@@ -51,13 +51,13 @@ import java.util.Objects;
 import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MAX;
 import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MIN;
 
-public class ValidatorConstraintScrypt implements ConstraintScrypt {
+public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 	public static final int MAX_RAKE_INCREASE = 10 * PreparedRakeUpdate.RAKE_PERCENTAGE_GRANULARITY; // 10%
 	private static final int FORK_VOTE_LENGTH = 32;
 
 	private final long rakeIncreaseDebounceEpochLength;
 
-	public ValidatorConstraintScrypt(long rakeIncreaseDebounceEpochLength) {
+	public ValidatorConstraintScryptV2(long rakeIncreaseDebounceEpochLength) {
 		this.rakeIncreaseDebounceEpochLength = rakeIncreaseDebounceEpochLength;
 	}
 

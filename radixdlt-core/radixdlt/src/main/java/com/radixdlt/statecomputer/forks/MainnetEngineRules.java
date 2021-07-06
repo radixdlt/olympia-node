@@ -44,7 +44,7 @@ import com.radixdlt.application.validators.construction.UpdateAllowDelegationFla
 import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
 import com.radixdlt.application.validators.construction.UpdateValidatorConstructor;
 import com.radixdlt.application.validators.construction.UpdateValidatorOwnerConstructor;
-import com.radixdlt.application.validators.scrypt.ValidatorConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.actions.BurnToken;
@@ -89,7 +89,7 @@ public final class MainnetEngineRules {
 		final var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
 
 		final var v4 = new CMAtomOS(Set.of("xrd"));
-		v4.load(new ValidatorConstraintScrypt(rakeIncreaseDebouncerEpochLength));
+		v4.load(new ValidatorConstraintScryptV2(rakeIncreaseDebouncerEpochLength));
 		v4.load(new ValidatorRegisterConstraintScrypt());
 		v4.load(new TokensConstraintScryptV3());
 		v4.load(new FeeConstraintScrypt());

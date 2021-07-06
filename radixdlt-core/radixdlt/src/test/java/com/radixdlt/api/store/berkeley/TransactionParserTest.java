@@ -45,7 +45,7 @@ import com.radixdlt.application.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.application.validators.construction.UpdateAllowDelegationFlagConstructor;
-import com.radixdlt.application.validators.scrypt.ValidatorConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.constraintmachine.meter.FixedFeeMeter;
 import com.radixdlt.engine.parser.REParser;
@@ -107,7 +107,7 @@ public class TransactionParserTest {
 		cmAtomOS.load(new EpochUpdateConstraintScrypt(
 			10, Amount.ofTokens(10).toSubunits(), 9800, 1, 10
 		));
-		cmAtomOS.load(new ValidatorConstraintScrypt(2));
+		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
 		cmAtomOS.load(new FeeConstraintScrypt());

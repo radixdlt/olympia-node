@@ -40,7 +40,7 @@ import com.radixdlt.application.tokens.construction.StakeTokensConstructorV3;
 import com.radixdlt.application.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.application.validators.scrypt.ValidatorConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -95,7 +95,7 @@ public class NextViewV2Test {
 		scrypts.forEach(cmAtomOS::load);
 		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		cmAtomOS.load(new ValidatorConstraintScrypt(2));
+		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
 		var cm = new ConstraintMachine(
 			cmAtomOS.virtualizedUpParticles(),

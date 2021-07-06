@@ -40,7 +40,7 @@ import com.radixdlt.application.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.unique.scrypt.MutexConstraintScrypt;
-import com.radixdlt.application.validators.scrypt.ValidatorConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -80,7 +80,7 @@ public class NextEpochV2Test {
 					),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new TokensConstraintScryptV3(),
-					new ValidatorConstraintScrypt(2),
+					new ValidatorConstraintScryptV2(2),
 					new ValidatorRegisterConstraintScrypt()
 				),
 				REConstructor.newBuilder()
