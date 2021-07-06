@@ -227,6 +227,7 @@ public final class ForkManager {
 		EngineStore<LedgerAndBFTProof> engineStore,
 		LedgerAndBFTProof ledgerAndBFTProof
 	) {
+		log.info("Trying to find next fork config, current = " + currentForkConfig.getName());
 		if (currentForkConfig instanceof CandidateForkConfig) {
 			// if we're already running a candidate fork than no action is needed
 			return Optional.empty();

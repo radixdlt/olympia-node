@@ -27,8 +27,11 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.utils.UInt256;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class CandidateForkPredicates {
+	private static final Logger log = LogManager.getLogger();
 
 	private CandidateForkPredicates() {
 	}
@@ -70,12 +73,15 @@ public final class CandidateForkPredicates {
 						})
 						.filter(vm -> validatorSet.containsNode(vm.getValidatorKey()))
 						.filter(vm -> {
+							log.info("Validator {} with power {} vote for {}", vm.getValidatorKey(),
+								validatorSet.getPower(vm.getValidatorKey()), vm.getAsHash());
 							final var expectedVoteHash = ForkConfig.voteHash(vm.getValidatorKey(), forkConfig);
 							return vm.getAsHash().equals(expectedVoteHash);
 						})
 						.map(validatorMetadata -> validatorSet.getPower(validatorMetadata.getValidatorKey()))
 						.reduce(UInt256.ZERO, UInt256::add);
 
+					log.info("Checking fork votes for {}, required = {}, got = {}", forkConfig.getName(), requiredPower, forkVotesPower);
 					return forkVotesPower.compareTo(requiredPower) >= 0;
 				}
 			}
