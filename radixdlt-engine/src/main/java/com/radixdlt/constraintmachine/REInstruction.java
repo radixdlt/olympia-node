@@ -50,8 +50,14 @@ public final class REInstruction {
 		UP((byte) 0x2, REOp.UP) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
-				var p = d.deserialize(buf);
-				return Substate.create(p, SubstateId.ofSubstate(parserState.txnId(), parserState.upSubstateCount()));
+				short size = buf.getShort();
+				if (size < 0 || size > 1024) { // Arbitrary max size for now
+					throw new DeserializeException("Invalid substate size: " + size);
+				}
+				var start = buf.position();
+				var substateId = SubstateId.ofSubstate(parserState.txnId(), parserState.upSubstateCount());
+				buf.position(start + size);
+				return new UpSubstate(substateId, buf.array(), start, size);
 			}
 		},
 		READ((byte) 0x3, REOp.READ) {

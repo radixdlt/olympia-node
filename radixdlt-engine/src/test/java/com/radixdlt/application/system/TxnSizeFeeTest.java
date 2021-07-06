@@ -122,7 +122,7 @@ public class TxnSizeFeeTest {
 
 	@Test
 	public void paying_for_fees_should_work() throws Exception {
-		var expectedTxnSize = 355;
+		var expectedTxnSize = 361;
 		// Act
 		var nextKey = ECKeyPair.generateNew();
 		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
@@ -140,7 +140,7 @@ public class TxnSizeFeeTest {
 
 	@Test
 	public void paying_for_fees_should_work_2() throws Exception {
-		var expectedTxnSize = 355;
+		var expectedTxnSize = 361;
 		// Act
 		var nextKey = ECKeyPair.generateNew();
 		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());

@@ -86,6 +86,7 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
 	private static int returnedSubstateInstructionSize() {
 		var returnSubstateSize = 0;
 		returnSubstateSize++; // REInstruction
+		returnSubstateSize += 2; // Substate size
 		returnSubstateSize++; // Substate typeId
 		returnSubstateSize++; // Reserved
 		returnSubstateSize += ECPublicKey.COMPRESSED_BYTES + 1; // PubKey addr

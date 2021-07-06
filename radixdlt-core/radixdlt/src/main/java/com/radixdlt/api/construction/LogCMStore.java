@@ -24,6 +24,7 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.UpSubstate;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
@@ -78,7 +79,10 @@ public final class LogCMStore implements CMStore {
 						.filter(i -> i.getMicroOp() == REInstruction.REMicroOp.UP)
 						.skip(index)
 						.findFirst()
-						.map(i -> i.getDataByteBuffer());
+						.map(i -> {
+							UpSubstate upSubstate = i.getData();
+							return upSubstate.getSubstateBuffer();
+						});
 				} catch (TxnParseException e) {
 					throw new IllegalStateException("Cannot deserialize txn", e);
 				}

@@ -113,7 +113,10 @@ public final class TxLowLevelBuilder {
 		Objects.requireNonNull(particle, "particle is required");
 		this.localUpParticles.put(upParticleCount, LocalSubstate.create(upParticleCount, particle));
 		var bytes = serialization.serialize(particle);
-		instruction(REInstruction.REMicroOp.UP, bytes);
+		var buf = ByteBuffer.allocate(bytes.length + 2);
+		buf.putShort((short) bytes.length);
+		buf.put(bytes);
+		instruction(REInstruction.REMicroOp.UP, buf.array());
 		upParticleCount++;
 		return this;
 	}
