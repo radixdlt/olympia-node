@@ -140,7 +140,7 @@ public final class REParser {
 			int curPos = buf.position();
 			final REInstruction inst;
 			try {
-				inst = REInstruction.readFrom(parserState, buf, substateDeserialization);
+				inst = REInstruction.readFrom(parserState, buf);
 			} catch (Exception e) {
 				throw new TxnParseException(parserState, "Could not read instruction", e);
 			}

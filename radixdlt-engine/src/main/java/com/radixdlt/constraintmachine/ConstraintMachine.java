@@ -319,7 +319,8 @@ public final class ConstraintMachine {
 					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);
 					expectEnd = reducerState == null;
 				} else if (inst.getMicroOp().getOp() == REOp.DOWNINDEX || inst.getMicroOp().getOp() == REOp.READINDEX) {
-					SubstateIndex index = inst.getData();
+					byte[] raw = inst.getData();
+					var index = SubstateIndex.create(raw, validationState.deserialization.byteToClass(raw[0]));
 					var substateCursor = validationState.getIndexedCursor(index);
 					var tmp = stateUpdates;
 					var iterator = new Iterator<Particle>() {
