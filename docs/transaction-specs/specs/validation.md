@@ -58,7 +58,7 @@ If a substate is created by one instruction, its content must be statically chec
 | `VALIDATOR_BFT_DATA`              | <ul><li>None</li></ul>                                                                                                                         |
 | `VALIDATOR_ALLOW_DELEGATION_FLAG` | <ul><li>None</li></ul>                                                                                                                         |
 | `VALIDATOR_REGISTERED_FLAG_COPY`  | <ul><li>None</li></ul>                                                                                                                         |
-| `VALIDATOR_RAKE_COPY`             | <ul><li>`rake_percentage`: must be in [0, 10000]</li></ul>                       |
+| `VALIDATOR_RAKE_COPY`             | <ul><li>`rake_percentage`: must be in [0, 10000]</li></ul>                                                                                     |
 | `VALIDATOR_OWNER_COPY`            | <ul><li>`owner`: must be an account address</li></ul>                                                                                          |
 
 #### Signature Validation

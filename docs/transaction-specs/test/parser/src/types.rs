@@ -54,6 +54,13 @@ pub struct SubstateId {
     pub index: u32,
 }
 
+/// Virtual Substate ID
+#[derive(Debug)]
+pub struct VirtualSubstateID {
+    pub length: u8,
+    pub data: Vec<u8>,
+}
+
 /// Radix Engine address
 pub enum Address {
     System,
@@ -143,6 +150,14 @@ impl SubstateId {
             hash: Hash::from_buffer(buffer),
             index: buffer.read_u32(),
         }
+    }
+}
+
+impl VirtualSubstateID {
+    pub fn from_buffer(buffer: &mut ByteBuffer) -> Self {
+        let length = buffer.read_u8();
+        let data = buffer.read_bytes(length as usize);
+        Self { length, data }
     }
 }
 

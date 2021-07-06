@@ -110,29 +110,37 @@ Currently, we have the following types:
 
 | **Substate Type**                 | **Code** | **Description**                                                |
 |-----------------------------------|----------|----------------------------------------------------------------|
-| `UNCLAIMED_READDR`                | `0x00`   | Unclaimed Radix Engine address                                 |
-| `ROUND_DATA`                      | `0x01`   | BFT consensus round data                                       |
-| `EPOCH_DATA`                      | `0x02`   | BFT consensus epoch data                                       |
-| `TOKEN_RESOURCE`                  | `0x03`   | Token resource                                                 |
-| `TOKEN_RESOURCE_METADATA`         | `0x04`   | Token resource metadata                                        |
-| `TOKENS`                          | `0x05`   | Tokens                                                         |
-| `PREPARED_STAKE`                  | `0x06`   | Prepared stake, will transition into stake ownership by system |
-| `STAKE_OWNERSHIP`                 | `0x07`   | Stake ownership                                                |
-| `PREPARED_UNSTAKE`                | `0x08`   | Prepared unstake                                               |
-| `EXITTING_STAKE`                  | `0x09`   | Existing stake                                                 |
-| `VALIDATOR_META_DATA`             | `0x0A`   | Validator metadata, e.g. name and url                          |
-| `VALIDATOR_STAKE_DATA`            | `0x0B`   | Validator stake data                                           |
-| `VALIDATOR_BFT_DATA`              | `0x0C`   | Validator BFT data                                             |
-| `VALIDATOR_ALLOW_DELEGATION_FLAG` | `0x0D`   | Validator allow delegation from others flag                    |
-| `VALIDATOR_REGISTERED_FLAG_COPY`  | `0x0E`   | Validator registered flag copy                                 |
-| `VALIDATOR_RAKE_COPY`             | `0x0F`   | Validator rake (fee) copy                                      |
-| `VALIDATOR_OWNER_COPY`            | `0x10`   | Validator owner copy                                           |
+| `VIRTUAL_PARENT`                  | `0x00`   | Virtual parent                                                 |
+| `UNCLAIMED_READDR`                | `0x01`   | Unclaimed Radix Engine address                                 |
+| `ROUND_DATA`                      | `0x02`   | BFT consensus round data                                       |
+| `EPOCH_DATA`                      | `0x03`   | BFT consensus epoch data                                       |
+| `TOKEN_RESOURCE`                  | `0x04`   | Token resource                                                 |
+| `TOKEN_RESOURCE_METADATA`         | `0x05`   | Token resource metadata                                        |
+| `TOKENS`                          | `0x06`   | Tokens                                                         |
+| `PREPARED_STAKE`                  | `0x07`   | Prepared stake, will transition into stake ownership by system |
+| `STAKE_OWNERSHIP`                 | `0x08`   | Stake ownership                                                |
+| `PREPARED_UNSTAKE`                | `0x09`   | Prepared unstake                                               |
+| `EXITTING_STAKE`                  | `0x0A`   | Existing stake                                                 |
+| `VALIDATOR_META_DATA`             | `0x0B`   | Validator metadata, e.g. name and url                          |
+| `VALIDATOR_STAKE_DATA`            | `0x0C`   | Validator stake data                                           |
+| `VALIDATOR_BFT_DATA`              | `0x0D`   | Validator BFT data                                             |
+| `VALIDATOR_ALLOW_DELEGATION_FLAG` | `0x0E`   | Validator allow delegation from others flag                    |
+| `VALIDATOR_REGISTERED_FLAG_COPY`  | `0x0F`   | Validator registered flag copy                                 |
+| `VALIDATOR_RAKE_COPY`             | `0x10`   | Validator rake (fee) copy                                      |
+| `VALIDATOR_OWNER_COPY`            | `0x11`   | Validator owner copy                                           |
 
 ### Substate Schema
 
 Substates are serialized and deserialized based on the following protocol:
 - The first byte indicates the substate type
 - The following bytes are the fields based on the order they appear on the tables below.
+
+#### `VIRTUAL_PARENT`
+
+| **Name**   | **Type** | **Description**      |
+|------------|----------|----------------------|
+| `reserved` | `u8`     | Reserved, always `0` |
+| `data`     | `bytes`  | Data                 |
 
 #### `UNCLAIMED_READDR`
 
@@ -281,12 +289,12 @@ Substates are serialized and deserialized based on the following protocol:
 
 #### `VALIDATOR_OWNER_COPY`
 
-| **Name**        | **Type**     | **Description**         |
-|-----------------|--------------|-------------------------|
-| `reserved`      | `u8`         | Reserved, always `0`    |
-| `epoch_update`  | `opt<u64>`   | The effective epoch     |
-| `validator`     | `public_key` | Validator public key    |
-| `owner`         | `address`    | Validator owner address |
+| **Name**       | **Type**     | **Description**         |
+|----------------|--------------|-------------------------|
+| `reserved`     | `u8`         | Reserved, always `0`    |
+| `epoch_update` | `opt<u64>`   | The effective epoch     |
+| `validator`    | `public_key` | Validator public key    |
+| `owner`        | `address`    | Validator owner address |
 
 ## Transaction Format
 
@@ -298,38 +306,41 @@ Each instruction consists of
 
 The table below summarizes all opcodes.
 
-| **Opcode**  | **Byte Value** | **Operand**       | **Description**                               |
-|-------------|----------------|-------------------|-----------------------------------------------|
-| `END`       | `0x00`         | None              | Mark the end of an action                     |
-| `SYSCALL`   | `0x01`         | `call_data`       | Make a system call                            |
-| `UP`        | `0x02`         | `substate`        | Boot up a new substate                        |
-| `READ`      | `0x03`         | `substate_id`     | Read a remote substate                        |
-| `LREAD`     | `0x04`         | `substate_index`  | Read a local substate                         |
-| `VREAD`     | `0x05`         | `substate`        | Read a virtual substate                       |
-| `DOWN`      | `0x06`         | `substate_id`     | Spin down a remote substate                   |
-| `LDOWN`     | `0x07`         | `substate_index`  | Spin down a local substate                    |
-| `VDOWN`     | `0x08`         | `substate`        | Spin down a virtual substate                  |
-| `SIG`       | `0x09`         | `signature`       | Provide a signature for prior instructions    |
-| `MSG`       | `0x0A`         | `msg`             | Record a message                              |
-| `HEADER`    | `0x0B`         | `version + flags` | Specify headers                               |
-| `READINDEX` | `0x0C`         | `prefix`          | Read all substates with the given prefix      |
-| `DOWNINDEX` | `0x0D`         | `prefix`          | Spin down all substates with the given prefix |
+| **Opcode**  | **Byte Value** | **Operand**              | **Description**                               |
+|-------------|----------------|--------------------------|-----------------------------------------------|
+| `END`       | `0x00`         | None                     | Mark the end of an action                     |
+| `SYSCALL`   | `0x01`         | `call_data`              | Make a system call                            |
+| `UP`        | `0x02`         | `substate`               | Boot up a new substate                        |
+| `READ`      | `0x03`         | `substate_id`            | Read a remote substate                        |
+| `LREAD`     | `0x04`         | `substate_index`         | Read a local substate                         |
+| `VREAD`     | `0x05`         | `substate`               | Read a virtual substate                       |
+| `LVREAD`    | `0x06`         | `virtual_substate_index` | Read a local virtual substate                 |
+| `DOWN`      | `0x07`         | `substate_id`            | Spin down a remote substate                   |
+| `LDOWN`     | `0x08`         | `substate_index`         | Spin down a local substate                    |
+| `VDOWN`     | `0x09`         | `substate`               | Spin down a virtual substate                  |
+| `LVDOWN`    | `0x0A`         | `virtual_substate_index` | Spin down a local virtual substate            |
+| `SIG`       | `0x0B`         | `signature`              | Provide a signature for prior instructions    |
+| `MSG`       | `0x0C`         | `msg`                    | Record a message                              |
+| `HEADER`    | `0x0D`         | `version + flags`        | Specify headers                               |
+| `READINDEX` | `0x0E`         | `prefix`                 | Read all substates with the given prefix      |
+| `DOWNINDEX` | `0x0F`         | `prefix`                 | Spin down all substates with the given prefix |
 
 ### Operand Format
 
 
-| **Name**         | **Description**                                                             |
-|------------------|-----------------------------------------------------------------------------|
-| `call_data`      | System call data (`bytes`) and the content must match function requirements |
-| `substate`       | Serialized substate                                                         |
-| `substate_id`    | Substate ID                                                                 |
-| `substate_index` | Substate index (`u32`)                                                      |
-| `substate`       | Spin down a virtual substate                                                |
-| `signature`      | ECDSA Signature                                                             |
-| `msg`            | Message (`bytes`)                                                           |
-| `version`        | Header version (`u8`)                                                       |
-| `flags`          | Header flags (`u8`)                                                         |
-| `prefix`         | Substate prefix (`bytes`)                                                   |
+| **Name**                 | **Description**                                                             |
+|--------------------------|-----------------------------------------------------------------------------|
+| `call_data`              | System call data (`bytes`) and the content must match function requirements |
+| `substate`               | Serialized substate                                                         |
+| `substate_id`            | Substate ID                                                                 |
+| `substate_index`         | Substate index (`u32`)                                                      |
+| `virtual_substate_index` | Virtual substate index (`bytes`)                                            |
+| `substate`               | Spin down a virtual substate                                                |
+| `signature`              | ECDSA Signature                                                             |
+| `msg`                    | Message (`bytes`)                                                           |
+| `version`                | Header version (`u8`)                                                       |
+| `flags`                  | Header flags (`u8`)                                                         |
+| `prefix`                 | Substate prefix (`bytes`)                                                   |
 
 ## Error Handling
 

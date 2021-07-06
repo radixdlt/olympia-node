@@ -15,12 +15,6 @@ pub trait Substate: std::fmt::Debug {
         Self: Sized;
 }
 
-pub trait VirtualSubstate: std::fmt::Debug {
-    fn from_buffer(buffer: &mut ByteBuffer) -> Self
-    where
-        Self: Sized;
-}
-
 #[derive(Debug)]
 pub struct TokenResource {
     pub reserved: u8,
@@ -105,31 +99,19 @@ pub struct ValidatorRegisteredFlagCopy {
 }
 
 #[derive(Debug)]
+pub struct ValidatorRakeCopy {
+    pub reserved: u8,
+    pub update_epoch: Option<u64>,
+    pub validator: PublicKey,
+    pub rake: u32,
+}
+
+#[derive(Debug)]
 pub struct ValidatorOwnerCopy {
     pub reserved: u8,
     pub update_epoch: Option<u64>,
     pub validator: PublicKey,
     pub owner: Address,
-}
-
-#[derive(Debug)]
-pub struct VirtualREAddress {
-    pub address: Address,
-}
-
-#[derive(Debug)]
-pub struct VirtualValidatorAllowDelegationFlag {
-    pub validator: PublicKey,
-}
-
-#[derive(Debug)]
-pub struct VirtualValidatorRegisteredFlagCopy {
-    pub validator: PublicKey,
-}
-
-#[derive(Debug)]
-pub struct VirtualValidatorOwnerCopy {
-    pub validator: PublicKey,
 }
 
 fn read_reserved_byte(buffer: &mut ByteBuffer) -> u8 {
@@ -312,6 +294,25 @@ impl Substate for ValidatorRegisteredFlagCopy {
     }
 }
 
+impl Substate for ValidatorRakeCopy {
+    fn from_buffer(buffer: &mut ByteBuffer) -> Self {
+        let reserved = read_reserved_byte(buffer);
+        let update_epoch = match Boolean::from_buffer(buffer).raw {
+            0x01 => Some(buffer.read_u64()),
+            _ => None,
+        };
+        let validator = PublicKey::from_buffer(buffer);
+        let rake = buffer.read_u32();
+
+        Self {
+            reserved,
+            update_epoch,
+            validator,
+            rake,
+        }
+    }
+}
+
 impl Substate for ValidatorOwnerCopy {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
         let reserved = read_reserved_byte(buffer);
@@ -328,37 +329,5 @@ impl Substate for ValidatorOwnerCopy {
             validator,
             owner,
         }
-    }
-}
-
-impl VirtualSubstate for VirtualREAddress {
-    fn from_buffer(buffer: &mut ByteBuffer) -> Self {
-        let address = Address::from_buffer(buffer);
-
-        Self { address }
-    }
-}
-
-impl VirtualSubstate for VirtualValidatorAllowDelegationFlag {
-    fn from_buffer(buffer: &mut ByteBuffer) -> Self {
-        let validator = PublicKey::from_buffer(buffer);
-
-        Self { validator }
-    }
-}
-
-impl VirtualSubstate for VirtualValidatorRegisteredFlagCopy {
-    fn from_buffer(buffer: &mut ByteBuffer) -> Self {
-        let validator = PublicKey::from_buffer(buffer);
-
-        Self { validator }
-    }
-}
-
-impl VirtualSubstate for VirtualValidatorOwnerCopy {
-    fn from_buffer(buffer: &mut ByteBuffer) -> Self {
-        let validator = PublicKey::from_buffer(buffer);
-
-        Self { validator }
     }
 }
