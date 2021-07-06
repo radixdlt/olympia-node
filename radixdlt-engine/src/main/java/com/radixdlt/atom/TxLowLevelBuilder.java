@@ -123,8 +123,8 @@ public final class TxLowLevelBuilder {
 			throw new IllegalStateException();
 		}
 		var buf = ByteBuffer.allocate(Integer.BYTES + 1 + virtualKey.length);
+		buf.put((byte) (virtualKey.length + Integer.BYTES));
 		buf.putInt(index);
-		buf.put((byte) virtualKey.length);
 		buf.put(virtualKey);
 		instruction(REInstruction.REMicroOp.LVDOWN, buf.array());
 		return this;
@@ -135,8 +135,8 @@ public final class TxLowLevelBuilder {
 			throw new IllegalStateException();
 		}
 		var buf = ByteBuffer.allocate(Integer.BYTES + 1 + virtualKey.length);
+		buf.put((byte) (virtualKey.length + Integer.BYTES));
 		buf.putInt(index);
-		buf.put((byte) virtualKey.length);
 		buf.put(virtualKey);
 		instruction(REInstruction.REMicroOp.LVREAD, buf.array());
 		return this;
@@ -146,10 +146,10 @@ public final class TxLowLevelBuilder {
 		if (virtualKey.length > 128) {
 			throw new IllegalStateException();
 		}
-		var buf = ByteBuffer.allocate(SubstateId.BYTES + 1 + virtualKey.length);
-		buf.put(parent.asBytes());
-		buf.put((byte) virtualKey.length);
-		buf.put(virtualKey);
+		var id = SubstateId.ofVirtualSubstate(parent, virtualKey);
+		var buf = ByteBuffer.allocate(1 + id.asBytes().length);
+		buf.put((byte) id.asBytes().length);
+		buf.put(id.asBytes());
 		instruction(REInstruction.REMicroOp.VDOWN, buf.array());
 		return this;
 	}
@@ -158,10 +158,10 @@ public final class TxLowLevelBuilder {
 		if (virtualKey.length > 128) {
 			throw new IllegalStateException();
 		}
-		var buf = ByteBuffer.allocate(SubstateId.BYTES + 1 + virtualKey.length);
-		buf.put(parent.asBytes());
-		buf.put((byte) virtualKey.length);
-		buf.put(virtualKey);
+		var id = SubstateId.ofVirtualSubstate(parent, virtualKey);
+		var buf = ByteBuffer.allocate(1 + id.asBytes().length);
+		buf.put((byte) id.asBytes().length);
+		buf.put(id.asBytes());
 		instruction(REInstruction.REMicroOp.VREAD, buf.array());
 		return this;
 	}

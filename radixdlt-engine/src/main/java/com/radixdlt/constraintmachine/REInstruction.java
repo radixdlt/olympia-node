@@ -73,23 +73,28 @@ public final class REInstruction {
 		VREAD((byte) 0x5, REOp.READ) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
-				var parent = SubstateId.fromBuffer(buf);
 				var length = Byte.toUnsignedInt(buf.get());
+				if (length <= SubstateId.BYTES) {
+					throw new DeserializeException("SubstateId is not virtual.");
+				}
 				var bytes = new byte[length];
 				buf.get(bytes);
-				return SubstateId.ofVirtualSubstate(parent, bytes);
+				return SubstateId.fromBytes(bytes);
 			}
 		},
 		LVREAD((byte) 0x6, REOp.READ) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				var length = Byte.toUnsignedInt(buf.get());
+				if (length <= Integer.BYTES) {
+					throw new DeserializeException("SubstateId is not virtual.");
+				}
 				var index = buf.getInt();
 				if (index < 0 || index >= parserState.upSubstateCount()) {
 					throw new DeserializeException("Bad local index: " + index);
 				}
 				var parent = SubstateId.ofSubstate(parserState.txnId(), index);
-				var length = Byte.toUnsignedInt(buf.get());
-				var bytes = new byte[length];
+				var bytes = new byte[length - Integer.BYTES];
 				buf.get(bytes);
 				return SubstateId.ofVirtualSubstate(parent, bytes);
 			}
@@ -113,23 +118,28 @@ public final class REInstruction {
 		VDOWN((byte) 0x9, REOp.DOWN) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
-				var parent = SubstateId.fromBuffer(buf);
 				var length = Byte.toUnsignedInt(buf.get());
+				if (length <= SubstateId.BYTES) {
+					throw new DeserializeException("SubstateId is not virtual.");
+				}
 				var bytes = new byte[length];
 				buf.get(bytes);
-				return SubstateId.ofVirtualSubstate(parent, bytes);
+				return SubstateId.fromBytes(bytes);
 			}
 		},
 		LVDOWN((byte) 0xa, REOp.DOWN) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				var length = Byte.toUnsignedInt(buf.get());
+				if (length <= Integer.BYTES) {
+					throw new DeserializeException("SubstateId is not virtual.");
+				}
 				var index = buf.getInt();
 				if (index < 0 || index >= parserState.upSubstateCount()) {
 					throw new DeserializeException("Bad local index: " + index);
 				}
 				var parent = SubstateId.ofSubstate(parserState.txnId(), index);
-				var length = Byte.toUnsignedInt(buf.get());
-				var bytes = new byte[length];
+				var bytes = new byte[length - Integer.BYTES];
 				buf.get(bytes);
 				return SubstateId.ofVirtualSubstate(parent, bytes);
 			}
