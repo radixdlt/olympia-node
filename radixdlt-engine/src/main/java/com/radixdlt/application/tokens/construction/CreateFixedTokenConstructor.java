@@ -27,6 +27,7 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.SubstateWithArg;
+import com.radixdlt.identifiers.REAddr;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -34,6 +35,9 @@ import java.util.Optional;
 public final class CreateFixedTokenConstructor implements ActionConstructor<CreateFixedToken> {
 	@Override
 	public void construct(CreateFixedToken action, TxBuilder txBuilder) throws TxBuilderException {
+		if (action.getResourceAddr().getType() != REAddr.REAddrType.HASHED_KEY) {
+			throw new TxBuilderException("Invalid resource address.");
+		}
 		var addrParticle = new UnclaimedREAddr(action.getResourceAddr());
 		txBuilder.down(
 			UnclaimedREAddr.class,
