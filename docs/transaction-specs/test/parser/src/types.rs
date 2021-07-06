@@ -54,6 +54,18 @@ pub struct SubstateId {
     pub index: u32,
 }
 
+/// Virtual Substate ID
+pub struct VirtualSubstateID {
+    pub length: u8,
+    pub data: Vec<u8>,
+}
+
+/// Virtual Substate ID
+pub struct LocalVirtualSubstateID {
+    pub length: u8,
+    pub data: Vec<u8>,
+}
+
 /// Radix Engine address
 pub enum Address {
     System,
@@ -146,6 +158,22 @@ impl SubstateId {
     }
 }
 
+impl VirtualSubstateID {
+    pub fn from_buffer(buffer: &mut ByteBuffer) -> Self {
+        let length = buffer.read_u8();
+        let data = buffer.read_bytes(length as usize);
+        Self { length, data }
+    }
+}
+
+impl LocalVirtualSubstateID {
+    pub fn from_buffer(buffer: &mut ByteBuffer) -> Self {
+        let length = buffer.read_u8();
+        let data = buffer.read_bytes(length as usize);
+        Self { length, data }
+    }
+}
+
 impl Address {
     pub fn from_buffer(buffer: &mut ByteBuffer) -> Self {
         let t = buffer.read_u8();
@@ -197,5 +225,17 @@ impl fmt::Debug for Signature {
             hex::encode(self.r),
             hex::encode(self.s)
         )
+    }
+}
+
+impl fmt::Debug for VirtualSubstateID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "0x{}", hex::encode(&self.data))
+    }
+}
+
+impl fmt::Debug for LocalVirtualSubstateID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "0x{}", hex::encode(&self.data))
     }
 }
