@@ -18,6 +18,8 @@
 
 package com.radixdlt.application.system.scrypt;
 
+import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
@@ -30,12 +32,15 @@ import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.UpProcedure;
+import com.radixdlt.constraintmachine.VirtualUpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SystemCallProcedure;
 import com.radixdlt.identifiers.REAddr;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -48,6 +53,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		this.systemNames = systemNames;
 	}
 
+	private static class AllocatingSystem implements ReducerState {
+	}
 
 	public static class REAddrClaim implements ReducerState {
 		private final byte[] arg;
@@ -84,6 +91,48 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
+		os.procedure(new VirtualUpProcedure<>(
+			VoidReducerState.class, UnclaimedREAddr.class,
+			() -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
+			(s, u, c, r) -> {
+				return ReducerResult.complete();
+			}
+		));
+
+		os.substate(
+			new SubstateDefinition<>(
+				EpochData.class,
+				SubstateTypeId.EPOCH_DATA.id(),
+				buf -> {
+					REFieldSerialization.deserializeReservedByte(buf);
+					var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
+					return new EpochData(epoch);
+				},
+				(s, buf) -> {
+					REFieldSerialization.serializeReservedByte(buf);
+					buf.putLong(s.getEpoch());
+				}
+			)
+		);
+
+		os.substate(
+			new SubstateDefinition<>(
+				RoundData.class,
+				SubstateTypeId.ROUND_DATA.id(),
+				buf -> {
+					REFieldSerialization.deserializeReservedByte(buf);
+					var view = REFieldSerialization.deserializeNonNegativeLong(buf);
+					var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
+					return new RoundData(view, timestamp);
+				},
+				(s, buf) -> {
+					REFieldSerialization.serializeReservedByte(buf);
+					buf.putLong(s.getView());
+					buf.putLong(s.getTimestamp());
+				}
+			)
+		);
+
 		os.procedure(
 			new SystemCallProcedure<>(
 				TokenHoldingBucket.class, REAddr.ofSystem(),
@@ -167,6 +216,29 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				return new Authorization(permissionLevel, (r, ctx) -> { });
 			},
 			(d, s, r, c) -> ReducerResult.incomplete(s.claim(d, c))
+		));
+
+		// For Mainnet Genesis
+		os.procedure(new UpProcedure<>(
+			SystemConstraintScrypt.REAddrClaim.class, EpochData.class,
+			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
+			(s, u, c, r) -> {
+				if (u.getEpoch() != 0) {
+					throw new ProcedureException("First epoch must be 0.");
+				}
+
+				return ReducerResult.incomplete(new AllocatingSystem());
+			}
+		));
+		os.procedure(new UpProcedure<>(
+			AllocatingSystem.class, RoundData.class,
+			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
+			(s, u, c, r) -> {
+				if (u.getView() != 0) {
+					throw new ProcedureException("First view must be 0.");
+				}
+				return ReducerResult.complete();
+			}
 		));
 	}
 }

@@ -18,20 +18,22 @@
 
 package com.radixdlt.constraintmachine;
 
-import java.nio.ByteBuffer;
-import java.util.function.Supplier;
+import com.radixdlt.atom.SubstateId;
 
-public final class VirtualKey {
-	private final byte[] key;
-	public VirtualKey(byte[] key) {
-		this.key = key;
+public final class VirtualizedState {
+	private final Class<? extends Particle> substateClass;
+	private final SubstateId id;
+
+	public VirtualizedState(SubstateId id, Class<? extends Particle> substateClass) {
+		this.id = id;
+		this.substateClass = substateClass;
 	}
 
-	public byte[] key() {
-		return key;
+	public SubstateId getId() {
+		return id;
 	}
 
-	public ByteBuffer get() {
-		return ByteBuffer.wrap(key);
+	public Class<? extends Particle> getSubstateClass() {
+		return substateClass;
 	}
 }

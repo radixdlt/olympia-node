@@ -18,6 +18,7 @@
 
 package com.radixdlt.atom;
 
+import com.radixdlt.constraintmachine.VirtualKey;
 import org.bouncycastle.util.encoders.Hex;
 
 import com.radixdlt.identifiers.AID;
@@ -49,12 +50,15 @@ public final class SubstateId {
 		return new SubstateId(id);
 	}
 
-	public static SubstateId ofVirtualSubstate(byte[] particleBytes) {
-		return new SubstateId(transactionIdHash(particleBytes).asBytes());
-	}
-
-	public static SubstateId ofVirtualSubstate(ByteBuffer buf) {
-		return new SubstateId(transactionIdHash(buf).asBytes());
+	public static SubstateId ofVirtualSubstate(SubstateId substateId, VirtualKey virtualKey) {
+		if (substateId.isVirtual()) {
+			throw new IllegalArgumentException();
+		}
+		byte[] id = new byte[BYTES + virtualKey.key().length];
+		var buf = ByteBuffer.wrap(id);
+		buf.put(substateId.asBytes());
+		buf.put(virtualKey.key());
+		return new SubstateId(id);
 	}
 
 	public static SubstateId fromBytes(byte[] bytes) {
@@ -68,7 +72,7 @@ public final class SubstateId {
 	}
 
 	public boolean isVirtual() {
-		return idBytes.length == AID.BYTES;
+		return idBytes.length > BYTES;
 	}
 
 	public byte[] asBytes() {
@@ -77,6 +81,14 @@ public final class SubstateId {
 
 	public AID getTxnId() {
 		return AID.from(idBytes);
+	}
+
+	public Optional<ByteBuffer> getVirtualKey() {
+		if (idBytes.length <= BYTES) {
+			return Optional.empty();
+		}
+		var buf = ByteBuffer.wrap(idBytes, BYTES, idBytes.length - BYTES);
+		return Optional.of(buf);
 	}
 
 	public Optional<Integer> getIndex() {

@@ -20,6 +20,7 @@ package com.radixdlt.constraintmachine;
 public enum REOp {
 	END(false),
 	SYSCALL(false),
+	VUP(true),
 	UP(true),
 	READ(false),
 	DOWN(true),

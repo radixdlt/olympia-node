@@ -127,7 +127,8 @@ public final class TxLowLevelBuilder {
 		if (virtualKey.length > 128) {
 			throw new IllegalStateException();
 		}
-		var buf = ByteBuffer.allocate(1 + virtualKey.length);
+		var buf = ByteBuffer.allocate(SubstateId.BYTES + 1 + virtualKey.length);
+		buf.put(new byte[SubstateId.BYTES]);
 		buf.put((byte) virtualKey.length);
 		buf.put(virtualKey);
 		instruction(REInstruction.REMicroOp.VDOWN, buf.array());
@@ -138,7 +139,8 @@ public final class TxLowLevelBuilder {
 		if (virtualKey.length > 128) {
 			throw new IllegalStateException();
 		}
-		var buf = ByteBuffer.allocate(1 + virtualKey.length);
+		var buf = ByteBuffer.allocate(SubstateId.BYTES + 1 + virtualKey.length);
+		buf.put(new byte[SubstateId.BYTES]);
 		buf.put((byte) virtualKey.length);
 		buf.put(virtualKey);
 		instruction(REInstruction.REMicroOp.VREAD, buf.array());
@@ -175,7 +177,7 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder readIndex(SubstateIndex index) {
+	public TxLowLevelBuilder readIndex(SubstateIndex<?> index) {
 		var buf = ByteBuffer.allocate(1 + index.getPrefix().length);
 		buf.put((byte) index.getPrefix().length);
 		buf.put(index.getPrefix());
@@ -183,7 +185,7 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder downIndex(SubstateIndex index) {
+	public TxLowLevelBuilder downIndex(SubstateIndex<?> index) {
 		var buf = ByteBuffer.allocate(1 + index.getPrefix().length);
 		buf.put((byte) index.getPrefix().length);
 		buf.put(index.getPrefix());

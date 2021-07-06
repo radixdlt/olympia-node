@@ -43,7 +43,7 @@ public final class REStateUpdate {
 	}
 
 	public static REStateUpdate of(REOp op, SubstateId substateId, Supplier<ByteBuffer> stateBuf, Object parsed) {
-		if (op != REOp.DOWN && op != REOp.UP) {
+		if (op != REOp.DOWN && op != REOp.UP && op != REOp.VUP) {
 			throw new IllegalArgumentException();
 		}
 		return new REStateUpdate(op, substateId, stateBuf, parsed);
@@ -55,6 +55,10 @@ public final class REStateUpdate {
 
 	public ByteBuffer getStateBuf() {
 		return stateBuf.get();
+	}
+
+	public boolean isVirtualBootUp() {
+		return this.op == REOp.VUP;
 	}
 
 	public boolean isBootUp() {

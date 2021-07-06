@@ -76,13 +76,16 @@ public final class ConstraintMachine {
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
 		private final CMStore store;
 		private final SubstateDeserialization deserialization;
+		private final VirtualSubstateDeserialization virtualSubstateDeserialization;
 		private int bootupCount = 0;
 
 		CMValidationState(
+			VirtualSubstateDeserialization virtualSubstateDeserialization,
 			SubstateDeserialization deserialization,
 			CMStore store
 		) {
 			this.deserialization = deserialization;
+			this.virtualSubstateDeserialization = virtualSubstateDeserialization;
 			this.store = store;
 		}
 
@@ -126,17 +129,21 @@ public final class ConstraintMachine {
 			bootupCount++;
 		}
 
-		public void virtualRead(SubstateId substateId) throws VirtualSubstateAlreadyDownException {
+		public Particle virtualRead(SubstateId substateId) throws VirtualSubstateAlreadyDownException, DeserializeException {
 			if (remoteDownParticles.contains(substateId)) {
 				throw new VirtualSubstateAlreadyDownException(substateId);
 			}
 
 			store.verifyVirtualSubstate(substateId);
+
+			var keyBuf = substateId.getVirtualKey().orElseThrow();
+			return virtualSubstateDeserialization.keyToSubstate(keyBuf);
 		}
 
-		public void virtualShutdown(SubstateId substateId) throws VirtualSubstateAlreadyDownException {
-			virtualRead(substateId);
+		public Particle virtualShutdown(SubstateId substateId) throws VirtualSubstateAlreadyDownException, DeserializeException {
+			var p = virtualRead(substateId);
 			remoteDownParticles.add(substateId);
+			return p;
 		}
 
 		public Particle localShutdown(int index) throws LocalSubstateNotFoundException {
@@ -263,10 +270,8 @@ public final class ConstraintMachine {
 				} else if (inst.getMicroOp().getOp() == REOp.READ) {
 					final Particle nextParticle;
 					if (inst.getMicroOp() == REInstruction.REMicroOp.VREAD) {
-						VirtualKey virtualKey = inst.getData();
-						nextParticle = virtualSubstateDeserialization.keyToSubstate(virtualKey.get());
-						var substateId = SubstateId.ofVirtualSubstate(virtualKey.get());
-						validationState.virtualRead(substateId);
+						SubstateId substateId = inst.getData();
+						nextParticle = validationState.virtualRead(substateId);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.READ) {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.read(substateId);
@@ -280,6 +285,18 @@ public final class ConstraintMachine {
 					var methodProcedure = loadProcedure(reducerState, eventId);
 					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);
 					expectEnd = reducerState == null;
+				} else if (inst.getMicroOp() == REInstruction.REMicroOp.VUP) {
+					VirtualizedState virtualizedState = inst.getData();
+					var substateClass = virtualizedState.getSubstateClass();
+					var eventId = OpSignature.ofSubstateUpdate(
+						inst.getMicroOp().getOp(), substateClass
+					);
+					var methodProcedure = loadProcedure(reducerState, eventId);
+					reducerState = callProcedure(methodProcedure, substateClass, reducerState, readableAddrs, context);
+					var id = virtualizedState.getId();
+					stateUpdates.add(REStateUpdate.of(REOp.VUP, id, inst::getDataByteBuffer, virtualizedState));
+
+
 				} else if (inst.getMicroOp().getOp() == REOp.DOWNINDEX || inst.getMicroOp().getOp() == REOp.READINDEX) {
 					SubstateIndex index = inst.getData();
 					var substateCursor = validationState.getIndexedCursor(index);
@@ -321,10 +338,8 @@ public final class ConstraintMachine {
 						substateId = substate.getId();
 						validationState.bootUp(substate, inst::getDataByteBuffer);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWN) {
-						VirtualKey virtualKey = inst.getData();
-						nextParticle = virtualSubstateDeserialization.keyToSubstate(virtualKey.get());
-						substateId = SubstateId.ofVirtualSubstate(virtualKey.get());
-						validationState.virtualShutdown(substateId);
+						substateId = inst.getData();
+						nextParticle = validationState.virtualShutdown(substateId);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.DOWN) {
 						substateId = inst.getData();
 						nextParticle = validationState.shutdown(substateId);
@@ -391,7 +406,7 @@ public final class ConstraintMachine {
 		ExecutionContext context,
 		List<REInstruction> instructions
 	) throws TxnParseException, ConstraintMachineException {
-		var validationState = new CMValidationState(deserialization, cmStore);
+		var validationState = new CMValidationState(virtualSubstateDeserialization, deserialization, cmStore);
 		return this.statefulVerify(context, validationState, instructions);
 	}
 }

@@ -96,7 +96,7 @@ public final class REParser {
 
 		void substateUpdate(REOp op) {
 			substateUpdateCount++;
-			if (op == REOp.UP) {
+			if (op == REOp.UP || op == REOp.VUP) {
 				upSubstateCount++;
 			}
 		}

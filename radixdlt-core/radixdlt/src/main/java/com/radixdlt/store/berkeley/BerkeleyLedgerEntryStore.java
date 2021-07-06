@@ -99,35 +99,35 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	CommittedReader, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
 
-	private static final String TXN_ID_DB_NAME = "radix.txn_id_db";
-	private static final String VERTEX_STORE_DB_NAME = "radix.vertex_store";
-	private static final String TXN_DB_NAME = "radix.txn_db";
-	private static final String RESOURCE_DB_NAME = "radix.resource_db";
-	private static final String SUBSTATE_DB_NAME = "radix.substate_db";
-	private static final String INDEXED_SUBSTATE_DB_NAME = "radix.indexed_substate_db";
-	private static final String PROOF_DB_NAME = "radix.proof_db";
-	private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
-	private static final String LEDGER_NAME = "radix.ledger";
-
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
 	private final SystemCounters systemCounters;
 	private final StoreConfig storeConfig;
 
-	private Database txnDatabase; // Txns by state version; Append-only
-
-	private Database txnIdDatabase; // Txns by AID; Append-only
-
+	// Engine Store databases
+	private static final String RESOURCE_DB_NAME = "radix.resource_db";
+	private static final String SUBSTATE_DB_NAME = "radix.substate_db";
+	private static final String VIRTUAL_STATE_DB_NAME = "radix.virtual_state_db";
+	private static final String INDEXED_SUBSTATE_DB_NAME = "radix.indexed_substate_db";
 	private Database substatesDatabase; // Write/Delete
 	private SecondaryDatabase indexedSubstatesDatabase; // Write/Delete
-	private Database resourceDatabase;
+	private Database virtualStateDatabase; // Write-only (Virtual state is immutable)
+	private Database resourceDatabase; // Write-only (Resources are immutable)
 
+	// Metadata databases
+	private static final String TXN_ID_DB_NAME = "radix.txn_id_db";
+	private static final String VERTEX_STORE_DB_NAME = "radix.vertex_store";
+	private static final String TXN_DB_NAME = "radix.txn_db";
 	private Database vertexStoreDatabase; // Write/Delete
-
 	private Database proofDatabase; // Write/Delete
 	private SecondaryDatabase epochProofDatabase;
 
-
+	// Syncing Ledger databases
+	private static final String PROOF_DB_NAME = "radix.proof_db";
+	private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
+	private static final String LEDGER_NAME = "radix.ledger";
+	private Database txnDatabase; // Txns by state version; Append-only
+	private Database txnIdDatabase; // Txns by AID; Append-only
 	private AppendLog txnLog; //Atom data append only log
 
 	@Inject
@@ -148,6 +148,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	public void close() {
 		safeClose(txnDatabase);
 		safeClose(resourceDatabase);
+		safeClose(virtualStateDatabase);
 
 		safeClose(txnIdDatabase);
 
@@ -352,6 +353,14 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			txnDatabase = env.openDatabase(null, TXN_DB_NAME, primaryConfig);
 
 			resourceDatabase = env.openDatabase(null, RESOURCE_DB_NAME, rriConfig);
+			virtualStateDatabase = env.openDatabase(
+				null, VIRTUAL_STATE_DB_NAME,
+				new DatabaseConfig()
+					.setAllowCreate(true)
+					.setTransactional(true)
+					.setKeyPrefixing(true)
+					.setBtreeComparator(lexicographicalComparator())
+			);
 			substatesDatabase = env.openDatabase(null, SUBSTATE_DB_NAME, primaryConfig);
 
 			indexedSubstatesDatabase = env.openSecondaryDatabase(
@@ -653,6 +662,16 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return v.get();
 	}
 
+	private void upVirtualState(
+		com.sleepycat.je.Transaction txn,
+		ByteBuffer bytes,
+		SubstateId substateId
+	) {
+		byte[] virtualStateId = substateId.asBytes();
+		var value = new DatabaseEntry(bytes.array(), bytes.position(), bytes.remaining());
+		virtualStateDatabase.putNoOverwrite(txn, entry(virtualStateId), value);
+	}
+
 	private void upParticle(
 		com.sleepycat.je.Transaction txn,
 		ByteBuffer bytes,
@@ -698,8 +717,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return Optional.of(ByteBuffer.wrap(e.getData()));
 	}
 
-	private void updateParticle(com.sleepycat.je.Transaction txn, REStateUpdate stateUpdate) {
-		if (stateUpdate.isBootUp()) {
+	private void executeStateUpdate(com.sleepycat.je.Transaction txn, REStateUpdate stateUpdate) {
+		if (stateUpdate.isVirtualBootUp()) {
+			var buf = stateUpdate.getStateBuf();
+			upVirtualState(txn, buf, stateUpdate.getId());
+		} else if (stateUpdate.isBootUp()) {
 			var buf = stateUpdate.getStateBuf();
 			upParticle(txn, buf, stateUpdate.getId());
 
@@ -750,11 +772,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			var idKey = entry(aid);
 			failIfNotSuccess(txnIdDatabase.put(transaction, idKey, atomPosData), "Atom Id write for", aid);
 			addBytesWrite(atomPosData, idKey);
-
 			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
 
-			// Update particles
-			stateUpdates.forEach(i -> this.updateParticle(transaction, i));
+			stateUpdates.forEach(i -> this.executeStateUpdate(transaction, i));
 		} catch (Exception e) {
 			if (transaction != null) {
 				transaction.abort();

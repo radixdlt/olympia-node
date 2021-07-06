@@ -18,20 +18,13 @@
 
 package com.radixdlt.constraintmachine;
 
-import java.nio.ByteBuffer;
-import java.util.function.Supplier;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
-public final class VirtualKey {
-	private final byte[] key;
-	public VirtualKey(byte[] key) {
-		this.key = key;
-	}
-
-	public byte[] key() {
-		return key;
-	}
-
-	public ByteBuffer get() {
-		return ByteBuffer.wrap(key);
-	}
+public interface VirtualUpReducer<U extends Particle, S extends ReducerState>  {
+	ReducerResult reduce(
+		S reducerState,
+		Class<U> virtualized,
+		ExecutionContext context,
+		ImmutableAddrs immutableAddrs
+	) throws ProcedureException;
 }

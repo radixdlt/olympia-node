@@ -73,12 +73,12 @@ public final class REInstruction {
 		VREAD((byte) 0x5, REOp.READ) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				var parent = SubstateId.fromBuffer(buf);
 				var length = Byte.toUnsignedInt(buf.get());
-				int pos = buf.position();
 				var bytes = new byte[length];
 				buf.get(bytes);
-				buf.position(pos + length);
-				return new VirtualKey(() -> ByteBuffer.wrap(buf.array(), pos, length));
+				var key = new VirtualKey(bytes);
+				return SubstateId.ofVirtualSubstate(parent, key);
 			}
 		},
 		DOWN((byte) 0x6, REOp.DOWN) {
@@ -100,12 +100,12 @@ public final class REInstruction {
 		VDOWN((byte) 0x8, REOp.DOWN) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				var parent = SubstateId.fromBuffer(buf);
 				var length = Byte.toUnsignedInt(buf.get());
-				int pos = buf.position();
 				var bytes = new byte[length];
 				buf.get(bytes);
-				buf.position(pos + length);
-				return new VirtualKey(() -> ByteBuffer.wrap(buf.array(), pos, length));
+				var key = new VirtualKey(bytes);
+				return SubstateId.ofVirtualSubstate(parent, key);
 			}
 		},
 		SIG((byte) 0x9, REOp.SIG) {
@@ -153,6 +153,14 @@ public final class REInstruction {
 				var b = new byte[indexSize];
 				buf.get(b);
 				return SubstateIndex.create(b, d.byteToClass(b[0]));
+			}
+		},
+		VUP((byte) 0xe, REOp.VUP) {
+			@Override
+			Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				var substateClass = d.byteToClass(buf.get());
+				var id = SubstateId.ofSubstate(parserState.txnId(), parserState.upSubstateCount());
+				return new VirtualizedState(id, substateClass);
 			}
 		};
 
