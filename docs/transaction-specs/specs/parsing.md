@@ -306,41 +306,42 @@ Each instruction consists of
 
 The table below summarizes all opcodes.
 
-| **Opcode**  | **Byte Value** | **Operand**           | **Description**                               |
-|-------------|----------------|-----------------------|-----------------------------------------------|
-| `END`       | `0x00`         | None                  | Mark the end of an action                     |
-| `SYSCALL`   | `0x01`         | `call_data`           | Make a system call                            |
-| `UP`        | `0x02`         | `substate`            | Boot up a new substate                        |
-| `READ`      | `0x03`         | `substate_id`         | Read a remote substate                        |
-| `LREAD`     | `0x04`         | `substate_index`      | Read a local substate                         |
-| `VREAD`     | `0x05`         | `substate`            | Read a virtual substate                       |
-| `LVREAD`    | `0x06`         | `virtual_substate_id` | Read a local virtual substate                 |
-| `DOWN`      | `0x07`         | `substate_id`         | Spin down a remote substate                   |
-| `LDOWN`     | `0x08`         | `substate_index`      | Spin down a local substate                    |
-| `VDOWN`     | `0x09`         | `substate`            | Spin down a virtual substate                  |
-| `LVDOWN`    | `0x0A`         | `virtual_substate_id` | Spin down a local virtual substate            |
-| `SIG`       | `0x0B`         | `signature`           | Provide a signature for prior instructions    |
-| `MSG`       | `0x0C`         | `msg`                 | Record a message                              |
-| `HEADER`    | `0x0D`         | `version + flags`     | Specify headers                               |
-| `READINDEX` | `0x0E`         | `prefix`              | Read all substates with the given prefix      |
-| `DOWNINDEX` | `0x0F`         | `prefix`              | Spin down all substates with the given prefix |
+| **Opcode**  | **Byte Value** | **Operand**                 | **Description**                               |
+|-------------|----------------|-----------------------------|-----------------------------------------------|
+| `END`       | `0x00`         | None                        | Mark the end of an action                     |
+| `SYSCALL`   | `0x01`         | `call_data`                 | Make a system call                            |
+| `UP`        | `0x02`         | `substate`                  | Boot up a new substate                        |
+| `READ`      | `0x03`         | `substate_id`               | Read a remote substate                        |
+| `LREAD`     | `0x04`         | `substate_index`            | Read a local substate                         |
+| `VREAD`     | `0x05`         | `virtual_substate_id`       | Read a virtual substate                       |
+| `LVREAD`    | `0x06`         | `local_virtual_substate_id` | Read a local virtual substate                 |
+| `DOWN`      | `0x07`         | `substate_id`               | Spin down a remote substate                   |
+| `LDOWN`     | `0x08`         | `substate_index`            | Spin down a local substate                    |
+| `VDOWN`     | `0x09`         | `virtual_substate_id`       | Spin down a virtual substate                  |
+| `LVDOWN`    | `0x0A`         | `local_virtual_substate_id` | Spin down a local virtual substate            |
+| `SIG`       | `0x0B`         | `signature`                 | Provide a signature for prior instructions    |
+| `MSG`       | `0x0C`         | `msg`                       | Record a message                              |
+| `HEADER`    | `0x0D`         | `version + flags`           | Specify headers                               |
+| `READINDEX` | `0x0E`         | `prefix`                    | Read all substates with the given prefix      |
+| `DOWNINDEX` | `0x0F`         | `prefix`                    | Spin down all substates with the given prefix |
 
 ### Operand Format
 
 
-| **Name**              | **Description**                                                             |
-|-----------------------|-----------------------------------------------------------------------------|
-| `call_data`           | System call data (`bytes`) and the content must match function requirements |
-| `substate`            | Serialized substate                                                         |
-| `substate_id`         | Substate ID                                                                 |
-| `substate_index`      | Substate index (`u32`)                                                      |
-| `virtual_substate_id` | Virtual substate index (`bytes`)                                            |
-| `substate`            | Spin down a virtual substate                                                |
-| `signature`           | ECDSA Signature                                                             |
-| `msg`                 | Message (`bytes`)                                                           |
-| `version`             | Header version (`u8`)                                                       |
-| `flags`               | Header flags (`u8`)                                                         |
-| `prefix`              | Substate prefix (`bytes`)                                                   |
+| **Name**                    | **Description**                                                             |
+|-----------------------------|-----------------------------------------------------------------------------|
+| `call_data`                 | System call data (`bytes`) and the content must match function requirements |
+| `substate`                  | Serialized substate                                                         |
+| `substate_id`               | Substate ID                                                                 |
+| `substate_index`            | Substate index (`u32`)                                                      |
+| `virtual_substate_id`       | Virtual substate index (`bytes`)                                            |
+| `local_virtual_substate_id` | Local virtual substate index (`bytes`)                                      |
+| `substate`                  | Spin down a virtual substate                                                |
+| `signature`                 | ECDSA Signature                                                             |
+| `msg`                       | Message (`bytes`)                                                           |
+| `version`                   | Header version (`u8`)                                                       |
+| `flags`                     | Header flags (`u8`)                                                         |
+| `prefix`                    | Substate prefix (`bytes`)                                                   |
 
 ## Error Handling
 

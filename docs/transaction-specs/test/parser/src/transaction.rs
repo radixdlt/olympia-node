@@ -24,7 +24,7 @@ pub enum Instruction {
 
     VREAD(VirtualSubstateID),
 
-    LVREAD(VirtualSubstateID),
+    LVREAD(LocalVirtualSubstateID),
 
     DOWN(SubstateId),
 
@@ -32,7 +32,7 @@ pub enum Instruction {
 
     VDOWN(VirtualSubstateID),
 
-    LVDOWN(VirtualSubstateID),
+    LVDOWN(LocalVirtualSubstateID),
 
     SIG(Signature),
 
@@ -78,11 +78,11 @@ impl Instruction {
             0x03 => Self::READ(SubstateId::from_buffer(buffer)),
             0x04 => Self::LREAD(buffer.read_u32()),
             0x05 => Self::VREAD(VirtualSubstateID::from_buffer(buffer)),
-            0x06 => Self::LVREAD(VirtualSubstateID::from_buffer(buffer)),
+            0x06 => Self::LVREAD(LocalVirtualSubstateID::from_buffer(buffer)),
             0x07 => Self::DOWN(SubstateId::from_buffer(buffer)),
             0x08 => Self::LDOWN(buffer.read_u32()),
             0x09 => Self::VDOWN(VirtualSubstateID::from_buffer(buffer)),
-            0x0A => Self::LVDOWN(VirtualSubstateID::from_buffer(buffer)),
+            0x0A => Self::LVDOWN(LocalVirtualSubstateID::from_buffer(buffer)),
             0x0B => Self::SIG(Signature::from_buffer(buffer)),
             0x0C => Self::MSG(Bytes::from_buffer(buffer)),
             0x0D => Self::HEADER(buffer.read_u8(), buffer.read_u8()),
