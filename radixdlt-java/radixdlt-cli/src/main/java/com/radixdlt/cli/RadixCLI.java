@@ -27,8 +27,6 @@ import picocli.CommandLine.Command;
 
 import java.security.Security;
 
-import static com.radixdlt.cli.Utils.println;
-
 @Command(name = "radix",
 		version = "1.0",
 		mixinStandardHelpOptions = true,
@@ -43,7 +41,7 @@ public class RadixCLI implements Runnable {
 
 	@Override
 	public void run() {
-		println("Radix Command Line Utility ");
+		System.out.println("Radix Command Line Utility ");
 	}
 
 	public static void main(String[] args) {

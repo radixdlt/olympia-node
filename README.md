@@ -15,6 +15,8 @@ Here we have:
 
 ## Contribute
 
+To contribute, you'll need to [setup development environment](docs/development/README.md).
+
 [Contributions](CONTRIBUTING.md) are welcome, we simply ask to:
 
 * Fork the codebase

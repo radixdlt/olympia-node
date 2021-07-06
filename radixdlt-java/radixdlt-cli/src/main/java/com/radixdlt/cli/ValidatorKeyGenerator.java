@@ -25,13 +25,11 @@ package com.radixdlt.cli;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.crypto.exception.KeyStoreException;
-import picocli.CommandLine;
 
 import java.io.File;
 import java.io.IOException;
 
-import static com.radixdlt.cli.Utils.printfln;
-import static com.radixdlt.cli.Utils.println;
+import picocli.CommandLine;
 
 /**
  * Create new keypair for use by validator and save created keypair into new or existing keystore.
@@ -66,18 +64,22 @@ public class ValidatorKeyGenerator implements Runnable {
 		var keyPair = ECKeyPair.generateNew();
 		var publicKey = keyPair.getPublicKey().toHex();
 
-		printfln("Writing key %s (pubKey: %s) into %s keystore %s",
-				keystoreDetails.keypair(), publicKey, isNew, keystoreDetails.keyStore()
+		System.out.printf(
+			"Writing key %s (pubKey: %s) into %s keystore %s%n",
+			keystoreDetails.keypair(),
+			publicKey,
+			isNew,
+			keystoreDetails.keyStore()
 		);
 
 		try {
 			RadixKeyStore.fromFile(keystoreFile, keystoreDetails.password().toCharArray(), newFile)
 					.writeKeyPair(keystoreDetails.keypair(), keyPair);
 		} catch (KeyStoreException | IOException e) {
-			printfln("Unable to generate keypair due to following error: %s", e.getMessage());
+			System.out.printf("Unable to generate keypair due to following error: %s%n", e.getMessage());
 			return;
 		}
 
-		println("Done");
+		System.out.println("Done");
 	}
 }

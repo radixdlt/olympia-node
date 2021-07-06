@@ -32,9 +32,7 @@ If no violation is found, a list of parsed instructions, an optional message dat
    * Can appear **at most once** per transaction.
 - `LDOWN` and `LREAD`:
    * The `index` operand must be less than the number of `UP` instructions before this instruction.
-- `DOWNALL`:
-   * The `class_id` operand must be one of the supported substate type.
-- `DOWNINDEX`:
+- `DOWNINDEX` and `READINDEX`:
    * The `prefix` length should be less than 10 and the first byte must be a valid `class_id`.
 - `SYSCALL`:
    * The `calldata` operand must be one of the following:
@@ -218,15 +216,17 @@ Constraint machine executes transaction instructions sequentially, based on the 
    * Verify authorization
    * Update `reducer_state` to the output of the state reducing rule
    * Update `end_expected` to `true` if `reducer_state` is void
-1. If current instruction is `READ`, `LREAD`, or `VREAD`
+1. If current instruction is `READ`, `LREAD`, `VREAD` or `READINDEX`
+   * If `current_instruction == READINDEX`
+      * Prepare an iterator for all the substates with the given prefix (including the ones in `local_up_substates` and excluding the ones in `remote_down_substates`)
    * Look up transition procedure with procedure key and abort if not found
    * Verify the required permission level
    * Verify authorization
    * Update `reducer_state` to the output of the state reducing rule
    * Update `end_expected` to `true` if `reducer_state` is void
 1. If current instruction is a state update
-   * If `current_instruction == DOWNALL` or `current_instruction == DOWNINDEX`
-      * Prepare an iterator for all the substates of the substate type (including the ones in `local_up_substates` and excluding the ones in `remote_down_substates`)
+   * If `current_instruction == DOWNINDEX`
+      * Prepare an iterator for all the substates with the given prefix (including the ones in `local_up_substates` and excluding the ones in `remote_down_substates`)
    * Else
       * Update `local_up_substates` and `remote_down_substates` according to the instruction and abort on error
    * Look up transition procedure with procedure key and abort if not found
