@@ -18,6 +18,7 @@
 package com.radixdlt.store;
 
 import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
@@ -27,6 +28,7 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
@@ -44,7 +46,7 @@ import java.util.function.Supplier;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	private final Object lock = new Object();
-	private final Map<SubstateId, REStateUpdate> storedParticles = new HashMap<>();
+	private final Map<SubstateId, REStateUpdate> storedState = new HashMap<>();
 	private final Map<REAddr, Supplier<ByteBuffer>> addrParticles = new HashMap<>();
 
 	@Override
@@ -53,7 +55,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			@Override
 			public void storeTxn(Txn txn, List<REStateUpdate> stateUpdates) {
 				synchronized (lock) {
-					stateUpdates.forEach(i -> storedParticles.put(i.getId(), i));
+					stateUpdates.forEach(i -> storedState.put(i.getId(), i));
 					stateUpdates.stream()
 						.filter(REStateUpdate::isBootUp)
 						.forEach(p -> {
@@ -72,19 +74,28 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			}
 
 			@Override
-			public void verifyVirtualSubstate(SubstateId substateId) throws VirtualSubstateAlreadyDownException {
+			public ByteBuffer verifyVirtualSubstate(SubstateId substateId)
+				throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist {
 				synchronized (lock) {
-					var inst = storedParticles.get(substateId);
+					var parent = substateId.getVirtualParent().orElseThrow();
+					var update = storedState.get(parent);
+					if (update == null || !(update.getParsed() instanceof VirtualParent)) {
+						throw new VirtualParentStateDoesNotExist(parent);
+					}
+
+					var inst = storedState.get(substateId);
 					if (inst != null && inst.isShutDown()) {
 						throw new VirtualSubstateAlreadyDownException(substateId);
 					}
+
+					return update.getStateBuf();
 				}
 			}
 
 			@Override
 			public Optional<ByteBuffer> loadSubstate(SubstateId substateId) {
 				synchronized (lock) {
-					var inst = storedParticles.get(substateId);
+					var inst = storedState.get(substateId);
 					if (inst == null || !inst.isBootUp()) {
 						return Optional.empty();
 					}
@@ -112,7 +123,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
 		final List<RawSubstateBytes> substates = new ArrayList<>();
 		synchronized (lock) {
-			for (var i : storedParticles.values()) {
+			for (var i : storedState.values()) {
 				if (!i.isBootUp()) {
 					continue;
 				}
@@ -129,7 +140,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 
 	public boolean contains(SubstateId substateId) {
 		synchronized (lock) {
-			var inst = storedParticles.get(substateId);
+			var inst = storedState.get(substateId);
 			return inst != null;
 		}
 	}
@@ -145,7 +156,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 		var types = Set.of(particleClass);
 
 		synchronized (lock) {
-			for (var i : storedParticles.values()) {
+			for (var i : storedState.values()) {
 				if (!i.isBootUp() || !isOneOf(types, i.getParsed())) {
 					continue;
 				}

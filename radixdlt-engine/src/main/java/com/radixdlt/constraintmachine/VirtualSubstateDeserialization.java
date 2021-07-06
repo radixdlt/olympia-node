@@ -36,8 +36,7 @@ public class VirtualSubstateDeserialization {
 			.collect(Collectors.toMap(SubstateDefinition::getTypeByte, d -> d));
 	}
 
-	public Particle keyToSubstate(ByteBuffer buf) throws DeserializeException {
-		var typeByte = buf.get();
+	public Particle keyToSubstate(byte typeByte, ByteBuffer buf) throws DeserializeException {
 		var deserializer = byteToDeserializer.get(typeByte);
 		if (deserializer == null) {
 			throw new DeserializeException("Unknown byte type: " + typeByte);

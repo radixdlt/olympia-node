@@ -210,6 +210,21 @@ public final class REFieldSerialization {
 		buf.put(sBytes); // url
 	}
 
+	public static void serializeBytes(ByteBuffer buf, byte[] bytes) {
+		if (bytes.length > 255) {
+			throw new IllegalArgumentException("bytes cannot be greater than 255 bytes");
+		}
+		buf.put((byte) bytes.length);
+		buf.put(bytes);
+	}
+
+	public static byte[] deserializeBytes(ByteBuffer buf) {
+		var len = Byte.toUnsignedInt(buf.get());
+		var dest = new byte[len];
+		buf.get(dest);
+		return dest;
+	}
+
 	public static String deserializeString(ByteBuffer buf) {
 		var len = Byte.toUnsignedInt(buf.get()); // url
 		var dest = new byte[len];

@@ -18,7 +18,6 @@
 
 package com.radixdlt.atom;
 
-import com.radixdlt.constraintmachine.VirtualKey;
 import org.bouncycastle.util.encoders.Hex;
 
 import com.radixdlt.identifiers.AID;
@@ -29,7 +28,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.radixdlt.crypto.HashUtils.transactionIdHash;
 
 /**
  * The id of a unique substate
@@ -50,14 +48,14 @@ public final class SubstateId {
 		return new SubstateId(id);
 	}
 
-	public static SubstateId ofVirtualSubstate(SubstateId substateId, VirtualKey virtualKey) {
+	public static SubstateId ofVirtualSubstate(SubstateId substateId, byte[] key) {
 		if (substateId.isVirtual()) {
 			throw new IllegalArgumentException();
 		}
-		byte[] id = new byte[BYTES + virtualKey.key().length];
+		byte[] id = new byte[BYTES + key.length];
 		var buf = ByteBuffer.wrap(id);
 		buf.put(substateId.asBytes());
-		buf.put(virtualKey.key());
+		buf.put(key);
 		return new SubstateId(id);
 	}
 
@@ -81,6 +79,14 @@ public final class SubstateId {
 
 	public AID getTxnId() {
 		return AID.from(idBytes);
+	}
+
+	public Optional<SubstateId> getVirtualParent() {
+		if (idBytes.length <= BYTES) {
+			return Optional.empty();
+		}
+		var buf = ByteBuffer.wrap(idBytes, 0, BYTES);
+		return Optional.of(SubstateId.fromBuffer(buf));
 	}
 
 	public Optional<ByteBuffer> getVirtualKey() {

@@ -74,7 +74,6 @@ public final class SubstateSerialization {
 		var serializer = classToVirtualSerializer.get(substateClass);
 		// TODO: Remove buf allocation
 		var buf = ByteBuffer.allocate(1024);
-		buf.put(classToTypeByte.get(substateClass));
 		T virtualized = (T) serializer.serialize(key, buf);
 		var position = buf.position();
 		buf.rewind();

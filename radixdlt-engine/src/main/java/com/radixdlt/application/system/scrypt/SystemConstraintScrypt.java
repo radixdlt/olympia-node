@@ -20,6 +20,7 @@ package com.radixdlt.application.system.scrypt;
 
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
+import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
@@ -33,15 +34,16 @@ import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
-import com.radixdlt.constraintmachine.VirtualUpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SystemCallProcedure;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.Bytes;
 
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.LinkedList;
 import java.util.Set;
 
 import static com.radixdlt.identifiers.Naming.NAME_PATTERN;
@@ -55,6 +57,26 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 	private static class AllocatingSystem implements ReducerState {
 	}
+
+	private static class AllocatingVirtualState implements ReducerState {
+		private final LinkedList<SubstateTypeId> substatesToVirtualize = new LinkedList<>();
+		AllocatingVirtualState() {
+			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_STAKE_DATA);
+			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG);
+			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY);
+			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_RAKE_COPY);
+			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_OWNER_COPY);
+		}
+
+		public ReducerState createVirtualSubstate(VirtualParent virtualParent) throws ProcedureException {
+			var typeId = substatesToVirtualize.remove(0);
+			if (!Arrays.equals(virtualParent.getData(), new byte[] {typeId.id()})) {
+				throw new ProcedureException("Expected " + typeId + " but was " + Bytes.toHexString(virtualParent.getData()));
+			}
+			return substatesToVirtualize.isEmpty() ? null : this;
+		}
+	}
+
 
 	public static class REAddrClaim implements ReducerState {
 		private final byte[] arg;
@@ -91,10 +113,33 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
-		os.procedure(new VirtualUpProcedure<>(
-			VoidReducerState.class, UnclaimedREAddr.class,
-			() -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
+		os.substate(
+			new SubstateDefinition<>(
+				VirtualParent.class,
+				SubstateTypeId.VIRTUAL_PARENT.id(),
+				buf -> {
+					REFieldSerialization.deserializeReservedByte(buf);
+					var data = REFieldSerialization.deserializeBytes(buf);
+					return new VirtualParent(data);
+				},
+				(s, buf) -> {
+					REFieldSerialization.serializeReservedByte(buf);
+					REFieldSerialization.serializeBytes(buf, s.getData());
+				}
+			)
+		);
+
+		// TODO: Down singleton
+		os.procedure(new UpProcedure<>(
+			VoidReducerState.class, VirtualParent.class,
+			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
 			(s, u, c, r) -> {
+				if (u.getData().length != 1) {
+					throw new ProcedureException("Invalid data: " + Bytes.toHexString(u.getData()));
+				}
+				if (u.getData()[0] != SubstateTypeId.UNCLAIMED_READDR.id()) {
+					throw new ProcedureException("Invalid data: " + Bytes.toHexString(u.getData()));
+				}
 				return ReducerResult.complete();
 			}
 		));
@@ -237,7 +282,15 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				if (u.getView() != 0) {
 					throw new ProcedureException("First view must be 0.");
 				}
-				return ReducerResult.complete();
+				return ReducerResult.incomplete(new AllocatingVirtualState());
+			}
+		));
+		os.procedure(new UpProcedure<>(
+			AllocatingVirtualState.class, VirtualParent.class,
+			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
+			(s, u, c, r) -> {
+				var next = s.createVirtualSubstate(u);
+				return next == null ? ReducerResult.complete() : ReducerResult.incomplete(next);
 			}
 		));
 	}

@@ -21,7 +21,7 @@ import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 
 import java.nio.ByteBuffer;
@@ -31,7 +31,7 @@ import java.util.Optional;
  * Read only store interface for Constraint Machine validation
  */
 public interface CMStore extends ResourceStore {
-	void verifyVirtualSubstate(SubstateId substateId) throws VirtualSubstateAlreadyDownException;
+	ByteBuffer verifyVirtualSubstate(SubstateId substateId) throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist;
 	Optional<ByteBuffer> loadSubstate(SubstateId substateId);
 	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index);
 }

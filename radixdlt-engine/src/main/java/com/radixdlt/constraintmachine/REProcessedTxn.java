@@ -18,7 +18,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.application.system.state.EpochData;

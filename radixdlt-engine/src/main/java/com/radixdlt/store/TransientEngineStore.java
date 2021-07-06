@@ -8,6 +8,7 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
@@ -52,9 +53,13 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 					}
 
 					@Override
-					public void verifyVirtualSubstate(SubstateId substateId) throws VirtualSubstateAlreadyDownException {
-						tStore.verifyVirtualSubstate(substateId);
-						baseStore.verifyVirtualSubstate(substateId);
+					public ByteBuffer verifyVirtualSubstate(SubstateId substateId)
+						throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist {
+						try {
+							return tStore.verifyVirtualSubstate(substateId);
+						} catch (VirtualParentStateDoesNotExist e) {
+							return baseStore.verifyVirtualSubstate(substateId);
+						}
 					}
 
 					@Override

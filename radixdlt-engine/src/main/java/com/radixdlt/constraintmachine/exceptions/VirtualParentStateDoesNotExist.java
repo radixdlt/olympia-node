@@ -16,24 +16,12 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
 import com.radixdlt.atom.SubstateId;
 
-public final class VirtualizedState {
-	private final Class<? extends Particle> substateClass;
-	private final SubstateId id;
-
-	public VirtualizedState(SubstateId id, Class<? extends Particle> substateClass) {
-		this.id = id;
-		this.substateClass = substateClass;
-	}
-
-	public SubstateId getId() {
-		return id;
-	}
-
-	public Class<? extends Particle> getSubstateClass() {
-		return substateClass;
+public class VirtualParentStateDoesNotExist extends Exception {
+	public VirtualParentStateDoesNotExist(SubstateId substateId) {
+		super("Virtual parent " + substateId + " does not exist.");
 	}
 }

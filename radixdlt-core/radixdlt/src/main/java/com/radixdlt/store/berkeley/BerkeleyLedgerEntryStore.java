@@ -22,7 +22,7 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
@@ -111,7 +111,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private static final String INDEXED_SUBSTATE_DB_NAME = "radix.indexed_substate_db";
 	private Database substatesDatabase; // Write/Delete
 	private SecondaryDatabase indexedSubstatesDatabase; // Write/Delete
-	private Database virtualStateDatabase; // Write-only (Virtual state is immutable)
 	private Database resourceDatabase; // Write-only (Resources are immutable)
 
 	// Metadata databases
@@ -148,7 +147,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	public void close() {
 		safeClose(txnDatabase);
 		safeClose(resourceDatabase);
-		safeClose(virtualStateDatabase);
 
 		safeClose(txnIdDatabase);
 
@@ -205,7 +203,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	public <R> R transaction(TransactionEngineStoreConsumer<LedgerAndBFTProof, R> consumer) throws RadixEngineException {
 		var dbTxn = createTransaction();
 		try {
-			var result = consumer.start(new EngineStoreInTransaction<LedgerAndBFTProof>() {
+			var result = consumer.start(new EngineStoreInTransaction<>() {
 				@Override
 				public void storeTxn(Txn txn, List<REStateUpdate> stateUpdates) {
 					BerkeleyLedgerEntryStore.this.storeTxn(dbTxn, txn, stateUpdates);
@@ -217,10 +215,26 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				}
 
 				@Override
-				public void verifyVirtualSubstate(SubstateId substateId) throws VirtualSubstateAlreadyDownException {
+				public ByteBuffer verifyVirtualSubstate(SubstateId substateId)
+					throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist {
+					var parent = substateId.getVirtualParent().orElseThrow();
+
+					var parentState = BerkeleyLedgerEntryStore.this.loadSubstate(dbTxn, parent);
+					if (parentState.isEmpty()) {
+						throw new VirtualParentStateDoesNotExist(parent);
+					}
+
+					var buf = parentState.get();
+					if (buf.get() != SubstateTypeId.VIRTUAL_PARENT.id()) {
+						throw new VirtualParentStateDoesNotExist(parent);
+					}
+					buf.position(buf.position() - 1);
+
 					if (BerkeleyLedgerEntryStore.this.isVirtualDown(dbTxn, substateId)) {
 						throw new VirtualSubstateAlreadyDownException(substateId);
 					}
+
+					return buf;
 				}
 
 				@Override
@@ -353,14 +367,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			txnDatabase = env.openDatabase(null, TXN_DB_NAME, primaryConfig);
 
 			resourceDatabase = env.openDatabase(null, RESOURCE_DB_NAME, rriConfig);
-			virtualStateDatabase = env.openDatabase(
-				null, VIRTUAL_STATE_DB_NAME,
-				new DatabaseConfig()
-					.setAllowCreate(true)
-					.setTransactional(true)
-					.setKeyPrefixing(true)
-					.setBtreeComparator(lexicographicalComparator())
-			);
 			substatesDatabase = env.openDatabase(null, SUBSTATE_DB_NAME, primaryConfig);
 
 			indexedSubstatesDatabase = env.openSecondaryDatabase(
@@ -662,16 +668,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return v.get();
 	}
 
-	private void upVirtualState(
-		com.sleepycat.je.Transaction txn,
-		ByteBuffer bytes,
-		SubstateId substateId
-	) {
-		byte[] virtualStateId = substateId.asBytes();
-		var value = new DatabaseEntry(bytes.array(), bytes.position(), bytes.remaining());
-		virtualStateDatabase.putNoOverwrite(txn, entry(virtualStateId), value);
-	}
-
 	private void upParticle(
 		com.sleepycat.je.Transaction txn,
 		ByteBuffer bytes,
@@ -718,10 +714,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	private void executeStateUpdate(com.sleepycat.je.Transaction txn, REStateUpdate stateUpdate) {
-		if (stateUpdate.isVirtualBootUp()) {
-			var buf = stateUpdate.getStateBuf();
-			upVirtualState(txn, buf, stateUpdate.getId());
-		} else if (stateUpdate.isBootUp()) {
+		if (stateUpdate.isBootUp()) {
 			var buf = stateUpdate.getStateBuf();
 			upParticle(txn, buf, stateUpdate.getId());
 

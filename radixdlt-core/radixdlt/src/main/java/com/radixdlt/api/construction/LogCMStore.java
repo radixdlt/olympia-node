@@ -56,7 +56,9 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public void verifyVirtualSubstate(SubstateId substateId) {
+	public ByteBuffer verifyVirtualSubstate(SubstateId substateId) {
+		var parent = substateId.getVirtualParent().orElseThrow();
+		return loadSubstate(parent).orElseThrow();
 	}
 
 	@Override

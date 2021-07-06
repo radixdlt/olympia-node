@@ -23,6 +23,7 @@ import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
@@ -39,7 +40,6 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -108,9 +108,19 @@ public final class TxBuilder {
 		return numResourcesCreated;
 	}
 
-	private <T extends Particle> T virtualDown(Class<T> substateClass, Object key) {
+	private <T extends Particle> T virtualDown(Class<T> substateClass, Object key) throws TxBuilderException {
+		var typeByte = deserialization.classToByte(substateClass);
+		var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
+		if (localParent.isPresent()) {
+			var pair = serialization.serializeVirtual(substateClass, key);
+			lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), pair.getSecond());
+			return pair.getFirst();
+		}
+
+		var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte)
+			.orElseThrow(() -> new TxBuilderException("Can't find parent with typeByte " + typeByte));
 		var pair = serialization.serializeVirtual(substateClass, key);
-		lowLevelBuilder.virtualDown(pair.getSecond());
+		lowLevelBuilder.virtualDown(parent.getId(), pair.getSecond());
 		return pair.getFirst();
 	}
 
@@ -131,8 +141,17 @@ public final class TxBuilder {
 	}
 
 	private <T extends Particle> T virtualRead(Class<T> substateClass, Object key) {
+		var typeByte = deserialization.classToByte(substateClass);
+		var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
+		if (localParent.isPresent()) {
+			var pair = serialization.serializeVirtual(substateClass, key);
+			lowLevelBuilder.localVirtualRead(localParent.get().getIndex(), pair.getSecond());
+			return pair.getFirst();
+		}
+
+		var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte).orElseThrow();
 		var pair = serialization.serializeVirtual(substateClass, key);
-		lowLevelBuilder.virtualRead(pair.getSecond());
+		lowLevelBuilder.virtualRead(parent.getId(), pair.getSecond());
 		return pair.getFirst();
 	}
 
@@ -197,6 +216,29 @@ public final class TxBuilder {
 		}
 	}
 
+	public <T extends Particle> Optional<LocalSubstate> findLocalSubstate(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate
+	) {
+		return lowLevelBuilder.localUpSubstate().stream()
+			.filter(l -> particleClass.isInstance(l.getParticle()))
+			.filter(l -> particlePredicate.test((T) l.getParticle()))
+			.findFirst();
+	}
+
+	public <T extends Particle> Optional<Substate> findRemoteSubstate(
+		Class<T> particleClass,
+		Predicate<T> particlePredicate
+	) {
+		try (var cursor = createRemoteSubstateCursor(particleClass)) {
+			return iteratorToStream(cursor)
+				.map(this::deserialize)
+				.filter(l -> particleClass.isInstance(l.getParticle()))
+				.filter(l -> particlePredicate.test((T) l.getParticle()))
+				.findFirst();
+		}
+	}
+
 	public <T extends Particle> Optional<T> find(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate
@@ -252,7 +294,13 @@ public final class TxBuilder {
 				.map(Substate::getParticle)
 				.map(particleClass::cast)
 				.findFirst()
-				.or(() -> keyToVirtual.map(k -> this.virtualDown(particleClass, k)));
+				.or(() -> keyToVirtual.map(k -> {
+					try {
+						return this.virtualDown(particleClass, k);
+					} catch (TxBuilderException e) {
+						throw new RuntimeException(e);
+					}
+				}));
 
 			if (substateDown.isEmpty()) {
 				throw exceptionSupplier.get();
