@@ -85,7 +85,7 @@ public final class REFieldSerialization {
 			throw new DeserializeException("Unknown address type " + v);
 		}
 		if (!allowed.contains(type.get())) {
-			throw new DeserializeException("Address type not allowed. Allowed: " + allowed);
+			throw new DeserializeException("Expected address type: " + allowed + " but was: " + type.get());
 		}
 		return type.get().parse(buf);
 	}

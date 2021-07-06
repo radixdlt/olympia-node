@@ -77,7 +77,7 @@ public interface TransactionAction {
 		String description, String iconUrl, String tokenUrl, UInt256 amount
 	) {
 		return new CreateFixedTokenAction(
-			from, amount, REAddr.ofPubKeyAccount(signer), name,
+			from, amount, REAddr.ofHashedKey(signer, symbol), name,
 			symbol, iconUrl, tokenUrl, description
 		);
 	}
