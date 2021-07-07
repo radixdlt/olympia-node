@@ -335,7 +335,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private void storeEpochForkHash(Transaction dbTxn, long epoch, HashCode forkHash) {
 		final var key = new DatabaseEntry(Longs.toByteArray(epoch));
 		final var entry = new DatabaseEntry(forkHash.asBytes());
-		forkConfigDatabase.putNoDupData(dbTxn, key, entry);
+		if (forkConfigDatabase.putNoOverwrite(dbTxn, key, entry) != SUCCESS) {
+			throw new BerkeleyStoreException("Duplicate fork hash store for epoch " + epoch);
+		}
 	}
 
 	@Override
