@@ -133,9 +133,14 @@ public final class REFieldSerialization {
 		}
 	}
 
-	public static int deserializeUnsignedShort(ByteBuffer buf, int max) throws DeserializeException {
+	public static int deserializeUnsignedShort(ByteBuffer buf, int min, int max) throws DeserializeException {
 		var s = buf.getShort();
 		var i = Short.toUnsignedInt(s);
+
+		if (i < min) {
+			throw new DeserializeException("Min of short value is " + min + " but value is: " + i);
+		}
+
 		if (i > max) {
 			throw new DeserializeException("Max of short value is " + max + " but value is: " + i);
 		}
