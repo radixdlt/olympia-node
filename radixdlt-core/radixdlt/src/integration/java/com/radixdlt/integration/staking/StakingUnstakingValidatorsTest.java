@@ -97,9 +97,9 @@ import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
-import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -186,7 +186,7 @@ public class StakingUnstakingValidatorsTest {
 			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
-			new ForkManagerModule(),
+			new ForksModule(),
 			new MainnetForksModule(),
 			forkModule
 		);
@@ -336,7 +336,7 @@ public class StakingUnstakingValidatorsTest {
 		private final DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate;
 		private final EpochChange epochChange;
 		private final BerkeleyLedgerEntryStore entryStore;
-		private final ForkManager forkManager;
+		private final Forks forks;
 
 		@Inject
 		private NodeState(
@@ -344,13 +344,13 @@ public class StakingUnstakingValidatorsTest {
 			DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate,
 			EpochChange epochChange,
 			BerkeleyLedgerEntryStore entryStore,
-			ForkManager forkManager
+			Forks forks
 		) {
 			this.self = self;
 			this.lastLedgerUpdate = lastLedgerUpdate;
 			this.epochChange = epochChange;
 			this.entryStore = entryStore;
-			this.forkManager = forkManager;
+			this.forks = forks;
 		}
 
 		public String getSelf() {
@@ -370,7 +370,7 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public Map<BFTNode, Map<String, String>> getValidators() {
-			final var forkConfig = forkManager.getCurrentFork(entryStore.getEpochsForkHashes());
+			final var forkConfig = forks.getCurrentFork(entryStore.getEpochsForkHashes());
 			var reParser = forkConfig.getEngineRules().getParser();
 			Map<BFTNode, Map<String, String>> map = entryStore.reduceUpParticles(
 				new HashMap<>(), (i, p) -> {
@@ -412,7 +412,7 @@ public class StakingUnstakingValidatorsTest {
 
 		@SuppressWarnings("unchecked")
 		public UInt256 getTotalNativeTokens() {
-			final var forkConfig = forkManager.getCurrentFork(entryStore.getEpochsForkHashes());
+			final var forkConfig = forks.getCurrentFork(entryStore.getEpochsForkHashes());
 			var reParser = forkConfig.getEngineRules().getParser();
 			var deserialization = reParser.getSubstateDeserialization();
 			var totalTokens = entryStore.reduceUpParticles(

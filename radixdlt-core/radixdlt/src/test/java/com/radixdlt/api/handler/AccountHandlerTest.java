@@ -20,7 +20,7 @@ package com.radixdlt.api.handler;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERules;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -54,8 +54,8 @@ public class AccountHandlerTest {
 	private final SubmissionService submissionService = mock(SubmissionService.class);
 	private final AccountInfoService accountService = mock(AccountInfoService.class);
 	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
-	private final ForkManager forkManager = mock(ForkManager.class);
-	private final ActionParserService actionParserService = new ActionParserService(addressing, forkManager);
+	private final Forks forks = mock(Forks.class);
+	private final ActionParserService actionParserService = new ActionParserService(addressing, forks);
 
 	private final ECKeyPair keyPair = ECKeyPair.generateNew();
 	private final ECPublicKey bftKey = keyPair.getPublicKey();
@@ -70,7 +70,7 @@ public class AccountHandlerTest {
 	public void setup() {
 		final var reRules = mock(RERules.class);
 		when(reRules.getMaxRounds()).thenReturn(View.of(10L));
-		when(forkManager.getCandidateFork()).thenReturn(Optional.empty());
+		when(forks.getCandidateFork()).thenReturn(Optional.empty());
 	}
 
 	@Test

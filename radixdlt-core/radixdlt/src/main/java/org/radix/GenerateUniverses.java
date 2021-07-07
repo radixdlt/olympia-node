@@ -27,7 +27,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -140,8 +140,8 @@ public final class GenerateUniverses {
 				install(new AbstractModule() {
 					@Provides
 					@Singleton
-					private ForkManager forkManager(ForkConfig initialForkConfig) {
-						return ForkManager.create(Set.of(initialForkConfig));
+					private Forks forks(ForkConfig initialForkConfig) {
+						return Forks.create(Set.of(initialForkConfig));
 					}
 
 					@Provides

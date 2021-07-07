@@ -23,7 +23,7 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Rule;
@@ -87,7 +87,7 @@ public class MutableTokenAndResourceFeeTest {
 					Amount.ofTokens(1)
 				)
 			)),
-			new ForkManagerModule(),
+			new ForksModule(),
 			new MainnetForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),

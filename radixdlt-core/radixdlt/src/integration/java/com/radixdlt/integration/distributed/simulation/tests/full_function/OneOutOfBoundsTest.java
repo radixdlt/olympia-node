@@ -28,7 +28,7 @@ import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMon
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -83,7 +83,7 @@ public class OneOutOfBoundsTest {
 						9800,
 						10
 					)),
-				new ForkManagerModule(),
+				new ForksModule(),
 				new MainnetForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))

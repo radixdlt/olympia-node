@@ -18,7 +18,7 @@
 
 package com.radixdlt.integration.statemachine;
 
-import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,7 +64,7 @@ public class RandomTxnTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new RadixEngineForksLatestOnlyModule(),
-			new ForkManagerModule(),
+			new ForksModule(),
 			new MainnetForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),

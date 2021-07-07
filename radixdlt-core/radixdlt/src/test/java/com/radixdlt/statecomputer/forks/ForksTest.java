@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class ForkManagerTest {
+public final class ForksTest {
 
 	@Test
 	public void should_fail_when_two_forks_with_the_same_hash() {
@@ -44,7 +44,7 @@ public final class ForkManagerTest {
 		final var fork2 = new FixedEpochForkConfig("fork2", HashCode.fromInt(1), null, 1L);
 
 		final var exception = assertThrows(IllegalArgumentException.class, () -> {
-			ForkManager.create(Set.of(fork1, fork2));
+			Forks.create(Set.of(fork1, fork2));
 		});
 
 		assertTrue(exception.getMessage().contains("duplicate hashes"));
@@ -56,7 +56,7 @@ public final class ForkManagerTest {
 		final var fork2 = new CandidateForkConfig("fork2", HashCode.fromInt(2), null, alwaysTrue(0));
 
 		final var exception = assertThrows(IllegalArgumentException.class, () -> {
-			ForkManager.create(Set.of(fork1, fork2));
+			Forks.create(Set.of(fork1, fork2));
 		});
 
 		assertTrue(exception.getMessage().contains("single candidate"));
@@ -67,7 +67,7 @@ public final class ForkManagerTest {
 		final var fork1 = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), null, 1L);
 
 		final var exception = assertThrows(IllegalArgumentException.class, () -> {
-			ForkManager.create(Set.of(fork1));
+			Forks.create(Set.of(fork1));
 		});
 
 		assertTrue(exception.getMessage().contains("must start at epoch"));
@@ -80,7 +80,7 @@ public final class ForkManagerTest {
 		final var fork3 = new CandidateForkConfig("fork3", HashCode.fromInt(3), null, alwaysTrue(2L));
 
 		final var exception = assertThrows(IllegalArgumentException.class, () -> {
-			ForkManager.create(Set.of(fork1, fork2, fork3));
+			Forks.create(Set.of(fork1, fork2, fork3));
 		});
 
 		System.out.println(exception.getMessage());
@@ -94,7 +94,7 @@ public final class ForkManagerTest {
 		final var fork3 = new FixedEpochForkConfig("fork3", HashCode.fromInt(3), null, 2L);
 
 		final var exception = assertThrows(IllegalArgumentException.class, () -> {
-			ForkManager.create(Set.of(fork1, fork2, fork3));
+			Forks.create(Set.of(fork1, fork2, fork3));
 		});
 
 		System.out.println(exception.getMessage());
@@ -111,25 +111,25 @@ public final class ForkManagerTest {
 		final var fork2 = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), reRules, 1L);
 		final var fork3 = new CandidateForkConfig("fork3", HashCode.fromInt(3), reRules, alwaysTrue(5L));
 
-		final var forkManager = ForkManager.create(Set.of(fork1, fork2, fork3));
+		final var forks = Forks.create(Set.of(fork1, fork2, fork3));
 
-		assertEquals(fork1.getHash(), forkManager.genesisFork().getHash());
-		assertEquals(fork3.getHash(), forkManager.latestKnownFork().getHash());
-		assertEquals(fork1.getHash(), forkManager.getByHash(fork1.getHash()).get().getHash());
-		assertEquals(fork2.getHash(), forkManager.getByHash(fork2.getHash()).get().getHash());
-		assertEquals(fork3.getHash(), forkManager.getByHash(fork3.getHash()).get().getHash());
+		assertEquals(fork1.getHash(), forks.genesisFork().getHash());
+		assertEquals(fork3.getHash(), forks.latestKnownFork().getHash());
+		assertEquals(fork1.getHash(), forks.getByHash(fork1.getHash()).get().getHash());
+		assertEquals(fork2.getHash(), forks.getByHash(fork2.getHash()).get().getHash());
+		assertEquals(fork3.getHash(), forks.getByHash(fork3.getHash()).get().getHash());
 
 		// if current fork is 1, then should only return 2
-		assertEquals(fork2.getHash(), forkManager.findNextForkConfig(null, proofAtEpoch(fork1, 0L)).get().getHash());
-		assertTrue(forkManager.findNextForkConfig(null, proofAtEpoch(fork1, 10L)).isEmpty());
+		assertEquals(fork2.getHash(), forks.findNextForkConfig(null, proofAtEpoch(fork1, 0L)).get().getHash());
+		assertTrue(forks.findNextForkConfig(null, proofAtEpoch(fork1, 10L)).isEmpty());
 
 		// if current fork is 2, the next can only be 3
-		assertTrue(forkManager.findNextForkConfig(null, proofAtEpoch(fork2, 1L)).isEmpty());
-		assertEquals(fork3.getHash(), forkManager.findNextForkConfig(null, proofAtEpoch(fork2, 10L)).get().getHash());
+		assertTrue(forks.findNextForkConfig(null, proofAtEpoch(fork2, 1L)).isEmpty());
+		assertEquals(fork3.getHash(), forks.findNextForkConfig(null, proofAtEpoch(fork2, 10L)).get().getHash());
 
 		// if current fork is 3 then shouldn't return any else
-		assertTrue(forkManager.findNextForkConfig(null, proofAtEpoch(fork3, 1L)).isEmpty());
-		assertTrue(forkManager.findNextForkConfig(null, proofAtEpoch(fork3, 10L)).isEmpty());
+		assertTrue(forks.findNextForkConfig(null, proofAtEpoch(fork3, 1L)).isEmpty());
+		assertTrue(forks.findNextForkConfig(null, proofAtEpoch(fork3, 10L)).isEmpty());
 	}
 
 	private LedgerAndBFTProof proofAtEpoch(ForkConfig currentFork, long epoch) {

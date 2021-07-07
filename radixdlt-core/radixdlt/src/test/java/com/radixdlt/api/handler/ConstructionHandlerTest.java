@@ -17,7 +17,7 @@
 package com.radixdlt.api.handler;
 
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERules;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
@@ -65,15 +65,15 @@ public class ConstructionHandlerTest {
 	private static final String FEE_PAYER = addressing.forAccounts().of(ACCOUNT_ADDR);
 
 	private final SubmissionService submissionService = mock(SubmissionService.class);
-	private final ForkManager forkManager = mock(ForkManager.class);
-	private final ActionParserService actionParserService = new ActionParserService(addressing, forkManager);
+	private final Forks forks = mock(Forks.class);
+	private final ActionParserService actionParserService = new ActionParserService(addressing, forks);
 	private final ConstructionHandler handler = new ConstructionHandler(submissionService, actionParserService, addressing);
 
 	@Before
 	public void setup() {
 		final var reRules = mock(RERules.class);
 		when(reRules.getMaxRounds()).thenReturn(View.of(10L));
-		when(forkManager.getCandidateFork()).thenReturn(Optional.empty());
+		when(forks.getCandidateFork()).thenReturn(Optional.empty());
 	}
 
 	@Test

@@ -49,7 +49,7 @@ public abstract class ForkConfig {
 		return reRules;
 	}
 
-	public abstract ForkConfig withForksVerifier(ForkManager forkManager);
+	public abstract ForkConfig withForksVerifier(Forks forks);
 
 	@Override
 	public String toString() {

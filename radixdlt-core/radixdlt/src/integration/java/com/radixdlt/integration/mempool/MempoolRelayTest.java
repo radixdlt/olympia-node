@@ -31,7 +31,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -163,7 +163,7 @@ public class MempoolRelayTest {
 			new CryptoModule(),
 			new RadixEngineModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
-			new ForkManagerModule(),
+			new ForksModule(),
 			new MainnetForksModule(),
 			new AbstractModule() {
 				@Override
@@ -190,7 +190,7 @@ public class MempoolRelayTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(500, 100, 10, 10, 10),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
-			new ForkManagerModule(),
+			new ForksModule(),
 			new MainnetForksModule(),
 			new PersistedNodeForTestingModule(),
 			new MempoolFillerModule(),

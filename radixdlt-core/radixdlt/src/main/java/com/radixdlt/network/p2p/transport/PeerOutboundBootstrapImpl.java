@@ -30,7 +30,7 @@ import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.statecomputer.forks.Forks;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -45,7 +45,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 	private final P2PConfig config;
 	private final Addressing addressing;
 	private final int networkId;
-	private final ForkManager forkManager;
+	private final Forks forks;
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
@@ -60,7 +60,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 		P2PConfig config,
 		Addressing addressing,
 		@NetworkId int networkId,
-		ForkManager forkManager,
+		Forks forks,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -71,7 +71,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 		this.config = Objects.requireNonNull(config);
 		this.addressing = Objects.requireNonNull(addressing);
 		this.networkId = networkId;
-		this.forkManager = Objects.requireNonNull(forkManager);
+		this.forks = Objects.requireNonNull(forks);
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -93,7 +93,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 				config,
 				addressing,
 				networkId,
-				forkManager.latestKnownFork().getHash(),
+				forks.latestKnownFork().getHash(),
 				counters,
 				serialization,
 				secureRandom,

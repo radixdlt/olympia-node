@@ -40,13 +40,13 @@ import java.util.stream.Collectors;
  * All forks must be executed in order, and a candidate fork can only be considered
  * when we're already running the latest fixed epoch fork.
  */
-public final class ForkManager {
+public final class Forks {
 	private static final Logger log = LogManager.getLogger();
 
 	private final ImmutableList<FixedEpochForkConfig> fixedEpochForks;
 	private final Optional<CandidateForkConfig> candidateFork;
 
-	public static ForkManager create(Set<ForkConfig> forks) {
+	public static Forks create(Set<ForkConfig> forks) {
 		if (!ensureUniqueHashes(forks)) {
 			throw new IllegalArgumentException("Forks contain duplicate hashes: " + forks);
 		}
@@ -87,7 +87,7 @@ public final class ForkManager {
 			throw new IllegalArgumentException("Candidate fork's minEpoch must be greater than the last fixed fork epoch.");
 		}
 
-		return new ForkManager(fixedEpochForks, maybeCandidateFork);
+		return new Forks(fixedEpochForks, maybeCandidateFork);
 	}
 
 	private static boolean ensureUniqueHashes(Set<ForkConfig> forks) {
@@ -109,7 +109,7 @@ public final class ForkManager {
 		return true;
 	}
 
-	private ForkManager(
+	private Forks(
 		ImmutableList<FixedEpochForkConfig> fixedEpochForks,
 		Optional<CandidateForkConfig> candidateFork
 	) {

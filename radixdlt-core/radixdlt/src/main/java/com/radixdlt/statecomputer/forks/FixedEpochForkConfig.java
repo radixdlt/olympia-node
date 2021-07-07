@@ -40,11 +40,11 @@ public final class FixedEpochForkConfig extends ForkConfig {
 	}
 
 	@Override
-	public FixedEpochForkConfig withForksVerifier(ForkManager forkManager) {
+	public FixedEpochForkConfig withForksVerifier(Forks forks) {
 		return new FixedEpochForkConfig(
 			name,
 			hash,
-			reRules.withForksVerifier(forkManager),
+			reRules.withForksVerifier(forks),
 			epoch
 		);
 	}

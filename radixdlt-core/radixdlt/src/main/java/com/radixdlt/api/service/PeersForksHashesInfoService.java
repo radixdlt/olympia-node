@@ -30,7 +30,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.statecomputer.forks.Forks;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -46,7 +46,7 @@ import static java.util.function.Predicate.not;
  */
 @Singleton
 public final class PeersForksHashesInfoService {
-	private final ForkManager forkManager;
+	private final Forks forks;
 	private final Addressing addressing;
 
 	private BFTValidatorSet currentValidatorSet;
@@ -54,11 +54,11 @@ public final class PeersForksHashesInfoService {
 
 	@Inject
 	public PeersForksHashesInfoService(
-		ForkManager forkManager,
+		Forks forks,
 		Addressing addressing,
 		EpochChange initialEpoch
 	) {
-		this.forkManager = Objects.requireNonNull(forkManager);
+		this.forks = Objects.requireNonNull(forks);
 		this.addressing = Objects.requireNonNull(addressing);
 
 		this.currentValidatorSet = initialEpoch.getBFTConfiguration().getValidatorSet();
@@ -71,7 +71,7 @@ public final class PeersForksHashesInfoService {
 				final var peerChannel = ((PeerEvent.PeerConnected) peerEvent).getChannel();
 				final var peerPubKey = peerChannel.getRemoteNodeId().getPublicKey();
 				final var peerLatestKnownForkHash = peerChannel.getRemoteLatestKnownForkHash();
-				final var isPeerForkHashKnown = forkManager.getByHash(peerLatestKnownForkHash).isPresent();
+				final var isPeerForkHashKnown = forks.getByHash(peerLatestKnownForkHash).isPresent();
 				final var peerIsInValidatorSet = currentValidatorSet.containsNode(BFTNode.create(peerPubKey));
 				if (peerIsInValidatorSet && !isPeerForkHashKnown) {
 					addUnknownReportedForkHash(peerPubKey, peerLatestKnownForkHash);

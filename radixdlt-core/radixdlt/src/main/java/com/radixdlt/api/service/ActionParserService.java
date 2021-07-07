@@ -19,7 +19,7 @@ package com.radixdlt.api.service;
 
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.statecomputer.forks.Forks;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -47,12 +47,12 @@ import static java.util.Optional.ofNullable;
 
 public final class ActionParserService {
 	private final Addressing addressing;
-	private final ForkManager forkManager;
+	private final Forks forks;
 
 	@Inject
-	public ActionParserService(Addressing addressing, ForkManager forkManager) {
+	public ActionParserService(Addressing addressing, Forks forks) {
 		this.addressing = addressing;
-		this.forkManager = forkManager;
+		this.forks = forks;
 	}
 
 	public Result<List<TransactionAction>> parse(JSONArray actions) {
@@ -137,7 +137,7 @@ public final class ActionParserService {
 					optionalUrl(element)
 				).map((validatorKey, name, url) -> {
 					final var maybeForkVoteHash =
-						forkManager.getCandidateFork().map(f -> ForkConfig.voteHash(validatorKey, f));
+						forks.getCandidateFork().map(f -> ForkConfig.voteHash(validatorKey, f));
 					return TransactionAction.update(validatorKey, name, url, maybeForkVoteHash);
 				});
 

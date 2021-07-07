@@ -31,7 +31,7 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-public final class ForkManagerModule extends AbstractModule {
+public final class ForksModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() { });
@@ -39,7 +39,7 @@ public final class ForkManagerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private ForkManager forkManager(Set<ForkBuilder> forkBuilders, Optional<UnaryOperator<Set<ForkBuilder>>> transformer) {
+	private Forks forks(Set<ForkBuilder> forkBuilders, Optional<UnaryOperator<Set<ForkBuilder>>> transformer) {
 		final var transformed = transformer.map(o -> o.apply(forkBuilders))
 			.orElse(forkBuilders);
 
@@ -47,17 +47,17 @@ public final class ForkManagerModule extends AbstractModule {
 			.map(ForkBuilder::build)
 			.collect(Collectors.toSet());
 
-		return ForkManager.create(forkConfigs);
+		return Forks.create(forkConfigs);
 	}
 
 	@Provides
 	@Singleton
 	private ForkConfig initialForkConfig(
 		CommittedReader committedReader,
-		ForkManager forkManager
+		Forks forks
 	) {
 		final var storedEpochForks = committedReader.getEpochsForkHashes();
 		final var epoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
-		return forkManager.sanityCheckForksAndGetInitial(storedEpochForks, epoch);
+		return forks.sanityCheckForksAndGetInitial(storedEpochForks, epoch);
 	}
 }

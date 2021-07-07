@@ -21,7 +21,7 @@ package com.radixdlt.api.service;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
-import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.sync.CommittedReader;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -161,7 +161,7 @@ public class SystemConfigService {
 	private final List<EndpointStatus> endpointStatuses;
 	private final PeersView peersView;
 	private final Addressing addressing;
-	private final ForkManager forkManager;
+	private final Forks forks;
 	private final CommittedReader committedReader;
 
 	@Inject
@@ -172,7 +172,7 @@ public class SystemConfigService {
 		@MempoolMaxSize int mempoolMaxSize,
 		@MempoolThrottleMs long mempoolThrottleMs,
 		@Genesis VerifiedTxnsAndProof genesis,
-		ForkManager forkManager,
+		Forks forks,
 		CommittedReader committedReader,
 		SyncConfig syncConfig,
 		InMemorySystemInfo inMemorySystemInfo,
@@ -186,7 +186,7 @@ public class SystemConfigService {
 		this.endpointStatuses = endpointStatuses;
 		this.peersView = peersView;
 		this.addressing = addressing;
-		this.forkManager = forkManager;
+		this.forks = forks;
 		this.committedReader = committedReader;
 
 		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
@@ -283,9 +283,9 @@ public class SystemConfigService {
 
 	private JSONObject prepareRadixEngineConfiguration() {
 		final var knownForks = jsonArray();
-		forkManager.forkConfigs().forEach(config -> knownForks.put(forkConfigJson(config)));
+		forks.forkConfigs().forEach(config -> knownForks.put(forkConfigJson(config)));
 
-		final var currentFork = forkManager.getCurrentFork(committedReader.getEpochsForkHashes());
+		final var currentFork = forks.getCurrentFork(committedReader.getEpochsForkHashes());
 
 		return jsonObject()
 			.put("known_forks", knownForks)

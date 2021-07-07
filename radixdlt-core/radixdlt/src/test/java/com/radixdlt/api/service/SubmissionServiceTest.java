@@ -27,8 +27,8 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.statecomputer.forks.ForkManager;
-import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Assert;
@@ -115,7 +115,7 @@ public class SubmissionServiceTest {
 	private SubmissionService submissionService;
 
 	@Inject
-	private ForkManager forkManager;
+	private Forks forks;
 
 	private REAddr nativeToken = REAddr.ofNativeToken();
 
@@ -152,7 +152,7 @@ public class SubmissionServiceTest {
 						)
 					)
 				));
-				install(new ForkManagerModule());
+				install(new ForksModule());
 				install(new MainnetForksModule());
 				install(MempoolConfig.asModule(10, 10));
 
@@ -225,7 +225,7 @@ public class SubmissionServiceTest {
 
 		radixEngine.execute(
 			genesisTxns.getTxns(),
-			LedgerAndBFTProof.create(genesisLedgerHeader, null, forkManager.genesisFork().getHash()),
+			LedgerAndBFTProof.create(genesisLedgerHeader, null, forks.genesisFork().getHash()),
 			PermissionLevel.SYSTEM
 		);
 	}

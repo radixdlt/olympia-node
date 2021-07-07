@@ -22,7 +22,7 @@ import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.MetadataException;
 import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
 
 import java.util.List;
@@ -31,14 +31,14 @@ import java.util.Optional;
 public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof> {
 
 	private final BatchVerifier<LedgerAndBFTProof> baseVerifier;
-	private final ForkManager forkManager;
+	private final Forks forks;
 
 	public ForkVotesVerifier(
 		BatchVerifier<LedgerAndBFTProof> baseVerifier,
-	 	ForkManager forkManager
+	 	Forks forks
 	) {
 		this.baseVerifier = baseVerifier;
-		this.forkManager = forkManager;
+		this.forks = forks;
 	}
 
 	@Override
@@ -59,7 +59,7 @@ public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof>
 		}
 
 		final var maybeNextForkConfig = metadata.getProof().getNextValidatorSet().isPresent()
-			? forkManager.findNextForkConfig(engineStore, metadata)
+			? forks.findNextForkConfig(engineStore, metadata)
 			: Optional.<ForkConfig>empty(); // forks only happen at epoch boundary
 
 		return maybeNextForkConfig

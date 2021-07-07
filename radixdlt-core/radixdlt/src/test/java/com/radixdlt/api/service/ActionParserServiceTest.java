@@ -20,7 +20,7 @@ package com.radixdlt.api.service;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERules;
 import org.json.JSONArray;
 import org.junit.Assert;
@@ -54,14 +54,14 @@ public class ActionParserServiceTest {
 	private final REAddr to = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 	private final REAddr rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "ckee");
 	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
-	private final ForkManager forkManager = mock(ForkManager.class);
-	private final ActionParserService actionParserService = new ActionParserService(addressing, forkManager);
+	private final Forks forks = mock(Forks.class);
+	private final ActionParserService actionParserService = new ActionParserService(addressing, forks);
 
 	@Before
 	public void setup() {
 		final var reRules = mock(RERules.class);
 		when(reRules.getMaxRounds()).thenReturn(View.of(10L));
-		when(forkManager.getCandidateFork()).thenReturn(Optional.empty());
+		when(forks.getCandidateFork()).thenReturn(Optional.empty());
 	}
 
 	@Test

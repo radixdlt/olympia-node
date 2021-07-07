@@ -91,13 +91,13 @@ public final class RERules {
 		return maxValidators;
 	}
 
-	public RERules withForksVerifier(ForkManager forkManager) {
+	public RERules withForksVerifier(Forks forks) {
 		return new RERules(
 			parser,
 			serialization,
 			constraintMachineConfig,
 			actionConstructors,
-			new ForkVotesVerifier(batchVerifier, forkManager),
+			new ForkVotesVerifier(batchVerifier, forks),
 			maxRounds,
 			maxSigsPerRound,
 			maxValidators

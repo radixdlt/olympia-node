@@ -21,7 +21,7 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.assertj.core.api.Condition;
@@ -141,7 +141,7 @@ public class RecoveryTest {
 		Guice.createInjector(
 			new MockedGenesisModule(),
 			new CryptoModule(),
-			new ForkManagerModule(),
+			new ForksModule(),
 			new MainnetForksModule(),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
@@ -199,7 +199,7 @@ public class RecoveryTest {
 					9800,
 					10
 				)),
-			new ForkManagerModule(),
+			new ForksModule(),
 			new MainnetForksModule(),
 			MempoolConfig.asModule(10, 10),
 			new AbstractModule() {

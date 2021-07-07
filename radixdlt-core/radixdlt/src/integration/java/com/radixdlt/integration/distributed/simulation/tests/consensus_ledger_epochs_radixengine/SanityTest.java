@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineUniqueGenerator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -46,7 +46,7 @@ public class SanityTest {
 		)
 		.addRadixEngineConfigModules(
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
-			new ForkManagerModule(),
+			new ForksModule(),
 			new MainnetForksModule()
 		)
 		.ledgerAndRadixEngineWithEpochHighView()

@@ -40,11 +40,11 @@ public final class CandidateForkConfig extends ForkConfig {
 	}
 
 	@Override
-	public CandidateForkConfig withForksVerifier(ForkManager forkManager) {
+	public CandidateForkConfig withForksVerifier(Forks forks) {
 		return new CandidateForkConfig(
 			name,
 			hash,
-			reRules.withForksVerifier(forkManager),
+			reRules.withForksVerifier(forks),
 			predicate
 		);
 	}

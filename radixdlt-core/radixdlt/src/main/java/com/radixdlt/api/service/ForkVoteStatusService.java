@@ -28,7 +28,7 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Objects;
@@ -43,30 +43,30 @@ public class ForkVoteStatusService {
 	private final BFTNode self;
 	private final EngineStore<LedgerAndBFTProof> engineStore;
 	private final CommittedReader committedReader;
-	private final ForkManager forkManager;
+	private final Forks forks;
 
 	@Inject
 	public ForkVoteStatusService(
 		@Self BFTNode self,
 		EngineStore<LedgerAndBFTProof> engineStore,
 		CommittedReader committedReader,
-		ForkManager forkManager
+		Forks forks
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.committedReader = Objects.requireNonNull(committedReader);
-		this.forkManager = Objects.requireNonNull(forkManager);
+		this.forks = Objects.requireNonNull(forks);
 	}
 
 	public ForkVoteStatus forkVoteStatus() {
-		if (forkManager.getCandidateFork().isEmpty()) {
+		if (forks.getCandidateFork().isEmpty()) {
 			return ForkVoteStatus.NO_ACTION_NEEDED;
 		}
 
 		final var expectedCandidateForkVoteHash =
-			ForkConfig.voteHash(self.getKey(), forkManager.getCandidateFork().get());
+			ForkConfig.voteHash(self.getKey(), forks.getCandidateFork().get());
 
-		final var currentFork = forkManager.getCurrentFork(committedReader.getEpochsForkHashes());
+		final var currentFork = forks.getCurrentFork(committedReader.getEpochsForkHashes());
 		final var substateDeserialization = currentFork.getEngineRules().getParser().getSubstateDeserialization();
 
 		// TODO: this could be optimized

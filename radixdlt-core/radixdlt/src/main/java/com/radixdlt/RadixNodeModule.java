@@ -59,7 +59,7 @@ import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.store.DatabasePropertiesModule;
@@ -205,7 +205,7 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new EpochsSyncModule());
 
 		// State Computer
-		install(new ForkManagerModule());
+		install(new ForksModule());
 		install(new MainnetForksModule());
 		if (properties.get("overwrite_forks.enable", false)) {
 			log.info("Enabling fork overwrites");

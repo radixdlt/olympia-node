@@ -64,7 +64,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.ForkManager;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -90,7 +90,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
-	private final ForkManager forkManager;
+	private final Forks forks;
 	private final SystemCounters systemCounters;
 	private final Hasher hasher;
 
@@ -113,7 +113,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
 		Hasher hasher,
 		SystemCounters systemCounters,
-		ForkManager forkManager,
+		Forks forks,
 		ForkConfig initialForkConfig
 	) {
 		if (epochCeilingView.isGenesis()) {
@@ -132,7 +132,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.hasher = Objects.requireNonNull(hasher);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 		this.proposerElection = proposerElection;
-		this.forkManager = Objects.requireNonNull(forkManager);
+		this.forks = Objects.requireNonNull(forks);
 		this.currentForkConfig = Objects.requireNonNull(initialForkConfig);
 	}
 
@@ -333,7 +333,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		radixEngineResult.getSecond().getNextForkHash().ifPresent(nextForkHash -> {
-			final var nextForkConfig = forkManager.getByHash(nextForkHash).get(); // guaranteed to be present
+			final var nextForkConfig = forks.getByHash(nextForkHash).get(); // guaranteed to be present
 			log.info("Epoch {} forking RadixEngine to {}", proof.getEpoch() + 1, nextForkConfig.getName());
 			final var rules = nextForkConfig.getEngineRules();
 			this.radixEngine.replaceConstraintMachine(

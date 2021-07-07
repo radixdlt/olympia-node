@@ -30,7 +30,7 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineUniqueGenerator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.sync.SyncConfig;
@@ -85,7 +85,7 @@ public class SanityTest {
 						9800,
 						10
 					)),
-				new ForkManagerModule(),
+				new ForksModule(),
 				new MainnetForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))

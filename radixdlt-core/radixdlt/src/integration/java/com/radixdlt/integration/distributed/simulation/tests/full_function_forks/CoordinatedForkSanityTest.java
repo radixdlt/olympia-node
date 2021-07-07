@@ -32,8 +32,8 @@ import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.Rad
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.ForkManager;
-import com.radixdlt.statecomputer.forks.ForkManagerModule;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
@@ -65,7 +65,7 @@ public final class CoordinatedForkSanityTest {
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
 				new MockedForksModule(View.of(2)),
-				new ForkManagerModule()
+				new ForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))
 			.addTestModules(
@@ -88,7 +88,7 @@ public final class CoordinatedForkSanityTest {
 		final var halfOfTheNodes = nodes.subList(0, nodes.size() / 2);
 		final var oneMoreNode = nodes.get(nodes.size() / 2);
 
-		final var forks = network.getInstance(ForkManager.class, nodes.get(0)).forkConfigs();
+		final var forks = network.getInstance(Forks.class, nodes.get(0)).forkConfigs();
 
 		final var firstError = new AtomicReference<String>();
 		final Consumer<String> reportError = err -> {
@@ -160,9 +160,9 @@ public final class CoordinatedForkSanityTest {
 	}
 
 	private void updateValidatorWithLatestFork(RunningNetwork network, BFTNode node) {
-		final var forkManager = network.getInstance(ForkManager.class, node);
+		final var forks = network.getInstance(Forks.class, node);
 		final var maybeForkVoteHash =
-			forkManager.getCandidateFork().map(f -> ForkConfig.voteHash(node.getKey(), f));
+			forks.getCandidateFork().map(f -> ForkConfig.voteHash(node.getKey(), f));
 		final var txRequest = TxnConstructionRequest.create()
 			.updateValidatorMetadata(node.getKey(), node.getSimpleName(), "", maybeForkVoteHash);
 		network.getDispatcher(NodeApplicationRequest.class, node)
@@ -171,9 +171,9 @@ public final class CoordinatedForkSanityTest {
 
 	private boolean verifyCurrentFork(RunningNetwork network, ForkConfig forkConfig) {
 		return network.getNodes().stream().allMatch(node -> {
-			final var forkManager = network.getInstance(ForkManager.class, node);
+			final var forks = network.getInstance(Forks.class, node);
 			final var epochsForks = network.getInstance(CommittedReader.class, node).getEpochsForkHashes();
-			return forkManager.getCurrentFork(epochsForks).getHash().equals(forkConfig.getHash());
+			return forks.getCurrentFork(epochsForks).getHash().equals(forkConfig.getHash());
 		});
 	}
 }
