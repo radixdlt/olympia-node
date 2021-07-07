@@ -86,12 +86,12 @@ public final class TestingForksModule extends AbstractModule {
 			MainnetEngineRules.olympiaV1,
 			new RERulesConfig(
 				FeeTable.create(
-					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
-					Amount.ofTokens(1000) // 1000XRD per resource
+					Amount.ofMicroTokens(300), // 0.0002XRD per byte fee
+					Amount.ofTokens(200) // 1000XRD per resource
 				),
-				OptionalInt.of(50), // 50 Txns per round
+				OptionalInt.of(40), // 50 Txns per round
 				2500,
-				150, // Two weeks worth of epochs
+				1000, // Two weeks worth of epochs
 				Amount.ofTokens(100), // Minimum stake
 				150, // Two weeks worth of epochs
 				Amount.ofTokens(10), // Rewards per proposal
