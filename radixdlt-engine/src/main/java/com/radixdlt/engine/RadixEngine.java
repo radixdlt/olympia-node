@@ -218,7 +218,6 @@ public final class RadixEngine<M> {
 	) {
 		synchronized (stateUpdateEngineLock) {
 			this.constraintMachine = new ConstraintMachine(
-				constraintMachineConfig.getVirtualStoreLayer(),
 				constraintMachineConfig.getProcedures(),
 				constraintMachineConfig.getMeter()
 			);

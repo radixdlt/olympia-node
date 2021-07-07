@@ -24,7 +24,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.HashUtils;
 
 import java.util.List;
@@ -36,7 +35,7 @@ public final class UpdateValidatorConstructor implements ActionConstructor<Updat
 		txBuilder.swap(
 			ValidatorMetaData.class,
 			p -> p.getValidatorKey().equals(action.validatorKey()),
-			Optional.of(SubstateWithArg.noArg(new ValidatorMetaData(action.validatorKey(), "", ""))),
+			Optional.of(new ValidatorMetaData(action.validatorKey(), "", "")),
 			() -> new TxBuilderException("Invalid state.")
 		).with(
 			substateDown -> List.of(new ValidatorMetaData(
@@ -51,7 +50,7 @@ public final class UpdateValidatorConstructor implements ActionConstructor<Updat
 			txBuilder.down(
 				ValidatorSystemMetadata.class,
 				p -> p.getValidatorKey().equals(action.validatorKey()),
-				Optional.of(SubstateWithArg.noArg(new ValidatorSystemMetadata(action.validatorKey(), HashUtils.zero256().asBytes()))),
+				Optional.of(new ValidatorSystemMetadata(action.validatorKey(), HashUtils.zero256().asBytes())),
 				() -> new TxBuilderException("Could not find state")
 			);
 			txBuilder.up(new ValidatorSystemMetadata(action.validatorKey(), forkVoteHash.get().asBytes()));

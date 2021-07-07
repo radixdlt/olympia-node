@@ -175,6 +175,8 @@ public final class REParser {
 							}
 							feePaid = feePaid.subtract(takeAmount);
 							break;
+						case READDR_CLAIM:
+							break;
 						// TODO: Need to rethink how stateless verification occurs here
 						// TODO: Along with FeeConstraintScrypt.java
 						default:

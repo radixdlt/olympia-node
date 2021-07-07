@@ -109,16 +109,16 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, RoundData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r) -> ReducerResult.incomplete(new EndPrevRound(d.getSubstate()))
+			(d, s, r, c) -> ReducerResult.incomplete(new EndPrevRound(d))
 		));
 
 		os.procedure(new DownProcedure<>(
 			EndPrevRound.class, ValidatorBFTData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r) -> {
+			(d, s, r, c) -> {
 				var closedRound = s.getClosedRound().getView();
 				var next = new StartValidatorBFTUpdate(closedRound);
-				next.beginUpdate(d.getSubstate());
+				next.beginUpdate(d);
 				return ReducerResult.incomplete(next);
 			}
 		));
@@ -126,7 +126,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		os.procedure(new DownProcedure<>(
 			StartValidatorBFTUpdate.class, ValidatorBFTData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r) -> ReducerResult.incomplete(s.beginUpdate(d.getSubstate()))
+			(d, s, r, c) -> ReducerResult.incomplete(s.beginUpdate(d))
 		));
 
 		os.procedure(new UpProcedure<>(

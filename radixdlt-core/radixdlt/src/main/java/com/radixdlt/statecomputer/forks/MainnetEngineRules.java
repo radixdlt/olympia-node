@@ -47,7 +47,7 @@ import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.construction.NextEpochConstructorV3;
 import com.radixdlt.application.system.construction.NextViewConstructorV3;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
-import com.radixdlt.application.system.scrypt.FeeConstraintScrypt;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.application.tokens.construction.CreateFixedTokenConstructor;
@@ -90,13 +90,13 @@ public final class MainnetEngineRules {
 		final var perResourceFee = config.getFeeTable().getPerResourceFee().toSubunits();
 		final var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
 
-		final CMAtomOS v4 = new CMAtomOS(Set.of("xrd"));
+		final CMAtomOS v4 = new CMAtomOS();
 		v4.load(new ValidatorConstraintScryptV2());
 		v4.load(new ValidatorUpdateRakeConstraintScrypt(rakeIncreaseDebouncerEpochLength));
 		v4.load(new ValidatorRegisterConstraintScrypt());
 		v4.load(new ValidatorUpdateOwnerConstraintScrypt());
 		v4.load(new TokensConstraintScryptV3());
-		v4.load(new FeeConstraintScrypt());
+		v4.load(new SystemConstraintScrypt(Set.of("xrd")));
 		v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));
 		v4.load(new MutexConstraintScrypt());
 		v4.load(new RoundUpdateConstraintScrypt(maxRounds));
@@ -114,11 +114,7 @@ public final class MainnetEngineRules {
 				ResourceFeeMeter.create(perResourceFee)
 			)
 		);
-		var constraintMachineConfig = new ConstraintMachineConfig(
-			v4.virtualizedUpParticles(),
-			v4.getProcedures(),
-			meter
-		);
+		var constraintMachineConfig = new ConstraintMachineConfig(v4.getProcedures(), meter);
 		var parser = new REParser(v4.buildSubstateDeserialization());
 		var serialization = v4.buildSubstateSerialization();
 		var actionConstructors = REConstructor.newBuilder()

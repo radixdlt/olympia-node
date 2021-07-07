@@ -36,9 +36,6 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.serialization.DeserializeException;
-
-import java.util.OptionalLong;
 
 public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 	private static class UpdatingRegistered implements ReducerState {
@@ -80,32 +77,23 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 			ValidatorRegisteredCopy.class,
 			SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(),
 			buf -> {
-				var subType = buf.get();
-				OptionalLong epochUpdate;
-				if (subType == 0) {
-					epochUpdate = OptionalLong.empty();
-				} else if (subType == 1) {
-					epochUpdate = OptionalLong.of(REFieldSerialization.deserializeNonNegativeLong(buf));
-				} else {
-					throw new DeserializeException("Unknown type: " + subType);
-				}
-
+				REFieldSerialization.deserializeReservedByte(buf);
+				var epochUpdate = REFieldSerialization.deserializeOptionalNonNegativeLong(buf);
 				var key = REFieldSerialization.deserializeKey(buf);
 				var flag = REFieldSerialization.deserializeBoolean(buf);
 				return new ValidatorRegisteredCopy(epochUpdate, key, flag);
 			},
 			(s, buf) -> {
-				s.getEpochUpdate().ifPresentOrElse(
-					e -> {
-						buf.put((byte) 0x1);
-						buf.putLong(e);
-					},
-					() -> buf.put((byte) 0x0)
-				);
+				REFieldSerialization.serializeReservedByte(buf);
+				REFieldSerialization.serializeOptionalLong(buf, s.getEpochUpdate());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.isRegistered() ? 1 : 0));
 			},
-			s -> s.getEpochUpdate().isEmpty() && !s.isRegistered()
+			buf -> {
+				var key = REFieldSerialization.deserializeKey(buf);
+				return new ValidatorRegisteredCopy(key, false);
+			},
+			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
 		));
 
 		os.procedure(new DownProcedure<>(
@@ -113,16 +101,13 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
 						throw new AuthorizationException("Key does not match.");
 					}
 				}
 			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingRegisteredNeedToReadEpoch(d.getSubstate().getValidatorKey()));
+			(d, s, r, c) -> {
+				return ReducerResult.incomplete(new UpdatingRegisteredNeedToReadEpoch(d.getValidatorKey()));
 			}
 		));
 

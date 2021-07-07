@@ -22,7 +22,6 @@ import com.radixdlt.atom.Substate;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -31,29 +30,23 @@ import java.util.function.Supplier;
 public final class REStateUpdate {
 	private final REOp op;
 	private final Substate substate;
-	private final byte[] arg;
 	private final Supplier<ByteBuffer> stateBuf;
 
-	private REStateUpdate(REOp op, Substate substate, byte[] arg, Supplier<ByteBuffer> stateBuf) {
+	private REStateUpdate(REOp op, Substate substate, Supplier<ByteBuffer> stateBuf) {
 		Objects.requireNonNull(op);
 		Objects.requireNonNull(substate);
 
 		this.op = op;
 		this.substate = substate;
-		this.arg = arg;
 		this.stateBuf = stateBuf;
 	}
 
-	public static REStateUpdate of(REOp op, Substate substate, byte[] arg, Supplier<ByteBuffer> stateBuf) {
-		return new REStateUpdate(op, substate, arg, stateBuf);
+	public static REStateUpdate of(REOp op, Substate substate, Supplier<ByteBuffer> stateBuf) {
+		return new REStateUpdate(op, substate, stateBuf);
 	}
 
 	public ByteBuffer getStateBuf() {
 		return stateBuf.get();
-	}
-
-	public Optional<byte[]> getArg() {
-		return Optional.ofNullable(arg);
 	}
 
 	public REOp getOp() {

@@ -48,7 +48,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -57,23 +56,14 @@ import java.util.function.Supplier;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintMachine {
-	private final Predicate<Particle> virtualStoreLayer;
 	private final Procedures procedures;
 	private final Meter metering;
 
-	public ConstraintMachine(
-		Predicate<Particle> virtualStoreLayer,
-		Procedures procedures
-	) {
-		this(virtualStoreLayer, procedures, Meter.EMPTY);
+	public ConstraintMachine(Procedures procedures) {
+		this(procedures, Meter.EMPTY);
 	}
 
-	public ConstraintMachine(
-		Predicate<Particle> virtualStoreLayer,
-		Procedures procedures,
-		Meter metering
-	) {
-		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
+	public ConstraintMachine(Procedures procedures, Meter metering) {
 		this.procedures = Objects.requireNonNull(procedures);
 		this.metering = Objects.requireNonNull(metering);
 	}
@@ -82,17 +72,14 @@ public final class ConstraintMachine {
 		private final Map<Integer, Pair<Substate, Supplier<ByteBuffer>>> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
 		private final CMStore store;
-		private final Predicate<Particle> virtualStoreLayer;
 		private final SubstateDeserialization deserialization;
 		private int bootupCount = 0;
 
 		CMValidationState(
 			SubstateDeserialization deserialization,
-			Predicate<Particle> virtualStoreLayer,
 			CMStore store
 		) {
 			this.deserialization = deserialization;
-			this.virtualStoreLayer = virtualStoreLayer;
 			this.store = store;
 		}
 
@@ -136,13 +123,9 @@ public final class ConstraintMachine {
 			bootupCount++;
 		}
 
-		public void virtualRead(Substate substate) throws SubstateNotFoundException, InvalidVirtualSubstateException {
+		public void virtualRead(Substate substate) throws SubstateNotFoundException {
 			if (remoteDownParticles.contains(substate.getId())) {
 				throw new SubstateNotFoundException(substate.getId());
-			}
-
-			if (!virtualStoreLayer.test(substate.getParticle())) {
-				throw new InvalidVirtualSubstateException(substate.getParticle());
 			}
 
 			if (store.isVirtualDown(substate.getId())) {
@@ -311,7 +294,7 @@ public final class ConstraintMachine {
 							// FIXME: do this via shutdownAll state update rather than individually
 							var substate = substateCursor.next();
 							if (inst.getMicroOp().getOp() == REOp.DOWNINDEX) {
-								tmp.add(REStateUpdate.of(REOp.DOWN, substate, null, inst::getDataByteBuffer));
+								tmp.add(REStateUpdate.of(REOp.DOWN, substate, inst::getDataByteBuffer));
 							}
 							return substate.getParticle();
 						}
@@ -329,48 +312,32 @@ public final class ConstraintMachine {
 				} else if (inst.isStateUpdate()) {
 					final Particle nextParticle;
 					final Substate substate;
-					final byte[] arg;
-					final Object o;
 					if (inst.getMicroOp() == REInstruction.REMicroOp.UP) {
 						// TODO: Cleanup indexing of substate class
 						substate = inst.getData();
-						arg = null;
 						nextParticle = substate.getParticle();
-						o = nextParticle;
 						validationState.bootUp(substate, inst::getDataByteBuffer);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWN) {
 						substate = inst.getData();
-						arg = null;
 						nextParticle = substate.getParticle();
-						o = SubstateWithArg.noArg(nextParticle);
-						validationState.virtualShutdown(substate);
-					} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWNARG) {
-						substate = (Substate) ((Pair) inst.getData()).getFirst();
-						arg = (byte[]) ((Pair) inst.getData()).getSecond();
-						nextParticle = substate.getParticle();
-						o = SubstateWithArg.withArg(nextParticle, arg);
 						validationState.virtualShutdown(substate);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.DOWN) {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.shutdown(substateId);
 						substate = Substate.create(nextParticle, substateId);
-						arg = null;
-						o = SubstateWithArg.noArg(nextParticle);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.LDOWN) {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.localShutdown(substateId.getIndex().orElseThrow());
 						substate = Substate.create(nextParticle, substateId);
-						arg = null;
-						o = SubstateWithArg.noArg(nextParticle);
 					} else {
 						throw new IllegalStateException("Unhandled op: " + inst.getMicroOp());
 					}
 
 					var op = inst.getMicroOp().getOp();
-					stateUpdates.add(REStateUpdate.of(op, substate, arg, inst::getDataByteBuffer));
+					stateUpdates.add(REStateUpdate.of(op, substate, inst::getDataByteBuffer));
 					var eventId = OpSignature.ofSubstateUpdate(op, nextParticle.getClass());
 					var methodProcedure = loadProcedure(reducerState, eventId);
-					reducerState = callProcedure(methodProcedure, o, reducerState, readableAddrs, context);
+					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);
 					expectEnd = reducerState == null;
 				} else if (inst.getMicroOp() == REInstruction.REMicroOp.END) {
 					groupedStateUpdates.add(stateUpdates);
@@ -422,7 +389,7 @@ public final class ConstraintMachine {
 		ExecutionContext context,
 		List<REInstruction> instructions
 	) throws TxnParseException, ConstraintMachineException {
-		var validationState = new CMValidationState(deserialization, virtualStoreLayer, cmStore);
+		var validationState = new CMValidationState(deserialization, cmStore);
 		return this.statefulVerify(context, validationState, instructions);
 	}
 }

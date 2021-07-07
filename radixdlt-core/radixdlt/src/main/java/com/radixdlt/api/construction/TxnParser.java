@@ -51,7 +51,6 @@ public final class TxnParser {
 		var parsedTxn = parser.parse(txn);
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
-			cmConfig.getVirtualStoreLayer(),
 			cmConfig.getProcedures(),
 			cmConfig.getMeter()
 		);

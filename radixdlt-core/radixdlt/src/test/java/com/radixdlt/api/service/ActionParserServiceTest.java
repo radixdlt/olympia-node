@@ -450,7 +450,7 @@ public class ActionParserServiceTest {
 					.ifPresentOrElse(
 						create -> {
 							assertEquals(from, create.getAccountAddr());
-							assertEquals(REAddr.ofPubKeyAccount(signer), create.getResourceAddr());
+							assertEquals(REAddr.ofHashedKey(signer, create.getSymbol()), create.getResourceAddr());
 							assertEquals("symbol", create.getSymbol());
 							assertEquals("name", create.getName());
 							assertEquals("description", create.getDescription());

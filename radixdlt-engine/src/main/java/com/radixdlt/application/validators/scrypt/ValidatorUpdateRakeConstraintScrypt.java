@@ -123,15 +123,8 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 			ValidatorRakeCopy.class,
 			SubstateTypeId.VALIDATOR_RAKE_COPY.id(),
 			buf -> {
-				var subType = buf.get();
-				OptionalLong epochUpdate;
-				if (subType == 0) {
-					epochUpdate = OptionalLong.empty();
-				} else if (subType == 1) {
-					epochUpdate = OptionalLong.of(REFieldSerialization.deserializeNonNegativeLong(buf));
-				} else {
-					throw new DeserializeException("Unknown type: " + subType);
-				}
+				REFieldSerialization.deserializeReservedByte(buf);
+				OptionalLong epochUpdate = REFieldSerialization.deserializeOptionalNonNegativeLong(buf);
 				var key = REFieldSerialization.deserializeKey(buf);
 				var curRakePercentage = REFieldSerialization.deserializeInt(buf);
 				if (curRakePercentage < RAKE_MIN || curRakePercentage > RAKE_MAX) {
@@ -141,17 +134,16 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 				return new ValidatorRakeCopy(epochUpdate, key, curRakePercentage);
 			},
 			(s, buf) -> {
-				s.getEpochUpdate().ifPresentOrElse(
-					e -> {
-						buf.put((byte) 0x1);
-						buf.putLong(e);
-					},
-					() -> buf.put((byte) 0x0)
-				);
+				REFieldSerialization.serializeReservedByte(buf);
+				REFieldSerialization.serializeOptionalLong(buf, s.getEpochUpdate());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.putInt(s.getRakePercentage());
 			},
-			s -> s.getEpochUpdate().isEmpty() && s.getRakePercentage() == RAKE_MAX
+			buf -> {
+				var key = REFieldSerialization.deserializeKey(buf);
+				return new ValidatorRakeCopy(OptionalLong.empty(), key, RAKE_MAX);
+			},
+			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
 		));
 
 		os.procedure(new DownProcedure<>(
@@ -159,16 +151,13 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
 						throw new AuthorizationException("Key does not match.");
 					}
 				}
 			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingRakeNeedToReadCurrentRake(d.getSubstate().getValidatorKey()));
+			(d, s, r, c) -> {
+				return ReducerResult.incomplete(new UpdatingRakeNeedToReadCurrentRake(d.getValidatorKey()));
 			}
 		));
 		os.procedure(new ReadProcedure<>(

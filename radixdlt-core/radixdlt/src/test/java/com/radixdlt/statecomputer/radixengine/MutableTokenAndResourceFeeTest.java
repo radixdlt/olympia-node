@@ -22,6 +22,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
@@ -127,7 +128,7 @@ public class MutableTokenAndResourceFeeTest {
 
 		// Act/Assert
 		assertThatThrownBy(() -> sut.execute(List.of(txn)))
-			.hasRootCauseInstanceOf(InvalidPermissionException.class);
+			.hasRootCauseInstanceOf(ProcedureException.class);
 	}
 
 	@Test

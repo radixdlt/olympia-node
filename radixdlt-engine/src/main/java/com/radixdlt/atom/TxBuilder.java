@@ -32,7 +32,6 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -40,6 +39,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -108,11 +108,8 @@ public final class TxBuilder {
 		return numResourcesCreated;
 	}
 
-	private void virtualDown(SubstateWithArg<?> substateWithArg) {
-		substateWithArg.getArg().ifPresentOrElse(
-			arg -> lowLevelBuilder.virtualDown(substateWithArg.getSubstate(), arg),
-			() -> lowLevelBuilder.virtualDown(substateWithArg.getSubstate())
-		);
+	private void virtualDown(Class<? extends Particle> substateClass, Object key) {
+		lowLevelBuilder.virtualDown(substateClass, key);
 	}
 
 	public void down(SubstateId substateId) {
@@ -131,8 +128,8 @@ public final class TxBuilder {
 		lowLevelBuilder.localRead(index);
 	}
 
-	private void virtualRead(Particle p) {
-		lowLevelBuilder.virtualRead(p);
+	private void virtualRead(Class<? extends Particle> substateClass, Object key) {
+		lowLevelBuilder.virtualRead(substateClass, key);
 	}
 
 	private CloseableCursor<RawSubstateBytes> createRemoteSubstateCursor(SubstateIndex index) {
@@ -223,7 +220,7 @@ public final class TxBuilder {
 	public <T extends Particle> T down(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Optional<SubstateWithArg<T>> virtualParticle,
+		Optional<Object> keyToVirtual,
 		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
 		var localDown = lowLevelBuilder.localUpSubstate().stream()
@@ -252,8 +249,16 @@ public final class TxBuilder {
 				.map(particleClass::cast)
 				.findFirst()
 				.or(() -> {
-					virtualParticle.ifPresent(this::virtualDown);
-					return virtualParticle.map(SubstateWithArg::getSubstate);
+					keyToVirtual.ifPresent(k -> this.virtualDown(particleClass, k));
+					return keyToVirtual.map(k -> {
+						var bytes = serialization.serializeVirtual(particleClass, k);
+						try {
+							// TODO: Remove this serialization/deserialization mess
+							return (T) deserialization.deserializeVirtual(ByteBuffer.wrap(bytes));
+						} catch (DeserializeException e) {
+							throw new IllegalStateException("Should not get here");
+						}
+					});
 				});
 
 			if (substateDown.isEmpty()) {
@@ -267,7 +272,7 @@ public final class TxBuilder {
 	public <T extends Particle> T read(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Optional<T> virtualParticle,
+		Optional<Object> keyToVirtual,
 		String errorMessage
 	) throws TxBuilderException {
 		var localRead = lowLevelBuilder.localUpSubstate().stream()
@@ -296,8 +301,16 @@ public final class TxBuilder {
 				.map(particleClass::cast)
 				.findFirst()
 				.or(() -> {
-					virtualParticle.ifPresent(this::virtualRead);
-					return virtualParticle;
+					keyToVirtual.ifPresent(k -> this.virtualRead(particleClass, k));
+					return keyToVirtual.map(k -> {
+						var bytes = serialization.serializeVirtual(particleClass, k);
+						try {
+							// TODO: Remove this serialization/deserialization mess
+							return (T) deserialization.deserializeVirtual(ByteBuffer.wrap(bytes));
+						} catch (DeserializeException e) {
+							throw new IllegalStateException("Should not get here");
+						}
+					});
 				});
 
 			if (substateDown.isEmpty()) {
@@ -414,10 +427,10 @@ public final class TxBuilder {
 	public <T extends Particle> Replacer<T> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Optional<SubstateWithArg<T>> virtualParticle,
+		Optional<Object> virtualKey,
 		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
-		T t = down(particleClass, particlePredicate, virtualParticle, exceptionSupplier);
+		T t = down(particleClass, particlePredicate, virtualKey, exceptionSupplier);
 		return replacer -> replacer.map(t).forEach(this::up);
 	}
 
@@ -580,10 +593,12 @@ public final class TxBuilder {
 
 	public TxBuilder mutex(ECPublicKey key, String id) throws TxBuilderException {
 		final var addr = REAddr.ofHashedKey(key, id);
+
+		lowLevelBuilder.syscall(Syscall.READDR_CLAIM, id.getBytes(StandardCharsets.UTF_8));
 		down(
 			UnclaimedREAddr.class,
 			p -> p.getAddr().equals(addr),
-			Optional.of(SubstateWithArg.withArg(new UnclaimedREAddr(addr), id.getBytes(StandardCharsets.UTF_8))),
+			Optional.of(addr),
 			() -> new TxBuilderException("Address already claimed")
 		);
 		end();

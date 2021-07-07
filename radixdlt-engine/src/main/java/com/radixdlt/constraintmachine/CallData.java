@@ -19,9 +19,11 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 public final class CallData {
@@ -42,6 +44,23 @@ public final class CallData {
 			throw new CallDataAccessException(data.length, offset, UInt256.BYTES);
 		}
 		return UInt256.from(data, offset);
+	}
+
+	public byte[] getBytes(int offset) throws CallDataAccessException, ProcedureException {
+		if (offset < 0 || offset > data.length) {
+			throw new CallDataAccessException(data.length, offset, 1);
+		}
+
+		var length = Byte.toUnsignedInt(data[offset]);
+		if (length < 1 || length > 32) {
+			throw new ProcedureException("Invalid length");
+		}
+
+		if (length + offset + 1 > data.length) {
+			throw new CallDataAccessException(data.length, offset, length);
+		}
+
+		return Arrays.copyOfRange(data, offset + 1, offset + 1 + length);
 	}
 
 	@Override

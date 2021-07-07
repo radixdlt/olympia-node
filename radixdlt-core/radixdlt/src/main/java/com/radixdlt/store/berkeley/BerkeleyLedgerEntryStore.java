@@ -398,24 +398,24 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 								// 1: Reserved Byte
 								// 2-5: Epoch
 								prefixIndexSize = 2 + Long.BYTES;
-							} else if (substateTypeId == SubstateTypeId.VALIDATOR_OWNER_COPY.id()
-								&& subType == (byte) 0x1) {
+							} else if (substateTypeId == SubstateTypeId.VALIDATOR_OWNER_COPY.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
-								// 2-5: Epoch
-								prefixIndexSize = 2 + Long.BYTES;
-							} else if (substateTypeId == SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id()
-								&& subType == (byte) 0x1) {
+								// 2: Optional flag
+								// 3-6: Epoch
+								prefixIndexSize = 3 + Long.BYTES;
+							} else if (substateTypeId == SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
-								// 2-5: Epoch
-								prefixIndexSize = 2 + Long.BYTES;
-							} else if (substateTypeId == SubstateTypeId.VALIDATOR_RAKE_COPY.id()
-								&& subType == (byte) 0x1) {
+								// 2: Optional flag
+								// 3-6: Epoch
+								prefixIndexSize = 3 + Long.BYTES;
+							} else if (substateTypeId == SubstateTypeId.VALIDATOR_RAKE_COPY.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
-								// 2-5: Epoch
-								prefixIndexSize = 2 + Long.BYTES;
+								// 2: Optional flag
+								// 3-6: Epoch
+								prefixIndexSize = 3 + Long.BYTES;
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_STAKE_DATA.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte

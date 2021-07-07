@@ -18,16 +18,18 @@
 
 package com.radixdlt.application.tokens.scrypt;
 
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
@@ -37,9 +39,10 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
+
+import java.nio.charset.StandardCharsets;
 
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	@Override
@@ -55,32 +58,22 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				TokenResource.class,
 				SubstateTypeId.TOKEN_RESOURCE.id(),
 				buf -> {
-					var type = buf.get();
+					REFieldSerialization.deserializeReservedByte(buf);
 					var addr = REFieldSerialization.deserializeResourceAddr(buf);
 					var granularity = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					if (!granularity.equals(UInt256.ONE)) {
 						throw new DeserializeException("Granularity must be one.");
 					}
-					final ECPublicKey minter;
-					if (type == (byte) 0x1) {
-						return new TokenResource(addr, granularity, true, null);
-					} else if (type == (byte) 0x3) {
-						minter = REFieldSerialization.deserializeKey(buf);
-						return new TokenResource(addr, granularity, true, minter);
-					} else if (type == (byte) 0x0) {
-						return new TokenResource(addr, granularity, false, null);
-					} else {
-						throw new DeserializeException("Unknown token def type " + type);
-					}
+					var isMutable = REFieldSerialization.deserializeBoolean(buf);
+					var minter = REFieldSerialization.deserializeOptionalKey(buf);
+					return new TokenResource(addr, granularity, isMutable, minter.orElse(null));
 				},
 				(s, buf) -> {
-					byte type = 0;
-					type |= (s.isMutable() ? 0x1 : 0x0);
-					type |= (s.getOwner().isPresent() ? 0x2 : 0x0);
-					buf.put(type);
+					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeREAddr(buf, s.getAddr());
 					REFieldSerialization.serializeUInt256(buf, UInt256.ONE);
-					s.getOwner().ifPresent(k -> REFieldSerialization.serializeKey(buf, k));
+					REFieldSerialization.serializeBoolean(buf, s.isMutable());
+					REFieldSerialization.serializeOptionalKey(buf, s.getOwner());
 				}
 			)
 		);
@@ -141,20 +134,25 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 
 	private static class NeedMetadata implements ReducerState {
 		private final TokenResource tokenResource;
-		private NeedMetadata(TokenResource tokenResource) {
+		private final byte[] arg;
+		private NeedMetadata(byte[] arg, TokenResource tokenResource) {
+			this.arg = arg;
 			this.tokenResource = tokenResource;
 		}
 
-		void metadata(TokenResourceMetadata metadata) throws ProcedureException {
+		void metadata(TokenResourceMetadata metadata, ExecutionContext context) throws ProcedureException {
 			if (!metadata.getAddr().equals(tokenResource.getAddr())) {
 				throw new ProcedureException("Addresses don't match");
 			}
+
+			var symbol = new String(arg, StandardCharsets.UTF_8);
+			context.emitEvent(new ResourceCreatedEvent(symbol, tokenResource, metadata));
 		}
 	}
 
 	private void defineTokenCreation(Loader os) {
 		os.procedure(new UpProcedure<>(
-			CMAtomOS.REAddrClaim.class, TokenResource.class,
+			SystemConstraintScrypt.REAddrClaim.class, TokenResource.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
@@ -162,7 +160,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				}
 
 				if (u.isMutable()) {
-					return ReducerResult.incomplete(new NeedMetadata(u));
+					return ReducerResult.incomplete(new NeedMetadata(s.getArg(), u));
 				}
 
 				if (!u.getGranularity().equals(UInt256.ONE)) {
@@ -180,7 +178,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
 					throw new ProcedureException("Addresses don't match.");
 				}
-				return ReducerResult.incomplete(new NeedMetadata(s.tokenResource));
+				return ReducerResult.incomplete(new NeedMetadata(s.arg, s.tokenResource));
 			}
 		));
 
@@ -188,7 +186,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			NeedMetadata.class, TokenResourceMetadata.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
-				s.metadata(u);
+				s.metadata(u, c);
 				return ReducerResult.complete();
 			}
 		));
@@ -232,10 +230,9 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		// Initial Withdraw
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, TokensInAccount.class,
-			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> {
-				var tokensInAccount = d.getSubstate();
-				var state = new TokenHoldingBucket(tokensInAccount.toTokens());
+			d -> d.bucket().withdrawAuthorization(),
+			(d, s, r, c) -> {
+				var state = new TokenHoldingBucket(d.toTokens());
 				return ReducerResult.incomplete(state);
 			}
 		));
@@ -243,10 +240,9 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		// More Withdraws
 		os.procedure(new DownProcedure<>(
 			TokenHoldingBucket.class, TokensInAccount.class,
-			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> {
-				var tokensInAccount = d.getSubstate();
-				s.deposit(tokensInAccount.toTokens());
+			d -> d.bucket().withdrawAuthorization(),
+			(d, s, r, c) -> {
+				s.deposit(d.toTokens());
 				return ReducerResult.incomplete(s);
 			}
 		));

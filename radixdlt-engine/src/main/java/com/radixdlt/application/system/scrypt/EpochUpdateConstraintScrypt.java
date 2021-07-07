@@ -37,7 +37,6 @@ import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
@@ -501,9 +500,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState prepareRakeUpdates(IndexedSubstateIterator<ValidatorRakeCopy> indexedSubstateIterator) throws ProcedureException {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
-			var expectedPrefix = new byte[Long.BYTES + 1];
-			expectedPrefix[0] = 1;
-			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
+			var expectedPrefix = new byte[2 + Long.BYTES];
+			expectedPrefix[0] = 0;
+			expectedPrefix[1] = 1;
+			Longs.copyTo(expectedEpoch, expectedPrefix, 2);
 			indexedSubstateIterator.verifyPostTypePrefixEquals(expectedPrefix);
 			var iter = indexedSubstateIterator.iterator();
 			while (iter.hasNext()) {
@@ -576,9 +576,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState prepareValidatorUpdate(IndexedSubstateIterator<ValidatorOwnerCopy> indexedSubstateIterator) throws ProcedureException {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
-			var expectedPrefix = new byte[Long.BYTES + 1];
-			expectedPrefix[0] = 1;
-			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
+			var expectedPrefix = new byte[2 + Long.BYTES];
+			expectedPrefix[0] = 0;
+			expectedPrefix[1] = 1;
+			Longs.copyTo(expectedEpoch, expectedPrefix, 2);
 			indexedSubstateIterator.verifyPostTypePrefixEquals(expectedPrefix);
 
 			var iter = indexedSubstateIterator.iterator();
@@ -655,9 +656,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState prepareRegisterUpdates(IndexedSubstateIterator<ValidatorRegisteredCopy> indexedSubstateIterator) throws ProcedureException {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
-			var expectedPrefix = new byte[Long.BYTES + 1];
-			expectedPrefix[0] = 1;
-			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
+			var expectedPrefix = new byte[2 + Long.BYTES];
+			expectedPrefix[0] = 0;
+			expectedPrefix[1] = 1;
+			Longs.copyTo(expectedEpoch, expectedPrefix, 2);
 			indexedSubstateIterator.verifyPostTypePrefixEquals(expectedPrefix);
 			var iter = indexedSubstateIterator.iterator();
 			while (iter.hasNext()) {
@@ -714,7 +716,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private void registerGenesisTransitions(Loader os) {
 		// For Mainnet Genesis
 		os.procedure(new UpProcedure<>(
-			CMAtomOS.REAddrClaim.class, EpochData.class,
+			SystemConstraintScrypt.REAddrClaim.class, EpochData.class,
 			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (u.getEpoch() != 0) {
@@ -741,14 +743,14 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		os.procedure(new DownProcedure<>(
 			EndPrevRound.class, EpochData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r) -> {
+			(d, s, r, c) -> {
 				// TODO: Should move this authorization instead of checking epoch > 0
-				if (d.getSubstate().getEpoch() > 0 && s.getClosedRound().getView() != maxRounds) {
+				if (d.getEpoch() > 0 && s.getClosedRound().getView() != maxRounds) {
 					throw new ProcedureException("Must execute epoch update on end of round " + maxRounds
 						+ " but is " + s.getClosedRound().getView());
 				}
 
-				return ReducerResult.incomplete(new UpdatingEpoch(d.getSubstate()));
+				return ReducerResult.incomplete(new UpdatingEpoch(d));
 			}
 		));
 
@@ -779,8 +781,8 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		));
 		os.procedure(new DownProcedure<>(
 			LoadingStake.class, ValidatorStakeData.class,
-			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> ReducerResult.incomplete(s.startUpdate(d.getSubstate()))
+			d -> d.bucket().withdrawAuthorization(),
+			(d, s, r, c) -> ReducerResult.incomplete(s.startUpdate(d))
 		));
 		os.procedure(new UpProcedure<>(
 			Unstaking.class, ExittingStake.class,
@@ -907,7 +909,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					buf.putInt(s.getRakePercentage());
 					REFieldSerialization.serializeREAddr(buf, s.getOwnerAddr());
 				},
-				s -> s.equals(ValidatorStakeData.createVirtual(s.getValidatorKey()))
+				buf -> {
+					var key = REFieldSerialization.deserializeKey(buf);
+					return ValidatorStakeData.createVirtual(key);
+				},
+				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
 			)
 		);
 		os.substate(

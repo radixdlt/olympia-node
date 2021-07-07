@@ -114,10 +114,11 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			if (!allowDelegationFlag.getValidatorKey().equals(ownerCopy.getValidatorKey())) {
 				throw new ProcedureException("Not matching validator keys");
 			}
+			var owner = ownerCopy.getOwner();
 			return new StakePrepare(
 				tokenHoldingBucket,
 				allowDelegationFlag.getValidatorKey(),
-				ownerCopy.getOwner()::equals
+				owner::equals
 			);
 		}
 	}
@@ -185,15 +186,15 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		// Unstake
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, StakeOwnership.class,
-			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> ReducerResult.incomplete(new StakeOwnershipHoldingBucket(d.getSubstate()))
+			d -> d.bucket().withdrawAuthorization(),
+			(d, s, r, c) -> ReducerResult.incomplete(new StakeOwnershipHoldingBucket(d))
 		));
 		// Additional Unstake
 		os.procedure(new DownProcedure<>(
 			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
-			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> {
-				s.depositOwnership(d.getSubstate());
+			d -> d.bucket().withdrawAuthorization(),
+			(d, s, r, c) -> {
+				s.depositOwnership(d);
 				return ReducerResult.incomplete(s);
 			}
 		));
