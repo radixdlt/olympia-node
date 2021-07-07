@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.lib.dto;
+package com.radixdlt.client.lib.api.rpc;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

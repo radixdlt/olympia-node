@@ -23,9 +23,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.identifiers.AID;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 import static java.util.Objects.requireNonNull;
 
-public class TxBlobDTO {
+public final class TxBlobDTO {
 	private final AID txId;
 	private final byte[] blob;
 
@@ -45,16 +48,37 @@ public class TxBlobDTO {
 		return new TxBlobDTO(txId, Hex.decode(blob));
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof TxBlobDTO)) {
+			return false;
+		}
+
+		var txBlobDTO = (TxBlobDTO) o;
+		return txId.equals(txBlobDTO.txId) && Arrays.equals(blob, txBlobDTO.blob);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hash(txId);
+		result = 31 * result + Arrays.hashCode(blob);
+		return result;
+	}
+
+	@Override
+	public String toString() {
+		return "{" + txId.toJson() + ", " + Hex.toHexString(blob) + '}';
+	}
+
 	public AID getTxId() {
 		return txId;
 	}
 
 	public byte[] getBlob() {
 		return blob;
-	}
-
-	@Override
-	public String toString() {
-		return "Tx(" + txId.toJson() + ", " + Hex.toHexString(blob) + ')';
 	}
 }

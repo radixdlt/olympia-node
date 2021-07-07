@@ -23,7 +23,7 @@ import com.radixdlt.client.lib.api.AccountAddress;
 
 import java.util.Objects;
 
-public class LocalAccount {
+public final class LocalAccount {
 	private final AccountAddress address;
 	private final AccountBalance balance;
 

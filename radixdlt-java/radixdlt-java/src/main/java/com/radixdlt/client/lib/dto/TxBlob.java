@@ -26,7 +26,7 @@ import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
 
-public class TxBlob {
+public final class TxBlob {
 	private final byte[] blob;
 	private final byte[] hashToSign;
 

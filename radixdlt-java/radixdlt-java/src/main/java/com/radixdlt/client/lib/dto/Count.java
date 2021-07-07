@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class Count {
+public final class Count {
 	private final long count;
 
 	private Count(long count) {

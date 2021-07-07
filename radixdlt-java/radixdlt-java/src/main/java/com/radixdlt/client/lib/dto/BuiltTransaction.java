@@ -26,7 +26,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class BuiltTransaction {
+public final class BuiltTransaction {
 	private final TxBlob transaction;
 	private final UInt256 fee;
 

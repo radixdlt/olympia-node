@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class NetworkData {
+public final class NetworkData {
 	private final NetworkDataMessages messages;
 	private final NetworkDataNetworking networking;
 

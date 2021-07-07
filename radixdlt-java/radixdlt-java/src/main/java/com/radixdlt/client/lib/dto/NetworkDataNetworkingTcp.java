@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class NetworkDataNetworkingTcp {
+public final class NetworkDataNetworkingTcp {
 	private final long outOpened;
 	private final long droppedMessages;
 	private final long closed;

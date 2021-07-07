@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Objects;
 
-public class AccountBalance {
+public final class AccountBalance {
 	private final List<BalanceStakes> stakes;
 	private final List<Balance> tokens;
 

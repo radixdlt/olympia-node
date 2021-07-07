@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class SyncConfiguration {
+public final class SyncConfiguration {
 	private final long maxLedgerUpdatesRate;
 	private final long requestTimeout;
 	private final long syncCheckInterval;

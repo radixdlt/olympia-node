@@ -27,7 +27,7 @@ import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-public class ValidatorsResponse {
+public final class ValidatorsResponse {
 	private final NavigationCursor cursor;
 	private final List<ValidatorDTO> validators;
 

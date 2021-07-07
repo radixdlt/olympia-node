@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class ApiDbElapsed {
+public final class ApiDbElapsed {
 	private final ReadWrite balance;
 	private final ReadWrite transaction;
 	private final ReadWrite token;

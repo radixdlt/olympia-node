@@ -1,7 +1,7 @@
-package com.radixdlt.client.lib.dto;
+package com.radixdlt.client.lib.api.rpc;
 
-import static com.radixdlt.client.lib.dto.PortSelector.PRIMARY;
-import static com.radixdlt.client.lib.dto.PortSelector.SECONDARY;
+import static com.radixdlt.client.lib.api.rpc.PortSelector.PRIMARY;
+import static com.radixdlt.client.lib.api.rpc.PortSelector.SECONDARY;
 
 public enum EndPoint {
 	ARCHIVE("/archive", PRIMARY),

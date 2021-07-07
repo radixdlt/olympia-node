@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class NetworkDataNetworking {
+public final class NetworkDataNetworking {
 	private final NetworkDataNetworkingUdp udp;
 	private final NetworkDataNetworkingTcp tcp;
 	private final long receivedBytes;
