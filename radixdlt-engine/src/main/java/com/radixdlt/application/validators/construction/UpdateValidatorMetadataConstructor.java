@@ -29,13 +29,13 @@ import com.radixdlt.crypto.HashUtils;
 import java.util.List;
 import java.util.Optional;
 
-public final class UpdateValidatorConstructor implements ActionConstructor<UpdateValidatorMetadata> {
+public final class UpdateValidatorMetadataConstructor implements ActionConstructor<UpdateValidatorMetadata> {
 	@Override
 	public void construct(UpdateValidatorMetadata action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.swap(
 			ValidatorMetaData.class,
 			p -> p.getValidatorKey().equals(action.validatorKey()),
-			Optional.of(new ValidatorMetaData(action.validatorKey(), "", "")),
+			Optional.of(action.validatorKey()),
 			() -> new TxBuilderException("Invalid state.")
 		).with(
 			substateDown -> List.of(new ValidatorMetaData(
@@ -50,7 +50,7 @@ public final class UpdateValidatorConstructor implements ActionConstructor<Updat
 			txBuilder.down(
 				ValidatorSystemMetadata.class,
 				p -> p.getValidatorKey().equals(action.validatorKey()),
-				Optional.of(new ValidatorSystemMetadata(action.validatorKey(), HashUtils.zero256().asBytes())),
+				Optional.of(action.validatorKey()),
 				() -> new TxBuilderException("Could not find state")
 			);
 			txBuilder.up(new ValidatorSystemMetadata(action.validatorKey(), forkVoteHash.get().asBytes()));
