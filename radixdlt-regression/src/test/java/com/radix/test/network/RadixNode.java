@@ -4,7 +4,11 @@ import java.util.Set;
 
 public class RadixNode {
 
-    private Set<ServiceType> availableNodeServices;
+    private final String rootUrl;
+    private final int primaryPort;
+    private final int secondaryPort;
+    private final String containerName;
+    private final Set<ServiceType> availableServices;
 
     /**
      * TODO explain
@@ -19,12 +23,17 @@ public class RadixNode {
         DEVELOPER
     }
 
-    public RadixNode(Set<ServiceType> availableNodeServices) {
-        this.availableNodeServices = availableNodeServices;
+    public RadixNode(String rootUrl, int primaryPort, int secondaryPort, String containerName, Set<ServiceType> availableServices) {
+        this.rootUrl = rootUrl;
+        this.primaryPort = primaryPort;
+        this.secondaryPort = secondaryPort;
+        this.containerName = containerName;
+        this.availableServices = availableServices;
     }
 
     public String toString() {
-        return availableNodeServices.toString();
+        return String.format("%s:%d:%d, container: %S, services: %s", rootUrl, primaryPort, secondaryPort, containerName,
+            availableServices);
     }
 
 }

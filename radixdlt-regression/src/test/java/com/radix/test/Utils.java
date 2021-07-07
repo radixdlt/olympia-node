@@ -37,6 +37,11 @@ public final class Utils {
         }
     }
 
+    public static String getEnvWithDefault(String envName, String defaultValue) {
+        String envValue = System.getenv(envName);
+        return (envValue == null || envValue.isBlank()) ? defaultValue : envValue;
+    }
+
     /**
      * Will wait until the native token balance reaches the given amount
      */
@@ -50,7 +55,7 @@ public final class Utils {
     }
 
     /**
-     * Will wait until the native token balance increases by any maount
+     * Will wait until the account's native token balance increases by any amount
      */
     public static void waitForBalanceToIncrease(Account account) {
         UInt256 initialAmount = account.getOwnNativeTokenBalance().getAmount();

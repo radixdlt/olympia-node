@@ -1,14 +1,14 @@
 package com.radix.test.network;
 
 import com.radix.test.account.Account;
+import com.radix.test.docker.DockerClient;
+import com.radix.test.docker.LocalDockerClient;
 import com.radix.test.network.client.RadixHttpClient;
-import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Represents an actual radix network with several running nodes. Keeps a list of the nodes, along with their addresses.
@@ -19,13 +19,16 @@ public class RadixNetwork {
     private static final Logger logger = LogManager.getLogger();
 
     private final RadixNetworkConfiguration configuration;
-    private final List<RadixNode> radixNodes;
-    private final RadixHttpClient nodeApi;
+    private final List<RadixNode> nodes;
+    private final DockerClient dockerClient;
+    private final RadixHttpClient httpClient;
 
-    private RadixNetwork(RadixNetworkConfiguration configuration, List<RadixNode> radixNodes, RadixHttpClient nodeApi) {
+    private RadixNetwork(RadixNetworkConfiguration configuration, List<RadixNode> nodes,
+                         RadixHttpClient httpClient, DockerClient dockerClient) {
         this.configuration = configuration;
-        this.radixNodes = radixNodes;
-        this.nodeApi = nodeApi;
+        this.nodes = nodes;
+        this.httpClient = httpClient;
+        this.dockerClient = dockerClient;
     }
 
     public static RadixNetwork initializeFromEnv() {
@@ -35,22 +38,38 @@ public class RadixNetwork {
         configuration.pingJsonRpcApi();
         logger.info("Connected to JSON RPC API at {}", configuration.getJsonRpcRootUrl());
 
-        // figure out the nodes of this network, and the services they expose
         RadixHttpClient httpClient = RadixHttpClient.fromRadixNetworkConfiguration(configuration);
-        List<RadixNode> radixNodes = RadixNetworkNodeLocator.findNodes(configuration, httpClient);
+        DockerClient dockerClient = createDockerClient(configuration);
+        List<RadixNode> radixNodes = RadixNetworkNodeLocator.locateNodes(configuration, httpClient, dockerClient);
         if (radixNodes == null || radixNodes.size() == 0) {
-            throw new RuntimeException("No nodes found, cannot test");
+            throw new RuntimeException("No nodes found, cannot run tests");
         }
-        logger.info("Located {} radix nodes", radixNodes.size());
+
+        logger.info("Located {} nodes", radixNodes.size());
         radixNodes.forEach(logger::debug);
 
-        return new RadixNetwork(configuration, radixNodes, httpClient);
+        return new RadixNetwork(configuration, radixNodes, httpClient, dockerClient);
     }
 
     private static void prettyPrintConfiguration(RadixNetworkConfiguration configuration) {
-        logger.debug("Will locate test nodes from properties:");
-        logger.debug("JSON-RPC URL: {}", configuration.getJsonRpcRootUrl());
-        logger.debug("Network type: {}", configuration.getType());
+        logger.debug("Network configuration:");
+        logger.debug("JSON-RPC URL: {}, type: {}", configuration.getJsonRpcRootUrl(), configuration.getType());
+    }
+
+    private static DockerClient createDockerClient(RadixNetworkConfiguration configuration) {
+        var dockerConfiguration = configuration.getDockerConfiguration();
+        DockerClient dockerClient;
+        switch (configuration.getType()) {
+            case LOCALNET:
+                dockerClient = new LocalDockerClient(dockerConfiguration.getSocketUrl());
+                break;
+            case TESTNET:
+            default:
+                throw new RuntimeException("Unimplemented");
+        }
+        dockerClient.connect();
+        logger.debug("Successfully initialized a {} docker client", configuration.getType());
+        return dockerClient;
     }
 
     public Result<Account> generateNewAccount() {

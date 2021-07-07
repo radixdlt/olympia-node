@@ -56,7 +56,7 @@ public class RadixHttpClient {
             int errorCode = errorObject.getInt("code");
             throw new RadixApiException(Failure.failure(errorCode, errorMessage));
         }
-        return "";
+        return responseObject.getJSONObject("result").getString("txID");
     }
 
 }

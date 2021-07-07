@@ -1,5 +1,6 @@
 package com.radix.test.network;
 
+import com.radix.test.docker.DockerClient;
 import com.radix.test.network.client.HttpException;
 import com.radix.test.network.client.RadixHttpClient;
 import com.radixdlt.application.system.construction.FeeReserveNotEnoughBalanceException;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * TODO
+ * Has utilities for scanning and locating nodes in radix networks
  */
 public class RadixNetworkNodeLocator {
 
@@ -33,35 +34,42 @@ public class RadixNetworkNodeLocator {
 
     }
 
-    public static List<RadixNode> findNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient) {
-        var jsonRpcApiRootUrl = configuration.getJsonRpcRootUrl();
+    public static List<RadixNode> locateNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient,
+                                              DockerClient dockerClient) {
         var peers = configuration.connect().network().peers();
+        var peersSizePlusOne = peers.size() + 1;
         switch (configuration.getType()) {
             case LOCALNET:
-                logger.debug("Locating ({}) nodes from local network...", peers.size()+1);
-                return locateLocalNodes(configuration, httpClient, peers.size()+1);
+                logger.debug("Searching for {} local nodes...", peersSizePlusOne);
+                return locateLocalNodes(configuration, httpClient, dockerClient, peersSizePlusOne);
             case TESTNET:
-                logger.debug("Locating ({}) nodes from testnet via node at {}", peers.size()+1, jsonRpcApiRootUrl);
+                logger.debug("Searching for {} testnet nodes", peersSizePlusOne);
             default:
-                throw new RuntimeException("Unimplemented!");
+                throw new RuntimeException("Unimplemented");
         }
     }
 
     private static List<RadixNode> locateLocalNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient,
-                                                    int expectedNoOfNodes) {
+                                                    DockerClient dockerClient, int expectedNoOfNodes) {
+        int primaryPort = configuration.getPrimaryPort();
+        int secondaryPort = configuration.getSecondaryPort();
         return IntStream.range(0, expectedNoOfNodes).mapToObj(counter -> {
-            return figureOutNode(configuration, httpClient);
+            String containerName = String.format("docker_core%d_1", counter);
+            return figureOutNode(configuration.getJsonRpcRootUrl(), primaryPort + counter, secondaryPort + counter,
+                containerName, httpClient, dockerClient);
         }).collect(Collectors.toList());
     }
 
     /**
-     * What to do when 1) node lacks an endpoint 2) node doesn't exist
+     * TODO explain
+     *
+     * TODO handle exceptions better. Right now, the test will fail is anything goes wrong here
      */
-    private static RadixNode figureOutNode(RadixNetworkConfiguration configuration, RadixHttpClient httpClient) {
+    private static RadixNode figureOutNode(String jsonRpcRootUrl, int primaryPort, int secondaryPort,
+                                           String expectedContainerName, RadixHttpClient httpClient, DockerClient dockerClient) {
         Set<RadixNode.ServiceType> availableNodeServices = Sets.newHashSet();
 
-        var api = ImperativeRadixApi.connect(configuration.getJsonRpcRootUrl(),
-            configuration.getPrimaryPort(), configuration.getSecondaryPort());
+        var api = ImperativeRadixApi.connect(jsonRpcRootUrl, primaryPort, secondaryPort);
         var networkId = api.network().id().getNetworkId();
         availableNodeServices.add(RadixNode.ServiceType.ARCHIVE);
 
@@ -85,11 +93,13 @@ public class RadixNetworkNodeLocator {
         api.local().validatorInfo();
         availableNodeServices.add(RadixNode.ServiceType.VALIDATION);
 
-        httpClient.callFaucet(configuration.getJsonRpcRootUrl(), configuration.getSecondaryPort(),
-            randomAddress.toString(networkId));
+        httpClient.callFaucet(jsonRpcRootUrl, secondaryPort, randomAddress.toString(networkId));
         availableNodeServices.add(RadixNode.ServiceType.FAUCET);
 
-        return new RadixNode(availableNodeServices);
+        // check that the container name is correct. TODO handle exception?
+        dockerClient.runShellCommandAndGetOutput(expectedContainerName, "pwd");
+
+        return new RadixNode(jsonRpcRootUrl, primaryPort, secondaryPort, expectedContainerName, availableNodeServices);
     }
 
 }
