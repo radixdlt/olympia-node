@@ -26,6 +26,7 @@ import com.radixdlt.properties.RuntimeProperties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -41,6 +42,11 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
 		public Set<ForkBuilder> apply(Set<ForkBuilder> forkBuilders) {
 			return forkBuilders.stream()
 				.map(c -> {
+					final var forkDisabledOverwrite = properties.get("overwrite_forks." + c.getName() + ".disabled", "");
+					if (!forkDisabledOverwrite.isBlank()) {
+						return Optional.<ForkBuilder>empty();
+					}
+
 					final var requiredStakeVotesOverwrite = properties.get("overwrite_forks." + c.getName() + ".required_stake_votes", "");
 					final var epochOverwrite = properties.get("overwrite_forks." + c.getName() + ".epoch", "");
 
@@ -64,8 +70,10 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
 						c = c.withEngineRulesConfig(c.getEngineRulesConfig().overrideMaxRounds(view));
 					}
 
-					return c;
+					return Optional.of(c);
 				})
+				.filter(Optional::isPresent)
+				.map(Optional::get)
 				.collect(Collectors.toSet());
 		}
 	}
