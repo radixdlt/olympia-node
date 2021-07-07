@@ -133,6 +133,16 @@ public final class REFieldSerialization {
 		}
 	}
 
+	public static int deserializeUnsignedShort(ByteBuffer buf, int max) throws DeserializeException {
+		var s = buf.getShort();
+		var i = Short.toUnsignedInt(s);
+		if (i > max) {
+			throw new DeserializeException("Max of short value is " + max + " but value is: " + i);
+		}
+
+		return i;
+	}
+
 	public static void serializeReservedByte(ByteBuffer buf) {
 		buf.put((byte) 0);
 	}

@@ -429,7 +429,7 @@ public final class ConstraintMachine {
 					}
 				}
 			} catch (Exception e) {
-				throw new ConstraintMachineException(instIndex, inst, reducerState, e);
+				throw new ConstraintMachineException(instIndex, instructions, reducerState, e);
 			}
 
 			instIndex++;
@@ -438,7 +438,7 @@ public final class ConstraintMachine {
 		try {
 			context.destroy();
 		} catch (Exception e) {
-			throw new ConstraintMachineException(instIndex, null, reducerState, e);
+			throw new ConstraintMachineException(instIndex, instructions, reducerState, e);
 		}
 
 		return groupedStateUpdates;

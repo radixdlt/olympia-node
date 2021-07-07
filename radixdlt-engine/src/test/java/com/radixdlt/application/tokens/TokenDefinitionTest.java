@@ -39,7 +39,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -156,6 +156,6 @@ public class TokenDefinitionTest {
 
 		// Act and Assert
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
-			.hasRootCauseInstanceOf(ProcedureException.class);
+			.hasRootCauseInstanceOf(InvalidHashedKeyException.class);
 	}
 }

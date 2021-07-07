@@ -77,7 +77,7 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
 	private static int syscallInstructionSize() {
 		var syscallSize = 0;
 		syscallSize++; // REInstruction
-		syscallSize++; // size
+		syscallSize += 2; // size
 		syscallSize++; // syscall id
 		syscallSize += UInt256.BYTES;
 		return syscallSize;

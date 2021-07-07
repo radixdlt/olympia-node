@@ -19,6 +19,7 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.utils.Bytes;
 
 import java.nio.ByteBuffer;
 
@@ -41,5 +42,10 @@ public class UpSubstate {
 
 	public SubstateId getSubstateId() {
 		return substateId;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{data=%s}", this.getClass().getSimpleName(), Bytes.toHexString(array, offset, length));
 	}
 }

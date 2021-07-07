@@ -38,10 +38,10 @@ public final class REInstruction {
 		},
 		SYSCALL((byte) 0x1, REOp.SYSCALL) {
 			@Override
-			Object read(REParser.ParserState parserState, ByteBuffer buf) {
-				int bufSize = Byte.toUnsignedInt(buf.get());
+			Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
+				int size = REFieldSerialization.deserializeUnsignedShort(buf, 512);
 				// TODO: Remove buffer copy
-				var callData = new byte[bufSize];
+				var callData = new byte[size];
 				buf.get(callData);
 				return new CallData(callData);
 			}
@@ -49,10 +49,7 @@ public final class REInstruction {
 		UP((byte) 0x2, REOp.UP) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
-				short size = buf.getShort();
-				if (size < 0 || size > 1024) { // Arbitrary max size for now
-					throw new DeserializeException("Invalid substate size: " + size);
-				}
+				int size = REFieldSerialization.deserializeUnsignedShort(buf, 512);
 				var start = buf.position();
 				var substateId = SubstateId.ofSubstate(parserState.txnId(), parserState.upSubstateCount());
 				buf.position(start + size);
@@ -68,21 +65,18 @@ public final class REInstruction {
 		LREAD((byte) 0x4, REOp.READ) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
-				var index = buf.getShort();
-				if (index < 0 || index >= parserState.upSubstateCount()) {
-					throw new DeserializeException("Bad local index: " + index);
-				}
+				int index = REFieldSerialization.deserializeUnsignedShort(buf, parserState.upSubstateCount() - 1);
 				return SubstateId.ofSubstate(parserState.txnId(), index);
 			}
 		},
 		VREAD((byte) 0x5, REOp.READ) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
-				var length = Byte.toUnsignedInt(buf.get());
-				if (length <= SubstateId.BYTES) {
+				int size = REFieldSerialization.deserializeUnsignedShort(buf, 512);
+				if (size <= SubstateId.BYTES) {
 					throw new DeserializeException("SubstateId is not virtual.");
 				}
-				var bytes = new byte[length];
+				var bytes = new byte[size];
 				buf.get(bytes);
 				return SubstateId.fromBytes(bytes);
 			}
@@ -90,16 +84,13 @@ public final class REInstruction {
 		LVREAD((byte) 0x6, REOp.READ) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
-				var length = Byte.toUnsignedInt(buf.get());
-				if (length <= Short.BYTES) {
-					throw new DeserializeException("SubstateId is not virtual.");
+				var size = REFieldSerialization.deserializeUnsignedShort(buf, 512);
+				if (size <= Short.BYTES) {
+					throw new DeserializeException("Local virtual substateId must have size > " + Short.BYTES + " but is " + size);
 				}
-				var index = buf.getShort();
-				if (index < 0 || index >= parserState.upSubstateCount()) {
-					throw new DeserializeException("Bad local index: " + index);
-				}
+				var index = REFieldSerialization.deserializeUnsignedShort(buf, parserState.upSubstateCount() - 1);
 				var parent = SubstateId.ofSubstate(parserState.txnId(), index);
-				var bytes = new byte[length - Short.BYTES];
+				var bytes = new byte[size - Short.BYTES];
 				buf.get(bytes);
 				return SubstateId.ofVirtualSubstate(parent, bytes);
 			}
@@ -113,21 +104,18 @@ public final class REInstruction {
 		LDOWN((byte) 0x8, REOp.DOWN) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
-				var index = buf.getShort();
-				if (index < 0 || index >= parserState.upSubstateCount()) {
-					throw new DeserializeException("Bad local index: " + index);
-				}
+				var index = REFieldSerialization.deserializeUnsignedShort(buf, parserState.upSubstateCount() - 1);
 				return SubstateId.ofSubstate(parserState.txnId(), index);
 			}
 		},
 		VDOWN((byte) 0x9, REOp.DOWN) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
-				var length = Byte.toUnsignedInt(buf.get());
-				if (length <= SubstateId.BYTES) {
+				var size = REFieldSerialization.deserializeUnsignedShort(buf, 512);
+				if (size <= SubstateId.BYTES) {
 					throw new DeserializeException("SubstateId is not virtual.");
 				}
-				var bytes = new byte[length];
+				var bytes = new byte[size];
 				buf.get(bytes);
 				return SubstateId.fromBytes(bytes);
 			}
@@ -135,16 +123,13 @@ public final class REInstruction {
 		LVDOWN((byte) 0xa, REOp.DOWN) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
-				var length = Byte.toUnsignedInt(buf.get());
-				if (length <= Short.BYTES) {
+				var size = REFieldSerialization.deserializeUnsignedShort(buf, 512);
+				if (size <= Short.BYTES) {
 					throw new DeserializeException("SubstateId is not virtual.");
 				}
-				var index = buf.getShort();
-				if (index < 0 || index >= parserState.upSubstateCount()) {
-					throw new DeserializeException("Bad local index: " + index);
-				}
+				var index = REFieldSerialization.deserializeUnsignedShort(buf, parserState.upSubstateCount() - 1);
 				var parent = SubstateId.ofSubstate(parserState.txnId(), index);
-				var bytes = new byte[length - Short.BYTES];
+				var bytes = new byte[size - Short.BYTES];
 				buf.get(bytes);
 				return SubstateId.ofVirtualSubstate(parent, bytes);
 			}
@@ -158,8 +143,8 @@ public final class REInstruction {
 		MSG((byte) 0xc, REOp.MSG) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
-				var length = Byte.toUnsignedInt(buf.get());
-				var bytes = new byte[length];
+				var size = REFieldSerialization.deserializeUnsignedShort(buf, 255);
+				var bytes = new byte[size];
 				buf.get(bytes);
 				return bytes;
 			}
@@ -181,8 +166,8 @@ public final class REInstruction {
 		READINDEX((byte) 0xe, REOp.READINDEX) {
 			@Override
 			Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
-				int indexSize = Byte.toUnsignedInt(buf.get());
-				var array = new byte[indexSize];
+				var size = REFieldSerialization.deserializeUnsignedShort(buf, 64);
+				var array = new byte[size];
 				buf.get(array);
 				return array;
 			}
@@ -190,8 +175,8 @@ public final class REInstruction {
 		DOWNINDEX((byte) 0xf, REOp.DOWNINDEX) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf) throws DeserializeException {
-				int indexSize = Byte.toUnsignedInt(buf.get());
-				var array = new byte[indexSize];
+				var size = REFieldSerialization.deserializeUnsignedShort(buf, 64);
+				var array = new byte[size];
 				buf.get(array);
 				return array;
 			}

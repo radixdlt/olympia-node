@@ -26,7 +26,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atomos.UnclaimedREAddr;
+import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.identifiers.REAddr;
 
 import java.nio.charset.StandardCharsets;
