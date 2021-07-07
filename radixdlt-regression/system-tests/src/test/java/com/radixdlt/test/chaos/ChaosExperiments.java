@@ -89,7 +89,7 @@ public class ChaosExperiments {
     public void a() throws PrivateKeyException, PublicKeyException, DeserializeException {
         ECKeyPair richKeyPair = keyPairOf(1);
         AccountAddress richAccount = AccountAddress.create(richKeyPair.getPublicKey());
-        REAddr faucetREAddr = AccountAddressing.bech32("tn5").parse("tn51qspkkuckknfrw3v5wel9y25au2zzvfm74enzmuexq8jtcex76mv9cpgv78ck2");
+        REAddr faucetREAddr = AccountAddressing.bech32("tdx5").parse("tdx51qspnz477n68fhtwzefrp4k2xwxeygn3zdzxl7yrxlstvd4ceejne8wqzlajvp");
         AccountAddress faucetAccount = AccountAddress.create(faucetREAddr);
 
         ImperativeRadixApi milestonetImpClient = ImperativeRadixApi

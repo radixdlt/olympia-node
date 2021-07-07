@@ -14,29 +14,30 @@ public final class TestNetworkConfiguration {
     }
 
     private final URL jsonRpcRootUrl;
-    private final URL nodeApiRootUrl;
+    private final int primaryPort;
+    private final int secondaryPort;
     private final String basicAuth;
     private final Type type;
 
-    private TestNetworkConfiguration(URL jsonRpcRootUrl, URL nodeApiRootUrl, String basicAuth, Type type) {
+    private TestNetworkConfiguration(URL jsonRpcRootUrl, int primaryPort, int secondaryPort, String basicAuth, Type type) {
         this.jsonRpcRootUrl = jsonRpcRootUrl;
-        this.nodeApiRootUrl = nodeApiRootUrl;
+        this.primaryPort = primaryPort;
+        this.secondaryPort = secondaryPort;
         this.basicAuth = basicAuth;
         this.type = type;
     }
 
-    //TODO: probably it needs to be fixed, as we use more than one port for RPC communication
     public static TestNetworkConfiguration fromEnv() {
         try {
-            var jsonRpcRootUrlString = getEnvWithDefault("RADIX_JSON_RPC_ROOT_URL", "http://localhost:8080");
+            var jsonRpcRootUrlString = getEnvWithDefault("RADIXDLT_JSON_RPC_ROOT_URL", "http://localhost:8080");
             var jsonRpcRootUrl = new URL(jsonRpcRootUrlString);
-            var nodeApiPort = (jsonRpcRootUrl.getProtocol().equalsIgnoreCase("https")) ? 443
-                : Integer.parseInt(getEnvWithDefault("RADIX_NODE_API_PORT", "3333"));
-            var nodeApiRootUrl = new URL(String.format("%s://%s%s:%s", jsonRpcRootUrl.getProtocol(),
-                jsonRpcRootUrl.getHost(), jsonRpcRootUrl.getPath(), nodeApiPort));
-            var basicAuth = System.getenv("RADIX_BASIC_AUTH");
+            var primaryPort = (jsonRpcRootUrl.getProtocol().equalsIgnoreCase("https")) ? 443
+                : Integer.parseInt(getEnvWithDefault("RADIXDLT_JSON_API_PRIMARY_PORT", "8080"));
+            var secondaryPort = (jsonRpcRootUrl.getProtocol().equalsIgnoreCase("https")) ? 443
+                : Integer.parseInt(getEnvWithDefault("RADIXDLT_JSON_API_PRIMARY_PORT", "3333"));
+            var basicAuth = System.getenv("RADIXDLT_BASIC_AUTH");
             var type = determineType(jsonRpcRootUrlString);
-            return new TestNetworkConfiguration(jsonRpcRootUrl, nodeApiRootUrl, basicAuth, type);
+            return new TestNetworkConfiguration(jsonRpcRootUrl, primaryPort, secondaryPort, basicAuth, type);
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException(e);
         }
@@ -53,10 +54,6 @@ public final class TestNetworkConfiguration {
 
     public URL getJsonRpcRootUrl() {
         return jsonRpcRootUrl;
-    }
-
-    public URL getNodeApiRootUrl() {
-        return nodeApiRootUrl;
     }
 
     public Type getType() {

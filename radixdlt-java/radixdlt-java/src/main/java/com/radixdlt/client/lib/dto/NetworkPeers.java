@@ -17,5 +17,54 @@
 
 package com.radixdlt.client.lib.dto;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.List;
+import java.util.Objects;
+
 public class NetworkPeers {
+
+    private final List<Peer> peers;
+
+    private NetworkPeers(List<Peer> peers) {
+        this.peers = peers;
+    }
+
+    @JsonCreator
+    public static NetworkPeers create(
+        @JsonProperty(value = "result", required = true) List<Peer> peers
+    ) {
+        return new NetworkPeers(peers);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (!(o instanceof NetworkPeers)) {
+            return false;
+        }
+
+        var that = (NetworkPeers) o;
+        return Objects.equals(this, that);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(peers);
+    }
+
+    @Override
+    public String toString() {
+        return "{peers:" + peers + "}";
+    }
+
+    public List<Peer> getPeers() {
+        return peers;
+    }
+
+    public int size() {return peers.size();}
 }

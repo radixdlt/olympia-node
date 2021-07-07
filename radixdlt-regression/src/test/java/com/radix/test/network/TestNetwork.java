@@ -1,7 +1,7 @@
 package com.radix.test.network;
 
 import com.radix.test.account.Account;
-import com.radix.test.network.client.NodeApiClient;
+import com.radix.test.network.client.RadixHttpClient;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
@@ -20,9 +20,9 @@ public class TestNetwork {
 
     private final TestNetworkConfiguration configuration;
     private final List<TestNode> testNodes;
-    private final NodeApiClient nodeApi;
+    private final RadixHttpClient nodeApi;
 
-    private TestNetwork(TestNetworkConfiguration configuration, List<TestNode> testNodes, NodeApiClient nodeApi) {
+    private TestNetwork(TestNetworkConfiguration configuration, List<TestNode> testNodes, RadixHttpClient nodeApi) {
         this.configuration = configuration;
         this.testNodes = testNodes;
         this.nodeApi = nodeApi;
@@ -38,7 +38,7 @@ public class TestNetwork {
         logger.info("Connected to JSON RPC API at {}", urlString);
 
         // actually figure out what nodes this network has
-        NodeApiClient nodeApi = NodeApiClient.fromTestNetworkConfiguration(configuration);
+        RadixHttpClient nodeApi = RadixHttpClient.fromTestNetworkConfiguration(configuration);
         List<TestNode> testNodes = TestNetworkNodeLocator.findNodes(configuration, nodeApi);
         if (testNodes == null || testNodes.size() == 0) {
             throw new RuntimeException("No nodes found, cannot test");
@@ -52,7 +52,6 @@ public class TestNetwork {
     private static void prettyPrintConfiguration(TestNetworkConfiguration configuration) {
         logger.debug("Will locate test nodes from properties:");
         logger.debug("JSON-RPC URL: {}", configuration.getJsonRpcRootUrl());
-        logger.debug("Node API URL: {}", configuration.getNodeApiRootUrl());
         logger.debug("Network type: {}", configuration.getType());
     }
 

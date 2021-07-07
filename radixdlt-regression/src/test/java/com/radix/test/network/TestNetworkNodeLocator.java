@@ -1,8 +1,9 @@
 package com.radix.test.network;
 
 import com.radix.test.network.client.HttpException;
-import com.radix.test.network.client.NodeApiClient;
+import com.radix.test.network.client.RadixHttpClient;
 import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
 import com.radixdlt.client.lib.api.sync.RadixApi;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.Pair;
@@ -14,7 +15,6 @@ import java.net.URL;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * TODO
@@ -29,19 +29,21 @@ public class TestNetworkNodeLocator {
 
     }
 
-    public static List<TestNode> findNodes(TestNetworkConfiguration configuration, NodeApiClient nodeApi) {
+    public static List<TestNode> findNodes(TestNetworkConfiguration configuration, RadixHttpClient nodeApi) {
+        var jsonRpcApiRootUrl = configuration.getJsonRpcRootUrl().toExternalForm();
+        var peers = ImperativeRadixApi.connect(jsonRpcApiRootUrl, 443, 443).network().peers();
         switch (configuration.getType()) {
             case LOCALNET:
-                logger.debug("Locating nodes from local network...");
-                var nodeUrls = createLocalUrlList(configuration.getNodeApiRootUrl(),
-                    configuration.getJsonRpcRootUrl());
+                logger.debug("Locating ({}) nodes from local network...", peers.size());
+                var nodeUrls = createLocalUrlList(jsonRpcApiRootUrl);
                 return locateNodes(nodeApi, nodeUrls);
             case TESTNET:
-                logger.debug("Locating nodes from testnet via " + configuration.getJsonRpcRootUrl());
-                nodeUrls = createRemoteUrlList(configuration.getNodeApiRootUrl(), nodeApi).stream()
-                    .map(url -> getUrlPairFromUrl(url, configuration.getNodeApiRootUrl().getPort()))
-                    .collect(Collectors.toList());
-                return locateNodes(nodeApi, nodeUrls);
+                logger.debug("Locating ({}) nodes from testnet via node at {}", peers.size(), jsonRpcApiRootUrl);
+//                nodeUrls = createRemoteUrlList(configuration.getNodeApiRootUrl(), nodeApi).stream()
+//                    .map(url -> getUrlPairFromUrl(url, configuration.getNodeApiRootUrl().getPort()))
+//                    .collect(Collectors.toList());
+//                return locateNodes(nodeApi, nodeUrls);
+                return null;
         }
         return Lists.newArrayList();
     }
@@ -52,23 +54,19 @@ public class TestNetworkNodeLocator {
         return Pair.of(url.toExternalForm(), nodeApiRootUrl);
     }
 
-    private static List<URL> createRemoteUrlList(URL nodeApiRootUrl, NodeApiClient nodeApi) {
+    private static List<URL> createRemoteUrlList(URL nodeApiRootUrl, RadixHttpClient nodeApi) {
         return nodeApi.getPeers(nodeApiRootUrl);
     }
 
-    private static List<Pair<String, String>> createLocalUrlList(URL nodeApiRootUrl, URL jsonRpcRootUrl) {
-        return IntStream.range(0, MAX_EXPECTED_LOCALNET_NODES).mapToObj(counter -> {
-            var newNodeApiPort = nodeApiRootUrl.getPort() + counter;
-            var newJsonRpcPort = jsonRpcRootUrl.getPort() + counter;
-            var newNodeApiRootUrl = String.format("%s://%s%s:%s", nodeApiRootUrl.getProtocol(),
-                nodeApiRootUrl.getHost(), nodeApiRootUrl.getPath(), newNodeApiPort);
-            var newJsonRpcRootUrl = String.format("%s://%s%s:%s", jsonRpcRootUrl.getProtocol(),
-                jsonRpcRootUrl.getHost(), jsonRpcRootUrl.getPath(), newJsonRpcPort);
-            return Pair.of(newNodeApiRootUrl, newJsonRpcRootUrl);
-        }).collect(Collectors.toList());
+    private static List<Pair<String, String>> createLocalUrlList(String jsonRpcRootUrl) {
+        return null;
+
+//        return IntStream.range(0, MAX_EXPECTED_LOCALNET_NODES).mapToObj(counter -> {
+//            return null;
+//        });
     }
 
-    private static List<TestNode> locateNodes(NodeApiClient nodeApi, List<Pair<String, String>> nodeUrlPairs) {
+    private static List<TestNode> locateNodes(RadixHttpClient nodeApi, List<Pair<String, String>> nodeUrlPairs) {
         return nodeUrlPairs.stream().map(nodeUrlPair -> {
             var nodeApiRootUrl = nodeUrlPair.getFirst();
             var jsonRpcRootUrl = nodeUrlPair.getSecond();

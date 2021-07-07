@@ -12,15 +12,14 @@ import kong.unirest.Unirest;
 import kong.unirest.json.JSONObject;
 
 /**
- * A thin client which just encapsulates some http calls. It's supposed to consume /node and /system
+ *
  */
-//TODO: remove/replace, no longer usable with new API
-public class NodeApiClient {
-    public static NodeApiClient fromTestNetworkConfiguration(TestNetworkConfiguration configuration) {
-        return new NodeApiClient(configuration.getBasicAuth());
+public class RadixHttpClient {
+    public static RadixHttpClient fromTestNetworkConfiguration(TestNetworkConfiguration configuration) {
+        return new RadixHttpClient(configuration.getBasicAuth());
     }
 
-    public NodeApiClient(String basicAuth) {
+    public RadixHttpClient(String basicAuth) {
         if (basicAuth != null && !basicAuth.isBlank()) {
             var encodedCredentials = Base64.getEncoder().encodeToString(basicAuth.getBytes(StandardCharsets.UTF_8));
             Unirest.config().setDefaultHeader("Authorization", "Basic " + encodedCredentials);
