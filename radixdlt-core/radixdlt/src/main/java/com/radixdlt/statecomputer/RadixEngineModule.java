@@ -90,6 +90,7 @@ public class RadixEngineModule extends AbstractModule {
 		final var cmConfig = forkConfig.getEngineRules().getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
 			cmConfig.getProcedures(),
+			cmConfig.getVirtualSubstateDeserialization(),
 			cmConfig.getMeter()
 		);
 		final var radixEngine = new RadixEngine<>(

@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.radixdlt.crypto.HashUtils.transactionIdHash;
 
 /**
  * The id of a unique substate
@@ -49,12 +48,15 @@ public final class SubstateId {
 		return new SubstateId(id);
 	}
 
-	public static SubstateId ofVirtualSubstate(byte[] particleBytes) {
-		return new SubstateId(transactionIdHash(particleBytes).asBytes());
-	}
-
-	public static SubstateId ofVirtualSubstate(ByteBuffer buf) {
-		return new SubstateId(transactionIdHash(buf).asBytes());
+	public static SubstateId ofVirtualSubstate(SubstateId substateId, byte[] key) {
+		if (substateId.isVirtual()) {
+			throw new IllegalArgumentException();
+		}
+		byte[] id = new byte[BYTES + key.length];
+		var buf = ByteBuffer.wrap(id);
+		buf.put(substateId.asBytes());
+		buf.put(key);
+		return new SubstateId(id);
 	}
 
 	public static SubstateId fromBytes(byte[] bytes) {
@@ -68,7 +70,7 @@ public final class SubstateId {
 	}
 
 	public boolean isVirtual() {
-		return idBytes.length == AID.BYTES;
+		return idBytes.length > BYTES;
 	}
 
 	public byte[] asBytes() {
@@ -77,6 +79,22 @@ public final class SubstateId {
 
 	public AID getTxnId() {
 		return AID.from(idBytes);
+	}
+
+	public Optional<SubstateId> getVirtualParent() {
+		if (idBytes.length <= BYTES) {
+			return Optional.empty();
+		}
+		var buf = ByteBuffer.wrap(idBytes, 0, BYTES);
+		return Optional.of(SubstateId.fromBuffer(buf));
+	}
+
+	public Optional<ByteBuffer> getVirtualKey() {
+		if (idBytes.length <= BYTES) {
+			return Optional.empty();
+		}
+		var buf = ByteBuffer.wrap(idBytes, BYTES, idBytes.length - BYTES);
+		return Optional.of(buf);
 	}
 
 	public Optional<Integer> getIndex() {

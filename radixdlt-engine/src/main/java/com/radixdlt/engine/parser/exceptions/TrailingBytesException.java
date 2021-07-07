@@ -16,35 +16,12 @@
  *
  */
 
-package com.radixdlt.atom;
+package com.radixdlt.engine.parser.exceptions;
 
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.serialization.DeserializeException;
 
-import java.util.NoSuchElementException;
-
-/**
- * Store which contains an index into up substates
- */
-public interface SubstateStore {
-
-	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index);
-
-	static SubstateStore empty() {
-		return t -> new CloseableCursor<>() {
-			@Override
-			public void close() {
-			}
-
-			@Override
-			public boolean hasNext() {
-				return false;
-			}
-
-			@Override
-			public RawSubstateBytes next() {
-				throw new NoSuchElementException();
-			}
-		};
+public class TrailingBytesException extends DeserializeException {
+	public TrailingBytesException(String message) {
+		super(message);
 	}
 }

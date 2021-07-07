@@ -19,7 +19,9 @@
 package com.radixdlt.application.system.construction;
 
 import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateSystem;
@@ -34,6 +36,10 @@ import java.util.Optional;
 public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem> {
 	@Override
 	public void construct(CreateSystem action, TxBuilder builder) throws TxBuilderException {
+		builder.up(new VirtualParent(new byte[] {SubstateTypeId.UNCLAIMED_READDR.id()}));
+		builder.end();
+
+
 		builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, "sys".getBytes(StandardCharsets.UTF_8));
 		builder.down(
 			UnclaimedREAddr.class,
@@ -43,6 +49,12 @@ public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem
 		);
 		builder.up(new EpochData(0));
 		builder.up(new RoundData(0, action.getTimestamp()));
+		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_STAKE_DATA.id()}));
+		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id()}));
+		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id()}));
+		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_RAKE_COPY.id()}));
+		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_OWNER_COPY.id()}));
+		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id()}));
 		builder.end();
 	}
 }

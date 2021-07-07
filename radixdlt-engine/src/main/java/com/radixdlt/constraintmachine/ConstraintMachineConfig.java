@@ -22,14 +22,21 @@ import com.radixdlt.constraintmachine.meter.Meter;
 
 public final class ConstraintMachineConfig {
 	private final Procedures procedures;
+	private final VirtualSubstateDeserialization virtualSubstateDeserialization;
 	private final Meter metering;
 
 	public ConstraintMachineConfig(
 		Procedures procedures,
+		VirtualSubstateDeserialization virtualSubstateDeserialization,
 		Meter metering
 	) {
 		this.procedures = procedures;
+		this.virtualSubstateDeserialization = virtualSubstateDeserialization;
 		this.metering = metering;
+	}
+
+	public VirtualSubstateDeserialization getVirtualSubstateDeserialization() {
+		return virtualSubstateDeserialization;
 	}
 
 	public Procedures getProcedures() {
@@ -40,9 +47,4 @@ public final class ConstraintMachineConfig {
 		return metering;
 	}
 
-	public ConstraintMachineConfig metering(Meter metering) {
-		return new ConstraintMachineConfig(
-			procedures, metering
-		);
-	}
 }

@@ -22,6 +22,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Procedures;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateSerialization;
+import com.radixdlt.constraintmachine.VirtualSubstateDeserialization;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -50,5 +51,9 @@ public final class CMAtomOS {
 
 	public SubstateSerialization buildSubstateSerialization() {
 		return new SubstateSerialization(substateDefinitions.values());
+	}
+
+	public VirtualSubstateDeserialization buildVirtualSubstateDeserialization() {
+		return new VirtualSubstateDeserialization(substateDefinitions.values());
 	}
 }

@@ -19,6 +19,7 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.utils.Pair;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -29,7 +30,6 @@ public final class SubstateSerialization {
 	private final Map<Class<? extends Particle>, SubstateSerializer<Particle>> classToSerializer;
 	private final Map<Class<? extends Particle>, VirtualSubstateSerializer> classToVirtualSerializer;
 	private final Map<Class<? extends Particle>, Byte> classToTypeByte;
-
 
 	public SubstateSerialization(
 		Collection<SubstateDefinition<? extends Particle>> definitions
@@ -70,16 +70,15 @@ public final class SubstateSerialization {
 		serializer.serialize(p, buffer);
 	}
 
-	public byte[] serializeVirtual(Class<? extends Particle> substateClass, Object key) {
+	public <T extends Particle> Pair<T, byte[]> serializeVirtual(Class<T> substateClass, Object key) {
 		var serializer = classToVirtualSerializer.get(substateClass);
 		// TODO: Remove buf allocation
 		var buf = ByteBuffer.allocate(1024);
-		buf.put(classToTypeByte.get(substateClass));
-		serializer.serialize(key, buf);
+		T virtualized = (T) serializer.serialize(key, buf);
 		var position = buf.position();
 		buf.rewind();
 		var bytes = new byte[position];
 		buf.get(bytes);
-		return bytes;
+		return Pair.of(virtualized, bytes);
 	}
 }

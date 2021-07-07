@@ -17,6 +17,7 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
@@ -24,13 +25,14 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
-import com.radixdlt.constraintmachine.exceptions.InvalidVirtualSubstateException;
 import com.radixdlt.constraintmachine.exceptions.LocalSubstateNotFoundException;
 import com.radixdlt.constraintmachine.exceptions.MeterException;
 import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
+import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.constraintmachine.meter.Meter;
 import com.radixdlt.identifiers.REAddr;
@@ -57,14 +59,16 @@ import java.util.function.Supplier;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintMachine {
 	private final Procedures procedures;
+	private final VirtualSubstateDeserialization virtualSubstateDeserialization;
 	private final Meter metering;
 
-	public ConstraintMachine(Procedures procedures) {
-		this(procedures, Meter.EMPTY);
+	public ConstraintMachine(Procedures procedures, VirtualSubstateDeserialization virtualSubstateDeserialization) {
+		this(procedures, virtualSubstateDeserialization, Meter.EMPTY);
 	}
 
-	public ConstraintMachine(Procedures procedures, Meter metering) {
+	public ConstraintMachine(Procedures procedures, VirtualSubstateDeserialization virtualSubstateDeserialization, Meter metering) {
 		this.procedures = Objects.requireNonNull(procedures);
+		this.virtualSubstateDeserialization = virtualSubstateDeserialization;
 		this.metering = Objects.requireNonNull(metering);
 	}
 
@@ -73,13 +77,16 @@ public final class ConstraintMachine {
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
 		private final CMStore store;
 		private final SubstateDeserialization deserialization;
+		private final VirtualSubstateDeserialization virtualSubstateDeserialization;
 		private int bootupCount = 0;
 
 		CMValidationState(
+			VirtualSubstateDeserialization virtualSubstateDeserialization,
 			SubstateDeserialization deserialization,
 			CMStore store
 		) {
 			this.deserialization = deserialization;
+			this.virtualSubstateDeserialization = virtualSubstateDeserialization;
 			this.store = store;
 		}
 
@@ -123,19 +130,49 @@ public final class ConstraintMachine {
 			bootupCount++;
 		}
 
-		public void virtualRead(Substate substate) throws SubstateNotFoundException {
-			if (remoteDownParticles.contains(substate.getId())) {
-				throw new SubstateNotFoundException(substate.getId());
+		public Particle virtualRead(SubstateId substateId)
+			throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist, DeserializeException {
+			if (remoteDownParticles.contains(substateId)) {
+				throw new VirtualSubstateAlreadyDownException(substateId);
 			}
 
-			if (store.isVirtualDown(substate.getId())) {
-				throw new SubstateNotFoundException(substate.getId());
-			}
+			var parentBuf = store.verifyVirtualSubstate(substateId);
+			var parent = (VirtualParent) deserialization.deserialize(parentBuf);
+			var typeByte = parent.getData()[0];
+			var keyBuf = substateId.getVirtualKey().orElseThrow();
+			return virtualSubstateDeserialization.keyToSubstate(typeByte, keyBuf);
 		}
 
-		public void virtualShutdown(Substate substate) throws SubstateNotFoundException, InvalidVirtualSubstateException {
-			virtualRead(substate);
-			remoteDownParticles.add(substate.getId());
+		public Particle virtualShutdown(SubstateId substateId)
+			throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist, DeserializeException {
+			var p = virtualRead(substateId);
+			remoteDownParticles.add(substateId);
+			return p;
+		}
+
+
+		public Particle localVirtualRead(SubstateId substateId)
+			throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist, DeserializeException {
+			if (remoteDownParticles.contains(substateId)) {
+				throw new VirtualSubstateAlreadyDownException(substateId);
+			}
+
+			var parentId = substateId.getVirtualParent().orElseThrow();
+			var substate = localUpParticles.get(parentId.getIndex().orElseThrow());
+			if (substate == null || !(substate.getFirst().getParticle() instanceof VirtualParent)) {
+				throw new VirtualParentStateDoesNotExist(parentId);
+			}
+			var parent = (VirtualParent) substate.getFirst().getParticle();
+			var typeByte = parent.getData()[0];
+			var keyBuf = substateId.getVirtualKey().orElseThrow();
+			return virtualSubstateDeserialization.keyToSubstate(typeByte, keyBuf);
+		}
+
+		public Particle localVirtualShutdown(SubstateId substateId)
+			throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist, DeserializeException {
+			var p = localVirtualRead(substateId);
+			remoteDownParticles.add(substateId);
+			return p;
 		}
 
 		public Particle localShutdown(int index) throws LocalSubstateNotFoundException {
@@ -262,17 +299,19 @@ public final class ConstraintMachine {
 				} else if (inst.getMicroOp().getOp() == REOp.READ) {
 					final Particle nextParticle;
 					if (inst.getMicroOp() == REInstruction.REMicroOp.VREAD) {
-						Substate substate = inst.getData();
-						nextParticle = substate.getParticle();
-						validationState.virtualRead(substate);
+						SubstateId substateId = inst.getData();
+						nextParticle = validationState.virtualRead(substateId);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.READ) {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.read(substateId);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.LREAD) {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.localRead(substateId.getIndex().orElseThrow());
+					} else if (inst.getMicroOp() == REInstruction.REMicroOp.LVREAD) {
+						SubstateId substateId = inst.getData();
+						nextParticle = validationState.localVirtualRead(substateId);
 					} else {
-						throw new IllegalStateException("Unknown read op");
+						throw new IllegalStateException("Unknown read op " + inst.getMicroOp());
 					}
 					var eventId = OpSignature.ofSubstateUpdate(inst.getMicroOp().getOp(), nextParticle.getClass());
 					var methodProcedure = loadProcedure(reducerState, eventId);
@@ -294,7 +333,7 @@ public final class ConstraintMachine {
 							// FIXME: do this via shutdownAll state update rather than individually
 							var substate = substateCursor.next();
 							if (inst.getMicroOp().getOp() == REOp.DOWNINDEX) {
-								tmp.add(REStateUpdate.of(REOp.DOWN, substate, inst::getDataByteBuffer));
+								tmp.add(REStateUpdate.of(REOp.DOWN, substate.getId(), inst::getDataByteBuffer, substate.getParticle()));
 							}
 							return substate.getParticle();
 						}
@@ -311,30 +350,31 @@ public final class ConstraintMachine {
 					}
 				} else if (inst.isStateUpdate()) {
 					final Particle nextParticle;
-					final Substate substate;
+					final SubstateId substateId;
 					if (inst.getMicroOp() == REInstruction.REMicroOp.UP) {
 						// TODO: Cleanup indexing of substate class
-						substate = inst.getData();
+						Substate substate = inst.getData();
 						nextParticle = substate.getParticle();
+						substateId = substate.getId();
 						validationState.bootUp(substate, inst::getDataByteBuffer);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWN) {
-						substate = inst.getData();
-						nextParticle = substate.getParticle();
-						validationState.virtualShutdown(substate);
+						substateId = inst.getData();
+						nextParticle = validationState.virtualShutdown(substateId);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.DOWN) {
-						SubstateId substateId = inst.getData();
+						substateId = inst.getData();
 						nextParticle = validationState.shutdown(substateId);
-						substate = Substate.create(nextParticle, substateId);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.LDOWN) {
-						SubstateId substateId = inst.getData();
+						substateId = inst.getData();
 						nextParticle = validationState.localShutdown(substateId.getIndex().orElseThrow());
-						substate = Substate.create(nextParticle, substateId);
+					} else if (inst.getMicroOp() == REInstruction.REMicroOp.LVDOWN) {
+						substateId = inst.getData();
+						nextParticle = validationState.localVirtualShutdown(substateId);
 					} else {
 						throw new IllegalStateException("Unhandled op: " + inst.getMicroOp());
 					}
 
 					var op = inst.getMicroOp().getOp();
-					stateUpdates.add(REStateUpdate.of(op, substate, inst::getDataByteBuffer));
+					stateUpdates.add(REStateUpdate.of(op, substateId, inst::getDataByteBuffer, nextParticle));
 					var eventId = OpSignature.ofSubstateUpdate(op, nextParticle.getClass());
 					var methodProcedure = loadProcedure(reducerState, eventId);
 					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);
@@ -389,7 +429,7 @@ public final class ConstraintMachine {
 		ExecutionContext context,
 		List<REInstruction> instructions
 	) throws TxnParseException, ConstraintMachineException {
-		var validationState = new CMValidationState(deserialization, cmStore);
+		var validationState = new CMValidationState(virtualSubstateDeserialization, deserialization, cmStore);
 		return this.statefulVerify(context, validationState, instructions);
 	}
 }

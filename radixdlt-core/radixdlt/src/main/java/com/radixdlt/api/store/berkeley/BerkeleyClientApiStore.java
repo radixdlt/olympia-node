@@ -749,7 +749,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private REResourceAccounting processGroupedStateUpdates(List<REStateUpdate> updates, AID txId) {
 		for (var update : updates) {
-			var substate = update.getRawSubstate();
+			var substate = update.getParsed();
 			if (substate instanceof RoundData) {
 				var d = (RoundData) substate;
 				if (d.getTimestamp() > 0) {

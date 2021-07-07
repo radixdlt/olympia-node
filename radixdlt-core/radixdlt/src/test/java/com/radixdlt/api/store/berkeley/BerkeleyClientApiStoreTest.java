@@ -148,7 +148,7 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	@Before
-	public void setUp() {
+	public void setUp() throws Exception {
 		environment = new DatabaseEnvironment(folder.getRoot().getAbsolutePath(), 0);
 		var injector = createInjector();
 		injector.injectMembers(this);

@@ -114,7 +114,7 @@ public final class MainnetEngineRules {
 				ResourceFeeMeter.create(perResourceFee)
 			)
 		);
-		var constraintMachineConfig = new ConstraintMachineConfig(v4.getProcedures(), meter);
+		var constraintMachineConfig = new ConstraintMachineConfig(v4.getProcedures(), v4.buildVirtualSubstateDeserialization(), meter);
 		var parser = new REParser(v4.buildSubstateDeserialization());
 		var serialization = v4.buildSubstateSerialization();
 		var actionConstructors = REConstructor.newBuilder()

@@ -56,8 +56,10 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public boolean isVirtualDown(SubstateId substateId) {
-		return false;
+	public ByteBuffer verifyVirtualSubstate(SubstateId substateId) {
+		return substateId.getVirtualParent()
+			.flatMap(this::loadSubstate)
+			.orElseThrow();
 	}
 
 	@Override
