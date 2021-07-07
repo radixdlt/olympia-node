@@ -341,7 +341,7 @@ public class BerkeleyClientApiStoreTest {
 		);
 		var tx1 = engine.construct(new NextRound(1, true, 2, i -> self))
 			.buildWithoutSignature();
-		var transactions = engine.execute(List.of(tx1, tx), LedgerAndBFTProof.create(ledgerProof), PermissionLevel.SUPER_USER).getFirst()
+		var transactions = engine.execute(List.of(tx1, tx), LedgerAndBFTProof.create(ledgerProof, null, null), PermissionLevel.SUPER_USER).getFirst()
 			.stream()
 			.map(REProcessedTxn::getTxn)
 			.collect(Collectors.toList());

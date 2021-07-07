@@ -40,15 +40,9 @@ import org.json.JSONObject;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
@@ -56,8 +50,6 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
@@ -149,7 +141,7 @@ public final class GenerateUniverses {
 					@Provides
 					@Singleton
 					private ForkManager forkManager(ForkConfig initialForkConfig) {
-						return ForkManager.create(null, Set.of(initialForkConfig));
+						return ForkManager.create(Set.of(initialForkConfig));
 					}
 
 					@Provides

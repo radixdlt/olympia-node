@@ -25,7 +25,6 @@ import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.sync.CommittedReader;
 import org.junit.Test;
 
 import java.util.OptionalInt;
@@ -41,13 +40,11 @@ public final class ForkManagerTest {
 
 	@Test
 	public void should_fail_when_two_forks_with_the_same_hash() {
-		final var committedReader = mock(CommittedReader.class);
-
 		final var fork1 = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), null, 0L);
 		final var fork2 = new FixedEpochForkConfig("fork2", HashCode.fromInt(1), null, 1L);
 
 		final var exception = assertThrows(IllegalArgumentException.class, () -> {
-			ForkManager.create(committedReader, Set.of(fork1, fork2));
+			ForkManager.create(Set.of(fork1, fork2));
 		});
 
 		assertTrue(exception.getMessage().contains("duplicate hashes"));
@@ -55,13 +52,11 @@ public final class ForkManagerTest {
 
 	@Test
 	public void should_fail_when_two_candidate_forks() {
-		final var committedReader = mock(CommittedReader.class);
-
-		final var fork1 = new CandidateForkConfig("fork1", HashCode.fromInt(1), null, sameProof(0, null));
-		final var fork2 = new CandidateForkConfig("fork2", HashCode.fromInt(2), null, sameProof(0, null));
+		final var fork1 = new CandidateForkConfig("fork1", HashCode.fromInt(1), null, alwaysTrue(0));
+		final var fork2 = new CandidateForkConfig("fork2", HashCode.fromInt(2), null, alwaysTrue(0));
 
 		final var exception = assertThrows(IllegalArgumentException.class, () -> {
-			ForkManager.create(committedReader, Set.of(fork1, fork2));
+			ForkManager.create(Set.of(fork1, fork2));
 		});
 
 		assertTrue(exception.getMessage().contains("single candidate"));
@@ -69,12 +64,10 @@ public final class ForkManagerTest {
 
 	@Test
 	public void should_fail_when_no_genesis() {
-		final var committedReader = mock(CommittedReader.class);
-
 		final var fork1 = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), null, 1L);
 
 		final var exception = assertThrows(IllegalArgumentException.class, () -> {
-			ForkManager.create(committedReader, Set.of(fork1));
+			ForkManager.create(Set.of(fork1));
 		});
 
 		assertTrue(exception.getMessage().contains("must start at epoch"));
@@ -82,14 +75,12 @@ public final class ForkManagerTest {
 
 	@Test
 	public void should_fail_when_candidate_epoch_invalid() {
-		final var committedReader = mock(CommittedReader.class);
-
 		final var fork1 = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), null, 0L);
 		final var fork2 = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), null, 2L);
-		final var fork3 = new CandidateForkConfig("fork3", HashCode.fromInt(3), null, sameProof(2L, null));
+		final var fork3 = new CandidateForkConfig("fork3", HashCode.fromInt(3), null, alwaysTrue(2L));
 
 		final var exception = assertThrows(IllegalArgumentException.class, () -> {
-			ForkManager.create(committedReader, Set.of(fork1, fork2, fork3));
+			ForkManager.create(Set.of(fork1, fork2, fork3));
 		});
 
 		System.out.println(exception.getMessage());
@@ -98,14 +89,12 @@ public final class ForkManagerTest {
 
 	@Test
 	public void should_fail_when_duplicate_epoch() {
-		final var committedReader = mock(CommittedReader.class);
-
 		final var fork1 = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), null, 0L);
 		final var fork2 = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), null, 2L);
 		final var fork3 = new FixedEpochForkConfig("fork3", HashCode.fromInt(3), null, 2L);
 
 		final var exception = assertThrows(IllegalArgumentException.class, () -> {
-			ForkManager.create(committedReader, Set.of(fork1, fork2, fork3));
+			ForkManager.create(Set.of(fork1, fork2, fork3));
 		});
 
 		System.out.println(exception.getMessage());
@@ -114,18 +103,15 @@ public final class ForkManagerTest {
 
 	@Test
 	public void fork_manager_should_correctly_manage_forks() {
-		final var fork3Proof = proofAtEpoch(10L);
-
 		final var reRules = new RERules(
 			null, null, null, null, BatchVerifier.empty(), View.of(10), OptionalInt.empty(), 10
 		);
 
 		final var fork1 = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
 		final var fork2 = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), reRules, 1L);
-		final var fork3 = new CandidateForkConfig("fork3", HashCode.fromInt(3), reRules, sameProof(2L, fork3Proof));
+		final var fork3 = new CandidateForkConfig("fork3", HashCode.fromInt(3), reRules, alwaysTrue(5L));
 
-		final var committedReader = mock(CommittedReader.class);
-		final var forkManager = ForkManager.create(committedReader, Set.of(fork1, fork2, fork3));
+		final var forkManager = ForkManager.create(Set.of(fork1, fork2, fork3));
 
 		assertEquals(fork1.getHash(), forkManager.genesisFork().getHash());
 		assertEquals(fork3.getHash(), forkManager.latestKnownFork().getHash());
@@ -134,29 +120,28 @@ public final class ForkManagerTest {
 		assertEquals(fork3.getHash(), forkManager.getByHash(fork3.getHash()).get().getHash());
 
 		// if current fork is 1, then should only return 2
-		assertEquals(fork2.getHash(), forkManager.findNextForkConfig(fork1, null, proofAtEpoch(0L)).get().getHash());
-		assertTrue(forkManager.findNextForkConfig(fork1, null, fork3Proof).isEmpty());
+		assertEquals(fork2.getHash(), forkManager.findNextForkConfig(null, proofAtEpoch(fork1, 0L)).get().getHash());
+		assertTrue(forkManager.findNextForkConfig(null, proofAtEpoch(fork1, 10L)).isEmpty());
 
 		// if current fork is 2, the next can only be 3
-		assertTrue(forkManager.findNextForkConfig(fork2, null, proofAtEpoch(1L)).isEmpty());
-		assertTrue(forkManager.findNextForkConfig(fork2, null, proofAtEpoch(1L)).isEmpty());
-		assertEquals(fork3.getHash(), forkManager.findNextForkConfig(fork2, null, fork3Proof).get().getHash());
+		assertTrue(forkManager.findNextForkConfig(null, proofAtEpoch(fork2, 1L)).isEmpty());
+		assertEquals(fork3.getHash(), forkManager.findNextForkConfig(null, proofAtEpoch(fork2, 10L)).get().getHash());
 
 		// if current fork is 3 then shouldn't return any else
-		assertTrue(forkManager.findNextForkConfig(fork3, null, proofAtEpoch(1L)).isEmpty());
-		assertTrue(forkManager.findNextForkConfig(fork3, null, proofAtEpoch(1L)).isEmpty());
-		assertTrue(forkManager.findNextForkConfig(fork3, null, fork3Proof).isEmpty());
+		assertTrue(forkManager.findNextForkConfig(null, proofAtEpoch(fork3, 1L)).isEmpty());
+		assertTrue(forkManager.findNextForkConfig(null, proofAtEpoch(fork3, 10L)).isEmpty());
 	}
 
-	private LedgerAndBFTProof proofAtEpoch(long epoch) {
+	private LedgerAndBFTProof proofAtEpoch(ForkConfig currentFork, long epoch) {
 		final var ledgerAndBftProof = mock(LedgerAndBFTProof.class);
 		final var proof = mock(LedgerProof.class);
 		when(proof.getEpoch()).thenReturn(epoch);
 		when(ledgerAndBftProof.getProof()).thenReturn(proof);
+		when(ledgerAndBftProof.getCurrentForkHash()).thenReturn(currentFork.getHash());
 		return ledgerAndBftProof;
 	}
 
-	private CandidateForkPredicate sameProof(long minEpoch, LedgerAndBFTProof requiredProof) {
+	private CandidateForkPredicate alwaysTrue(long minEpoch) {
 		return new CandidateForkPredicate() {
 			@Override
 			public long minEpoch() {
@@ -170,7 +155,7 @@ public final class ForkManagerTest {
 				REParser reParser,
 				LedgerAndBFTProof ledgerAndBFTProof
 			) {
-				return ledgerAndBFTProof.equals(requiredProof);
+				return true;
 			}
 		};
 	}

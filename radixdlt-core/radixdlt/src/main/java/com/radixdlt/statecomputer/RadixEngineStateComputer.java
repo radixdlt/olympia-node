@@ -63,6 +63,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -96,6 +97,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private ProposerElection proposerElection;
 	private View epochCeilingView;
 	private OptionalInt maxSigsPerRound;
+	private ForkConfig currentForkConfig;
 
 	@Inject
 	public RadixEngineStateComputer(
@@ -111,7 +113,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
 		Hasher hasher,
 		SystemCounters systemCounters,
-		ForkManager forkManager
+		ForkManager forkManager,
+		ForkConfig initialForkConfig
 	) {
 		if (epochCeilingView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -130,6 +133,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 		this.proposerElection = proposerElection;
 		this.forkManager = Objects.requireNonNull(forkManager);
+		this.currentForkConfig = Objects.requireNonNull(initialForkConfig);
 	}
 
 	public static class RadixEngineTxn implements PreparedTxn {
@@ -319,7 +323,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		try {
 			radixEngineResult = this.radixEngine.execute(
 				verifiedTxnsAndProof.getTxns(),
-				LedgerAndBFTProof.create(proof, vertexStoreState),
+				LedgerAndBFTProof.create(proof, vertexStoreState, this.currentForkConfig.getHash()),
 				PermissionLevel.SUPER_USER
 			);
 		} catch (RadixEngineException e) {
@@ -341,6 +345,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			);
 			this.epochCeilingView = rules.getMaxRounds();
 			this.maxSigsPerRound = rules.getMaxSigsPerRound();
+			this.currentForkConfig = nextForkConfig;
 		});
 
 		radixEngineResult.getFirst().forEach(t -> {

@@ -26,7 +26,6 @@ import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.ForkVotesVerifier;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.sync.CommittedReader;
 
 import java.util.OptionalInt;
 
@@ -92,13 +91,13 @@ public final class RERules {
 		return maxValidators;
 	}
 
-	public RERules withForksVerifier(ForkManager forkManager, CommittedReader committedReader) {
+	public RERules withForksVerifier(ForkManager forkManager) {
 		return new RERules(
 			parser,
 			serialization,
 			constraintMachineConfig,
 			actionConstructors,
-			new ForkVotesVerifier(batchVerifier, forkManager, committedReader),
+			new ForkVotesVerifier(batchVerifier, forkManager),
 			maxRounds,
 			maxSigsPerRound,
 			maxValidators

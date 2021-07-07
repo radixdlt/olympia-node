@@ -31,29 +31,37 @@ import java.util.Optional;
 public final class LedgerAndBFTProof {
 	private final LedgerProof ledgerProof;
 	private final VerifiedVertexStoreState vertexStoreState;
+	private final HashCode currentForkHash;
 	private final Optional<HashCode> nextForkHash;
 
 	private LedgerAndBFTProof(
 		LedgerProof ledgerProof,
 		VerifiedVertexStoreState vertexStoreState,
+		HashCode currentForkHash,
 		Optional<HashCode> nextForkHash
 	) {
 		this.ledgerProof = ledgerProof;
 		this.vertexStoreState = vertexStoreState;
+		this.currentForkHash = currentForkHash;
 		this.nextForkHash = nextForkHash;
 	}
 
-	public static LedgerAndBFTProof create(LedgerProof ledgerProof) {
-		return create(ledgerProof, null);
+	public static LedgerAndBFTProof create(
+		LedgerProof ledgerProof,
+		VerifiedVertexStoreState vertexStoreState,
+		HashCode currentForkHash
+	) {
+		return create(ledgerProof, vertexStoreState, currentForkHash, Optional.empty());
 	}
 
-	public static LedgerAndBFTProof create(LedgerProof ledgerProof, VerifiedVertexStoreState vertexStoreState) {
-		return create(ledgerProof, vertexStoreState, Optional.empty());
-	}
-
-	public static LedgerAndBFTProof create(LedgerProof ledgerProof, VerifiedVertexStoreState vertexStoreState, Optional<HashCode> nextForkHash) {
+	public static LedgerAndBFTProof create(
+		LedgerProof ledgerProof,
+		VerifiedVertexStoreState vertexStoreState,
+		HashCode currentForkHash,
+		Optional<HashCode> nextForkHash
+	) {
 		Objects.requireNonNull(ledgerProof);
-		return new LedgerAndBFTProof(ledgerProof, vertexStoreState, nextForkHash);
+		return new LedgerAndBFTProof(ledgerProof, vertexStoreState, currentForkHash, nextForkHash);
 	}
 
 	public LedgerProof getProof() {
@@ -64,17 +72,21 @@ public final class LedgerAndBFTProof {
 		return Optional.ofNullable(vertexStoreState);
 	}
 
+	public HashCode getCurrentForkHash() {
+		return this.currentForkHash;
+	}
+
 	public Optional<HashCode> getNextForkHash() {
 		return nextForkHash;
 	}
 
 	public LedgerAndBFTProof withNextForkHash(HashCode nextForkHash) {
-		return new LedgerAndBFTProof(ledgerProof, vertexStoreState, Optional.of(nextForkHash));
+		return new LedgerAndBFTProof(ledgerProof, vertexStoreState, currentForkHash, Optional.of(nextForkHash));
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(ledgerProof, vertexStoreState, nextForkHash);
+		return Objects.hash(ledgerProof, vertexStoreState, currentForkHash, nextForkHash);
 	}
 
 	@Override
@@ -86,6 +98,7 @@ public final class LedgerAndBFTProof {
 		var other = (LedgerAndBFTProof) o;
 		return Objects.equals(this.ledgerProof, other.ledgerProof)
 			&& Objects.equals(this.vertexStoreState, other.vertexStoreState)
+			&& Objects.equals(this.currentForkHash, other.currentForkHash)
 			&& Objects.equals(this.nextForkHash, other.nextForkHash);
 	}
 }

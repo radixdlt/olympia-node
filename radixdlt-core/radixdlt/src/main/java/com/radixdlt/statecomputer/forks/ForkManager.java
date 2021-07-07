@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.sync.CommittedReader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,7 +46,7 @@ public final class ForkManager {
 	private final ImmutableList<FixedEpochForkConfig> fixedEpochForks;
 	private final Optional<CandidateForkConfig> candidateFork;
 
-	public static ForkManager create(CommittedReader committedReader, Set<ForkConfig> forks) {
+	public static ForkManager create(Set<ForkConfig> forks) {
 		if (!ensureUniqueHashes(forks)) {
 			throw new IllegalArgumentException("Forks contain duplicate hashes: " + forks);
 		}
@@ -88,7 +87,7 @@ public final class ForkManager {
 			throw new IllegalArgumentException("Candidate fork's minEpoch must be greater than the last fixed fork epoch.");
 		}
 
-		return new ForkManager(committedReader, fixedEpochForks, maybeCandidateFork);
+		return new ForkManager(fixedEpochForks, maybeCandidateFork);
 	}
 
 	private static boolean ensureUniqueHashes(Set<ForkConfig> forks) {
@@ -111,17 +110,16 @@ public final class ForkManager {
 	}
 
 	private ForkManager(
-		CommittedReader committedReader,
 		ImmutableList<FixedEpochForkConfig> fixedEpochForks,
 		Optional<CandidateForkConfig> candidateFork
 	) {
-		/* TODO(fixme): this is a hack to provide fork manager and committedReader to fork bach verifier */
+		/* TODO(fixme): this is a hack to inject Forks to ForkBatchVerifier */
 		final var fixedEpochForksWithForkVerifier = fixedEpochForks.stream()
-			.map(forkConfig -> forkConfig.withForksVerifier(this, committedReader))
+			.map(forkConfig -> forkConfig.withForksVerifier(this))
 			.collect(ImmutableList.toImmutableList());
 
 		final var candidateForkWithForkVerifier = candidateFork
-			.map(forkConfig -> forkConfig.withForksVerifier(this, committedReader));
+			.map(forkConfig -> forkConfig.withForksVerifier(this));
 
 		this.fixedEpochForks = fixedEpochForksWithForkVerifier;
 		this.candidateFork = candidateForkWithForkVerifier;
@@ -223,10 +221,11 @@ public final class ForkManager {
 
 	@SuppressWarnings("unchecked")
 	public Optional<ForkConfig> findNextForkConfig(
-		ForkConfig currentForkConfig,
 		EngineStore<LedgerAndBFTProof> engineStore,
 		LedgerAndBFTProof ledgerAndBFTProof
 	) {
+		final var currentForkConfig = getByHash(ledgerAndBFTProof.getCurrentForkHash()).get();
+
 		if (currentForkConfig instanceof CandidateForkConfig) {
 			// if we're already running a candidate fork than no action is needed
 			return Optional.empty();

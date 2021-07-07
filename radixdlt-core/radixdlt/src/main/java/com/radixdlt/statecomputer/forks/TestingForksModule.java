@@ -84,20 +84,20 @@ public final class TestingForksModule extends AbstractModule {
 			HashUtils.sha256("testing-fork-v3".getBytes(StandardCharsets.UTF_8)),
 			CandidateForkPredicates.stakeVoting(5L, 5500),
 			MainnetEngineRules.olympiaV1,
-				new RERulesConfig(
-					FeeTable.create(
-						Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
-						Amount.ofTokens(1000) // 1000XRD per resource
-					),
-					OptionalInt.of(50), // 50 Txns per round
-					2500,
-					150, // Two weeks worth of epochs
-					Amount.ofTokens(100), // Minimum stake
-					150, // Two weeks worth of epochs
-					Amount.ofTokens(10), // Rewards per proposal
-					9800, // 98.00% threshold for completed proposals to get any rewards
-					100 // 100 max validators
-				)
+			new RERulesConfig(
+				FeeTable.create(
+					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
+					Amount.ofTokens(1000) // 1000XRD per resource
+				),
+				OptionalInt.of(50), // 50 Txns per round
+				2500,
+				150, // Two weeks worth of epochs
+				Amount.ofTokens(100), // Minimum stake
+				150, // Two weeks worth of epochs
+				Amount.ofTokens(10), // Rewards per proposal
+				9800, // 98.00% threshold for completed proposals to get any rewards
+				100 // 100 max validators
+			)
 		);
 	}
 

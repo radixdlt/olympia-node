@@ -21,7 +21,6 @@ package com.radixdlt.statecomputer.forks;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.sync.CommittedReader;
 import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
 
 /**
@@ -50,7 +49,7 @@ public abstract class ForkConfig {
 		return reRules;
 	}
 
-	public abstract ForkConfig withForksVerifier(ForkManager forkManager, CommittedReader committedReader);
+	public abstract ForkConfig withForksVerifier(ForkManager forkManager);
 
 	@Override
 	public String toString() {

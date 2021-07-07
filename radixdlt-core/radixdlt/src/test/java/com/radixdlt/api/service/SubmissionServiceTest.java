@@ -27,6 +27,7 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.statecomputer.forks.ForkManager;
 import com.radixdlt.statecomputer.forks.ForkManagerModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -112,6 +113,9 @@ public class SubmissionServiceTest {
 
 	@Inject
 	private SubmissionService submissionService;
+
+	@Inject
+	private ForkManager forkManager;
 
 	private REAddr nativeToken = REAddr.ofNativeToken();
 
@@ -219,7 +223,11 @@ public class SubmissionServiceTest {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
 
-		radixEngine.execute(genesisTxns.getTxns(), LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
+		radixEngine.execute(
+			genesisTxns.getTxns(),
+			LedgerAndBFTProof.create(genesisLedgerHeader, null, forkManager.genesisFork().getHash()),
+			PermissionLevel.SYSTEM
+		);
 	}
 
 	@Before

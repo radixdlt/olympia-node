@@ -19,7 +19,6 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.sync.CommittedReader;
 
 public final class CandidateForkConfig extends ForkConfig {
 
@@ -41,11 +40,11 @@ public final class CandidateForkConfig extends ForkConfig {
 	}
 
 	@Override
-	public CandidateForkConfig withForksVerifier(ForkManager forkManager, CommittedReader committedReader) {
+	public CandidateForkConfig withForksVerifier(ForkManager forkManager) {
 		return new CandidateForkConfig(
 			name,
 			hash,
-			reRules.withForksVerifier(forkManager, committedReader),
+			reRules.withForksVerifier(forkManager),
 			predicate
 		);
 	}

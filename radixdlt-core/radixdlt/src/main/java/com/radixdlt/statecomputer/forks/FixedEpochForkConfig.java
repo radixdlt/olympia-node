@@ -19,7 +19,6 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.sync.CommittedReader;
 
 public final class FixedEpochForkConfig extends ForkConfig {
 
@@ -41,11 +40,11 @@ public final class FixedEpochForkConfig extends ForkConfig {
 	}
 
 	@Override
-	public FixedEpochForkConfig withForksVerifier(ForkManager forkManager, CommittedReader committedReader) {
+	public FixedEpochForkConfig withForksVerifier(ForkManager forkManager) {
 		return new FixedEpochForkConfig(
 			name,
 			hash,
-			reRules.withForksVerifier(forkManager, committedReader),
+			reRules.withForksVerifier(forkManager),
 			epoch
 		);
 	}

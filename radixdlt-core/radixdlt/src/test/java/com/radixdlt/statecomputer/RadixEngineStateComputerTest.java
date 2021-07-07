@@ -201,7 +201,11 @@ public class RadixEngineStateComputerTest {
 		if (!genesisLedgerHeader.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
-		radixEngine.execute(genesisTxns.getTxns(), LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
+		radixEngine.execute(
+			genesisTxns.getTxns(),
+			LedgerAndBFTProof.create(genesisLedgerHeader, null, forkConfig.getHash()),
+			PermissionLevel.SYSTEM
+		);
 	}
 
 	@Before

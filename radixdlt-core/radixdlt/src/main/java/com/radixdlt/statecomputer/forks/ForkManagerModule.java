@@ -39,11 +39,7 @@ public final class ForkManagerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private ForkManager forkManager(
-			Set<ForkBuilder> forkBuilders,
-			Optional<UnaryOperator<Set<ForkBuilder>>> transformer,
-			CommittedReader committedReader
-	) {
+	private ForkManager forkManager(Set<ForkBuilder> forkBuilders, Optional<UnaryOperator<Set<ForkBuilder>>> transformer) {
 		final var transformed = transformer.map(o -> o.apply(forkBuilders))
 			.orElse(forkBuilders);
 
@@ -51,14 +47,14 @@ public final class ForkManagerModule extends AbstractModule {
 			.map(ForkBuilder::build)
 			.collect(Collectors.toSet());
 
-		return ForkManager.create(committedReader, forkConfigs);
+		return ForkManager.create(forkConfigs);
 	}
 
 	@Provides
 	@Singleton
 	private ForkConfig initialForkConfig(
-			CommittedReader committedReader,
-			ForkManager forkManager
+		CommittedReader committedReader,
+		ForkManager forkManager
 	) {
 		final var storedEpochForks = committedReader.getEpochsForkHashes();
 		final var epoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
