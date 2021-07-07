@@ -74,10 +74,11 @@ class InMemoryCommittedReader implements CommittedReader {
 					this.epochProofs.put(nextEpoch, update.getTail());
 				}
 
-				final var result = (RadixEngineResult<LedgerAndBFTProof>) update.getStateComputerOutput().get(RadixEngineResult.class);
-				result.getMetadata().getNextForkHash().ifPresent(nextForkHash -> {
-					this.epochsForkHashes.put(nextEpoch, nextForkHash);
-				});
+				final var radixEngineResult = (RadixEngineResult<LedgerAndBFTProof>) update.getStateComputerOutput().get(RadixEngineResult.class);
+				if  (radixEngineResult != null) {
+					radixEngineResult.getMetadata().getNextForkHash()
+						.ifPresent(nextForkHash -> this.epochsForkHashes.put(nextEpoch, nextForkHash));
+				}
 			}
 		};
 	}
