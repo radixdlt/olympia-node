@@ -46,7 +46,7 @@ public abstract class AcceptanceTest {
     }
 
     public void faucet(AccountAddress to) {
-        //radixNetwork.faucet(to);
+        radixNetwork.faucet(to);
     }
 
     public RadixNetwork getNetwork() {

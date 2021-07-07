@@ -31,6 +31,18 @@ public class RadixNode {
         this.availableServices = availableServices;
     }
 
+    public String getRootUrl() {
+        return rootUrl;
+    }
+
+    public int getSecondaryPort() {
+        return secondaryPort;
+    }
+
+    public Set<ServiceType> getAvailableServices() {
+        return availableServices;
+    }
+
     public String toString() {
         return String.format("%s:%d:%d, container: %S, services: %s", rootUrl, primaryPort, secondaryPort, containerName,
             availableServices);

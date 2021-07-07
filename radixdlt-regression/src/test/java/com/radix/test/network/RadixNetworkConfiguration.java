@@ -70,12 +70,11 @@ public final class RadixNetworkConfiguration {
 
     /**
      * Tries to connect and call the "networkId" method, making sure that we have a working json-rpc api
+     *
+     * @return the network id
      */
-    public void pingJsonRpcApi() {
-        RadixApi.connect(jsonRpcRootUrl, primaryPort, secondaryPort).flatMap(client -> client.network().id())
-            .onFailureDo(() -> {
-                throw new HttpException("Could not connect to JSON-RPC API at " + jsonRpcRootUrl + "");
-            });
+    public int pingJsonRpcApi() {
+        return ImperativeRadixApi.connect(jsonRpcRootUrl, primaryPort, secondaryPort).network().id().getNetworkId();
     }
 
     public String getJsonRpcRootUrl() {
