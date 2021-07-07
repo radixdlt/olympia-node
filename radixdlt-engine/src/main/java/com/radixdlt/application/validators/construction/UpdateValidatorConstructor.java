@@ -54,7 +54,7 @@ public final class UpdateValidatorConstructor implements ActionConstructor<Updat
 				() -> new TxBuilderException("Could not find state")
 			);
 			txBuilder.up(new ValidatorSystemMetadata(action.validatorKey(), forkVoteHash.get().asBytes()));
+			txBuilder.end();
 		}
-		txBuilder.end();
 	}
 }
