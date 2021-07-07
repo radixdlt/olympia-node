@@ -161,7 +161,7 @@ public final class ActionParserService {
 
 			case CREATE_FIXED:
 				return allOf(
-					from(element),
+					to(element),
 					pubKey(element),
 					symbol(element),
 					name(element),

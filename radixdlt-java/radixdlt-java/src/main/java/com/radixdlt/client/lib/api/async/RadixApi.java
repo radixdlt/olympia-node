@@ -54,146 +54,392 @@ import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * <h2>Asynchronous Radix JSON RPC client.</h2>
+ * <p>
+ * The Radix Web API consists of several endpoints which are assigned to two large groups. Each group served by
+ * dedicated embedded HTTP server hence full configuration of the client requires base URL and two ports.
+ * <p>
+ * Each endpoint can be individually enabled or disabled, so even if client is successfully connected, it does not
+ * mean that all API's are available. This should be kept in mind while using client with particular hode.
+ * <p>
+ * <h3>Client API structure</h3>
+ * API is split into following groups:
+ * <p>
+ * <table>
+ *     <tr><th>Name</th><th>Description</th></tr>
+ *     <tr><td>Network</td><td>General information about network: ID, configuration, nodes, etc.</td></tr>
+ *     <tr><td>Transaction</td><td>General purpose API for building and sending transactions, checking status, etc.</td></tr>
+ *     <tr><td>Token</td><td>Information about tokens</td></tr>
+ *     <tr><td>Local</td><td>Information about the node as well as single step transaction submission</td></tr>
+ *     <tr><td>SingleAccount</td><td>Information related to single account: balances, transaction history, etc.</td></tr>
+ *     <tr><td>Validator</td><td>List and lookup information about validators known to network</td></tr>
+ *     <tr><td>Api</td><td>API configuration and metric counters</td></tr>
+ *     <tr><td>Consensus</td><td>Consensus configuration and metric counters</td></tr>
+ *     <tr><td>Mempool</td><td>Mempool configuration and metric counters</td></tr>
+ *     <tr><td>RadixEngine</td><td>Radix Engine configuration and metric counters</td></tr>
+ *     <tr><td>Sync</td><td>Node synchronization configuration and metric counters</td></tr>
+ *     <tr><td>Ledger</td><td>Ledger proofs and checkpoints information</td></tr>
+ * </table>
+ */
 public interface RadixApi {
 	int DEFAULT_PRIMARY_PORT = 8080;
 	int DEFAULT_SECONDARY_PORT = 3333;
 
+	/**
+	 * Create client and connect to specified node.
+	 *
+	 * @param baseUrl base URL to connect. Note that it should not include path part of the URL.
+	 *
+	 * @return {@link Promise} which will be resolved with built client or with error info.
+	 */
 	static Promise<RadixApi> connect(String baseUrl) {
 		return connect(baseUrl, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT);
 	}
 
+	/**
+	 * Create client and connect to specified node at specified primary and secondary ports.
+	 *
+	 * @param baseUrl base URL to connect. Note that it should not include path part of the URL.
+	 *
+	 * @return {@link Promise} which will be resolved with built client or with error info.
+	 */
 	static Promise<RadixApi> connect(String baseUrl, int primaryPort, int secondaryPort) {
 		return AsyncRadixApi.connect(baseUrl, primaryPort, secondaryPort);
 	}
 
+	/**
+	 * Enable tracing in client.
+	 */
 	RadixApi withTrace();
 
+	/**
+	 * Configure timeout for asynchronous operations.
+	 *
+	 * @param timeout - operation timeout
+	 */
 	AsyncRadixApi withTimeout(Duration timeout);
 
+	/**
+	 * Network API's
+	 */
 	interface Network {
+		/**
+		 * Get network ID.
+		 */
 		Promise<NetworkId> id();
 
+		/**
+		 * Get current network throughput in transactions per second.
+		 */
 		Promise<NetworkStats> throughput();
 
+		/**
+		 * Get current network demand in transactions per second.
+		 */
 		Promise<NetworkStats> demand();
 
+		/**
+		 * Get current network configuration.
+		 */
 		Promise<NetworkConfiguration> configuration();
 
+		/**
+		 * Get network metrics.
+		 */
 		Promise<NetworkData> data();
 
+		/**
+		 * Get network peers.
+		 */
 		Promise<NetworkPeers> peers();
 	}
 
 	Network network();
 
+	/**
+	 * Transaction API's.
+	 * <p>
+	 * Radix API uses three step transaction submission:
+	 * <ol>
+	 *     <li>Build - transaction blob is assembled from the high level action description</li>
+	 *     <li>Finalize - transaction is prepared, validated, transaction ID is calculated and returned</li>
+	 *     <li>Submit - transaction is actually submitted to mempool</li>
+	 * </ol>
+	 * This process is designed for the case of very unreliable communication, to prevent double submission and
+	 * other potential issues. If this is less of an issue in particular use case, it is possible to omit last
+	 * step and submit transaction during finalization step. To achieve this, set {@code immediateSubmit} flag
+	 * in {@link #finalize(FinalizedTransaction, boolean)} to {@code true}.
+	 */
 	interface Transaction {
+		/**
+		 * Build transaction for a given transaction request.
+		 *
+		 * @param request transaction request
+		 */
 		Promise<BuiltTransaction> build(TransactionRequest request);
 
+		/**
+		 * Finalize transaction.
+		 *
+		 * @param request transaction request (can be built from {@link BuiltTransaction} by invoking {@link BuiltTransaction#toFinalized(ECKeyPair)}
+		 * 	method)
+		 * @param immediateSubmit if set to {@code true} then transaction will be immediately submitted to mempool
+		 */
 		Promise<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit);
 
+		/**
+		 * Submit transaction.
+		 *
+		 * @param request transaction request
+		 */
 		Promise<TxDTO> submit(TxBlobDTO request);
 
+		/**
+		 * Lookup transaction.
+		 *
+		 * @param txId the ID of the transaction to look up
+		 */
 		Promise<TransactionDTO> lookup(AID txId);
 
+		/**
+		 * Get transaction status.
+		 *
+		 * @param txId the ID of the transaction to get status for
+		 */
 		Promise<TransactionStatusDTO> status(AID txId);
 	}
 
 	Transaction transaction();
 
+	/**
+	 * Token-related API's
+	 */
 	interface Token {
+		/**
+		 * Get description of the native token.
+		 */
 		Promise<TokenInfo> describeNative();
 
+		/**
+		 * Get description of the token with a given RRI.
+		 */
 		Promise<TokenInfo> describe(String rri);
 	}
 
 	Token token();
 
+	/**
+	 * API's which deal with information local to node to which client is connected.
+	 * <p>
+	 * <b>WARNING:</b> These API's may expose or use security-sensitive information. Use with care.
+	 */
 	interface Local {
+		/**
+		 * Get local node account information.
+		 */
 		Promise<LocalAccount> accountInfo();
 
+		/**
+		 * Submit transaction is single step, using local node private key to sign the transaction.
+		 *
+		 * @param request high level action description
+		 */
 		Promise<TxDTO> submitTxSingleStep(TransactionRequest request);
 
+		/**
+		 * Get information about local node as a validator.
+		 */
 		Promise<LocalValidatorInfo> validatorInfo();
 
+		/**
+		 * Get information about current epoch validator set.
+		 */
 		Promise<EpochData> currentEpoch();
 
+		/**
+		 * Get information about next epoch validator set.
+		 */
 		Promise<EpochData> nextEpoch();
 	}
 
 	Local local();
 
+	/**
+	 * Single account address API's
+	 */
 	interface SingleAccount {
+		/**
+		 * Get account balances.
+		 *
+		 * @param address account address for which information is requested
+		 */
 		Promise<TokenBalances> balances(AccountAddress address);
 
+		/**
+		 * Get transaction history.
+		 * <p>
+		 * To get full list, pass empty cursor for first request and then just pass cursor received in the response
+		 * back to API until you get empty cursor again.
+		 *
+		 * @param address account address for which information is requested
+		 * @param size batch size
+		 * @param cursor pagination cursor
+		 */
 		Promise<TransactionHistory> history(AccountAddress address, int size, Optional<NavigationCursor> cursor);
 
+		/**
+		 * Get stakes made from given account.
+		 *
+		 * @param address account address for which information is requested
+		 */
 		Promise<List<StakePositions>> stakes(AccountAddress address);
 
+		/**
+		 * Get pending (not yet transferred back) unstakes.
+		 *
+		 * @param address account address for which information is requested
+		 */
 		Promise<List<UnstakePositions>> unstakes(AccountAddress address);
 	}
 
 	SingleAccount account();
 
+	/**
+	 * General validator information API's
+	 */
 	interface Validator {
+		/**
+		 * Get paginated list of all validators known to the network.
+		 * <p>
+		 * To get full list, pass empty cursor for first request and then just pass cursor received in the response
+		 * back to API until you get empty cursor again.
+		 *
+		 * @param size batch size
+		 * @param cursor pagination cursor
+		 */
 		Promise<ValidatorsResponse> list(int size, Optional<NavigationCursor> cursor);
 
+		/**
+		 * Lookup validator by address.
+		 *
+		 * @param validatorAddress
+		 */
 		Promise<ValidatorDTO> lookup(ValidatorAddress validatorAddress);
 	}
 
 	Validator validator();
 
+	/**
+	 * Node API configuration and metrics.
+	 */
 	interface Api {
+		/**
+		 * Get API configuration.
+		 */
 		Promise<ApiConfiguration> configuration();
 
+		/**
+		 * Get API metrics.
+		 */
 		Promise<ApiData> data();
 	}
 
 	Api api();
 
+	/**
+	 * Consensus configuration and metrics.
+	 */
 	interface Consensus {
+		/**
+		 * Get consensus configuration.
+		 */
 		Promise<ConsensusConfiguration> configuration();
 
+		/**
+		 * Get consensus metrics.
+		 */
 		Promise<ConsensusData> data();
 	}
 
 	Consensus consensus();
 
+	/**
+	 * Mempool configuration and metrics.
+	 */
 	interface Mempool {
+		/**
+		 * Get mempool configuration.
+		 */
 		Promise<MempoolConfiguration> configuration();
 
+		/**
+		 * Get mempool metrics.
+		 */
 		Promise<MempoolData> data();
 	}
 
 	Mempool mempool();
 
+	/**
+	 * RadixEngine configuration and metrics.
+	 */
 	interface RadixEngine {
+		/**
+		 * Get Radix Engine configuration.
+		 */
 		Promise<List<ForkDetails>> configuration();
 
+		/**
+		 * Get Radix Engine metrics.
+		 */
 		Promise<RadixEngineData> data();
 	}
 
 	RadixEngine radixEngine();
 
+	/**
+	 * Inter-node synchronization configuration and metrics.
+	 */
 	interface Sync {
+		/**
+		 * Get synchronization configuration.
+		 */
 		Promise<SyncConfiguration> configuration();
 
+		/**
+		 * Get synchronization metrics.
+		 */
 		Promise<SyncData> data();
 	}
 
 	Sync sync();
 
+	/**
+	 * Ledger API's.
+	 */
 	interface Ledger {
-		Promise<Proof> latest(); //ledger.get_latest_proof
+		/**
+		 * Get latest proof.
+		 */
+		Promise<Proof> latest();
 
-		Promise<Proof> epoch(); //ledger.get_latest_epoch_proof
+		/**
+		 * Get latest epoch proof.
+		 */
+		Promise<Proof> epoch();
 
-		Promise<Checkpoint> checkpoints(); //checkpoints.get_checkpoints
+		/**
+		 * Get checkpoint configuration.
+		 */
+		Promise<Checkpoint> checkpoints();
 	}
 
 	Ledger ledger();

@@ -433,7 +433,7 @@ public class ActionParserServiceTest {
 		var fromAddr = addressing.forAccounts().of(from);
 		var signer = ECKeyPair.generateNew().getPublicKey();
 
-		var source = "[{\"type\":\"CreateFixedSupplyToken\", \"from\":\"%s\", \"publicKeyOfSigner\":\"%s\", \"symbol\":\"%s\", "
+		var source = "[{\"type\":\"CreateFixedSupplyToken\", \"to\":\"%s\", \"publicKeyOfSigner\":\"%s\", \"symbol\":\"%s\", "
 			+ "\"name\":\"%s\", \"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\", \"supply\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, signer.toHex(), "symbol",
 											  "name", "description", "http://icon.url/", "http://token.url/", UInt256.TEN
