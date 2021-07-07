@@ -39,7 +39,6 @@ import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -85,7 +84,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			var validatorData = txBuilder.down(
 				ValidatorStakeData.class,
 				p -> p.getValidatorKey().equals(k),
-				canBeVirtual ? Optional.of(SubstateWithArg.noArg(ValidatorStakeData.createVirtual(k))) : Optional.empty(),
+				canBeVirtual ? Optional.of(k) : Optional.empty(),
 				() -> new TxBuilderException("Validator not found")
 			);
 			validatorsToUpdate.put(k, new ValidatorScratchPad(validatorData));
@@ -103,9 +102,10 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		Function<T, U> copy
 	) throws TxBuilderException {
 		var preparing = new TreeMap<ECPublicKey, T>(KeyComparator.instance());
-		var buf = ByteBuffer.allocate(2 + Long.BYTES);
+		var buf = ByteBuffer.allocate(3 + Long.BYTES);
 		buf.put(typeId);
-		buf.put((byte) 1);
+		buf.put((byte) 0); // Reserved byte
+		buf.put((byte) 1); // Optional flag
 		buf.putLong(epoch);
 		var index = SubstateIndex.create(buf.array(), preparedClass);
 		txBuilder.shutdownAll(index, (Iterator<T> i) -> {

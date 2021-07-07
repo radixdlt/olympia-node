@@ -24,7 +24,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -35,7 +34,7 @@ public class RegisterValidatorConstructor implements ActionConstructor<RegisterV
 		txBuilder.down(
 			ValidatorRegisteredCopy.class,
 			p -> p.getValidatorKey().equals(action.validatorKey()),
-			Optional.of(SubstateWithArg.noArg(new ValidatorRegisteredCopy(action.validatorKey(), false))),
+			Optional.of(action.validatorKey()),
 			() -> new TxBuilderException("Cannot find state")
 		);
 

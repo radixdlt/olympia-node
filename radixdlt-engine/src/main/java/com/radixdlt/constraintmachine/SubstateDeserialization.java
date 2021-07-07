@@ -77,4 +77,17 @@ public final class SubstateDeserialization {
 			throw new SubstateDeserializationException(deserializer.getSubstateClass(), e);
 		}
 	}
+
+	public Particle deserializeVirtual(ByteBuffer buf) throws DeserializeException {
+		var typeByte = buf.get();
+		var deserializer = byteToDeserializer.get(typeByte);
+		if (deserializer == null) {
+			throw new DeserializeException("Unknown byte type: " + typeByte);
+		}
+		try {
+			return deserializer.getVirtualDeserializer().deserialize(buf);
+		} catch (Exception e) {
+			throw new SubstateDeserializationException(deserializer.getSubstateClass(), e);
+		}
+	}
 }

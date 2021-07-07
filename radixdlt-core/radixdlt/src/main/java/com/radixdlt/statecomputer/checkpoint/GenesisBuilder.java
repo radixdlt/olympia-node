@@ -59,7 +59,6 @@ public final class GenesisBuilder {
 		this.ledgerAccumulator = ledgerAccumulator;
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
-			cmConfig.getVirtualStoreLayer(),
 			cmConfig.getProcedures(),
 			cmConfig.getMeter()
 		);

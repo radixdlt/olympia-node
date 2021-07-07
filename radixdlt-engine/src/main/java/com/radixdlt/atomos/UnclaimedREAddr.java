@@ -18,7 +18,6 @@
 package com.radixdlt.atomos;
 
 import java.util.Objects;
-import java.util.Optional;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
@@ -35,7 +34,7 @@ public final class UnclaimedREAddr implements Particle {
 		return addr;
 	}
 
-	public boolean allow(ECPublicKey publicKey, Optional<byte[]> arg) {
+	public boolean allow(ECPublicKey publicKey, byte[] arg) {
 		return addr.allowToClaimAddress(publicKey, arg);
 	}
 

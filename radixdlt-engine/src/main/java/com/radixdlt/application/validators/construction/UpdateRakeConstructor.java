@@ -25,12 +25,9 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateRake;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.Optional;
 import java.util.OptionalLong;
-
-import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 
 public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake> {
 	private final long rakeIncreaseDebounceEpochLength;
@@ -49,14 +46,14 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 		builder.down(
 			ValidatorRakeCopy.class,
 			p -> p.getValidatorKey().equals(action.getValidatorKey()),
-			Optional.of(SubstateWithArg.noArg(new ValidatorRakeCopy(action.getValidatorKey(), RAKE_MAX))),
+			Optional.of(action.getValidatorKey()),
 			() -> new TxBuilderException("Cannot find state")
 		);
 
 		var curRakePercentage = builder.read(
 			ValidatorStakeData.class,
 			s -> s.getValidatorKey().equals(action.getValidatorKey()),
-			Optional.of(ValidatorStakeData.createVirtual(action.getValidatorKey())),
+			Optional.of(action.getValidatorKey()),
 			"Can't find validator stake"
 		).getRakePercentage();
 

@@ -28,6 +28,8 @@ import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.regex.Pattern;
 
 public final class REFieldSerialization {
@@ -74,6 +76,28 @@ public final class REFieldSerialization {
 		return flag == 1;
 	}
 
+	public static void serializeOptionalKey(ByteBuffer buf, Optional<ECPublicKey> addr) {
+		addr.ifPresentOrElse(
+			o -> {
+				buf.put((byte) 0x1);
+				REFieldSerialization.serializeKey(buf, o);
+			},
+			() -> buf.put((byte) 0x0)
+		);
+	}
+
+	public static Optional<ECPublicKey> deserializeOptionalKey(ByteBuffer buf) throws DeserializeException {
+		var type = buf.get();
+		if (type == 0) {
+			return Optional.empty();
+		} else if (type == 1) {
+			return Optional.of(REFieldSerialization.deserializeKey(buf));
+		} else {
+			throw new DeserializeException("Unknown optionalAccountREAddr: " + type);
+		}
+	}
+
+
 	public static void serializeREAddr(ByteBuffer buf, REAddr rri) {
 		buf.put(rri.getBytes());
 	}
@@ -111,6 +135,27 @@ public final class REFieldSerialization {
 
 	public static void serializeReservedByte(ByteBuffer buf) {
 		buf.put((byte) 0);
+	}
+
+	public static void serializeOptionalLong(ByteBuffer buf, OptionalLong optionalLong) {
+		optionalLong.ifPresentOrElse(
+			e -> {
+				buf.put((byte) 0x1);
+				buf.putLong(e);
+			},
+			() -> buf.put((byte) 0x0)
+		);
+	}
+
+	public static OptionalLong deserializeOptionalNonNegativeLong(ByteBuffer buf) throws DeserializeException {
+		var type = buf.get();
+		if (type == 0) {
+			return OptionalLong.empty();
+		} else if (type == 1) {
+			return OptionalLong.of(REFieldSerialization.deserializeNonNegativeLong(buf));
+		} else {
+			throw new DeserializeException("Unknown optionalLongType: " + type);
+		}
 	}
 
 	public static Long deserializeNonNegativeLong(ByteBuffer buf) throws DeserializeException {

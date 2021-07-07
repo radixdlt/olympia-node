@@ -35,7 +35,7 @@ import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.NextEpochConstructorV3;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
-import com.radixdlt.application.system.scrypt.FeeConstraintScrypt;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
@@ -76,6 +76,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -112,13 +113,12 @@ public class TransactionParserTest {
 		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
-		cmAtomOS.load(new FeeConstraintScrypt());
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
 		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
 		cmAtomOS.load(new ValidatorUpdateOwnerConstraintScrypt());
 
 		final var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures(),
 			FixedFeeMeter.create(UInt256.FOUR)
 		);

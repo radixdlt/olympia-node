@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
@@ -26,7 +27,6 @@ import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.UnclaimedREAddr;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.identifiers.REAddr;
 
 import java.nio.charset.StandardCharsets;
@@ -38,11 +38,11 @@ public final class CreateFixedTokenConstructor implements ActionConstructor<Crea
 		if (action.getResourceAddr().getType() != REAddr.REAddrType.HASHED_KEY) {
 			throw new TxBuilderException("Invalid resource address.");
 		}
-		var addrParticle = new UnclaimedREAddr(action.getResourceAddr());
+		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
 		txBuilder.down(
 			UnclaimedREAddr.class,
 			p -> p.getAddr().equals(action.getResourceAddr()),
-			Optional.of(SubstateWithArg.withArg(addrParticle, action.getSymbol().getBytes(StandardCharsets.UTF_8))),
+			Optional.of(action.getResourceAddr()),
 			() -> new TxBuilderException("RRI not available")
 		);
 		txBuilder.up(TokenResource.createFixedSupplyResource(action.getResourceAddr()));

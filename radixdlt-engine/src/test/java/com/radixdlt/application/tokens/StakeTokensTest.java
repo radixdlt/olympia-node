@@ -19,6 +19,7 @@
 package com.radixdlt.application.tokens;
 
 import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.REConstructor;
@@ -56,6 +57,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -70,6 +72,7 @@ public class StakeTokensTest {
 		var scrypts = List.of(
 			Pair.of(
 				List.of(
+					new SystemConstraintScrypt(Set.of()),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(),
@@ -119,10 +122,7 @@ public class StakeTokensTest {
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
 		scrypts.forEach(cmAtomOS::load);
-		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
-		);
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures());
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();

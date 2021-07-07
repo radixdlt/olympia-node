@@ -18,6 +18,8 @@
 
 package com.radixdlt.engine;
 
+import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.application.unique.scrypt.MutexConstraintScrypt;
@@ -35,6 +37,7 @@ import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -49,10 +52,8 @@ public class UniqueTest {
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new MutexConstraintScrypt());
-		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
-		);
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures());
 		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
@@ -68,11 +69,12 @@ public class UniqueTest {
 	}
 
 	@Test
-	public void using_someone_elses_mutex_should_fail() {
+	public void using_someone_elses_mutex_should_fail() throws Exception {
 		var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
 		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
 			.toLowLevelBuilder()
-			.virtualDown(new UnclaimedREAddr(addr), "smthng".getBytes(StandardCharsets.UTF_8))
+			.syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
+			.virtualDown(UnclaimedREAddr.class, addr)
 			.end();
 		var sig = keyPair.sign(builder.hashToSign());
 		var txn = builder.sig(sig).build();

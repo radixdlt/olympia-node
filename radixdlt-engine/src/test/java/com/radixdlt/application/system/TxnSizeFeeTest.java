@@ -21,7 +21,7 @@ package com.radixdlt.application.system;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
-import com.radixdlt.application.system.scrypt.FeeConstraintScrypt;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
@@ -56,6 +56,7 @@ import org.junit.runners.Parameterized;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -85,9 +86,8 @@ public class TxnSizeFeeTest {
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		cmAtomOS.load(new FeeConstraintScrypt());
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures(),
 			TxnSizeFeeMeter.create(costPerByte.toSubunits())
 		);

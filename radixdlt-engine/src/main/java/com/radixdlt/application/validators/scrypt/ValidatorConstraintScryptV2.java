@@ -34,6 +34,7 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
@@ -84,7 +85,11 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getUrl());
 				},
-				p -> p.getUrl().isEmpty() && p.getName().isEmpty()
+				buf -> {
+					var key = REFieldSerialization.deserializeKey(buf);
+					return new ValidatorMetaData(key, "", "");
+				},
+				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
 			)
 		);
 
@@ -93,17 +98,12 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
 						throw new AuthorizationException("Key does not match.");
 					}
 				}
 			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingValidatorInfo(d.getSubstate()));
-			}
+			(d, s, r, c) -> ReducerResult.incomplete(new UpdatingValidatorInfo(d))
 		));
 
 		os.procedure(new UpProcedure<>(
@@ -138,7 +138,11 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.allowsDelegation() ? 1 : 0));
 			},
-			s -> !s.allowsDelegation()
+			buf -> {
+				var key = REFieldSerialization.deserializeKey(buf);
+				return new AllowDelegationFlag(key, false);
+			},
+			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
 		));
 
 		os.procedure(new DownProcedure<>(
@@ -146,17 +150,12 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
 						throw new AuthorizationException("Key does not match.");
 					}
 				}
 			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingDelegationFlag(d.getSubstate()));
-			}
+			(d, s, r, c) -> ReducerResult.incomplete(new UpdatingDelegationFlag(d))
 		));
 
 		os.procedure(new UpProcedure<>(
