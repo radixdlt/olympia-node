@@ -18,22 +18,26 @@
 
 package com.radixdlt.application.tokens;
 
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.REConstructor;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
-import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECKeyPair;
@@ -58,13 +62,14 @@ public class TokenDefinitionTest {
 	private EngineStore<Void> store;
 	private REParser parser;
 	private SubstateSerialization serialization;
+	private Txn genesis;
 
 	@Before
-	public void setup() {
+	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		var cm = new ConstraintMachine(cmAtomOS.getProcedures());
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures(), cmAtomOS.buildVirtualSubstateDeserialization());
 		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
@@ -72,12 +77,15 @@ public class TokenDefinitionTest {
 			parser,
 			serialization,
 			REConstructor.newBuilder()
+				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.build(),
 			cm,
 			store
 		);
+		this.genesis = this.engine.construct(new CreateSystem(0)).buildWithoutSignature();
+		this.engine.execute(List.of(this.genesis), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test
@@ -92,9 +100,10 @@ public class TokenDefinitionTest {
 			addr,
 			UInt256.TEN
 		);
+
 		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
-			.virtualDown(UnclaimedREAddr.class, addr)
+			.virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
 			.up(tokenResource)
 			.up(tokensParticle)
 			.up(TokenResourceMetadata.empty(addr))
@@ -115,7 +124,7 @@ public class TokenDefinitionTest {
 		var tokenDefinitionParticle = TokenResource.createFixedSupplyResource(addr);
 		var builder = TxLowLevelBuilder.newBuilder(serialization)
 			.syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
-			.virtualDown(UnclaimedREAddr.class, addr)
+			.virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
 			.up(tokenDefinitionParticle)
 			.end();
 		var sig = keyPair.sign(builder.hashToSign().asBytes());
@@ -135,7 +144,7 @@ public class TokenDefinitionTest {
 		var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization)
 			.toLowLevelBuilder()
 			.syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
-			.virtualDown(UnclaimedREAddr.class, addr)
+			.virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
 			.up(tokenDefinitionParticle)
 			.end();
 		var sig = keyPair.sign(builder.hashToSign());

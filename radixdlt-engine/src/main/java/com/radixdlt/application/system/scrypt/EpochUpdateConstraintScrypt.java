@@ -710,32 +710,9 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	private static class AllocatingSystem implements ReducerState {
-	}
 
 	private void registerGenesisTransitions(Loader os) {
-		// For Mainnet Genesis
-		os.procedure(new UpProcedure<>(
-			SystemConstraintScrypt.REAddrClaim.class, EpochData.class,
-			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
-			(s, u, c, r) -> {
-				if (u.getEpoch() != 0) {
-					throw new ProcedureException("First epoch must be 0.");
-				}
 
-				return ReducerResult.incomplete(new AllocatingSystem());
-			}
-		));
-		os.procedure(new UpProcedure<>(
-			AllocatingSystem.class, RoundData.class,
-			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
-			(s, u, c, r) -> {
-				if (u.getView() != 0) {
-					throw new ProcedureException("First view must be 0.");
-				}
-				return ReducerResult.complete();
-			}
-		));
 	}
 
 	private void epochUpdate(Loader os) {
@@ -871,21 +848,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
-		os.substate(
-			new SubstateDefinition<>(
-				EpochData.class,
-				SubstateTypeId.EPOCH_DATA.id(),
-				buf -> {
-					REFieldSerialization.deserializeReservedByte(buf);
-					var epoch = REFieldSerialization.deserializeNonNegativeLong(buf);
-					return new EpochData(epoch);
-				},
-				(s, buf) -> {
-					REFieldSerialization.serializeReservedByte(buf);
-					buf.putLong(s.getEpoch());
-				}
-			)
-		);
+
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorStakeData.class,
@@ -913,7 +876,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					var key = REFieldSerialization.deserializeKey(buf);
 					return ValidatorStakeData.createVirtual(key);
 				},
-				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
+				(k, buf) -> {
+					REFieldSerialization.serializeKey(buf, (ECPublicKey) k);
+					return ValidatorStakeData.createVirtual((ECPublicKey) k);
+				}
 			)
 		);
 		os.substate(

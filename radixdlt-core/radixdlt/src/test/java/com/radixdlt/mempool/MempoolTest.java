@@ -18,6 +18,7 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERules;
@@ -34,7 +35,6 @@ import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -108,7 +108,7 @@ public class MempoolTest {
 			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
 			atomBuilder
 				.syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8))
-				.virtualDown(UnclaimedREAddr.class, addr)
+				.virtualDown(SubstateId.ofSubstate(genesisTxns.getTxns().get(0).getId(), 0), addr.getBytes())
 				.end();
 		}
 		var signature = keyPair.sign(atomBuilder.hashToSign());

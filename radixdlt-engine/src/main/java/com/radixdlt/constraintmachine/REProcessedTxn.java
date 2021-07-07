@@ -18,7 +18,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.application.system.state.EpochData;
@@ -77,8 +76,8 @@ public final class REProcessedTxn {
 
 	// FIXME: Currently a hack, better would be to put this at transaction layer for fees
 	public boolean isSystemOnly() {
-		return stateUpdates().anyMatch(i -> i.getSubstate().getParticle() instanceof RoundData)
-			|| stateUpdates().anyMatch(i -> i.getSubstate().getParticle() instanceof EpochData);
+		return stateUpdates().anyMatch(i -> i.getParsed() instanceof RoundData)
+			|| stateUpdates().anyMatch(i -> i.getParsed() instanceof EpochData);
 	}
 
 	public List<List<REStateUpdate>> getGroupedStateUpdates() {
@@ -96,8 +95,8 @@ public final class REProcessedTxn {
 					SubstateId substateId = i.getData();
 					return Stream.of(substateId);
 				} else if (i.getMicroOp() == REInstruction.REMicroOp.VDOWN || i.getMicroOp() == REInstruction.REMicroOp.VREAD) {
-					Substate substate = i.getData();
-					return Stream.of(substate.getId());
+					SubstateId substateId = i.getData();
+					return Stream.of(substateId);
 				}
 				return Stream.empty();
 			});

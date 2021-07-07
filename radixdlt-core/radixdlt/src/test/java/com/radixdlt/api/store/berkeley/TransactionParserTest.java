@@ -120,6 +120,7 @@ public class TransactionParserTest {
 
 		final var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
+			cmAtomOS.buildVirtualSubstateDeserialization(),
 			FixedFeeMeter.create(UInt256.FOUR)
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
@@ -142,18 +143,14 @@ public class TransactionParserTest {
 
 		var txn0 = engine.construct(
 			TxnConstructionRequest.create()
+				.action(new CreateSystem(System.currentTimeMillis()))
 				.createMutableToken(tokDef)
 				.mint(this.tokenRri, this.tokenOwnerAcct, Amount.ofTokens(10 * 2).toSubunits())
-		).buildWithoutSignature();
-		var validatorBuilder = this.engine.construct(
-			TxnConstructionRequest.create()
-				.action(new CreateSystem(System.currentTimeMillis()))
 				.action(new RegisterValidator(this.validatorKeyPair.getPublicKey()))
 				.action(new UpdateAllowDelegationFlag(this.validatorKeyPair.getPublicKey(), true))
-		);
-		var txn1 = validatorBuilder.buildWithoutSignature();
+		).buildWithoutSignature();
 
-		engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
+		engine.execute(List.of(txn0), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test

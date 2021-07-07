@@ -109,12 +109,12 @@ public final class RadixEngine<M> {
 
 		void processStateUpdate(REStateUpdate stateUpdate) {
 			for (var particleClass : particleClasses) {
-				var p = stateUpdate.getSubstate().getParticle();
+				var p = stateUpdate.getParsed();
 				if (particleClass.isInstance(p)) {
 					if (stateUpdate.isBootUp()) {
-						curValue = outputReducer.apply(curValue, p);
+						curValue = outputReducer.apply(curValue, (Particle) p);
 					} else {
-						curValue = inputReducer.apply(curValue, p);
+						curValue = inputReducer.apply(curValue, (Particle) p);
 					}
 				}
 			}
@@ -219,6 +219,7 @@ public final class RadixEngine<M> {
 		synchronized (stateUpdateEngineLock) {
 			this.constraintMachine = new ConstraintMachine(
 				constraintMachineConfig.getProcedures(),
+				constraintMachineConfig.getVirtualSubstateDeserialization(),
 				constraintMachineConfig.getMeter()
 			);
 			this.actionConstructors = actionToConstructorMap;

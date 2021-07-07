@@ -118,15 +118,51 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder virtualDown(Class<? extends Particle> substateClass, Object key) {
-		var bytes = serialization.serializeVirtual(substateClass, key);
-		instruction(REInstruction.REMicroOp.VDOWN, bytes);
+	public TxLowLevelBuilder localVirtualDown(int index, byte[] virtualKey) {
+		if (virtualKey.length > 128) {
+			throw new IllegalStateException();
+		}
+		var buf = ByteBuffer.allocate(Integer.BYTES + 1 + virtualKey.length);
+		buf.put((byte) (virtualKey.length + Integer.BYTES));
+		buf.putInt(index);
+		buf.put(virtualKey);
+		instruction(REInstruction.REMicroOp.LVDOWN, buf.array());
 		return this;
 	}
 
-	public TxLowLevelBuilder virtualRead(Class<? extends Particle> substateClass, Object key) {
-		var bytes = serialization.serializeVirtual(substateClass, key);
-		instruction(REInstruction.REMicroOp.VREAD, bytes);
+	public TxLowLevelBuilder localVirtualRead(int index, byte[] virtualKey) {
+		if (virtualKey.length > 128) {
+			throw new IllegalStateException();
+		}
+		var buf = ByteBuffer.allocate(Integer.BYTES + 1 + virtualKey.length);
+		buf.put((byte) (virtualKey.length + Integer.BYTES));
+		buf.putInt(index);
+		buf.put(virtualKey);
+		instruction(REInstruction.REMicroOp.LVREAD, buf.array());
+		return this;
+	}
+
+	public TxLowLevelBuilder virtualDown(SubstateId parent, byte[] virtualKey) {
+		if (virtualKey.length > 128) {
+			throw new IllegalStateException();
+		}
+		var id = SubstateId.ofVirtualSubstate(parent, virtualKey);
+		var buf = ByteBuffer.allocate(1 + id.asBytes().length);
+		buf.put((byte) id.asBytes().length);
+		buf.put(id.asBytes());
+		instruction(REInstruction.REMicroOp.VDOWN, buf.array());
+		return this;
+	}
+
+	public TxLowLevelBuilder virtualRead(SubstateId parent, byte[] virtualKey) {
+		if (virtualKey.length > 128) {
+			throw new IllegalStateException();
+		}
+		var id = SubstateId.ofVirtualSubstate(parent, virtualKey);
+		var buf = ByteBuffer.allocate(1 + id.asBytes().length);
+		buf.put((byte) id.asBytes().length);
+		buf.put(id.asBytes());
+		instruction(REInstruction.REMicroOp.VREAD, buf.array());
 		return this;
 	}
 
@@ -160,7 +196,7 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder readIndex(SubstateIndex index) {
+	public TxLowLevelBuilder readIndex(SubstateIndex<?> index) {
 		var buf = ByteBuffer.allocate(1 + index.getPrefix().length);
 		buf.put((byte) index.getPrefix().length);
 		buf.put(index.getPrefix());
@@ -168,7 +204,7 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder downIndex(SubstateIndex index) {
+	public TxLowLevelBuilder downIndex(SubstateIndex<?> index) {
 		var buf = ByteBuffer.allocate(1 + index.getPrefix().length);
 		buf.put((byte) index.getPrefix().length);
 		buf.put(index.getPrefix());

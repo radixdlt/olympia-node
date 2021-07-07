@@ -69,23 +69,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
-		os.substate(
-			new SubstateDefinition<>(
-				RoundData.class,
-				SubstateTypeId.ROUND_DATA.id(),
-				buf -> {
-					REFieldSerialization.deserializeReservedByte(buf);
-					var view = REFieldSerialization.deserializeNonNegativeLong(buf);
-					var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
-					return new RoundData(view, timestamp);
-				},
-				(s, buf) -> {
-					REFieldSerialization.serializeReservedByte(buf);
-					buf.putLong(s.getView());
-					buf.putLong(s.getTimestamp());
-				}
-			)
-		);
+
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorBFTData.class,

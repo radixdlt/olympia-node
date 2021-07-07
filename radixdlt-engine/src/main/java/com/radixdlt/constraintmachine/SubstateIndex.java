@@ -24,21 +24,21 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 
-public final class SubstateIndex {
+public final class SubstateIndex<T extends Particle> {
 	private final byte[] index;
-	private final Class<? extends Particle> substateClass;
+	private final Class<T> substateClass;
 
-	private SubstateIndex(byte[] index, Class<? extends Particle> substateClass) {
+	private SubstateIndex(byte[] index, Class<T> substateClass) {
 		this.index = index;
 		this.substateClass = substateClass;
 	}
 
-	public static SubstateIndex create(byte[] prefix, Class<? extends Particle> substateClass) {
-		return new SubstateIndex(prefix, substateClass);
+	public static <T extends Particle> SubstateIndex<T> create(byte[] prefix, Class<T> substateClass) {
+		return new SubstateIndex<>(prefix, substateClass);
 	}
 
-	public static SubstateIndex create(byte typeByte, Class<? extends Particle> substateClass) {
-		return new SubstateIndex(new byte[] {typeByte}, substateClass);
+	public static <T extends Particle> SubstateIndex<T> create(byte typeByte, Class<T> substateClass) {
+		return new SubstateIndex<>(new byte[] {typeByte}, substateClass);
 	}
 
 	public boolean test(RawSubstateBytes bytes) {
@@ -73,7 +73,7 @@ public final class SubstateIndex {
 		return index;
 	}
 
-	public Class<? extends Particle> getSubstateClass() {
+	public Class<T> getSubstateClass() {
 		return substateClass;
 	}
 

@@ -16,35 +16,35 @@
  *
  */
 
-package com.radixdlt.atom;
+package com.radixdlt.application.system.state;
 
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.constraintmachine.Particle;
 
-import java.util.NoSuchElementException;
+import java.util.Arrays;
 
-/**
- * Store which contains an index into up substates
- */
-public interface SubstateStore {
+public final class VirtualParent implements Particle {
+	private final byte[] data;
 
-	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index);
+	public VirtualParent(byte[] data) {
+		this.data = data;
+	}
 
-	static SubstateStore empty() {
-		return t -> new CloseableCursor<>() {
-			@Override
-			public void close() {
-			}
+	public byte[] getData() {
+		return data;
+	}
 
-			@Override
-			public boolean hasNext() {
-				return false;
-			}
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(data);
+	}
 
-			@Override
-			public RawSubstateBytes next() {
-				throw new NoSuchElementException();
-			}
-		};
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof VirtualParent)) {
+			return false;
+		}
+
+		var other = (VirtualParent) o;
+		return Arrays.equals(this.data, other.data);
 	}
 }

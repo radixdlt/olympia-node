@@ -115,7 +115,7 @@ public enum RERulesVersion {
 					ResourceFeeMeter.create(perResourceFee)
 				)
 			);
-			var betanet4 = new ConstraintMachineConfig(v4.getProcedures(), meter);
+			var betanet4 = new ConstraintMachineConfig(v4.getProcedures(), v4.buildVirtualSubstateDeserialization(), meter);
 			var parser = new REParser(v4.buildSubstateDeserialization());
 			var serialization = v4.buildSubstateSerialization();
 			var actionConstructors = REConstructor.newBuilder()
