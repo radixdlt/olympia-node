@@ -17,7 +17,20 @@
 
 package com.radixdlt.client.lib.dto;
 
-public enum PortSelector {
-	PRIMARY,
-	SECONDARY;
+import com.fasterxml.jackson.annotation.JsonCreator;
+
+import java.util.Locale;
+
+public enum ChannelType {
+	IN,
+	OUT;
+
+	@JsonCreator
+	public static ChannelType create(String source) {
+		switch (source.toUpperCase(Locale.US)) {
+			case "IN": return IN;
+			case "OUT": return OUT;
+			default: throw new IllegalArgumentException("Unknown channel type " + source);
+		}
+	}
 }

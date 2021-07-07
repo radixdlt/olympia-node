@@ -25,7 +25,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class Balance {
+public final class Balance {
 	private final String rri;
 	private final UInt256 amount;
 

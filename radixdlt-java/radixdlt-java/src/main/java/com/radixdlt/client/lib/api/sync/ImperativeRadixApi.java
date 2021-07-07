@@ -37,7 +37,7 @@ import com.radixdlt.client.lib.dto.MempoolData;
 import com.radixdlt.client.lib.dto.NetworkConfiguration;
 import com.radixdlt.client.lib.dto.NetworkData;
 import com.radixdlt.client.lib.dto.NetworkId;
-import com.radixdlt.client.lib.dto.NetworkPeers;
+import com.radixdlt.client.lib.dto.NetworkPeer;
 import com.radixdlt.client.lib.dto.NetworkStats;
 import com.radixdlt.client.lib.dto.Proof;
 import com.radixdlt.client.lib.dto.RadixEngineData;
@@ -159,7 +159,7 @@ public interface ImperativeRadixApi {
 		/**
 		 * Get network peers.
 		 */
-		NetworkPeers peers();
+		List<NetworkPeer> peers();
 	}
 
 	Network network();
@@ -494,7 +494,7 @@ public interface ImperativeRadixApi {
 					}
 
 					@Override
-					public NetworkPeers peers() {
+					public List<NetworkPeer> peers() {
 						return unwrap(api.network().peers());
 					}
 				};

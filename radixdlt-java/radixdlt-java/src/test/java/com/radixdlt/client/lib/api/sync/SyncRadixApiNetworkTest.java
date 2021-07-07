@@ -45,6 +45,19 @@ public class SyncRadixApiNetworkTest {
 		+ "\"peerConnectionTimeout\":5000,\"pingTimeout\":5000,\"listenPort\":30000,\"discoveryInterval\":30000,"
 		+ "\"seedNodes\":[\"radix://dn1qfwtmurydewmf64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumcfppt2p@core1\"],"
 		+ "\"maxOutboundChannels\":1024,\"peerLivenessCheckInterval\":10000},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String PEERS = "{\"result\":[{\"address\":\"dn1qghsre0ptn9r28d07wzrldc08shs5x7aqhj6lzy2vauyaulppg4qznsumgv\","
+		+ "\"channels\":[{\"localPort\":52434,\"ip\":\"172.20.0.5\",\"type\":\"in\"}]},"
+		+ "{\"address\":\"dn1qwsyxnv7gleusc34ga78kxhx4ewngsk5nvv58s4h22ngu2j8ufruw62f4eq\","
+		+ "\"channels\":[{\"localPort\":30000,\"ip\":\"172.20.0.3\",\"type\":\"out\",\"uri\":"
+		+ "\"radix://dn1qwsyxnv7gleusc34ga78kxhx4ewngsk5nvv58s4h22ngu2j8ufruw62f4eq@172.20.0.3:30000\"},"
+		+ "{\"localPort\":42080,\"ip\":\"172.20.0.3\",\"type\":\"in\"}]},"
+		+ "{\"address\":\"dn1qfwtmurydewmf64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumcfppt2p\","
+		+ "\"channels\":[{\"localPort\":30000,\"ip\":\"172.20.0.4\",\"type\":\"out\",\"uri\":"
+		+ "\"radix://dn1qfwtmurydewmf64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumcfppt2p@172.20.0.4:30000\"}]},"
+		+ "{\"address\":\"dn1qwkdfp8z7rrlv5cf45tc4864n277p9ukjax90ec5cd03zr0uylxtuxr0wk5\","
+		+ "\"channels\":[{\"localPort\":30000,\"ip\":\"172.20.0.6\",\"type\":\"out\",\"uri\":"
+		+ "\"radix://dn1qwkdfp8z7rrlv5cf45tc4864n277p9ukjax90ec5cd03zr0uylxtuxr0wk5@172.20.0.6:30000\"}]}],\""
+		+ "id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);
 
@@ -96,6 +109,18 @@ public class SyncRadixApiNetworkTest {
 			.onSuccess(client -> client.network().configuration()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(networkConfiguration -> assertEquals(30000L, networkConfiguration.getDefaultPort())));
+	}
+
+	@Test
+	public void testPeers() throws Exception {
+		prepareClient(PEERS)
+//		RadixApi.connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.network().peers()
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(peers -> System.out.println(peers)));
+				//.onSuccess(peers -> assertEquals(30000L, peers..getDefaultPort())));
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws Exception {

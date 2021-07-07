@@ -21,9 +21,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.identifiers.AID;
 
+import java.util.Objects;
+
 import static java.util.Objects.requireNonNull;
 
-public class TxDTO {
+public final class TxDTO {
 	private final AID txId;
 
 	private TxDTO(AID txId) {
@@ -37,12 +39,31 @@ public class TxDTO {
 		return new TxDTO(txId);
 	}
 
-	public AID getTxId() {
-		return txId;
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof TxDTO)) {
+			return false;
+		}
+
+		var txDTO = (TxDTO) o;
+		return txId.equals(txDTO.txId);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(txId);
 	}
 
 	@Override
 	public String toString() {
-		return "Tx(" + txId.toJson() + ')';
+		return "{" + txId.toJson() + '}';
+	}
+
+	public AID getTxId() {
+		return txId;
 	}
 }

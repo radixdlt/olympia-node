@@ -29,7 +29,7 @@ import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-public class TransactionDTO {
+public final class TransactionDTO {
 	private final AID txID;
 	private final TxTimestamp sentAt;
 	private final UInt256 fee;

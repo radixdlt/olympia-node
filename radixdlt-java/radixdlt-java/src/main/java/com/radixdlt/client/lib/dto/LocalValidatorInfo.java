@@ -26,7 +26,7 @@ import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.Objects;
 
-public class LocalValidatorInfo {
+public final class LocalValidatorInfo {
 	private final ValidatorAddress address;
 	private final UInt256 totalStake;
 	private final String name;

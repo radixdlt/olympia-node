@@ -37,7 +37,7 @@ import com.radixdlt.client.lib.dto.MempoolData;
 import com.radixdlt.client.lib.dto.NetworkConfiguration;
 import com.radixdlt.client.lib.dto.NetworkData;
 import com.radixdlt.client.lib.dto.NetworkId;
-import com.radixdlt.client.lib.dto.NetworkPeers;
+import com.radixdlt.client.lib.dto.NetworkPeer;
 import com.radixdlt.client.lib.dto.NetworkStats;
 import com.radixdlt.client.lib.dto.Proof;
 import com.radixdlt.client.lib.dto.RadixEngineData;
@@ -160,7 +160,7 @@ public interface RadixApi {
 		/**
 		 * Get network peers.
 		 */
-		Result<NetworkPeers> peers();
+		Result<List<NetworkPeer>> peers();
 	}
 
 	Network network();

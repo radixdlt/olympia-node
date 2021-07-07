@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class MempoolDataErrors {
+public final class MempoolDataErrors {
 	private final long other;
 	private final long hook;
 	private final long conflict;

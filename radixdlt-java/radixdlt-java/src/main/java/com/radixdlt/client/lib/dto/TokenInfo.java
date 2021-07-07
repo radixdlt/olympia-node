@@ -25,7 +25,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class TokenInfo {
+public final class TokenInfo {
 	private final String name;
 	private final String rri;
 	private final String symbol;

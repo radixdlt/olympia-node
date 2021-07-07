@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class MempoolData {
+public final class MempoolData {
 	private final long maxcount;
 	private final long relayerSentCount;
 	private final long count;

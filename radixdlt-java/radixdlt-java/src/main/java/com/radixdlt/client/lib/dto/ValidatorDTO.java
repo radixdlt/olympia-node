@@ -25,7 +25,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class ValidatorDTO {
+public final class ValidatorDTO {
 	private final String address;
 	private final String ownerAddress;
 	private final String name;
