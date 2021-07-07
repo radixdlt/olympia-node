@@ -13,20 +13,21 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
- *
  */
 
 package com.radixdlt.statecomputer.forks;
 
-public final class CandidateForkPredicates {
+import javax.inject.Qualifier;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-	private CandidateForkPredicates() {
-	}
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-	/**
-	 * Returns a fork predicate that requires the specified percentage of stake votes.
-	 */
-	public static CandidateForkPredicate stakeVoting(long minEpoch, int percentage) {
-		return new CandidateForkStakeVotingPredicate(minEpoch, percentage);
-	}
+@Qualifier
+@Target({ FIELD, PARAMETER, METHOD })
+@Retention(RUNTIME)
+public @interface LatestKnownForkConfig {
 }

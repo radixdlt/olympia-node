@@ -67,6 +67,24 @@ import java.util.stream.Collectors;
 public final class RadixEngine<M> {
 	private static final Logger logger = LogManager.getLogger();
 
+	public static final class RadixEngineResult<M> {
+		private final List<REProcessedTxn> txns;
+		private final M metadata;
+
+		public RadixEngineResult(List<REProcessedTxn> txns, M metadata) {
+			this.txns = txns;
+			this.metadata = metadata;
+		}
+
+		public List<REProcessedTxn> getTxns() {
+			return txns;
+		}
+
+		public M getMetadata() {
+			return metadata;
+		}
+	}
+
 	private static class ApplicationStateReducer<U, M> {
 		private final Set<Class<? extends Particle>> particleClasses;
 		private final REParser reParser;
@@ -269,12 +287,12 @@ public final class RadixEngine<M> {
 			}
 		}
 
-		public Pair<List<REProcessedTxn>, M> execute(List<Txn> txns) throws RadixEngineException {
+		public RadixEngineResult<M> execute(List<Txn> txns) throws RadixEngineException {
 			assertNotDeleted();
 			return engine.execute(txns);
 		}
 
-		public Pair<List<REProcessedTxn>, M> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
+		public RadixEngineResult<M> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
 			assertNotDeleted();
 			return engine.execute(txns, null, permissionLevel);
 		}
@@ -343,7 +361,7 @@ public final class RadixEngine<M> {
 	 *
 	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
 	 */
-	public Pair<List<REProcessedTxn>, M> execute(List<Txn> txns) throws RadixEngineException {
+	public RadixEngineResult<M> execute(List<Txn> txns) throws RadixEngineException {
 		return execute(txns, null, PermissionLevel.USER);
 	}
 
@@ -355,7 +373,7 @@ public final class RadixEngine<M> {
 	 * @param permissionLevel permission level to execute on
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
-	public Pair<List<REProcessedTxn>, M> execute(
+	public RadixEngineResult<M> execute(
 		List<Txn> txns,
 		M meta,
 		PermissionLevel permissionLevel
@@ -373,8 +391,7 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	// TODO: consider adding a dedicated EngineExecuteResult type instead of Pair
-	private Pair<List<REProcessedTxn>, M> executeInternal(
+	private RadixEngineResult<M> executeInternal(
 		EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction,
 		List<Txn> txns,
 		M meta,
@@ -421,7 +438,7 @@ public final class RadixEngine<M> {
 			if (processedMetadata != null) {
 				engineStoreInTransaction.storeMetadata(processedMetadata);
 			}
-			return Pair.of(processedTxns, processedMetadata);
+			return new RadixEngineResult<>(processedTxns, processedMetadata);
 		} catch (MetadataException e) {
 			logger.error("Invalid metadata: " + processedTxns);
 			throw e;

@@ -28,6 +28,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -51,7 +52,7 @@ public class RadixEngineModule extends AbstractModule {
 	// TODO: Remove
 	@Provides
 	@Singleton
-	private REParser parser(ForkConfig forkConfig) {
+	private REParser parser(@InitialForkConfig ForkConfig forkConfig) {
 		return forkConfig.getEngineRules().getParser();
 	}
 
@@ -59,7 +60,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	@MaxSigsPerRound
-	private OptionalInt maxSigsPerRound(ForkConfig forkConfig) {
+	private OptionalInt maxSigsPerRound(@InitialForkConfig ForkConfig forkConfig) {
 		return forkConfig.getEngineRules().getMaxSigsPerRound();
 	}
 
@@ -67,7 +68,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	@EpochCeilingView
-	private View epochCeilingHighView(ForkConfig forkConfig) {
+	private View epochCeilingHighView(@InitialForkConfig ForkConfig forkConfig) {
 		return forkConfig.getEngineRules().getMaxRounds();
 	}
 
@@ -75,7 +76,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	@MaxValidators
-	private int maxValidators(ForkConfig forkConfig) {
+	private int maxValidators(@InitialForkConfig ForkConfig forkConfig) {
 		return forkConfig.getEngineRules().getMaxValidators();
 	}
 
@@ -85,7 +86,7 @@ public class RadixEngineModule extends AbstractModule {
 		EngineStore<LedgerAndBFTProof> engineStore,
 		Set<StateReducer<?>> stateReducers,
 		Set<Pair<String, StateReducer<?>>> namedStateReducers,
-		ForkConfig forkConfig
+		@InitialForkConfig ForkConfig forkConfig
 	) {
 		final var cmConfig = forkConfig.getEngineRules().getConstraintMachineConfig();
 		final var cm = new ConstraintMachine(

@@ -19,7 +19,6 @@ package com.radixdlt.api.service;
 
 import com.google.common.collect.Streams;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -33,7 +32,6 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Objects;
 
-@Singleton
 public class ForkVoteStatusService {
 
 	public enum ForkVoteStatus {

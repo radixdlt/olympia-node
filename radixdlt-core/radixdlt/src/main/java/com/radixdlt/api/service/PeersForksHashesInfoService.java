@@ -17,11 +17,9 @@
 
 package com.radixdlt.api.service;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -34,23 +32,21 @@ import com.radixdlt.statecomputer.forks.Forks;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import static java.util.function.Predicate.not;
 
 /**
  * Collects other peers' latest known forks hashes (received during the handshake) and compares it against
  * local list of forks. Signals with a flag, when there's a known fork on any of the validator nodes
  * that local node is not aware of, which means that there's potentially a newer app version to download.
  */
-@Singleton
 public final class PeersForksHashesInfoService {
 	private final Forks forks;
 	private final Addressing addressing;
 
 	private BFTValidatorSet currentValidatorSet;
-	private ImmutableMap<HashCode, ImmutableSet<ECPublicKey>> unknownReportedForksHashes;
+	private final Map<HashCode, ImmutableSet<ECPublicKey>> unknownReportedForksHashes;
 
 	@Inject
 	public PeersForksHashesInfoService(
@@ -62,7 +58,7 @@ public final class PeersForksHashesInfoService {
 		this.addressing = Objects.requireNonNull(addressing);
 
 		this.currentValidatorSet = initialEpoch.getBFTConfiguration().getValidatorSet();
-		this.unknownReportedForksHashes = ImmutableMap.of();
+		this.unknownReportedForksHashes = new HashMap<>();
 	}
 
 	public EventProcessor<PeerEvent> peerEventProcessor() {
@@ -89,14 +85,7 @@ public final class PeersForksHashesInfoService {
 			.add(publicKey)
 			.build();
 
-		this.unknownReportedForksHashes = ImmutableMap.<HashCode, ImmutableSet<ECPublicKey>>builder()
-			.putAll(
-				this.unknownReportedForksHashes.entrySet().stream()
-					.filter(not(e -> e.getKey().equals(forkHash)))
-					.collect(ImmutableSet.toImmutableSet())
-			)
-			.put(Map.entry(forkHash, newReportsForHash))
-			.build();
+		this.unknownReportedForksHashes.put(forkHash, newReportsForHash);
 	}
 
 	@SuppressWarnings("unchecked")

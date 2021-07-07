@@ -86,6 +86,7 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
@@ -118,6 +119,7 @@ public class RadixEngineStateComputerTest {
 	private RadixEngineStateComputer sut;
 
 	@Inject
+	@InitialForkConfig
 	private ForkConfig forkConfig;
 
 	@Inject
@@ -182,7 +184,7 @@ public class RadixEngineStateComputerTest {
 
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		var processed = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM).getFirst();
+		var processed = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM).getTxns();
 		var genesisValidatorSet = processed.get(0).getEvents().stream()
 			.filter(NextValidatorSetEvent.class::isInstance)
 			.map(NextValidatorSetEvent.class::cast)

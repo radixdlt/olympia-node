@@ -28,6 +28,8 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
+import com.radixdlt.statecomputer.forks.LatestKnownForkConfig;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -140,15 +142,26 @@ public final class GenerateUniverses {
 				install(new AbstractModule() {
 					@Provides
 					@Singleton
-					private Forks forks(ForkConfig initialForkConfig) {
+					private Forks forks(@InitialForkConfig  ForkConfig initialForkConfig) {
 						return Forks.create(Set.of(initialForkConfig));
 					}
 
 					@Provides
 					@Singleton
+					@InitialForkConfig
 					private ForkConfig initialForkConfig(Set<ForkBuilder> forkBuilders) {
 						return forkBuilders.stream()
 							.min((a, b) -> (int) (a.fixedOrMinEpoch() - b.fixedOrMinEpoch()))
+							.get()
+							.build();
+					}
+
+					@Provides
+					@Singleton
+					@LatestKnownForkConfig
+					private ForkConfig latestKnownForkConfig(Set<ForkBuilder> forkBuilders) {
+						return forkBuilders.stream()
+							.max((a, b) -> (int) (a.fixedOrMinEpoch() - b.fixedOrMinEpoch()))
 							.get()
 							.build();
 					}

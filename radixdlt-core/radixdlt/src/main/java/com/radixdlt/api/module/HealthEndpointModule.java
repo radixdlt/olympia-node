@@ -18,6 +18,7 @@
 package com.radixdlt.api.module;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
@@ -33,6 +34,13 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.network.p2p.PeerEvent;
 
 public class HealthEndpointModule extends AbstractModule {
+
+	@Override
+	protected void configure() {
+		bind(ForkVoteStatusService.class).in(Scopes.SINGLETON);
+		bind(PeersForksHashesInfoService.class).in(Scopes.SINGLETON);
+	}
+
 	@NodeServer
 	@ProvidesIntoMap
 	@StringMapKey("/health")

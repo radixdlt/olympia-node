@@ -200,7 +200,7 @@ public class TransactionParserTest {
 	}
 
 	private void executeAndDecode(List<ActionType> expectedActions, UInt256 fee, Txn... txns) throws Exception {
-		var list = engine.execute(List.of(txns), null, PermissionLevel.USER).getFirst();
+		var list = engine.execute(List.of(txns), null, PermissionLevel.USER).getTxns();
 
 		if (txns.length != 1) {
 			return;

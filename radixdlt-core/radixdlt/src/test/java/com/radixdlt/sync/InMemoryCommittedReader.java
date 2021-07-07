@@ -22,11 +22,13 @@ import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.engine.RadixEngine.RadixEngineResult;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.util.List;
 import java.util.Map.Entry;
@@ -49,6 +51,7 @@ class InMemoryCommittedReader implements CommittedReader {
 		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
 	}
 
+	@SuppressWarnings("unchecked")
 	public EventProcessor<LedgerUpdate> updateProcessor() {
 		return update -> {
 			synchronized (lock) {
@@ -71,7 +74,8 @@ class InMemoryCommittedReader implements CommittedReader {
 					this.epochProofs.put(nextEpoch, update.getTail());
 				}
 
-				update.getNextForkHash().ifPresent(nextForkHash -> {
+				final var result = (RadixEngineResult<LedgerAndBFTProof>) update.getStateComputerOutput().get(RadixEngineResult.class);
+				result.getMetadata().getNextForkHash().ifPresent(nextForkHash -> {
 					this.epochsForkHashes.put(nextEpoch, nextForkHash);
 				});
 			}

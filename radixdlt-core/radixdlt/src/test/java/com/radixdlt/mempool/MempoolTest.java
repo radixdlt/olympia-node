@@ -20,6 +20,7 @@ package com.radixdlt.mempool;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Ignore;
@@ -76,7 +77,7 @@ public class MempoolTest {
 	@Inject private RadixEngineStateComputer stateComputer;
 	@Inject private SystemCounters systemCounters;
 	@Inject private PeersView peersView;
-	@Inject private ForkConfig forkConfig;
+	@Inject @InitialForkConfig  private ForkConfig forkConfig;
 	@Inject @MempoolRelayInitialDelay private long initialDelay;
 	@Inject @MempoolRelayRepeatDelay private long repeatDelay;
 

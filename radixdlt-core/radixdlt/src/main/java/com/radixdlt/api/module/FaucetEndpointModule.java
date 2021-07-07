@@ -39,6 +39,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
 
 import java.util.Map;
 import java.util.Set;
@@ -74,7 +75,7 @@ public class FaucetEndpointModule extends AbstractModule {
 	@FaucetToken
 	@Singleton
 	public Set<REAddr> tokens(
-		ForkConfig forkConfig,
+		@InitialForkConfig ForkConfig forkConfig,
 		@Genesis VerifiedTxnsAndProof genesis
 	) {
 		return genesis.getTxns().stream()

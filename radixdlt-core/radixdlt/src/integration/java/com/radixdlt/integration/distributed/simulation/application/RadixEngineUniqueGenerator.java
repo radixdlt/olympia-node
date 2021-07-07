@@ -24,6 +24,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
 
 /**
  * Generates a new unique rri consumer command. Because new addresses are used
@@ -34,6 +35,7 @@ public class RadixEngineUniqueGenerator implements TxnGenerator {
 	private REParser parser;
 
 	@Inject
+	@InitialForkConfig
 	private ForkConfig forkConfig;
 
 	@Override

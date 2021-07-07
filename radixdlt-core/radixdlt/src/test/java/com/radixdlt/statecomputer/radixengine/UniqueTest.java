@@ -21,6 +21,7 @@ package com.radixdlt.statecomputer.radixengine;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Rule;
@@ -59,6 +60,7 @@ public final class UniqueTest {
 	private RadixEngine<LedgerAndBFTProof> sut;
 
 	@Inject
+	@InitialForkConfig
 	private ForkConfig forkConfig;
 
 	private Injector createInjector() {

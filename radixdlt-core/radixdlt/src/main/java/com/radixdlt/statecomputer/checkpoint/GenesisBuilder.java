@@ -102,7 +102,7 @@ public final class GenesisBuilder {
 		var branch = radixEngine.transientBranch();
 		var processed = branch.execute(List.of(txn), PermissionLevel.SYSTEM);
 		radixEngine.deleteBranches();
-		var genesisValidatorSet = processed.getFirst().get(0).getEvents().stream()
+		var genesisValidatorSet = processed.getTxns().get(0).getEvents().stream()
 				.filter(NextValidatorSetEvent.class::isInstance)
 				.map(NextValidatorSetEvent.class::cast)
 				.findFirst()

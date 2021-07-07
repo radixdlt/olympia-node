@@ -29,7 +29,8 @@ import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.LatestKnownForkConfig;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -46,7 +47,7 @@ public final class PeerServerBootstrap {
 	private final P2PConfig config;
 	private final Addressing addressing;
 	private final int networkId;
-	private final Forks forks;
+	private final ForkConfig latestKnownForkConfig;
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
@@ -56,21 +57,21 @@ public final class PeerServerBootstrap {
 
 	@Inject
 	public PeerServerBootstrap(
-		P2PConfig config,
-		Addressing addressing,
-		@NetworkId int networkId,
-		Forks forks,
-		SystemCounters counters,
-		Serialization serialization,
-		SecureRandom secureRandom,
-		ECKeyOps ecKeyOps,
-		EventDispatcher<PeerEvent> peerEventDispatcher,
-		Provider<PeerControl> peerControl
+			P2PConfig config,
+			Addressing addressing,
+			@NetworkId int networkId,
+			@LatestKnownForkConfig ForkConfig latestKnownForkConfig,
+			SystemCounters counters,
+			Serialization serialization,
+			SecureRandom secureRandom,
+			ECKeyOps ecKeyOps,
+			EventDispatcher<PeerEvent> peerEventDispatcher,
+			Provider<PeerControl> peerControl
 	) {
 		this.config = Objects.requireNonNull(config);
 		this.addressing = Objects.requireNonNull(addressing);
 		this.networkId = networkId;
-		this.forks = Objects.requireNonNull(forks);
+		this.latestKnownForkConfig = Objects.requireNonNull(latestKnownForkConfig);
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -94,7 +95,7 @@ public final class PeerServerBootstrap {
 				config,
 				addressing,
 				networkId,
-				forks.latestKnownFork().getHash(),
+				latestKnownForkConfig.getHash(),
 				counters,
 				serialization,
 				secureRandom,

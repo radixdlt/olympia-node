@@ -28,6 +28,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.exceptions.TxnParseException;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.functional.Result;
 
@@ -39,7 +40,7 @@ public final class TxnParser {
 
 	@Inject
 	public TxnParser(
-		ForkConfig forkConfig,
+		@InitialForkConfig ForkConfig forkConfig,
 		LogCMStore logCMStore
 	) {
 		this.rules = forkConfig.getEngineRules();

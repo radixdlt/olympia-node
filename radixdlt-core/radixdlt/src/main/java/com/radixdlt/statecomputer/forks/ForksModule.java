@@ -52,6 +52,7 @@ public final class ForksModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	@InitialForkConfig
 	private ForkConfig initialForkConfig(
 		CommittedReader committedReader,
 		Forks forks
@@ -59,5 +60,12 @@ public final class ForksModule extends AbstractModule {
 		final var storedEpochForks = committedReader.getEpochsForkHashes();
 		final var epoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
 		return forks.sanityCheckForksAndGetInitial(storedEpochForks, epoch);
+	}
+
+	@Provides
+	@Singleton
+	@LatestKnownForkConfig
+	private ForkConfig latestKnownForkConfig(Forks forks) {
+		return forks.latestKnownFork();
 	}
 }

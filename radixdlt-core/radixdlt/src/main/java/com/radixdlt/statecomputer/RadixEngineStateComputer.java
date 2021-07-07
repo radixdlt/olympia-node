@@ -48,6 +48,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.MetadataException;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngine.RadixEngineResult;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
@@ -65,7 +66,7 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.utils.Pair;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -114,7 +115,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		Hasher hasher,
 		SystemCounters systemCounters,
 		Forks forks,
-		ForkConfig initialForkConfig
+		@InitialForkConfig ForkConfig initialForkConfig
 	) {
 		if (epochCeilingView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -232,7 +233,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		try {
 			// TODO: combine construct/execute
 			systemUpdate = branch.construct(systemActions).buildWithoutSignature();
-			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER).getFirst();
+			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER).getTxns();
 		} catch (RadixEngineException | TxBuilderException e) {
 			throw new IllegalStateException(
 				String.format("Failed to execute system updates: %s", systemActions), e
@@ -263,7 +264,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			var txn = nextTxns.get(i);
 			final List<REProcessedTxn> parsed;
 			try {
-				parsed = branch.execute(List.of(txn)).getFirst();
+				parsed = branch.execute(List.of(txn)).getTxns();
 			} catch (RadixEngineException e) {
 				errorBuilder.put(txn, e);
 				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedTxn.create(proposer.getKey(), txn, e));
@@ -314,12 +315,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), nextValidatorSet.orElse(null));
 	}
 
-	private Pair<List<REProcessedTxn>, LedgerAndBFTProof> commitInternal(
+	private RadixEngineResult<LedgerAndBFTProof> commitInternal(
 		VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState
 	) {
 		var proof = verifiedTxnsAndProof.getProof();
 
-		final Pair<List<REProcessedTxn>, LedgerAndBFTProof> radixEngineResult;
+		final RadixEngineResult<LedgerAndBFTProof> radixEngineResult;
 		try {
 			radixEngineResult = this.radixEngine.execute(
 				verifiedTxnsAndProof.getTxns(),
@@ -332,7 +333,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new ByzantineQuorumException(e.getMessage());
 		}
 
-		radixEngineResult.getSecond().getNextForkHash().ifPresent(nextForkHash -> {
+		radixEngineResult.getMetadata().getNextForkHash().ifPresent(nextForkHash -> {
 			final var nextForkConfig = forks.getByHash(nextForkHash).get(); // guaranteed to be present
 			log.info("Epoch {} forking RadixEngine to {}", proof.getEpoch() + 1, nextForkConfig.getName());
 			final var rules = nextForkConfig.getEngineRules();
@@ -348,7 +349,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			this.currentForkConfig = nextForkConfig;
 		});
 
-		radixEngineResult.getFirst().forEach(t -> {
+		radixEngineResult.getTxns().forEach(t -> {
 			if (t.isSystemOnly()) {
 				systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);
 			} else {
@@ -362,8 +363,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 	@Override
 	public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
 		final var radixEngineResult = commitInternal(txnsAndProof, vertexStoreState);
-		final var txCommitted = radixEngineResult.getFirst();
-		final var ledgerAndBftProof = radixEngineResult.getSecond();
+		final var txCommitted = radixEngineResult.getTxns();
+		final var ledgerAndBftProof = radixEngineResult.getMetadata();
 
 		// TODO: refactor mempool to be less generic and make this more efficient
 		// TODO: Move this into engine
@@ -403,7 +404,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 			outputBuilder.put(EpochChange.class, e);
 		});
 		outputBuilder.put(REOutput.class, REOutput.create(txCommitted));
-		var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build(), ledgerAndBftProof.getNextForkHash());
+		outputBuilder.put(RadixEngineResult.class, radixEngineResult);
+		var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
 		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 	}
 }
