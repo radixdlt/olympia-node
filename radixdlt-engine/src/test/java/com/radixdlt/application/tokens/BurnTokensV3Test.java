@@ -19,16 +19,20 @@
 package com.radixdlt.application.tokens;
 
 import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.application.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
@@ -45,6 +49,7 @@ import org.junit.Test;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,13 +58,11 @@ public class BurnTokensV3Test {
 	private RadixEngine<Void> engine;
 
 	@Before
-	public void setup() {
+	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
-		);
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures(), cmAtomOS.buildVirtualSubstateDeserialization());
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
 		EngineStore<Void> store = new InMemoryEngineStore<>();
@@ -67,6 +70,7 @@ public class BurnTokensV3Test {
 			parser,
 			serialization,
 			REConstructor.newBuilder()
+				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(BurnToken.class, new BurnTokenConstructor())
@@ -74,6 +78,8 @@ public class BurnTokensV3Test {
 			cm,
 			store
 		);
+		var genesis = this.engine.construct(new CreateSystem(0)).buildWithoutSignature();
+		this.engine.execute(List.of(genesis), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test

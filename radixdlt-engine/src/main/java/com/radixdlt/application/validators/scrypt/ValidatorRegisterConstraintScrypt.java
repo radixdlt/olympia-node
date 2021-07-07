@@ -18,14 +18,15 @@
 
 package com.radixdlt.application.validators.scrypt;
 
+import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
+import com.radixdlt.constraintmachine.ReadProcedure;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -39,15 +40,34 @@ import com.radixdlt.crypto.ECPublicKey;
 public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 	private static class UpdatingRegistered implements ReducerState {
 		private final ECPublicKey validatorKey;
+		private final EpochData epochData;
 
-		UpdatingRegistered(ECPublicKey validatorKey) {
+		UpdatingRegistered(ECPublicKey validatorKey, EpochData epochData) {
 			this.validatorKey = validatorKey;
+			this.epochData = epochData;
 		}
 
-		void update(PreparedRegisteredUpdate update) throws ProcedureException {
+		void update(ValidatorRegisteredCopy update) throws ProcedureException {
 			if (!update.getValidatorKey().equals(validatorKey)) {
 				throw new ProcedureException("Cannot update validator");
 			}
+
+			var expectedEpoch = epochData.getEpoch() + 1;
+			if (update.getEpochUpdate().orElseThrow() != expectedEpoch) {
+				throw new ProcedureException("Expected epoch to be " + expectedEpoch + " but is " + update.getEpochUpdate());
+			}
+		}
+	}
+
+	private static class UpdatingRegisteredNeedToReadEpoch implements ReducerState {
+		private final ECPublicKey validatorKey;
+
+		UpdatingRegisteredNeedToReadEpoch(ECPublicKey validatorKey) {
+			this.validatorKey = validatorKey;
+		}
+
+		ReducerState readEpoch(EpochData epochData) {
+			return new UpdatingRegistered(validatorKey, epochData);
 		}
 	}
 
@@ -58,74 +78,50 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 			SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(),
 			buf -> {
 				REFieldSerialization.deserializeReservedByte(buf);
+				var epochUpdate = REFieldSerialization.deserializeOptionalNonNegativeLong(buf);
 				var key = REFieldSerialization.deserializeKey(buf);
 				var flag = REFieldSerialization.deserializeBoolean(buf);
-				return new ValidatorRegisteredCopy(key, flag);
+				return new ValidatorRegisteredCopy(epochUpdate, key, flag);
 			},
 			(s, buf) -> {
 				REFieldSerialization.serializeReservedByte(buf);
+				REFieldSerialization.serializeOptionalLong(buf, s.getEpochUpdate());
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.isRegistered() ? 1 : 0));
 			},
-			s -> !s.isRegistered()
-		));
-
-		os.substate(new SubstateDefinition<>(
-			PreparedRegisteredUpdate.class,
-			SubstateTypeId.PREPARED_REGISTERED_FLAG_UPDATE.id(),
 			buf -> {
-				REFieldSerialization.deserializeReservedByte(buf);
 				var key = REFieldSerialization.deserializeKey(buf);
-				var flag = REFieldSerialization.deserializeBoolean(buf);
-				return new PreparedRegisteredUpdate(key, flag);
+				return new ValidatorRegisteredCopy(key, false);
 			},
-			(s, buf) -> {
-				REFieldSerialization.serializeReservedByte(buf);
-				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
-				buf.put((byte) (s.isRegistered() ? 1 : 0));
-			},
-			s -> !s.isRegistered()
+			(k, buf) -> {
+				REFieldSerialization.serializeKey(buf, (ECPublicKey) k);
+				return new ValidatorRegisteredCopy((ECPublicKey) k, false);
+			}
 		));
-
 
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, ValidatorRegisteredCopy.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
+					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
 						throw new AuthorizationException("Key does not match.");
 					}
 				}
 			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingRegistered(d.getSubstate().getValidatorKey()));
+			(d, s, r, c) -> {
+				return ReducerResult.incomplete(new UpdatingRegisteredNeedToReadEpoch(d.getValidatorKey()));
 			}
 		));
 
-		os.procedure(new DownProcedure<>(
-			VoidReducerState.class, PreparedRegisteredUpdate.class,
-			d -> new Authorization(
-				PermissionLevel.USER,
-				(r, c) -> {
-					if (!c.key().map(d.getSubstate().getValidatorKey()::equals).orElse(false)) {
-						throw new AuthorizationException("Key does not match.");
-					}
-				}
-			),
-			(d, s, r) -> {
-				if (d.getArg().isPresent()) {
-					throw new ProcedureException("Args not allowed");
-				}
-				return ReducerResult.incomplete(new UpdatingRegistered(d.getSubstate().getValidatorKey()));
-			}
+		os.procedure(new ReadProcedure<>(
+			UpdatingRegisteredNeedToReadEpoch.class, EpochData.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, r) -> ReducerResult.incomplete(s.readEpoch(u))
 		));
 
 		os.procedure(new UpProcedure<>(
-			UpdatingRegistered.class, PreparedRegisteredUpdate.class,
+			UpdatingRegistered.class, ValidatorRegisteredCopy.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				s.update(u);

@@ -22,7 +22,8 @@ import java.util.Optional;
 
 public enum Syscall {
 	FEE_RESERVE_PUT((byte) 0),
-	FEE_RESERVE_TAKE((byte) 1);
+	FEE_RESERVE_TAKE((byte) 1),
+	READDR_CLAIM((byte) 2);
 
 	private final byte id;
 

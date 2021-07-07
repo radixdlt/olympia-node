@@ -19,8 +19,8 @@
 package com.radixdlt.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
@@ -51,7 +51,7 @@ public final class MyValidatorInfoReducer implements StateReducer<MyValidatorInf
 	public Set<Class<? extends Particle>> particleClasses() {
 		return Set.of(
 			ValidatorMetaData.class,
-			PreparedRegisteredUpdate.class
+			ValidatorRegisteredCopy.class
 		);
 	}
 
@@ -73,7 +73,7 @@ public final class MyValidatorInfoReducer implements StateReducer<MyValidatorInf
 					);
 				}
 			} else {
-				var r = (PreparedRegisteredUpdate) p;
+				var r = (ValidatorRegisteredCopy) p;
 				if (r.getValidatorKey().equals(self)) {
 					return new MyValidatorInfo(
 						i.getName(),

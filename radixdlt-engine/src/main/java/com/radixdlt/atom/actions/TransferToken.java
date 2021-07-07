@@ -50,4 +50,10 @@ public final class TransferToken implements TxAction {
 	public REAddr to() {
 		return to;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{resource=%s from=%s to=%s amount=%s}", this.getClass().getSimpleName(),
+			resourceAddr, from, to, amount);
+	}
 }

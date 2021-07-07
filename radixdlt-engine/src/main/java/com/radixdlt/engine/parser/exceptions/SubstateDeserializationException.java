@@ -16,23 +16,13 @@
  *
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.engine.parser.exceptions;
 
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.serialization.DeserializeException;
 
-/**
- * Exception from the Radix Engine mempool
- */
-public final class RadixEngineMempoolException extends MempoolRejectedException {
-    private final RadixEngineException exception;
-
-    public RadixEngineMempoolException(RadixEngineException exception) {
-        super(exception.getMessage(), exception);
-        this.exception = exception;
-    }
-
-    public RadixEngineException getException() {
-        return exception;
-    }
+public class SubstateDeserializationException extends DeserializeException {
+	public SubstateDeserializationException(Class<? extends Particle> substateClass, Throwable cause) {
+		super("Failed to deserialize " + substateClass.getSimpleName(), cause);
+	}
 }

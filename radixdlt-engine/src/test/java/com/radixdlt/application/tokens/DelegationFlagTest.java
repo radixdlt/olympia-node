@@ -18,11 +18,17 @@
 
 package com.radixdlt.application.tokens;
 
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
@@ -34,7 +40,7 @@ import com.radixdlt.application.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.validators.construction.UpdateAllowDelegationFlagConstructor;
 import com.radixdlt.application.validators.construction.UpdateValidatorOwnerConstructor;
-import com.radixdlt.application.validators.scrypt.ValidatorConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -55,6 +61,7 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -68,9 +75,12 @@ public class DelegationFlagTest {
 		var scrypts = List.of(
 			Pair.of(
 				List.of(
+					new RoundUpdateConstraintScrypt(10),
+					new EpochUpdateConstraintScrypt(10, UInt256.NINE, 1, 1, 10),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScrypt(2)
+					new ValidatorConstraintScryptV2(),
+					new ValidatorUpdateOwnerConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits())
 			)
@@ -114,13 +124,11 @@ public class DelegationFlagTest {
 	}
 
 	@Before
-	public void setup() {
+	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		scrypts.forEach(cmAtomOS::load);
-		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
-		);
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures(), cmAtomOS.buildVirtualSubstateDeserialization());
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
@@ -133,10 +141,13 @@ public class DelegationFlagTest {
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 				.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
+				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.build(),
 			cm,
 			store
 		);
+		var txn = this.engine.construct(new CreateSystem(0)).buildWithoutSignature();
+		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test

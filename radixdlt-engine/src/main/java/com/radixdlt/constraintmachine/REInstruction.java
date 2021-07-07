@@ -21,10 +21,9 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.engine.parser.exceptions.REInstructionDataDeserializeException;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.Pair;
 
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 /**
@@ -74,20 +73,39 @@ public final class REInstruction {
 		VREAD((byte) 0x5, REOp.READ) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
-				int pos = buf.position();
-				var p = d.deserialize(buf);
-				int length = buf.position() - pos;
-				var b = ByteBuffer.wrap(buf.array(), pos, length);
-				return Substate.create(p, SubstateId.ofVirtualSubstate(b));
+				var length = Byte.toUnsignedInt(buf.get());
+				if (length <= SubstateId.BYTES) {
+					throw new DeserializeException("SubstateId is not virtual.");
+				}
+				var bytes = new byte[length];
+				buf.get(bytes);
+				return SubstateId.fromBytes(bytes);
 			}
 		},
-		DOWN((byte) 0x6, REOp.DOWN) {
+		LVREAD((byte) 0x6, REOp.READ) {
+			@Override
+			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				var length = Byte.toUnsignedInt(buf.get());
+				if (length <= Integer.BYTES) {
+					throw new DeserializeException("SubstateId is not virtual.");
+				}
+				var index = buf.getInt();
+				if (index < 0 || index >= parserState.upSubstateCount()) {
+					throw new DeserializeException("Bad local index: " + index);
+				}
+				var parent = SubstateId.ofSubstate(parserState.txnId(), index);
+				var bytes = new byte[length - Integer.BYTES];
+				buf.get(bytes);
+				return SubstateId.ofVirtualSubstate(parent, bytes);
+			}
+		},
+		DOWN((byte) 0x7, REOp.DOWN) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
 				return SubstateId.fromBuffer(buf);
 			}
 		},
-		LDOWN((byte) 0x7, REOp.DOWN) {
+		LDOWN((byte) 0x8, REOp.DOWN) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
 				var index = buf.getInt();
@@ -97,45 +115,51 @@ public final class REInstruction {
 				return SubstateId.ofSubstate(parserState.txnId(), index);
 			}
 		},
-		VDOWN((byte) 0x8, REOp.DOWN) {
+		VDOWN((byte) 0x9, REOp.DOWN) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
-				int pos = buf.position();
-				var p = d.deserialize(buf);
-				int length = buf.position() - pos;
-				var b = ByteBuffer.wrap(buf.array(), pos, length);
-				return Substate.create(p, SubstateId.ofVirtualSubstate(b));
+				var length = Byte.toUnsignedInt(buf.get());
+				if (length <= SubstateId.BYTES) {
+					throw new DeserializeException("SubstateId is not virtual.");
+				}
+				var bytes = new byte[length];
+				buf.get(bytes);
+				return SubstateId.fromBytes(bytes);
 			}
 		},
-		VDOWNARG((byte) 0x9, REOp.DOWN) {
+		LVDOWN((byte) 0xa, REOp.DOWN) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
-				int pos = buf.position();
-				var p = d.deserialize(buf);
-				int length = buf.position() - pos;
-				var b = ByteBuffer.wrap(buf.array(), pos, length);
-				var argLength = buf.get();
-				var arg = new byte[Byte.toUnsignedInt(argLength)];
-				buf.get(arg);
-				return Pair.of(Substate.create(p, SubstateId.ofVirtualSubstate(b)), arg);
+				var length = Byte.toUnsignedInt(buf.get());
+				if (length <= Integer.BYTES) {
+					throw new DeserializeException("SubstateId is not virtual.");
+				}
+				var index = buf.getInt();
+				if (index < 0 || index >= parserState.upSubstateCount()) {
+					throw new DeserializeException("Bad local index: " + index);
+				}
+				var parent = SubstateId.ofSubstate(parserState.txnId(), index);
+				var bytes = new byte[length - Integer.BYTES];
+				buf.get(bytes);
+				return SubstateId.ofVirtualSubstate(parent, bytes);
 			}
 		},
-		SIG((byte) 0xa, REOp.SIG) {
+		SIG((byte) 0xb, REOp.SIG) {
 			@Override
 			Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
 				return REFieldSerialization.deserializeSignature(b);
 			}
 		},
-		MSG((byte) 0xb, REOp.MSG) {
+		MSG((byte) 0xc, REOp.MSG) {
 			@Override
-			public Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
-				var length = Byte.toUnsignedInt(b.get());
+			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
+				var length = Byte.toUnsignedInt(buf.get());
 				var bytes = new byte[length];
-				b.get(bytes);
+				buf.get(bytes);
 				return bytes;
 			}
 		},
-		HEADER((byte) 0xc, REOp.HEADER) {
+		HEADER((byte) 0xd, REOp.HEADER) {
 			@Override
 			Object read(REParser.ParserState parserState, ByteBuffer b, SubstateDeserialization d) throws DeserializeException {
 				int version = b.get();
@@ -149,25 +173,19 @@ public final class REInstruction {
 				return (flags & 0x1) == 1;
 			}
 		},
-		READINDEX((byte) 0xd, REOp.READINDEX) {
+		READINDEX((byte) 0xe, REOp.READINDEX) {
 			@Override
 			Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
 				int indexSize = Byte.toUnsignedInt(buf.get());
-				if (indexSize <= 0 || indexSize > 10) {
-					throw new DeserializeException("Bad ReadIndex size " + indexSize);
-				}
 				var array = new byte[indexSize];
 				buf.get(array);
 				return SubstateIndex.create(array, d.byteToClass(array[0]));
 			}
 		},
-		DOWNINDEX((byte) 0xe, REOp.DOWNINDEX) {
+		DOWNINDEX((byte) 0xf, REOp.DOWNINDEX) {
 			@Override
 			public Object read(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization d) throws DeserializeException {
 				int indexSize = Byte.toUnsignedInt(buf.get());
-				if (indexSize <= 0 || indexSize > 10) {
-					throw new DeserializeException("Bad DownIndex size " + indexSize);
-				}
 				var b = new byte[indexSize];
 				buf.get(b);
 				return SubstateIndex.create(b, d.byteToClass(b[0]));
@@ -238,15 +256,16 @@ public final class REInstruction {
 	}
 
 	public static REInstruction readFrom(REParser.ParserState parserState, ByteBuffer buf, SubstateDeserialization deserialization)
-		throws DeserializeException {
+		throws DeserializeException, REInstructionDataDeserializeException {
+
+		var microOp = REMicroOp.fromByte(buf.get());
+		var pos = buf.position();
 		try {
-			var microOp = REMicroOp.fromByte(buf.get());
-			var pos = buf.position();
 			var data = microOp.read(parserState, buf, deserialization);
 			var length = buf.position() - pos;
 			return new REInstruction(microOp, data, buf.array(), pos, length);
-		} catch (BufferUnderflowException e) {
-			throw new DeserializeException("Buffer underflow @" + parserState.curIndex(), e);
+		} catch (Exception e) {
+			throw new REInstructionDataDeserializeException(microOp, e);
 		}
 	}
 

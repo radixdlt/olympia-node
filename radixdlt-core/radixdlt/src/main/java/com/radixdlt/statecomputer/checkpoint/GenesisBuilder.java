@@ -60,9 +60,9 @@ public final class GenesisBuilder {
 		final var rules = forks.genesisFork().getEngineRules();
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
-				cmConfig.getVirtualStoreLayer(),
-				cmConfig.getProcedures(),
-				cmConfig.getMeter()
+			cmConfig.getProcedures(),
+			cmConfig.getVirtualSubstateDeserialization(),
+			cmConfig.getMeter()
 		);
 		this.radixEngine = new RadixEngine<>(
 				rules.getParser(),

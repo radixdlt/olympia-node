@@ -26,7 +26,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-import static com.radixdlt.application.validators.state.PreparedRakeUpdate.RAKE_MAX;
+import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 
 public final class ValidatorStakeData implements ResourceInBucket {
 	private final UInt256 totalStake;
@@ -107,13 +107,14 @@ public final class ValidatorStakeData implements ResourceInBucket {
 
 	@Override
 	public String toString() {
-		return String.format("%s{registered=%s stake=%s validator=%s ownership=%s rake=%s}",
+		return String.format("%s{registered=%s stake=%s validator=%s ownership=%s rake=%s owner=%s}",
 			getClass().getSimpleName(),
 			isRegistered,
 			totalStake,
 			validatorKey.toHex().substring(0, 11),
 			totalOwnership,
-			rakePercentage
+			rakePercentage,
+			ownerAddr
 		);
 	}
 

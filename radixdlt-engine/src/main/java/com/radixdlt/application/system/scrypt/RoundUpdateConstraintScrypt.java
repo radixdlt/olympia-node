@@ -69,23 +69,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
-		os.substate(
-			new SubstateDefinition<>(
-				RoundData.class,
-				SubstateTypeId.ROUND_DATA.id(),
-				buf -> {
-					REFieldSerialization.deserializeReservedByte(buf);
-					var view = REFieldSerialization.deserializeNonNegativeLong(buf);
-					var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
-					return new RoundData(view, timestamp);
-				},
-				(s, buf) -> {
-					REFieldSerialization.serializeReservedByte(buf);
-					buf.putLong(s.getView());
-					buf.putLong(s.getTimestamp());
-				}
-			)
-		);
+
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorBFTData.class,
@@ -109,16 +93,16 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, RoundData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r) -> ReducerResult.incomplete(new EndPrevRound(d.getSubstate()))
+			(d, s, r, c) -> ReducerResult.incomplete(new EndPrevRound(d))
 		));
 
 		os.procedure(new DownProcedure<>(
 			EndPrevRound.class, ValidatorBFTData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r) -> {
+			(d, s, r, c) -> {
 				var closedRound = s.getClosedRound().getView();
 				var next = new StartValidatorBFTUpdate(closedRound);
-				next.beginUpdate(d.getSubstate());
+				next.beginUpdate(d);
 				return ReducerResult.incomplete(next);
 			}
 		));
@@ -126,7 +110,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		os.procedure(new DownProcedure<>(
 			StartValidatorBFTUpdate.class, ValidatorBFTData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
-			(d, s, r) -> ReducerResult.incomplete(s.beginUpdate(d.getSubstate()))
+			(d, s, r, c) -> ReducerResult.incomplete(s.beginUpdate(d))
 		));
 
 		os.procedure(new UpProcedure<>(

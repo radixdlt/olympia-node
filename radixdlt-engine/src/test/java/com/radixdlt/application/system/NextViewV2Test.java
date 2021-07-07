@@ -18,6 +18,9 @@
 
 package com.radixdlt.application.system;
 
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
@@ -40,7 +43,7 @@ import com.radixdlt.application.tokens.construction.StakeTokensConstructorV3;
 import com.radixdlt.application.tokens.scrypt.StakingConstraintScryptV4;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
-import com.radixdlt.application.validators.scrypt.ValidatorConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -60,6 +63,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -92,15 +96,15 @@ public class NextViewV2Test {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		scrypts.forEach(cmAtomOS::load);
 		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		cmAtomOS.load(new ValidatorConstraintScrypt(2));
+		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
-		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
-		);
+		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
+		cmAtomOS.load(new ValidatorUpdateOwnerConstraintScrypt());
+		var cm = new ConstraintMachine(cmAtomOS.getProcedures(), cmAtomOS.buildVirtualSubstateDeserialization());
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();

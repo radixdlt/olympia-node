@@ -24,7 +24,6 @@ import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
@@ -115,17 +114,11 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			if (!allowDelegationFlag.getValidatorKey().equals(ownerCopy.getValidatorKey())) {
 				throw new ProcedureException("Not matching validator keys");
 			}
-			return new StakePrepare(tokenHoldingBucket, allowDelegationFlag.getValidatorKey(), ownerCopy.getOwner()::equals);
-		}
-
-		ReducerState readOwner(PreparedOwnerUpdate preparedOwnerUpdate) throws ProcedureException {
-			if (!allowDelegationFlag.getValidatorKey().equals(preparedOwnerUpdate.getValidatorKey())) {
-				throw new ProcedureException("Not matching validator keys");
-			}
+			var owner = ownerCopy.getOwner();
 			return new StakePrepare(
 				tokenHoldingBucket,
 				allowDelegationFlag.getValidatorKey(),
-				preparedOwnerUpdate.getOwnerAddress()::equals
+				owner::equals
 			);
 		}
 	}
@@ -181,14 +174,6 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 				return ReducerResult.incomplete(nextState);
 			}
 		));
-		os.procedure(new ReadProcedure<>(
-			OwnerStakePrepare.class, PreparedOwnerUpdate.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
-			(s, d, r) -> {
-				var nextState = s.readOwner(d);
-				return ReducerResult.incomplete(nextState);
-			}
-		));
 		os.procedure(new UpProcedure<>(
 			StakePrepare.class, PreparedStake.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
@@ -201,15 +186,15 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		// Unstake
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, StakeOwnership.class,
-			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> ReducerResult.incomplete(new StakeOwnershipHoldingBucket(d.getSubstate()))
+			d -> d.bucket().withdrawAuthorization(),
+			(d, s, r, c) -> ReducerResult.incomplete(new StakeOwnershipHoldingBucket(d))
 		));
 		// Additional Unstake
 		os.procedure(new DownProcedure<>(
 			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
-			d -> d.getSubstate().bucket().withdrawAuthorization(),
-			(d, s, r) -> {
-				s.depositOwnership(d.getSubstate());
+			d -> d.bucket().withdrawAuthorization(),
+			(d, s, r, c) -> {
+				s.depositOwnership(d);
 				return ReducerResult.incomplete(s);
 			}
 		));

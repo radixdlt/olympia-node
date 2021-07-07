@@ -32,6 +32,10 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 		var validatorStake = txBuilder.find(ValidatorStakeData.class, v -> v.getValidatorKey().equals(action.from()))
 			.orElseThrow(() -> new TxBuilderException("Validator does not exist."));
 
+		if (action.amount().isZero()) {
+			throw new TxBuilderException("Unstake amount can't be zero.");
+		}
+
 		var ownershipAmt = action.amount()
 			.multiply(validatorStake.getTotalOwnership())
 			.divide(validatorStake.getAmount());

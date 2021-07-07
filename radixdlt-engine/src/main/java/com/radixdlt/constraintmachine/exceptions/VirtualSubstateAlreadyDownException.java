@@ -18,16 +18,10 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-public class TxnParseException extends Exception {
-	public TxnParseException(String message, Throwable cause) {
-		super(message, cause);
-	}
+import com.radixdlt.atom.SubstateId;
 
-	public TxnParseException(Throwable cause) {
-		super(cause);
-	}
-
-	public TxnParseException(String message) {
-		super(message);
+public class VirtualSubstateAlreadyDownException extends SubstateNotFoundException {
+	public VirtualSubstateAlreadyDownException(SubstateId substateId) {
+		super(substateId);
 	}
 }

@@ -90,7 +90,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 			radixEngineTxns = checker.execute(List.of(txn)).getTxns();
 		} catch (RadixEngineException e) {
 			// TODO: allow missing dependency atoms to live for a certain amount of time
-			throw new RadixEngineMempoolException(e);
+			throw new MempoolRejectedException(e);
 		} finally {
 			radixEngine.deleteBranches();
 		}
@@ -113,7 +113,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 			.flatMap(REProcessedTxn::stateUpdates)
 			.filter(REStateUpdate::isShutDown)
 			.forEach(instruction -> {
-				var substateId = instruction.getSubstate().getId();
+				var substateId = instruction.getId();
 				Set<AID> txnIds = substateIndex.remove(substateId);
 				if (txnIds == null) {
 					return;
@@ -142,7 +142,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 		prepared.stream()
 			.flatMap(REProcessedTxn::stateUpdates)
 			.filter(REStateUpdate::isShutDown)
-			.flatMap(i -> substateIndex.getOrDefault(i.getSubstate().getId(), Set.of()).stream())
+			.flatMap(i -> substateIndex.getOrDefault(i.getId(), Set.of()).stream())
 			.distinct()
 			.forEach(copy::remove);
 
@@ -154,7 +154,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 			var txnData = data.get(txId);
 			txnData.getFirst().stateUpdates()
 				.filter(REStateUpdate::isShutDown)
-				.flatMap(inst -> substateIndex.getOrDefault(inst.getSubstate().getId(), Set.of()).stream())
+				.flatMap(inst -> substateIndex.getOrDefault(inst.getId(), Set.of()).stream())
 				.distinct()
 				.forEach(copy::remove);
 

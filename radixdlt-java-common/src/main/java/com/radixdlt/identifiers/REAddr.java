@@ -159,12 +159,10 @@ public final class REAddr {
 		return Arrays.copyOfRange(hash.asBytes(), 32 - HASHED_KEY_BYTES, 32);
 	}
 
-	public boolean allowToClaimAddress(ECPublicKey publicKey, Optional<byte[]> arg) {
+	public boolean allowToClaimAddress(ECPublicKey publicKey, byte[] arg) {
 		if (addr[0] == REAddrType.HASHED_KEY.type) {
-			return arg.map(a -> {
-				var hash = REAddr.pkToHash(new String(a), publicKey);
-				return Arrays.equals(addr, 1, HASHED_KEY_BYTES + 1, hash, 0, HASHED_KEY_BYTES);
-			}).orElse(false);
+			var hash = REAddr.pkToHash(new String(arg), publicKey);
+			return Arrays.equals(addr, 1, HASHED_KEY_BYTES + 1, hash, 0, HASHED_KEY_BYTES);
 		}
 
 		return false;
@@ -248,6 +246,13 @@ public final class REAddr {
 		var buf = ByteBuffer.allocate(HASHED_KEY_BYTES + 1);
 		buf.put(REAddrType.HASHED_KEY.type);
 		buf.put(hash);
+		return create(buf.array());
+	}
+
+	public static REAddr ofHashedKey(ByteBuffer readBuf) {
+		var buf = ByteBuffer.allocate(HASHED_KEY_BYTES + 1);
+		buf.put(REAddrType.HASHED_KEY.type);
+		buf.put(readBuf.get(HASHED_KEY_BYTES));
 		return create(buf.array());
 	}
 
