@@ -48,6 +48,7 @@ import static org.mockito.Mockito.when;
 
 import static com.radixdlt.client.lib.api.token.Amount.amount;
 
+//TODO: test remaining actions!!!
 public class SyncRadixApiCreationTest {
 	private static final String BASE_URL = "http://localhost/";
 	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);

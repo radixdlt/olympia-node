@@ -127,21 +127,21 @@ public class TransactionRequest {
 		}
 
 		public TransactionRequestBuilder createFixed(
-			AccountAddress from, ECPublicKey signer, String rri, String symbol, String name,
-			String description, String iconUrl, String tokenUrl, UInt256 amount
+			AccountAddress to, ECPublicKey publicKeyOfSigner, String symbol,
+			String name, String description, String iconUrl, String tokenUrl, UInt256 supply
 		) {
-			actions.add(new CreateFixedTokenAction(from, signer, amount, rri, name, symbol, iconUrl, tokenUrl, description));
+			actions.add(new CreateFixedTokenAction(to, publicKeyOfSigner, symbol, name, description, iconUrl, tokenUrl, supply));
 			return this;
 		}
 
 		public TransactionRequestBuilder createMutable(
-			ECPublicKey signer, String symbol, String name,
+			ECPublicKey publicKeyOfSigner, String symbol, String name,
 			Optional<String> description, Optional<String> iconUrl, Optional<String> tokenUrl
 		) {
-			new CreateMutableTokenAction(
-				signer, name, symbol,
+			actions.add(new CreateMutableTokenAction(
+				publicKeyOfSigner, symbol, name,
 				iconUrl.orElse(null), tokenUrl.orElse(null), description.orElse(null)
-			);
+			));
 			return this;
 		}
 
