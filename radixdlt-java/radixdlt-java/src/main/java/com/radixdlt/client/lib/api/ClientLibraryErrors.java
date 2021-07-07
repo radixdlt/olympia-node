@@ -22,8 +22,9 @@ import com.radixdlt.utils.functional.Failure;
 public enum ClientLibraryErrors implements Failure {
 	BASE_URL_IS_MANDATORY(1001, "Base URL is mandatory"),
 	UNKNOWN_ACTION(1002, "Unknown action {0}"),
-	NO_CONTENT(1003, "No content in response"),
-	UNABLE_TO_READ_RESPONSE_BODY(1008, "Error while retrieving response body {0}");
+	OPERATION_INTERRUPTED(1003, "Operation was interrupted {0}"),
+	NETWORK_IO_ERROR(1004, "Network I/O error {0}"),
+	UNKNOWN_ERROR(1005, "Unknown error of type {0} with message {1}");
 
 	private final int code;
 	private final String message;

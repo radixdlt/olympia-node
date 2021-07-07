@@ -77,6 +77,7 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -95,6 +96,9 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
+import static com.radixdlt.client.lib.api.ClientLibraryErrors.NETWORK_IO_ERROR;
+import static com.radixdlt.client.lib.api.ClientLibraryErrors.OPERATION_INTERRUPTED;
+import static com.radixdlt.client.lib.api.ClientLibraryErrors.UNKNOWN_ERROR;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_BALANCES;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_HISTORY;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_INFO;
@@ -505,7 +509,15 @@ class SyncRadixApi implements RadixApi {
 	}
 
 	private Failure errorMapper(Throwable throwable) {
-		return null;
+		if (throwable instanceof IOException) {
+			return NETWORK_IO_ERROR.with(throwable.getMessage());
+		}
+
+		if (throwable instanceof InterruptedException) {
+			return OPERATION_INTERRUPTED.with(throwable.getMessage());
+		}
+
+		return UNKNOWN_ERROR.with(throwable.getClass().getName(), throwable.getMessage());
 	}
 
 	private <T> Result<T> bodyHandler(HttpResponse<String> body, TypeReference<JsonRpcResponse<T>> reference) {
