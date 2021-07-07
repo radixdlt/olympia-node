@@ -1,6 +1,6 @@
 package com.radix.test.network.client;
 
-import com.radix.test.network.TestNetworkConfiguration;
+import com.radix.test.network.RadixNetworkConfiguration;
 import com.radixdlt.client.lib.api.AccountAddress;
 
 import java.net.URL;
@@ -8,14 +8,23 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 
+import com.radixdlt.client.lib.api.sync.RadixApiException;
+import com.radixdlt.utils.functional.Failure;
+import kong.unirest.HttpResponse;
+import kong.unirest.JsonNode;
 import kong.unirest.Unirest;
 import kong.unirest.json.JSONObject;
 
 /**
+ * A small HTTP client that consumes the non-JSON-RPC methods e.g. /health.
  *
+ * Also consumes the JSON-RPC methods that are not part of the RadixApi client e.g. /faucet
  */
 public class RadixHttpClient {
-    public static RadixHttpClient fromTestNetworkConfiguration(TestNetworkConfiguration configuration) {
+
+    private final static String FAUCET_PATH = "/faucet";
+
+    public static RadixHttpClient fromRadixNetworkConfiguration(RadixNetworkConfiguration configuration) {
         return new RadixHttpClient(configuration.getBasicAuth());
     }
 
@@ -26,15 +35,28 @@ public class RadixHttpClient {
         }
     }
 
-    public JSONObject getNodeInfo(String nodeApiRootUrl) {
-        throw new UnsupportedOperationException("Node info is no longer accessible with this client");
+    public String callFaucet(String rootUrl, int port, String address) {
+        JSONObject faucetBody = new JSONObject();
+        faucetBody.put("jsonrpc", "2.0");
+        faucetBody.put("id", "1");
+        faucetBody.put("method", "faucet.request_tokens");
+        JSONObject params = new JSONObject();
+        params.put("address", address);
+        faucetBody.put("params", params);
+        HttpResponse<JsonNode> response = Unirest.post(rootUrl + ":" + port + FAUCET_PATH)
+            .body(faucetBody.toString(5))
+            .asJson();
+        if (!response.isSuccess()) {
+            throw new RadixApiException(Failure.failure(-1, response.getBody().toPrettyString()));
+        }
+        JSONObject responseObject = response.getBody().getObject();
+        if (responseObject.has("error")) {
+            JSONObject errorObject = responseObject.getJSONObject("error");
+            String errorMessage = errorObject.getString("message");
+            int errorCode = errorObject.getInt("code");
+            throw new RadixApiException(Failure.failure(errorCode, errorMessage));
+        }
+        return "";
     }
 
-    public String callFaucet(String nodeApiRootUrl, AccountAddress address) {
-        throw new UnsupportedOperationException("Faucet is no longer accessible with this client");
-    }
-
-    public List<URL> getPeers(URL nodeApiRootUrl) {
-        throw new UnsupportedOperationException("Peer list is no longer accessible with this client");
-    }
 }

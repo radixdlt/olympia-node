@@ -499,7 +499,7 @@ public class SyncRadixApi implements RadixApi {
 	}
 
 	private Failure errorMapper(Throwable throwable) {
-		return null;
+		return Failure.failure(-1, throwable.getMessage());
 	}
 
 	private <T> Result<T> bodyHandler(HttpResponse<String> body, TypeReference<JsonRpcResponse<T>> reference) {

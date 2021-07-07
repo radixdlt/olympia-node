@@ -2,7 +2,7 @@ package com.radix.acceptance;
 
 import com.radix.test.Utils;
 import com.radix.test.account.Account;
-import com.radix.test.network.TestNetwork;
+import com.radix.test.network.RadixNetwork;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
@@ -21,16 +21,16 @@ public abstract class AcceptanceTest {
      */
     public static final UInt256 FIXED_FAUCET_AMOUNT = Utils.fromMajorToMinor(UInt256.from(10));
 
-    private final TestNetwork testNetwork;
+    private final RadixNetwork radixNetwork;
     private final List<Account> accounts;
     protected final Account account1;
     protected final Account account2;
 
     public AcceptanceTest() {
-        testNetwork = TestNetwork.initializeFromEnv();
+        radixNetwork = RadixNetwork.initializeFromEnv();
         accounts = Lists.newArrayList();
         IntStream.range(0, 5).forEach(i -> {
-            var account = testNetwork.generateNewAccount().fold(Utils::toTestFailureException, newAccount -> newAccount);
+            var account = radixNetwork.generateNewAccount().fold(Utils::toTestFailureException, newAccount -> newAccount);
             accounts.add(account);
         });
         account1 = accounts.get(0);
@@ -46,11 +46,11 @@ public abstract class AcceptanceTest {
     }
 
     public void faucet(AccountAddress to) {
-        testNetwork.faucet(to);
+        //radixNetwork.faucet(to);
     }
 
-    public TestNetwork getNetwork() {
-        return testNetwork;
+    public RadixNetwork getNetwork() {
+        return radixNetwork;
     }
 
     /**

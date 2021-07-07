@@ -33,7 +33,7 @@ public class NetworkPeers {
 
     @JsonCreator
     public static NetworkPeers create(
-        @JsonProperty(value = "result", required = true) List<Peer> peers
+        @JsonProperty(value = "", required = true) List<Peer> peers
     ) {
         return new NetworkPeers(peers);
     }
