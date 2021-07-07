@@ -41,19 +41,29 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
 		public Set<ForkBuilder> apply(Set<ForkBuilder> forkBuilders) {
 			return forkBuilders.stream()
 				.map(c -> {
-					var epochOverwrite = properties.get("overwrite_forks." + c.getName() + ".epoch", "");
-					if (!epochOverwrite.isBlank()) {
-						var epoch = Long.parseLong(epochOverwrite);
+					final var requiredStakeVotesOverwrite = properties.get("overwrite_forks." + c.getName() + ".required_stake_votes", "");
+					final var epochOverwrite = properties.get("overwrite_forks." + c.getName() + ".epoch", "");
+
+					if (!requiredStakeVotesOverwrite.isBlank()) {
+						final var requiredStakeVotes = Integer.parseInt(requiredStakeVotesOverwrite);
+						final var minEpochOverwrite = properties.get("overwrite_forks." + c.getName() + ".min_epoch", "");
+						final var minEpoch = minEpochOverwrite.isBlank()
+							? c.fixedOrMinEpoch()
+							: Long.parseLong(minEpochOverwrite);
+						c = c.withStakeVoting(minEpoch, requiredStakeVotes);
+					} else if (!epochOverwrite.isBlank()) {
+						final var epoch = Long.parseLong(epochOverwrite);
 						logger.warn("Overwriting epoch of " + c.getName() + " to " + epoch);
 						c = c.atFixedEpoch(epoch);
 					}
 
-					var viewOverwrite = properties.get("overwrite_forks." + c.getName() + ".views", "");
+					final var viewOverwrite = properties.get("overwrite_forks." + c.getName() + ".views", "");
 					if (!viewOverwrite.isBlank()) {
-						var view = Long.parseLong(viewOverwrite);
+						final var view = Long.parseLong(viewOverwrite);
 						logger.warn("Overwriting views of " + c.getName() + " from " + c.getEngineRulesConfig().getMaxRounds() + " to " + view);
 						c = c.withEngineRulesConfig(c.getEngineRulesConfig().overrideMaxRounds(view));
 					}
+
 					return c;
 				})
 				.collect(Collectors.toSet());

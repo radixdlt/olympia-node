@@ -87,6 +87,16 @@ public final class ForkBuilder {
 		return new ForkBuilder(name, hash, Either.left(fixedEpoch), reRulesFactory, reRulesConfig);
 	}
 
+	public ForkBuilder withStakeVoting(long minEpoch, int requiredStake) {
+		return new ForkBuilder(
+			name,
+			hash,
+			Either.right(CandidateForkPredicates.stakeVoting(minEpoch, requiredStake)),
+			reRulesFactory,
+			reRulesConfig
+		);
+	}
+
 	public long fixedOrMinEpoch() {
 		return forkExecution.fold(Function.identity(), CandidateForkPredicate::minEpoch);
 	}
