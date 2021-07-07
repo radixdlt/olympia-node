@@ -54,6 +54,7 @@ import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
 
 import java.time.Duration;
