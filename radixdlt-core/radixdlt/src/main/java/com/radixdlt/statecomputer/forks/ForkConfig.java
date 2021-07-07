@@ -26,41 +26,17 @@ import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
 /**
  * Configuration used for hard forks
  */
-public abstract class ForkConfig {
-	protected final String name;
-	protected final HashCode hash;
-	protected final RERules reRules;
+public interface ForkConfig {
+	String getName();
+	HashCode getHash();
+	RERules getEngineRules();
+	ForkConfig withForksVerifier(Forks forks);
 
-	public ForkConfig(String name, HashCode hash, RERules reRules) {
-		this.name = name;
-		this.hash = hash;
-		this.reRules = reRules;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public HashCode getHash() {
-		return hash;
-	}
-
-	public RERules getEngineRules() {
-		return reRules;
-	}
-
-	public abstract ForkConfig withForksVerifier(Forks forks);
-
-	@Override
-	public String toString() {
-		return String.format("%s[%s:%s]", getClass().getSimpleName(), this.name, this.hash);
-	}
-
-	public static HashCode voteHash(ECPublicKey publicKey, ForkConfig forkConfig) {
+	static HashCode voteHash(ECPublicKey publicKey, ForkConfig forkConfig) {
 		return voteHash(publicKey, forkConfig.getHash());
 	}
 
-	public static HashCode voteHash(ECPublicKey publicKey, HashCode forkHash) {
+	static HashCode voteHash(ECPublicKey publicKey, HashCode forkHash) {
 		final var bytes = ByteUtils.concatenate(publicKey.getBytes(), forkHash.asBytes());
 		return HashUtils.sha256(bytes); // it's actually hashed twice (see HashUtils impl)
 	}

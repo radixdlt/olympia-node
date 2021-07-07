@@ -62,11 +62,20 @@ public class HealthEndpointModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> ledgerUpdateEventProcessorOnRunner(PeersForksHashesInfoService peersForksHashesInfoService) {
+	public EventProcessorOnRunner<?> ledgerUpdateEventProcessorOnRunnerpPeersForksService(PeersForksHashesInfoService peersForksHashesInfoService) {
 		return new EventProcessorOnRunner<>(
 			Runners.NODE_API,
 			LedgerUpdate.class,
 			peersForksHashesInfoService.ledgerUpdateEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> ledgerUpdateEventProcessorOnRunnerVoteStatusService(ForkVoteStatusService forkVoteStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.NODE_API,
+			LedgerUpdate.class,
+				forkVoteStatusService.ledgerUpdateEventProcessor()
 		);
 	}
 }

@@ -347,7 +347,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			var key = entry();
 			var value = entry();
 			while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-				builder.put(new BigInteger(key.getData()).longValueExact(), HashCode.fromBytes(value.getData()));
+				builder.put(Longs.fromByteArray(key.getData()), HashCode.fromBytes(value.getData()));
 			}
 		}
 		return builder.build();

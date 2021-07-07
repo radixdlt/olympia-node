@@ -1,3 +1,4 @@
+
 # Transaction
 
 A transaction is the serialization of actions that are cryptographically signed and broadcast to the Radix Network. Transactions trigger ledger state transitions, considering blockchain as a [replicated state machine](https://en.wikipedia.org/wiki/State_machine_replication). 
@@ -127,7 +128,7 @@ Currently, we have the following types:
 | `VALIDATOR_ALLOW_DELEGATION_FLAG` | `0x0E`   | Validator allow delegation from others flag                    |
 | `VALIDATOR_REGISTERED_FLAG_COPY`  | `0x0F`   | Validator registered flag copy                                 |
 | `VALIDATOR_RAKE_COPY`             | `0x10`   | Validator rake (fee) copy                                      |
-| `VALIDATOR_OWNER_COPY`            | `0x11`   | Validator owner copy                                           |
+| `VALIDATOR_SYSTEM_META_DATA`      | `0x12`   | Validator system metadata                                      |
 
 ### Substate Schema
 
@@ -239,7 +240,6 @@ Substates are serialized and deserialized based on the following protocol:
 | `validator`      | `public_key` | The validator public key        |
 | `name`           | `string`     | The validator name              |
 | `url`            | `string`     | A link to the validator website |
-| `fork_vote_hash` | `bytes`      | Validator's latest fork vote    |
 
 #### `VALIDATOR_STAKE_DATA`
 
@@ -296,6 +296,14 @@ Substates are serialized and deserialized based on the following protocol:
 | `epoch_update` | `opt<u64>`   | The effective epoch     |
 | `validator`    | `public_key` | Validator public key    |
 | `owner`        | `address`    | Validator owner address |
+
+#### `VALIDATOR_SYSTEM_META_DATA`
+
+| **Name**    | **Type**     | **Description**          |
+|-------------|--------------|--------------------------|
+| `reserved`  | `u8`         | Reserved, always `0`     |
+| `validator` | `public_key` | The validator public key |
+| `data`      | `bytes`      | System metadata          |
 
 ## Transaction Format
 

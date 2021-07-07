@@ -65,12 +65,12 @@ public final class GenesisBuilder {
 			cmConfig.getMeter()
 		);
 		this.radixEngine = new RadixEngine<>(
-				rules.getParser(),
-				rules.getSerialization(),
-				rules.getActionConstructors(),
-				cm,
-				new InMemoryEngineStore<>(),
-				rules.getBatchVerifier()
+			rules.getParser(),
+			rules.getSerialization(),
+			rules.getActionConstructors(),
+			cm,
+			new InMemoryEngineStore<>(),
+			rules.getBatchVerifier()
 		);
 	}
 
@@ -79,12 +79,12 @@ public final class GenesisBuilder {
 		txnConstructionRequest.action(new CreateSystem(timestamp));
 
 		var tokenDef = new MutableTokenDefinition(
-				null,
-				"xrd",
-				"Rads",
-				"Radix Tokens",
-				RADIX_ICON_URL,
-				RADIX_TOKEN_URL
+			null,
+			"xrd",
+			"Rads",
+			"Radix Tokens",
+			RADIX_ICON_URL,
+			RADIX_TOKEN_URL
 		);
 		txnConstructionRequest.createMutableToken(tokenDef);
 		actions.forEach(txnConstructionRequest::action);
@@ -103,20 +103,20 @@ public final class GenesisBuilder {
 		var processed = branch.execute(List.of(txn), PermissionLevel.SYSTEM);
 		radixEngine.deleteBranches();
 		var genesisValidatorSet = processed.getTxns().get(0).getEvents().stream()
-				.filter(NextValidatorSetEvent.class::isInstance)
-				.map(NextValidatorSetEvent.class::cast)
-				.findFirst()
-				.map(e -> BFTValidatorSet.from(
-						e.nextValidators().stream()
-								.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
-				).orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
+			.filter(NextValidatorSetEvent.class::isInstance)
+			.map(NextValidatorSetEvent.class::cast)
+			.findFirst()
+			.map(e -> BFTValidatorSet.from(
+				e.nextValidators().stream()
+					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
+			).orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
 
 		var init = new AccumulatorState(0, HashUtils.zero256());
 		var accumulatorState = ledgerAccumulator.accumulate(init, txn.getId().asHashCode());
 		var genesisProof = LedgerProof.genesis(
-				accumulatorState,
-				genesisValidatorSet,
-				0L
+			accumulatorState,
+			genesisValidatorSet,
+			0L
 		);
 		if (!genesisProof.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");

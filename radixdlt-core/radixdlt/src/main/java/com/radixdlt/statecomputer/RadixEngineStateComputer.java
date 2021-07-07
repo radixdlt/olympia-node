@@ -334,7 +334,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		radixEngineResult.getMetadata().getNextForkHash().ifPresent(nextForkHash -> {
-			final var nextForkConfig = forks.getByHash(nextForkHash).get(); // guaranteed to be present
+			final var nextForkConfig = forks.getByHash(nextForkHash).orElseThrow(); // guaranteed to be present
 			log.info("Epoch {} forking RadixEngine to {}", proof.getEpoch() + 1, nextForkConfig.getName());
 			final var rules = nextForkConfig.getEngineRules();
 			this.radixEngine.replaceConstraintMachine(

@@ -30,40 +30,40 @@ public final class ForkBuilder {
 	private final String name;
 	private final HashCode hash;
 	private final Either<Long, CandidateForkPredicate> forkExecution;
-	private final Function<RERulesConfig, RERules> reRulesFactory;
+	private final RERulesVersion reRulesVersion;
 	private final RERulesConfig reRulesConfig;
 
 	public ForkBuilder(
 		String name,
 		HashCode hash,
 		long fixedEpoch,
-		Function<RERulesConfig, RERules> reRulesFactory,
+		RERulesVersion reRulesVersion,
 		RERulesConfig reRulesConfig
 	) {
-		this(name, hash, Either.left(fixedEpoch), reRulesFactory, reRulesConfig);
+		this(name, hash, Either.left(fixedEpoch), reRulesVersion, reRulesConfig);
 	}
 
 	public ForkBuilder(
 		String name,
 		HashCode hash,
 		CandidateForkPredicate predicate,
-		Function<RERulesConfig, RERules> reRulesFactory,
+		RERulesVersion reRulesVersion,
 		RERulesConfig reRulesConfig
 	) {
-		this(name, hash, Either.right(predicate), reRulesFactory, reRulesConfig);
+		this(name, hash, Either.right(predicate), reRulesVersion, reRulesConfig);
 	}
 
 	private ForkBuilder(
 		String name,
 		HashCode hash,
 		Either<Long, CandidateForkPredicate> forkExecution,
-		Function<RERulesConfig, RERules> reRulesFactory,
+		RERulesVersion reRulesVersion,
 		RERulesConfig reRulesConfig
 	) {
 		this.name = name;
 		this.hash = hash;
 		this.forkExecution = forkExecution;
-		this.reRulesFactory = reRulesFactory;
+		this.reRulesVersion = reRulesVersion;
 		this.reRulesConfig = reRulesConfig;
 	}
 
@@ -75,16 +75,16 @@ public final class ForkBuilder {
 		return reRulesConfig;
 	}
 
-	public Function<RERulesConfig, RERules> getEngineRulesFactory() {
-		return reRulesFactory;
+	public RERulesVersion getReRulesVersion() {
+		return reRulesVersion;
 	}
 
 	public ForkBuilder withEngineRulesConfig(RERulesConfig newEngineRulesConfig) {
-		return new ForkBuilder(name, hash, forkExecution, reRulesFactory, newEngineRulesConfig);
+		return new ForkBuilder(name, hash, forkExecution, reRulesVersion, newEngineRulesConfig);
 	}
 
 	public ForkBuilder atFixedEpoch(long fixedEpoch) {
-		return new ForkBuilder(name, hash, Either.left(fixedEpoch), reRulesFactory, reRulesConfig);
+		return new ForkBuilder(name, hash, Either.left(fixedEpoch), reRulesVersion, reRulesConfig);
 	}
 
 	public ForkBuilder withStakeVoting(long minEpoch, int requiredStake) {
@@ -92,7 +92,7 @@ public final class ForkBuilder {
 			name,
 			hash,
 			Either.right(CandidateForkPredicates.stakeVoting(minEpoch, requiredStake)),
-			reRulesFactory,
+				reRulesVersion,
 			reRulesConfig
 		);
 	}
@@ -102,7 +102,7 @@ public final class ForkBuilder {
 	}
 
 	public ForkConfig build() {
-		final var reRules = reRulesFactory.apply(reRulesConfig);
+		final var reRules = reRulesVersion.create(reRulesConfig);
 		return forkExecution.fold(
 			fixedEpoch -> new FixedEpochForkConfig(name, hash, reRules, fixedEpoch),
 			predicate -> new CandidateForkConfig(name, hash, reRules, predicate)

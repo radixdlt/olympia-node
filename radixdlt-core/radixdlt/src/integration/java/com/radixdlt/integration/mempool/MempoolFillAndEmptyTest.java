@@ -69,7 +69,7 @@ public final class MempoolFillAndEmptyTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
-	        new ForksModule(),
+			new ForksModule(),
 			new MainnetForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
 			new MockedGenesisModule(),

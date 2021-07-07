@@ -81,86 +81,87 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
 
 import java.util.Set;
-import java.util.function.Function;
 
-public final class MainnetEngineRules {
-	public static final Function<RERulesConfig, RERules> olympiaV1 = config -> {
-		final var maxRounds = config.getMaxRounds();
-		final var perByteFee = config.getFeeTable().getPerByteFee().toSubunits();
-		final var perResourceFee = config.getFeeTable().getPerResourceFee().toSubunits();
-		final var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
+public enum RERulesVersion {
+	OLYMPIA_V1 {
+		@Override
+		public RERules create(RERulesConfig config) {
+			final var maxRounds = config.getMaxRounds();
+			final var perByteFee = config.getFeeTable().getPerByteFee().toSubunits();
+			final var perResourceFee = config.getFeeTable().getPerResourceFee().toSubunits();
+			final var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
 
-		final CMAtomOS v4 = new CMAtomOS();
-		v4.load(new ValidatorConstraintScryptV2());
-		v4.load(new ValidatorUpdateRakeConstraintScrypt(rakeIncreaseDebouncerEpochLength));
-		v4.load(new ValidatorRegisterConstraintScrypt());
-		v4.load(new ValidatorUpdateOwnerConstraintScrypt());
-		v4.load(new TokensConstraintScryptV3());
-		v4.load(new SystemConstraintScrypt(Set.of("xrd")));
-		v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));
-		v4.load(new MutexConstraintScrypt());
-		v4.load(new RoundUpdateConstraintScrypt(maxRounds));
-		v4.load(new EpochUpdateConstraintScrypt(
-			maxRounds,
-			config.getRewardsPerProposal().toSubunits(),
-			config.getMinimumCompletedProposalsPercentage(),
-			config.getUnstakingEpochDelay(),
-			config.getMaxValidators()
-		));
-		var meter = Meters.combine(
-			config.getMaxSigsPerRound().stream().<Meter>mapToObj(SigsPerRoundMeter::create).findAny().orElse(Meter.EMPTY),
-			Meters.combine(
-				TxnSizeFeeMeter.create(perByteFee),
-				ResourceFeeMeter.create(perResourceFee)
-			)
-		);
-		var constraintMachineConfig = new ConstraintMachineConfig(v4.getProcedures(), v4.buildVirtualSubstateDeserialization(), meter);
-		var parser = new REParser(v4.buildSubstateDeserialization());
-		var serialization = v4.buildSubstateSerialization();
-		var actionConstructors = REConstructor.newBuilder()
-			.perByteFee(perByteFee)
-			.put(CreateSystem.class, new CreateSystemConstructorV2())
-			.put(BurnToken.class, new BurnTokenConstructor())
-			.put(CreateFixedToken.class, new CreateFixedTokenConstructor())
-			.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
-			.put(MintToken.class, new MintTokenConstructor())
-			.put(NextEpoch.class, new NextEpochConstructorV3(
+			final CMAtomOS v4 = new CMAtomOS();
+			v4.load(new ValidatorConstraintScryptV2());
+			v4.load(new ValidatorUpdateRakeConstraintScrypt(rakeIncreaseDebouncerEpochLength));
+			v4.load(new ValidatorRegisterConstraintScrypt());
+			v4.load(new ValidatorUpdateOwnerConstraintScrypt());
+			v4.load(new TokensConstraintScryptV3());
+			v4.load(new SystemConstraintScrypt(Set.of("xrd")));
+			v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));
+			v4.load(new MutexConstraintScrypt());
+			v4.load(new RoundUpdateConstraintScrypt(maxRounds));
+			v4.load(new EpochUpdateConstraintScrypt(
+				maxRounds,
 				config.getRewardsPerProposal().toSubunits(),
 				config.getMinimumCompletedProposalsPercentage(),
 				config.getUnstakingEpochDelay(),
 				config.getMaxValidators()
-			))
-			.put(NextRound.class, new NextViewConstructorV3())
-			.put(RegisterValidator.class, new RegisterValidatorConstructor())
-			.put(SplitToken.class, new SplitTokenConstructor())
-			.put(StakeTokens.class, new StakeTokensConstructorV3(config.getMinimumStake().toSubunits()))
-			.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
-			.put(UnstakeOwnership.class, new UnstakeOwnershipConstructor())
-			.put(TransferToken.class, new TransferTokensConstructorV2())
-			.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
-			.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
-			.put(FeeReservePut.class, new FeeReservePutConstructor())
-			.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(config.getFeeTable()))
-			.put(UpdateRake.class, new UpdateRakeConstructor(
-				rakeIncreaseDebouncerEpochLength,
-				ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE
-			))
-			.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
-			.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
-			.build();
+			));
+			var meter = Meters.combine(
+				config.getMaxSigsPerRound().stream().<Meter>mapToObj(SigsPerRoundMeter::create).findAny().orElse(Meter.EMPTY),
+				Meters.combine(
+					TxnSizeFeeMeter.create(perByteFee),
+					ResourceFeeMeter.create(perResourceFee)
+				)
+			);
+			var constraintMachineConfig = new ConstraintMachineConfig(v4.getProcedures(), v4.buildVirtualSubstateDeserialization(), meter);
+			var parser = new REParser(v4.buildSubstateDeserialization());
+			var serialization = v4.buildSubstateSerialization();
+			var actionConstructors = REConstructor.newBuilder()
+				.perByteFee(perByteFee)
+				.put(CreateSystem.class, new CreateSystemConstructorV2())
+				.put(BurnToken.class, new BurnTokenConstructor())
+				.put(CreateFixedToken.class, new CreateFixedTokenConstructor())
+				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+				.put(MintToken.class, new MintTokenConstructor())
+				.put(NextEpoch.class, new NextEpochConstructorV3(
+					config.getRewardsPerProposal().toSubunits(),
+					config.getMinimumCompletedProposalsPercentage(),
+					config.getUnstakingEpochDelay(),
+					config.getMaxValidators()
+				))
+				.put(NextRound.class, new NextViewConstructorV3())
+				.put(RegisterValidator.class, new RegisterValidatorConstructor())
+				.put(SplitToken.class, new SplitTokenConstructor())
+				.put(StakeTokens.class, new StakeTokensConstructorV3(config.getMinimumStake().toSubunits()))
+				.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
+				.put(UnstakeOwnership.class, new UnstakeOwnershipConstructor())
+				.put(TransferToken.class, new TransferTokensConstructorV2())
+				.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
+				.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
+				.put(FeeReservePut.class, new FeeReservePutConstructor())
+				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(config.getFeeTable()))
+				.put(UpdateRake.class, new UpdateRakeConstructor(
+					rakeIncreaseDebouncerEpochLength,
+					ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE
+				))
+				.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
+				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
+				.build();
 
-		return new RERules(
-			parser,
-			serialization,
-			constraintMachineConfig,
-			actionConstructors,
-			new EpochProofVerifierV2(),
-			View.of(maxRounds),
-			config.getMaxSigsPerRound(),
-			config.getMaxValidators()
-		);
+			return new RERules(
+				parser,
+				serialization,
+				constraintMachineConfig,
+				actionConstructors,
+				new EpochProofVerifierV2(),
+				View.of(maxRounds),
+				config.getMaxSigsPerRound(),
+				config.getMaxValidators()
+			);
+		}
 	};
 
-	private MainnetEngineRules() {
-	}
+	public abstract RERules create(RERulesConfig config);
 }

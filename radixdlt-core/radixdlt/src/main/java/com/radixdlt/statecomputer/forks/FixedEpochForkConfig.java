@@ -20,23 +20,41 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.common.hash.HashCode;
 
-public final class FixedEpochForkConfig extends ForkConfig {
-
+public final class FixedEpochForkConfig implements ForkConfig {
+	private final String name;
+	private final HashCode hash;
+	private final RERules reRules;
 	private final long epoch;
 
 	public FixedEpochForkConfig(
-			String name,
-			HashCode hash,
-			RERules reRules,
-			long epoch
+		String name,
+		HashCode hash,
+		RERules reRules,
+		long epoch
 	) {
-		super(name, hash, reRules);
-
+		this.name = name;
+		this.hash = hash;
+		this.reRules = reRules;
 		this.epoch = epoch;
 	}
 
 	public long getEpoch() {
 		return epoch;
+	}
+
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public HashCode getHash() {
+		return hash;
+	}
+
+	@Override
+	public RERules getEngineRules() {
+		return reRules;
 	}
 
 	@Override

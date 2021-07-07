@@ -20,8 +20,10 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.common.hash.HashCode;
 
-public final class CandidateForkConfig extends ForkConfig {
-
+public final class CandidateForkConfig implements ForkConfig {
+	private final String name;
+	private final HashCode hash;
+	private final RERules reRules;
 	private final CandidateForkPredicate predicate;
 
 	public CandidateForkConfig(
@@ -30,13 +32,29 @@ public final class CandidateForkConfig extends ForkConfig {
 		RERules reRules,
 		CandidateForkPredicate predicate
 	) {
-		super(name, hash, reRules);
-
+		this.name = name;
+		this.hash = hash;
+		this.reRules = reRules;
 		this.predicate = predicate;
 	}
 
 	public CandidateForkPredicate getPredicate() {
 		return predicate;
+	}
+
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public HashCode getHash() {
+		return hash;
+	}
+
+	@Override
+	public RERules getEngineRules() {
+		return reRules;
 	}
 
 	@Override

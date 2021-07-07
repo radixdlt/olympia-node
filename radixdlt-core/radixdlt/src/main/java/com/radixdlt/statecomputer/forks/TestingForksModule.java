@@ -35,7 +35,7 @@ public final class TestingForksModule extends AbstractModule {
 			"testing-fork-genesis",
 			HashUtils.sha256("testing-fork-genesis".getBytes(StandardCharsets.UTF_8)),
 			0L,
-			MainnetEngineRules.olympiaV1,
+			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
@@ -59,7 +59,7 @@ public final class TestingForksModule extends AbstractModule {
 			"testing-fork-v2",
 			HashUtils.sha256("testing-fork-v2".getBytes(StandardCharsets.UTF_8)),
 			2L,
-			MainnetEngineRules.olympiaV1,
+			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
@@ -83,7 +83,7 @@ public final class TestingForksModule extends AbstractModule {
 			"testing-fork-v3",
 			HashUtils.sha256("testing-fork-v3".getBytes(StandardCharsets.UTF_8)),
 			CandidateForkPredicates.stakeVoting(5L, 5500),
-			MainnetEngineRules.olympiaV1,
+			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				FeeTable.create(
 					Amount.ofMicroTokens(300), // 0.0002XRD per byte fee

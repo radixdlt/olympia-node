@@ -10,7 +10,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.CandidateForkPredicates;
-import com.radixdlt.statecomputer.forks.MainnetEngineRules;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 
 import java.nio.charset.StandardCharsets;
@@ -25,7 +25,7 @@ public final class MockedForksModule extends AbstractModule {
 			"",
 			HashCode.fromInt(0),
 			0L,
-			MainnetEngineRules.olympiaV1,
+			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				FeeTable.noFees(),
 				OptionalInt.empty(),
@@ -72,7 +72,7 @@ public final class MockedForksModule extends AbstractModule {
 			name,
 			HashUtils.sha256(name.getBytes(StandardCharsets.UTF_8)),
 			epoch,
-			baseForkBuilder.getEngineRulesFactory(),
+			baseForkBuilder.getReRulesVersion(),
 			baseForkBuilder.getEngineRulesConfig()
 		);
 	}
@@ -82,7 +82,7 @@ public final class MockedForksModule extends AbstractModule {
 			name,
 			HashUtils.sha256(name.getBytes(StandardCharsets.UTF_8)),
 			CandidateForkPredicates.stakeVoting(minEpoch, percentage),
-			baseForkBuilder.getEngineRulesFactory(),
+			baseForkBuilder.getReRulesVersion(),
 			baseForkBuilder.getEngineRulesConfig()
 		);
 	}

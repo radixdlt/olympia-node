@@ -24,12 +24,16 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.engine.RadixEngine.RadixEngineResult;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.sync.CommittedReader;
+
 import java.util.Objects;
 
 public class ForkVoteStatusService {
@@ -40,20 +44,20 @@ public class ForkVoteStatusService {
 
 	private final BFTNode self;
 	private final EngineStore<LedgerAndBFTProof> engineStore;
-	private final CommittedReader committedReader;
 	private final Forks forks;
+	private ForkConfig currentForkConfig;
 
 	@Inject
 	public ForkVoteStatusService(
 		@Self BFTNode self,
 		EngineStore<LedgerAndBFTProof> engineStore,
-		CommittedReader committedReader,
-		Forks forks
+		Forks forks,
+		@InitialForkConfig ForkConfig initialForkConfig
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.engineStore = Objects.requireNonNull(engineStore);
-		this.committedReader = Objects.requireNonNull(committedReader);
 		this.forks = Objects.requireNonNull(forks);
+		this.currentForkConfig = Objects.requireNonNull(initialForkConfig);
 	}
 
 	public ForkVoteStatus forkVoteStatus() {
@@ -64,8 +68,7 @@ public class ForkVoteStatusService {
 		final var expectedCandidateForkVoteHash =
 			ForkConfig.voteHash(self.getKey(), forks.getCandidateFork().get());
 
-		final var currentFork = forks.getCurrentFork(committedReader.getEpochsForkHashes());
-		final var substateDeserialization = currentFork.getEngineRules().getParser().getSubstateDeserialization();
+		final var substateDeserialization = currentForkConfig.getEngineRules().getParser().getSubstateDeserialization();
 
 		// TODO: this could be optimized
 		try (var validatorMetadataCursor = engineStore.openIndexedCursor(
@@ -87,5 +90,15 @@ public class ForkVoteStatusService {
 				? ForkVoteStatus.NO_ACTION_NEEDED
 				: ForkVoteStatus.VOTE_REQUIRED;
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
+		return ledgerUpdate -> {
+			final var result = (RadixEngineResult<LedgerAndBFTProof>) ledgerUpdate.getStateComputerOutput().get(RadixEngineResult.class);
+			result.getMetadata().getNextForkHash()
+				.flatMap(forks::getByHash)
+				.ifPresent(nextFork -> currentForkConfig = nextFork);
+		};
 	}
 }

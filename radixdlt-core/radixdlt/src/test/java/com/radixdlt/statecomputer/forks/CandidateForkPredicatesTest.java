@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 
 public final class CandidateForkPredicatesTest {
 
-	private final RERules reRules = MainnetEngineRules.olympiaV1.apply(
+	private final RERules reRules = RERulesVersion.OLYMPIA_V1.create(
 		new RERulesConfig(
 			FeeTable.create(
 				Amount.ofMicroTokens(200),

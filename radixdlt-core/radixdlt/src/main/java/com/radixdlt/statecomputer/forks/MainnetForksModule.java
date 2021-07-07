@@ -35,7 +35,7 @@ public final class MainnetForksModule extends AbstractModule {
 			"olympia-first-epoch",
 			HashUtils.sha256("hello world".getBytes(StandardCharsets.UTF_8)),
 			0L,
-			MainnetEngineRules.olympiaV1,
+			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
@@ -59,7 +59,7 @@ public final class MainnetForksModule extends AbstractModule {
 			"olympia",
 			HashUtils.sha256("olympia".getBytes(StandardCharsets.UTF_8)),
 			2L,
-			MainnetEngineRules.olympiaV1,
+			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee

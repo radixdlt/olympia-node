@@ -167,6 +167,9 @@ public interface CloseableCursor<T> extends Iterator<T>, Closeable {
 
 			@Override
 			public T next() {
+				if (pos == items.length) {
+					throw new NoSuchElementException();
+				}
 				return items[pos++];
 			}
 		};
