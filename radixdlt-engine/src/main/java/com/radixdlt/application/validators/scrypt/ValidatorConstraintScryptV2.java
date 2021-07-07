@@ -103,7 +103,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 					return new ValidatorSystemMetadata(key, HashUtils.zero256().asBytes());
 				},
 				(k, buf) -> {
-					REFieldSerialization.serializeFixedLengthBytes(buf, HashUtils.zero256().asBytes());
+					REFieldSerialization.serializeKey(buf, (ECPublicKey) k);
 					return new ValidatorSystemMetadata((ECPublicKey) k, HashUtils.zero256().asBytes());
 				}
 			)
