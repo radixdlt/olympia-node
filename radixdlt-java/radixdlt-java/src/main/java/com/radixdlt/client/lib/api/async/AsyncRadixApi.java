@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
+import com.radixdlt.client.lib.api.NodeAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
@@ -68,6 +69,8 @@ import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
 import com.radixdlt.client.lib.dto.serializer.AccountAddressDeserializer;
 import com.radixdlt.client.lib.dto.serializer.AccountAddressSerializer;
+import com.radixdlt.client.lib.dto.serializer.NodeAddressDeserializer;
+import com.radixdlt.client.lib.dto.serializer.NodeAddressSerializer;
 import com.radixdlt.client.lib.dto.serializer.ValidatorAddressDeserializer;
 import com.radixdlt.client.lib.dto.serializer.ValidatorAddressSerializer;
 import com.radixdlt.identifiers.AID;
@@ -205,7 +208,10 @@ public class AsyncRadixApi implements RadixApi {
 		@Override
 		public Promise<BuiltTransaction> build(TransactionRequest request) {
 			return call(
-				request(CONSTRUCTION_BUILD, request.getActions(), request.getFeePayer(), request.getMessage()),
+				request(
+					CONSTRUCTION_BUILD, request.getActions(), request.getFeePayer(),
+					request.getMessage(), request.disableResourceAllocationAndDestroy()
+				),
 				new TypeReference<>() {}
 			);
 		}
@@ -557,6 +563,7 @@ public class AsyncRadixApi implements RadixApi {
 				}
 
 				public void checkClientTrusted(X509Certificate[] certs, String authType) { }
+
 				public void checkServerTrusted(X509Certificate[] certs, String authType) { }
 			}
 		};
@@ -587,11 +594,13 @@ public class AsyncRadixApi implements RadixApi {
 	}
 
 	private void configureSerialization(int networkId) {
-		var module = new SimpleModule();
-		module.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkId));
-		module.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkId));
-		module.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkId));
-		module.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(networkId));
+		var module = new SimpleModule()
+			.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkId))
+			.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkId))
+			.addSerializer(NodeAddress.class, new NodeAddressSerializer(networkId))
+			.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkId))
+			.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(networkId))
+			.addDeserializer(NodeAddress.class, new NodeAddressDeserializer(networkId));
 		objectMapper = createDefaultMapper().registerModule(module);
 	}
 

@@ -22,21 +22,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class NetworkData {
-	private final NetworkDataMessages messages;
-	private final NetworkDataNetworking networking;
+public class NetworkDataNetworkingUdp {
+	private final long droppedMessages;
 
-	private NetworkData(NetworkDataMessages messages, NetworkDataNetworking networking) {
-		this.messages = messages;
-		this.networking = networking;
+	private NetworkDataNetworkingUdp(long droppedMessages) {
+		this.droppedMessages = droppedMessages;
 	}
 
 	@JsonCreator
-	public static NetworkData create(
-		@JsonProperty(value = "messages", required = true) NetworkDataMessages messages,
-		@JsonProperty(value = "networking", required = true) NetworkDataNetworking networking
+	public static NetworkDataNetworkingUdp create(
+		@JsonProperty(value = "droppedMessages", required = true) long droppedMessages
 	) {
-		return new NetworkData(messages, networking);
+		return new NetworkDataNetworkingUdp(droppedMessages);
 	}
 
 	@Override
@@ -45,29 +42,25 @@ public class NetworkData {
 			return true;
 		}
 
-		if (!(o instanceof NetworkData)) {
+		if (!(o instanceof NetworkDataNetworkingUdp)) {
 			return false;
 		}
 
-		var that = (NetworkData) o;
-		return messages.equals(that.messages) && networking.equals(that.networking);
+		var that = (NetworkDataNetworkingUdp) o;
+		return droppedMessages == that.droppedMessages;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(messages, networking);
+		return Objects.hash(droppedMessages);
 	}
 
 	@Override
 	public String toString() {
-		return "{" + "messages=" + messages + ", networking=" + networking + '}';
+		return "{" + "droppedMessages=" + droppedMessages + '}';
 	}
 
-	public NetworkDataMessages getMessages() {
-		return messages;
-	}
-
-	public NetworkDataNetworking getNetworking() {
-		return networking;
+	public long getDroppedMessages() {
+		return droppedMessages;
 	}
 }
