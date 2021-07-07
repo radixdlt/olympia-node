@@ -24,26 +24,22 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
-import com.radixdlt.crypto.HashUtils;
-
-import java.util.List;
 import java.util.Optional;
 
 public final class UpdateValidatorMetadataConstructor implements ActionConstructor<UpdateValidatorMetadata> {
 	@Override
 	public void construct(UpdateValidatorMetadata action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.swap(
+		var substateDown = txBuilder.down(
 			ValidatorMetaData.class,
 			p -> p.getValidatorKey().equals(action.validatorKey()),
 			Optional.of(action.validatorKey()),
 			() -> new TxBuilderException("Invalid state.")
-		).with(
-			substateDown -> List.of(new ValidatorMetaData(
-				action.validatorKey(),
-				action.name() == null ? substateDown.getName() : action.name(),
-				action.name() == null ? substateDown.getUrl() : action.url()
-			))
 		);
+		txBuilder.up(new ValidatorMetaData(
+			action.validatorKey(),
+			action.name() == null ? substateDown.getName() : action.name(),
+			action.name() == null ? substateDown.getUrl() : action.url()
+		));
 		txBuilder.end();
 		var forkVoteHash = action.forkVoteHash();
 		if (forkVoteHash.isPresent()) {
