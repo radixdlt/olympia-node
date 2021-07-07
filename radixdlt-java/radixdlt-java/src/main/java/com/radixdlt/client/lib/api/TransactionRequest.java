@@ -41,11 +41,15 @@ public class TransactionRequest {
 	private final List<Action> actions;
 	private final String message;
 	private final AccountAddress feePayer;
+	private final Boolean disableResourceAllocationAndDestroy;
 
-	private TransactionRequest(String message, List<Action> actions, AccountAddress feePayer) {
+	private TransactionRequest(
+		String message, List<Action> actions, AccountAddress feePayer, Boolean disableResourceAllocationAndDestroy
+	) {
 		this.message = message;
 		this.actions = actions;
 		this.feePayer = feePayer;
+		this.disableResourceAllocationAndDestroy = disableResourceAllocationAndDestroy;
 	}
 
 	public static TransactionRequestBuilder createBuilder(AccountAddress feePayer) {
@@ -67,10 +71,16 @@ public class TransactionRequest {
 		return feePayer;
 	}
 
+	@JsonProperty("disableResourceAllocationAndDestroy")
+	public Boolean disableResourceAllocationAndDestroy() {
+		return disableResourceAllocationAndDestroy;
+	}
+
 	public static final class TransactionRequestBuilder {
 		private final List<Action> actions = new ArrayList<>();
 		private final AccountAddress feePayer;
 		private String message;
+		private Boolean disableResourceAllocationAndDestroy;
 
 		private TransactionRequestBuilder(AccountAddress feePayer) {
 			this.feePayer = feePayer;
@@ -140,8 +150,13 @@ public class TransactionRequest {
 			return this;
 		}
 
+		public TransactionRequestBuilder disableResourceAllocationAndDestroy() {
+			this.disableResourceAllocationAndDestroy = true;
+			return this;
+		}
+
 		public TransactionRequest build() {
-			return new TransactionRequest(message, actions, feePayer);
+			return new TransactionRequest(message, actions, feePayer, disableResourceAllocationAndDestroy);
 		}
 	}
 }

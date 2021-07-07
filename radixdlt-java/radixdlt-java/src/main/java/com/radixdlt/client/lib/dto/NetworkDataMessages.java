@@ -22,21 +22,21 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class NetworkData {
-	private final NetworkDataMessages messages;
-	private final NetworkDataNetworking networking;
+public class NetworkDataMessages {
+	private final NetworkDataMessagesInbound inbound;
+	private final NetworkDataMessagesOutbound outbound;
 
-	private NetworkData(NetworkDataMessages messages, NetworkDataNetworking networking) {
-		this.messages = messages;
-		this.networking = networking;
+	private NetworkDataMessages(NetworkDataMessagesInbound inbound, NetworkDataMessagesOutbound outbound) {
+		this.inbound = inbound;
+		this.outbound = outbound;
 	}
 
 	@JsonCreator
-	public static NetworkData create(
-		@JsonProperty(value = "messages", required = true) NetworkDataMessages messages,
-		@JsonProperty(value = "networking", required = true) NetworkDataNetworking networking
+	public static NetworkDataMessages create(
+		@JsonProperty(value = "inbound", required = true) NetworkDataMessagesInbound inbound,
+		@JsonProperty(value = "outbound", required = true) NetworkDataMessagesOutbound outbound
 	) {
-		return new NetworkData(messages, networking);
+		return new NetworkDataMessages(inbound, outbound);
 	}
 
 	@Override
@@ -45,29 +45,29 @@ public class NetworkData {
 			return true;
 		}
 
-		if (!(o instanceof NetworkData)) {
+		if (!(o instanceof NetworkDataMessages)) {
 			return false;
 		}
 
-		var that = (NetworkData) o;
-		return messages.equals(that.messages) && networking.equals(that.networking);
+		var that = (NetworkDataMessages) o;
+		return inbound.equals(that.inbound) && outbound.equals(that.outbound);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(messages, networking);
+		return Objects.hash(inbound, outbound);
 	}
 
 	@Override
 	public String toString() {
-		return "{" + "messages=" + messages + ", networking=" + networking + '}';
+		return "{" + "inbound=" + inbound + ", outbound=" + outbound + '}';
 	}
 
-	public NetworkDataMessages getMessages() {
-		return messages;
+	public NetworkDataMessagesInbound getInbound() {
+		return inbound;
 	}
 
-	public NetworkDataNetworking getNetworking() {
-		return networking;
+	public NetworkDataMessagesOutbound getOutbound() {
+		return outbound;
 	}
 }
