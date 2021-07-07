@@ -28,7 +28,7 @@ import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import java.util.Optional;
 
-public class Action {
+public final class Action {
 	@JsonProperty("type")
 	private final ActionType type;
 

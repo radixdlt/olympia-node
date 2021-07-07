@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class RadixEngineData {
+public final class RadixEngineData {
 	private final long invalidProposedCommands;
 	private final long systemTransactions;
 	private final long userTransactions;

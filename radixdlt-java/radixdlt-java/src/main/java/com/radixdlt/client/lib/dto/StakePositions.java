@@ -27,7 +27,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class StakePositions {
+public final class StakePositions {
 	private final ValidatorAddress validator;
 	private final UInt256 amount;
 

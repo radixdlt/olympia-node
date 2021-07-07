@@ -37,7 +37,7 @@ import com.radixdlt.client.lib.dto.MempoolData;
 import com.radixdlt.client.lib.dto.NetworkConfiguration;
 import com.radixdlt.client.lib.dto.NetworkData;
 import com.radixdlt.client.lib.dto.NetworkId;
-import com.radixdlt.client.lib.dto.NetworkPeers;
+import com.radixdlt.client.lib.dto.NetworkPeer;
 import com.radixdlt.client.lib.dto.NetworkStats;
 import com.radixdlt.client.lib.dto.Proof;
 import com.radixdlt.client.lib.dto.RadixEngineData;
@@ -74,6 +74,8 @@ import java.util.Optional;
  * API is split into following groups:
  * <p>
  * <table>
+ * <caption style="display:none">apiGroups</caption>
+ * <tbody>
  *     <tr><th>Name</th><th>Description</th></tr>
  *     <tr><td>Network</td><td>General information about network: ID, configuration, nodes, etc.</td></tr>
  *     <tr><td>Transaction</td><td>General purpose API for building and sending transactions, checking status, etc.</td></tr>
@@ -87,6 +89,7 @@ import java.util.Optional;
  *     <tr><td>RadixEngine</td><td>Radix Engine configuration and metric counters</td></tr>
  *     <tr><td>Sync</td><td>Node synchronization configuration and metric counters</td></tr>
  *     <tr><td>Ledger</td><td>Ledger proofs and checkpoints information</td></tr>
+ * </tbody>
  * </table>
  */
 public interface RadixApi {
@@ -159,7 +162,7 @@ public interface RadixApi {
 		/**
 		 * Get network peers.
 		 */
-		Promise<NetworkPeers> peers();
+		Promise<List<NetworkPeer>> peers();
 	}
 
 	Network network();

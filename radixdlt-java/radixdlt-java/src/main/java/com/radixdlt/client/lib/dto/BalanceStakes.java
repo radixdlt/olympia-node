@@ -25,7 +25,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class BalanceStakes {
+public final class BalanceStakes {
 	private final String delegate;
 	private final UInt256 amount;
 

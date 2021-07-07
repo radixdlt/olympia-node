@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Objects;
 
-public class Proof {
+public final class Proof {
 	private final String opaque;
 	private final List<SignatureDetails> sigs;
 	private final ProofHeader header;

@@ -15,7 +15,9 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.lib.dto;
+package com.radixdlt.client.lib.api.rpc;
 
-public class NetworkPeers {
+public enum PortSelector {
+	PRIMARY,
+	SECONDARY;
 }

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class NetworkDataMessagesInbound {
+public final class NetworkDataMessagesInbound {
 	private final long processed;
 	private final long discarded;
 	private final long received;

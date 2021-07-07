@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class ConsensusDataSync {
+public final class ConsensusDataSync {
 	private final long requestTimeouts;
 	private final long requestsSent;
 

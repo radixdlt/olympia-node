@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class SyncData {
+public final class SyncData {
 	private final long processed;
 	private final long targetStateVersion;
 	private final long remoteRequestsProcessed;

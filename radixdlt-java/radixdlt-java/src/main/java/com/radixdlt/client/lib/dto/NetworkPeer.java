@@ -19,19 +19,26 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.lib.api.NodeAddress;
 
+import java.util.List;
 import java.util.Objects;
 
-public final class Size {
-	private final long size;
+public final class NetworkPeer {
+	private final NodeAddress address;
+	private final List<NetworkChannel> channels;
 
-	private Size(long size) {
-		this.size = size;
+	private NetworkPeer(NodeAddress address, List<NetworkChannel> channels) {
+		this.address = address;
+		this.channels = channels;
 	}
 
 	@JsonCreator
-	public static Size create(@JsonProperty(value = "size", required = true) long size) {
-		return new Size(size);
+	public static NetworkPeer create(
+		@JsonProperty(value = "address", required = true) NodeAddress address,
+		@JsonProperty(value = "channels", required = true) List<NetworkChannel> channels
+	) {
+		return new NetworkPeer(address, channels);
 	}
 
 	@Override
@@ -40,25 +47,32 @@ public final class Size {
 			return true;
 		}
 
-		if (!(o instanceof Size)) {
+		if (!(o instanceof NetworkPeer)) {
 			return false;
 		}
 
-		var sizeDTO = (Size) o;
-		return size == sizeDTO.size;
+		var that = (NetworkPeer) o;
+		return address.equals(that.address) && channels.equals(that.channels);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(size);
+		return Objects.hash(address, channels);
 	}
 
 	@Override
 	public String toString() {
-		return "{size:" + size + '}';
+		return "{"
+			+ "address=" + address
+			+ ", channels=" + channels
+			+ '}';
 	}
 
-	public long getSize() {
-		return size;
+	public NodeAddress getAddress() {
+		return address;
+	}
+
+	public List<NetworkChannel> getChannels() {
+		return channels;
 	}
 }

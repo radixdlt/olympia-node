@@ -417,9 +417,11 @@ public class SystemConfigService {
 		var peerJson = jsonObject().put("address", addressing.forNodes().of(peer.getNodeId().getPublicKey()));
 
 		peer.getChannels().forEach(channel -> {
-			var channelJson = jsonObject();
-			channelJson.put("type", channel.isOutbound() ? "out" : "in");
-			channelJson.put("localPort", channel.getSocketAddress().getPort());
+			var channelJson = jsonObject()
+				.put("type", channel.isOutbound() ? "out" : "in")
+				.put("localPort", channel.getSocketAddress().getPort())
+				.put("ip", channel.getSocketAddress().getAddress().getHostAddress());
+
 			channel.getUri().ifPresent(uri -> channelJson.put("uri", uri.toString()));
 			channelsJson.put(channelJson);
 		});

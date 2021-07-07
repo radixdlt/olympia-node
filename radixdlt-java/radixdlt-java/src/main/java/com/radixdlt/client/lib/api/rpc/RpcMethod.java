@@ -1,10 +1,10 @@
-package com.radixdlt.client.lib.dto;
+package com.radixdlt.client.lib.api.rpc;
 
-import static com.radixdlt.client.lib.dto.EndPoint.ACCOUNT;
-import static com.radixdlt.client.lib.dto.EndPoint.ARCHIVE;
-import static com.radixdlt.client.lib.dto.EndPoint.CONSTRUCTION;
-import static com.radixdlt.client.lib.dto.EndPoint.SYSTEM;
-import static com.radixdlt.client.lib.dto.EndPoint.VALIDATION;
+import static com.radixdlt.client.lib.api.rpc.EndPoint.ACCOUNT;
+import static com.radixdlt.client.lib.api.rpc.EndPoint.ARCHIVE;
+import static com.radixdlt.client.lib.api.rpc.EndPoint.CONSTRUCTION;
+import static com.radixdlt.client.lib.api.rpc.EndPoint.SYSTEM;
+import static com.radixdlt.client.lib.api.rpc.EndPoint.VALIDATION;
 
 public enum RpcMethod {
 	TOKEN_NATIVE("tokens.get_native_token", ARCHIVE),

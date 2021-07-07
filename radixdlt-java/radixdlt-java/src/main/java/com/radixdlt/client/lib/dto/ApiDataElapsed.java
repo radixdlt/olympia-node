@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class ApiDataElapsed {
+public final class ApiDataElapsed {
 	private final ApiDbElapsed apiDb;
 
 	private ApiDataElapsed(ApiDbElapsed apiDb) {
