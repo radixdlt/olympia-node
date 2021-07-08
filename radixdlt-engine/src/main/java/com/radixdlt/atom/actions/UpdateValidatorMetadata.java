@@ -19,13 +19,13 @@
 package com.radixdlt.atom.actions;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxValidatorAction;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 import java.util.Optional;
 
-public class UpdateValidatorMetadata implements TxAction {
+public class UpdateValidatorMetadata implements TxValidatorAction {
 	private final ECPublicKey validatorKey;
 	private final String name;
 	private final String url;
@@ -43,6 +43,7 @@ public class UpdateValidatorMetadata implements TxAction {
 		this.forkVoteHash = Objects.requireNonNull(forkVoteHash);
 	}
 
+	@Override
 	public ECPublicKey validatorKey() {
 		return validatorKey;
 	}

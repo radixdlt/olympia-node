@@ -18,7 +18,6 @@
 package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-//import com.radixdlt.client.lib.dto.Action;
 import com.google.common.hash.HashCode;
 import com.radixdlt.client.lib.api.action.Action;
 import com.radixdlt.client.lib.api.action.BurnAction;
@@ -31,6 +30,9 @@ import com.radixdlt.client.lib.api.action.TransferAction;
 import com.radixdlt.client.lib.api.action.UnregisterValidatorAction;
 import com.radixdlt.client.lib.api.action.UnstakeAction;
 import com.radixdlt.client.lib.api.action.UpdateValidatorAction;
+import com.radixdlt.client.lib.api.action.UpdateValidatorAllowDelegationFlagAction;
+import com.radixdlt.client.lib.api.action.UpdateValidatorFeeAction;
+import com.radixdlt.client.lib.api.action.UpdateValidatorOwnerAction;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 
@@ -112,23 +114,38 @@ public class TransactionRequest {
 			return this;
 		}
 
-		public TransactionRequestBuilder registerValidator(ValidatorAddress delegate, Optional<String> name, Optional<String> url) {
-			actions.add(new RegisterValidatorAction(delegate, name.orElse(null), url.orElse(null)));
+		public TransactionRequestBuilder registerValidator(ValidatorAddress validator, Optional<String> name, Optional<String> url) {
+			actions.add(new RegisterValidatorAction(validator, name.orElse(null), url.orElse(null)));
 			return this;
 		}
 
-		public TransactionRequestBuilder unregisterValidator(ValidatorAddress delegate, Optional<String> name, Optional<String> url) {
-			actions.add(new UnregisterValidatorAction(delegate, name.orElse(null), url.orElse(null)));
+		public TransactionRequestBuilder unregisterValidator(ValidatorAddress validator, Optional<String> name, Optional<String> url) {
+			actions.add(new UnregisterValidatorAction(validator, name.orElse(null), url.orElse(null)));
 			return this;
 		}
 
 		public TransactionRequestBuilder updateValidator(
-			ValidatorAddress delegate,
+			ValidatorAddress validator,
 			Optional<String> name,
 			Optional<String> url,
 			Optional<HashCode> forkVoteHash
 		) {
-			actions.add(new UpdateValidatorAction(delegate, name.orElse(null), url.orElse(null), forkVoteHash.orElse(null)));
+			actions.add(new UpdateValidatorAction(validator, name.orElse(null), url.orElse(null), forkVoteHash.orElse(null)));
+			return this;
+		}
+
+		public TransactionRequestBuilder updateValidatorAllowDelegationFlag(ValidatorAddress validator, boolean allowDelegation) {
+			actions.add(new UpdateValidatorAllowDelegationFlagAction(validator, allowDelegation));
+			return this;
+		}
+
+		public TransactionRequestBuilder updateValidatorFee(ValidatorAddress validator, double validatorFee) {
+			actions.add(new UpdateValidatorFeeAction(validator, validatorFee));
+			return this;
+		}
+
+		public TransactionRequestBuilder updateValidatorOwner(ValidatorAddress validator, AccountAddress owner) {
+			actions.add(new UpdateValidatorOwnerAction(validator, owner));
 			return this;
 		}
 

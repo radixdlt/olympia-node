@@ -19,15 +19,11 @@ package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.utils.functional.Result;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.UNKNOWN_ACTION;
 
 public enum ActionType {
 	MSG("Message"),
@@ -39,6 +35,9 @@ public enum ActionType {
 	REGISTER_VALIDATOR("RegisterValidator"),
 	UNREGISTER_VALIDATOR("UnregisterValidator"),
 	UPDATE_VALIDATOR("UpdateValidator"),
+	UPDATE_VALIDATOR_FEE("UpdateValidatorFee"),
+	UPDATE_VALIDATOR_OWNER("UpdateValidatorOwnerAddress"),
+	UPDATE_VALIDATOR_DELEGATION_FLAG("UpdateAllowDelegationFlag"),
 	CREATE_FIXED("CreateFixedSupplyToken"),
 	CREATE_MUTABLE("CreateMutableSupplyToken"),
 	UNKNOWN("Other");
@@ -66,11 +65,5 @@ public enum ActionType {
 		}
 
 		return result;
-	}
-
-	public static Result<ActionType> fromString(String action) {
-		return Optional.ofNullable(TO_ACTION_TYPE.get(action))
-			.map(Result::ok)
-			.orElseGet(() -> UNKNOWN_ACTION.with(action).result());
 	}
 }
