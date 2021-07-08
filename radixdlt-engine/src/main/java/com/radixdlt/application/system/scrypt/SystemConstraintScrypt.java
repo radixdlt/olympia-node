@@ -120,12 +120,13 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				SubstateTypeId.VIRTUAL_PARENT.id(),
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
-					var data = REFieldSerialization.deserializeBytes(buf);
+					var data = new byte[buf.remaining()];
+					buf.get(data);
 					return new VirtualParent(data);
 				},
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
-					REFieldSerialization.serializeBytes(buf, s.getData());
+					buf.put(s.getData());
 				}
 			)
 		);

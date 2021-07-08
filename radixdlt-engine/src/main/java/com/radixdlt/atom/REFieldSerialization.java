@@ -220,33 +220,20 @@ public final class REFieldSerialization {
 		if (sBytes.length > 255) {
 			throw new IllegalArgumentException("string cannot be greater than 255 chars");
 		}
-		var len = (byte) sBytes.length;
-		buf.put(len); // url length
+		var len = (short) sBytes.length;
+		buf.putShort(len); // url length
 		buf.put(sBytes); // url
 	}
 
-	public static void serializeBytes(ByteBuffer buf, byte[] bytes) {
-		buf.put(bytes);
-	}
-
-	public static byte[] deserializeBytes(ByteBuffer buf) {
-		var dest = new byte[buf.remaining()];
-		buf.get(dest);
-		return dest;
-	}
-
-	public static String deserializeString(ByteBuffer buf) {
-		var len = Byte.toUnsignedInt(buf.get()); // url
+	public static String deserializeString(ByteBuffer buf) throws DeserializeException {
+		var len = REFieldSerialization.deserializeUnsignedShort(buf, 0, 255);
 		var dest = new byte[len];
 		buf.get(dest);
 		return new String(dest, RadixConstants.STANDARD_CHARSET);
 	}
 
 	public static String deserializeUrl(ByteBuffer buf) throws DeserializeException {
-		var len = Byte.toUnsignedInt(buf.get()); // url
-		var dest = new byte[len];
-		buf.get(dest);
-		var url = new String(dest, RadixConstants.STANDARD_CHARSET);
+		var url = deserializeString(buf);
 		if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
 			throw new DeserializeException("URL: not a valid URL: " + url);
 		}
