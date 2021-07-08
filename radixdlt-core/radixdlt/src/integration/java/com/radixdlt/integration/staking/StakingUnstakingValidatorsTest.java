@@ -26,6 +26,7 @@ import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
+import com.radixdlt.integration.FailOnEvent;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.PrivateKeys;
@@ -51,7 +52,6 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.NodeApplicationRequest;
@@ -77,7 +77,6 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -219,6 +218,13 @@ public class StakingUnstakingValidatorsTest {
 			reConfig,
 			new PersistedNodeForTestingModule(),
 			new LastEventsModule(LedgerUpdate.class),
+			FailOnEvent.asModule(InvalidProposedTxn.class),
+			FailOnEvent.asModule(MempoolAddFailure.class, e -> {
+				if (!(e.getException().getCause() instanceof RadixEngineException)) {
+					return false;
+				}
+				return !(Throwables.getRootCause(e.getException()) instanceof SubstateNotFoundException);
+			}),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
@@ -226,31 +232,6 @@ public class StakingUnstakingValidatorsTest {
 					bind(Environment.class).toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
-				}
-
-				@ProvidesIntoSet
-				EventProcessorOnDispatch<?> failOnEvent() {
-					return new EventProcessorOnDispatch<>(
-						InvalidProposedTxn.class,
-						i -> {
-							throw new IllegalStateException("Invalid proposed transaction occurred: " + i, i.getException());
-						}
-					);
-				}
-
-				@ProvidesIntoSet
-				EventProcessorOnDispatch<?> mempoolFail() {
-					return new EventProcessorOnDispatch<>(
-						MempoolAddFailure.class,
-						e -> {
-							if (e.getException().getCause() instanceof RadixEngineException) {
-								var rootCause = Throwables.getRootCause(e.getException());
-								if (!(rootCause instanceof SubstateNotFoundException)) {
-									throw new IllegalStateException("Found unexpected mempool exception", e.getException());
-								}
-							}
-						}
-					);
 				}
 
 				@Provides
