@@ -129,7 +129,7 @@ public final class CandidateForkPredicatesTest {
 	private CloseableCursor<RawSubstateBytes> votesOf(ForkConfig forkConfig, BFTNode... nodes) {
 		return CloseableCursor.of(
 			Arrays.stream(nodes)
-				.map(n -> voteOf(n, forkConfig.getHash()))
+				.map(n -> voteOf(n, forkConfig.hash()))
 				.toArray(RawSubstateBytes[]::new)
 		);
 	}

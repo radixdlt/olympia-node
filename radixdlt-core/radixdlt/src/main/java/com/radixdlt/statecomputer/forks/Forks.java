@@ -92,7 +92,7 @@ public final class Forks {
 
 	private static boolean ensureUniqueHashes(Set<ForkConfig> forks) {
 		final var hashesSet = forks.stream()
-			.map(ForkConfig::getHash)
+			.map(ForkConfig::hash)
 			.collect(Collectors.toSet());
 		return forks.size() == hashesSet.size();
 	}
@@ -139,7 +139,7 @@ public final class Forks {
 	@SuppressWarnings("unchecked")
 	public Optional<ForkConfig> getByHash(HashCode forkHash) {
 		final var maybeFixedEpochFork = this.fixedEpochForks.stream()
-			.filter(forkConfig -> forkConfig.getHash().equals(forkHash))
+			.filter(forkConfig -> forkConfig.hash().equals(forkHash))
 			.findFirst();
 
 		if (maybeFixedEpochFork.isPresent()) {
@@ -147,7 +147,7 @@ public final class Forks {
 			return (Optional) maybeFixedEpochFork;
 		} else {
 			return (Optional) candidateFork
-				.filter(forkConfig -> forkConfig.getHash().equals(forkHash));
+				.filter(forkConfig -> forkConfig.hash().equals(forkHash));
 		}
 	}
 
@@ -173,7 +173,7 @@ public final class Forks {
 			.filter(f -> f.getEpoch() <= currentEpoch && f.getEpoch() > 0)
 			.allMatch(fork -> {
 				final var maybeStored = Optional.ofNullable(storedForks.get(fork.getEpoch()));
-				return maybeStored.isPresent() && maybeStored.get().equals(fork.getHash());
+				return maybeStored.isPresent() && maybeStored.get().equals(fork.hash());
 			});
 
 		final var storedForksAreExpected = storedForks.entrySet().stream()
@@ -186,10 +186,10 @@ public final class Forks {
 					.filter(f -> e.getKey() >= f.getPredicate().minEpoch());
 
 				final var expectedAtFixedEpochMatches =
-					maybeExpectedAtFixedEpoch.isPresent() && maybeExpectedAtFixedEpoch.get().getHash().equals(e.getValue());
+					maybeExpectedAtFixedEpoch.isPresent() && maybeExpectedAtFixedEpoch.get().hash().equals(e.getValue());
 
 				final var expectedCandidateMatches =
-					maybeExpectedCandidate.isPresent() && maybeExpectedCandidate.get().getHash().equals(e.getValue());
+					maybeExpectedCandidate.isPresent() && maybeExpectedCandidate.get().hash().equals(e.getValue());
 
 				return expectedAtFixedEpochMatches || expectedCandidateMatches;
 			});
@@ -243,9 +243,9 @@ public final class Forks {
 		if (maybeNextFixedEpochFork.isPresent()) {
 			// move to a next fixed epoch fork, if there is one
 			return (Optional) maybeNextFixedEpochFork;
-		} else if (currentFixedEpochFork.getHash().equals(latestFixedEpochFork.getHash())) {
+		} else if (currentFixedEpochFork.hash().equals(latestFixedEpochFork.hash())) {
 			// if we're at the latest fixed epoch fork, then consider the candidate fork
-			final var reParser = currentFixedEpochFork.getEngineRules().getParser();
+			final var reParser = currentFixedEpochFork.engineRules().getParser();
 			return (Optional) candidateFork
 				.filter(f ->
 					nextEpoch >= f.getPredicate().minEpoch()

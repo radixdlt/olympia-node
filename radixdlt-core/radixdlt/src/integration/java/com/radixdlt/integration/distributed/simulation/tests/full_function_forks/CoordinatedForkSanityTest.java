@@ -173,7 +173,7 @@ public final class CoordinatedForkSanityTest {
 		return network.getNodes().stream().allMatch(node -> {
 			final var forks = network.getInstance(Forks.class, node);
 			final var epochsForks = network.getInstance(CommittedReader.class, node).getEpochsForkHashes();
-			return forks.getCurrentFork(epochsForks).getHash().equals(forkConfig.getHash());
+			return forks.getCurrentFork(epochsForks).hash().equals(forkConfig.hash());
 		});
 	}
 }

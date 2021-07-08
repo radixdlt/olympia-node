@@ -57,7 +57,7 @@ public final class GenesisBuilder {
 		LedgerAccumulator ledgerAccumulator
 	) {
 		this.ledgerAccumulator = ledgerAccumulator;
-		final var rules = forks.genesisFork().getEngineRules();
+		final var rules = forks.genesisFork().engineRules();
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
 			cmConfig.getProcedures(),

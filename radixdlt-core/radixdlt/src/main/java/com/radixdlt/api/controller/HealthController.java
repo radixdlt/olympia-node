@@ -54,6 +54,7 @@ public class HealthController implements Controller {
 	void handleHealthRequest(HttpServerExchange exchange) {
 		respond(exchange, jsonObject()
 			.put("network_status", networkInfoService.nodeStatus())
+			.put("current_fork", forkVoteStatusService.currentFork())
 			.put("fork_vote_status", forkVoteStatusService.forkVoteStatus())
 			.put("unknown_reported_forks_hashes", peersForksHashesInfoService.getUnknownReportedForksHashes())
 		);

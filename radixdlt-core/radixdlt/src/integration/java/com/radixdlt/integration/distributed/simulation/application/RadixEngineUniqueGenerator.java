@@ -42,7 +42,7 @@ public class RadixEngineUniqueGenerator implements TxnGenerator {
 	public Txn nextTxn() {
 		var keyPair = ECKeyPair.generateNew();
 		try {
-			return TxBuilder.newBuilder(parser.getSubstateDeserialization(), forkConfig.getEngineRules().getSerialization())
+			return TxBuilder.newBuilder(parser.getSubstateDeserialization(), forkConfig.engineRules().getSerialization())
 				.mutex(keyPair.getPublicKey(), "test")
 				.signAndBuild(keyPair::sign);
 		} catch (TxBuilderException e) {

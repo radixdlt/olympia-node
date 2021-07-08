@@ -43,7 +43,7 @@ public final class TxnParser {
 		@InitialForkConfig ForkConfig forkConfig,
 		LogCMStore logCMStore
 	) {
-		this.rules = forkConfig.getEngineRules();
+		this.rules = forkConfig.engineRules();
 		this.logCMStore = Objects.requireNonNull(logCMStore);
 	}
 

@@ -324,7 +324,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		try {
 			radixEngineResult = this.radixEngine.execute(
 				verifiedTxnsAndProof.getTxns(),
-				LedgerAndBFTProof.create(proof, vertexStoreState, this.currentForkConfig.getHash()),
+				LedgerAndBFTProof.create(proof, vertexStoreState, this.currentForkConfig.hash()),
 				PermissionLevel.SUPER_USER
 			);
 		} catch (RadixEngineException e) {
@@ -335,8 +335,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		radixEngineResult.getMetadata().getNextForkHash().ifPresent(nextForkHash -> {
 			final var nextForkConfig = forks.getByHash(nextForkHash).orElseThrow(); // guaranteed to be present
-			log.info("Epoch {} forking RadixEngine to {}", proof.getEpoch() + 1, nextForkConfig.getName());
-			final var rules = nextForkConfig.getEngineRules();
+			log.info("Epoch {} forking RadixEngine to {}", proof.getEpoch() + 1, nextForkConfig.name());
+			final var rules = nextForkConfig.engineRules();
 			this.radixEngine.replaceConstraintMachine(
 				rules.getConstraintMachineConfig(),
 				rules.getSerialization(),

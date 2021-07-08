@@ -205,7 +205,7 @@ public class RadixEngineStateComputerTest {
 		}
 		radixEngine.execute(
 			genesisTxns.getTxns(),
-			LedgerAndBFTProof.create(genesisLedgerHeader, null, forkConfig.getHash()),
+			LedgerAndBFTProof.create(genesisLedgerHeader, null, forkConfig.hash()),
 			PermissionLevel.SYSTEM
 		);
 	}
@@ -320,7 +320,7 @@ public class RadixEngineStateComputerTest {
 		// Arrange
 		var txn = radixEngine.construct(new NextRound(1, false, 0, i -> proposerElection.getProposer(View.of(i)).getKey()))
 			.buildWithoutSignature();
-		var illegalTxn = TxLowLevelBuilder.newBuilder(forkConfig.getEngineRules().getSerialization())
+		var illegalTxn = TxLowLevelBuilder.newBuilder(forkConfig.engineRules().getSerialization())
 			.down(SubstateId.ofSubstate(txn.getId(), 1))
 			.up(new RoundData(2, 0))
 			.end()

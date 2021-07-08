@@ -81,7 +81,7 @@ public class FaucetEndpointModule extends AbstractModule {
 		return genesis.getTxns().stream()
 			.flatMap(txn -> {
 				try {
-					var parsed = forkConfig.getEngineRules().getParser().parse(txn);
+					var parsed = forkConfig.engineRules().getParser().parse(txn);
 					return parsed.instructions().stream()
 						.map(REInstruction::getData)
 						.filter(Substate.class::isInstance)

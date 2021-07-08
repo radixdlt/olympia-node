@@ -105,7 +105,7 @@ public class MempoolTest {
 	}
 
 	private Txn createTxn(ECKeyPair keyPair, int numMutexes) throws Exception {
-		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder(forkConfig.getEngineRules().getSerialization());
+		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder(forkConfig.engineRules().getSerialization());
 		for (int i = 0; i < numMutexes; i++) {
 			var symbol = "test" + (char) ('c' + i);
 			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);

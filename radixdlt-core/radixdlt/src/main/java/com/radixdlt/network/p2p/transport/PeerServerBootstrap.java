@@ -95,7 +95,7 @@ public final class PeerServerBootstrap {
 				config,
 				addressing,
 				networkId,
-				latestKnownForkConfig.getHash(),
+				latestKnownForkConfig.hash(),
 				counters,
 				serialization,
 				secureRandom,

@@ -27,13 +27,13 @@ import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
  * Configuration used for hard forks
  */
 public interface ForkConfig {
-	String getName();
-	HashCode getHash();
-	RERules getEngineRules();
+	String name();
+	HashCode hash();
+	RERules engineRules();
 	ForkConfig withForksVerifier(Forks forks);
 
 	static HashCode voteHash(ECPublicKey publicKey, ForkConfig forkConfig) {
-		return voteHash(publicKey, forkConfig.getHash());
+		return voteHash(publicKey, forkConfig.hash());
 	}
 
 	static HashCode voteHash(ECPublicKey publicKey, HashCode forkHash) {

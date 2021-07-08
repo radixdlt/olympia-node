@@ -104,7 +104,7 @@ public final class ForksTest {
 	@Test
 	public void fork_manager_should_correctly_manage_forks() {
 		final var reRules = new RERules(
-			null, null, null, null, BatchVerifier.empty(), View.of(10), OptionalInt.empty(), 10
+			RERulesVersion.OLYMPIA_V1, null, null, null, null, BatchVerifier.empty(), View.of(10), OptionalInt.empty(), 10
 		);
 
 		final var fork1 = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
@@ -113,19 +113,19 @@ public final class ForksTest {
 
 		final var forks = Forks.create(Set.of(fork1, fork2, fork3));
 
-		assertEquals(fork1.getHash(), forks.genesisFork().getHash());
-		assertEquals(fork3.getHash(), forks.latestKnownFork().getHash());
-		assertEquals(fork1.getHash(), forks.getByHash(fork1.getHash()).get().getHash());
-		assertEquals(fork2.getHash(), forks.getByHash(fork2.getHash()).get().getHash());
-		assertEquals(fork3.getHash(), forks.getByHash(fork3.getHash()).get().getHash());
+		assertEquals(fork1.hash(), forks.genesisFork().hash());
+		assertEquals(fork3.hash(), forks.latestKnownFork().hash());
+		assertEquals(fork1.hash(), forks.getByHash(fork1.hash()).get().hash());
+		assertEquals(fork2.hash(), forks.getByHash(fork2.hash()).get().hash());
+		assertEquals(fork3.hash(), forks.getByHash(fork3.hash()).get().hash());
 
 		// if current fork is 1, then should only return 2
-		assertEquals(fork2.getHash(), forks.findNextForkConfig(null, proofAtEpoch(fork1, 0L)).get().getHash());
+		assertEquals(fork2.hash(), forks.findNextForkConfig(null, proofAtEpoch(fork1, 0L)).get().hash());
 		assertTrue(forks.findNextForkConfig(null, proofAtEpoch(fork1, 10L)).isEmpty());
 
 		// if current fork is 2, the next can only be 3
 		assertTrue(forks.findNextForkConfig(null, proofAtEpoch(fork2, 1L)).isEmpty());
-		assertEquals(fork3.getHash(), forks.findNextForkConfig(null, proofAtEpoch(fork2, 10L)).get().getHash());
+		assertEquals(fork3.hash(), forks.findNextForkConfig(null, proofAtEpoch(fork2, 10L)).get().hash());
 
 		// if current fork is 3 then shouldn't return any else
 		assertTrue(forks.findNextForkConfig(null, proofAtEpoch(fork3, 1L)).isEmpty());
@@ -137,7 +137,7 @@ public final class ForksTest {
 		final var proof = mock(LedgerProof.class);
 		when(proof.getEpoch()).thenReturn(epoch);
 		when(ledgerAndBftProof.getProof()).thenReturn(proof);
-		when(ledgerAndBftProof.getCurrentForkHash()).thenReturn(currentFork.getHash());
+		when(ledgerAndBftProof.getCurrentForkHash()).thenReturn(currentFork.hash());
 		return ledgerAndBftProof;
 	}
 

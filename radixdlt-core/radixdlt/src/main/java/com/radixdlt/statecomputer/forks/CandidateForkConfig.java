@@ -43,17 +43,17 @@ public final class CandidateForkConfig implements ForkConfig {
 	}
 
 	@Override
-	public String getName() {
+	public String name() {
 		return name;
 	}
 
 	@Override
-	public HashCode getHash() {
+	public HashCode hash() {
 		return hash;
 	}
 
 	@Override
-	public RERules getEngineRules() {
+	public RERules engineRules() {
 		return reRules;
 	}
 

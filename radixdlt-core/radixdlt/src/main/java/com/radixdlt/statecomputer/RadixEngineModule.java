@@ -53,7 +53,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private REParser parser(@InitialForkConfig ForkConfig forkConfig) {
-		return forkConfig.getEngineRules().getParser();
+		return forkConfig.engineRules().getParser();
 	}
 
 	// TODO: Remove
@@ -61,7 +61,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Singleton
 	@MaxSigsPerRound
 	private OptionalInt maxSigsPerRound(@InitialForkConfig ForkConfig forkConfig) {
-		return forkConfig.getEngineRules().getMaxSigsPerRound();
+		return forkConfig.engineRules().getMaxSigsPerRound();
 	}
 
 	// TODO: Remove
@@ -69,7 +69,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Singleton
 	@EpochCeilingView
 	private View epochCeilingHighView(@InitialForkConfig ForkConfig forkConfig) {
-		return forkConfig.getEngineRules().getMaxRounds();
+		return forkConfig.engineRules().getMaxRounds();
 	}
 
 	// TODO: Remove
@@ -77,7 +77,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Singleton
 	@MaxValidators
 	private int maxValidators(@InitialForkConfig ForkConfig forkConfig) {
-		return forkConfig.getEngineRules().getMaxValidators();
+		return forkConfig.engineRules().getMaxValidators();
 	}
 
 	@Provides
@@ -88,19 +88,19 @@ public class RadixEngineModule extends AbstractModule {
 		Set<Pair<String, StateReducer<?>>> namedStateReducers,
 		@InitialForkConfig ForkConfig forkConfig
 	) {
-		final var cmConfig = forkConfig.getEngineRules().getConstraintMachineConfig();
+		final var cmConfig = forkConfig.engineRules().getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
 			cmConfig.getProcedures(),
 			cmConfig.getVirtualSubstateDeserialization(),
 			cmConfig.getMeter()
 		);
 		final var radixEngine = new RadixEngine<>(
-			forkConfig.getEngineRules().getParser(),
-			forkConfig.getEngineRules().getSerialization(),
-			forkConfig.getEngineRules().getActionConstructors(),
+			forkConfig.engineRules().getParser(),
+			forkConfig.engineRules().getSerialization(),
+			forkConfig.engineRules().getActionConstructors(),
 			cm,
 			engineStore,
-			forkConfig.getEngineRules().getBatchVerifier()
+			forkConfig.engineRules().getBatchVerifier()
 		);
 
 		radixEngine.addStateReducer(new CurrentValidatorsReducer(), false);

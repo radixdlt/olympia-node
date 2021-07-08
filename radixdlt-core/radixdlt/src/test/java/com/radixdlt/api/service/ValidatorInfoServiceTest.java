@@ -140,7 +140,7 @@ public class ValidatorInfoServiceTest {
 
 		when(inMemorySystemInfo.getCurrentProof()).thenReturn(LedgerProof.mock());
 		final var forkConfig = mock(ForkConfig.class);
-		when(forkConfig.getEngineRules()).thenReturn(rules);
+		when(forkConfig.engineRules()).thenReturn(rules);
 		when(forks.getCurrentFork(any())).thenReturn(forkConfig);
 		when(rules.getParser()).thenReturn(parser);
 		when(parser.getSubstateDeserialization()).thenReturn(mock(SubstateDeserialization.class));

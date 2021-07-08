@@ -94,7 +94,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 				config,
 				addressing,
 				networkId,
-				latestKnownForkConfig.getHash(),
+				latestKnownForkConfig.hash(),
 				counters,
 				serialization,
 				secureRandom,

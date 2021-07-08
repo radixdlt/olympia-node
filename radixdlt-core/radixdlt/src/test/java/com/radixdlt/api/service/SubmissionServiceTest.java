@@ -225,7 +225,7 @@ public class SubmissionServiceTest {
 
 		radixEngine.execute(
 			genesisTxns.getTxns(),
-			LedgerAndBFTProof.create(genesisLedgerHeader, null, forks.genesisFork().getHash()),
+			LedgerAndBFTProof.create(genesisLedgerHeader, null, forks.genesisFork().hash()),
 			PermissionLevel.SYSTEM
 		);
 	}

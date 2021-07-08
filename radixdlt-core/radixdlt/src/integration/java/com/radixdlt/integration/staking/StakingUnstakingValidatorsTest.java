@@ -390,7 +390,7 @@ public class StakingUnstakingValidatorsTest {
 
 		public Map<BFTNode, Map<String, String>> getValidators() {
 			final var forkConfig = forks.getCurrentFork(entryStore.getEpochsForkHashes());
-			var reParser = forkConfig.getEngineRules().getParser();
+			var reParser = forkConfig.engineRules().getParser();
 			Map<BFTNode, Map<String, String>> map = entryStore.reduceUpParticles(
 				new HashMap<>(), (i, p) -> {
 					var stakeData = (ValidatorStakeData) p;
@@ -432,7 +432,7 @@ public class StakingUnstakingValidatorsTest {
 		@SuppressWarnings("unchecked")
 		public UInt256 getTotalNativeTokens() {
 			final var forkConfig = forks.getCurrentFork(entryStore.getEpochsForkHashes());
-			var reParser = forkConfig.getEngineRules().getParser();
+			var reParser = forkConfig.engineRules().getParser();
 			var deserialization = reParser.getSubstateDeserialization();
 			var totalTokens = entryStore.reduceUpParticles(
 				UInt256.ZERO,

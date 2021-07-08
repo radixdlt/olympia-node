@@ -43,17 +43,17 @@ public final class FixedEpochForkConfig implements ForkConfig {
 	}
 
 	@Override
-	public String getName() {
+	public String name() {
 		return name;
 	}
 
 	@Override
-	public HashCode getHash() {
+	public HashCode hash() {
 		return hash;
 	}
 
 	@Override
-	public RERules getEngineRules() {
+	public RERules engineRules() {
 		return reRules;
 	}
 
@@ -69,6 +69,6 @@ public final class FixedEpochForkConfig implements ForkConfig {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s, epoch=%s]", getClass().getSimpleName(), getName(), getHash(), epoch);
+		return String.format("%s[%s:%s, epoch=%s]", getClass().getSimpleName(), name(), hash(), epoch);
 	}
 }

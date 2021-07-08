@@ -33,6 +33,7 @@ import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.store.EngineStore;
+import org.json.JSONObject;
 
 import java.util.Objects;
 
@@ -60,6 +61,10 @@ public class ForkVoteStatusService {
 		this.currentForkConfig = Objects.requireNonNull(initialForkConfig);
 	}
 
+	public JSONObject currentFork() {
+		return SystemConfigService.forkConfigJson(currentForkConfig);
+	}
+
 	public ForkVoteStatus forkVoteStatus() {
 		if (forks.getCandidateFork().isEmpty()) {
 			return ForkVoteStatus.NO_ACTION_NEEDED;
@@ -68,7 +73,7 @@ public class ForkVoteStatusService {
 		final var expectedCandidateForkVoteHash =
 			ForkConfig.voteHash(self.getKey(), forks.getCandidateFork().get());
 
-		final var substateDeserialization = currentForkConfig.getEngineRules().getParser().getSubstateDeserialization();
+		final var substateDeserialization = currentForkConfig.engineRules().getParser().getSubstateDeserialization();
 
 		// TODO: this could be optimized
 		try (var validatorMetadataCursor = engineStore.openIndexedCursor(

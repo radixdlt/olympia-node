@@ -63,7 +63,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 	) {
 		return committedReader.getLastProof().orElseGet(() -> {
 			var txns = genesis.getTxns();
-			var proof = LedgerAndBFTProof.create(genesis.getProof(), null, forks.genesisFork().getHash());
+			var proof = LedgerAndBFTProof.create(genesis.getProof(), null, forks.genesisFork().hash());
 			try {
 				var parsed = radixEngine.execute(txns, proof, PermissionLevel.SYSTEM).getTxns();
 				committedDispatcher.dispatch(REOutput.create(parsed));

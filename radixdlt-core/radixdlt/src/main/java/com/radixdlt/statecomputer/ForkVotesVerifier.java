@@ -63,7 +63,7 @@ public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof>
 			: Optional.<ForkConfig>empty(); // forks only happen at epoch boundary
 
 		return maybeNextForkConfig
-			.map(nextForkConfig -> metadata.withNextForkHash(nextForkConfig.getHash()))
+			.map(nextForkConfig -> metadata.withNextForkHash(nextForkConfig.hash()))
 			.orElse(metadata);
 	}
 }

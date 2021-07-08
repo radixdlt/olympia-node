@@ -105,7 +105,7 @@ public class ValidatorInfoService {
 
 	private SubstateDeserialization retrieveEpochParser() {
 		final var forkConfig = forks.getCurrentFork(committedReader.getEpochsForkHashes());
-		return forkConfig.getEngineRules().getParser().getSubstateDeserialization();
+		return forkConfig.engineRules().getParser().getSubstateDeserialization();
 	}
 
 	@SuppressWarnings("unchecked")

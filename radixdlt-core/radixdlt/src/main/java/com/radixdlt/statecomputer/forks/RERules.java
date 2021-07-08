@@ -30,6 +30,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import java.util.OptionalInt;
 
 public final class RERules {
+	private final RERulesVersion version;
 	private final REParser parser;
 	private final SubstateSerialization serialization;
 	private final ConstraintMachineConfig constraintMachineConfig;
@@ -40,6 +41,7 @@ public final class RERules {
 	private final int maxValidators;
 
 	public RERules(
+		RERulesVersion version,
 		REParser parser,
 		SubstateSerialization serialization,
 		ConstraintMachineConfig constraintMachineConfig,
@@ -49,6 +51,7 @@ public final class RERules {
 		OptionalInt maxSigsPerRound,
 		int maxValidators
 	) {
+		this.version = version;
 		this.parser = parser;
 		this.serialization = serialization;
 		this.constraintMachineConfig = constraintMachineConfig;
@@ -57,6 +60,10 @@ public final class RERules {
 		this.maxRounds = maxRounds;
 		this.maxSigsPerRound = maxSigsPerRound;
 		this.maxValidators = maxValidators;
+	}
+
+	public RERulesVersion getVersion() {
+		return version;
 	}
 
 	public ConstraintMachineConfig getConstraintMachineConfig() {
@@ -93,6 +100,7 @@ public final class RERules {
 
 	public RERules withForksVerifier(Forks forks) {
 		return new RERules(
+			version,
 			parser,
 			serialization,
 			constraintMachineConfig,

@@ -151,6 +151,7 @@ public enum RERulesVersion {
 				.build();
 
 			return new RERules(
+				this,
 				parser,
 				serialization,
 				constraintMachineConfig,
