@@ -37,7 +37,7 @@ public enum ActionType {
 	UPDATE_VALIDATOR("UpdateValidator"),
 	UPDATE_VALIDATOR_FEE("UpdateValidatorFee"),
 	UPDATE_VALIDATOR_OWNER("UpdateValidatorOwnerAddress"),
-	UPDATE_VALIDATOR_DELEGATION_FLAG("UpdateAllowDelegationFlag"),//
+	UPDATE_VALIDATOR_DELEGATION_FLAG("UpdateAllowDelegationFlag"),
 	CREATE_FIXED("CreateFixedSupplyToken"),
 	CREATE_MUTABLE("CreateMutableSupplyToken"),
 	UNKNOWN("Other");
