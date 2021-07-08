@@ -237,6 +237,7 @@ public final class RadixEngine<M> {
 		synchronized (stateUpdateEngineLock) {
 			this.constraintMachine = new ConstraintMachine(
 				constraintMachineConfig.getProcedures(),
+				constraintMachineConfig.getDeserialization(),
 				constraintMachineConfig.getVirtualSubstateDeserialization(),
 				constraintMachineConfig.getMeter()
 			);
@@ -345,7 +346,6 @@ public final class RadixEngine<M> {
 		context.setDisableResourceAllocAndDestroy(parsedTxn.disableResourceAllocAndDestroy());
 
 		var stateUpdates = constraintMachine.verify(
-			parser.getSubstateDeserialization(),
 			engineStoreInTransaction,
 			context,
 			parsedTxn.instructions()
@@ -460,7 +460,7 @@ public final class RadixEngine<M> {
 
 			var txBuilder = TxBuilder.newBuilder(
 				filteredStore,
-				parser.getSubstateDeserialization(),
+				constraintMachine.getDeserialization(),
 				serialization
 			);
 

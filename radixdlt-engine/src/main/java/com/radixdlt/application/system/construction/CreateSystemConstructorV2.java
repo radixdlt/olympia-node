@@ -27,7 +27,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.atomos.UnclaimedREAddr;
+import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.identifiers.REAddr;
 
 import java.nio.charset.StandardCharsets;

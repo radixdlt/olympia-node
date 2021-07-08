@@ -62,7 +62,11 @@ public class BurnTokensV3Test {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		var cm = new ConstraintMachine(cmAtomOS.getProcedures(), cmAtomOS.buildVirtualSubstateDeserialization());
+		var cm = new ConstraintMachine(
+			cmAtomOS.getProcedures(),
+			cmAtomOS.buildSubstateDeserialization(),
+			cmAtomOS.buildVirtualSubstateDeserialization()
+		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
 		EngineStore<Void> store = new InMemoryEngineStore<>();

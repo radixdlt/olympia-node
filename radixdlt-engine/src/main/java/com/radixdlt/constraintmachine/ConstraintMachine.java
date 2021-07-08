@@ -33,6 +33,7 @@ import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
+import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.constraintmachine.meter.Meter;
 import com.radixdlt.identifiers.REAddr;
@@ -60,16 +61,31 @@ import java.util.function.Supplier;
 public final class ConstraintMachine {
 	private final Procedures procedures;
 	private final VirtualSubstateDeserialization virtualSubstateDeserialization;
+	private final SubstateDeserialization deserialization;
 	private final Meter metering;
 
-	public ConstraintMachine(Procedures procedures, VirtualSubstateDeserialization virtualSubstateDeserialization) {
-		this(procedures, virtualSubstateDeserialization, Meter.EMPTY);
+	public ConstraintMachine(
+		Procedures procedures,
+		SubstateDeserialization deserialization,
+		VirtualSubstateDeserialization virtualSubstateDeserialization
+	) {
+		this(procedures, deserialization, virtualSubstateDeserialization, Meter.EMPTY);
 	}
 
-	public ConstraintMachine(Procedures procedures, VirtualSubstateDeserialization virtualSubstateDeserialization, Meter metering) {
+	public ConstraintMachine(
+		Procedures procedures,
+		SubstateDeserialization deserialization,
+		VirtualSubstateDeserialization virtualSubstateDeserialization,
+		Meter metering
+	) {
 		this.procedures = Objects.requireNonNull(procedures);
+		this.deserialization = deserialization;
 		this.virtualSubstateDeserialization = virtualSubstateDeserialization;
 		this.metering = Objects.requireNonNull(metering);
+	}
+
+	public SubstateDeserialization getDeserialization() {
+		return deserialization;
 	}
 
 	private static final class CMValidationState {
@@ -318,7 +334,8 @@ public final class ConstraintMachine {
 					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);
 					expectEnd = reducerState == null;
 				} else if (inst.getMicroOp().getOp() == REOp.DOWNINDEX || inst.getMicroOp().getOp() == REOp.READINDEX) {
-					SubstateIndex index = inst.getData();
+					byte[] raw = inst.getData();
+					var index = SubstateIndex.create(raw, validationState.deserialization.byteToClass(raw[0]));
 					var substateCursor = validationState.getIndexedCursor(index);
 					var tmp = stateUpdates;
 					var iterator = new Iterator<Particle>() {
@@ -333,7 +350,7 @@ public final class ConstraintMachine {
 							// FIXME: do this via shutdownAll state update rather than individually
 							var substate = substateCursor.next();
 							if (inst.getMicroOp().getOp() == REOp.DOWNINDEX) {
-								tmp.add(REStateUpdate.of(REOp.DOWN, substate.getId(), inst::getDataByteBuffer, substate.getParticle()));
+								tmp.add(REStateUpdate.of(REOp.DOWN, substate.getId(), null, substate.getParticle()));
 							}
 							return substate.getParticle();
 						}
@@ -349,32 +366,42 @@ public final class ConstraintMachine {
 						substateCursor.close();
 					}
 				} else if (inst.isStateUpdate()) {
-					final Particle nextParticle;
 					final SubstateId substateId;
+					final Particle nextParticle;
+					final Supplier<ByteBuffer> substateBuffer;
 					if (inst.getMicroOp() == REInstruction.REMicroOp.UP) {
 						// TODO: Cleanup indexing of substate class
-						Substate substate = inst.getData();
-						nextParticle = substate.getParticle();
-						substateId = substate.getId();
-						validationState.bootUp(substate, inst::getDataByteBuffer);
+						UpSubstate upSubstate = inst.getData();
+						var buf = upSubstate.getSubstateBuffer();
+						nextParticle = validationState.deserialization.deserialize(buf);
+						if (buf.hasRemaining()) {
+							throw new TrailingBytesException("Substate has trailing bytes.");
+						}
+						substateId = upSubstate.getSubstateId();
+						substateBuffer = upSubstate::getSubstateBuffer;
+						validationState.bootUp(Substate.create(nextParticle, substateId), upSubstate::getSubstateBuffer);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWN) {
 						substateId = inst.getData();
+						substateBuffer = null;
 						nextParticle = validationState.virtualShutdown(substateId);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.DOWN) {
 						substateId = inst.getData();
+						substateBuffer = null;
 						nextParticle = validationState.shutdown(substateId);
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.LDOWN) {
 						substateId = inst.getData();
+						substateBuffer = null;
 						nextParticle = validationState.localShutdown(substateId.getIndex().orElseThrow());
 					} else if (inst.getMicroOp() == REInstruction.REMicroOp.LVDOWN) {
 						substateId = inst.getData();
+						substateBuffer = null;
 						nextParticle = validationState.localVirtualShutdown(substateId);
 					} else {
 						throw new IllegalStateException("Unhandled op: " + inst.getMicroOp());
 					}
 
 					var op = inst.getMicroOp().getOp();
-					stateUpdates.add(REStateUpdate.of(op, substateId, inst::getDataByteBuffer, nextParticle));
+					stateUpdates.add(REStateUpdate.of(op, substateId, substateBuffer, nextParticle));
 					var eventId = OpSignature.ofSubstateUpdate(op, nextParticle.getClass());
 					var methodProcedure = loadProcedure(reducerState, eventId);
 					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);
@@ -402,7 +429,7 @@ public final class ConstraintMachine {
 					}
 				}
 			} catch (Exception e) {
-				throw new ConstraintMachineException(instIndex, inst, reducerState, e);
+				throw new ConstraintMachineException(instIndex, instructions, reducerState, e);
 			}
 
 			instIndex++;
@@ -411,7 +438,7 @@ public final class ConstraintMachine {
 		try {
 			context.destroy();
 		} catch (Exception e) {
-			throw new ConstraintMachineException(instIndex, null, reducerState, e);
+			throw new ConstraintMachineException(instIndex, instructions, reducerState, e);
 		}
 
 		return groupedStateUpdates;
@@ -424,7 +451,6 @@ public final class ConstraintMachine {
 	 * @return the first error found, otherwise an empty optional
 	 */
 	public List<List<REStateUpdate>> verify(
-		SubstateDeserialization deserialization,
 		CMStore cmStore,
 		ExecutionContext context,
 		List<REInstruction> instructions

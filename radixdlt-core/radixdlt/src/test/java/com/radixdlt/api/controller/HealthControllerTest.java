@@ -76,19 +76,19 @@ public class HealthControllerTest {
 		when(peersForksHashesInfoService.getUnknownReportedForksHashes()).thenReturn(new JSONObject());
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\"," +
-			"\"network_status\":\"BOOTING\",\"current_fork\":{\"name\":\"fork1\"}}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\","
+			+ "\"network_status\":\"BOOTING\",\"current_fork\":{\"name\":\"fork1\"}}");
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\"," +
-			"\"network_status\":\"SYNCING\",\"current_fork\":{\"name\":\"fork2\"}}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\","
+			+ "\"network_status\":\"SYNCING\",\"current_fork\":{\"name\":\"fork2\"}}");
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\"," +
-			"\"network_status\":\"UP\",\"current_fork\":{\"name\":\"fork3\"}}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\","
+			+ "\"network_status\":\"UP\",\"current_fork\":{\"name\":\"fork3\"}}");
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\"," +
-			"\"network_status\":\"STALLED\",\"current_fork\":{\"name\":\"fork4\"}}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\","
+			+ "\"network_status\":\"STALLED\",\"current_fork\":{\"name\":\"fork4\"}}");
 	}
 }

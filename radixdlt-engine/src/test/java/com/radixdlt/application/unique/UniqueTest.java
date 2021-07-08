@@ -22,6 +22,7 @@ import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
@@ -34,7 +35,6 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
@@ -61,7 +61,11 @@ public class UniqueTest {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new MutexConstraintScrypt());
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
-		var cm = new ConstraintMachine(cmAtomOS.getProcedures(), cmAtomOS.buildVirtualSubstateDeserialization());
+		var cm = new ConstraintMachine(
+			cmAtomOS.getProcedures(),
+			cmAtomOS.buildSubstateDeserialization(),
+			cmAtomOS.buildVirtualSubstateDeserialization()
+		);
 		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
@@ -99,6 +103,6 @@ public class UniqueTest {
 		var sig = keyPair.sign(builder.hashToSign());
 		var txn = builder.sig(sig).build();
 		assertThatThrownBy(() -> this.sut.execute(List.of(txn)))
-			.isInstanceOf(RadixEngineException.class);
+			.hasRootCauseInstanceOf(InvalidHashedKeyException.class);
 	}
 }

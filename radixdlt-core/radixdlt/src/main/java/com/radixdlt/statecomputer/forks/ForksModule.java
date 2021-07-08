@@ -23,8 +23,6 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.sync.CommittedReader;
 
 import java.util.Optional;
 import java.util.Set;
@@ -50,22 +48,4 @@ public final class ForksModule extends AbstractModule {
 		return Forks.create(forkConfigs);
 	}
 
-	@Provides
-	@Singleton
-	@InitialForkConfig
-	private ForkConfig initialForkConfig(
-		CommittedReader committedReader,
-		Forks forks
-	) {
-		final var storedEpochForks = committedReader.getEpochsForkHashes();
-		final var epoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
-		return forks.sanityCheckForksAndGetInitial(storedEpochForks, epoch);
-	}
-
-	@Provides
-	@Singleton
-	@LatestKnownForkConfig
-	private ForkConfig latestKnownForkConfig(Forks forks) {
-		return forks.latestKnownFork();
-	}
 }
