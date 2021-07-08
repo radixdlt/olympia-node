@@ -27,7 +27,7 @@ import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.UpdateRake;
+import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -44,7 +44,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Set;
 
-public class UpdateRakeTest {
+public class UpdateValidatorFeeTest {
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
 	private SubstateSerialization serialization;
@@ -66,7 +66,7 @@ public class UpdateRakeTest {
 			serialization,
 			REConstructor.newBuilder()
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
-				.put(UpdateRake.class, new UpdateRakeConstructor(2, ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE))
+				.put(UpdateValidatorFee.class, new UpdateRakeConstructor(2, ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE))
 				.build(),
 			cm,
 			store
@@ -81,7 +81,7 @@ public class UpdateRakeTest {
 		var key = ECKeyPair.generateNew();
 
 		// Act and Assert
-		var registerTxn = this.engine.construct(new UpdateRake(key.getPublicKey(), 100))
+		var registerTxn = this.engine.construct(new UpdateValidatorFee(key.getPublicKey(), 100))
 			.signAndBuild(key::sign);
 		this.engine.execute(List.of(registerTxn));
 	}

@@ -18,12 +18,12 @@
 
 package com.radixdlt.atom.actions;
 
-import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxValidatorAction;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public class UpdateValidatorMetadata implements TxAction {
+public class UpdateValidatorMetadata implements TxValidatorAction {
 	private final ECPublicKey validatorKey;
 	private final String name;
 	private final String url;
@@ -38,6 +38,7 @@ public class UpdateValidatorMetadata implements TxAction {
 		this.url = url;
 	}
 
+	@Override
 	public ECPublicKey validatorKey() {
 		return validatorKey;
 	}

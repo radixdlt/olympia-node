@@ -22,14 +22,14 @@ import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.UpdateRake;
+import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 
 import java.util.Optional;
 import java.util.OptionalLong;
 
-public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake> {
+public final class UpdateRakeConstructor implements ActionConstructor<UpdateValidatorFee> {
 	private final long rakeIncreaseDebounceEpochLength;
 	private final int maxRakeIncrease;
 
@@ -42,23 +42,23 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 	}
 
 	@Override
-	public void construct(UpdateRake action, TxBuilder builder) throws TxBuilderException {
+	public void construct(UpdateValidatorFee action, TxBuilder builder) throws TxBuilderException {
 		builder.down(
 			ValidatorRakeCopy.class,
-			p -> p.getValidatorKey().equals(action.getValidatorKey()),
-			Optional.of(action.getValidatorKey()),
+			p -> p.getValidatorKey().equals(action.validatorKey()),
+			Optional.of(action.validatorKey()),
 			() -> new TxBuilderException("Cannot find state")
 		);
 
 		var curRakePercentage = builder.read(
 			ValidatorStakeData.class,
-			s -> s.getValidatorKey().equals(action.getValidatorKey()),
-			Optional.of(action.getValidatorKey()),
+			s -> s.getValidatorKey().equals(action.validatorKey()),
+			Optional.of(action.validatorKey()),
 			"Can't find validator stake"
 		).getRakePercentage();
 
-		var isIncrease = action.getRakePercentage() > curRakePercentage;
-		var rakeIncrease = action.getRakePercentage() - curRakePercentage;
+		var isIncrease = action.getFeePercentage() > curRakePercentage;
+		var rakeIncrease = action.getFeePercentage() - curRakePercentage;
 		if (isIncrease && rakeIncrease >= maxRakeIncrease) {
 			throw new TxBuilderException("Max rake increase is " + maxRakeIncrease + " but trying to increase " + rakeIncrease);
 		}
@@ -68,8 +68,8 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateRake
 		var epoch = curEpoch.getEpoch() + epochDiff;
 		builder.up(new ValidatorRakeCopy(
 			OptionalLong.of(epoch),
-			action.getValidatorKey(),
-			action.getRakePercentage()
+			action.validatorKey(),
+			action.getFeePercentage()
 		));
 		builder.end();
 	}

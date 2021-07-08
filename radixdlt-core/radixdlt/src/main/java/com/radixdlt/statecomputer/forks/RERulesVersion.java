@@ -39,7 +39,7 @@ import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.atom.actions.UpdateRake;
+import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
@@ -142,7 +142,7 @@ public enum RERulesVersion {
 				.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
 				.put(FeeReservePut.class, new FeeReservePutConstructor())
 				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(config.getFeeTable()))
-				.put(UpdateRake.class, new UpdateRakeConstructor(
+				.put(UpdateValidatorFee.class, new UpdateRakeConstructor(
 					rakeIncreaseDebouncerEpochLength,
 					ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE
 				))
