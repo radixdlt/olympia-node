@@ -92,7 +92,8 @@ public class MempoolTest {
 			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
 			new MockedGenesisModule(
 				Set.of(VALIDATOR_KEY.getPublicKey()),
-				Amount.ofTokens(10 * 10)
+				Amount.ofTokens(1000),
+				Amount.ofTokens(100)
 			),
 			new AbstractModule() {
 				@Override

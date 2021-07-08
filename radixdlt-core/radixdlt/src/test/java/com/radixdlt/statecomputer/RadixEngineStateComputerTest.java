@@ -209,7 +209,8 @@ public class RadixEngineStateComputerTest {
 			new RadixEngineModule(),
 			new MockedGenesisModule(
 				registeredNodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
-				Amount.ofTokens(10 * 10)
+				Amount.ofTokens(1000),
+				Amount.ofTokens(100)
 			),
 			getExternalModule()
 		).injectMembers(this);

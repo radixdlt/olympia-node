@@ -18,12 +18,8 @@
 
 package com.radixdlt.api.chaos.mempoolfiller;
 
-import com.google.inject.TypeLiteral;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.utils.PrivateKeys;
 import org.assertj.core.api.Condition;
@@ -51,7 +47,6 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
-import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,7 +75,8 @@ public class MempoolFillerTest {
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
 			new MockedGenesisModule(
 				Set.of(TEST_KEY.getPublicKey()),
-				Amount.ofTokens(10 * 10)
+				Amount.ofTokens(10000000000L),
+				Amount.ofTokens(100)
 			),
 			new AbstractModule() {
 				@Override
@@ -88,12 +84,6 @@ public class MempoolFillerTest {
 				    install(new MempoolFillerModule());
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bind(new TypeLiteral<List<TxAction>>() { })
-						.toInstance(List.of(new MintToken(
-							REAddr.ofNativeToken(),
-							REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey()),
-							Amount.ofTokens(10000000000L).toSubunits()
-						)));
 				}
 			}
 		);

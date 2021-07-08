@@ -72,7 +72,8 @@ public class PacemakerTest {
 			new RadixEngineForksLatestOnlyModule(),
 			new MockedGenesisModule(
 				Set.of(PrivateKeys.ofNumeric(1).getPublicKey()),
-				Amount.ofTokens(10 * 10)
+				Amount.ofTokens(1000),
+				Amount.ofTokens(100)
 			),
 			new SingleNodeAndPeersDeterministicNetworkModule(PrivateKeys.ofNumeric(1)),
 			new AbstractModule() {

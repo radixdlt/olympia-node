@@ -141,7 +141,8 @@ public class RecoveryTest {
 		return Guice.createInjector(
 			new MockedGenesisModule(
 				Set.of(ecKeyPair.getPublicKey()),
-				Amount.ofTokens(10 * 10)
+				Amount.ofTokens(1000),
+				Amount.ofTokens(100)
 			),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(

@@ -144,6 +144,7 @@ public class MempoolRelayTest {
 		return Guice.createInjector(
 			new MockedGenesisModule(
 				validatorsKeys,
+				Amount.ofTokens(1000),
 				Amount.ofTokens(1000)
 			),
 			MempoolConfig.asModule(500, 100, 10, 10, 10),

@@ -34,7 +34,6 @@ import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 
 /**
  * Module that supplies network senders, as well as some other assorted
@@ -43,8 +42,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork.Deter
 public class DeterministicEnvironmentModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(DeterministicSender.class).to(ControlledSender.class);
-
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(Environment.class).to(ControlledSender.class);
 

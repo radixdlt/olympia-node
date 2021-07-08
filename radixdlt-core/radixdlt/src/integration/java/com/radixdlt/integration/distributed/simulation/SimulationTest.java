@@ -273,6 +273,7 @@ public class SimulationTest {
 				public void configure() {
 					bind(new TypeLiteral<ImmutableList<BFTNode>>() { }).toInstance(bftNodes);
 					bind(new TypeLiteral<ImmutableList<BFTValidator>>() { }).toInstance(validators);
+					bind(BFTValidatorSet.class).toInstance(initialVset);
 				}
 			});
 
@@ -489,7 +490,8 @@ public class SimulationTest {
 				modules.add(new MockedRadixEngineStoreModule());
 				modules.add(new MockedGenesisModule(
 					nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
-					Amount.ofTokens(100 * 100)
+					Amount.ofTokens(1000000),
+					Amount.ofTokens(10000)
 				));
 				modules.add(new LedgerRecoveryModule());
 				modules.add(new ConsensusRecoveryModule());
@@ -501,7 +503,8 @@ public class SimulationTest {
 						install(new RadixEngineModule());
 						install(new MockedGenesisModule(
 							nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
-							Amount.ofTokens(100 * 100)
+							Amount.ofTokens(1000000),
+							Amount.ofTokens(10000)
 						));
 						bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 						bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());

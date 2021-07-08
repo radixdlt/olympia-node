@@ -19,7 +19,6 @@
 package com.radixdlt.integration.staking;
 
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
-import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
@@ -90,7 +89,6 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
@@ -214,6 +212,7 @@ public class StakingUnstakingValidatorsTest {
 		return Guice.createInjector(
 			new MockedGenesisModule(
 				nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+				Amount.ofTokens(100000),
 				Amount.ofTokens(1000)
 			),
 			MempoolConfig.asModule(10, 10),
@@ -222,15 +221,6 @@ public class StakingUnstakingValidatorsTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(nodeKeys.stream()
-						.map(k -> new MintToken(
-							REAddr.ofNativeToken(),
-							REAddr.ofPubKeyAccount(k.getPublicKey()),
-							Amount.ofTokens(10 * 10).toSubunits())
-						)
-						.collect(Collectors.toList())
-					);
-
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);

@@ -154,6 +154,7 @@ public class RecoveryLivenessTest {
 		return Guice.createInjector(
 			new MockedGenesisModule(
 				nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+				Amount.ofTokens(100000),
 				Amount.ofTokens(1000)
 			),
 			MempoolConfig.asModule(10, 10),

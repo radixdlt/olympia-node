@@ -17,13 +17,8 @@
 
 package com.radixdlt.integration.mempool;
 
-import com.google.inject.Provides;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.PrivateKeys;
@@ -39,10 +34,8 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.api.chaos.mempoolfiller.ScheduledMempoolFill;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -53,7 +46,6 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
-import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -81,6 +73,7 @@ public final class MempoolFillAndEmptyTest {
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
 			new MockedGenesisModule(
 				Set.of(TEST_KEY.getPublicKey()),
+				Amount.ofTokens(10000000000L),
 				Amount.ofTokens(1000)
 			),
 			new MempoolFillerModule(),
@@ -89,16 +82,6 @@ public final class MempoolFillAndEmptyTest {
 				protected void configure() {
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-				}
-
-				@Provides
-				@Genesis
-				private List<TxAction> mempoolFillerIssuance(@Self ECPublicKey self) {
-					return List.of(new MintToken(
-						REAddr.ofNativeToken(),
-						REAddr.ofPubKeyAccount(self),
-						Amount.ofTokens(10000000000L).toSubunits()
-					));
 				}
 			}
 		);

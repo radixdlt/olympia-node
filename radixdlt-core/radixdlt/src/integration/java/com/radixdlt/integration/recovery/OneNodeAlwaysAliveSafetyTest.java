@@ -173,7 +173,8 @@ public class OneNodeAlwaysAliveSafetyTest {
 		return Guice.createInjector(
 			new MockedGenesisModule(
 				nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
-				Amount.ofTokens(100 * 100)
+				Amount.ofTokens(1000000),
+				Amount.ofTokens(10000)
 			),
 			MempoolConfig.asModule(10, 10),
 			new RadixEngineForksLatestOnlyModule(

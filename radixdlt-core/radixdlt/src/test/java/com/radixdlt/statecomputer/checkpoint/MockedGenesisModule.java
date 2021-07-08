@@ -44,11 +44,13 @@ import java.util.stream.Collectors;
  */
 public final class MockedGenesisModule extends AbstractModule {
 	private final Set<ECPublicKey> validators;
-	private final Amount stake;
+	private final Amount xrdPerValidator;
+	private final Amount stakePerValidator;
 
-	public MockedGenesisModule(Set<ECPublicKey> validators, Amount stake) {
+	public MockedGenesisModule(Set<ECPublicKey> validators, Amount xrdPerValidator, Amount stakePerValidator) {
 		this.validators = validators;
-		this.stake = stake;
+		this.xrdPerValidator = xrdPerValidator;
+		this.stakePerValidator = stakePerValidator;
 	}
 
 	@Override
@@ -68,14 +70,14 @@ public final class MockedGenesisModule extends AbstractModule {
 	@Genesis
 	public Set<StakeTokens> stakeDelegations(@Genesis Set<ECPublicKey> validators) {
 		return validators.stream()
-			.map(v -> new StakeTokens(REAddr.ofPubKeyAccount(v), v, stake.toSubunits()))
+			.map(v -> new StakeTokens(REAddr.ofPubKeyAccount(v), v, stakePerValidator.toSubunits()))
 			.collect(Collectors.toSet());
 	}
 
 	@Provides
 	@Genesis
 	public ImmutableList<TokenIssuance> tokenIssuanceList(@Genesis Set<ECPublicKey> validators) {
-		return validators.stream().map(v -> TokenIssuance.of(v, Amount.ofTokens(100 * 100).toSubunits()))
+		return validators.stream().map(v -> TokenIssuance.of(v, xrdPerValidator.toSubunits()))
 			.sorted(Comparator.comparing(t -> t.receiver().toHex()))
 			.collect(ImmutableList.toImmutableList());
 	}

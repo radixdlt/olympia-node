@@ -72,6 +72,7 @@ public class RandomTxnTest {
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
 			new MockedGenesisModule(
 				Set.of(TEST_KEY.getPublicKey()),
+				Amount.ofTokens(100000),
 				Amount.ofTokens(1000)
 			),
 			new AbstractModule() {

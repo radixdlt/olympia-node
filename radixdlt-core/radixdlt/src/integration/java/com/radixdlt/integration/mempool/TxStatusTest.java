@@ -18,10 +18,7 @@
 
 package com.radixdlt.integration.mempool;
 
-import com.google.inject.Provides;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -121,6 +118,7 @@ public class TxStatusTest {
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
 			new MockedGenesisModule(
 				Set.of(TEST_KEY.getPublicKey()),
+				Amount.ofTokens(1010),
 				Amount.ofTokens(1000)
 			),
 			new MempoolFillerModule(),
@@ -130,16 +128,6 @@ public class TxStatusTest {
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bind(ClientApiStore.class).toInstance(mock(ClientApiStore.class));
-				}
-
-				@Provides
-				@Genesis
-				private List<TxAction> mempoolFillerIssuance() {
-					return List.of(new MintToken(
-						REAddr.ofNativeToken(),
-						REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey()),
-						Amount.ofTokens(10).toSubunits()
-					));
 				}
 			}
 		);
