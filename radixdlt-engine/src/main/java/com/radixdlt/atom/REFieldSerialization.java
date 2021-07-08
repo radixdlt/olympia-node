@@ -226,16 +226,11 @@ public final class REFieldSerialization {
 	}
 
 	public static void serializeBytes(ByteBuffer buf, byte[] bytes) {
-		if (bytes.length > 255) {
-			throw new IllegalArgumentException("bytes cannot be greater than 255 bytes");
-		}
-		buf.put((byte) bytes.length);
 		buf.put(bytes);
 	}
 
 	public static byte[] deserializeBytes(ByteBuffer buf) {
-		var len = Byte.toUnsignedInt(buf.get());
-		var dest = new byte[len];
+		var dest = new byte[buf.remaining()];
 		buf.get(dest);
 		return dest;
 	}
