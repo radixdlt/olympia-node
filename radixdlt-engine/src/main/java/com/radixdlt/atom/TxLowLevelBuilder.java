@@ -26,7 +26,7 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.Shorts;
 import com.radixdlt.utils.UInt256;
 
 import java.io.ByteArrayOutputStream;
@@ -84,9 +84,10 @@ public final class TxLowLevelBuilder {
 		if (bytes.length > 255) {
 			throw new IllegalArgumentException("Data length is " + bytes.length + " but must be <= " + 255);
 		}
-		var data = new byte[1 + bytes.length];
-		System.arraycopy(bytes, 0, data, 1, bytes.length);
-		data[0] = (byte) bytes.length;
+		var data = new byte[Short.BYTES + bytes.length];
+		data[0] = 0;
+		data[1] = (byte) bytes.length;
+		System.arraycopy(bytes, 0, data, 2, bytes.length);
 		return data;
 	}
 
@@ -113,7 +114,10 @@ public final class TxLowLevelBuilder {
 		Objects.requireNonNull(particle, "particle is required");
 		this.localUpParticles.put(upParticleCount, LocalSubstate.create(upParticleCount, particle));
 		var bytes = serialization.serialize(particle);
-		instruction(REInstruction.REMicroOp.UP, bytes);
+		var buf = ByteBuffer.allocate(Short.BYTES + bytes.length);
+		buf.putShort((short) bytes.length);
+		buf.put(bytes);
+		instruction(REInstruction.REMicroOp.UP, buf.array());
 		upParticleCount++;
 		return this;
 	}
@@ -122,9 +126,9 @@ public final class TxLowLevelBuilder {
 		if (virtualKey.length > 128) {
 			throw new IllegalStateException();
 		}
-		var buf = ByteBuffer.allocate(Integer.BYTES + 1 + virtualKey.length);
-		buf.put((byte) (virtualKey.length + Integer.BYTES));
-		buf.putInt(index);
+		var buf = ByteBuffer.allocate(Short.BYTES + Short.BYTES + virtualKey.length);
+		buf.putShort((short) (virtualKey.length + Short.BYTES));
+		buf.putShort((short) index);
 		buf.put(virtualKey);
 		instruction(REInstruction.REMicroOp.LVDOWN, buf.array());
 		return this;
@@ -134,9 +138,9 @@ public final class TxLowLevelBuilder {
 		if (virtualKey.length > 128) {
 			throw new IllegalStateException();
 		}
-		var buf = ByteBuffer.allocate(Integer.BYTES + 1 + virtualKey.length);
-		buf.put((byte) (virtualKey.length + Integer.BYTES));
-		buf.putInt(index);
+		var buf = ByteBuffer.allocate(Short.BYTES + Short.BYTES + virtualKey.length);
+		buf.putShort((short) (virtualKey.length + Short.BYTES));
+		buf.putShort((short) index);
 		buf.put(virtualKey);
 		instruction(REInstruction.REMicroOp.LVREAD, buf.array());
 		return this;
@@ -147,8 +151,8 @@ public final class TxLowLevelBuilder {
 			throw new IllegalStateException();
 		}
 		var id = SubstateId.ofVirtualSubstate(parent, virtualKey);
-		var buf = ByteBuffer.allocate(1 + id.asBytes().length);
-		buf.put((byte) id.asBytes().length);
+		var buf = ByteBuffer.allocate(Short.BYTES + id.asBytes().length);
+		buf.putShort((short) id.asBytes().length);
 		buf.put(id.asBytes());
 		instruction(REInstruction.REMicroOp.VDOWN, buf.array());
 		return this;
@@ -159,8 +163,8 @@ public final class TxLowLevelBuilder {
 			throw new IllegalStateException();
 		}
 		var id = SubstateId.ofVirtualSubstate(parent, virtualKey);
-		var buf = ByteBuffer.allocate(1 + id.asBytes().length);
-		buf.put((byte) id.asBytes().length);
+		var buf = ByteBuffer.allocate(Short.BYTES + id.asBytes().length);
+		buf.putShort((short) id.asBytes().length);
 		buf.put(id.asBytes());
 		instruction(REInstruction.REMicroOp.VREAD, buf.array());
 		return this;
@@ -171,7 +175,7 @@ public final class TxLowLevelBuilder {
 		if (particle == null) {
 			throw new IllegalStateException("Local particle does not exist: " + index);
 		}
-		instruction(REInstruction.REMicroOp.LREAD, Ints.toByteArray(index));
+		instruction(REInstruction.REMicroOp.LREAD, Shorts.toByteArray((short) index));
 		return this;
 	}
 
@@ -186,7 +190,7 @@ public final class TxLowLevelBuilder {
 		if (particle == null) {
 			throw new IllegalStateException("Local particle does not exist: " + index);
 		}
-		instruction(REInstruction.REMicroOp.LDOWN, Ints.toByteArray(index));
+		instruction(REInstruction.REMicroOp.LDOWN, Shorts.toByteArray((short) index));
 		return this;
 	}
 
@@ -197,16 +201,16 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder readIndex(SubstateIndex<?> index) {
-		var buf = ByteBuffer.allocate(1 + index.getPrefix().length);
-		buf.put((byte) index.getPrefix().length);
+		var buf = ByteBuffer.allocate(Short.BYTES + index.getPrefix().length);
+		buf.putShort((short) index.getPrefix().length);
 		buf.put(index.getPrefix());
 		instruction(REInstruction.REMicroOp.READINDEX, buf.array());
 		return this;
 	}
 
 	public TxLowLevelBuilder downIndex(SubstateIndex<?> index) {
-		var buf = ByteBuffer.allocate(1 + index.getPrefix().length);
-		buf.put((byte) index.getPrefix().length);
+		var buf = ByteBuffer.allocate(Short.BYTES + index.getPrefix().length);
+		buf.putShort((short) index.getPrefix().length);
 		buf.put(index.getPrefix());
 		instruction(REInstruction.REMicroOp.DOWNINDEX, buf.array());
 		return this;
@@ -219,22 +223,23 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder syscall(Syscall syscall, byte[] bytes) throws TxBuilderException {
 		if (bytes.length < 1 || bytes.length > 32) {
-			throw new TxBuilderException("Str length must be >= 1 and <= 32");
+			throw new TxBuilderException("Length must be >= 1 and <= 32");
 		}
-		var data = new byte[3 + bytes.length];
-		data[0] = (byte) (bytes.length + 2);
-		data[1] = syscall.id();
-		data[2] = (byte) bytes.length;
+		var data = new byte[Short.BYTES + 1 + bytes.length];
+		data[0] = 0;
+		data[1] = (byte) (bytes.length + 1);
+		data[2] = syscall.id();
 		System.arraycopy(bytes, 0, data, 3, bytes.length);
 		instruction(REInstruction.REMicroOp.SYSCALL, data);
 		return this;
 	}
 
 	public TxLowLevelBuilder syscall(Syscall syscall, UInt256 amount) {
-		var data = new byte[2 + UInt256.BYTES];
-		data[0] = UInt256.BYTES + 1;
-		data[1] = syscall.id();
-		amount.toByteArray(data, 2);
+		var data = new byte[Short.BYTES + 1 + UInt256.BYTES];
+		data[0] = 0;
+		data[1] = UInt256.BYTES + 1;
+		data[2] = syscall.id();
+		amount.toByteArray(data, 3);
 		instruction(REInstruction.REMicroOp.SYSCALL, data);
 		return this;
 	}

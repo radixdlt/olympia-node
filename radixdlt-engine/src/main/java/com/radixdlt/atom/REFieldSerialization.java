@@ -133,6 +133,21 @@ public final class REFieldSerialization {
 		}
 	}
 
+	public static int deserializeUnsignedShort(ByteBuffer buf, int min, int max) throws DeserializeException {
+		var s = buf.getShort();
+		var i = Short.toUnsignedInt(s);
+
+		if (i < min) {
+			throw new DeserializeException("Min of short value is " + min + " but value is: " + i);
+		}
+
+		if (i > max) {
+			throw new DeserializeException("Max of short value is " + max + " but value is: " + i);
+		}
+
+		return i;
+	}
+
 	public static void serializeReservedByte(ByteBuffer buf) {
 		buf.put((byte) 0);
 	}
@@ -205,38 +220,20 @@ public final class REFieldSerialization {
 		if (sBytes.length > 255) {
 			throw new IllegalArgumentException("string cannot be greater than 255 chars");
 		}
-		var len = (byte) sBytes.length;
-		buf.put(len); // url length
+		var len = (short) sBytes.length;
+		buf.putShort(len); // url length
 		buf.put(sBytes); // url
 	}
 
-	public static void serializeBytes(ByteBuffer buf, byte[] bytes) {
-		if (bytes.length > 255) {
-			throw new IllegalArgumentException("bytes cannot be greater than 255 bytes");
-		}
-		buf.put((byte) bytes.length);
-		buf.put(bytes);
-	}
-
-	public static byte[] deserializeBytes(ByteBuffer buf) {
-		var len = Byte.toUnsignedInt(buf.get());
-		var dest = new byte[len];
-		buf.get(dest);
-		return dest;
-	}
-
-	public static String deserializeString(ByteBuffer buf) {
-		var len = Byte.toUnsignedInt(buf.get()); // url
+	public static String deserializeString(ByteBuffer buf) throws DeserializeException {
+		var len = REFieldSerialization.deserializeUnsignedShort(buf, 0, 255);
 		var dest = new byte[len];
 		buf.get(dest);
 		return new String(dest, RadixConstants.STANDARD_CHARSET);
 	}
 
 	public static String deserializeUrl(ByteBuffer buf) throws DeserializeException {
-		var len = Byte.toUnsignedInt(buf.get()); // url
-		var dest = new byte[len];
-		buf.get(dest);
-		var url = new String(dest, RadixConstants.STANDARD_CHARSET);
+		var url = deserializeString(buf);
 		if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
 			throw new DeserializeException("URL: not a valid URL: " + url);
 		}

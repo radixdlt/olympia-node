@@ -55,10 +55,15 @@ public final class REParser {
 		private int upSubstateCount = 0;
 		private int substateUpdateCount = 0;
 		private int endCount = 0;
+		private int position = 0;
 		private boolean disableResourceAllocAndDestroy = false;
 
 		ParserState(Txn txn) {
 			this.txn = txn;
+		}
+
+		public List<REInstruction> instructions() {
+			return instructions;
 		}
 
 		void header(boolean disableResourceAllocAndDestroy) throws TxnParseException {
@@ -69,6 +74,14 @@ public final class REParser {
 		}
 
 		void read() {
+		}
+
+		void pos(int curPos) {
+			this.position = curPos;
+		}
+
+		public int curPosition() {
+			return this.position;
 		}
 
 		void nextInstruction(REInstruction inst) {
@@ -138,9 +151,10 @@ public final class REParser {
 			}
 
 			int curPos = buf.position();
+			parserState.pos(curPos);
 			final REInstruction inst;
 			try {
-				inst = REInstruction.readFrom(parserState, buf, substateDeserialization);
+				inst = REInstruction.readFrom(parserState, buf);
 			} catch (Exception e) {
 				throw new TxnParseException(parserState, "Could not read instruction", e);
 			}
