@@ -26,6 +26,7 @@ import com.radixdlt.statecomputer.ValidatorDetails;
 import com.radixdlt.utils.UInt256;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
 
 import static java.util.Objects.requireNonNull;
 
@@ -150,7 +151,7 @@ public class ValidatorInfoDetails {
 			.put("infoURL", infoUrl)
 			.put("totalDelegatedStake", totalStake)
 			.put("ownerDelegation", ownerStake)
-			.put("validatorFee", percentage)
+			.put("validatorFee", (double) percentage / (double) RAKE_PERCENTAGE_GRANULARITY + "")
 			.put("registered", registered)
 			.put("isExternalStakeAccepted", externalStakesAllowed);
 	}

@@ -34,7 +34,7 @@ public final class LocalValidatorInfo {
 	private final boolean registered;
 	private final List<DelegatedStake> stakes;
 	private final AccountAddress owner;
-	private final int rakePercentage;
+	private final double validatorFee;
 	private final boolean allowDelegation;
 
 	public LocalValidatorInfo(
@@ -45,7 +45,7 @@ public final class LocalValidatorInfo {
 		boolean registered,
 		List<DelegatedStake> stakes,
 		AccountAddress owner,
-		int rakePercentage,
+		double validatorFee,
 		boolean allowDelegation
 	) {
 		this.address = address;
@@ -55,7 +55,7 @@ public final class LocalValidatorInfo {
 		this.registered = registered;
 		this.stakes = stakes;
 		this.owner = owner;
-		this.rakePercentage = rakePercentage;
+		this.validatorFee = validatorFee;
 		this.allowDelegation = allowDelegation;
 	}
 
@@ -68,10 +68,10 @@ public final class LocalValidatorInfo {
 		@JsonProperty(value = "registered", required = true) boolean registered,
 		@JsonProperty(value = "stakes", required = true) List<DelegatedStake> stakes,
 		@JsonProperty(value = "owner", required = true) AccountAddress owner,
-		@JsonProperty(value = "validatorFee", required = true) int rakePercentage,
+		@JsonProperty(value = "validatorFee", required = true) double validatorFee,
 		@JsonProperty(value = "allowDelegation", required = true) boolean allowDelegation
 	) {
-		return new LocalValidatorInfo(address, totalStake, name, url, registered, stakes, owner, rakePercentage, allowDelegation);
+		return new LocalValidatorInfo(address, totalStake, name, url, registered, stakes, owner, validatorFee, allowDelegation);
 	}
 
 	@Override
@@ -86,7 +86,7 @@ public final class LocalValidatorInfo {
 
 		var that = (LocalValidatorInfo) o;
 		return registered == that.registered
-			&& rakePercentage == that.rakePercentage
+			&& Double.compare(that.validatorFee, validatorFee) == 0
 			&& allowDelegation == that.allowDelegation
 			&& address.equals(that.address)
 			&& totalStake.equals(that.totalStake)
@@ -98,17 +98,22 @@ public final class LocalValidatorInfo {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, totalStake, name, url, registered, stakes, owner, rakePercentage, allowDelegation);
+		return Objects.hash(address, totalStake, name, url, registered, stakes, owner, validatorFee, allowDelegation);
 	}
 
 	@Override
 	public String toString() {
-		return "{address:" + address
-			+ ", totalStake:" + totalStake
-			+ ", name:'" + name + '\''
-			+ ", url:'" + url + '\''
-			+ ", registered:" + registered
-			+ ", stakes:" + stakes + '}';
+		return "{"
+			+ "address=" + address
+			+ ", totalStake=" + totalStake
+			+ ", name='" + name + '\''
+			+ ", url='" + url + '\''
+			+ ", registered=" + registered
+			+ ", stakes=" + stakes
+			+ ", owner=" + owner
+			+ ", validatorFee=" + validatorFee
+			+ ", allowDelegation=" + allowDelegation
+			+ '}';
 	}
 
 	public ValidatorAddress getAddress() {
@@ -133,5 +138,17 @@ public final class LocalValidatorInfo {
 
 	public List<DelegatedStake> getStakes() {
 		return stakes;
+	}
+
+	public AccountAddress getOwner() {
+		return owner;
+	}
+
+	public double getValidatorFee() {
+		return validatorFee;
+	}
+
+	public boolean isAllowDelegation() {
+		return allowDelegation;
 	}
 }

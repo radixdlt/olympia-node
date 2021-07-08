@@ -57,11 +57,15 @@ public class SyncRadixApiLocalTest {
 		+ "addup7z2zfm4c3jqurkgjv\",\"balance\":{\"stakes\":[{\"delegate\":\"dv1qgcwgzawsygqxe4xklx94quptdlq302330m690"
 		+ "tt0q0sjsjwawyvs6zsklj\",\"amount\":\"1000000000000000000000000000\"}],\"tokens\":[]}},\"id\":\"2\",\"jsonrp"
 		+ "c\":\"2.0\"}\n";
-	private static final String VALIDATOR_INFO = "{\"result\":{\"owner\":\"ddx1qsprpeqt46q3qqmx56muck5rs9dhuz9a2x9l0g4"
-		+ "addup7z2zfm4c3jqurkgjv\",\"validatorFee\":0,\"address\":\"dv1qgcwgzawsygqxe4xklx94quptdlq302330m690tt0q0s"
-		+ "jsjwawyvs6zsklj\",\"stakes\":[{\"amount\":\"1000000000000000000000000000\",\"delegator\":\"ddx1qsprpeqt46q3"
-		+ "qqmx56muck5rs9dhuz9a2x9l0g4addup7z2zfm4c3jqurkgjv\"}],\"allowDelegation\":true,\"name\":\"\",\"registered\""
-		+ ":true,\"totalStake\":\"1000000000000000000000000000\",\"url\":\"\"},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String VALIDATOR_INFO = "{\"result\":{\"owner\":"
+		+ "\"ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sfvvdfj\","
+		+ "\"address\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\","
+		+ "\"stakes\":[{\"amount\":\"100000000000000000000\",\"delegator\":"
+		+ "\"ddx1qspzsu73jt6ps6g8l0rj2yya2euunqapv7j2qemgaaujyej2tlp3lcs99m6k9\"},"
+		+ "{\"amount\":\"5300000000000000000000000\",\"delegator\":"
+		+ "\"ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sfvvdfj\"}],"
+		+ "\"allowDelegation\":true,\"name\":\"\",\"validatorFee\":0,\"registered\":true,"
+		+ "\"totalStake\":\"5300100000000000000000000\",\"url\":\"\"},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 	private static final String NEXT_EPOCH = "{\"result\":{\"validators\":[{\"totalDelegatedStake\":\"1000000000000000"
 		+ "000000000000\",\"validatorFee\":0,\"address\":\"dv1qtjlayqkvk234cwh5rs72uunjwgte8gnr4gp6vvgqmmdjl9fjvr5ul"
 		+ "nv4zg\",\"infoURL\":\"\",\"ownerDelegation\":\"1000000000000000000000000000\",\"name\":\"\",\"registered\":"
@@ -117,7 +121,7 @@ public class SyncRadixApiLocalTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.local().validatorInfo()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(localValidatorInfo -> assertEquals(1, localValidatorInfo.getStakes().size()))
+				.onSuccess(localValidatorInfo -> assertEquals(2, localValidatorInfo.getStakes().size()))
 				.onSuccess(localValidatorInfo -> assertTrue(localValidatorInfo.isRegistered())));
 	}
 
