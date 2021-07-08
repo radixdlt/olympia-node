@@ -67,18 +67,28 @@ public class HealthControllerTest {
 		when(exchange.getResponseSender()).thenReturn(sender);
 		when(networkInfoService.nodeStatus()).thenReturn(BOOTING, SYNCING, UP, STALLED);
 		when(forkVoteStatusService.forkVoteStatus()).thenReturn(VOTE_REQUIRED, NO_ACTION_NEEDED, VOTE_REQUIRED, NO_ACTION_NEEDED);
+		when(forkVoteStatusService.currentFork()).thenReturn(
+			new JSONObject().put("name", "fork1"),
+			new JSONObject().put("name", "fork2"),
+			new JSONObject().put("name", "fork3"),
+			new JSONObject().put("name", "fork4")
+		);
 		when(peersForksHashesInfoService.getUnknownReportedForksHashes()).thenReturn(new JSONObject());
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\",\"network_status\":\"BOOTING\"}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\"," +
+			"\"network_status\":\"BOOTING\",\"current_fork\":{\"name\":\"fork1\"}}");
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\",\"network_status\":\"SYNCING\"}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\"," +
+			"\"network_status\":\"SYNCING\",\"current_fork\":{\"name\":\"fork2\"}}");
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\",\"network_status\":\"UP\"}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\"," +
+			"\"network_status\":\"UP\",\"current_fork\":{\"name\":\"fork3\"}}");
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\",\"network_status\":\"STALLED\"}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\"," +
+			"\"network_status\":\"STALLED\",\"current_fork\":{\"name\":\"fork4\"}}");
 	}
 }

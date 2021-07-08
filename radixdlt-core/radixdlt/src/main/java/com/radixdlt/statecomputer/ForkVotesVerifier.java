@@ -21,12 +21,10 @@ package com.radixdlt.statecomputer;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.MetadataException;
-import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
 
 import java.util.List;
-import java.util.Optional;
 
 public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof> {
 
@@ -58,11 +56,7 @@ public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof>
 			return metadata;
 		}
 
-		final var maybeNextForkConfig = metadata.getProof().getNextValidatorSet().isPresent()
-			? forks.findNextForkConfig(engineStore, metadata)
-			: Optional.<ForkConfig>empty(); // forks only happen at epoch boundary
-
-		return maybeNextForkConfig
+		return forks.findNextForkConfig(engineStore, metadata)
 			.map(nextForkConfig -> metadata.withNextForkHash(nextForkConfig.hash()))
 			.orElse(metadata);
 	}
