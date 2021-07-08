@@ -17,6 +17,7 @@
 
 package com.radixdlt.test.chaos;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
@@ -89,18 +90,20 @@ public class ChaosExperiments {
     public void a() throws PrivateKeyException, PublicKeyException, DeserializeException {
         ECKeyPair richKeyPair = keyPairOf(1);
         AccountAddress richAccount = AccountAddress.create(richKeyPair.getPublicKey());
-        REAddr faucetREAddr = AccountAddressing.bech32("tdx5").parse("tdx51qspnz477n68fhtwzefrp4k2xwxeygn3zdzxl7yrxlstvd4ceejne8wqzlajvp");
+        //REAddr faucetREAddr = AccountAddressing.bech32("tdx").parse("tdx1qspjpz3asp8fkq97e2xyvfc7h47wwf78597ssufw75kxrgr7nrdj5ng35dnc3");
+        REAddr faucetREAddr = AccountAddressing.bech32("tdx").parse("tdx1qspqqhzx0z4pcgfgpdy3l26ny0kezhadnj58f2vrk4qhh00zknrydag9wqj0n");
         AccountAddress faucetAccount = AccountAddress.create(faucetREAddr);
 
-        ImperativeRadixApi milestonetImpClient = ImperativeRadixApi
-            .connect("https://milestonenet.radixdlt.com", 443, 443);
-        //ImperativeRadixApi milestonetImpClient = ImperativeRadixApi.connect("http://localhost");
-        FinalizedTransaction finalized = milestonetImpClient.transaction().build(TransactionRequest
+        Amount amount = Amount.ofTokens(2000);
+        ImperativeRadixApi client = ImperativeRadixApi
+            .connect("https://stokenetz.radixdlt.com", 443, 443);
+        FinalizedTransaction finalized = client.transaction().build(TransactionRequest
             .createBuilder(richAccount)
-            .transfer(richAccount, faucetAccount, UInt256.from("100000000000000000"), "xrdtn51qy690ufl")
+            .transfer(richAccount, faucetAccount, amount.toSubunits(), "xrd_tr1qyf0x76s")
             .build())
             .toFinalized(richKeyPair);
-        TxBlobDTO response = milestonetImpClient.transaction().finalize(finalized);
+        TxBlobDTO postFinal = client.transaction().finalize(finalized);
+        TxDTO response = client.transaction().submit(postFinal);
 
         System.out.println(response);
     }

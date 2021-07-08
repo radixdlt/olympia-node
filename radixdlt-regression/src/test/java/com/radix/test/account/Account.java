@@ -1,33 +1,38 @@
 package com.radix.test.account;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.radix.test.Utils;
+import com.radix.test.TransactionUtils;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.sync.RadixApi;
+import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
 import com.radixdlt.client.lib.dto.Balance;
 import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TokenInfo;
+import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.ValidatorAddressing;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Result;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.time.Duration;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * A wrapper around an api client + a keypair
+ * A wrapper around an imperative api client + a keypair
  */
-public final class Account implements RadixApi {
+public final class Account implements ImperativeRadixApi, RadixAccount {
     private static final Logger logger = LogManager.getLogger();
 
-    private final RadixApi client;
+    private final ImperativeRadixApi client;
     private final ECKeyPair keyPair;
     private final AccountAddress address;
     private final TokenInfo nativeToken;
 
-    private Account(RadixApi client, ECKeyPair keyPair, TokenInfo nativeToken) {
+    private Account(ImperativeRadixApi client, ECKeyPair keyPair, TokenInfo nativeToken) {
         this.client = client;
         this.keyPair = keyPair;
         this.address = AccountAddress.create(keyPair.getPublicKey());
@@ -37,12 +42,6 @@ public final class Account implements RadixApi {
     @Override
     public Account withTrace() {
         client.withTrace();
-        return this;
-    }
-
-    @Override
-    public RadixApi withTimeout(Duration timeout) {
-        client.withTimeout(timeout);
         return this;
     }
 
@@ -114,41 +113,57 @@ public final class Account implements RadixApi {
         return keyPair;
     }
 
-    public static Result<Account> initialize(String jsonRpcUrl) {
-        return RadixApi.connect(jsonRpcUrl)
-                .flatMap(api -> api.token().describeNative().map(nativeToken -> {
-                    var newAccount = new Account(api, ECKeyPair.generateNew(), nativeToken);
-                    logger.trace("Generated new account with address: {}", newAccount.getAddress());
-                    logger.trace("New account connected to {}", jsonRpcUrl);
-                    logger.trace("Network's native token is {}({})", nativeToken.getName(), nativeToken.getSymbol());
-                    return newAccount;
-                }));
+    public static Account initialize(String jsonRpcUrl) {
+        var api = ImperativeRadixApi.connect(jsonRpcUrl);
+        var nativeToken = api.token().describeNative();
+        var newAccount = new Account(api, ECKeyPair.generateNew(), nativeToken);
+        logger.trace("Generated new account with address: {}", newAccount.getAddress());
+        logger.trace("New account connected to {}", jsonRpcUrl);
+        logger.trace("Network's native token is {}({})", nativeToken.getName(), nativeToken.getSymbol());
+        return newAccount;
     }
 
-    /**
-     * returns the (already queried) native token
-     */
     public TokenInfo getNativeToken() {
         return nativeToken;
     }
 
-    public Result<Balance> ownNativeTokenBalance() {
-        Balance zeroNativeTokenBalance = Balance.create(nativeToken.getRri(), UInt256.ZERO);
-        return ownTokenBalances().map(tokenBalancesDTO -> {
-            if (tokenBalancesDTO.getTokenBalances().size() == 0) {
-                return zeroNativeTokenBalance;
-            }
-            var balances = tokenBalancesDTO.getTokenBalances().stream().filter(balance ->
-                    balance.getRri().equals(nativeToken.getRri())).collect(Collectors.toList());
-            return balances.isEmpty() ? zeroNativeTokenBalance : balances.get(0);
-        });
-    }
-
     public Balance getOwnNativeTokenBalance() {
-        return ownNativeTokenBalance().fold(Utils::toTestFailureException, balance -> balance);
+        Balance zeroNativeTokenBalance = Balance.create(nativeToken.getRri(), UInt256.ZERO);
+        var balances = getOwnTokenBalances().getTokenBalances().stream().filter(balance ->
+            balance.getRri().equals(nativeToken.getRri())).collect(Collectors.toList());
+        return balances.isEmpty() ? zeroNativeTokenBalance : balances.get(0);
     }
 
-    public Result<TokenBalances> ownTokenBalances() {
+    public TokenBalances getOwnTokenBalances() {
         return client.account().balances(address);
     }
+
+    @Override
+    public TransactionDTO lookup(AID txID) {
+        return TransactionUtils.lookupTransaction(this, txID);
+    }
+
+    @Override
+    public AID transfer(Account destination, Amount amount, Optional<String> message) {
+        return TransactionUtils.nativeTokenTransfer(this, destination, amount, message);
+    }
+
+    @Override
+    public AID stake(String validatorAddressString, Amount amount) {
+        try {
+            ECPublicKey validatorPublicKey = ValidatorAddressing.bech32("dv1").parse(validatorAddressString);
+            ValidatorAddress validatorAddress = ValidatorAddress.of(validatorPublicKey);
+            return TransactionUtils.stake(this, validatorAddress, amount);
+        } catch (DeserializeException e) {
+            throw new RuntimeException(e); // TODO better exception
+        }
+    }
+
+    @Override
+    public AID fixedSupplyToken(String rri, String symbol, String name, String description, String iconUrl,
+                                String tokenUrl, Amount supply) {
+        return TransactionUtils.createFixedSupplyToken(this, rri, symbol, name, description, iconUrl, tokenUrl,
+            supply);
+    }
+
 }

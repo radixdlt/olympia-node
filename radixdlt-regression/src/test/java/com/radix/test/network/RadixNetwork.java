@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 /**
  * Represents an actual radix network with several running nodes. Keeps a list of the nodes, along with their addresses.
- * Used when running tests against real networks (acceptance or system tests).
+ * Has many utility functions. Used when running tests against real networks (acceptance or system tests).
  */
 public class RadixNetwork {
 
@@ -76,17 +76,26 @@ public class RadixNetwork {
         return dockerClient;
     }
 
-    public Result<Account> generateNewAccount() {
+    public Account generateNewAccount() {
         return Account.initialize(configuration.getJsonRpcRootUrl());
     }
 
-    public void faucet(AccountAddress to) {
+    /**
+     * Calls the faucet to send tokens to the given address
+     *
+     * @return the txId of the faucet's transaction
+     */
+    public String faucet(AccountAddress to) {
         List<RadixNode> faucets = nodes.stream().filter(node -> node.getAvailableServices()
             .contains(RadixNode.ServiceType.FAUCET)).collect(Collectors.toList());
+        if (faucets.isEmpty()) {
+            throw new NoFaucetException("No faucet found in this network");
+        }
         RadixNode nodeWithFaucet = faucets.get(0);
         String address = to.toString(networkId);
         String txID = httpClient.callFaucet(nodeWithFaucet.getRootUrl(), nodeWithFaucet.getSecondaryPort(), address);
         logger.debug("Successfully called faucet to send tokens to {}. TxID: {}", address, txID);
+        return txID;
     }
 
 }

@@ -43,8 +43,8 @@ public class RadixNetworkNodeLocator {
                 logger.debug("Searching for {} local nodes...", peersSizePlusOne);
                 return locateLocalNodes(configuration, httpClient, dockerClient, peersSizePlusOne);
             case TESTNET:
-                logger.debug("Searching for {} testnet nodes", peersSizePlusOne);
             default:
+                logger.debug("Searching for {} testnet nodes", peersSizePlusOne);
                 throw new RuntimeException("Unimplemented");
         }
     }
