@@ -17,6 +17,8 @@
 
 package com.radixdlt.statecomputer.checkpoint;
 
+import com.google.inject.Key;
+import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.crypto.ECPublicKey;
@@ -28,7 +30,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 
@@ -36,17 +37,21 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Genesis atom to be used with tests
  */
 public final class MockedGenesisModule extends AbstractModule {
+	private final Amount stake;
+
+	public MockedGenesisModule(Amount stake) {
+		this.stake = stake;
+	}
+
 	@Override
 	public void configure() {
-		Multibinder.newSetBinder(binder(), TokenIssuance.class);
 		bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).annotatedWith(Genesis.class).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<List<TxAction>>() { }).annotatedWith(Genesis.class).toInstance(List.of());
+		OptionalBinder.newOptionalBinder(binder(), Key.get(new TypeLiteral<List<TxAction>>() { }, Genesis.class));
 	}
 
 	@Provides
@@ -57,25 +62,16 @@ public final class MockedGenesisModule extends AbstractModule {
 
 	@Provides
 	@Genesis
-	public Set<StakeTokens> stakeDelegations(
-		@Genesis ImmutableList<ECPublicKey> initialValidators
-	) {
-		return initialValidators.stream()
-			.map(v -> new StakeTokens(REAddr.ofPubKeyAccount(v), v, Amount.ofTokens(100 * 100).toSubunits()))
+	public Set<StakeTokens> stakeDelegations(@Genesis Set<ECPublicKey> validators) {
+		return validators.stream()
+			.map(v -> new StakeTokens(REAddr.ofPubKeyAccount(v), v, stake.toSubunits()))
 			.collect(Collectors.toSet());
 	}
 
 	@Provides
 	@Genesis
-	public ImmutableList<TokenIssuance> tokenIssuanceList(
-		Set<TokenIssuance> tokenIssuanceSet,
-		@Genesis ImmutableList<ECPublicKey> initialValidators
-	) {
-		return Stream.concat(
-			tokenIssuanceSet.stream(),
-			initialValidators.stream()
-				.map(v -> TokenIssuance.of(v, Amount.ofTokens(100 * 100).toSubunits()))
-		)
+	public ImmutableList<TokenIssuance> tokenIssuanceList(@Genesis Set<ECPublicKey> validators) {
+		return validators.stream().map(v -> TokenIssuance.of(v, Amount.ofTokens(100 * 100).toSubunits()))
 			.sorted(Comparator.comparing(t -> t.receiver().toHex()))
 			.collect(ImmutableList.toImmutableList());
 	}

@@ -88,6 +88,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -138,7 +139,7 @@ public class RecoveryTest {
 	@Before
 	public void setup() {
 		Guice.createInjector(
-			new MockedGenesisModule(),
+			new MockedGenesisModule(Amount.ofTokens(10 * 10)),
 			new CryptoModule(),
 			new ForksModule(),
 			new RadixEngineForksLatestOnlyModule(
@@ -161,8 +162,8 @@ public class RecoveryTest {
 					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-						.toInstance(ImmutableList.of(ecKeyPair.getPublicKey()));
+					bind(new TypeLiteral<Set<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+						.toInstance(Set.of(ecKeyPair.getPublicKey()));
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 				}
 			}

@@ -35,6 +35,7 @@ import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -61,8 +62,8 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     @Provides
     @Singleton
     @Genesis
-    public ImmutableList<ECPublicKey> genesisValidators(@Self ECPublicKey self) {
-        return ImmutableList.of(self);
+    public Set<ECPublicKey> genesisValidators(@Self ECPublicKey self) {
+        return Set.of(self);
     }
 
     @Provides

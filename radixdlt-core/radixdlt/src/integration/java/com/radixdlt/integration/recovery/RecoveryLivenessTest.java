@@ -87,6 +87,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -145,7 +146,7 @@ public class RecoveryLivenessTest {
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
 
 		Guice.createInjector(
-			new MockedGenesisModule(),
+			new MockedGenesisModule(Amount.ofTokens(1000)),
 			new CryptoModule(),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
@@ -168,8 +169,8 @@ public class RecoveryLivenessTest {
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
+					bind(new TypeLiteral<Set<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()));
 				}
 			}
 		).injectMembers(this);

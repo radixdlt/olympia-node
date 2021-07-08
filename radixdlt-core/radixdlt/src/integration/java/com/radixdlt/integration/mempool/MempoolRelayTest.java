@@ -18,12 +18,14 @@
 package com.radixdlt.integration.mempool;
 
 import com.google.inject.Provides;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -75,6 +77,7 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -83,7 +86,6 @@ import java.util.stream.Stream;
 import io.reactivex.rxjava3.schedulers.Timed;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.radix.TokenIssuance;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -156,9 +158,9 @@ public class MempoolRelayTest {
 		final var validatorsKeys = this.validators.stream()
 			.map(nodeKeys::get)
 			.map(ECKeyPair::getPublicKey)
-			.collect(ImmutableList.toImmutableList());
+			.collect(Collectors.toSet());
 		Guice.createInjector(
-			new MockedGenesisModule(),
+			new MockedGenesisModule(Amount.ofTokens(1000)),
 			new CryptoModule(),
 			new RadixEngineModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
@@ -167,18 +169,20 @@ public class MempoolRelayTest {
 				@Override
 				public void configure() {
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class).toInstance(validatorsKeys);
+					bind(new TypeLiteral<Set<ECPublicKey>>() { }).annotatedWith(Genesis.class).toInstance(validatorsKeys);
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 				}
 
-				@ProvidesIntoSet
-				private TokenIssuance mempoolFillerIssuance() {
-					return TokenIssuance.of(
-						nodeKeys.get(MEMPOOL_FILLER_NODE).getPublicKey(),
-						TokenUnitConversions.unitsToSubunits(10000000000L)
-					);
+				@Provides
+				@Genesis
+				private List<TxAction> mempoolFillerIssuance() {
+					return List.of(new MintToken(
+						REAddr.ofNativeToken(),
+						REAddr.ofPubKeyAccount(nodeKeys.get(MEMPOOL_FILLER_NODE).getPublicKey()),
+						Amount.ofTokens(10000000000L).toSubunits()
+					));
 				}
 			}
 		).injectMembers(this);

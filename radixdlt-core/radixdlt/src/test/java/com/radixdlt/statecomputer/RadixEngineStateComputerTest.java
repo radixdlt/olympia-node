@@ -32,6 +32,7 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.application.system.NextValidatorSetEvent;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.SubstateId;
@@ -94,6 +95,8 @@ import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
 import org.junit.Before;
@@ -137,8 +140,8 @@ public class RadixEngineStateComputerTest {
 
 			@Override
 			public void configure() {
-				bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-					.toInstance(registeredNodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
+				bind(new TypeLiteral<Set<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+					.toInstance(registeredNodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()));
 				var validatorSet = BFTValidatorSet.from(registeredNodes.stream().map(ECKeyPair::getPublicKey)
 					.map(BFTNode::create)
 					.map(n -> BFTValidator.from(n, UInt256.ONE)));
@@ -209,7 +212,7 @@ public class RadixEngineStateComputerTest {
 			new RadixEngineCheckpointModule(),
 			new RadixEngineStateComputerModule(),
 			new RadixEngineModule(),
-			new MockedGenesisModule(),
+			new MockedGenesisModule(Amount.ofTokens(10 * 10)),
 			getExternalModule()
 		).injectMembers(this);
 		setupGenesis();

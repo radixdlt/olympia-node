@@ -36,6 +36,8 @@ import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.LedgerRecoveryModule;
 import com.radixdlt.MockedKeyModule;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.integration.distributed.simulation.monitors.SimulationNodeEventsModule;
@@ -349,8 +351,8 @@ public class SimulationTest {
 					install(new MockedCryptoModule());
 					install(new RadixEngineModule());
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-						.toInstance(nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
+					bind(new TypeLiteral<Set<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+						.toInstance(nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()));
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
@@ -424,8 +426,8 @@ public class SimulationTest {
 			this.genesisModules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-						.toInstance(nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
+					bind(new TypeLiteral<Set<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+						.toInstance(nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()));
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
@@ -531,7 +533,7 @@ public class SimulationTest {
 			if (ledgerType.hasRadixEngine) {
 				modules.add(new MockedRadixEngineStoreModule());
 				// Hack to get nodes to have the same genesis atom
-				genesisModules.add(new MockedGenesisModule());
+				genesisModules.add(new MockedGenesisModule(Amount.ofTokens(100 * 100)));
 				genesisModules.add(new AbstractModule() {
 					public void configure() {
 						bind(CommittedReader.class).toInstance(CommittedReader.mocked());
@@ -553,6 +555,7 @@ public class SimulationTest {
 					public void configure() {
 						install(new MockedCryptoModule());
 						install(new RadixEngineModule());
+						bind(Txn.class).annotatedWith(Genesis.class).toInstance(genesis.getTxns().get(0));
 						bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 						bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 						bind(SystemCounters.class).toInstance(new SystemCountersImpl());

@@ -18,6 +18,7 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Rule;
@@ -57,7 +58,7 @@ public class ConstraintMachineTest {
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(),
+			new MockedGenesisModule(Amount.ofTokens(10 * 10)),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

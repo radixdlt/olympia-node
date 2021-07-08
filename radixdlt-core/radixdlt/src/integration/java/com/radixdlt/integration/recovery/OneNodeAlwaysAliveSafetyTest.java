@@ -47,7 +47,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -91,6 +90,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -144,7 +144,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 		);
 
 		Guice.createInjector(
-			new MockedGenesisModule(),
+			new MockedGenesisModule(Amount.ofTokens(100 * 100)),
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
 			new RadixEngineModule(),
@@ -156,8 +156,8 @@ public class OneNodeAlwaysAliveSafetyTest {
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
+					bind(new TypeLiteral<Set<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()));
 				}
 			},
 			new AbstractModule() {

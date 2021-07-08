@@ -18,6 +18,7 @@
 
 package com.radixdlt.integration.statemachine;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,7 +66,7 @@ public class RandomTxnTest {
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(),
+			new MockedGenesisModule(Amount.ofTokens(1000)),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

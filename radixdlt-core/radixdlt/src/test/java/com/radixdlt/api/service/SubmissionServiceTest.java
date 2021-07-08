@@ -16,9 +16,12 @@
  */
 package com.radixdlt.api.service;
 
+import com.google.inject.Provides;
 import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -32,7 +35,6 @@ import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.TokenIssuance;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
@@ -40,7 +42,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.data.action.TransactionAction;
@@ -90,6 +91,8 @@ import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -150,8 +153,8 @@ public class SubmissionServiceTest {
 				install(new ForksModule());
 				install(MempoolConfig.asModule(10, 10));
 
-				bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-					.toInstance(registeredNodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
+				bind(new TypeLiteral<Set<ECPublicKey>>() { }).annotatedWith(Genesis.class)
+					.toInstance(registeredNodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()));
 				var validatorSet = BFTValidatorSet.from(registeredNodes.stream().map(ECKeyPair::getPublicKey)
 					.map(BFTNode::create)
 					.map(n -> BFTValidator.from(n, UInt256.ONE)));
@@ -178,17 +181,17 @@ public class SubmissionServiceTest {
 					.toInstance(mempoolAddEventDispatcher());
 				bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
-
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(NODE);
-
 				bind(SystemCounters.class).to(SystemCountersImpl.class);
-
 				bind(ClientApiStore.class).toInstance(mock(ClientApiStore.class));
 			}
 
-			@ProvidesIntoSet
-			TokenIssuance tokenIssuance() {
-				return TokenIssuance.of(key.getPublicKey(), BIG_AMOUNT.multiply(BIG_AMOUNT));
+			@Provides
+			@Genesis
+			List<TxAction> tokenIssuance() {
+				return List.of(new MintToken(
+					REAddr.ofNativeToken(), REAddr.ofPubKeyAccount(key.getPublicKey()), BIG_AMOUNT.multiply(BIG_AMOUNT)
+				));
 			}
 		};
 	}
@@ -225,7 +228,7 @@ public class SubmissionServiceTest {
 		var injector = Guice.createInjector(
 			new RadixEngineCheckpointModule(),
 			new RadixEngineModule(),
-			new MockedGenesisModule(),
+			new MockedGenesisModule(Amount.ofTokens(10 * 10)),
 			localModule()
 		);
 		injector.injectMembers(this);

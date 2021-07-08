@@ -19,12 +19,14 @@
 package com.radixdlt.integration.staking;
 
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
+import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -36,7 +38,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.radix.TokenIssuance;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
@@ -113,19 +114,17 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
-import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import io.reactivex.rxjava3.schedulers.Timed;
 
@@ -177,16 +176,15 @@ public class StakingUnstakingValidatorsTest {
 
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
-	private List<Injector> nodes = new ArrayList<>();
+	private final List<Injector> nodes = new ArrayList<>();
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final Module radixEngineConfiguration;
 	private final Module byzantineModule;
 	private final long maxRounds;
 
 	public StakingUnstakingValidatorsTest(Module forkModule, long maxRounds, Module byzantineModule) {
-		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
+		this.nodeKeys = PrivateKeys.numeric(1)
 			.limit(20)
-			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
 			new ForksModule(),
@@ -208,7 +206,7 @@ public class StakingUnstakingValidatorsTest {
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
 
 		Guice.createInjector(
-			new MockedGenesisModule(),
+			new MockedGenesisModule(Amount.ofTokens(1000)),
 			new CryptoModule(),
 			new RadixEngineModule(),
 			this.radixEngineConfiguration,
@@ -219,12 +217,15 @@ public class StakingUnstakingValidatorsTest {
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() {}).annotatedWith(Genesis.class)
-						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
-
-					nodeKeys.forEach(key ->
-						Multibinder.newSetBinder(binder(), TokenIssuance.class)
-							.addBinding().toInstance(TokenIssuance.of(key.getPublicKey(), Amount.ofTokens(10 * 10).toSubunits()))
+					bind(new TypeLiteral<Set<ECPublicKey>>() {}).annotatedWith(Genesis.class)
+						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()));
+					bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(nodeKeys.stream()
+						.map(k -> new MintToken(
+							REAddr.ofNativeToken(),
+							REAddr.ofPubKeyAccount(k.getPublicKey()),
+							Amount.ofTokens(10 * 10).toSubunits())
+						)
+						.collect(Collectors.toList())
 					);
 				}
 			}

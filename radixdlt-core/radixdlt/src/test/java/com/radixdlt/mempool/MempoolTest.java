@@ -18,6 +18,7 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.statecomputer.forks.ForksModule;
@@ -86,7 +87,7 @@ public class MempoolTest {
 			MempoolConfig.asModule(10, 10, 200, 500, 10),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(),
+			new MockedGenesisModule(Amount.ofTokens(10 * 10)),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

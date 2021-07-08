@@ -18,7 +18,10 @@
 
 package com.radixdlt.integration.staking;
 
+import com.google.inject.Provides;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Rule;
@@ -26,13 +29,11 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.radix.TokenIssuance;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.application.NodeApplicationRequest;
@@ -114,7 +115,7 @@ public class UnstakingLockedTokensTest {
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(),
+			new MockedGenesisModule(Amount.ofTokens(100)),
 			new MempoolFillerModule(),
 			new AbstractModule() {
 				@Override
@@ -123,9 +124,10 @@ public class UnstakingLockedTokensTest {
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
 
-				@ProvidesIntoSet
-				private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
-					return TokenIssuance.of(self, Amount.ofTokens(10).toSubunits());
+				@Provides
+				@Genesis
+				private List<TxAction> mempoolFillerIssuance(@Self ECPublicKey self) {
+					return List.of(new MintToken(REAddr.ofNativeToken(), REAddr.ofPubKeyAccount(self), Amount.ofTokens(10).toSubunits()));
 				}
 			}
 		);

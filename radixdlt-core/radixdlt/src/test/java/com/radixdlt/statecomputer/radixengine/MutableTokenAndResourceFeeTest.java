@@ -18,12 +18,14 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
-import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Rule;
@@ -54,7 +56,6 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
-import org.radix.TokenIssuance;
 
 import java.util.List;
 
@@ -89,17 +90,18 @@ public class MutableTokenAndResourceFeeTest {
 			)),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(),
+			new MockedGenesisModule(Amount.ofTokens(10 * 10)),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-				}
-
-				@ProvidesIntoSet
-				private TokenIssuance issuance() {
-					return TokenIssuance.of(keyPair.getPublicKey(), Amount.ofTokens(1).toSubunits());
+					bind(new TypeLiteral<List<TxAction>>() { }).annotatedWith(Genesis.class)
+						.toInstance(List.of(new MintToken(
+							REAddr.ofNativeToken(),
+							REAddr.ofPubKeyAccount(keyPair.getPublicKey()),
+							Amount.ofTokens(1).toSubunits())
+						));
 				}
 			}
 		);

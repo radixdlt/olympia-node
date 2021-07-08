@@ -16,6 +16,7 @@
  */
 package com.radixdlt.api.store.berkeley;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
@@ -134,7 +135,7 @@ public class BerkeleyClientApiStoreTest {
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(),
+			new MockedGenesisModule(Amount.ofTokens(10 * 10)),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
