@@ -18,22 +18,13 @@
 package com.radixdlt.integration.recovery;
 
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.KeyComparator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,7 +45,6 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -64,8 +54,6 @@ import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
@@ -78,7 +66,6 @@ import com.radixdlt.integration.distributed.deterministic.NodeEvents.NodeEventPr
 import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
 import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
@@ -90,7 +77,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.OptionalInt;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -119,10 +105,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 	@Inject
 	private NodeEvents nodeEvents;
 
-	@Inject
-	@Genesis
-	private VerifiedTxnsAndProof genesisTxns;
-
 	private int lastNodeToCommit;
 
 	public OneNodeAlwaysAliveSafetyTest(int numNodes) {
@@ -144,22 +126,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 		);
 
 		Guice.createInjector(
-			new MockedGenesisModule(Amount.ofTokens(100 * 100)),
-			new RadixEngineForksLatestOnlyModule(),
-			new ForksModule(),
-			new RadixEngineModule(),
-			new CryptoModule(),
-			new AbstractModule() {
-				@Override
-				public void configure() {
-					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
-					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
-					bind(new TypeLiteral<Set<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()));
-				}
-			},
 			new AbstractModule() {
 				@Override
 				protected void configure() {
@@ -205,6 +171,10 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
+			new MockedGenesisModule(
+				nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+				Amount.ofTokens(100 * 100)
+			),
 			MempoolConfig.asModule(10, 10),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
@@ -223,7 +193,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(Stream::of);

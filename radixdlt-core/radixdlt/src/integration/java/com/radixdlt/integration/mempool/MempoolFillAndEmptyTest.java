@@ -21,10 +21,12 @@ import com.google.inject.Provides;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.PrivateKeys;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -52,6 +54,7 @@ import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -60,8 +63,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
  * stragglers left behind.
  */
 public final class MempoolFillAndEmptyTest {
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+	@Rule
+	public TemporaryFolder folder = new TemporaryFolder();
 
     @Inject private DeterministicProcessor processor;
     @Inject private DeterministicNetwork network;
@@ -74,8 +78,11 @@ public final class MempoolFillAndEmptyTest {
 			MempoolConfig.asModule(1000, 10),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(Amount.ofTokens(1000)),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new MockedGenesisModule(
+				Set.of(TEST_KEY.getPublicKey()),
+				Amount.ofTokens(1000)
+			),
 			new MempoolFillerModule(),
 			new AbstractModule() {
 				@Override

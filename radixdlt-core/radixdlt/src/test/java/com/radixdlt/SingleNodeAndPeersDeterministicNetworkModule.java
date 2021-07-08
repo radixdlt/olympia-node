@@ -20,22 +20,18 @@ package com.radixdlt;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.qualifier.NumPeers;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,9 +39,15 @@ import java.util.stream.Stream;
  * Module which injects a full one node network
  */
 public final class SingleNodeAndPeersDeterministicNetworkModule extends AbstractModule {
+    private final ECKeyPair self;
+
+    public SingleNodeAndPeersDeterministicNetworkModule(ECKeyPair self) {
+        this.self = self;
+    }
+
     @Override
     protected void configure() {
-        bind(ECKeyPair.class).annotatedWith(Self.class).toProvider(ECKeyPair::generateNew).in(Scopes.SINGLETON);
+        bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(self);
         install(new PersistedNodeForTestingModule());
     }
 
@@ -57,13 +59,6 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
             .map(PeersView.PeerInfo::fromBftNode)
             .collect(ImmutableList.toImmutableList());
         return peers::stream;
-    }
-
-    @Provides
-    @Singleton
-    @Genesis
-    public Set<ECPublicKey> genesisValidators(@Self ECPublicKey self) {
-        return Set.of(self);
     }
 
     @Provides

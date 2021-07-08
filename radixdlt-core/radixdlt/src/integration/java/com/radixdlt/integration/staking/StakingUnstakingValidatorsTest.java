@@ -52,7 +52,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
-import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.application.system.state.ValidatorStakeData;
@@ -75,10 +74,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
@@ -89,16 +85,11 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.application.system.FeeTable;
@@ -109,10 +100,7 @@ import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.UInt256;
 
@@ -122,7 +110,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -169,11 +156,6 @@ public class StakingUnstakingValidatorsTest {
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
-
-	@Inject
-	@Genesis
-	private VerifiedTxnsAndProof genesis;
-
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private final List<Injector> nodes = new ArrayList<>();
@@ -204,33 +186,6 @@ public class StakingUnstakingValidatorsTest {
 
 		List<BFTNode> allNodes = nodeKeys.stream()
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
-
-		Guice.createInjector(
-			new MockedGenesisModule(Amount.ofTokens(1000)),
-			new CryptoModule(),
-			new RadixEngineModule(),
-			this.radixEngineConfiguration,
-			new AbstractModule() {
-				@Override
-				public void configure() {
-					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
-					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(new InMemoryEngineStore<>());
-					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<Set<ECPublicKey>>() {}).annotatedWith(Genesis.class)
-						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()));
-					bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(nodeKeys.stream()
-						.map(k -> new MintToken(
-							REAddr.ofNativeToken(),
-							REAddr.ofPubKeyAccount(k.getPublicKey()),
-							Amount.ofTokens(10 * 10).toSubunits())
-						)
-						.collect(Collectors.toList())
-					);
-				}
-			}
-		).injectMembers(this);
-
 		this.nodeCreators = Streams.mapWithIndex(nodeKeys.stream(), (k, i) ->
 			(Supplier<Injector>) () -> createRunner(i == 1, k, allNodes)).collect(Collectors.toList());
 
@@ -257,13 +212,25 @@ public class StakingUnstakingValidatorsTest {
 			: this.radixEngineConfiguration;
 
 		return Guice.createInjector(
+			new MockedGenesisModule(
+				nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+				Amount.ofTokens(1000)
+			),
 			MempoolConfig.asModule(10, 10),
 			reConfig,
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesis);
+					bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(nodeKeys.stream()
+						.map(k -> new MintToken(
+							REAddr.ofNativeToken(),
+							REAddr.ofPubKeyAccount(k.getPublicKey()),
+							Amount.ofTokens(10 * 10).toSubunits())
+						)
+						.collect(Collectors.toList())
+					);
+
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);

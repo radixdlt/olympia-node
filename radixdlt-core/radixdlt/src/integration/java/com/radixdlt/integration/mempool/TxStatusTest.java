@@ -25,6 +25,7 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.PrivateKeys;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -66,6 +67,7 @@ import com.radixdlt.store.DatabaseLocation;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -82,6 +84,8 @@ public class TxStatusTest {
 			{true}
 		});
 	}
+
+	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
@@ -114,8 +118,11 @@ public class TxStatusTest {
 			MempoolConfig.asModule(1000, 10),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(Amount.ofTokens(1000)),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new MockedGenesisModule(
+				Set.of(TEST_KEY.getPublicKey()),
+				Amount.ofTokens(1000)
+			),
 			new MempoolFillerModule(),
 			new AbstractModule() {
 				@Override
@@ -127,10 +134,10 @@ public class TxStatusTest {
 
 				@Provides
 				@Genesis
-				private List<TxAction> mempoolFillerIssuance(@Self ECPublicKey self) {
+				private List<TxAction> mempoolFillerIssuance() {
 					return List.of(new MintToken(
 						REAddr.ofNativeToken(),
-						REAddr.ofPubKeyAccount(self),
+						REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey()),
 						Amount.ofTokens(10).toSubunits()
 					));
 				}

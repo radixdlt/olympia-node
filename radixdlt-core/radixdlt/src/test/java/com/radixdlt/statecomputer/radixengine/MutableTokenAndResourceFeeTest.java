@@ -28,6 +28,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.PrivateKeys;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -58,12 +59,14 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
 public class MutableTokenAndResourceFeeTest {
-	private final ECKeyPair keyPair = ECKeyPair.generateNew();
+	private static final ECKeyPair VALIDATOR_KEY = PrivateKeys.ofNumeric(1);
+	private static final ECKeyPair keyPair = ECKeyPair.generateNew();
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
@@ -89,8 +92,11 @@ public class MutableTokenAndResourceFeeTest {
 				)
 			)),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(Amount.ofTokens(10 * 10)),
+			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
+			new MockedGenesisModule(
+				Set.of(VALIDATOR_KEY.getPublicKey()),
+				Amount.ofTokens(10 * 10)
+			),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

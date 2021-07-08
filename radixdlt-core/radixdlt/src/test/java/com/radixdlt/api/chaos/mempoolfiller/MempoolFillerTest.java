@@ -18,13 +18,14 @@
 
 package com.radixdlt.api.chaos.mempoolfiller;
 
-import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.utils.PrivateKeys;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,7 +39,6 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -52,10 +52,13 @@ import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MempoolFillerTest {
+	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
@@ -74,25 +77,25 @@ public class MempoolFillerTest {
 			new RadixEngineForksLatestOnlyModule(),
 			MempoolConfig.asModule(10, 10),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(Amount.ofTokens(10 * 10)),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new MockedGenesisModule(
+				Set.of(TEST_KEY.getPublicKey()),
+				Amount.ofTokens(10 * 10)
+			),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
 				    install(new MempoolFillerModule());
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-				}
-
-				@Provides
-				@Genesis
-				private List<TxAction> mempoolFillerIssuance(@Self ECPublicKey self) {
-					return List.of(
-						new MintToken(REAddr.ofNativeToken(), REAddr.ofPubKeyAccount(self), Amount.ofTokens(10000000000L).toSubunits())
-					);
+					bind(new TypeLiteral<List<TxAction>>() { })
+						.toInstance(List.of(new MintToken(
+							REAddr.ofNativeToken(),
+							REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey()),
+							Amount.ofTokens(10000000000L).toSubunits()
+						)));
 				}
 			}
-
 		);
 	}
 

@@ -24,6 +24,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.PrivateKeys;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -59,12 +60,14 @@ import com.radixdlt.store.DatabaseLocation;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class MempoolTest {
+	private static final ECKeyPair VALIDATOR_KEY = PrivateKeys.ofNumeric(1);
 	private static final int NUM_PEERS = 2;
 
 	@Rule
@@ -86,8 +89,11 @@ public class MempoolTest {
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().removeSigsPerRoundLimit()),
 			MempoolConfig.asModule(10, 10, 200, 500, 10),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(Amount.ofTokens(10 * 10)),
+			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
+			new MockedGenesisModule(
+				Set.of(VALIDATOR_KEY.getPublicKey()),
+				Amount.ofTokens(10 * 10)
+			),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

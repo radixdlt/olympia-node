@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer.checkpoint;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.atom.TxAction;
@@ -34,9 +35,12 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.TokenIssuance;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -45,6 +49,7 @@ import java.util.Set;
  * Generates a genesis atom
  */
 public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
+	private static final Logger logger = LogManager.getLogger();
 	private final ImmutableList<TokenIssuance> tokenIssuances;
 	private final Set<ECPublicKey> validatorKeys;
 	private final Set<StakeTokens> stakeTokens;
@@ -90,9 +95,19 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 					actions.add(new UpdateAllowDelegationFlag(k, true));
 				});
 
-			actions.addAll(stakeTokens);
+			stakeTokens.stream()
+				.sorted(
+					Comparator.<StakeTokens, byte[]>comparing(t -> t.from().getBytes(), UnsignedBytes.lexicographicalComparator())
+						.thenComparing(t -> t.from().getBytes(), UnsignedBytes.lexicographicalComparator())
+						.thenComparing(StakeTokens::amount)
+				)
+				.forEach(actions::add);
+
 			additionalActions.ifPresent(actions::addAll);
 			var genesis = genesisBuilder.build(timestamp, actions);
+
+			logger.info("gen_create{tx_id={}}", genesis.getId());
+
 			var proof = genesisBuilder.generateGenesisProof(genesis);
 			return VerifiedTxnsAndProof.create(List.of(genesis), proof);
 		} catch (TxBuilderException | RadixEngineException e) {

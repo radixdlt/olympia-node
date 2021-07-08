@@ -27,7 +27,6 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForksModule;
@@ -91,7 +90,6 @@ import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -153,8 +151,6 @@ public class SubmissionServiceTest {
 				install(new ForksModule());
 				install(MempoolConfig.asModule(10, 10));
 
-				bind(new TypeLiteral<Set<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-					.toInstance(registeredNodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()));
 				var validatorSet = BFTValidatorSet.from(registeredNodes.stream().map(ECKeyPair::getPublicKey)
 					.map(BFTNode::create)
 					.map(n -> BFTValidator.from(n, UInt256.ONE)));
@@ -228,7 +224,10 @@ public class SubmissionServiceTest {
 		var injector = Guice.createInjector(
 			new RadixEngineCheckpointModule(),
 			new RadixEngineModule(),
-			new MockedGenesisModule(Amount.ofTokens(10 * 10)),
+			new MockedGenesisModule(
+				registeredNodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+				Amount.ofTokens(10 * 10)
+			),
 			localModule()
 		);
 		injector.injectMembers(this);

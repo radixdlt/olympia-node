@@ -26,19 +26,11 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.KeyComparator;
 import org.apache.logging.log4j.ThreadContext;
 import org.junit.After;
@@ -49,18 +41,15 @@ import org.junit.rules.TemporaryFolder;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -77,7 +66,6 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -108,14 +96,10 @@ public class MempoolRelayTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	@Inject
-	@Genesis
-	private VerifiedTxnsAndProof genesisTxns;
-
 	private final ImmutableList<Integer> validators;
 	private final ImmutableList<Integer> fullNodes;
-
 	private DeterministicNetwork network;
+	private ImmutableList<ECKeyPair> nodeKeys;
 	private ImmutableList<Injector> nodes;
 
 	public MempoolRelayTest(int numValidators, int numFullNodes) {
@@ -129,7 +113,7 @@ public class MempoolRelayTest {
 	public void setup() {
 		final var numNodes = this.validators.size() + this.fullNodes.size();
 
-		final var nodeKeys = Stream.generate(ECKeyPair::generateNew)
+		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
 			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
 			.collect(ImmutableList.toImmutableList());
@@ -143,8 +127,6 @@ public class MempoolRelayTest {
 			MessageMutator.nothing()
 		);
 
-		this.injectGenesisAtomToThis(nodeKeys);
-
 		this.nodes = nodeKeys.stream()
 			.<Supplier<Injector>>map(k -> () -> createRunner(k, bftNodes))
 			.map(Supplier::get)
@@ -153,43 +135,17 @@ public class MempoolRelayTest {
 		this.nodes.forEach(i -> i.getInstance(DeterministicProcessor.class).start());
 	}
 
-	private void injectGenesisAtomToThis(ImmutableList<ECKeyPair> nodeKeys) {
-		/* Using injector to create a valid genesis atoms using the modules, and inject it to this instance */
+	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		final var validatorsKeys = this.validators.stream()
 			.map(nodeKeys::get)
 			.map(ECKeyPair::getPublicKey)
 			.collect(Collectors.toSet());
-		Guice.createInjector(
-			new MockedGenesisModule(Amount.ofTokens(1000)),
-			new CryptoModule(),
-			new RadixEngineModule(),
-			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
-			new ForksModule(),
-			new AbstractModule() {
-				@Override
-				public void configure() {
-					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<Set<ECPublicKey>>() { }).annotatedWith(Genesis.class).toInstance(validatorsKeys);
-					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
-					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
-				}
 
-				@Provides
-				@Genesis
-				private List<TxAction> mempoolFillerIssuance() {
-					return List.of(new MintToken(
-						REAddr.ofNativeToken(),
-						REAddr.ofPubKeyAccount(nodeKeys.get(MEMPOOL_FILLER_NODE).getPublicKey()),
-						Amount.ofTokens(10000000000L).toSubunits()
-					));
-				}
-			}
-		).injectMembers(this);
-	}
-
-	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
+			new MockedGenesisModule(
+				validatorsKeys,
+				Amount.ofTokens(1000)
+			),
 			MempoolConfig.asModule(500, 100, 10, 10, 10),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
 			new ForksModule(),
@@ -198,7 +154,6 @@ public class MempoolRelayTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
@@ -211,6 +166,16 @@ public class MempoolRelayTest {
 					return () -> allNodes.stream()
 						.filter(n -> !self.equals(n))
 						.map(PeersView.PeerInfo::fromBftNode);
+				}
+
+				@Provides
+				@Genesis
+				private List<TxAction> mempoolFillerIssuance(@Self ECPublicKey self) {
+					return List.of(new MintToken(
+						REAddr.ofNativeToken(),
+						REAddr.ofPubKeyAccount(nodeKeys.get(MEMPOOL_FILLER_NODE).getPublicKey()),
+						Amount.ofTokens(10000000000L).toSubunits()
+					));
 				}
 			}
 		);

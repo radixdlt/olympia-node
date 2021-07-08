@@ -39,17 +39,21 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Genesis atom to be used with tests
+ * Genesis atom to be used with tests. Given a set of parameters the genesis transaction
+ * generated should be deterministic.
  */
 public final class MockedGenesisModule extends AbstractModule {
+	private final Set<ECPublicKey> validators;
 	private final Amount stake;
 
-	public MockedGenesisModule(Amount stake) {
+	public MockedGenesisModule(Set<ECPublicKey> validators, Amount stake) {
+		this.validators = validators;
 		this.stake = stake;
 	}
 
 	@Override
 	public void configure() {
+		bind(new TypeLiteral<Set<ECPublicKey>>() { }).annotatedWith(Genesis.class).toInstance(validators);
 		bind(new TypeLiteral<VerifiedTxnsAndProof>() { }).annotatedWith(Genesis.class).toProvider(GenesisProvider.class).in(Scopes.SINGLETON);
 		OptionalBinder.newOptionalBinder(binder(), Key.get(new TypeLiteral<List<TxAction>>() { }, Genesis.class));
 	}
