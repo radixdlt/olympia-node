@@ -18,6 +18,7 @@ import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,12 @@ public final class Account implements ImperativeRadixApi, RadixAccount {
     @Override
     public Account withTrace() {
         client.withTrace();
+        return this;
+    }
+
+    @Override
+    public ImperativeRadixApi withTimeout(Duration timeout) {
+        client.withTimeout(timeout);
         return this;
     }
 
@@ -162,8 +169,7 @@ public final class Account implements ImperativeRadixApi, RadixAccount {
     @Override
     public AID fixedSupplyToken(String rri, String symbol, String name, String description, String iconUrl,
                                 String tokenUrl, Amount supply) {
-        return TransactionUtils.createFixedSupplyToken(this, rri, symbol, name, description, iconUrl, tokenUrl,
-            supply);
+        return TransactionUtils.createFixedSupplyToken(this, symbol, name, description, iconUrl, tokenUrl, supply);
     }
 
 }

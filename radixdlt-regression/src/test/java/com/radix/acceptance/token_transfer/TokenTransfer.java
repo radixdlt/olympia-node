@@ -1,14 +1,17 @@
 package com.radix.acceptance.token_transfer;
 
 import com.radix.acceptance.AcceptanceTest;
-import com.radix.test.TransactionUtils;
-import com.radix.test.Utils;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.utils.UInt256;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Optional;
+
+import static org.junit.Assert.assertEquals;
 
 public class TokenTransfer extends AcceptanceTest {
 
@@ -23,12 +26,13 @@ public class TokenTransfer extends AcceptanceTest {
     }
 
     @And("I transfer {int} XRD from the first account to the second")
-    public void i_transfer_xrd_from_the_first_account_to_the_second(Integer xrdToTransfer) {
-//        TransactionUtils.nativeTokenTransfer(account1, account2, xrdToTransfer, "hello there!");
-//        var expectedBalance1 = FIXED_FAUCET_AMOUNT.subtract(Utils.fromMajorToMinor(xrdToTransfer)).subtract(FIXED_FEES);
-//        Utils.waitForBalanceToReach(account1, expectedBalance1);
-//        var expectedBalance2 = FIXED_FAUCET_AMOUNT.add(Utils.fromMajorToMinor(xrdToTransfer));
-//        Utils.waitForBalanceToReach(account2, expectedBalance2);
+    public void i_transfer_xrd_from_the_first_account_to_the_second(int amount) {
+        UInt256 account1BalanceBefore = account1.getOwnNativeTokenBalance().getAmount();
+        UInt256 account2BalanceBefore = account2.getOwnNativeTokenBalance().getAmount();
+        Amount transferredAmount = Amount.ofTokens(amount);
+        account1.transfer(account2, transferredAmount, Optional.of("hello there!"));
+        assertEquals(account1BalanceBefore.add(transferredAmount.toSubunits()),
+            account1.getOwnNativeTokenBalance().getAmount());
     }
 
     @Then("the second account can transfer {int} XRD back to the first")

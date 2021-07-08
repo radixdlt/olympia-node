@@ -6,13 +6,13 @@ Feature: Fixed Supply Tokens
 
   Scenario: 1: Creating a fixed supply token
     Given I have an account with funds at a suitable Radix network
-    When I create a fixed supply token with properties: 'testrri', 'symbol', 'name', 'desc', 'www.iconUrl.com', 'www.tokenUrl.com', with amount 150
+    When I create a fixed supply token with properties: 'symbol', 'name', 'desc', 'www.iconUrl.com', 'www.tokenUrl.com', with amount 150
     Then I can observe that the token has been created, with the correct values
 
   Scenario: 2: Creating a conflicting token
     Given I have an account with funds at a suitable Radix network
-    When I create a fixed supply token with rri 'testrri2'
-    And I create a fixed supply token with rri 'testrri2'
+    When I create a fixed supply token with name 'name2'
+    And I create a fixed supply token with name 'name2'
     Then I can observe that the last token creation failed
 
   Scenario: 3: Total supply

@@ -1,19 +1,15 @@
 package com.radix.test.network.client;
 
 import com.radix.test.network.RadixNetworkConfiguration;
-import com.radixdlt.client.lib.api.AccountAddress;
-
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.List;
-
 import com.radixdlt.client.lib.api.sync.RadixApiException;
 import com.radixdlt.utils.functional.Failure;
 import kong.unirest.HttpResponse;
 import kong.unirest.JsonNode;
 import kong.unirest.Unirest;
 import kong.unirest.json.JSONObject;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 /**
  * A small HTTP client that consumes the non-JSON-RPC methods e.g. /health.
@@ -22,7 +18,7 @@ import kong.unirest.json.JSONObject;
  */
 public class RadixHttpClient {
 
-    private final static String FAUCET_PATH = "/faucet";
+    private static final String FAUCET_PATH = "/faucet";
 
     public static RadixHttpClient fromRadixNetworkConfiguration(RadixNetworkConfiguration configuration) {
         return new RadixHttpClient(configuration.getBasicAuth());

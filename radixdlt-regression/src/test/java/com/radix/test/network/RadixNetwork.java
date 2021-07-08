@@ -5,7 +5,6 @@ import com.radix.test.docker.DockerClient;
 import com.radix.test.docker.LocalDockerClient;
 import com.radix.test.network.client.RadixHttpClient;
 import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

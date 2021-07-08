@@ -1,9 +1,7 @@
 package com.radix.test.network;
 
 import com.radix.test.Utils;
-import com.radix.test.network.client.HttpException;
 import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
-import com.radixdlt.client.lib.api.sync.RadixApi;
 
 import java.net.MalformedURLException;
 import java.net.URL;

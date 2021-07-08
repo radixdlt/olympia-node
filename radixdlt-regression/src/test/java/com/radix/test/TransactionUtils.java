@@ -25,7 +25,7 @@ import static org.awaitility.Awaitility.await;
  */
 public final class TransactionUtils {
 
-    public final static Duration DEFAULT_TX_CONFIRMATION_PATIENCE = Durations.ONE_MINUTE;
+    public static final Duration DEFAULT_TX_CONFIRMATION_PATIENCE = Durations.ONE_MINUTE;
 
     private TransactionUtils() {
 
@@ -77,11 +77,11 @@ public final class TransactionUtils {
     /**
      * Submits a fixed supply token creation transaction and waits for its confirmation
      */
-    public static AID createFixedSupplyToken(Account creator, String rri, String symbol, String name, String description,
-                                             String iconUrl, String tokenUrl, Amount amount) {
+    public static AID createFixedSupplyToken(Account creator, String symbol, String name, String description,
+                                             String iconUrl, String tokenUrl, Amount supply) {
         var key = creator.getKeyPair().getPublicKey();
         var request = TransactionRequest.createBuilder(creator.getAddress())
-            .createFixed(creator.getAddress(), key, rri, symbol, name, description, iconUrl, tokenUrl, amount.toSubunits())
+            .createFixed(creator.getAddress(), key, symbol, name, description, iconUrl, tokenUrl, supply.toSubunits())
             .build();
         return finalizeAndSubmitTransaction(creator, request, true);
     }
@@ -94,7 +94,7 @@ public final class TransactionUtils {
     public static AID finalizeAndSubmitTransaction(Account account, TransactionRequest request, boolean waitForConfirmation) {
         var keyPair = account.getKeyPair();
         var builtTransaction = account.transaction().build(request);
-        var finalizedTransaction = account.transaction().finalize(builtTransaction.toFinalized(keyPair));
+        var finalizedTransaction = account.transaction().finalize(builtTransaction.toFinalized(keyPair), false);
         var submittedTransaction = account.transaction().submit(finalizedTransaction);
 
         if (waitForConfirmation) {

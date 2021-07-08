@@ -19,7 +19,6 @@ package com.radix.acceptance.staking;
 
 import com.radix.acceptance.AcceptanceTest;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -30,6 +29,7 @@ import org.assertj.core.util.Lists;
 import org.junit.Assert;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -87,7 +87,7 @@ public class Staking extends AcceptanceTest {
 
     private void updateValidatorInformation() {
         validatorsBuffer.clear();
-        validatorsBuffer = account1.validator().list(1000, NavigationCursor.create("")).getValidators();
+        validatorsBuffer = account1.validator().list(1000, Optional.empty()).getValidators();
         if (validatorsBuffer.isEmpty()) {
             Assert.fail("No validators were found in the network, test cannot proceed.");
         }

@@ -1,19 +1,13 @@
 package com.radix.test;
 
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.AccountAddressing;
-import com.radixdlt.identifiers.ValidatorAddressing;
+import com.radix.test.account.Account;
+import com.radixdlt.application.tokens.TokenUtils;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Failure;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.Durations;
 import org.awaitility.core.ConditionTimeoutException;
-
-import com.radix.test.account.Account;
-import com.radixdlt.application.tokens.TokenUtils;
-import com.radixdlt.client.lib.api.ValidatorAddress;
-import com.radixdlt.client.lib.dto.ValidatorDTO;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Failure;
 
 import static org.awaitility.Awaitility.await;
 

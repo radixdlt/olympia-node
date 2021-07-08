@@ -1,3 +1,4 @@
+@Single
 Feature: Token Transfer
   As an account owner,
   I want to be able to transfer tokens to other accounts,
