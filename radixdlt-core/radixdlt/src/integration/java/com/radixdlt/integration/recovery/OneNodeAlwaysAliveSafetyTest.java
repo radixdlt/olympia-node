@@ -18,6 +18,7 @@
 package com.radixdlt.integration.recovery;
 
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.mempool.MempoolConfig;
@@ -57,7 +58,6 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -197,7 +197,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(PeersView.class).toInstance(Stream::of);
-					bind(ControlledSenderFactory.class).toInstance(network::createSender);
+					bind(Environment.class).toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 				}

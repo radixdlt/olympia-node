@@ -24,7 +24,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
+import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -80,7 +80,8 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     }
 
     @Provides
-    ControlledSenderFactory senderFactory(DeterministicNetwork network) {
-        return network::createSender;
+	@Singleton
+    Environment environment(@Self BFTNode self, DeterministicNetwork network) {
+        return network.createSender(self);
     }
 }

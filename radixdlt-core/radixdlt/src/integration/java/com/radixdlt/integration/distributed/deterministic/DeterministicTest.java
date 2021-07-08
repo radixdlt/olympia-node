@@ -98,7 +98,7 @@ public final class DeterministicTest {
 
 		this.nodes = new DeterministicNodes(
 			nodes,
-			this.network::createSender,
+			this.network,
 			baseModule,
 			overrideModule
 		);

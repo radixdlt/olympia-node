@@ -17,9 +17,12 @@
 
 package com.radixdlt.recovery;
 
+import com.google.common.collect.ClassToInstanceMap;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.assertj.core.api.Condition;
@@ -38,7 +41,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Proposal;
@@ -53,10 +55,7 @@ import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -158,19 +157,16 @@ public class RecoveryTest {
 				)),
 			new ForksModule(),
 			MempoolConfig.asModule(10, 10),
+			new LastEventsModule(EpochViewUpdate.class, Vote.class),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(PeersView.class).toInstance(Stream::of);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
-					bind(ControlledSenderFactory.class).toInstance(network::createSender);
+					bind(Environment.class).toInstance(network.createSender(BFTNode.create(self.getKey())));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
-					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { })
-						.toInstance(new DeterministicSavedLastEvent<>(Vote.class));
-					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
-						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { });
 				}
 			},
 			new PersistedNodeForTestingModule()
@@ -186,12 +182,13 @@ public class RecoveryTest {
 	}
 
 	private EpochView getLastEpochView() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }))
-			.getLastEvent().getEpochView();
+		return currentInjector.getInstance(Key.get(new TypeLiteral<ClassToInstanceMap<Object>>() { }))
+			.getInstance(EpochViewUpdate.class).getEpochView();
 	}
 
 	private Vote getLastVote() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { })).getLastEvent();
+		return currentInjector.getInstance(Key.get(new TypeLiteral<ClassToInstanceMap<Object>>() { }))
+			.getInstance(Vote.class);
 	}
 
 	private void restartNode() {

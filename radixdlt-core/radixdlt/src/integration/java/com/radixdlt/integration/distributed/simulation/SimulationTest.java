@@ -273,7 +273,6 @@ public class SimulationTest {
 				public void configure() {
 					bind(new TypeLiteral<ImmutableList<BFTNode>>() { }).toInstance(bftNodes);
 					bind(new TypeLiteral<ImmutableList<BFTValidator>>() { }).toInstance(validators);
-					bind(BFTValidatorSet.class).toInstance(initialVset);
 				}
 			});
 
@@ -520,6 +519,13 @@ public class SimulationTest {
 				});
 			} else {
 				modules.add(new MockedRecoveryModule());
+				var initialVset = BFTValidatorSet.from(nodes.stream()
+					.map(e -> BFTValidator.from(BFTNode.create(e.getPublicKey()), UInt256.ONE)));
+				modules.add(new AbstractModule() {
+					public void configure() {
+						bind(BFTValidatorSet.class).toInstance(initialVset);
+					}
+				});
 			}
 
 			modules.add(new MockedPersistenceStoreModule());

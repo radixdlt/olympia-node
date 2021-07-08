@@ -17,9 +17,12 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.google.common.collect.ClassToInstanceMap;
 import com.google.inject.Provides;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForksModule;
@@ -53,8 +56,6 @@ import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
-import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -172,12 +173,13 @@ public class RecoveryLivenessTest {
 				)),
 			new ForksModule(),
 			new PersistedNodeForTestingModule(),
+			new LastEventsModule(EpochViewUpdate.class),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
-					bind(ControlledSenderFactory.class).toInstance(network::createSender);
+					bind(Environment.class).toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 				}
@@ -244,9 +246,8 @@ public class RecoveryLivenessTest {
 	}
 
 	private EpochView latestEpochView() {
-		final var lastEventKey = Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { });
 		return this.nodes.stream()
-			.map(i -> i.getInstance(lastEventKey).getLastEvent())
+			.map(i -> i.getInstance(Key.get(new TypeLiteral<ClassToInstanceMap<Object>>() { })).getInstance(EpochViewUpdate.class))
 			.map(e -> e == null ? new EpochView(0, View.genesis()) : e.getEpochView())
 			.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
 	}

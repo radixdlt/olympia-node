@@ -18,11 +18,14 @@
 
 package com.radixdlt.integration.staking;
 
+import com.google.common.collect.ClassToInstanceMap;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.PrivateKeys;
@@ -48,7 +51,6 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.PersistedNodeForTestingModule;
@@ -76,9 +78,7 @@ import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -218,18 +218,14 @@ public class StakingUnstakingValidatorsTest {
 			MempoolConfig.asModule(10, 10),
 			reConfig,
 			new PersistedNodeForTestingModule(),
+			new LastEventsModule(LedgerUpdate.class),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-					bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
-					bind(ControlledSenderFactory.class).toInstance(network::createSender);
+					bind(Environment.class).toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
-					bind(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() {})
-						.toInstance(new DeterministicSavedLastEvent<>(LedgerUpdate.class));
-					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() {})
-						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() {});
 				}
 
 				@ProvidesIntoSet
@@ -308,21 +304,21 @@ public class StakingUnstakingValidatorsTest {
 
 	private static class NodeState {
 		private final String self;
-		private final DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate;
 		private final EpochChange epochChange;
 		private final BerkeleyLedgerEntryStore entryStore;
 		private final Forks forks;
+		private final ClassToInstanceMap<Object> lastEvents;
 
 		@Inject
 		private NodeState(
 			@Self String self,
-			DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate,
+			ClassToInstanceMap<Object> lastEvents,
 			EpochChange epochChange,
 			BerkeleyLedgerEntryStore entryStore,
 			Forks forks
 		) {
 			this.self = self;
-			this.lastLedgerUpdate = lastLedgerUpdate;
+			this.lastEvents = lastEvents;
 			this.epochChange = epochChange;
 			this.entryStore = entryStore;
 			this.forks = forks;
@@ -333,14 +329,14 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public long getEpoch() {
-			if (lastLedgerUpdate.getLastEvent() == null) {
+			if (lastEvents.getInstance(LedgerUpdate.class) == null) {
 				return epochChange.getEpoch();
 			}
-			var epochChange = lastLedgerUpdate.getLastEvent().getStateComputerOutput().getInstance(EpochChange.class);
+			var epochChange = lastEvents.getInstance(LedgerUpdate.class).getStateComputerOutput().getInstance(EpochChange.class);
 			if (epochChange != null) {
 				return epochChange.getEpoch();
 			} else {
-				return lastLedgerUpdate.getLastEvent().getTail().getEpoch();
+				return lastEvents.getInstance(LedgerUpdate.class).getTail().getEpoch();
 			}
 		}
 
