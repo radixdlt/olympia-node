@@ -18,8 +18,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-
 public interface EndReducer<S extends ReducerState> {
-	void reduce(S reducerState, ExecutionContext context, ImmutableAddrs immutableAddrs) throws ProcedureException;
+	void reduce(S reducerState, ExecutionContext context, ImmutableAddrs immutableAddrs) throws Exception;
 }

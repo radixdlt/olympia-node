@@ -27,6 +27,9 @@ import com.radixdlt.application.tokens.state.TokensInAccount;
 public final class MintTokenConstructor implements ActionConstructor<MintToken> {
 	@Override
 	public void construct(MintToken action, TxBuilder txBuilder) throws TxBuilderException {
+		if (action.amount().isZero()) {
+			throw new TxBuilderException("Must mint > 0 tokens");
+		}
 		txBuilder.up(new TokensInAccount(action.to(), action.resourceAddr(), action.amount()));
 		txBuilder.end();
 	}

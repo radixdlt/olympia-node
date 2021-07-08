@@ -24,7 +24,7 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 
 import java.util.Objects;
 
-public class SignatureDetails {
+public final class SignatureDetails {
 	private final ECPublicKey key;
 	private final String signature;
 	private final long timestamp;

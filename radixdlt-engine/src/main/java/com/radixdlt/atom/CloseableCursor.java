@@ -18,13 +18,13 @@
 
 package com.radixdlt.atom;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 
 import java.io.Closeable;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -34,31 +34,32 @@ import java.util.function.Supplier;
 public interface CloseableCursor<T> extends Iterator<T>, Closeable {
 	void close();
 
-	static <T, U> CloseableCursor<U> map(CloseableCursor<T> cursor, Function<T, U> mapper) {
+	default <U> CloseableCursor<U> map(Function<T, U> mapper) {
 		return new CloseableCursor<>() {
 			@Override
 			public void close() {
-				cursor.close();
+				CloseableCursor.this.close();
 			}
 
 			@Override
 			public boolean hasNext() {
-				return cursor.hasNext();
+				return CloseableCursor.this.hasNext();
 			}
 
 			@Override
 			public U next() {
-				return mapper.apply(cursor.next());
+				var next = CloseableCursor.this.next();
+				return mapper.apply(next);
 			}
 		};
 	}
 
-	static <T> CloseableCursor<T> filter(CloseableCursor<T> cursor, Predicate<T> substatePredicate) {
-		var iterator = Iterators.filter(cursor, substatePredicate);
-		return new CloseableCursor<T>() {
+	default CloseableCursor<T> filter(Predicate<T> substatePredicate) {
+		var iterator = Iterators.filter(this, substatePredicate::test);
+		return new CloseableCursor<>() {
 			@Override
 			public void close() {
-				cursor.close();
+				CloseableCursor.this.close();
 			}
 
 			@Override
@@ -73,13 +74,13 @@ public interface CloseableCursor<T> extends Iterator<T>, Closeable {
 		};
 	}
 
-	static <T> CloseableCursor<T> concat(CloseableCursor<T> cursor0, Supplier<CloseableCursor<T>> supplier1) {
-		return new CloseableCursor<T>() {
+	default CloseableCursor<T> concat(Supplier<CloseableCursor<T>> supplier1) {
+		return new CloseableCursor<>() {
 			private CloseableCursor<T> cursor1;
 
 			@Override
 			public void close() {
-				cursor0.close();
+				CloseableCursor.this.close();
 				if (cursor1 != null) {
 					cursor1.close();
 				}
@@ -87,7 +88,7 @@ public interface CloseableCursor<T> extends Iterator<T>, Closeable {
 
 			@Override
 			public boolean hasNext() {
-				if (cursor0.hasNext()) {
+				if (CloseableCursor.this.hasNext()) {
 					return true;
 				}
 
@@ -103,8 +104,8 @@ public interface CloseableCursor<T> extends Iterator<T>, Closeable {
 				if (cursor1 != null) {
 					return cursor1.next();
 				} else {
-					var s = cursor0.next();
-					if (!cursor0.hasNext()) {
+					var s = CloseableCursor.this.next();
+					if (!CloseableCursor.this.hasNext()) {
 						cursor1 = supplier1.get();
 					}
 					return s;

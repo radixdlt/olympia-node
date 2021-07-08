@@ -24,7 +24,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-public class DelegatedStake {
+public final class DelegatedStake {
 	private final UInt256 amount;
 	private final AccountAddress delegator;
 

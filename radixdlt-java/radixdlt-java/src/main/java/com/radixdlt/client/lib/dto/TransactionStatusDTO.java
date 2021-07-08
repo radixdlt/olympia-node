@@ -25,7 +25,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class TransactionStatusDTO {
+public final class TransactionStatusDTO {
 	private final AID txId;
 	private final TransactionStatus status;
 

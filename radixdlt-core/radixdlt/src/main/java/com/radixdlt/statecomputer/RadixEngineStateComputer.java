@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
@@ -45,10 +46,12 @@ import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.engine.MetadataException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.CommittedBadTxnException;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
@@ -69,7 +72,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongFunction;
 import java.util.stream.Collectors;
 
@@ -131,17 +133,21 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	public static class RadixEngineTxn implements PreparedTxn {
 		private final Txn txn;
-		private final REProcessedTxn transaction;
+		private final REProcessedTxn processed;
 		private final PermissionLevel permissionLevel;
 
 		public RadixEngineTxn(
 			Txn txn,
-			REProcessedTxn transaction,
+			REProcessedTxn processed,
 			PermissionLevel permissionLevel
 		) {
 			this.txn = txn;
-			this.transaction = transaction;
+			this.processed = processed;
 			this.permissionLevel = permissionLevel;
+		}
+
+		REProcessedTxn processedTxn() {
+			return processed;
 		}
 
 		@Override
@@ -177,7 +183,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
 		List<REProcessedTxn> cmds = prepared.stream()
 			.map(p -> (RadixEngineTxn) p)
-			.map(c -> c.transaction)
+			.map(RadixEngineTxn::processedTxn)
 			.collect(Collectors.toList());
 
 		// TODO: only return commands which will not cause a missing dependency error
@@ -190,15 +196,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return l -> proposerElection.getProposer(View.of(l)).getKey();
 	}
 
-	private BFTValidatorSet executeSystemUpdate(
+	private RadixEngineTxn executeSystemUpdate(
 		RadixEngineBranch<LedgerAndBFTProof> branch,
 		VerifiedVertex vertex,
-		long timestamp,
-		ImmutableList.Builder<PreparedTxn> successBuilder
+		long timestamp
 	) {
 		var systemActions = TxnConstructionRequest.create();
 		var view = vertex.getView();
-		var nextValidatorSet = new AtomicReference<BFTValidatorSet>();
 		if (view.compareTo(epochCeilingView) <= 0) {
 			systemActions.action(new NextRound(
 				view.number(),
@@ -215,15 +219,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 					getValidatorMapping()
 				));
 			}
-			systemActions.action(new NextEpoch(nextValidators -> {
-				var next = nextValidators.stream()
-					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount()))
-					.collect(Collectors.toList());
-				if (next.isEmpty()) {
-					throw new NoValidatorsException(vertex.getQC().getEpoch());
-				}
-				nextValidatorSet.set(BFTValidatorSet.from(next));
-			}, timestamp));
+			systemActions.action(new NextEpoch(timestamp));
 		}
 
 		final Txn systemUpdate;
@@ -237,14 +233,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 				String.format("Failed to execute system updates: %s", systemActions), e
 			);
 		}
-		var radixEngineCommand = new RadixEngineTxn(
+		return new RadixEngineTxn(
 			systemUpdate,
 			txs.get(0),
 			PermissionLevel.SUPER_USER
 		);
-		successBuilder.add(radixEngineCommand);
-
-		return nextValidatorSet.get();
 	}
 
 	private void executeUserCommands(
@@ -291,20 +284,29 @@ public final class RadixEngineStateComputer implements StateComputer {
 				);
 			} catch (RadixEngineException e) {
 				throw new IllegalStateException("Re-execution of already prepared atom failed: "
-					+ radixEngineCommand.transaction.getTxn().getId(), e);
+					+ radixEngineCommand.processed.getTxn().getId(), e);
 			}
 		}
 
+		var systemTxn = this.executeSystemUpdate(transientBranch, vertex, timestamp);
 		final ImmutableList.Builder<PreparedTxn> successBuilder = ImmutableList.builder();
+		successBuilder.add(systemTxn);
 		final ImmutableMap.Builder<Txn, Exception> exceptionBuilder = ImmutableMap.builder();
-		final BFTValidatorSet validatorSet = this.executeSystemUpdate(transientBranch, vertex, timestamp, successBuilder);
+		var nextValidatorSet = systemTxn.processedTxn().getEvents().stream()
+			.filter(NextValidatorSetEvent.class::isInstance)
+			.map(NextValidatorSetEvent.class::cast)
+			.findFirst()
+			.map(e -> BFTValidatorSet.from(
+				e.nextValidators().stream()
+					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
+			);
 		// Don't execute command if changing epochs
-		if (validatorSet == null) {
+		if (nextValidatorSet.isEmpty()) {
 			this.executeUserCommands(vertex.getProposer(), transientBranch, next, successBuilder, exceptionBuilder);
 		}
 		this.radixEngine.deleteBranches();
 
-		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSet);
+		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), nextValidatorSet.orElse(null));
 	}
 
 	private List<REProcessedTxn> commitInternal(
@@ -322,6 +324,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 			);
 		} catch (RadixEngineException e) {
 			throw new CommittedBadTxnException(verifiedTxnsAndProof, e);
+		} catch (MetadataException e) {
+			throw new ByzantineQuorumException(e.getMessage());
 		}
 
 		// Next epoch

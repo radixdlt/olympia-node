@@ -25,7 +25,6 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -57,32 +56,19 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 		var flag = builder.read(
 			AllowDelegationFlag.class,
 			p -> p.getValidatorKey().equals(action.to()),
-			Optional.of(new AllowDelegationFlag(action.to(), false)),
+			Optional.of(action.to()),
 			"Could not find state"
 		);
 
 		if (!flag.allowsDelegation()) {
-			var updateInFlight = builder
-				.find(PreparedOwnerUpdate.class, p -> p.getValidatorKey().equals(action.to()));
-
 			final REAddr owner;
-			if (updateInFlight.isPresent()) {
-				var validator = builder.read(
-					PreparedOwnerUpdate.class,
-					p -> p.getValidatorKey().equals(action.to()),
-					Optional.empty(),
-					"Could not find state"
-				);
-				owner = validator.getOwnerAddress();
-			} else {
-				var validator = builder.read(
-					ValidatorOwnerCopy.class,
-					p -> p.getValidatorKey().equals(action.to()),
-					Optional.of(new ValidatorOwnerCopy(action.to(), REAddr.ofPubKeyAccount(action.to()))),
-					"Could not find state"
-				);
-				owner = validator.getOwner();
-			}
+			var validator = builder.read(
+				ValidatorOwnerCopy.class,
+				p -> p.getValidatorKey().equals(action.to()),
+				Optional.of(action.to()),
+				"Could not find state"
+			);
+			owner = validator.getOwner();
 			if (!action.from().equals(owner)) {
 				throw new TxBuilderException("Delegation flag is false and you are not the owner.");
 			}

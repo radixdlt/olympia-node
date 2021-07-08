@@ -4,9 +4,7 @@ use bytebuffer::ByteBuffer;
 use std::fmt;
 
 use crate::substates::*;
-use crate::types::Bytes;
-use crate::types::Signature;
-use crate::types::SubstateId;
+use crate::types::*;
 
 pub struct Transaction {
     pub instructions: Vec<Instruction>,
@@ -14,35 +12,37 @@ pub struct Transaction {
 
 #[derive(Debug)]
 pub enum Instruction {
-    HEADER(u8, u8),
+    END,
 
     SYSCALL(Bytes),
 
     UP(Box<dyn Substate>),
 
-    VDOWN(Box<dyn Substate>),
+    READ(SubstateId),
 
-    VDOWNARG(Box<dyn Substate>, Bytes),
+    LREAD(u32),
+
+    VREAD(VirtualSubstateID),
+
+    LVREAD(LocalVirtualSubstateID),
 
     DOWN(SubstateId),
 
     LDOWN(u32),
 
-    DOWNALL(u8),
+    VDOWN(VirtualSubstateID),
 
-    MSG(Bytes),
+    LVDOWN(LocalVirtualSubstateID),
 
     SIG(Signature),
 
+    MSG(Bytes),
+
+    HEADER(u8, u8),
+
+    READINDEX(Bytes),
+
     DOWNINDEX(Bytes),
-
-    LREAD(u32),
-
-    VREAD(Box<dyn Substate>),
-
-    READ(SubstateId),
-
-    END,
 }
 
 impl Transaction {
@@ -73,20 +73,21 @@ impl Instruction {
         let t = buffer.read_u8();
         match t {
             0x00 => Self::END,
-            0x01 => Self::UP(Self::read_substate(buffer)),
-            0x02 => Self::VDOWN(Self::read_substate(buffer)),
-            0x03 => Self::VDOWNARG(Self::read_substate(buffer), Bytes::from_buffer(buffer)),
-            0x04 => Self::DOWN(SubstateId::from_buffer(buffer)),
-            0x05 => Self::LDOWN(buffer.read_u32()),
-            0x06 => Self::MSG(Bytes::from_buffer(buffer)),
-            0x07 => Self::SIG(Signature::from_buffer(buffer)),
-            0x08 => Self::DOWNALL(buffer.read_u8()),
-            0x09 => Self::SYSCALL(Bytes::from_buffer(buffer)),
-            0x0A => Self::HEADER(buffer.read_u8(), buffer.read_u8()),
-            0x0B => Self::DOWNINDEX(Bytes::from_buffer(buffer)),
-            0x0C => Self::LREAD(buffer.read_u32()),
-            0x0D => Self::VREAD(Self::read_substate(buffer)),
-            0x0E => Self::READ(SubstateId::from_buffer(buffer)),
+            0x01 => Self::SYSCALL(Bytes::from_buffer(buffer)),
+            0x02 => Self::UP(Self::read_substate(buffer)),
+            0x03 => Self::READ(SubstateId::from_buffer(buffer)),
+            0x04 => Self::LREAD(buffer.read_u32()),
+            0x05 => Self::VREAD(VirtualSubstateID::from_buffer(buffer)),
+            0x06 => Self::LVREAD(LocalVirtualSubstateID::from_buffer(buffer)),
+            0x07 => Self::DOWN(SubstateId::from_buffer(buffer)),
+            0x08 => Self::LDOWN(buffer.read_u32()),
+            0x09 => Self::VDOWN(VirtualSubstateID::from_buffer(buffer)),
+            0x0A => Self::LVDOWN(LocalVirtualSubstateID::from_buffer(buffer)),
+            0x0B => Self::SIG(Signature::from_buffer(buffer)),
+            0x0C => Self::MSG(Bytes::from_buffer(buffer)),
+            0x0D => Self::HEADER(buffer.read_u8(), buffer.read_u8()),
+            0x0E => Self::READINDEX(Bytes::from_buffer(buffer)),
+            0x0F => Self::DOWNINDEX(Bytes::from_buffer(buffer)),
             _ => panic!("Unexpected opcode: {:#04X}", t),
         }
     }
@@ -94,18 +95,17 @@ impl Instruction {
     fn read_substate(buffer: &mut ByteBuffer) -> Box<dyn Substate> {
         let t = buffer.read_u8();
         match t {
-            0x00 => Box::new(REAddress::from_buffer(buffer)),
-            0x03 => Box::new(TokenResource::from_buffer(buffer)),
-            0x04 => Box::new(TokenResourceMetadata::from_buffer(buffer)),
-            0x05 => Box::new(Tokens::from_buffer(buffer)),
-            0x06 => Box::new(PreparedStake::from_buffer(buffer)),
-            0x07 => Box::new(StakeOwnership::from_buffer(buffer)),
-            0x08 => Box::new(PreparedUnstake::from_buffer(buffer)),
-            0x09 => Box::new(ExitingStake::from_buffer(buffer)),
-            0x0D => Box::new(ValidatorAllowDelegationFlag::from_buffer(buffer)),
-            0x0E => Box::new(ValidatorRegisteredFlagCopy::from_buffer(buffer)),
-            0x0F => Box::new(PreparedRegisteredFlagUpdate::from_buffer(buffer)),
-            0x12 => Box::new(ValidatorOwnerCopy::from_buffer(buffer)),
+            0x04 => Box::new(TokenResource::from_buffer(buffer)),
+            0x05 => Box::new(TokenResourceMetadata::from_buffer(buffer)),
+            0x06 => Box::new(Tokens::from_buffer(buffer)),
+            0x07 => Box::new(PreparedStake::from_buffer(buffer)),
+            0x08 => Box::new(StakeOwnership::from_buffer(buffer)),
+            0x09 => Box::new(PreparedUnstake::from_buffer(buffer)),
+            0x0A => Box::new(ExitingStake::from_buffer(buffer)),
+            0x0E => Box::new(ValidatorAllowDelegationFlag::from_buffer(buffer)),
+            0x0F => Box::new(ValidatorRegisteredFlagCopy::from_buffer(buffer)),
+            0x10 => Box::new(ValidatorRakeCopy::from_buffer(buffer)),
+            0x11 => Box::new(ValidatorOwnerCopy::from_buffer(buffer)),
             _ => panic!("Unsupported substate type: {:#04X}", t),
         }
     }
@@ -225,6 +225,30 @@ mod tests {
     #[test]
     fn other_transfer_mixed_tokens() {
         let contents = fs::read_to_string("../samples/other_transfer_mixed_tokens.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
+    fn other_stake_from_validator_1() {
+        let contents = fs::read_to_string("../samples/other_stake_from_validator_1.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
+    fn other_stake_from_validator_2() {
+        let contents = fs::read_to_string("../samples/other_stake_from_validator_2.txt").unwrap();
+        let raw = hex::decode(contents).unwrap();
+        let tx = Transaction::from_bytes(raw);
+        println!("{:?}", tx)
+    }
+
+    #[test]
+    fn other_complex_fee() {
+        let contents = fs::read_to_string("../samples/other_complex_fee.txt").unwrap();
         let raw = hex::decode(contents).unwrap();
         let tx = Transaction::from_bytes(raw);
         println!("{:?}", tx)

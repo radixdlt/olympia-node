@@ -18,6 +18,10 @@
 
 package com.radixdlt.engine;
 
+import com.radixdlt.constraintmachine.REProcessedTxn;
+
+import java.util.List;
+
 /**
  * Verifies that batched atoms executed on Radix Engine follow some
  * specified rules.
@@ -25,30 +29,10 @@ package com.radixdlt.engine;
  * @param <M> class of metadata
  */
 public interface BatchVerifier<M> {
-	PerStateChangeVerifier<M> newVerifier(ComputedState computedState);
-
-	interface ComputedState {
-		<T> T get(Class<T> stateClass);
-	}
-
-	interface PerStateChangeVerifier<M> {
-		void test(ComputedState computedState);
-		void testMetadata(M metadata, ComputedState computedState) throws MetadataException;
+	default void testMetadata(M metadata, List<REProcessedTxn> txns) throws MetadataException {
 	}
 
 	static <M> BatchVerifier<M> empty() {
-		final var emptyPerStateChangeChecker = new PerStateChangeVerifier<M>() {
-			@Override
-			public void test(ComputedState computedState) {
-				// No-op
-			}
-
-			@Override
-			public void testMetadata(Object metadata, ComputedState computedState) {
-				// No-op
-			}
-		};
-
-		return computedState -> emptyPerStateChangeChecker;
+		return new BatchVerifier<>() {};
 	}
 }

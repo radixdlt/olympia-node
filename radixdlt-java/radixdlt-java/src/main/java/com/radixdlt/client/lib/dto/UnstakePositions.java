@@ -28,7 +28,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class UnstakePositions {
+public final class UnstakePositions {
 	private final UInt256 amount;
 	private final ValidatorAddress validator;
 	private final int epochsUntil;

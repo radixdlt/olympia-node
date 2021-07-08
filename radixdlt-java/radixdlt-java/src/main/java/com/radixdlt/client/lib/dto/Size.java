@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class Size {
+public final class Size {
 	private final long size;
 
 	private Size(long size) {

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class ConsensusData {
+public final class ConsensusData {
 	private final long stateVersion;
 	private final long voteQuorums;
 	private final long rejected;

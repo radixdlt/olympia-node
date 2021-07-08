@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class ApiDbCount {
+public final class ApiDbCount {
 	private final Count flush;
 	private final Size queue;
 	private final ReadWriteStats balance;

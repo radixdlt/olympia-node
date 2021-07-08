@@ -99,13 +99,13 @@ public class RadixEngineModule extends AbstractModule {
 		EngineStore<LedgerAndBFTProof> engineStore,
 		Set<StateReducer<?>> stateReducers,
 		Set<Pair<String, StateReducer<?>>> namedStateReducers,
-		StakedValidatorsReducer stakedValidatorsReducer,
 		RERules rules
 	) {
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
-			cmConfig.getVirtualStoreLayer(),
 			cmConfig.getProcedures(),
+			cmConfig.getDeserialization(),
+			cmConfig.getVirtualSubstateDeserialization(),
 			cmConfig.getMeter()
 		);
 		var radixEngine = new RadixEngine<>(
@@ -117,16 +117,6 @@ public class RadixEngineModule extends AbstractModule {
 			rules.getBatchVerifier()
 		);
 
-
-		// TODO: Convert to something more like the following:
-		// RadixEngine
-		//   .newStateComputer()
-		//   .ofType(RegisteredValidatorParticle.class)
-		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
-		//   .build();
-
-		radixEngine.addStateReducer(stakedValidatorsReducer, true);
-		radixEngine.addStateReducer(new SystemReducer(), true);
 		radixEngine.addStateReducer(new CurrentValidatorsReducer(), false);
 
 		// Additional state reducers are not required for consensus so don't need to include their

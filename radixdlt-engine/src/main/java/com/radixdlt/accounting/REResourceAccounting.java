@@ -67,7 +67,7 @@ public class REResourceAccounting {
 		Map<Bucket, BigInteger> bucketAccounting = new HashMap<>();
 
 		for (var update : updates) {
-			var substate = update.getRawSubstate();
+			var substate = update.getParsed();
 			if (substate instanceof ResourceInBucket) {
 				var resourceInBucket = (ResourceInBucket) substate;
 				bucketAccounting.merge(

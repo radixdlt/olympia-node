@@ -17,8 +17,10 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
+
 import org.json.JSONArray;
 import org.junit.Assert;
 import org.junit.Test;
@@ -338,6 +340,56 @@ public class ActionParserServiceTest {
 	}
 
 	@Test
+	public void updateValidatorFeeIsParsedCorrectly() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = addressing.forValidators().of(key);
+
+		var source = "[{\"type\":\"UpdateValidatorFee\", \"validator\":\"%s\", \"validatorFee\":\"1.2345\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(UpdateValidatorFee.class::isInstance)
+					.map(UpdateValidatorFee.class::cast)
+					.ifPresentOrElse(
+						updateValidatorFee -> {
+							assertEquals(key, updateValidatorFee.validatorKey());
+							assertEquals(123, updateValidatorFee.getFeePercentage());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void updateValidatorFeeIsCheckedForUpperBound() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = addressing.forValidators().of(key);
+
+		var source = "[{\"type\":\"UpdateValidatorFee\", \"validator\":\"%s\", \"validatorFee\":\"100.1\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr));
+
+		actionParserService.parse(actions)
+			.onSuccessDo(this::failureExpected);
+	}
+
+	@Test
+	public void updateValidatorFeeIsCheckedForLowerBound() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = addressing.forValidators().of(key);
+
+		var source = "[{\"type\":\"UpdateValidatorFee\", \"validator\":\"%s\", \"validatorFee\":\"-0.01\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr));
+
+		actionParserService.parse(actions)
+			.onSuccessDo(this::failureExpected);
+	}
+
+	@Test
 	public void unregisterValidatorIsParsedCorrectlyWithUrlAndName() {
 		var key = ECKeyPair.generateNew().getPublicKey();
 		var validatorAddr = addressing.forValidators().of(key);
@@ -417,7 +469,7 @@ public class ActionParserServiceTest {
 		var fromAddr = addressing.forAccounts().of(from);
 		var signer = ECKeyPair.generateNew().getPublicKey();
 
-		var source = "[{\"type\":\"CreateFixedSupplyToken\", \"from\":\"%s\", \"publicKeyOfSigner\":\"%s\", \"symbol\":\"%s\", "
+		var source = "[{\"type\":\"CreateFixedSupplyToken\", \"to\":\"%s\", \"publicKeyOfSigner\":\"%s\", \"symbol\":\"%s\", "
 			+ "\"name\":\"%s\", \"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\", \"supply\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, signer.toHex(), "symbol",
 											  "name", "description", "http://icon.url/", "http://token.url/", UInt256.TEN
@@ -434,7 +486,7 @@ public class ActionParserServiceTest {
 					.ifPresentOrElse(
 						create -> {
 							assertEquals(from, create.getAccountAddr());
-							assertEquals(REAddr.ofPubKeyAccount(signer), create.getResourceAddr());
+							assertEquals(REAddr.ofHashedKey(signer, create.getSymbol()), create.getResourceAddr());
 							assertEquals("symbol", create.getSymbol());
 							assertEquals("name", create.getName());
 							assertEquals("description", create.getDescription());
@@ -532,5 +584,9 @@ public class ActionParserServiceTest {
 
 	private void fail(Failure failure) {
 		Assert.fail(failure.message());
+	}
+
+	private void failureExpected() {
+		Assert.fail("Expected failure result, got success instead");
 	}
 }

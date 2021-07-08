@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Objects;
 
-public class EpochData {
+public final class EpochData {
 	private final List<ValidatorDTO> validators;
 
 	private EpochData(List<ValidatorDTO> validators) {

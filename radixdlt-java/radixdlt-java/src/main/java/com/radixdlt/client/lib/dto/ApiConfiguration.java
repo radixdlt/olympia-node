@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Objects;
 
-public class ApiConfiguration {
+public final class ApiConfiguration {
 	private final List<String> endpoints;
 
 	private ApiConfiguration(List<String> endpoints) {

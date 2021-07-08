@@ -18,6 +18,9 @@
 
 package com.radixdlt.application.system;
 
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxnConstructionRequest;
@@ -60,6 +63,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -80,8 +84,10 @@ public class NextEpochV2Test {
 					),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new TokensConstraintScryptV3(),
-					new ValidatorConstraintScryptV2(2),
-					new ValidatorRegisterConstraintScrypt()
+					new ValidatorConstraintScryptV2(),
+					new ValidatorUpdateRakeConstraintScrypt(2),
+					new ValidatorRegisterConstraintScrypt(),
+					new ValidatorUpdateOwnerConstraintScrypt()
 				),
 				REConstructor.newBuilder()
 					.put(NextRound.class, new NextViewConstructorV3())
@@ -114,11 +120,13 @@ public class NextEpochV2Test {
 	@Before
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		scrypts.forEach(cmAtomOS::load);
 		cmAtomOS.load(new MutexConstraintScrypt()); // For v1 start
 		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
+			cmAtomOS.getProcedures(),
+			cmAtomOS.buildSubstateDeserialization(),
+			cmAtomOS.buildVirtualSubstateDeserialization()
 		);
 		this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
@@ -141,7 +149,7 @@ public class NextEpochV2Test {
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);
 
 		var request = TxnConstructionRequest.create()
-			.action(new NextEpoch(u -> { }, 1));
+			.action(new NextEpoch(1));
 
 		// Act
 		var txn = sut.construct(request)

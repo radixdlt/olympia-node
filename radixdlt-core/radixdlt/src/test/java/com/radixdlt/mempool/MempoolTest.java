@@ -17,6 +17,8 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERules;
@@ -33,7 +35,6 @@ import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atomos.UnclaimedREAddr;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -100,26 +101,26 @@ public class MempoolTest {
 		return peersView.peers().findFirst().get().bftNode();
 	}
 
-	private Txn createTxn(ECKeyPair keyPair, int numMutexes) {
+	private Txn createTxn(ECKeyPair keyPair, int numMutexes) throws Exception {
 		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder(rules.getSerialization());
 		for (int i = 0; i < numMutexes; i++) {
 			var symbol = "test" + (char) ('c' + i);
 			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
-			var rriParticle = new UnclaimedREAddr(addr);
 			atomBuilder
-				.virtualDown(rriParticle, symbol.getBytes(StandardCharsets.UTF_8))
+				.syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8))
+				.virtualDown(SubstateId.ofSubstate(genesisTxns.getTxns().get(0).getId(), 0), addr.getBytes())
 				.end();
 		}
 		var signature = keyPair.sign(atomBuilder.hashToSign());
 		return atomBuilder.sig(signature).build();
 	}
 
-	private Txn createTxn(ECKeyPair keyPair) {
+	private Txn createTxn(ECKeyPair keyPair) throws Exception {
 		return createTxn(keyPair, 1);
 	}
 
 	@Test
-	public void add_local_command_to_mempool() {
+	public void add_local_command_to_mempool() throws Exception {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -136,7 +137,7 @@ public class MempoolTest {
 	}
 
 	@Test
-	public void add_remote_command_to_mempool() {
+	public void add_remote_command_to_mempool() throws Exception {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -153,7 +154,7 @@ public class MempoolTest {
 	}
 
 	@Test
-	public void relay_successful_local_add() {
+	public void relay_successful_local_add() throws Exception {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -167,7 +168,7 @@ public class MempoolTest {
 	}
 
 	@Test
-	public void relay_successful_remote_add() {
+	public void relay_successful_remote_add() throws Exception {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -181,7 +182,7 @@ public class MempoolTest {
 	}
 
 	@Test
-	public void add_same_command_to_mempool() {
+	public void add_same_command_to_mempool() throws Exception {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -197,7 +198,7 @@ public class MempoolTest {
 	}
 
 	@Test
-	public void add_conflicting_commands_to_mempool() {
+	public void add_conflicting_commands_to_mempool() throws Exception {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -229,7 +230,7 @@ public class MempoolTest {
 	}
 
 	@Test
-	public void replay_command_to_mempool() {
+	public void replay_command_to_mempool() throws Exception {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -250,7 +251,7 @@ public class MempoolTest {
 	}
 
 	@Test
-	public void mempool_removes_conflicts_on_commit() {
+	public void mempool_removes_conflicts_on_commit() throws Exception {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -272,7 +273,7 @@ public class MempoolTest {
 	}
 
 	@Test
-	public void mempool_removes_multiple_conflicts_on_commit() {
+	public void mempool_removes_multiple_conflicts_on_commit() throws Exception {
 		// Arrange
 		getInjector().injectMembers(this);
 		ECKeyPair keyPair = ECKeyPair.generateNew();

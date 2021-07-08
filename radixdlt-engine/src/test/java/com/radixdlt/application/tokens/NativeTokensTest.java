@@ -18,9 +18,13 @@
 
 package com.radixdlt.application.tokens;
 
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.REConstructor;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
@@ -46,6 +50,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -72,9 +77,11 @@ public class NativeTokensTest {
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(scrypt);
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
+			cmAtomOS.getProcedures(),
+			cmAtomOS.buildSubstateDeserialization(),
+			cmAtomOS.buildVirtualSubstateDeserialization()
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
@@ -83,6 +90,7 @@ public class NativeTokensTest {
 			parser,
 			serialization,
 			REConstructor.newBuilder()
+				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(TransferToken.class, transferTokensConstructor)
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
@@ -91,7 +99,9 @@ public class NativeTokensTest {
 			store
 		);
 		var txn = this.engine.construct(
-			new CreateMutableToken(null, "xrd", "xrd", "", "", "")
+			TxnConstructionRequest.create()
+				.action(new CreateSystem(0))
+				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}

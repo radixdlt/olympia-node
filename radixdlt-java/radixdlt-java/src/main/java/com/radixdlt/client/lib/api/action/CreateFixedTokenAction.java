@@ -26,34 +26,32 @@ import com.radixdlt.utils.UInt256;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class CreateFixedTokenAction implements Action {
 	private final ActionType type = ActionType.CREATE_FIXED;
-	private final AccountAddress from;
-	private final ECPublicKey signer;
-	private final UInt256 amount;
-	private final String rri;
-	private final String name;
+	private final AccountAddress to;
+	private final ECPublicKey publicKeyOfSigner;
 	private final String symbol;
+	private final String name;
+	private final String description;
 	private final String iconUrl;
 	private final String tokenUrl;
-	private final String description;
+	private final UInt256 supply;
 
 	public CreateFixedTokenAction(
-		AccountAddress from,
-		ECPublicKey signer, UInt256 amount,
-		String rri,
-		String name,
+		AccountAddress to,
+		ECPublicKey publicKeyOfSigner,
 		String symbol,
+		String name,
+		String description,
 		String iconUrl,
 		String tokenUrl,
-		String description
+		UInt256 supply
 	) {
-		this.from = from;
-		this.signer = signer;
-		this.amount = amount;
-		this.rri = rri;
-		this.name = name;
+		this.to = to;
+		this.publicKeyOfSigner = publicKeyOfSigner;
 		this.symbol = symbol;
+		this.name = name;
+		this.description = description;
 		this.iconUrl = iconUrl;
 		this.tokenUrl = tokenUrl;
-		this.description = description;
+		this.supply = supply;
 	}
 }

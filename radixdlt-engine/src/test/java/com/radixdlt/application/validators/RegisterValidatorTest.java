@@ -18,28 +18,32 @@
 
 package com.radixdlt.application.validators;
 
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
-import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -49,13 +53,17 @@ public class RegisterValidatorTest {
 	private SubstateSerialization serialization;
 
 	@Before
-	public void setup() {
+	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
+		cmAtomOS.load(new RoundUpdateConstraintScrypt(2));
+		cmAtomOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
+		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
 		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
+			cmAtomOS.getProcedures(),
+			cmAtomOS.buildSubstateDeserialization(),
+			cmAtomOS.buildVirtualSubstateDeserialization()
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.serialization = cmAtomOS.buildSubstateSerialization();
@@ -65,10 +73,13 @@ public class RegisterValidatorTest {
 			serialization,
 			REConstructor.newBuilder()
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
+				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.build(),
 			cm,
 			store
 		);
+		var txn = this.engine.construct(new CreateSystem(0)).buildWithoutSignature();
+		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test
@@ -92,21 +103,5 @@ public class RegisterValidatorTest {
 			.signAndBuild(key::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(registerTxn)))
 			.hasRootCauseInstanceOf(AuthorizationException.class);
-	}
-
-	@Test
-	public void changing_validator_key_should_fail() {
-		// Arrange
-		var key = ECKeyPair.generateNew();
-		var builder = TxLowLevelBuilder.newBuilder(serialization)
-			.virtualDown(new ValidatorRegisteredCopy(key.getPublicKey(), false))
-			.up(new PreparedRegisteredUpdate(ECKeyPair.generateNew().getPublicKey(), true))
-			.end();
-		var sig = key.sign(builder.hashToSign().asBytes());
-		var txn = builder.sig(sig).build();
-
-		// Act and Assert
-		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
-			.hasRootCauseInstanceOf(ProcedureException.class);
 	}
 }

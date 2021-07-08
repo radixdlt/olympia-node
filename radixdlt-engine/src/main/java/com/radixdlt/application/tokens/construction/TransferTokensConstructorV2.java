@@ -27,6 +27,10 @@ import com.radixdlt.application.tokens.state.TokensInAccount;
 public class TransferTokensConstructorV2 implements ActionConstructor<TransferToken> {
 	@Override
 	public void construct(TransferToken action, TxBuilder txBuilder) throws TxBuilderException {
+		if (action.amount().isZero()) {
+			throw new TxBuilderException("Must transfer > 0.");
+		}
+
 		txBuilder.swapFungible(
 			TokensInAccount.class,
 			p -> p.getResourceAddr().equals(action.resourceAddr())

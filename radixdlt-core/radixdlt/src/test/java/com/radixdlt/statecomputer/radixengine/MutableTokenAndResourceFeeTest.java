@@ -22,6 +22,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -125,7 +126,7 @@ public class MutableTokenAndResourceFeeTest {
 
 		// Act/Assert
 		assertThatThrownBy(() -> sut.execute(List.of(txn)))
-			.hasRootCauseInstanceOf(InvalidPermissionException.class);
+			.hasRootCauseInstanceOf(ProcedureException.class);
 	}
 
 	@Test
@@ -165,7 +166,8 @@ public class MutableTokenAndResourceFeeTest {
 		).signAndBuild(keyPair::sign);
 
 		// Act/Assert
-		sut.execute(List.of(txn));
+		var branch = sut.transientBranch();
+		branch.execute(List.of(txn));
 	}
 
 	@Test
@@ -207,13 +209,14 @@ public class MutableTokenAndResourceFeeTest {
 			null
 		);
 		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-		var atom = sut.construct(
+		var txn = sut.construct(
 			TxnConstructionRequest.create()
 				.feePayer(account)
 				.action(new CreateMutableToken(tokDef))
 			).signAndBuild(keyPair::sign);
 
+		var branch = sut.transientBranch();
 		// Act/Assert
-		sut.execute(List.of(atom));
+		branch.execute(List.of(txn));
 	}
 }

@@ -31,6 +31,7 @@ import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.SubstateId;
@@ -65,7 +66,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.engine.MetadataException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
@@ -180,8 +180,15 @@ public class RadixEngineStateComputerTest {
 
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
-		final var genesisValidatorSet = branch.getComputedState(StakedValidators.class).toValidatorSet();
+		var processed = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
+		var genesisValidatorSet = processed.get(0).getEvents().stream()
+			.filter(NextValidatorSetEvent.class::isInstance)
+			.map(NextValidatorSetEvent.class::cast)
+			.findFirst()
+			.map(e -> BFTValidatorSet.from(
+				e.nextValidators().stream()
+					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
+			).orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
 		radixEngine.deleteBranches();
 
 		var genesisLedgerHeader = LedgerProof.genesis(
@@ -213,7 +220,7 @@ public class RadixEngineStateComputerTest {
 		if (nextEpoch >= 2) {
 			var request = TxnConstructionRequest.create()
 				.action(new NextRound(10, true, 0, v -> proposerElection.getProposer(View.of(v)).getKey()))
-				.action(new NextEpoch(u -> List.of(registeredNodes.get(0).getPublicKey()), 0));
+				.action(new NextEpoch(0));
 			builder = radixEngine.construct(request);
 		} else {
 			builder = radixEngine.construct(new NextRound(
@@ -403,7 +410,7 @@ public class RadixEngineStateComputerTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
-			.isInstanceOf(MetadataException.class);
+			.isInstanceOf(ByzantineQuorumException.class);
 	}
 
 	// TODO: should catch this and log it somewhere as proof of byzantine quorum
@@ -426,6 +433,6 @@ public class RadixEngineStateComputerTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
-			.isInstanceOf(MetadataException.class);
+			.isInstanceOf(ByzantineQuorumException.class);
 	}
 }

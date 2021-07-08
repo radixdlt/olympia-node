@@ -27,6 +27,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.ArrayList;
@@ -37,7 +38,11 @@ import java.util.stream.Stream;
 import static com.radixdlt.api.data.ApiErrors.INVALID_ACTION_DATA;
 import static com.radixdlt.api.data.ApiErrors.MISSING_FIELD;
 import static com.radixdlt.api.data.ApiErrors.UNSUPPORTED_ACTION;
+import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
+import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MIN;
+import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
+import static com.radixdlt.identifiers.CommonErrors.VALUE_OUT_OF_RANGE;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.wrap;
 
@@ -133,11 +138,11 @@ public final class ActionParserService {
 					optionalUrl(element)
 				).map(TransactionAction::update);
 
-			case UPDATE_RAKE:
+			case UPDATE_VALIDATOR_FEE:
 				return allOf(
 					validator(element),
-					percentage(element)
-				).map(TransactionAction::updateRake);
+					fee(element)
+				).map(TransactionAction::updateValidatorFee);
 
 			case UPDATE_DELEGATION:
 				return allOf(
@@ -153,7 +158,7 @@ public final class ActionParserService {
 
 			case CREATE_FIXED:
 				return allOf(
-					from(element),
+					to(element),
 					pubKey(element),
 					symbol(element),
 					name(element),
@@ -186,9 +191,16 @@ public final class ActionParserService {
 			.flatMap(p -> addressing.forResources().parseFunctional(p).map(t -> t.map((__, addr) -> addr)));
 	}
 
-	private Result<Integer> percentage(JSONObject element) {
+	private static final Failure FEE_BOUNDS_FAILURE = VALUE_OUT_OF_RANGE.with(
+		(double) RAKE_MIN / (double) RAKE_PERCENTAGE_GRANULARITY + "",
+		(double) RAKE_MAX / (double) RAKE_PERCENTAGE_GRANULARITY + ""
+	);
+
+	private Result<Integer> fee(JSONObject element) {
 		return param(element, "validatorFee")
-			.flatMap(parameter -> wrap(UNABLE_TO_DECODE, () -> Integer.parseInt(parameter)));
+			.flatMap(parameter -> wrap(UNABLE_TO_DECODE, () -> Double.parseDouble(parameter)))
+			.map(doublePercentage -> (int) (doublePercentage * RAKE_PERCENTAGE_GRANULARITY))
+			.filter(percentage -> percentage >= RAKE_MIN && percentage <= RAKE_MAX, FEE_BOUNDS_FAILURE);
 	}
 
 	private Result<Boolean> allowDelegation(JSONObject element) {

@@ -18,6 +18,8 @@ package com.radixdlt.api.store.berkeley;
 
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
@@ -33,7 +35,7 @@ import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.NextEpochConstructorV3;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
-import com.radixdlt.application.system.scrypt.FeeConstraintScrypt;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
@@ -74,6 +76,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -107,15 +110,18 @@ public class TransactionParserTest {
 		cmAtomOS.load(new EpochUpdateConstraintScrypt(
 			10, Amount.ofTokens(10).toSubunits(), 9800, 1, 10
 		));
-		cmAtomOS.load(new ValidatorConstraintScryptV2(2));
+		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
-		cmAtomOS.load(new FeeConstraintScrypt());
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
+		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
+		cmAtomOS.load(new ValidatorUpdateOwnerConstraintScrypt());
 
 		final var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures(),
+			cmAtomOS.buildSubstateDeserialization(),
+			cmAtomOS.buildVirtualSubstateDeserialization(),
 			FixedFeeMeter.create(UInt256.FOUR)
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
@@ -138,18 +144,14 @@ public class TransactionParserTest {
 
 		var txn0 = engine.construct(
 			TxnConstructionRequest.create()
+				.action(new CreateSystem(System.currentTimeMillis()))
 				.createMutableToken(tokDef)
 				.mint(this.tokenRri, this.tokenOwnerAcct, Amount.ofTokens(10 * 2).toSubunits())
-		).buildWithoutSignature();
-		var validatorBuilder = this.engine.construct(
-			TxnConstructionRequest.create()
 				.action(new RegisterValidator(this.validatorKeyPair.getPublicKey()))
 				.action(new UpdateAllowDelegationFlag(this.validatorKeyPair.getPublicKey(), true))
-				.action(new CreateSystem(System.currentTimeMillis()))
-		);
-		var txn1 = validatorBuilder.buildWithoutSignature();
+		).buildWithoutSignature();
 
-		engine.execute(List.of(txn0, txn1), null, PermissionLevel.SYSTEM);
+		engine.execute(List.of(txn0), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test
@@ -172,7 +174,7 @@ public class TransactionParserTest {
 				.action(nativeStake())
 		).signAndBuild(tokenOwnerKeyPair::sign);
 		engine.execute(List.of(txn1));
-		var nextEpoch = engine.construct(new NextEpoch(s -> List.of(validatorKeyPair.getPublicKey()), 0))
+		var nextEpoch = engine.construct(new NextEpoch(0))
 			.buildWithoutSignature();
 		engine.execute(List.of(nextEpoch), null, PermissionLevel.SYSTEM);
 

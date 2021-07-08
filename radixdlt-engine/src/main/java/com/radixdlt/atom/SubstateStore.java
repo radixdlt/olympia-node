@@ -28,7 +28,7 @@ import java.util.NoSuchElementException;
  */
 public interface SubstateStore {
 
-	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index);
+	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index);
 
 	static SubstateStore empty() {
 		return t -> new CloseableCursor<>() {

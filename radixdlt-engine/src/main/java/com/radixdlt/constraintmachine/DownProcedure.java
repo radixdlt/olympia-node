@@ -26,11 +26,11 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 	private final Class<D> downClass;
 	private final Class<S> reducerStateClass;
 	private final DownReducer<D, S> downReducer;
-	private final Function<SubstateWithArg<D>, Authorization> authorization;
+	private final Function<D, Authorization> authorization;
 
 	public DownProcedure(
 		Class<S> reducerStateClass, Class<D> downClass,
-		Function<SubstateWithArg<D>, Authorization> authorization,
+		Function<D, Authorization> authorization,
 		DownReducer<D, S> downReducer
 	) {
 		this.downClass = downClass;
@@ -46,7 +46,7 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 
 	@Override
 	public Authorization authorization(Object o) {
-		return authorization.apply((SubstateWithArg<D>) o);
+		return authorization.apply((D) o);
 	}
 
 	@Override
@@ -57,7 +57,7 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 		ExecutionContext context
 	) throws ProcedureException {
 		try {
-			return downReducer.reduce((SubstateWithArg<D>) o, (S) reducerState, immutableAddrs);
+			return downReducer.reduce((D) o, (S) reducerState, immutableAddrs, context);
 		} catch (Exception e) {
 			throw new ProcedureException(e);
 		}

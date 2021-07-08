@@ -18,18 +18,19 @@
 
 package com.radixdlt.atom.actions;
 
-import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxValidatorAction;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class UnregisterValidator implements TxAction {
+public final class UnregisterValidator implements TxValidatorAction {
 	private final ECPublicKey validatorKey;
 
 	public UnregisterValidator(ECPublicKey validatorKey) {
 		this.validatorKey = Objects.requireNonNull(validatorKey);
 	}
 
+	@Override
 	public ECPublicKey validatorKey() {
 		return validatorKey;
 	}

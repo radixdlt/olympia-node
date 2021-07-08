@@ -21,17 +21,16 @@
  */
 package com.radixdlt.cli;
 
-import com.radixdlt.client.lib.identity.RadixIdentities;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identity.RadixIdentities;
+
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.GeneralSecurityException;
-
-import static com.radixdlt.cli.Utils.println;
 
 /**
  * This command generates new private key and prints it to standard output.
@@ -52,17 +51,17 @@ public class KeyGenerator implements Runnable {
     @Override
     public void run() {
         if (password == null || password.isBlank()) {
-            println("The password must be provided");
+            System.out.println("The password must be provided");
             return;
         }
 
-        try (PrintWriter writer = new PrintWriter(System.out)) {
+        try (var writer = new PrintWriter(System.out)) {
             RadixIdentities.createNewEncryptedIdentity(writer, password);
             writer.flush();
         } catch (IOException | GeneralSecurityException | PrivateKeyException | PublicKeyException e) {
-            println("Unable to generate keys due to following error:\n" + e.getMessage());
+            System.out.println("Unable to generate keys due to following error:\n" + e.getMessage());
             return;
         }
-        println("Done");
+        System.out.println("Done");
     }
 }

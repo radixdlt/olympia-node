@@ -22,6 +22,7 @@ import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 public final class CallData {
@@ -42,6 +43,13 @@ public final class CallData {
 			throw new CallDataAccessException(data.length, offset, UInt256.BYTES);
 		}
 		return UInt256.from(data, offset);
+	}
+
+	public byte[] getRemainingBytes(int offset) throws CallDataAccessException {
+		if (offset < 0 || offset >= data.length) {
+			throw new CallDataAccessException(data.length, offset, 0);
+		}
+		return Arrays.copyOfRange(data, offset, data.length);
 	}
 
 	@Override

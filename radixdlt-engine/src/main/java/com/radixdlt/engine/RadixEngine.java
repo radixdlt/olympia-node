@@ -19,7 +19,6 @@ package com.radixdlt.engine;
 
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
 import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
@@ -39,7 +38,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.exceptions.TxnParseException;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
@@ -110,12 +109,12 @@ public final class RadixEngine<M> {
 
 		void processStateUpdate(REStateUpdate stateUpdate) {
 			for (var particleClass : particleClasses) {
-				var p = stateUpdate.getSubstate().getParticle();
+				var p = stateUpdate.getParsed();
 				if (particleClass.isInstance(p)) {
 					if (stateUpdate.isBootUp()) {
-						curValue = outputReducer.apply(curValue, p);
+						curValue = outputReducer.apply(curValue, (Particle) p);
 					} else {
-						curValue = inputReducer.apply(curValue, p);
+						curValue = inputReducer.apply(curValue, (Particle) p);
 					}
 				}
 			}
@@ -219,8 +218,9 @@ public final class RadixEngine<M> {
 	) {
 		synchronized (stateUpdateEngineLock) {
 			this.constraintMachine = new ConstraintMachine(
-				constraintMachineConfig.getVirtualStoreLayer(),
 				constraintMachineConfig.getProcedures(),
+				constraintMachineConfig.getDeserialization(),
+				constraintMachineConfig.getVirtualSubstateDeserialization(),
 				constraintMachineConfig.getMeter()
 			);
 			this.actionConstructors = actionToConstructorMap;
@@ -288,11 +288,6 @@ public final class RadixEngine<M> {
 			assertNotDeleted();
 			return engine.construct(request);
 		}
-
-		public <U> U getComputedState(Class<U> applicationStateClass) {
-			assertNotDeleted();
-			return engine.getComputedState(applicationStateClass);
-		}
 	}
 
 	public void deleteBranches() {
@@ -333,7 +328,6 @@ public final class RadixEngine<M> {
 		context.setDisableResourceAllocAndDestroy(parsedTxn.disableResourceAllocAndDestroy());
 
 		var stateUpdates = constraintMachine.verify(
-			parser.getSubstateDeserialization(),
 			engineStoreInTransaction,
 			context,
 			parsedTxn.instructions()
@@ -380,8 +374,7 @@ public final class RadixEngine<M> {
 		M meta,
 		PermissionLevel permissionLevel
 	) throws RadixEngineException {
-		var checker = batchVerifier.newVerifier(this::getComputedState);
-		var parsedTransactions = new ArrayList<REProcessedTxn>();
+		var processedTxns = new ArrayList<REProcessedTxn>();
 
 		// FIXME: This is quite the hack to increase sigsLeft for execution on noncommits (e.g. mempool)
 		// FIXME: Should probably just change metering
@@ -412,16 +405,15 @@ public final class RadixEngine<M> {
 			// Non-persisted computed state
 			for (var group : parsedTxn.getGroupedStateUpdates()) {
 				group.forEach(update -> stateComputers.forEach((a, computer) -> computer.processStateUpdate(update)));
-				checker.test(this::getComputedState);
 			}
 
-			parsedTransactions.add(parsedTxn);
+			processedTxns.add(parsedTxn);
 		}
 
 		try {
-			checker.testMetadata(meta, this::getComputedState);
+			batchVerifier.testMetadata(meta, processedTxns);
 		} catch (MetadataException e) {
-			logger.error("Invalid metadata: " + parsedTransactions);
+			logger.error("Invalid metadata: " + processedTxns);
 			throw e;
 		}
 
@@ -429,7 +421,7 @@ public final class RadixEngine<M> {
 			engineStoreInTransaction.storeMetadata(meta);
 		}
 
-		return parsedTransactions;
+		return processedTxns;
 	}
 
 	public interface TxBuilderExecutable {
@@ -442,14 +434,13 @@ public final class RadixEngine<M> {
 
 	private TxBuilder construct(TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
-			SubstateStore filteredStore = b -> CloseableCursor.filter(
-				engineStore.openIndexedCursor(b),
-				i -> !avoid.contains(SubstateId.fromBytes(i.getId()))
-			);
+			SubstateStore filteredStore = b ->
+				engineStore.openIndexedCursor(b)
+					.filter(i -> !avoid.contains(SubstateId.fromBytes(i.getId())));
 
 			var txBuilder = TxBuilder.newBuilder(
 				filteredStore,
-				parser.getSubstateDeserialization(),
+				constraintMachine.getDeserialization(),
 				serialization
 			);
 
