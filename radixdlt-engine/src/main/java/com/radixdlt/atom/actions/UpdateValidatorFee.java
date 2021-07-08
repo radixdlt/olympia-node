@@ -18,23 +18,27 @@
 
 package com.radixdlt.atom.actions;
 
-import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxValidatorAction;
 import com.radixdlt.crypto.ECPublicKey;
 
-public class UpdateRake implements TxAction {
+/**
+ * @see com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt for details
+ */
+public class UpdateValidatorFee implements TxValidatorAction {
 	private final ECPublicKey validatorKey;
-	private final int rakePercentage;
+	private final int feePercentage;
 
-	public UpdateRake(ECPublicKey validatorKey, int rakePercentage) {
+	public UpdateValidatorFee(ECPublicKey validatorKey, int feePercentage) {
 		this.validatorKey = validatorKey;
-		this.rakePercentage = rakePercentage;
+		this.feePercentage = feePercentage;
 	}
 
-	public ECPublicKey getValidatorKey() {
+	@Override
+	public ECPublicKey validatorKey() {
 		return validatorKey;
 	}
 
-	public int getRakePercentage() {
-		return rakePercentage;
+	public int getFeePercentage() {
+		return feePercentage;
 	}
 }

@@ -152,17 +152,21 @@ public class SyncRadixApiCreationTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.transaction().build(request)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(builtTransactionDTO -> assertEquals(amount(73800).micros(), builtTransactionDTO.getFee()))
-				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
+				.onSuccess(builtTransaction -> assertEquals(amount(73800).micros(), builtTransaction.getFee()))
+				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
 				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
 					.onFailure(failure -> fail(failure.toString()))));
 	}
 
 	@Test
 	@Ignore
+	//TODO: for some reason operation succeeds only if transaction contains only one action
 	public void testRegisterValidator() {
 		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS3)
 			.registerValidator(VALIDATOR_ADDRESS, Optional.of("MyValidator"), Optional.of("http://my.validator.url.com/"))
+			.updateValidatorFee(VALIDATOR_ADDRESS, 3.1)
+			.updateValidatorOwner(VALIDATOR_ADDRESS, ACCOUNT_ADDRESS3)
+			.updateValidatorAllowDelegationFlag(VALIDATOR_ADDRESS, true)
 			.build();
 
 		RadixApi.connect(BASE_URL)
@@ -170,8 +174,8 @@ public class SyncRadixApiCreationTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.transaction().build(request)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(builtTransactionDTO -> assertEquals(amount(56800).micros(), builtTransactionDTO.getFee()))
-				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR3))
+				.onSuccess(builtTransaction -> assertEquals(amount(102600).micros(), builtTransaction.getFee()))
+				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR3))
 				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
 					.onFailure(failure -> fail(failure.toString()))));
 	}
@@ -182,9 +186,9 @@ public class SyncRadixApiCreationTest {
 
 	private FinalizedTransaction buildFinalizedTransaction() throws PublicKeyException {
 		var sig = ECDSASignature.decodeFromHexDer(SIG);
-		var pubkey = ECPublicKey.fromHex(PUB_KEY);
-		var blobDTO = buildBlobDto();
-		return FinalizedTransaction.create(blobDTO.getBlob(), sig, pubkey, blobDTO.getTxId());
+		var publicKey = ECPublicKey.fromHex(PUB_KEY);
+		var blob = buildBlobDto();
+		return FinalizedTransaction.create(blob.getBlob(), sig, publicKey, blob.getTxId());
 	}
 
 	private static ECKeyPair keyPairOf(int pk) {

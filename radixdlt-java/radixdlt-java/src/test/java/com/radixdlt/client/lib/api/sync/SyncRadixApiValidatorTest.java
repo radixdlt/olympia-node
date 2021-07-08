@@ -20,7 +20,6 @@ import org.junit.Test;
 
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.net.http.HttpClient;
@@ -33,6 +32,8 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static com.radixdlt.client.lib.api.token.Amount.amount;
 
 public class SyncRadixApiValidatorTest {
 	private static final String BASE_URL = "http://localhost/";
@@ -47,10 +48,11 @@ public class SyncRadixApiValidatorTest {
 		+ ",\"name\":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sfvvdfj\""
 		+ ",\"isExternalStakeAccepted\":true}]},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private static final String LOOKUP = "{\"result\":{\"totalDelegatedStake\":\"4754240000000000000000000\",\"validatorFee\":0,\""
-		+ "address\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\",\"infoURL\":\"\",\"ownerDelegation\":\"10000"
-		+ "0000000000000000\",\"name\":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs2"
-		+ "7s5vq5h24sfvvdfj\",\"isExternalStakeAccepted\":true},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String LOOKUP = "{\"result\":{\"totalDelegatedStake\":\"4900100000000000000000000\","
+		+ "\"address\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\",\"infoURL\":\"\","
+		+ "\"ownerDelegation\":\"4900100000000000000000000\",\"name\":\"\",\"validatorFee\":0,"
+		+ "\"registered\":true,\"ownerAddress\":\"ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sfvvdfj\","
+		+ "\"isExternalStakeAccepted\":true},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);
 
@@ -67,7 +69,6 @@ public class SyncRadixApiValidatorTest {
 
 	@Test
 	public void testLookup() throws Exception {
-		var stake = UInt256.from("4754240000000000000000000");
 		var address = ValidatorAddress.of(Addressing.ofNetworkId(99).forValidators()
 			.parse("dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9"));
 
@@ -78,7 +79,7 @@ public class SyncRadixApiValidatorTest {
 				client -> client.validator().lookup(address)
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(validatorDTO -> assertTrue(validatorDTO.isExternalStakeAccepted()))
-					.onSuccess(validatorDTO -> assertEquals(stake, validatorDTO.getTotalDelegatedStake())));
+					.onSuccess(validatorDTO -> assertEquals(amount(4900100).tokens(), validatorDTO.getTotalDelegatedStake())));
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws Exception {

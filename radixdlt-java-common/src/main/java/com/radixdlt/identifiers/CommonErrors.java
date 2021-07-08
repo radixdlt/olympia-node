@@ -31,6 +31,7 @@ public enum CommonErrors implements Failure {
 	SSL_KEY_ERROR(1605, "SSL Key error: {0}"),
 	SSL_ALGORITHM_ERROR(1606, "SSL algorithm error: {0}"),
 	SSL_GENERAL_ERROR(1607, "SSL algorithm error: {0}"),
+	VALUE_OUT_OF_RANGE(1608, "Parameter must be between {0} and {1}"),
 	CANT_MAKE_RECOVERABLE(1701, "Unable to convert signature to recoverable {0}"),
 	INVALID_RADIX_ADDRESS(1702, "Invalid RadixAddress {0}"),
 	INVALID_UINT_VALUE(1703, "Invalid UInt256/UInt384 value {0}"),

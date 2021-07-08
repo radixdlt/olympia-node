@@ -15,25 +15,20 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.api.data.action;
+package com.radixdlt.client.lib.api.action;
 
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.UpdateValidatorFee;
-import com.radixdlt.crypto.ECPublicKey;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.radixdlt.client.lib.api.ActionType;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 
-import java.util.stream.Stream;
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+public class UpdateValidatorFeeAction implements Action {
+	private final ActionType type = ActionType.UPDATE_VALIDATOR_FEE;
+	private final ValidatorAddress validator;
+	private final double validatorFee;
 
-class UpdateRakeAction implements TransactionAction {
-	private final ECPublicKey validatorKey;
-	private final int rakePercentage;
-
-	UpdateRakeAction(ECPublicKey validatorKey, int rakePercentage) {
-		this.validatorKey = validatorKey;
-		this.rakePercentage = rakePercentage;
-	}
-
-	@Override
-	public Stream<TxAction> toAction() {
-		return Stream.of(new UpdateValidatorFee(validatorKey, rakePercentage));
+	public UpdateValidatorFeeAction(ValidatorAddress validator, double validatorFee) {
+		this.validator = validator;
+		this.validatorFee = validatorFee;
 	}
 }

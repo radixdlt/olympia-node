@@ -60,7 +60,7 @@ public interface TransactionAction {
 		return new UpdateValidatorAction(validatorKey, name.orElse(null), url.orElse(null));
 	}
 
-	static TransactionAction updateRake(ECPublicKey validatorKey, int percentage) {
+	static TransactionAction updateValidatorFee(ECPublicKey validatorKey, int percentage) {
 		return new UpdateRakeAction(validatorKey, percentage);
 	}
 

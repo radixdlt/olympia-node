@@ -6,36 +6,29 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
- *
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.client.lib.api.action;
 
-import com.radixdlt.atom.TxValidatorAction;
-import com.radixdlt.crypto.ECPublicKey;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.radixdlt.client.lib.api.ActionType;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 
-public final class UpdateAllowDelegationFlag implements TxValidatorAction {
-	private final ECPublicKey validatorKey;
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+public class UpdateValidatorAllowDelegationFlagAction implements Action {
+	private final ActionType type = ActionType.UPDATE_VALIDATOR_DELEGATION_FLAG;
+	private final ValidatorAddress validator;
 	private final boolean allowDelegation;
 
-	public UpdateAllowDelegationFlag(ECPublicKey validatorKey, boolean allowDelegation) {
-		this.validatorKey = validatorKey;
+	public UpdateValidatorAllowDelegationFlagAction(ValidatorAddress validator, boolean allowDelegation) {
+		this.validator = validator;
 		this.allowDelegation = allowDelegation;
-	}
-
-	@Override
-	public ECPublicKey validatorKey() {
-		return validatorKey;
-	}
-
-	public boolean allowDelegation() {
-		return allowDelegation;
 	}
 }
