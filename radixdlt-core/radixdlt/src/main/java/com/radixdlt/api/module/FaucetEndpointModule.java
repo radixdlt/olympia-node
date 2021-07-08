@@ -20,29 +20,17 @@ package com.radixdlt.api.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.JsonRpcController;
-import com.radixdlt.api.faucet.FaucetToken;
 import com.radixdlt.api.handler.FaucetHandler;
 import com.radixdlt.api.qualifier.NodeServer;
 import com.radixdlt.api.qualifier.FaucetEndpoint;
 import com.radixdlt.api.server.JsonRpcServer;
-import com.radixdlt.atom.Substate;
-import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.engine.parser.exceptions.TxnParseException;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.forks.RERules;
 
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class FaucetEndpointModule extends AbstractModule {
 	@Override
@@ -68,30 +56,5 @@ public class FaucetEndpointModule extends AbstractModule {
 	@StringMapKey("faucet.request_tokens")
 	public JsonRpcHandler faucetRequestTokens(FaucetHandler faucetHandler) {
 		return faucetHandler::requestTokens;
-	}
-
-	@Provides
-	@FaucetToken
-	@Singleton
-	public Set<REAddr> tokens(
-		RERules rules,
-		@Genesis VerifiedTxnsAndProof genesis
-	) {
-		return genesis.getTxns().stream()
-			.flatMap(txn -> {
-				try {
-					var parsed = rules.getParser().parse(txn);
-					return parsed.instructions().stream()
-						.map(REInstruction::getData)
-						.filter(Substate.class::isInstance)
-						.map(Substate.class::cast)
-						.map(Substate::getParticle)
-						.filter(TokenResource.class::isInstance)
-						.map(TokenResource.class::cast)
-						.map(TokenResource::getAddr);
-				} catch (TxnParseException e) {
-					throw new IllegalStateException(e);
-				}
-			}).collect(Collectors.toSet());
 	}
 }

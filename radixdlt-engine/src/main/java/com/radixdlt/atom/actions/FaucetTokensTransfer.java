@@ -16,19 +16,25 @@
  *
  */
 
-package com.radixdlt.api.faucet;
+package com.radixdlt.atom.actions;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.identifiers.REAddr;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public class FaucetTokensTransfer implements TxAction {
+	private final REAddr from;
+	private final REAddr to;
 
-@Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
-@Retention(RUNTIME)
-public @interface FaucetToken {
+	public FaucetTokensTransfer(REAddr from, REAddr to) {
+		this.from = from;
+		this.to = to;
+	}
+
+	public REAddr from() {
+		return from;
+	}
+
+	public REAddr to() {
+		return to;
+	}
 }
