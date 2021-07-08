@@ -1,4 +1,3 @@
-@single
 Feature: Fixed Supply Tokens
   As an account owner
   I want to create a fixed supply token with some key properties of an ERC-20 token,
