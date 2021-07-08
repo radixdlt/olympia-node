@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class NetworkId {
+public final class NetworkId {
 	private final int networkId;
 
 	private NetworkId(int networkId) {

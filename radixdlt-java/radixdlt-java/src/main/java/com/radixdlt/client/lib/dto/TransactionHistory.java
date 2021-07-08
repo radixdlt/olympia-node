@@ -27,9 +27,9 @@ import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-public class TransactionHistory {
-	private NavigationCursor cursor;
-	private List<TransactionDTO> transactions;
+public final class TransactionHistory {
+	private final NavigationCursor cursor;
+	private final List<TransactionDTO> transactions;
 
 	private TransactionHistory(NavigationCursor cursor, List<TransactionDTO> transactions) {
 		this.cursor = cursor;

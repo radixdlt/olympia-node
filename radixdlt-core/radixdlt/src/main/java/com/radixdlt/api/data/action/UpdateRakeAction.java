@@ -18,7 +18,7 @@
 package com.radixdlt.api.data.action;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.UpdateRake;
+import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.stream.Stream;
@@ -34,6 +34,6 @@ class UpdateRakeAction implements TransactionAction {
 
 	@Override
 	public Stream<TxAction> toAction() {
-		return Stream.of(new UpdateRake(validatorKey, rakePercentage));
+		return Stream.of(new UpdateValidatorFee(validatorKey, rakePercentage));
 	}
 }

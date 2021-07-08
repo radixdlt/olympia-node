@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class ReadWriteStats {
+public final class ReadWriteStats {
 	private final long read;
 	private final long write;
 	private final long total;

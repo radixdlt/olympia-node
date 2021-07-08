@@ -33,14 +33,14 @@ public class UpdateValidatorOwnerConstructor implements ActionConstructor<Update
 	public void construct(UpdateValidatorOwnerAddress action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.down(
 			ValidatorOwnerCopy.class,
-			p -> p.getValidatorKey().equals(action.getValidatorKey()),
-			Optional.of(action.getValidatorKey()),
+			p -> p.getValidatorKey().equals(action.validatorKey()),
+			Optional.of(action.validatorKey()),
 			() -> new TxBuilderException("Cannot find state")
 		);
 
 		var curEpoch = txBuilder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
 		txBuilder.up(new ValidatorOwnerCopy(
-			OptionalLong.of(curEpoch.getEpoch() + 1), action.getValidatorKey(), action.getOwnerAddress()
+			OptionalLong.of(curEpoch.getEpoch() + 1), action.validatorKey(), action.getOwnerAddress()
 		));
 		txBuilder.end();
 	}

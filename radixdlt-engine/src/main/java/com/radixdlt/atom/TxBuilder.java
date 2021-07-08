@@ -37,6 +37,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
@@ -118,7 +119,7 @@ public final class TxBuilder {
 		}
 
 		var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte)
-			.orElseThrow(() -> new TxBuilderException("Can't find parent with typeByte " + typeByte));
+			.orElseThrow(() -> new TxBuilderException("Can't find parent with typeByte " + Bytes.toHexString(typeByte)));
 		var pair = serialization.serializeVirtual(substateClass, key);
 		lowLevelBuilder.virtualDown(parent.getId(), pair.getSecond());
 		return pair.getFirst();

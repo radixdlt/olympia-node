@@ -49,6 +49,7 @@ public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem
 		);
 		builder.up(new EpochData(0));
 		builder.up(new RoundData(0, action.getTimestamp()));
+		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_META_DATA.id()}));
 		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_STAKE_DATA.id()}));
 		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id()}));
 		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id()}));

@@ -15,9 +15,20 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.lib.dto;
+package com.radixdlt.client.lib.api.action;
 
-public enum PortSelector {
-	PRIMARY,
-	SECONDARY;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.radixdlt.client.lib.api.ActionType;
+import com.radixdlt.client.lib.api.ValidatorAddress;
+
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+public class UpdateValidatorFeeAction implements Action {
+	private final ActionType type = ActionType.UPDATE_VALIDATOR_FEE;
+	private final ValidatorAddress validator;
+	private final double validatorFee;
+
+	public UpdateValidatorFeeAction(ValidatorAddress validator, double validatorFee) {
+		this.validator = validator;
+		this.validatorFee = validatorFee;
+	}
 }

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class NetworkStats {
+public final class NetworkStats {
 	private final long tps;
 
 	private NetworkStats(long tps) {

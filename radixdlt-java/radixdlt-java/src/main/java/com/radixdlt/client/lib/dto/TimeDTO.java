@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class TimeDTO {
+public final class TimeDTO {
 	private final long time;
 
 	private TimeDTO(long time) {
@@ -39,10 +39,12 @@ public class TimeDTO {
 		if (this == o) {
 			return true;
 		}
+
 		if (!(o instanceof TimeDTO)) {
 			return false;
 		}
-		TimeDTO timeDTO = (TimeDTO) o;
+
+		var timeDTO = (TimeDTO) o;
 		return time == timeDTO.time;
 	}
 

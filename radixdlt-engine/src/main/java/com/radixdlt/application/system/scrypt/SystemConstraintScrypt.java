@@ -62,6 +62,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 	private static class AllocatingVirtualState implements ReducerState {
 		private final LinkedList<SubstateTypeId> substatesToVirtualize = new LinkedList<>();
 		AllocatingVirtualState() {
+			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_META_DATA);
 			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_STAKE_DATA);
 			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG);
 			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY);

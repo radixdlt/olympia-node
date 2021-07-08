@@ -25,14 +25,14 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class ValidatorDTO {
+public final class ValidatorDTO {
 	private final String address;
 	private final String ownerAddress;
 	private final String name;
 	private final String infoURL;
 	private final UInt256 totalDelegatedStake;
 	private final UInt256 ownerDelegation;
-	private final long percentage;
+	private final double validatorFee;
 	private final boolean isExternalStakeAccepted;
 	private final boolean registered;
 
@@ -43,7 +43,7 @@ public class ValidatorDTO {
 		String infoURL,
 		UInt256 totalDelegatedStake,
 		UInt256 ownerDelegation,
-		long percentage,
+		double validatorFee,
 		boolean isExternalStakeAccepted,
 		boolean registered
 	) {
@@ -53,7 +53,7 @@ public class ValidatorDTO {
 		this.infoURL = infoURL;
 		this.totalDelegatedStake = totalDelegatedStake;
 		this.ownerDelegation = ownerDelegation;
-		this.percentage = percentage;
+		this.validatorFee = validatorFee;
 		this.isExternalStakeAccepted = isExternalStakeAccepted;
 		this.registered = registered;
 	}
@@ -66,7 +66,7 @@ public class ValidatorDTO {
 		@JsonProperty(value = "infoURL", required = true) String infoURL,
 		@JsonProperty(value = "totalDelegatedStake", required = true) UInt256 totalDelegatedStake,
 		@JsonProperty(value = "ownerDelegation", required = true) UInt256 ownerDelegation,
-		@JsonProperty(value = "validatorFee", required = true) long percentage,
+		@JsonProperty(value = "validatorFee", required = true) double validatorFee,
 		@JsonProperty(value = "isExternalStakeAccepted", required = true) boolean isExternalStakeAccepted,
 		@JsonProperty(value = "registered", required = true) boolean registered
 	) {
@@ -77,7 +77,7 @@ public class ValidatorDTO {
 
 		return new ValidatorDTO(
 			address, ownerAddress, name, infoURL, totalDelegatedStake,
-			ownerDelegation, percentage, isExternalStakeAccepted, registered
+			ownerDelegation, validatorFee, isExternalStakeAccepted, registered
 		);
 	}
 
@@ -99,7 +99,7 @@ public class ValidatorDTO {
 			&& name.equals(that.name)
 			&& infoURL.equals(that.infoURL)
 			&& totalDelegatedStake.equals(that.totalDelegatedStake)
-			&& percentage == that.percentage
+			&& Double.compare(that.validatorFee, validatorFee) == 0
 			&& ownerDelegation.equals(that.ownerDelegation);
 	}
 
@@ -107,7 +107,7 @@ public class ValidatorDTO {
 	public int hashCode() {
 		return Objects.hash(
 			address, ownerAddress, name, infoURL, totalDelegatedStake,
-			ownerDelegation, percentage, isExternalStakeAccepted, registered
+			ownerDelegation, validatorFee, isExternalStakeAccepted, registered
 		);
 	}
 
@@ -120,7 +120,7 @@ public class ValidatorDTO {
 			+ ", infoURL='" + infoURL + '\''
 			+ ", totalDelegatedStake=" + totalDelegatedStake
 			+ ", ownerDelegation=" + ownerDelegation
-			+ ", percentage=" + percentage
+			+ ", validatorFee=" + validatorFee
 			+ ", isExternalStakeAccepted=" + isExternalStakeAccepted
 			+ ", registered=" + registered
 			+ ')';
@@ -154,8 +154,8 @@ public class ValidatorDTO {
 		return isExternalStakeAccepted;
 	}
 
-	public long getPercentage() {
-		return percentage;
+	public double getValidatorFee() {
+		return validatorFee;
 	}
 
 	public boolean isRegistered() {

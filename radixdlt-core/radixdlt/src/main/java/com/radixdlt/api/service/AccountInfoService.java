@@ -37,6 +37,7 @@ import com.radixdlt.utils.UInt384;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
 
 public class AccountInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
@@ -81,14 +82,14 @@ public class AccountInfoService {
 				.put("url", details.getInfoUrl())
 				.put("registered", details.isRegistered())
 				.put("owner", addressing.forAccounts().of(details.getOwner()))
-				.put("validatorFee", details.getPercentage())
+				.put("validatorFee", (double) details.getPercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "")
 				.put("allowDelegation", details.isExternalStakesAllowed()),
 			() -> result
 				.put("name", "")
 				.put("url", "")
 				.put("registered", false)
 				.put("owner", addressing.forAccounts().of(REAddr.ofPubKeyAccount(bftKey)))
-				.put("validatorFee", 0)
+				.put("validatorFee", 0.0 + "")
 				.put("allowDelegation", true)
 		);
 

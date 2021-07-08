@@ -47,8 +47,7 @@ public class StakeAction implements Action {
 
 	public String toJSON(int networkId) {
 		return String.format("{\"from\":\"%s\",\"validator\":\"%s\",\"amount\":\"%s\",\"type\":\"StakeTokens\"}",
-							 from.toString(networkId), validator.toString(networkId), amount
-		);
+							 from.toString(networkId), validator.toString(networkId), amount);
 	}
 
 	@Override

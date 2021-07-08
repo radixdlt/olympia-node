@@ -18,7 +18,6 @@
 package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-//import com.radixdlt.client.lib.dto.Action;
 import com.radixdlt.client.lib.api.action.Action;
 import com.radixdlt.client.lib.api.action.BurnAction;
 import com.radixdlt.client.lib.api.action.CreateFixedTokenAction;
@@ -30,6 +29,9 @@ import com.radixdlt.client.lib.api.action.TransferAction;
 import com.radixdlt.client.lib.api.action.UnregisterValidatorAction;
 import com.radixdlt.client.lib.api.action.UnstakeAction;
 import com.radixdlt.client.lib.api.action.UpdateValidatorAction;
+import com.radixdlt.client.lib.api.action.UpdateValidatorAllowDelegationFlagAction;
+import com.radixdlt.client.lib.api.action.UpdateValidatorFeeAction;
+import com.radixdlt.client.lib.api.action.UpdateValidatorOwnerAction;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 
@@ -41,11 +43,15 @@ public class TransactionRequest {
 	private final List<Action> actions;
 	private final String message;
 	private final AccountAddress feePayer;
+	private final Boolean disableResourceAllocationAndDestroy;
 
-	private TransactionRequest(String message, List<Action> actions, AccountAddress feePayer) {
+	private TransactionRequest(
+		String message, List<Action> actions, AccountAddress feePayer, Boolean disableResourceAllocationAndDestroy
+	) {
 		this.message = message;
 		this.actions = actions;
 		this.feePayer = feePayer;
+		this.disableResourceAllocationAndDestroy = disableResourceAllocationAndDestroy;
 	}
 
 	public static TransactionRequestBuilder createBuilder(AccountAddress feePayer) {
@@ -67,10 +73,16 @@ public class TransactionRequest {
 		return feePayer;
 	}
 
+	@JsonProperty("disableResourceAllocationAndDestroy")
+	public Boolean disableResourceAllocationAndDestroy() {
+		return disableResourceAllocationAndDestroy;
+	}
+
 	public static final class TransactionRequestBuilder {
 		private final List<Action> actions = new ArrayList<>();
 		private final AccountAddress feePayer;
 		private String message;
+		private Boolean disableResourceAllocationAndDestroy;
 
 		private TransactionRequestBuilder(AccountAddress feePayer) {
 			this.feePayer = feePayer;
@@ -101,37 +113,52 @@ public class TransactionRequest {
 			return this;
 		}
 
-		public TransactionRequestBuilder registerValidator(ValidatorAddress delegate, Optional<String> name, Optional<String> url) {
-			actions.add(new RegisterValidatorAction(delegate, name.orElse(null), url.orElse(null)));
+		public TransactionRequestBuilder registerValidator(ValidatorAddress validator, Optional<String> name, Optional<String> url) {
+			actions.add(new RegisterValidatorAction(validator, name.orElse(null), url.orElse(null)));
 			return this;
 		}
 
-		public TransactionRequestBuilder unregisterValidator(ValidatorAddress delegate, Optional<String> name, Optional<String> url) {
-			actions.add(new UnregisterValidatorAction(delegate, name.orElse(null), url.orElse(null)));
+		public TransactionRequestBuilder unregisterValidator(ValidatorAddress validator, Optional<String> name, Optional<String> url) {
+			actions.add(new UnregisterValidatorAction(validator, name.orElse(null), url.orElse(null)));
 			return this;
 		}
 
-		public TransactionRequestBuilder updateValidator(ValidatorAddress delegate, Optional<String> name, Optional<String> url) {
-			actions.add(new UpdateValidatorAction(delegate, name.orElse(null), url.orElse(null)));
+		public TransactionRequestBuilder updateValidator(ValidatorAddress validator, Optional<String> name, Optional<String> url) {
+			actions.add(new UpdateValidatorAction(validator, name.orElse(null), url.orElse(null)));
+			return this;
+		}
+
+		public TransactionRequestBuilder updateValidatorAllowDelegationFlag(ValidatorAddress validator, boolean allowDelegation) {
+			actions.add(new UpdateValidatorAllowDelegationFlagAction(validator, allowDelegation));
+			return this;
+		}
+
+		public TransactionRequestBuilder updateValidatorFee(ValidatorAddress validator, double validatorFee) {
+			actions.add(new UpdateValidatorFeeAction(validator, validatorFee));
+			return this;
+		}
+
+		public TransactionRequestBuilder updateValidatorOwner(ValidatorAddress validator, AccountAddress owner) {
+			actions.add(new UpdateValidatorOwnerAction(validator, owner));
 			return this;
 		}
 
 		public TransactionRequestBuilder createFixed(
-			AccountAddress from, ECPublicKey signer, String rri, String symbol, String name,
-			String description, String iconUrl, String tokenUrl, UInt256 amount
+			AccountAddress to, ECPublicKey publicKeyOfSigner, String symbol,
+			String name, String description, String iconUrl, String tokenUrl, UInt256 supply
 		) {
-			actions.add(new CreateFixedTokenAction(from, signer, amount, rri, name, symbol, iconUrl, tokenUrl, description));
+			actions.add(new CreateFixedTokenAction(to, publicKeyOfSigner, symbol, name, description, iconUrl, tokenUrl, supply));
 			return this;
 		}
 
 		public TransactionRequestBuilder createMutable(
-			ECPublicKey signer, String symbol, String name,
+			ECPublicKey publicKeyOfSigner, String symbol, String name,
 			Optional<String> description, Optional<String> iconUrl, Optional<String> tokenUrl
 		) {
-			new CreateMutableTokenAction(
-				signer, name, symbol,
+			actions.add(new CreateMutableTokenAction(
+				publicKeyOfSigner, symbol, name,
 				iconUrl.orElse(null), tokenUrl.orElse(null), description.orElse(null)
-			);
+			));
 			return this;
 		}
 
@@ -140,8 +167,13 @@ public class TransactionRequest {
 			return this;
 		}
 
+		public TransactionRequestBuilder disableResourceAllocationAndDestroy() {
+			this.disableResourceAllocationAndDestroy = true;
+			return this;
+		}
+
 		public TransactionRequest build() {
-			return new TransactionRequest(message, actions, feePayer);
+			return new TransactionRequest(message, actions, feePayer, disableResourceAllocationAndDestroy);
 		}
 	}
 }

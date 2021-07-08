@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Objects;
 
-public class ProofHeader {
+public final class ProofHeader {
 	private final long view;
 	private final long epoch;
 	private final long version;
