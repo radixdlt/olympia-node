@@ -17,7 +17,6 @@
 
 package com.radixdlt.store;
 
-import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.atom.CloseableCursor;
@@ -71,11 +70,6 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 
 			@Override
 			public void storeMetadata(M metadata) {
-				// no-op
-			}
-
-			@Override
-			public void overwriteEpochForkHash(long epoch, HashCode forkHash) {
 				// no-op
 			}
 

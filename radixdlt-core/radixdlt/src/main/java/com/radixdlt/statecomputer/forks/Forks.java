@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
@@ -173,30 +172,26 @@ public final class Forks {
 	 */
 	public void tryExecuteMissedFork(
 		EngineStore<LedgerAndBFTProof> engineStore,
-		CommittedReader committedReader
-	) throws RadixEngineException {
+		CommittedReader committedReader,
+		ForksEpochStore forksEpochStore
+	) {
 		final var currentEpoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
-		final var currentFork = getCurrentFork(committedReader.getEpochsForkHashes());
+		final var currentFork = getCurrentFork(forksEpochStore.getEpochsForkHashes());
 
 		if (!latestKnownFork().hash().equals(currentFork.hash())) {
-			final var maybeNextFork = committedReader.getLastProof()
+			committedReader.getLastProof()
 				.map(lastProof -> LedgerAndBFTProof.create(lastProof, null, currentFork.hash()))
-				.flatMap(ledgerAndBftProof -> findNextForkConfig(engineStore, ledgerAndBftProof));
-
-			if (maybeNextFork.isPresent()) {
-				final var nextFork = maybeNextFork.get();
-				log.info("Found a missed fork config: {}", nextFork.name());
-				engineStore.transaction(tx -> {
-					tx.overwriteEpochForkHash(currentEpoch, nextFork.hash());
-					return null;
+				.flatMap(ledgerAndBftProof -> findNextForkConfig(engineStore, ledgerAndBftProof))
+				.ifPresent(nextFork -> {
+					log.info("Found a missed fork config: {}", nextFork.name());
+					forksEpochStore.storeEpochForkHash(currentEpoch, nextFork.hash());
 				});
-			}
 		}
 	}
 
-	public void sanityCheck(CommittedReader committedReader) {
+	public void sanityCheck(CommittedReader committedReader, ForksEpochStore forksEpochStore) {
 		final var currentEpoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
-		final var storedForks = committedReader.getEpochsForkHashes();
+		final var storedForks = forksEpochStore.getEpochsForkHashes();
 		final var fixedEpochForksMap = fixedEpochForks.stream()
 			.collect(ImmutableMap.toImmutableMap(FixedEpochForkConfig::getEpoch, Function.identity()));
 

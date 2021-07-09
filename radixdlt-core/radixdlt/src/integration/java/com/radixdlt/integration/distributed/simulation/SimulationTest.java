@@ -20,7 +20,6 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -57,6 +56,7 @@ import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.integration.distributed.MockedPeersViewModule;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
@@ -414,11 +414,6 @@ public class SimulationTest {
 						public Optional<LedgerProof> getLastProof() {
 							return Optional.empty();
 						}
-
-						@Override
-						public ImmutableMap<Long, HashCode> getEpochsForkHashes() {
-							return ImmutableMap.of();
-						}
 					};
 				}
 			});
@@ -537,6 +532,7 @@ public class SimulationTest {
 				genesisModules.add(new AbstractModule() {
 					public void configure() {
 						bind(CommittedReader.class).toInstance(CommittedReader.mocked());
+						bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
 					}
 				});
 				var genesis = Guice.createInjector(genesisModules)
@@ -559,6 +555,7 @@ public class SimulationTest {
 						bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 						bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 						bind(CommittedReader.class).toInstance(CommittedReader.mocked());
+						bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
 					}
 				});
 			} else {

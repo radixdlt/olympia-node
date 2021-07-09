@@ -21,6 +21,7 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -161,6 +162,7 @@ public class RecoveryTest {
 				public void configure() {
 					// HACK
 					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
+					bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)

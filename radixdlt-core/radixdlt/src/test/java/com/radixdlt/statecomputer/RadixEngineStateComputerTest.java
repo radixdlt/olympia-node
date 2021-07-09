@@ -85,6 +85,7 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
@@ -159,6 +160,7 @@ public class RadixEngineStateComputerTest {
 
 				// HACK
 				bind(CommittedReader.class).toInstance(CommittedReader.mocked());
+				bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
 
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.sleepycat.je.LockMode;
 import com.google.common.collect.Streams;
 import com.radixdlt.atom.SubstateTypeId;
@@ -99,7 +100,7 @@ import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 @Singleton
 public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, ResourceStore, TxnIndex,
-	CommittedReader, PersistentVertexStore {
+	CommittedReader, PersistentVertexStore, ForksEpochStore {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Serialization serialization;
@@ -222,11 +223,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				}
 
 				@Override
-				public void overwriteEpochForkHash(long epoch, HashCode forkHash) {
-					BerkeleyLedgerEntryStore.this.overwriteEpochForkHash(dbTxn, epoch, forkHash);
-				}
-
-				@Override
 				public ByteBuffer verifyVirtualSubstate(SubstateId substateId)
 					throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist {
 					var parent = substateId.getVirtualParent().orElseThrow();
@@ -345,12 +341,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private void overwriteEpochForkHash(Transaction dbTxn, long epoch, HashCode forkHash) {
-		final var key = new DatabaseEntry(Longs.toByteArray(epoch));
-		final var entry = new DatabaseEntry(forkHash.asBytes());
-		if (forkConfigDatabase.put(dbTxn, key, entry) != SUCCESS) {
-			throw new BerkeleyStoreException("Can't write epoch fork hash");
-		}
+	@Override
+	public void storeEpochForkHash(long epoch, HashCode forkHash) {
+		final var tx = beginTransaction();
+		storeEpochForkHash(tx, epoch, forkHash);
+		tx.commit();
 	}
 
 	@Override

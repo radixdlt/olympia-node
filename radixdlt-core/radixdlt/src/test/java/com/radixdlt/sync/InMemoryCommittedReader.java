@@ -17,7 +17,6 @@
 
 package com.radixdlt.sync;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
@@ -115,10 +114,5 @@ class InMemoryCommittedReader implements CommittedReader {
 	@Override
 	public Optional<LedgerProof> getLastProof() {
 		return Optional.ofNullable(commandsAndProof.lastEntry()).map(p -> p.getValue().getProof());
-	}
-
-	@Override
-	public ImmutableMap<Long, HashCode> getEpochsForkHashes() {
-		return ImmutableMap.copyOf(epochsForkHashes);
 	}
 }

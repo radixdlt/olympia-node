@@ -31,6 +31,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineModule;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -173,6 +174,7 @@ public class MempoolRelayTest {
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
+					bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
 				}
 
 				@ProvidesIntoSet

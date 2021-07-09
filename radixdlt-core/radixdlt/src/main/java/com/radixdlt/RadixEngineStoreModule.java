@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.CommittedReader;
@@ -31,5 +32,6 @@ public class RadixEngineStoreModule extends AbstractModule {
 		bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { })
 			.to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
 		bind(CommittedReader.class).to(BerkeleyLedgerEntryStore.class);
+		bind(ForksEpochStore.class).to(BerkeleyLedgerEntryStore.class);
 	}
 }

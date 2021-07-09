@@ -28,6 +28,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -167,6 +168,7 @@ public class SubmissionServiceTest {
 				bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(engineStore);
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bind(CommittedReader.class).toInstance(CommittedReader.mocked());
+				bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 				bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {})
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));

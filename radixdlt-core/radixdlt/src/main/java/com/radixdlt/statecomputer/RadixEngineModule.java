@@ -25,11 +25,11 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.statecomputer.forks.LatestKnownForkConfig;
 import com.radixdlt.store.EngineStore;
@@ -59,11 +59,12 @@ public class RadixEngineModule extends AbstractModule {
 	private ForkConfig initialForkConfig(
 		EngineStore<LedgerAndBFTProof> engineStore,
 		CommittedReader committedReader,
+		ForksEpochStore forksEpochStore,
 		Forks forks
-	) throws RadixEngineException {
-		forks.tryExecuteMissedFork(engineStore, committedReader);
-		forks.sanityCheck(committedReader);
-		return forks.getCurrentFork(committedReader.getEpochsForkHashes());
+	) {
+		forks.tryExecuteMissedFork(engineStore, committedReader, forksEpochStore);
+		forks.sanityCheck(committedReader, forksEpochStore);
+		return forks.getCurrentFork(forksEpochStore.getEpochsForkHashes());
 	}
 
 	@Provides

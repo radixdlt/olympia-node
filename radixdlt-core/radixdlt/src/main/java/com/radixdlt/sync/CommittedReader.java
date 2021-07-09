@@ -17,8 +17,6 @@
 
 package com.radixdlt.sync;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -32,7 +30,6 @@ public interface CommittedReader {
 	VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start);
 	Optional<LedgerProof> getEpochProof(long epoch);
 	Optional<LedgerProof> getLastProof();
-	ImmutableMap<Long, HashCode> getEpochsForkHashes();
 
 	static CommittedReader mocked() {
 		return new CommittedReader() {
@@ -49,11 +46,6 @@ public interface CommittedReader {
 			@Override
 			public Optional<LedgerProof> getLastProof() {
 				return Optional.empty();
-			}
-
-			@Override
-			public ImmutableMap<Long, HashCode> getEpochsForkHashes() {
-				return ImmutableMap.of();
 			}
 		};
 	}

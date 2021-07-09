@@ -27,8 +27,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.functional.FunctionalUtils;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Result.Mapper2;
@@ -45,19 +45,19 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ValidatorInfoService {
 	private final EngineStore<LedgerAndBFTProof> engineStore;
-	private final CommittedReader committedReader;
+	private final ForksEpochStore forksEpochStore;
 	private final Forks forks;
 	private final Addressing addressing;
 
 	@Inject
 	public ValidatorInfoService(
 		EngineStore<LedgerAndBFTProof> engineStore,
-		CommittedReader committedReader,
+		ForksEpochStore forksEpochStore,
 		Forks forks,
 		Addressing addressing
 	) {
 		this.engineStore = engineStore;
-		this.committedReader = committedReader;
+		this.forksEpochStore = forksEpochStore;
 		this.forks = forks;
 		this.addressing = addressing;
 	}
@@ -104,7 +104,7 @@ public class ValidatorInfoService {
 	}
 
 	private SubstateDeserialization retrieveEpochParser() {
-		final var forkConfig = forks.getCurrentFork(committedReader.getEpochsForkHashes());
+		final var forkConfig = forks.getCurrentFork(forksEpochStore.getEpochsForkHashes());
 		return forkConfig.engineRules().getParser().getSubstateDeserialization();
 	}
 

@@ -25,6 +25,7 @@ import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -218,6 +219,7 @@ public class StakingUnstakingValidatorsTest {
 				@Override
 				public void configure() {
 					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
+					bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(new InMemoryEngineStore<>());
 					bind(SystemCounters.class).toInstance(new SystemCountersImpl());

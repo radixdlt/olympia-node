@@ -33,8 +33,8 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.R
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -172,7 +172,7 @@ public final class CoordinatedForkSanityTest {
 	private boolean verifyCurrentFork(RunningNetwork network, ForkConfig forkConfig) {
 		return network.getNodes().stream().allMatch(node -> {
 			final var forks = network.getInstance(Forks.class, node);
-			final var epochsForks = network.getInstance(CommittedReader.class, node).getEpochsForkHashes();
+			final var epochsForks = network.getInstance(ForksEpochStore.class, node).getEpochsForkHashes();
 			return forks.getCurrentFork(epochsForks).hash().equals(forkConfig.hash());
 		});
 	}

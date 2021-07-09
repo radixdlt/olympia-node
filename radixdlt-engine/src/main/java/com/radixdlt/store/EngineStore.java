@@ -17,7 +17,6 @@
 
 package com.radixdlt.store;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REStateUpdate;
@@ -37,9 +36,6 @@ public interface EngineStore<M> {
 	interface EngineStoreInTransaction<M> extends CMStore {
 		void storeTxn(Txn txn, List<REStateUpdate> instructions);
 		void storeMetadata(M metadata);
-		// just a hack for testing, remove me
-		void overwriteEpochForkHash(long epoch, HashCode forkHash);
-
 	}
 	interface TransactionEngineStoreConsumer<M, R> {
 		R start(EngineStoreInTransaction<M> store) throws RadixEngineException;

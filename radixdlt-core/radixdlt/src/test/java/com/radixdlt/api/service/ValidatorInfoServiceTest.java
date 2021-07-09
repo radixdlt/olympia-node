@@ -19,7 +19,7 @@ package com.radixdlt.api.service;
 
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -117,14 +117,14 @@ public class ValidatorInfoServiceTest {
 	@SuppressWarnings("unchecked")
 	private ValidatorInfoService setUpService() {
 		var engineStore = (EngineStore<LedgerAndBFTProof>) mock(EngineStore.class);
-		var committedReader = mock(CommittedReader.class);
+		var forksEpochStore = mock(ForksEpochStore.class);
 		var inMemorySystemInfo = mock(InMemorySystemInfo.class);
 		var forks = mock(Forks.class);
 		var rules = mock(RERules.class);
 		var parser = mock(REParser.class);
 
 		var validatorInfoService = new ValidatorInfoService(
-			engineStore, committedReader, forks, Addressing.ofNetwork(Network.LOCALNET)
+			engineStore, forksEpochStore, forks, Addressing.ofNetwork(Network.LOCALNET)
 		);
 
 		var particle1 = new ValidatorMetaData(validator1, "V1", "http://v1.com");
