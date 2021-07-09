@@ -289,7 +289,8 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		validatorsToUpdate.forEach((k, v) -> txBuilder.up(v.toSubstate()));
 
 		try (var cursor = txBuilder.readIndex(
-			SubstateIndex.create(new byte[] {SubstateTypeId.VALIDATOR_STAKE_DATA.id(), 0, 1}, ValidatorStakeData.class)
+			SubstateIndex.create(new byte[] {SubstateTypeId.VALIDATOR_STAKE_DATA.id(), 0, 1}, ValidatorStakeData.class),
+			true
 		)) {
 			// TODO: Explicitly specify next validatorset
 			Streams.stream(cursor)
