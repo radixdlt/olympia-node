@@ -20,7 +20,7 @@ pub enum Instruction {
 
     READ(SubstateId),
 
-    LREAD(u32),
+    LREAD(SubstateIndex),
 
     VREAD(VirtualSubstateID),
 
@@ -28,7 +28,7 @@ pub enum Instruction {
 
     DOWN(SubstateId),
 
-    LDOWN(u32),
+    LDOWN(SubstateIndex),
 
     VDOWN(VirtualSubstateID),
 
@@ -76,11 +76,11 @@ impl Instruction {
             0x01 => Self::SYSCALL(Bytes::from_buffer(buffer)),
             0x02 => Self::UP(Self::read_substate(buffer)),
             0x03 => Self::READ(SubstateId::from_buffer(buffer)),
-            0x04 => Self::LREAD(buffer.read_u32()),
+            0x04 => Self::LREAD(buffer.read_u16()),
             0x05 => Self::VREAD(VirtualSubstateID::from_buffer(buffer)),
             0x06 => Self::LVREAD(LocalVirtualSubstateID::from_buffer(buffer)),
             0x07 => Self::DOWN(SubstateId::from_buffer(buffer)),
-            0x08 => Self::LDOWN(buffer.read_u32()),
+            0x08 => Self::LDOWN(buffer.read_u16()),
             0x09 => Self::VDOWN(VirtualSubstateID::from_buffer(buffer)),
             0x0A => Self::LVDOWN(LocalVirtualSubstateID::from_buffer(buffer)),
             0x0B => Self::SIG(Signature::from_buffer(buffer)),
@@ -93,6 +93,7 @@ impl Instruction {
     }
 
     fn read_substate(buffer: &mut ByteBuffer) -> Box<dyn Substate> {
+        let _size = buffer.read_u16();
         let t = buffer.read_u8();
         match t {
             0x04 => Box::new(TokenResource::from_buffer(buffer)),
