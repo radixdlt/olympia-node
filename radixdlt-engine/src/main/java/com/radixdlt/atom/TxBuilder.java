@@ -452,15 +452,6 @@ public final class TxBuilder {
 	public <T extends Particle> Replacer<T> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Supplier<TxBuilderException> exceptionSupplier
-	) throws TxBuilderException {
-		T t = down(particleClass, particlePredicate, exceptionSupplier);
-		return replacer -> replacer.map(t).forEach(this::up);
-	}
-
-	public <T extends Particle> Replacer<T> swap(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
 		Optional<Object> virtualKey,
 		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
@@ -505,18 +496,11 @@ public final class TxBuilder {
 	) throws TxBuilderException {
 		UInt256 spent = UInt256.ZERO;
 		while (spent.compareTo(amount) < 0) {
-			// FIXME: This is a hack due to the constraint machine not being able to
-			// FIXME: handle spins of the same type one after the other yet.
-			if (!spent.isZero()) {
-				end();
-			}
-
 			var substateDown = down(
 				particleClass,
 				particlePredicate,
 				exceptionSupplier
 			);
-
 			spent = spent.add(substateDown.getAmount());
 		}
 
@@ -524,28 +508,6 @@ public final class TxBuilder {
 		if (!remainder.isZero()) {
 			up(remainderMapper.map(remainder));
 		}
-	}
-
-	public <T extends ResourceInBucket, U extends ResourceInBucket> FungibleReplacer<U> deprecatedSwapFungible(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		FungibleMapper<T> remainderMapper,
-		UInt256 amount,
-		Supplier<TxBuilderException> exceptionSupplier
-	) {
-		return mapper -> {
-			var substateUp = mapper.map(amount);
-			up(substateUp);
-			var remainder = downFungible(
-				particleClass,
-				particlePredicate.and(p -> !p.equals(substateUp)), // HACK to allow mempool filler to do it's thing
-				amount,
-				exceptionSupplier
-			);
-			if (!remainder.isZero()) {
-				up(remainderMapper.map(remainder));
-			}
-		};
 	}
 
 	public UInt256 getFeeReserve() {

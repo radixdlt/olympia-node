@@ -112,6 +112,35 @@ public class BurnTokensV3Test {
 	}
 
 	@Test
+	public void can_burn_tokens_of_multiple_utxos() throws Exception {
+		// Arrange
+		var key = ECKeyPair.generateNew();
+		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
+		var txn = this.engine.construct(
+			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
+		).signAndBuild(key::sign);
+		this.engine.execute(List.of(txn));
+		var account = REAddr.ofPubKeyAccount(key.getPublicKey());
+		var mintTxn = this.engine.construct(
+			TxnConstructionRequest.create()
+				.action(new MintToken(tokenAddr, account, UInt256.FIVE))
+				.action(new MintToken(tokenAddr, account, UInt256.FIVE))
+		).signAndBuild(key::sign);
+		this.engine.execute(List.of(mintTxn));
+
+		// Act
+		var burnTxn = this.engine.construct(new BurnToken(tokenAddr, account, UInt256.TEN))
+			.signAndBuild(key::sign);
+		var processed = this.engine.execute(List.of(burnTxn));
+
+		// Assert
+		var accounting = REResourceAccounting.compute(processed.get(0).getGroupedStateUpdates().get(0));
+		assertThat(accounting.resourceAccounting())
+			.hasSize(1)
+			.containsEntry(tokenAddr, BigInteger.valueOf(-10));
+	}
+
+	@Test
 	public void cannot_burn_tokens_if_deallocation_disabled() throws Exception {
 		// Arrange
 		var key = ECKeyPair.generateNew();
