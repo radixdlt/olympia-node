@@ -473,18 +473,45 @@ public final class TxBuilder {
 		UInt256 amount,
 		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
-		UInt256 spent = UInt256.ZERO;
-		while (spent.compareTo(amount) < 0) {
-			var substateDown = down(
-				particleClass,
-				particlePredicate,
-				exceptionSupplier
-			);
+		var spent = UInt256.ZERO;
+		for (var l : lowLevelBuilder.localUpSubstate()) {
+			var p = l.getParticle();
+			if (!particleClass.isInstance(p) || !particlePredicate.test((T) p)) {
+				continue;
+			}
+			var resource = (T) p;
 
-			spent = spent.add(substateDown.getAmount());
+			spent = spent.add(resource.getAmount());
+			localDown(l.getIndex());
+
+			if (spent.compareTo(amount) >= 0) {
+				return spent.subtract(amount);
+			}
 		}
 
-		return spent.subtract(amount);
+		var typeByte = deserialization.classToByte(particleClass);
+		var index = SubstateIndex.create(typeByte, particleClass);
+		try (var cursor = createRemoteSubstateCursor(index)) {
+			while (cursor.hasNext()) {
+				var raw = cursor.next();
+				try {
+					var resource = (T) deserialization.deserialize(raw.getData());
+					if (!particlePredicate.test(resource)) {
+						continue;
+					}
+					spent = spent.add(resource.getAmount());
+					down(SubstateId.fromBytes(raw.getId()));
+					if (spent.compareTo(amount) >= 0) {
+						return spent.subtract(amount);
+					}
+
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			}
+		}
+
+		throw exceptionSupplier.get();
 	}
 
 	public <T extends ResourceInBucket> void deallocateFungible(

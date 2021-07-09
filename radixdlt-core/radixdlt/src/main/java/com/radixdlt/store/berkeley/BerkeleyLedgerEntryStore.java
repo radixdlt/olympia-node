@@ -283,7 +283,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			long lastVersion = Longs.fromByteArray(key.getData());
 			if (lastVersion != proof.getStateVersion()) {
 				throw new IllegalStateException("Proof version " + proof.getStateVersion()
-					+ " does not match last atom: " + lastVersion);
+					+ " does not match last transaction: " + lastVersion);
 			}
 		}
 

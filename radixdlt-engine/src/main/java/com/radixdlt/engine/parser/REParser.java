@@ -37,7 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class REParser {
-	private static final int MAX_TXN_SIZE = 1024 * 1024;
+	//private static final int MAX_TXN_SIZE = 1024 * 1024;
 	private final SubstateDeserialization substateDeserialization;
 
 	public REParser(SubstateDeserialization substateDeserialization) {
@@ -140,9 +140,11 @@ public final class REParser {
 		int sigPosition = 0;
 		var parserState = new ParserState(txn);
 
+		/*
 		if (txn.getPayload().length > MAX_TXN_SIZE) {
 			throw new TxnParseException(parserState, "Transaction is too big: " + txn.getPayload().length + " > " + MAX_TXN_SIZE);
 		}
+		 */
 
 		var buf = ByteBuffer.wrap(txn.getPayload());
 		while (buf.hasRemaining()) {
