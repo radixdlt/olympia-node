@@ -22,7 +22,7 @@ import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
-import com.radixdlt.application.validators.construction.UpdateValidatorConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorMetadataConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.actions.CreateSystem;
@@ -67,7 +67,7 @@ public class UpdateValidatorMetadataTest {
 			parser,
 			serialization,
 			REConstructor.newBuilder()
-				.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
+				.put(UpdateValidatorMetadata.class, new UpdateValidatorMetadataConstructor())
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.build(),
 			cm,
