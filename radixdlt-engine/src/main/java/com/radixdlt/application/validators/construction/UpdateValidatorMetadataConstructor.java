@@ -26,7 +26,7 @@ import com.radixdlt.application.validators.state.ValidatorMetaData;
 
 import java.util.Optional;
 
-public final class UpdateValidatorConstructor implements ActionConstructor<UpdateValidatorMetadata> {
+public final class UpdateValidatorMetadataConstructor implements ActionConstructor<UpdateValidatorMetadata> {
 	@Override
 	public void construct(UpdateValidatorMetadata action, TxBuilder txBuilder) throws TxBuilderException {
 		var substateDown = txBuilder.down(

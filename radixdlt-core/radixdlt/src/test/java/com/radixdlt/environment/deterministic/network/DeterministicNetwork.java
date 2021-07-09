@@ -40,11 +40,6 @@ import org.apache.logging.log4j.Logger;
 public final class DeterministicNetwork {
 	private static final Logger log = LogManager.getLogger();
 	private static final long DEFAULT_LATENCY = 50L; // virtual milliseconds
-
-	public interface DeterministicSender {
-		// Aggregation, no additional stuff
-	}
-
 	private final MessageQueue messageQueue = new MessageQueue();
 	private final MessageSelector messageSelector;
 	private final MessageMutator messageMutator;
@@ -74,10 +69,6 @@ public final class DeterministicNetwork {
 		log.debug("Nodes {}", this.nodeLookup);
 	}
 
-	/**
-	 * Create the network sender for the specified node.
-	 * @return A newly created {@link DeterministicSender} for the specified node
-	 */
 	public ControlledSender createSender(BFTNode node) {
 		return new ControlledSender(this, node, this.lookup(node));
 	}

@@ -17,10 +17,12 @@
 
 package com.radixdlt.recovery;
 
+import com.google.common.collect.ClassToInstanceMap;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.assertj.core.api.Condition;
@@ -36,12 +38,9 @@ import org.junit.runners.Parameterized.Parameters;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Proposal;
@@ -54,32 +53,20 @@ import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.CommittedReader;
@@ -88,6 +75,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -121,10 +109,6 @@ public class RecoveryTest {
 	private final long epochCeilingView;
 	private final int processForCount;
 
-	@Inject
-	@Genesis
-	private VerifiedTxnsAndProof genesisTxns;
-
 	public RecoveryTest(long epochCeilingView, int processForCount) {
 		this.epochCeilingView = epochCeilingView;
 		this.processForCount = processForCount;
@@ -137,37 +121,6 @@ public class RecoveryTest {
 
 	@Before
 	public void setup() {
-		Guice.createInjector(
-			new MockedGenesisModule(),
-			new CryptoModule(),
-			new ForksModule(),
-			new RadixEngineForksLatestOnlyModule(
-				new RERulesConfig(
-					FeeTable.noFees(),
-					OptionalInt.of(50),
-					100L,
-					2,
-					Amount.ofTokens(10),
-					1,
-					Amount.ofTokens(10),
-					9800,
-					10
-				)),
-			new RadixEngineModule(),
-			new AbstractModule() {
-				@Override
-				public void configure() {
-					// HACK
-					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
-					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
-					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-						.toInstance(ImmutableList.of(ecKeyPair.getPublicKey()));
-					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-				}
-			}
-		).injectMembers(this);
-
 		this.currentInjector = createRunner(ecKeyPair);
 		this.currentInjector.getInstance(DeterministicProcessor.class).start();
 	}
@@ -185,6 +138,11 @@ public class RecoveryTest {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 
 		return Guice.createInjector(
+			new MockedGenesisModule(
+				Set.of(ecKeyPair.getPublicKey()),
+				Amount.ofTokens(1000),
+				Amount.ofTokens(100)
+			),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					FeeTable.noFees(),
@@ -199,20 +157,16 @@ public class RecoveryTest {
 				)),
 			new ForksModule(),
 			MempoolConfig.asModule(10, 10),
+			new LastEventsModule(EpochViewUpdate.class, Vote.class),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(PeersView.class).toInstance(Stream::of);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
-					bind(ControlledSenderFactory.class).toInstance(network::createSender);
+					bind(Environment.class).toInstance(network.createSender(BFTNode.create(self.getKey())));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
-					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { })
-						.toInstance(new DeterministicSavedLastEvent<>(Vote.class));
-					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() { })
-						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { });
 				}
 			},
 			new PersistedNodeForTestingModule()
@@ -228,12 +182,13 @@ public class RecoveryTest {
 	}
 
 	private EpochView getLastEpochView() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }))
-			.getLastEvent().getEpochView();
+		return currentInjector.getInstance(Key.get(new TypeLiteral<ClassToInstanceMap<Object>>() { }))
+			.getInstance(EpochViewUpdate.class).getEpochView();
 	}
 
 	private Vote getLastVote() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { })).getLastEvent();
+		return currentInjector.getInstance(Key.get(new TypeLiteral<ClassToInstanceMap<Object>>() { }))
+			.getInstance(Vote.class);
 	}
 
 	private void restartNode() {

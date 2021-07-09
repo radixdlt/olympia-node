@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,16 +13,28 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt.environment.deterministic;
+package com.radixdlt.atom.actions;
 
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.deterministic.network.ControlledSender;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.identifiers.REAddr;
 
-/**
- * Creates a sender to be used with a deterministic network
- */
-public interface ControlledSenderFactory {
-	ControlledSender create(BFTNode node);
+public class FaucetTokensTransfer implements TxAction {
+	private final REAddr from;
+	private final REAddr to;
+
+	public FaucetTokensTransfer(REAddr from, REAddr to) {
+		this.from = from;
+		this.to = to;
+	}
+
+	public REAddr from() {
+		return from;
+	}
+
+	public REAddr to() {
+		return to;
+	}
 }

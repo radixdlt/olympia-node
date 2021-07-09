@@ -18,7 +18,6 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
@@ -26,6 +25,7 @@ import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.PrivateKeys;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -54,15 +54,15 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
-import org.radix.TokenIssuance;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
 public class MutableTokenAndResourceFeeTest {
-	private final ECKeyPair keyPair = ECKeyPair.generateNew();
+	private static final ECKeyPair VALIDATOR_KEY = PrivateKeys.ofNumeric(1);
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
@@ -88,18 +88,17 @@ public class MutableTokenAndResourceFeeTest {
 				)
 			)),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(),
+			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
+			new MockedGenesisModule(
+				Set.of(VALIDATOR_KEY.getPublicKey()),
+				Amount.ofTokens(101),
+				Amount.ofTokens(100)
+			),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-				}
-
-				@ProvidesIntoSet
-				private TokenIssuance issuance() {
-					return TokenIssuance.of(keyPair.getPublicKey(), Amount.ofTokens(1).toSubunits());
 				}
 			}
 		);
@@ -109,9 +108,9 @@ public class MutableTokenAndResourceFeeTest {
 	public void cannot_create_xrd_token() throws Exception {
 		// Arrange
 		createInjector().injectMembers(this);
-		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
+		var account = REAddr.ofPubKeyAccount(VALIDATOR_KEY.getPublicKey());
 		var tokDef = new MutableTokenDefinition(
-			keyPair.getPublicKey(),
+			VALIDATOR_KEY.getPublicKey(),
 			"xrd",
 			"XRD",
 			"XRD",
@@ -122,7 +121,7 @@ public class MutableTokenAndResourceFeeTest {
 			TxnConstructionRequest.create()
 				.feePayer(account)
 				.action(new CreateMutableToken(tokDef))
-		).signAndBuild(keyPair::sign);
+		).signAndBuild(VALIDATOR_KEY::sign);
 
 		// Act/Assert
 		assertThatThrownBy(() -> sut.execute(List.of(txn)))
@@ -135,9 +134,9 @@ public class MutableTokenAndResourceFeeTest {
 		createInjector().injectMembers(this);
 
 		// Act/Assert
-		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
+		var account = REAddr.ofPubKeyAccount(VALIDATOR_KEY.getPublicKey());
 		var txn = sut.construct(new MintToken(REAddr.ofNativeToken(), account, UInt256.SEVEN))
-			.signAndBuild(keyPair::sign);
+			.signAndBuild(VALIDATOR_KEY::sign);
 		assertThatThrownBy(() -> sut.execute(List.of(txn)))
 			.hasRootCauseInstanceOf(InvalidPermissionException.class);
 	}
@@ -147,7 +146,7 @@ public class MutableTokenAndResourceFeeTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var tokDef = new MutableTokenDefinition(
-			keyPair.getPublicKey(),
+			VALIDATOR_KEY.getPublicKey(),
 			"test",
 			"test",
 			"desc",
@@ -155,15 +154,15 @@ public class MutableTokenAndResourceFeeTest {
 			null
 		);
 
-		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-		var tokenAddr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
+		var account = REAddr.ofPubKeyAccount(VALIDATOR_KEY.getPublicKey());
+		var tokenAddr = REAddr.ofHashedKey(VALIDATOR_KEY.getPublicKey(), "test");
 		var txn = sut.construct(
 			TxnConstructionRequest.create()
 				.feePayer(account)
 				.createMutableToken(tokDef)
 				.mint(tokenAddr, account, UInt256.SEVEN)
 				.transfer(tokenAddr, account, account, UInt256.FIVE)
-		).signAndBuild(keyPair::sign);
+		).signAndBuild(VALIDATOR_KEY::sign);
 
 		// Act/Assert
 		var branch = sut.transientBranch();
@@ -175,7 +174,7 @@ public class MutableTokenAndResourceFeeTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var tokDef = new MutableTokenDefinition(
-			keyPair.getPublicKey(),
+			VALIDATOR_KEY.getPublicKey(),
 			"test",
 			"test",
 			"desc",
@@ -183,14 +182,14 @@ public class MutableTokenAndResourceFeeTest {
 			null
 		);
 
-		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-		var tokenAddr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
+		var account = REAddr.ofPubKeyAccount(VALIDATOR_KEY.getPublicKey());
+		var tokenAddr = REAddr.ofHashedKey(VALIDATOR_KEY.getPublicKey(), "test");
 		var txn = sut.construct(
 			TxnConstructionRequest.create()
 				.feePayer(account)
 				.createMutableToken(tokDef)
-				.mint(tokenAddr, REAddr.ofHashedKey(keyPair.getPublicKey(), "test"), UInt256.SEVEN)
-		).signAndBuild(keyPair::sign);
+				.mint(tokenAddr, REAddr.ofHashedKey(VALIDATOR_KEY.getPublicKey(), "test"), UInt256.SEVEN)
+		).signAndBuild(VALIDATOR_KEY::sign);
 
 		// Act/Assert
 		assertThatThrownBy(() -> sut.execute(List.of(txn))).hasRootCauseInstanceOf(DeserializeException.class);
@@ -201,19 +200,19 @@ public class MutableTokenAndResourceFeeTest {
 		// Arrange
 		createInjector().injectMembers(this);
 		var tokDef = new MutableTokenDefinition(
-			keyPair.getPublicKey(),
+			VALIDATOR_KEY.getPublicKey(),
 			"test",
 			"test",
 			null,
 			null,
 			null
 		);
-		var account = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
+		var account = REAddr.ofPubKeyAccount(VALIDATOR_KEY.getPublicKey());
 		var txn = sut.construct(
 			TxnConstructionRequest.create()
 				.feePayer(account)
 				.action(new CreateMutableToken(tokDef))
-			).signAndBuild(keyPair::sign);
+			).signAndBuild(VALIDATOR_KEY::sign);
 
 		var branch = sut.transientBranch();
 		// Act/Assert

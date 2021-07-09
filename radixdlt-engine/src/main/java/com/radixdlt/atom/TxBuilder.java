@@ -360,7 +360,8 @@ public final class TxBuilder {
 		return shutdownAll(SubstateIndex.create(typeByte, particleClass), mapper);
 	}
 
-	public <T extends Particle> CloseableCursor<T> readIndex(SubstateIndex index) {
+	// FIXME: programmedInTxn is just a hack
+	public <T extends Particle> CloseableCursor<T> readIndex(SubstateIndex<T> index, boolean programmedInTxn) {
 		var comparator = UnsignedBytes.lexicographicalComparator().reversed();
 		var cursor = createRemoteSubstateCursor(index);
 		var localIterator = lowLevelBuilder.localUpSubstate().stream()
@@ -372,7 +373,9 @@ public final class TxBuilder {
 			.sorted(Comparator.comparing(Pair::getSecond, comparator))
 			.iterator();
 
-		lowLevelBuilder.readIndex(index);
+		if (programmedInTxn) {
+			lowLevelBuilder.readIndex(index);
+		}
 
 		return new CloseableCursor<T>() {
 			private RawSubstateBytes nextRemote = cursor.hasNext() ? cursor.next() : null;
