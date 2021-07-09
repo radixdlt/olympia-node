@@ -21,8 +21,26 @@ package com.radixdlt.constraintmachine.exceptions;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.ReducerState;
 
+import java.util.List;
+
 public final class ConstraintMachineException extends Exception {
-	public ConstraintMachineException(int instIndex, REInstruction instruction, ReducerState reducerState, Throwable cause) {
-		super("index=" + instIndex + " reducerState=" + reducerState + " instruction=" + instruction, cause);
+	public ConstraintMachineException(int instIndex, List<REInstruction> instructions, ReducerState reducerState, Throwable cause) {
+		super("index=" + instIndex + " reducerState=" + reducerState + "\n" + toMessage(instIndex, instructions), cause);
+	}
+
+	private static String toMessage(int instIndex, List<REInstruction> instructions) {
+		var builder = new StringBuilder();
+
+		for (int i = 0; i < instructions.size(); i++) {
+			if (i == instIndex) {
+				builder.append("<<<<Issue here>>>> ");
+			}
+			builder.append(i);
+			builder.append(": ");
+			builder.append(instructions.get(i));
+			builder.append("\n");
+		}
+
+		return builder.toString();
 	}
 }

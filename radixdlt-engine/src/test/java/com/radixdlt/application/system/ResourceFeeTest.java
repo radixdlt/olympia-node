@@ -68,6 +68,7 @@ public final class ResourceFeeTest {
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of("xrd")));
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
+			cmAtomOS.buildSubstateDeserialization(),
 			cmAtomOS.buildVirtualSubstateDeserialization(),
 			ResourceFeeMeter.create(Amount.ofTokens(1).toSubunits())
 		);

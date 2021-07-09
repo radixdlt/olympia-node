@@ -22,7 +22,7 @@ import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
-import com.radixdlt.application.validators.construction.UpdateValidatorConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorMetadataConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.actions.CreateSystem;
@@ -55,7 +55,11 @@ public class UpdateValidatorMetadataTest {
 		cmAtomOS.load(new RoundUpdateConstraintScrypt(2));
 		cmAtomOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
 		cmAtomOS.load(new ValidatorConstraintScryptV2());
-		var cm = new ConstraintMachine(cmAtomOS.getProcedures(), cmAtomOS.buildVirtualSubstateDeserialization());
+		var cm = new ConstraintMachine(
+			cmAtomOS.getProcedures(),
+			cmAtomOS.buildSubstateDeserialization(),
+			cmAtomOS.buildVirtualSubstateDeserialization()
+		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
@@ -63,7 +67,7 @@ public class UpdateValidatorMetadataTest {
 			parser,
 			serialization,
 			REConstructor.newBuilder()
-				.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
+				.put(UpdateValidatorMetadata.class, new UpdateValidatorMetadataConstructor())
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.build(),
 			cm,

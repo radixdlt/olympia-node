@@ -27,7 +27,7 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
-import com.radixdlt.atomos.UnclaimedREAddr;
+import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ExecutionContext;
@@ -35,6 +35,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.SystemCallProcedure;
@@ -103,10 +104,10 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			this.arg = arg;
 		}
 
-		public ReducerState claim(UnclaimedREAddr unclaimedREAddr, ExecutionContext ctx) throws ProcedureException {
-			if (ctx.permissionLevel() != PermissionLevel.SYSTEM
-				&& !ctx.key().map(k -> unclaimedREAddr.allow(k, arg)).orElse(false)) {
-				throw new ProcedureException("Invalid key/arg combination.");
+		public ReducerState claim(UnclaimedREAddr unclaimedREAddr, ExecutionContext ctx) throws ProcedureException, InvalidHashedKeyException {
+			if (ctx.permissionLevel() != PermissionLevel.SYSTEM) {
+				var key = ctx.key().orElseThrow(() -> new ProcedureException("Missing key"));
+				unclaimedREAddr.verifyHashedKey(key, arg);
 			}
 			return new REAddrClaim(unclaimedREAddr, arg);
 		}
@@ -120,12 +121,13 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				SubstateTypeId.VIRTUAL_PARENT.id(),
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
-					var data = REFieldSerialization.deserializeBytes(buf);
+					var data = new byte[buf.remaining()];
+					buf.get(data);
 					return new VirtualParent(data);
 				},
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
-					REFieldSerialization.serializeBytes(buf, s.getData());
+					buf.put(s.getData());
 				}
 			)
 		);
@@ -210,7 +212,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 						var tokens = c.withdrawFeeReserve(amt);
 						return ReducerResult.incomplete(new TokenHoldingBucket(tokens));
 					} else if (syscall == Syscall.READDR_CLAIM) {
-						var bytes = d.getBytes(1);
+						var bytes = d.getRemainingBytes(1);
 						var str = new String(bytes);
 						if (systemNames.contains(str) && c.permissionLevel() != PermissionLevel.SYSTEM) {
 							throw new ProcedureException("Not allowed to use name " + str);
