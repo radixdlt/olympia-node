@@ -22,12 +22,18 @@ import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorMetadataConstructor;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
+import com.radixdlt.atom.actions.UpdateValidatorFee;
+import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
@@ -60,6 +66,7 @@ public class RegisterValidatorTest {
 		cmAtomOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
 		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
+		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
 			cmAtomOS.buildSubstateDeserialization(),
@@ -74,6 +81,8 @@ public class RegisterValidatorTest {
 			REConstructor.newBuilder()
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
+				.put(UpdateValidatorMetadata.class, new UpdateValidatorMetadataConstructor())
+				.put(UpdateValidatorFee.class, new UpdateRakeConstructor(2, 2000))
 				.build(),
 			cm,
 			store
@@ -103,5 +112,22 @@ public class RegisterValidatorTest {
 			.signAndBuild(key::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(registerTxn)))
 			.hasRootCauseInstanceOf(AuthorizationException.class);
+	}
+
+
+	@Test
+	public void multiple_validator_actions() throws Exception {
+		// Arrange
+		var key = ECKeyPair.generateNew();
+
+		// Act and Assert
+		var txn = this.engine.construct(
+			TxnConstructionRequest.create()
+				.action(new RegisterValidator(key.getPublicKey()))
+				.action(new UpdateValidatorMetadata(key.getPublicKey(), "some_name", "http://test.com"))
+				.action(new UpdateValidatorFee(key.getPublicKey(), 2000))
+			)
+			.signAndBuild(key::sign);
+		this.engine.execute(List.of(txn));
 	}
 }

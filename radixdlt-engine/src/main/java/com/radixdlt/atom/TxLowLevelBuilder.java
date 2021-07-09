@@ -181,7 +181,6 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder read(SubstateId substateId) {
 		instruction(REInstruction.REMicroOp.READ, substateId.asBytes());
-		this.remoteDownSubstate.add(substateId);
 		return this;
 	}
 

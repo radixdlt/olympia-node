@@ -65,7 +65,7 @@ import com.radixdlt.application.validators.construction.RegisterValidatorConstru
 import com.radixdlt.application.validators.construction.UnregisterValidatorConstructor;
 import com.radixdlt.application.validators.construction.UpdateAllowDelegationFlagConstructor;
 import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
-import com.radixdlt.application.validators.construction.UpdateValidatorConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorMetadataConstructor;
 import com.radixdlt.application.validators.construction.UpdateValidatorOwnerConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
@@ -144,7 +144,7 @@ public enum RERulesVersion {
 				.put(UnstakeOwnership.class, new UnstakeOwnershipConstructor())
 				.put(TransferToken.class, new TransferTokensConstructorV2())
 				.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
-				.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
+				.put(UpdateValidatorMetadata.class, new UpdateValidatorMetadataConstructor())
 				.put(FeeReservePut.class, new FeeReservePutConstructor())
 				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(config.getFeeTable()))
 				.put(UpdateValidatorFee.class, new UpdateRakeConstructor(
