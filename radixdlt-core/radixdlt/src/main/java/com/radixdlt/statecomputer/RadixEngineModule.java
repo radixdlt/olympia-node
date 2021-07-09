@@ -25,11 +25,15 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.InitialForkConfig;
+import com.radixdlt.statecomputer.forks.LatestKnownForkConfig;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,6 +51,24 @@ public class RadixEngineModule extends AbstractModule {
 	protected void configure() {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?>>>() { });
+	}
+
+	@Provides
+	@Singleton
+	@InitialForkConfig
+	private ForkConfig initialForkConfig(
+		EngineStore<LedgerAndBFTProof> engineStore,
+		CommittedReader committedReader,
+		Forks forks
+	) throws RadixEngineException {
+		return forks.sanityCheckForksAndGetInitial(engineStore, committedReader);
+	}
+
+	@Provides
+	@Singleton
+	@LatestKnownForkConfig
+	private ForkConfig latestKnownForkConfig(Forks forks) {
+		return forks.latestKnownFork();
 	}
 
 	// TODO: Remove
@@ -91,6 +113,7 @@ public class RadixEngineModule extends AbstractModule {
 		final var cmConfig = forkConfig.engineRules().getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
 			cmConfig.getProcedures(),
+			cmConfig.getDeserialization(),
 			cmConfig.getVirtualSubstateDeserialization(),
 			cmConfig.getMeter()
 		);

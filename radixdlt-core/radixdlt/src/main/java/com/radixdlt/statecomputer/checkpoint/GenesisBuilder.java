@@ -61,6 +61,7 @@ public final class GenesisBuilder {
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
 			cmConfig.getProcedures(),
+			cmConfig.getDeserialization(),
 			cmConfig.getVirtualSubstateDeserialization(),
 			cmConfig.getMeter()
 		);

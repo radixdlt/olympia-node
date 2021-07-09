@@ -23,10 +23,6 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.sync.CommittedReader;
 
 import java.util.Optional;
 import java.util.Set;
@@ -52,21 +48,4 @@ public final class ForksModule extends AbstractModule {
 		return Forks.create(forkConfigs);
 	}
 
-	@Provides
-	@Singleton
-	@InitialForkConfig
-	private ForkConfig initialForkConfig(
-		CommittedReader committedReader,
-		EngineStore<LedgerAndBFTProof> engineStore,
-		Forks forks
-	) throws RadixEngineException {
-		return forks.sanityCheckForksAndGetInitial(engineStore, committedReader);
-	}
-
-	@Provides
-	@Singleton
-	@LatestKnownForkConfig
-	private ForkConfig latestKnownForkConfig(Forks forks) {
-		return forks.latestKnownFork();
-	}
 }

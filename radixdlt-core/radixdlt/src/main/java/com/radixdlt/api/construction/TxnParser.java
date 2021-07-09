@@ -53,6 +53,7 @@ public final class TxnParser {
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
 			cmConfig.getProcedures(),
+			cmConfig.getDeserialization(),
 			cmConfig.getVirtualSubstateDeserialization(),
 			cmConfig.getMeter()
 		);
@@ -64,7 +65,6 @@ public final class TxnParser {
 		);
 
 		var stateUpdates = cm.verify(
-			parser.getSubstateDeserialization(),
 			logCMStore,
 			context,
 			parsedTxn.instructions()

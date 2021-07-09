@@ -91,6 +91,7 @@ public class TxnSizeFeeTest {
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
+			cmAtomOS.buildSubstateDeserialization(),
 			cmAtomOS.buildVirtualSubstateDeserialization(),
 			TxnSizeFeeMeter.create(costPerByte.toSubunits())
 		);
@@ -122,7 +123,7 @@ public class TxnSizeFeeTest {
 
 	@Test
 	public void paying_for_fees_should_work() throws Exception {
-		var expectedTxnSize = 355;
+		var expectedTxnSize = 360;
 		// Act
 		var nextKey = ECKeyPair.generateNew();
 		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
@@ -140,7 +141,7 @@ public class TxnSizeFeeTest {
 
 	@Test
 	public void paying_for_fees_should_work_2() throws Exception {
-		var expectedTxnSize = 355;
+		var expectedTxnSize = 360;
 		// Act
 		var nextKey = ECKeyPair.generateNew();
 		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
