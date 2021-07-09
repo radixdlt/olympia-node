@@ -21,8 +21,11 @@ package com.radixdlt.statecomputer.forks;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.sync.CommittedReader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -163,7 +166,36 @@ public final class Forks {
 		}
 	}
 
-	public ForkConfig sanityCheckForksAndGetInitial(ImmutableMap<Long, HashCode> storedForks, long currentEpoch) {
+	public ForkConfig sanityCheckForksAndGetInitial(
+		EngineStore<LedgerAndBFTProof> engineStore,
+		CommittedReader committedReader
+	) throws RadixEngineException {
+		final var currentEpoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
+
+		var intermediateStoredForks = committedReader.getEpochsForkHashes();
+		final var initialStoredFork = getCurrentFork(intermediateStoredForks);
+		var intermediateCurrentFork = initialStoredFork;
+
+		/* we need to check for the forks here, if the app starts with a never version mid-epoch */
+		if (!latestKnownFork().hash().equals(initialStoredFork.hash())) {
+			final var maybeNextFork = committedReader.getLastProof()
+				.map(lastProof -> LedgerAndBFTProof.create(lastProof, null, initialStoredFork.hash()))
+				.flatMap(ledgerAndBftProof -> findNextForkConfig(engineStore, ledgerAndBftProof));
+
+			if (maybeNextFork.isPresent()) {
+				final var nextFork = maybeNextFork.get();
+				engineStore.transaction(tx -> {
+					tx.overwriteEpochForkHash(currentEpoch, nextFork.hash());
+					return null;
+				});
+				intermediateStoredForks = committedReader.getEpochsForkHashes();
+				intermediateCurrentFork = nextFork;
+			}
+		}
+
+		final var storedForks = intermediateStoredForks;
+		final var currentFork = intermediateCurrentFork;
+
 		final var fixedEpochForksMap = fixedEpochForks.stream()
 			.collect(ImmutableMap.toImmutableMap(FixedEpochForkConfig::getEpoch, Function.identity()));
 
@@ -206,7 +238,7 @@ public final class Forks {
 			throw new RuntimeException("Forks inconsistency! Found a fork config that was executed, but shouldn't have been.");
 		}
 
-		return getCurrentFork(storedForks);
+		return currentFork;
 	}
 
 	public ForkConfig getCurrentFork(ImmutableMap<Long, HashCode> storedForks) {

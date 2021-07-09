@@ -222,6 +222,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				}
 
 				@Override
+				public void overwriteEpochForkHash(long epoch, HashCode forkHash) {
+					BerkeleyLedgerEntryStore.this.overwriteEpochForkHash(dbTxn, epoch, forkHash);
+				}
+
+				@Override
 				public ByteBuffer verifyVirtualSubstate(SubstateId substateId)
 					throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist {
 					var parent = substateId.getVirtualParent().orElseThrow();
@@ -337,6 +342,14 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		final var entry = new DatabaseEntry(forkHash.asBytes());
 		if (forkConfigDatabase.putNoOverwrite(dbTxn, key, entry) != SUCCESS) {
 			throw new BerkeleyStoreException("Duplicate fork hash store for epoch " + epoch);
+		}
+	}
+
+	private void overwriteEpochForkHash(Transaction dbTxn, long epoch, HashCode forkHash) {
+		final var key = new DatabaseEntry(Longs.toByteArray(epoch));
+		final var entry = new DatabaseEntry(forkHash.asBytes());
+		if (forkConfigDatabase.put(dbTxn, key, entry) != SUCCESS) {
+			throw new BerkeleyStoreException("Can't write epoch fork hash");
 		}
 	}
 

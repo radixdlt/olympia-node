@@ -23,7 +23,9 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
 
 import java.util.Optional;
@@ -55,11 +57,10 @@ public final class ForksModule extends AbstractModule {
 	@InitialForkConfig
 	private ForkConfig initialForkConfig(
 		CommittedReader committedReader,
+		EngineStore<LedgerAndBFTProof> engineStore,
 		Forks forks
-	) {
-		final var storedEpochForks = committedReader.getEpochsForkHashes();
-		final var epoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
-		return forks.sanityCheckForksAndGetInitial(storedEpochForks, epoch);
+	) throws RadixEngineException {
+		return forks.sanityCheckForksAndGetInitial(engineStore, committedReader);
 	}
 
 	@Provides
