@@ -47,5 +47,4 @@ public final class ForksModule extends AbstractModule {
 
 		return Forks.create(forkConfigs);
 	}
-
 }

@@ -61,7 +61,9 @@ public class RadixEngineModule extends AbstractModule {
 		CommittedReader committedReader,
 		Forks forks
 	) throws RadixEngineException {
-		return forks.sanityCheckForksAndGetInitial(engineStore, committedReader);
+		forks.tryExecuteMissedFork(engineStore, committedReader);
+		forks.sanityCheck(committedReader);
+		return forks.getCurrentFork(committedReader.getEpochsForkHashes());
 	}
 
 	@Provides

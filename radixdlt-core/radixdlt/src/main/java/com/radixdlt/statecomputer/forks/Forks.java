@@ -166,36 +166,37 @@ public final class Forks {
 		}
 	}
 
-	public ForkConfig sanityCheckForksAndGetInitial(
+	/*
+	When the node has failed due to not knowing of a fork, and is later restarted with a never version
+	that contains the fork, we need to check if any forks that this node hasn't yet executed should be executed in
+	the current epoch.
+	 */
+	public void tryExecuteMissedFork(
 		EngineStore<LedgerAndBFTProof> engineStore,
 		CommittedReader committedReader
 	) throws RadixEngineException {
 		final var currentEpoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
+		final var currentFork = getCurrentFork(committedReader.getEpochsForkHashes());
 
-		var intermediateStoredForks = committedReader.getEpochsForkHashes();
-		final var initialStoredFork = getCurrentFork(intermediateStoredForks);
-		var intermediateCurrentFork = initialStoredFork;
-
-		/* we need to check for the forks here, if the app starts with a never version mid-epoch */
-		if (!latestKnownFork().hash().equals(initialStoredFork.hash())) {
+		if (!latestKnownFork().hash().equals(currentFork.hash())) {
 			final var maybeNextFork = committedReader.getLastProof()
-				.map(lastProof -> LedgerAndBFTProof.create(lastProof, null, initialStoredFork.hash()))
+				.map(lastProof -> LedgerAndBFTProof.create(lastProof, null, currentFork.hash()))
 				.flatMap(ledgerAndBftProof -> findNextForkConfig(engineStore, ledgerAndBftProof));
 
 			if (maybeNextFork.isPresent()) {
 				final var nextFork = maybeNextFork.get();
+				log.info("Found a missed fork config: {}", nextFork.name());
 				engineStore.transaction(tx -> {
 					tx.overwriteEpochForkHash(currentEpoch, nextFork.hash());
 					return null;
 				});
-				intermediateStoredForks = committedReader.getEpochsForkHashes();
-				intermediateCurrentFork = nextFork;
 			}
 		}
+	}
 
-		final var storedForks = intermediateStoredForks;
-		final var currentFork = intermediateCurrentFork;
-
+	public void sanityCheck(CommittedReader committedReader) {
+		final var currentEpoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
+		final var storedForks = committedReader.getEpochsForkHashes();
 		final var fixedEpochForksMap = fixedEpochForks.stream()
 			.collect(ImmutableMap.toImmutableMap(FixedEpochForkConfig::getEpoch, Function.identity()));
 
@@ -237,8 +238,6 @@ public final class Forks {
 			log.warn("Expected forks: {}", forkConfigs());
 			throw new RuntimeException("Forks inconsistency! Found a fork config that was executed, but shouldn't have been.");
 		}
-
-		return currentFork;
 	}
 
 	public ForkConfig getCurrentFork(ImmutableMap<Long, HashCode> storedForks) {
