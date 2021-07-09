@@ -18,24 +18,23 @@
 
 package com.radixdlt.api.chaos.mempoolfiller;
 
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.utils.PrivateKeys;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.radix.TokenIssuance;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -48,9 +47,13 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MempoolFillerTest {
+	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
@@ -69,8 +72,12 @@ public class MempoolFillerTest {
 			new RadixEngineForksLatestOnlyModule(),
 			MempoolConfig.asModule(10, 10),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new MockedGenesisModule(
+				Set.of(TEST_KEY.getPublicKey()),
+				Amount.ofTokens(10000000000L),
+				Amount.ofTokens(100)
+			),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
@@ -78,13 +85,7 @@ public class MempoolFillerTest {
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 				}
-
-				@ProvidesIntoSet
-				private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
-					return TokenIssuance.of(self, TokenUnitConversions.unitsToSubunits(10000000000L));
-				}
 			}
-
 		);
 	}
 

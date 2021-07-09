@@ -30,7 +30,6 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.utils.TimeSupplier;
@@ -44,9 +43,9 @@ import com.radixdlt.sync.SyncConfig;
 public final class PersistedNodeForTestingModule extends AbstractModule {
 	@Override
 	public void configure() {
+		bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
 		bind(SyncConfig.class).toInstance(SyncConfig.of(500, 10, 3000, 10, Long.MAX_VALUE));
 		bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
-
 		bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
 		bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
 		bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
@@ -62,11 +61,8 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 		// P2P
 		bind(PeerControl.class).toInstance(new NoOpPeerControl());
 
-		bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
-
 		install(new InMemoryBFTKeyModule());
 		install(new CryptoModule());
-		install(new DeterministicEnvironmentModule());
 		install(new FunctionalNodeModule());
 		install(new RadixEngineStoreModule());
 		install(new PersistenceModule());

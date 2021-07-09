@@ -25,14 +25,16 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
@@ -47,16 +49,16 @@ public final class DeterministicNodes {
 	private static final Logger log = LogManager.getLogger();
 
 	private final ImmutableList<Injector> nodeInstances;
-	private final ControlledSenderFactory senderFactory;
+	private final DeterministicNetwork network;
 	private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
 
 	public DeterministicNodes(
 		List<BFTNode> nodes,
-		ControlledSenderFactory senderFactory,
+		DeterministicNetwork network,
 		Module baseModule,
 		Module overrideModule
 	) {
-		this.senderFactory = senderFactory;
+		this.network = network;
 		this.nodeLookup = Streams.mapWithIndex(
 			nodes.stream(),
 			(node, index) -> Pair.of(node, (int) index)
@@ -72,10 +74,10 @@ public final class DeterministicNodes {
 				@Override
 				public void configure() {
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
-					bind(ControlledSenderFactory.class).toInstance(senderFactory);
+					bind(Environment.class).toInstance(network.createSender(self));
+					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 				}
 			},
-			new DeterministicEnvironmentModule(),
 			baseModule
 		);
 		if (overrideModule != null) {
