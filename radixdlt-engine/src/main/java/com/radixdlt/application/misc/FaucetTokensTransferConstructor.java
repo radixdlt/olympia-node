@@ -39,7 +39,7 @@ public class FaucetTokensTransferConstructor implements ActionConstructor<Faucet
 	public void construct(FaucetTokensTransfer action, TxBuilder txBuilder) throws TxBuilderException {
 		var map = new HashMap<REAddr, UInt256>();
 		var index = SubstateIndex.create(SubstateTypeId.TOKENS.id(), TokensInAccount.class);
-		try (var cursor = txBuilder.readIndex(index)) {
+		try (var cursor = txBuilder.readIndex(index, false)) {
 			cursor
 				.map(p -> (TokensInAccount) p)
 				.filter(p -> p.getHoldingAddr().equals(action.from()))
