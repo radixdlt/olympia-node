@@ -47,7 +47,7 @@ public class FaucetTokensTransferConstructor implements ActionConstructor<Faucet
 		}
 
 		var toSend = map.entrySet().stream()
-			.filter(e -> e.getValue().compareTo(AMOUNT_TO_TRANSFER.toSubunits()) < 0)
+			.filter(e -> e.getValue().compareTo(AMOUNT_TO_TRANSFER.toSubunits()) >= 0)
 			.collect(Collectors.toList());
 		for (var e : toSend) {
 			txBuilder.swapFungible(
