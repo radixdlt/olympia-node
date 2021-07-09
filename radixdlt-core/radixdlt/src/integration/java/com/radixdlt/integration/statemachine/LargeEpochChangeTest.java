@@ -136,7 +136,7 @@ public class LargeEpochChangeTest {
 
 	@Test
 	public void large_epoch() throws Exception {
-		long numStakes = 10000;
+		long numStakes = 10000 * 3;
 
 		createInjector().injectMembers(this);
 		// Arrange

@@ -467,8 +467,8 @@ public final class TxBuilder {
 		void with(FungibleMapper<U> mapper) throws TxBuilderException;
 	}
 
-	private <T extends ResourceInBucket> UInt256 downFungible(
-		Class<T> particleClass,
+	public <T extends ResourceInBucket> UInt256 downFungible(
+		SubstateIndex<T> index,
 		Predicate<T> particlePredicate,
 		UInt256 amount,
 		Supplier<TxBuilderException> exceptionSupplier
@@ -476,7 +476,7 @@ public final class TxBuilder {
 		var spent = UInt256.ZERO;
 		for (var l : lowLevelBuilder.localUpSubstate()) {
 			var p = l.getParticle();
-			if (!particleClass.isInstance(p) || !particlePredicate.test((T) p)) {
+			if (!index.getSubstateClass().isInstance(p) || !particlePredicate.test((T) p)) {
 				continue;
 			}
 			var resource = (T) p;
@@ -489,8 +489,6 @@ public final class TxBuilder {
 			}
 		}
 
-		var typeByte = deserialization.classToByte(particleClass);
-		var index = SubstateIndex.create(typeByte, particleClass);
 		try (var cursor = createRemoteSubstateCursor(index)) {
 			while (cursor.hasNext()) {
 				var raw = cursor.next();
@@ -549,7 +547,7 @@ public final class TxBuilder {
 	) throws TxBuilderException {
 		// Take
 		var remainder = downFungible(
-			TokensInAccount.class,
+			SubstateIndex.create(deserialization.classToByte(TokensInAccount.class), TokensInAccount.class),
 			particlePredicate,
 			amount,
 			exceptionSupplier
@@ -572,7 +570,7 @@ public final class TxBuilder {
 		this.feeReserveTake = this.feeReserveTake.add(amount);
 	}
 
-	public <T extends ResourceInBucket, U extends ResourceInBucket> void downFungible(
+	public <T extends ResourceInBucket> void downFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,
@@ -581,7 +579,7 @@ public final class TxBuilder {
 	) throws TxBuilderException {
 		// Take
 		var remainder = downFungible(
-			particleClass,
+			SubstateIndex.create(deserialization.classToByte(particleClass), particleClass),
 			particlePredicate,
 			amount,
 			exceptionSupplier

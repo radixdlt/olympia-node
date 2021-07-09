@@ -381,7 +381,14 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 							var substateTypeId = data.getData()[data.getOffset()];
 							var subType = data.getData()[data.getOffset() + 1];
 							final int prefixIndexSize;
-							if (substateTypeId == SubstateTypeId.EXITTING_STAKE.id()) {
+							if (substateTypeId == SubstateTypeId.TOKENS.id()) {
+								// Indexing not necessary for verification at the moment but useful for construction
+
+								// 0: Type Byte
+								// 1: Reserved Byte
+								// 2-37: Account Address
+								prefixIndexSize = 2 + 1 + ECPublicKey.COMPRESSED_BYTES;
+							} else if (substateTypeId == SubstateTypeId.EXITTING_STAKE.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2-5: Epoch

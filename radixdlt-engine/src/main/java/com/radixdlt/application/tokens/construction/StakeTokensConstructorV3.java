@@ -20,6 +20,7 @@ package com.radixdlt.application.tokens.construction;
 
 import com.google.common.base.Stopwatch;
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -27,11 +28,14 @@ import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -60,17 +64,24 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 		}
 
 		fungible.start();
-		builder.downFungible(
-			TokensInAccount.class,
-			p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(action.from()),
-			amt -> new TokensInAccount(action.from(), REAddr.ofNativeToken(), amt),
+		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
+		buf.put(SubstateTypeId.TOKENS.id());
+		buf.put((byte) 0);
+		buf.put(action.from().getBytes());
+
+		var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
+		var change = builder.downFungible(
+			index,
+			p -> p.getResourceAddr().isNativeToken()
+				&& p.getHoldingAddr().equals(action.from()),
 			action.amount(),
-			() -> new TxBuilderException("Not enough balance for staking " + action.amount())
+			() -> new TxBuilderException("Not enough balance for transfer.")
 		);
+		builder.up(new TokensInAccount(action.from(), REAddr.ofNativeToken(), change));
 		fungible.stop();
 
-		other.start();
 
+		other.start();
 		var flag = builder.read(
 			AllowDelegationFlag.class,
 			p -> p.getValidatorKey().equals(action.to()),
