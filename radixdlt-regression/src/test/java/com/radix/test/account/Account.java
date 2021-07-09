@@ -158,7 +158,7 @@ public final class Account implements ImperativeRadixApi, RadixAccount {
     @Override
     public AID stake(String validatorAddressString, Amount amount) {
         try {
-            ECPublicKey validatorPublicKey = ValidatorAddressing.bech32("dv1").parse(validatorAddressString);
+            ECPublicKey validatorPublicKey = ValidatorAddressing.bech32("dv").parse(validatorAddressString);
             ValidatorAddress validatorAddress = ValidatorAddress.of(validatorPublicKey);
             return TransactionUtils.stake(this, validatorAddress, amount);
         } catch (DeserializeException e) {

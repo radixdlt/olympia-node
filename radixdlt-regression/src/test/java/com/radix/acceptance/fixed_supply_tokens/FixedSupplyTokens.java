@@ -17,8 +17,6 @@ public class FixedSupplyTokens extends AcceptanceTest {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private List<ValidatorDTO> validatorsBuffer = Lists.newArrayList();
-
     @Given("I have an account with funds at a suitable Radix network")
     public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
         faucet(account1);
@@ -33,7 +31,7 @@ public class FixedSupplyTokens extends AcceptanceTest {
     @When("I create a fixed supply token with rri {string}")
     public void i_create_a_fixed_supply_token_with_rri(String rri) {
         txBuffer = account1.fixedSupplyToken(rri, "symbol", "name", "description",
-            "www.iconUrl.com", "www.tokenUrl.com", Amount.ofTokens(200));
+            "www.icon-url.com", "www.token-url.com", Amount.ofTokens(200));
     }
 
     @Then("I can observe that the token has been created, with the correct values")

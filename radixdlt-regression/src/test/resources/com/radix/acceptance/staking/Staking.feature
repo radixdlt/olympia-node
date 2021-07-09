@@ -1,3 +1,4 @@
+@single
 Feature: Staking
   As an account owner,
   I would like to delegate stake to validators,

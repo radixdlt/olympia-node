@@ -20,6 +20,7 @@ package com.radix.acceptance.staking;
 import com.radix.acceptance.AcceptanceTest;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
+import com.radixdlt.identifiers.ValidatorAddressing;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
