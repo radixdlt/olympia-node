@@ -66,6 +66,7 @@ public final class SubstateSerialization {
 	}
 
 	public void serialize(Particle p, ByteBuffer buffer) {
+		buffer.put(classToTypeByte.get(p.getClass()));
 		var serializer = classToSerializer.get(p.getClass());
 		serializer.serialize(p, buffer);
 	}

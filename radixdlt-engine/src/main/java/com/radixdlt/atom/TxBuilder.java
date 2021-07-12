@@ -452,15 +452,6 @@ public final class TxBuilder {
 	public <T extends Particle> Replacer<T> swap(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Supplier<TxBuilderException> exceptionSupplier
-	) throws TxBuilderException {
-		T t = down(particleClass, particlePredicate, exceptionSupplier);
-		return replacer -> replacer.map(t).forEach(this::up);
-	}
-
-	public <T extends Particle> Replacer<T> swap(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
 		Optional<Object> virtualKey,
 		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
@@ -476,24 +467,49 @@ public final class TxBuilder {
 		void with(FungibleMapper<U> mapper) throws TxBuilderException;
 	}
 
-	private <T extends ResourceInBucket> UInt256 downFungible(
-		Class<T> particleClass,
+	public <T extends ResourceInBucket> UInt256 downFungible(
+		SubstateIndex<T> index,
 		Predicate<T> particlePredicate,
 		UInt256 amount,
 		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
-		UInt256 spent = UInt256.ZERO;
-		while (spent.compareTo(amount) < 0) {
-			var substateDown = down(
-				particleClass,
-				particlePredicate,
-				exceptionSupplier
-			);
+		var spent = UInt256.ZERO;
+		for (var l : lowLevelBuilder.localUpSubstate()) {
+			var p = l.getParticle();
+			if (!index.getSubstateClass().isInstance(p) || !particlePredicate.test((T) p)) {
+				continue;
+			}
+			var resource = (T) p;
 
-			spent = spent.add(substateDown.getAmount());
+			spent = spent.add(resource.getAmount());
+			localDown(l.getIndex());
+
+			if (spent.compareTo(amount) >= 0) {
+				return spent.subtract(amount);
+			}
 		}
 
-		return spent.subtract(amount);
+		try (var cursor = createRemoteSubstateCursor(index)) {
+			while (cursor.hasNext()) {
+				var raw = cursor.next();
+				try {
+					var resource = (T) deserialization.deserialize(raw.getData());
+					if (!particlePredicate.test(resource)) {
+						continue;
+					}
+					spent = spent.add(resource.getAmount());
+					down(SubstateId.fromBytes(raw.getId()));
+					if (spent.compareTo(amount) >= 0) {
+						return spent.subtract(amount);
+					}
+
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			}
+		}
+
+		throw exceptionSupplier.get();
 	}
 
 	public <T extends ResourceInBucket> void deallocateFungible(
@@ -505,18 +521,11 @@ public final class TxBuilder {
 	) throws TxBuilderException {
 		UInt256 spent = UInt256.ZERO;
 		while (spent.compareTo(amount) < 0) {
-			// FIXME: This is a hack due to the constraint machine not being able to
-			// FIXME: handle spins of the same type one after the other yet.
-			if (!spent.isZero()) {
-				end();
-			}
-
 			var substateDown = down(
 				particleClass,
 				particlePredicate,
 				exceptionSupplier
 			);
-
 			spent = spent.add(substateDown.getAmount());
 		}
 
@@ -524,28 +533,6 @@ public final class TxBuilder {
 		if (!remainder.isZero()) {
 			up(remainderMapper.map(remainder));
 		}
-	}
-
-	public <T extends ResourceInBucket, U extends ResourceInBucket> FungibleReplacer<U> deprecatedSwapFungible(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		FungibleMapper<T> remainderMapper,
-		UInt256 amount,
-		Supplier<TxBuilderException> exceptionSupplier
-	) {
-		return mapper -> {
-			var substateUp = mapper.map(amount);
-			up(substateUp);
-			var remainder = downFungible(
-				particleClass,
-				particlePredicate.and(p -> !p.equals(substateUp)), // HACK to allow mempool filler to do it's thing
-				amount,
-				exceptionSupplier
-			);
-			if (!remainder.isZero()) {
-				up(remainderMapper.map(remainder));
-			}
-		};
 	}
 
 	public UInt256 getFeeReserve() {
@@ -560,7 +547,7 @@ public final class TxBuilder {
 	) throws TxBuilderException {
 		// Take
 		var remainder = downFungible(
-			TokensInAccount.class,
+			SubstateIndex.create(deserialization.classToByte(TokensInAccount.class), TokensInAccount.class),
 			particlePredicate,
 			amount,
 			exceptionSupplier
@@ -583,7 +570,7 @@ public final class TxBuilder {
 		this.feeReserveTake = this.feeReserveTake.add(amount);
 	}
 
-	public <T extends ResourceInBucket, U extends ResourceInBucket> void downFungible(
+	public <T extends ResourceInBucket> void downFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,
@@ -592,7 +579,7 @@ public final class TxBuilder {
 	) throws TxBuilderException {
 		// Take
 		var remainder = downFungible(
-			particleClass,
+			SubstateIndex.create(deserialization.classToByte(particleClass), particleClass),
 			particlePredicate,
 			amount,
 			exceptionSupplier

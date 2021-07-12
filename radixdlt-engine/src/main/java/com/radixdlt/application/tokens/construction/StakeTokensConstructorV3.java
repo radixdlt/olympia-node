@@ -19,6 +19,7 @@
 package com.radixdlt.application.tokens.construction;
 
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -26,13 +27,15 @@ import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
+import java.nio.ByteBuffer;
 import java.util.Optional;
 
 public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> {
-
 	private final UInt256 minimumStake;
 
 	public StakeTokensConstructorV3(UInt256 minimumStake) {
@@ -45,13 +48,22 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 			throw new TxBuilderException("Minimum to stake is " + minimumStake + " but trying to stake " + action.amount());
 		}
 
-		builder.downFungible(
-			TokensInAccount.class,
-			p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(action.from()),
-			amt -> new TokensInAccount(action.from(), REAddr.ofNativeToken(), amt),
+		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
+		buf.put(SubstateTypeId.TOKENS.id());
+		buf.put((byte) 0);
+		buf.put(action.from().getBytes());
+
+		var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
+		var change = builder.downFungible(
+			index,
+			p -> p.getResourceAddr().isNativeToken()
+				&& p.getHoldingAddr().equals(action.from()),
 			action.amount(),
-			() -> new TxBuilderException("Not enough balance for staking.")
+			() -> new TxBuilderException("Not enough balance for transfer.")
 		);
+		if (!change.isZero()) {
+			builder.up(new TokensInAccount(action.from(), REAddr.ofNativeToken(), change));
+		}
 
 		var flag = builder.read(
 			AllowDelegationFlag.class,
@@ -73,7 +85,6 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 				throw new TxBuilderException("Delegation flag is false and you are not the owner.");
 			}
 		}
-
 		builder.up(new PreparedStake(action.amount(), action.from(), action.to()));
 		builder.end();
 	}

@@ -385,7 +385,6 @@ public final class RadixEngine<M> {
 			var context = new ExecutionContext(txn, permissionLevel, sigsLeft, Amount.ofTokens(200).toSubunits());
 
 			final REProcessedTxn parsedTxn;
-			// TODO: combine verification and storage
 			try {
 				parsedTxn = this.verify(engineStoreInTransaction, txn, context);
 			} catch (TxnParseException | AuthorizationException | ConstraintMachineException e) {

@@ -91,6 +91,11 @@ public final class TxLowLevelBuilder {
 		return data;
 	}
 
+	private void instruction(REInstruction.REMicroOp op, ByteBuffer buffer) {
+		blobStream.write(op.opCode());
+		blobStream.write(buffer.array(), buffer.position(), buffer.remaining());
+	}
+
 	private void instruction(REInstruction.REMicroOp op, byte[] data) {
 		blobStream.write(op.opCode());
 		try {
@@ -113,11 +118,14 @@ public final class TxLowLevelBuilder {
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
 		this.localUpParticles.put(upParticleCount, LocalSubstate.create(upParticleCount, particle));
-		var bytes = serialization.serialize(particle);
-		var buf = ByteBuffer.allocate(Short.BYTES + bytes.length);
-		buf.putShort((short) bytes.length);
-		buf.put(bytes);
-		instruction(REInstruction.REMicroOp.UP, buf.array());
+		var buf = ByteBuffer.allocate(1024);
+		buf.putShort((short) 0);
+		serialization.serialize(particle, buf);
+		var limit = buf.position();
+		buf.putShort(0, (short) (limit - 2));
+		buf.position(0);
+		buf.limit(limit);
+		instruction(REInstruction.REMicroOp.UP, buf);
 		upParticleCount++;
 		return this;
 	}

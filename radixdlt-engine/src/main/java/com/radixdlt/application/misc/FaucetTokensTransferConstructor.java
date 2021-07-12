@@ -41,7 +41,6 @@ public class FaucetTokensTransferConstructor implements ActionConstructor<Faucet
 		var index = SubstateIndex.create(SubstateTypeId.TOKENS.id(), TokensInAccount.class);
 		try (var cursor = txBuilder.readIndex(index, false)) {
 			cursor
-				.map(p -> (TokensInAccount) p)
 				.filter(p -> p.getHoldingAddr().equals(action.from()))
 				.forEachRemaining(t -> map.merge(t.getResourceAddr(), t.getAmount(), UInt256::add));
 		}
