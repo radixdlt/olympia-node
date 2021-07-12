@@ -43,19 +43,9 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
 
 	@Override
 	public void construct(UpdateValidatorFee action, TxBuilder builder) throws TxBuilderException {
-		builder.down(
-			ValidatorRakeCopy.class,
-			p -> p.getValidatorKey().equals(action.validatorKey()),
-			Optional.of(action.validatorKey()),
-			() -> new TxBuilderException("Cannot find state")
-		);
-
-		var curRakePercentage = builder.read(
-			ValidatorStakeData.class,
-			s -> s.getValidatorKey().equals(action.validatorKey()),
-			Optional.of(action.validatorKey()),
-			"Can't find validator stake"
-		).getRakePercentage();
+		builder.down(ValidatorRakeCopy.class, action.validatorKey());
+		var curRakePercentage = builder.read(ValidatorStakeData.class, action.validatorKey())
+			.getRakePercentage();
 
 		var isIncrease = action.getFeePercentage() > curRakePercentage;
 		var rakeIncrease = action.getFeePercentage() - curRakePercentage;

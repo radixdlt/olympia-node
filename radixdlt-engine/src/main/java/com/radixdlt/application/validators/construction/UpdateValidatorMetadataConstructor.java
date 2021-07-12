@@ -29,12 +29,7 @@ import java.util.Optional;
 public final class UpdateValidatorMetadataConstructor implements ActionConstructor<UpdateValidatorMetadata> {
 	@Override
 	public void construct(UpdateValidatorMetadata action, TxBuilder txBuilder) throws TxBuilderException {
-		var substateDown = txBuilder.down(
-			ValidatorMetaData.class,
-			p -> p.getValidatorKey().equals(action.validatorKey()),
-			Optional.of(action.validatorKey()),
-			() -> new TxBuilderException("Invalid state.")
-		);
+		var substateDown = txBuilder.down(ValidatorMetaData.class, action.validatorKey());
 		txBuilder.up(new ValidatorMetaData(
 			action.validatorKey(),
 			action.name() == null ? substateDown.getName() : action.name(),
