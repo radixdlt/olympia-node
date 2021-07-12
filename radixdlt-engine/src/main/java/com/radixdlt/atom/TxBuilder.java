@@ -354,45 +354,6 @@ public final class TxBuilder {
 		return serialization.mapVirtual(UnclaimedREAddr.class, addr);
 	}
 
-	public <T extends Particle> T down(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		Supplier<TxBuilderException> exceptionSupplier
-	) throws TxBuilderException {
-		var localDown = lowLevelBuilder.localUpSubstate().stream()
-			.filter(s -> {
-				if (!particleClass.isInstance(s.getParticle())) {
-					return false;
-				}
-
-				return particlePredicate.test(particleClass.cast(s.getParticle()));
-			})
-			.peek(s -> this.localDown(s.getIndex()))
-			.map(LocalSubstate::getParticle)
-			.map(particleClass::cast)
-			.findFirst();
-
-		if (localDown.isPresent()) {
-			return localDown.get();
-		}
-
-		try (var cursor = createRemoteSubstateCursor(particleClass)) {
-			var substateDown = iteratorToStream(cursor)
-				.map(this::deserialize)
-				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
-				.peek(s -> this.down(s.getId()))
-				.map(Substate::getParticle)
-				.map(particleClass::cast)
-				.findFirst();
-
-			if (substateDown.isEmpty()) {
-				throw exceptionSupplier.get();
-			}
-
-			return substateDown.get();
-		}
-	}
-
 	public <T extends Particle, U> U shutdownAll(
 		Class<T> particleClass,
 		Function<Iterator<T>, U> mapper
@@ -533,29 +494,6 @@ public final class TxBuilder {
 		}
 
 		throw exceptionSupplier.get();
-	}
-
-	public <T extends ResourceInBucket> void deallocateFungible(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		FungibleMapper<T> remainderMapper,
-		UInt256 amount,
-		Supplier<TxBuilderException> exceptionSupplier
-	) throws TxBuilderException {
-		UInt256 spent = UInt256.ZERO;
-		while (spent.compareTo(amount) < 0) {
-			var substateDown = down(
-				particleClass,
-				particlePredicate,
-				exceptionSupplier
-			);
-			spent = spent.add(substateDown.getAmount());
-		}
-
-		var remainder = spent.subtract(amount);
-		if (!remainder.isZero()) {
-			up(remainderMapper.map(remainder));
-		}
 	}
 
 	public UInt256 getFeeReserve() {

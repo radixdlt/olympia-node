@@ -41,11 +41,7 @@ public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 		for (long view = prevRound.getView() + 1; view < action.view(); view++) {
 			var missingLeader = action.leaderMapping().apply(view);
 			if (!validatorsToUpdate.containsKey(missingLeader)) {
-				var validatorData = txBuilder.down(
-					ValidatorBFTData.class,
-					p -> p.validatorKey().equals(missingLeader),
-					() -> new TxBuilderException("Could not find validator")
-				);
+				var validatorData = txBuilder.down(ValidatorBFTData.class, missingLeader);
 				validatorsToUpdate.put(missingLeader, validatorData);
 			}
 			var nextData = validatorsToUpdate.get(missingLeader).incrementProposalsMissed();
@@ -54,11 +50,7 @@ public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 
 		var curLeader = action.leaderMapping().apply(action.view());
 		if (!validatorsToUpdate.containsKey(curLeader)) {
-			var validatorData = txBuilder.down(
-				ValidatorBFTData.class,
-				p -> p.validatorKey().equals(curLeader),
-				() -> new TxBuilderException("Could not find validator")
-			);
+			var validatorData = txBuilder.down(ValidatorBFTData.class, curLeader);
 			validatorsToUpdate.put(curLeader, validatorData);
 		}
 		var nextData = action.isTimeout()

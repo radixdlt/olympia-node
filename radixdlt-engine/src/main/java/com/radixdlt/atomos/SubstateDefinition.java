@@ -67,6 +67,27 @@ public final class SubstateDefinition<T extends Particle> {
 		byte typeByte,
 		SubstateDeserializer<T> deserializer,
 		SubstateSerializer<T> serializer,
+		KeySerializer keySerializer
+	) {
+		this.substateClass = substateClass;
+		this.typeByte = typeByte;
+		this.deserializer = deserializer;
+		this.serializer = serializer;
+
+		this.keySerializer = keySerializer;
+		this.keyDeserializer = buf -> {
+			throw new DeserializeException("Virtual substate not supported");
+		};
+		this.virtualSerializer = o -> {
+			throw new IllegalStateException("Cannot virtualize");
+		};
+	}
+
+	public SubstateDefinition(
+		Class<T> substateClass,
+		byte typeByte,
+		SubstateDeserializer<T> deserializer,
+		SubstateSerializer<T> serializer,
 		KeyDeserializer keyDeserializer,
 		KeySerializer keySerializer,
 		VirtualMapper virtualMapper

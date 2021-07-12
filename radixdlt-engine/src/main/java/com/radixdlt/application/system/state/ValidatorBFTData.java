@@ -18,12 +18,13 @@
 
 package com.radixdlt.application.system.state;
 
+import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
 
-public final class ValidatorBFTData implements Particle {
+public final class ValidatorBFTData implements ValidatorData {
 	private final ECPublicKey validatorKey;
 	private final long proposalsCompleted;
 	private final long proposalsMissed;
@@ -42,7 +43,8 @@ public final class ValidatorBFTData implements Particle {
 		return proposalsMissed;
 	}
 
-	public ECPublicKey validatorKey() {
+	@Override
+	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}
 

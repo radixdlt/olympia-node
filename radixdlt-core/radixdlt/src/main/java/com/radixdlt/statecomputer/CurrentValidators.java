@@ -44,7 +44,7 @@ public final class CurrentValidators {
 	public CurrentValidators add(ValidatorBFTData validatorBFTData) {
 		var map = ImmutableMap.<ECPublicKey, Long>builder()
 			.putAll(epochData)
-			.put(validatorBFTData.validatorKey(), validatorBFTData.proposalsCompleted())
+			.put(validatorBFTData.getValidatorKey(), validatorBFTData.proposalsCompleted())
 			.build();
 
 		return new CurrentValidators(map);
@@ -52,7 +52,7 @@ public final class CurrentValidators {
 
 	public CurrentValidators remove(ValidatorBFTData validatorBFTData) {
 		var map = epochData.entrySet().stream()
-			.filter(v -> !v.getKey().equals(validatorBFTData.validatorKey()))
+			.filter(v -> !v.getKey().equals(validatorBFTData.getValidatorKey()))
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		return new CurrentValidators(map);
 	}

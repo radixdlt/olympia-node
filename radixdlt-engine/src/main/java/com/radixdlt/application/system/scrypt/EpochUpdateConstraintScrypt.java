@@ -151,10 +151,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var iter = i.iterator();
 			while (iter.hasNext()) {
 				var validatorEpochData = iter.next();
-				if (validatorBFTData.containsKey(validatorEpochData.validatorKey())) {
-					throw new ProcedureException("Already inserted " + validatorEpochData.validatorKey());
+				if (validatorBFTData.containsKey(validatorEpochData.getValidatorKey())) {
+					throw new ProcedureException("Already inserted " + validatorEpochData.getValidatorKey());
 				}
-				validatorBFTData.put(validatorEpochData.validatorKey(), validatorEpochData);
+				validatorBFTData.put(validatorEpochData.getValidatorKey(), validatorEpochData);
 			}
 
 			return next(context);

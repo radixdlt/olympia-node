@@ -141,7 +141,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorScratchPad>(KeyComparator.instance());
 		var validatorBFTData = txBuilder.shutdownAll(ValidatorBFTData.class, i -> {
 			final TreeMap<ECPublicKey, ValidatorBFTData> bftData = new TreeMap<>(KeyComparator.instance());
-			i.forEachRemaining(e -> bftData.put(e.validatorKey(), e));
+			i.forEachRemaining(e -> bftData.put(e.getValidatorKey(), e));
 			return bftData;
 		});
 		var preparingStake = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(KeyComparator.instance());
