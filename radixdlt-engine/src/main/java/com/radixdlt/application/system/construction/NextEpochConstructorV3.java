@@ -120,18 +120,8 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 
 	@Override
 	public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-		var closedRound = txBuilder.down(
-			RoundData.class,
-			p -> true,
-			Optional.empty(),
-			() -> new TxBuilderException("No round data available")
-		);
-		var closingEpoch = txBuilder.down(
-			EpochData.class,
-			p -> true,
-			Optional.empty(),
-			() -> new TxBuilderException("No epoch data available")
-		);
+		var closedRound = txBuilder.downSystem(RoundData.class);
+		var closingEpoch = txBuilder.downSystem(EpochData.class);
 
 		var unlockedStateIndexBuf = ByteBuffer.allocate(2 + Long.BYTES);
 		unlockedStateIndexBuf.put(SubstateTypeId.EXITTING_STAKE.id());

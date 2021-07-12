@@ -19,6 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.Streams;
 import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
@@ -761,7 +762,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var key = new DatabaseEntry(mapKey.array());
 				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
 				mapDatabase.put(txn, key, value);
-			} else if (stateUpdate.getParsed() instanceof EpochData) {
+			} else if (stateUpdate.getParsed() instanceof SystemData) {
 				var mapKey = SystemMapKey.ofSystem(stateUpdate.getStateBuf().get());
 				var key = new DatabaseEntry(mapKey.array());
 				var value = new DatabaseEntry(stateUpdate.getId().asBytes());

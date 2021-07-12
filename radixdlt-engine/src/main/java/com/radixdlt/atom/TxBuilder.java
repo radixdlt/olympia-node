@@ -324,6 +324,25 @@ public final class TxBuilder {
 		}
 	}
 
+	public <T extends Particle> T downSystem(Class<T> substateClass) throws TxBuilderException {
+		var typeByte = deserialization.classToByte(substateClass);
+		var mapKey = SystemMapKey.ofSystem(typeByte);
+		var localMaybe = lowLevelBuilder.get(mapKey);
+		if (localMaybe.isPresent()) {
+			var local = localMaybe.get();
+			lowLevelBuilder.localDown(local.getIndex());
+			return (T) local.getParticle();
+		}
+
+		var rawSubstate = remoteSubstate.get(mapKey).orElseThrow();
+		down(SubstateId.fromBytes(rawSubstate.getId()));
+		try {
+			return (T) deserialization.deserialize(rawSubstate.getData());
+		} catch (DeserializeException e) {
+			throw new IllegalStateException();
+		}
+	}
+
 	public <T extends Particle> T readSystem(Class<T> substateClass) throws TxBuilderException {
 		var typeByte = deserialization.classToByte(substateClass);
 		var mapKey = SystemMapKey.ofSystem(typeByte);
@@ -487,24 +506,6 @@ public final class TxBuilder {
 			lowLevelBuilder.downIndex(index);
 			return result;
 		}
-	}
-
-	public interface Mapper<T extends Particle> {
-		List<Particle> map(T t) throws TxBuilderException;
-	}
-
-	public interface Replacer<T extends Particle> {
-		void with(Mapper<T> mapper) throws TxBuilderException;
-	}
-
-	public <T extends Particle> Replacer<T> swap(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		Optional<Object> virtualKey,
-		Supplier<TxBuilderException> exceptionSupplier
-	) throws TxBuilderException {
-		T t = down(particleClass, particlePredicate, virtualKey, exceptionSupplier);
-		return replacer -> replacer.map(t).forEach(this::up);
 	}
 
 	public interface FungibleMapper<U extends Particle> {

@@ -19,6 +19,7 @@ package com.radixdlt.store;
 
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.CloseableCursor;
@@ -74,7 +75,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 									data.getValidatorKey().getCompressedBytes()
 								);
 								maps.put(mapKey, update.getRawSubstateBytes());
-							} else if (update.getParsed() instanceof EpochData) {
+							} else if (update.getParsed() instanceof SystemData) {
 								var mapKey = SystemMapKey.ofSystem(update.getStateBuf().get());
 								maps.put(mapKey, update.getRawSubstateBytes());
 							}

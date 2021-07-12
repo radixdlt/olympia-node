@@ -23,7 +23,7 @@ import com.radixdlt.constraintmachine.Particle;
 
 import java.time.Instant;
 
-public final class RoundData implements Particle {
+public final class RoundData implements SystemData {
 	private final long view;
 	private final long timestamp;
 

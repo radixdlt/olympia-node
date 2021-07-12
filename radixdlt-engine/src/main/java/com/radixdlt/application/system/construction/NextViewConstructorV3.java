@@ -33,13 +33,7 @@ import java.util.TreeMap;
 public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 	@Override
 	public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
-		var prevRound = txBuilder.down(
-			RoundData.class,
-			p -> true,
-			Optional.empty(),
-			() -> new TxBuilderException("No round state available.")
-		);
-
+		var prevRound = txBuilder.downSystem(RoundData.class);
 		if (action.view() <= prevRound.getView()) {
 			throw new TxBuilderException("Next view: " + action + " isn't higher than current view: " + prevRound);
 		}
