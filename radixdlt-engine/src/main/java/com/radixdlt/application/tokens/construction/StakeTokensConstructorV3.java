@@ -65,12 +65,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 			builder.up(new TokensInAccount(action.from(), REAddr.ofNativeToken(), change));
 		}
 
-		var flag = builder.read(
-			AllowDelegationFlag.class,
-			p -> p.getValidatorKey().equals(action.to()),
-			Optional.of(action.to()),
-			"Could not find state"
-		);
+		var flag = builder.read(AllowDelegationFlag.class, action.to());
 
 		if (!flag.allowsDelegation()) {
 			final REAddr owner;

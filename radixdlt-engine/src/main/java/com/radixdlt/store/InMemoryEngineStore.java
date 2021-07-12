@@ -84,6 +84,13 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 									data.getValidatorKey().getCompressedBytes()
 								);
 								maps.put(mapKey, update.getRawSubstateBytes());
+							} else if (update.getParsed() instanceof AllowDelegationFlag) {
+								var data = (AllowDelegationFlag) update.getParsed();
+								var mapKey = SystemMapKey.create(
+									update.getStateBuf().get(),
+									data.getValidatorKey().getCompressedBytes()
+								);
+								maps.put(mapKey, update.getRawSubstateBytes());
 							}
 						});
 					}

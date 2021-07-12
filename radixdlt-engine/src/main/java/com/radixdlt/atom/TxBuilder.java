@@ -54,7 +54,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -267,6 +266,13 @@ public final class TxBuilder {
 		var pair = serialization.serializeVirtual(substateClass, key);
 		var typeByte = deserialization.classToByte(substateClass);
 		var mapKey = SystemMapKey.create(typeByte, pair.getSecond());
+		var localMaybe = lowLevelBuilder.get(mapKey);
+		if (localMaybe.isPresent()) {
+			var local = localMaybe.get();
+			lowLevelBuilder.localDown(local.getIndex());
+			return (T) local.getParticle();
+		}
+
 		var raw = remoteSubstate.get(mapKey);
 
 		final T t;
@@ -298,8 +304,15 @@ public final class TxBuilder {
 	public <T extends Particle> T read(Class<T> substateClass, Object key) throws TxBuilderException {
 		var pair = serialization.serializeVirtual(substateClass, key);
 		var typeByte = deserialization.classToByte(substateClass);
-		var raw = remoteSubstate.get(SystemMapKey.create(typeByte, pair.getSecond()));
+		var mapKey = SystemMapKey.create(typeByte, pair.getSecond());
+		var localMaybe = lowLevelBuilder.get(mapKey);
+		if (localMaybe.isPresent()) {
+			var local = localMaybe.get();
+			lowLevelBuilder.localRead(local.getIndex());
+			return (T) local.getParticle();
+		}
 
+		var raw = remoteSubstate.get(mapKey);
 		if (raw.isPresent()) {
 			var rawSubstate = raw.get();
 			read(SubstateId.fromBytes(rawSubstate.getId()));

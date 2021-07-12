@@ -771,6 +771,15 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var key = new DatabaseEntry(mapKey.array());
 				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
 				mapDatabase.put(txn, key, value);
+			} else if (stateUpdate.getParsed() instanceof AllowDelegationFlag) {
+				var p = (AllowDelegationFlag) stateUpdate.getParsed();
+				var mapKey = SystemMapKey.create(
+					stateUpdate.getStateBuf().get(),
+					p.getValidatorKey().getCompressedBytes()
+				);
+				var key = new DatabaseEntry(mapKey.array());
+				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
+				mapDatabase.put(txn, key, value);
 			}
 		} else if (stateUpdate.isShutDown()) {
 			if (stateUpdate.getId().isVirtual()) {
