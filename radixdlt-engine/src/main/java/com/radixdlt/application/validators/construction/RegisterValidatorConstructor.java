@@ -31,13 +31,7 @@ import java.util.OptionalLong;
 public class RegisterValidatorConstructor implements ActionConstructor<RegisterValidator> {
 	@Override
 	public void construct(RegisterValidator action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.down(
-			ValidatorRegisteredCopy.class,
-			p -> p.getValidatorKey().equals(action.validatorKey()),
-			Optional.of(action.validatorKey()),
-			() -> new TxBuilderException("Cannot find state")
-		);
-
+		txBuilder.down(ValidatorRegisteredCopy.class, action.validatorKey());
 		var curEpoch = txBuilder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
 		txBuilder.up(new ValidatorRegisteredCopy(OptionalLong.of(curEpoch.getEpoch() + 1), action.validatorKey(), true));
 		txBuilder.end();

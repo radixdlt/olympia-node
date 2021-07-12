@@ -104,6 +104,9 @@ public class LargeEpochChangeTest {
 
 	@Test
 	public void large_epoch() throws Exception {
+		var rt = Runtime.getRuntime();
+		logger.info("max mem: {}MB", rt.maxMemory() / 1024 / 1024);
+
 		long numStakes = 10000 * 3;
 
 		createInjector().injectMembers(this);
@@ -151,11 +154,12 @@ public class LargeEpochChangeTest {
 			});
 
 		// Act
-		logger.info("preparing...");
+		logger.info("constructing...");
 		var txn = sut.construct(TxnConstructionRequest.create()
 			.action(new NextRound(10, true, 0, v -> TEST_KEY.getPublicKey()))
 			.action(new NextEpoch(1))
 		).buildWithoutSignature();
+		logger.info("preparing...");
 		var result = sut.transientBranch().execute(List.of(txn), PermissionLevel.SUPER_USER);
 		sut.deleteBranches();
 		var nextValidatorSet = result.get(0).getEvents().stream()
