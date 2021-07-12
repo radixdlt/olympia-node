@@ -259,11 +259,11 @@ public class ActionParserServiceTest {
 	}
 
 	@Test
-	public void updateValidatorIsParsedCorrectlyWithUrlAndName() {
+	public void updateValidatorMetadataIsParsedCorrectlyWithUrlAndName() {
 		var key = ECKeyPair.generateNew().getPublicKey();
 		var validatorAddr = addressing.forValidators().of(key);
 
-		var source = "[{\"type\":\"UpdateValidator\", \"validator\":\"%s\", \"name\":\"%s\", \"url\":\"%s\"}]";
+		var source = "[{\"type\":\"UpdateValidatorMetadata\", \"validator\":\"%s\", \"name\":\"%s\", \"url\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr, "validator 1", "http://localhost/"));
 
 		actionParserService.parse(actions)
@@ -286,11 +286,11 @@ public class ActionParserServiceTest {
 	}
 
 	@Test
-	public void updateValidatorIsParsedCorrectlyWithUrl() {
+	public void updateValidatorMetadataIsParsedCorrectlyWithUrl() {
 		var key = ECKeyPair.generateNew().getPublicKey();
 		var validatorAddr = addressing.forValidators().of(key);
 
-		var source = "[{\"type\":\"UpdateValidator\", \"validator\":\"%s\", \"url\":\"%s\"}]";
+		var source = "[{\"type\":\"UpdateValidatorMetadata\", \"validator\":\"%s\", \"url\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr, "http://localhost/"));
 
 		actionParserService.parse(actions)
@@ -313,11 +313,11 @@ public class ActionParserServiceTest {
 	}
 
 	@Test
-	public void updateValidatorIsParsedCorrectly() {
+	public void updateValidatorMetadataIsParsedCorrectly() {
 		var key = ECKeyPair.generateNew().getPublicKey();
 		var validatorAddr = addressing.forValidators().of(key);
 
-		var source = "[{\"type\":\"UpdateValidator\", \"validator\":\"%s\"}]";
+		var source = "[{\"type\":\"UpdateValidatorMetadata\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
 
 		actionParserService.parse(actions)

@@ -34,7 +34,7 @@ public enum ActionType {
 	MINT("MintTokens"),
 	REGISTER_VALIDATOR("RegisterValidator"),
 	UNREGISTER_VALIDATOR("UnregisterValidator"),
-	UPDATE_VALIDATOR("UpdateValidator"),
+	UPDATE_VALIDATOR_METADATA("UpdateValidatorMetadata"),
 	UPDATE_VALIDATOR_FEE("UpdateValidatorFee"),
 	UPDATE_VALIDATOR_OWNER("UpdateValidatorOwnerAddress"),
 	UPDATE_VALIDATOR_DELEGATION_FLAG("UpdateAllowDelegationFlag"),

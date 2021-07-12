@@ -15,22 +15,27 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.client.lib.api.action;
+package com.radixdlt.api.data.action;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.radixdlt.client.lib.api.ActionType;
-import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.actions.UpdateValidatorMetadata;
+import com.radixdlt.crypto.ECPublicKey;
 
-@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public class UpdateValidatorAction implements Action {
-	private final ActionType type = ActionType.UPDATE_VALIDATOR;
-	private final ValidatorAddress delegate;
+import java.util.stream.Stream;
+
+class UpdateValidatorMetadataAction implements TransactionAction {
+	private final ECPublicKey validatorKey;
 	private final String name;
 	private final String url;
 
-	public UpdateValidatorAction(ValidatorAddress delegate, String name, String url) {
-		this.delegate = delegate;
+	UpdateValidatorMetadataAction(ECPublicKey validatorKey, String name, String url) {
+		this.validatorKey = validatorKey;
 		this.name = name;
 		this.url = url;
+	}
+
+	@Override
+	public Stream<TxAction> toAction() {
+		return Stream.of(new UpdateValidatorMetadata(validatorKey, name, url));
 	}
 }

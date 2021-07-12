@@ -131,12 +131,12 @@ public final class ActionParserService {
 					validator(element)
 				).map(TransactionAction::unregister);
 
-			case UPDATE_VALIDATOR:
+			case UPDATE_VALIDATOR_METADATA:
 				return allOf(
 					validator(element),
 					optionalName(element),
 					optionalUrl(element)
-				).map(TransactionAction::update);
+				).map(TransactionAction::updateMetadata);
 
 			case UPDATE_VALIDATOR_FEE:
 				return allOf(
