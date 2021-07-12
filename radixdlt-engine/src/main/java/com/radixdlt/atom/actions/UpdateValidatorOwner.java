@@ -22,11 +22,11 @@ import com.radixdlt.atom.TxValidatorAction;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
-public final class UpdateValidatorOwnerAddress implements TxValidatorAction {
+public final class UpdateValidatorOwner implements TxValidatorAction {
 	private final ECPublicKey validatorKey;
 	private final REAddr ownerAddress;
 
-	public UpdateValidatorOwnerAddress(ECPublicKey validatorKey, REAddr ownerAddress) {
+	public UpdateValidatorOwner(ECPublicKey validatorKey, REAddr ownerAddress) {
 		this.validatorKey = validatorKey;
 		this.ownerAddress = ownerAddress;
 	}

@@ -59,9 +59,6 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			if (!current.getValidatorKey().equals(next.getValidatorKey())) {
 				throw new ProcedureException("Invalid key update");
 			}
-			if (current.allowsDelegation() == next.allowsDelegation()) {
-				throw new ProcedureException("Already set.");
-			}
 		}
 	}
 

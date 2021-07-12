@@ -32,7 +32,7 @@ import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
+import com.radixdlt.atom.actions.UpdateValidatorOwner;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.construction.StakeTokensConstructorV3;
@@ -144,7 +144,7 @@ public class DelegationFlagTest {
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
-				.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
+				.put(UpdateValidatorOwner.class, new UpdateValidatorOwnerConstructor())
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.build(),
 			cm,
@@ -205,7 +205,7 @@ public class DelegationFlagTest {
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 		var update = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new UpdateValidatorOwnerAddress(validatorKey.getPublicKey(), accountAddr))
+				.action(new UpdateValidatorOwner(validatorKey.getPublicKey(), accountAddr))
 		).signAndBuild(validatorKey::sign);
 		this.engine.execute(List.of(update));
 

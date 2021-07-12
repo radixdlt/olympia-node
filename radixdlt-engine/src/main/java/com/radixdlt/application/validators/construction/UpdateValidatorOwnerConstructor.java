@@ -22,22 +22,16 @@ import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
+import com.radixdlt.atom.actions.UpdateValidatorOwner;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 
 import java.util.Optional;
 import java.util.OptionalLong;
 
-public class UpdateValidatorOwnerConstructor implements ActionConstructor<UpdateValidatorOwnerAddress> {
+public class UpdateValidatorOwnerConstructor implements ActionConstructor<UpdateValidatorOwner> {
 	@Override
-	public void construct(UpdateValidatorOwnerAddress action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.down(
-			ValidatorOwnerCopy.class,
-			p -> p.getValidatorKey().equals(action.validatorKey()),
-			Optional.of(action.validatorKey()),
-			() -> new TxBuilderException("Cannot find state")
-		);
-
+	public void construct(UpdateValidatorOwner action, TxBuilder txBuilder) throws TxBuilderException {
+		txBuilder.down(ValidatorOwnerCopy.class, action.validatorKey());
 		var curEpoch = txBuilder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
 		txBuilder.up(new ValidatorOwnerCopy(
 			OptionalLong.of(curEpoch.getEpoch() + 1), action.validatorKey(), action.getOwnerAddress()

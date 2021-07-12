@@ -69,12 +69,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 
 		if (!flag.allowsDelegation()) {
 			final REAddr owner;
-			var validator = builder.read(
-				ValidatorOwnerCopy.class,
-				p -> p.getValidatorKey().equals(action.to()),
-				Optional.of(action.to()),
-				"Could not find state"
-			);
+			var validator = builder.read(ValidatorOwnerCopy.class, action.to());
 			owner = validator.getOwner();
 			if (!action.from().equals(owner)) {
 				throw new TxBuilderException("Delegation flag is false and you are not the owner.");
