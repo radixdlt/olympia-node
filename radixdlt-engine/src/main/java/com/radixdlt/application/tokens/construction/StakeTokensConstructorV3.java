@@ -33,7 +33,6 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
-import java.util.Optional;
 
 public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> {
 	private final UInt256 minimumStake;

@@ -127,16 +127,14 @@ public final class TxBuilder {
 	private <T extends Particle> T virtualRead(Class<T> substateClass, Object key) {
 		var typeByte = deserialization.classToByte(substateClass);
 		var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
+		var keyBytes = serialization.serializeKey(substateClass, key);
 		if (localParent.isPresent()) {
-			var pair = serialization.serializeVirtual(substateClass, key);
-			lowLevelBuilder.localVirtualRead(localParent.get().getIndex(), pair.getSecond());
-			return pair.getFirst();
+			lowLevelBuilder.localVirtualRead(localParent.get().getIndex(), keyBytes);
+		} else {
+			var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte).orElseThrow();
+			lowLevelBuilder.virtualRead(parent.getId(), keyBytes);
 		}
-
-		var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte).orElseThrow();
-		var pair = serialization.serializeVirtual(substateClass, key);
-		lowLevelBuilder.virtualRead(parent.getId(), pair.getSecond());
-		return pair.getFirst();
+		return serialization.mapVirtual(substateClass, key);
 	}
 
 	private CloseableCursor<RawSubstateBytes> createRemoteSubstateCursor(SubstateIndex<?> index) {
@@ -240,9 +238,9 @@ public final class TxBuilder {
 	}
 
 	public <T extends Particle> T down(Class<T> substateClass, Object key) throws TxBuilderException {
-		var pair = serialization.serializeVirtual(substateClass, key);
+		var keyBytes = serialization.serializeKey(substateClass, key);
 		var typeByte = deserialization.classToByte(substateClass);
-		var mapKey = SystemMapKey.ofValidatorData(typeByte, pair.getSecond());
+		var mapKey = SystemMapKey.ofValidatorData(typeByte, keyBytes);
 		var localMaybe = lowLevelBuilder.get(mapKey);
 		if (localMaybe.isPresent()) {
 			var local = localMaybe.get();
@@ -265,23 +263,22 @@ public final class TxBuilder {
 		} else {
 			var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
 			if (localParent.isPresent()) {
-				lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), pair.getSecond());
+				lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), keyBytes);
 			} else {
 				var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte)
 					.orElseThrow(() -> new TxBuilderException("Can't find parent with typeByte " + Bytes.toHexString(typeByte)));
-
-				lowLevelBuilder.virtualDown(parent.getId(), pair.getSecond());
+				lowLevelBuilder.virtualDown(parent.getId(), keyBytes);
 			}
-			t = pair.getFirst();
+			t = serialization.mapVirtual(substateClass, key);
 		}
 		return t;
 	}
 
 
 	public <T extends Particle> T read(Class<T> substateClass, Object key) throws TxBuilderException {
-		var pair = serialization.serializeVirtual(substateClass, key);
+		var keyBytes = serialization.serializeKey(substateClass, key);
 		var typeByte = deserialization.classToByte(substateClass);
-		var mapKey = SystemMapKey.ofValidatorData(typeByte, pair.getSecond());
+		var mapKey = SystemMapKey.ofValidatorData(typeByte, keyBytes);
 		var localMaybe = lowLevelBuilder.get(mapKey);
 		if (localMaybe.isPresent()) {
 			var local = localMaybe.get();
@@ -343,18 +340,18 @@ public final class TxBuilder {
 
 	// TODO: check if address is already claimed
 	public UnclaimedREAddr downREAddr(REAddr addr) throws TxBuilderException {
-		var pair = serialization.serializeVirtual(UnclaimedREAddr.class, addr);
+		var keyBytes = serialization.serializeKey(UnclaimedREAddr.class, addr);
 		var typeByte = deserialization.classToByte(UnclaimedREAddr.class);
 		var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
 		if (localParent.isPresent()) {
-			lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), pair.getSecond());
+			lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), keyBytes);
 		} else {
 			var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte)
 				.orElseThrow(() -> new TxBuilderException("Can't find parent with typeByte " + Bytes.toHexString(typeByte)));
 
-			lowLevelBuilder.virtualDown(parent.getId(), pair.getSecond());
+			lowLevelBuilder.virtualDown(parent.getId(), keyBytes);
 		}
-		return pair.getFirst();
+		return serialization.mapVirtual(UnclaimedREAddr.class, addr);
 	}
 
 	public <T extends Particle> T down(

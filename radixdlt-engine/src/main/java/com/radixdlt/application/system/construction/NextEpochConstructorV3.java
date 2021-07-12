@@ -48,7 +48,6 @@ import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;

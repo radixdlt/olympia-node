@@ -20,7 +20,6 @@ package com.radixdlt.atom;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.application.system.scrypt.Syscall;
-import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.constraintmachine.REInstruction;

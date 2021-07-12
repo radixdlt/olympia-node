@@ -89,14 +89,9 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.isRegistered() ? 1 : 0));
 			},
-			buf -> {
-				var key = REFieldSerialization.deserializeKey(buf);
-				return new ValidatorRegisteredCopy(key, false);
-			},
-			(k, buf) -> {
-				REFieldSerialization.serializeKey(buf, (ECPublicKey) k);
-				return new ValidatorRegisteredCopy((ECPublicKey) k, false);
-			}
+			buf -> REFieldSerialization.deserializeKey(buf),
+			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
+			k -> new ValidatorRegisteredCopy((ECPublicKey) k, false)
 		));
 
 		os.procedure(new DownProcedure<>(

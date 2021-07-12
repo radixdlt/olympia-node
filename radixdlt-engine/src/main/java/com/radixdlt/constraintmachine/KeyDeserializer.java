@@ -18,8 +18,10 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.serialization.DeserializeException;
+
 import java.nio.ByteBuffer;
 
-public interface VirtualSubstateSerializer<T extends Particle> {
-	T serialize(Object key, ByteBuffer buf);
+public interface KeyDeserializer {
+	Object deserialize(ByteBuffer buf) throws DeserializeException;
 }

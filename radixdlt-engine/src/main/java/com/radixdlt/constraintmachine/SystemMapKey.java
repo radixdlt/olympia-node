@@ -32,7 +32,7 @@ public final class SystemMapKey {
 
 
 	public static SystemMapKey ofSystem(byte key) {
-		return new SystemMapKey(new byte[] { REAddr.REAddrType.SYSTEM.byteValue(), key});
+		return new SystemMapKey(new byte[] {REAddr.REAddrType.SYSTEM.byteValue(), key});
 	}
 
 	public static SystemMapKey ofValidatorData(byte typeId, byte[] mapKey) {

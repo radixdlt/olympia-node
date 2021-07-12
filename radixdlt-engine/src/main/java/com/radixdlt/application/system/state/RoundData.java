@@ -19,7 +19,6 @@
 package com.radixdlt.application.system.state;
 
 import com.google.common.base.Objects;
-import com.radixdlt.constraintmachine.Particle;
 
 import java.time.Instant;
 

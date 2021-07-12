@@ -18,7 +18,6 @@
 package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.Streams;
-import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.SubstateTypeId;

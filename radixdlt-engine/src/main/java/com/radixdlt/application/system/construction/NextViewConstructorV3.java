@@ -27,7 +27,6 @@ import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.KeyComparator;
 
-import java.util.Optional;
 import java.util.TreeMap;
 
 public class NextViewConstructorV3 implements ActionConstructor<NextRound> {

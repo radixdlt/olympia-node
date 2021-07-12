@@ -25,7 +25,6 @@ import com.radixdlt.environment.EventProcessorOnDispatch;
 
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 public final class FailOnEvent {
 	private FailOnEvent() {

@@ -26,7 +26,6 @@ import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 
-import java.util.Optional;
 import java.util.OptionalLong;
 
 public final class UpdateRakeConstructor implements ActionConstructor<UpdateValidatorFee> {

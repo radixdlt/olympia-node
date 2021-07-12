@@ -872,14 +872,9 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					buf.putInt(s.getRakePercentage());
 					REFieldSerialization.serializeREAddr(buf, s.getOwnerAddr());
 				},
-				buf -> {
-					var key = REFieldSerialization.deserializeKey(buf);
-					return ValidatorStakeData.createVirtual(key);
-				},
-				(k, buf) -> {
-					REFieldSerialization.serializeKey(buf, (ECPublicKey) k);
-					return ValidatorStakeData.createVirtual((ECPublicKey) k);
-				}
+				buf -> REFieldSerialization.deserializeKey(buf),
+				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
+				k -> ValidatorStakeData.createVirtual((ECPublicKey) k)
 			)
 		);
 		os.substate(

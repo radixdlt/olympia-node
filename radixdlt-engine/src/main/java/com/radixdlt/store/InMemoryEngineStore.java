@@ -18,7 +18,6 @@
 package com.radixdlt.store;
 
 import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.validators.state.ValidatorData;
