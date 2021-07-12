@@ -47,7 +47,6 @@ import org.apache.logging.log4j.Logger;
 import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Spliterator;
@@ -113,22 +112,6 @@ public final class TxBuilder {
 		return numResourcesCreated;
 	}
 
-	private <T extends Particle> T virtualDown(Class<T> substateClass, Object key) throws TxBuilderException {
-		var typeByte = deserialization.classToByte(substateClass);
-		var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
-		if (localParent.isPresent()) {
-			var pair = serialization.serializeVirtual(substateClass, key);
-			lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), pair.getSecond());
-			return pair.getFirst();
-		}
-
-		var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte)
-			.orElseThrow(() -> new TxBuilderException("Can't find parent with typeByte " + Bytes.toHexString(typeByte)));
-		var pair = serialization.serializeVirtual(substateClass, key);
-		lowLevelBuilder.virtualDown(parent.getId(), pair.getSecond());
-		return pair.getFirst();
-	}
-
 	public void down(SubstateId substateId) {
 		lowLevelBuilder.down(substateId);
 	}
@@ -139,10 +122,6 @@ public final class TxBuilder {
 
 	private void read(SubstateId substateId) {
 		lowLevelBuilder.read(substateId);
-	}
-
-	private void localRead(int index) {
-		lowLevelBuilder.localRead(index);
 	}
 
 	private <T extends Particle> T virtualRead(Class<T> substateClass, Object key) {
@@ -362,20 +341,25 @@ public final class TxBuilder {
 		}
 	}
 
+	// TODO: check if address is already claimed
+	public UnclaimedREAddr downREAddr(REAddr addr) throws TxBuilderException {
+		var pair = serialization.serializeVirtual(UnclaimedREAddr.class, addr);
+		var typeByte = deserialization.classToByte(UnclaimedREAddr.class);
+		var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
+		if (localParent.isPresent()) {
+			lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), pair.getSecond());
+		} else {
+			var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte)
+				.orElseThrow(() -> new TxBuilderException("Can't find parent with typeByte " + Bytes.toHexString(typeByte)));
 
-
-	public <T extends Particle> T down(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		Supplier<TxBuilderException> exceptionSupplier
-	) throws TxBuilderException {
-		return down(particleClass, particlePredicate, Optional.empty(), exceptionSupplier);
+			lowLevelBuilder.virtualDown(parent.getId(), pair.getSecond());
+		}
+		return pair.getFirst();
 	}
 
 	public <T extends Particle> T down(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		Optional<Object> keyToVirtual,
 		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
 		var localDown = lowLevelBuilder.localUpSubstate().stream()
@@ -402,14 +386,7 @@ public final class TxBuilder {
 				.peek(s -> this.down(s.getId()))
 				.map(Substate::getParticle)
 				.map(particleClass::cast)
-				.findFirst()
-				.or(() -> keyToVirtual.map(k -> {
-					try {
-						return this.virtualDown(particleClass, k);
-					} catch (TxBuilderException e) {
-						throw new RuntimeException(e);
-					}
-				}));
+				.findFirst();
 
 			if (substateDown.isEmpty()) {
 				throw exceptionSupplier.get();
@@ -665,12 +642,7 @@ public final class TxBuilder {
 		final var addr = REAddr.ofHashedKey(key, id);
 
 		lowLevelBuilder.syscall(Syscall.READDR_CLAIM, id.getBytes(StandardCharsets.UTF_8));
-		down(
-			UnclaimedREAddr.class,
-			p -> p.getAddr().equals(addr),
-			Optional.of(addr),
-			() -> new TxBuilderException("Address already claimed")
-		);
+		downREAddr(addr);
 		end();
 
 		return this;
