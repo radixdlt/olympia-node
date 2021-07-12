@@ -33,6 +33,7 @@ import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -447,7 +448,7 @@ public final class RadixEngine<M> {
 				}
 
 				@Override
-				public Optional<RawSubstateBytes> get(byte[] key) {
+				public Optional<RawSubstateBytes> get(SystemMapKey key) {
 					return engineStore.get(key);
 				}
 			};

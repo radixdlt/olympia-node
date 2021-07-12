@@ -19,10 +19,12 @@ package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.Streams;
 import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -269,9 +271,10 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public Optional<RawSubstateBytes> get(byte[] key) {
+	public Optional<RawSubstateBytes> get(SystemMapKey mapKey) {
+		var key = new DatabaseEntry(mapKey.array());
 		var substateId = new DatabaseEntry();
-		var result = mapDatabase.get(null, new DatabaseEntry(key), substateId, null);
+		var result = mapDatabase.get(null, key, substateId, null);
 		if (result != SUCCESS) {
 			return Optional.empty();
 		}
@@ -751,9 +754,22 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				resourceDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
 			} else if (stateUpdate.getParsed() instanceof ValidatorStakeData) {
 				var p = (ValidatorStakeData) stateUpdate.getParsed();
+				var mapKey = SystemMapKey.create(
+					SubstateTypeId.VALIDATOR_STAKE_DATA.id(),
+					p.getValidatorKey().getCompressedBytes()
+				);
+				var key = new DatabaseEntry(mapKey.array());
 				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
-				var e = new DatabaseEntry(p.getValidatorKey().getCompressedBytes());
-				mapDatabase.put(txn, e, value);
+				mapDatabase.put(txn, key, value);
+			} else if (stateUpdate.getParsed() instanceof ValidatorRegisteredCopy) {
+				var p = (ValidatorRegisteredCopy) stateUpdate.getParsed();
+				var mapKey = SystemMapKey.create(
+					SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(),
+					p.getValidatorKey().getCompressedBytes()
+				);
+				var key = new DatabaseEntry(mapKey.array());
+				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
+				mapDatabase.put(txn, key, value);
 			}
 		} else if (stateUpdate.isShutDown()) {
 			if (stateUpdate.getId().isVirtual()) {

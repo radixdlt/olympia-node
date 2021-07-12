@@ -77,12 +77,11 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 	private static ValidatorScratchPad loadValidatorStakeData(
 		TxBuilder txBuilder,
 		ECPublicKey k,
-		TreeMap<ECPublicKey, ValidatorScratchPad> validatorsToUpdate,
-		boolean canBeVirtual
+		TreeMap<ECPublicKey, ValidatorScratchPad> validatorsToUpdate
 	) throws TxBuilderException {
 		var scratchPad = validatorsToUpdate.get(k);
 		if (scratchPad == null) {
-			var validatorData = txBuilder.down(k);
+			var validatorData = txBuilder.down(ValidatorStakeData.class, k);
 			scratchPad = new ValidatorScratchPad(validatorData);
 			validatorsToUpdate.put(k, scratchPad);
 		}
@@ -113,7 +112,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		for (var e : preparing.entrySet()) {
 			var k = e.getKey();
 			var update = e.getValue();
-			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, true);
+			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
 			updater.accept(curValidator, update);
 			txBuilder.up(copy.apply(update));
 		}
@@ -176,7 +175,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 				continue;
 			}
 
-			var validatorStakeData = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, false);
+			var validatorStakeData = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
 			int rakePercentage = validatorStakeData.getRakePercentage();
 			final UInt256 rakedEmissions;
 			if (rakePercentage != 0) {
@@ -210,7 +209,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		});
 		for (var e : allPreparedUnstake.entrySet()) {
 			var k = e.getKey();
-			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, false);
+			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
 			var unstakes = e.getValue();
 			for (var entry : unstakes.entrySet()) {
 				var addr = entry.getKey();
@@ -236,7 +235,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		for (var e : allPreparedStake.entrySet()) {
 			var k = e.getKey();
 			var stakes = e.getValue();
-			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, true);
+			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
 			for (var entry : stakes.entrySet()) {
 				var addr = entry.getKey();
 				var amt = entry.getValue();

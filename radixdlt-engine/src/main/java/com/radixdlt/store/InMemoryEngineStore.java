@@ -20,8 +20,10 @@ package com.radixdlt.store;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.system.state.VirtualParent;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.SubstateIndex;
@@ -29,6 +31,7 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -50,7 +53,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	private final Object lock = new Object();
 	private final Map<SubstateId, REStateUpdate> storedState = new HashMap<>();
 	private final Map<REAddr, Supplier<ByteBuffer>> addrParticles = new HashMap<>();
-	private final Map<byte[], RawSubstateBytes> maps = new HashMap<>();
+	private final Map<SystemMapKey, RawSubstateBytes> maps = new HashMap<>();
 
 	@Override
 	public <R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException {
@@ -68,7 +71,18 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 								addrParticles.put(tokenDef.getAddr(), p::getStateBuf);
 							} else if (p.getParsed() instanceof ValidatorStakeData) {
 								var data = (ValidatorStakeData) p.getParsed();
-								maps.put(data.getValidatorKey().getCompressedBytes(), p.getRawSubstateBytes());
+								var mapKey = SystemMapKey.create(
+									SubstateTypeId.VALIDATOR_STAKE_DATA.id(),
+									data.getValidatorKey().getCompressedBytes()
+								);
+								maps.put(mapKey, p.getRawSubstateBytes());
+							} else if (p.getParsed() instanceof ValidatorRegisteredCopy) {
+								var data = (ValidatorRegisteredCopy) p.getParsed();
+								var mapKey = SystemMapKey.create(
+									SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(),
+									data.getValidatorKey().getCompressedBytes()
+								);
+								maps.put(mapKey, p.getRawSubstateBytes());
 							}
 						});
 				}
@@ -145,7 +159,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public Optional<RawSubstateBytes> get(byte[] key) {
+	public Optional<RawSubstateBytes> get(SystemMapKey key) {
 		return Optional.ofNullable(maps.get(key));
 	}
 

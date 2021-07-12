@@ -20,7 +20,7 @@ package com.radixdlt.atom;
 
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.constraintmachine.SystemMapKey;
 
 import java.util.Optional;
 
@@ -30,7 +30,7 @@ import java.util.Optional;
 public interface SubstateStore {
 
 	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index);
-	Optional<RawSubstateBytes> get(byte[] key);
+	Optional<RawSubstateBytes> get(SystemMapKey key);
 
 	static SubstateStore empty() {
 		return new SubstateStore() {
@@ -40,7 +40,7 @@ public interface SubstateStore {
 			}
 
 			@Override
-			public Optional<RawSubstateBytes> get(byte[] key) {
+			public Optional<RawSubstateBytes> get(SystemMapKey key) {
 				return Optional.empty();
 			}
 		};

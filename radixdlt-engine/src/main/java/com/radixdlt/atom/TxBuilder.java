@@ -35,6 +35,7 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateSerialization;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -262,50 +263,53 @@ public final class TxBuilder {
 		}
 	}
 
-	public ValidatorStakeData down(ECPublicKey key) throws TxBuilderException {
-		var raw = remoteSubstate.get(key.getCompressedBytes());
-		final ValidatorStakeData validatorStakeData;
+	public <T extends Particle> T down(Class<T> substateClass, Object key) throws TxBuilderException {
+		var pair = serialization.serializeVirtual(substateClass, key);
+		var typeByte = deserialization.classToByte(substateClass);
+		var mapKey = SystemMapKey.create(typeByte, pair.getSecond());
+		var raw = remoteSubstate.get(mapKey);
+
+		final T t;
 		if (raw.isPresent()) {
 			var rawSubstate = raw.get();
 			try {
-				validatorStakeData = (ValidatorStakeData) deserialization.deserialize(rawSubstate.getData());
+				t = (T) deserialization.deserialize(rawSubstate.getData());
 			} catch (DeserializeException e) {
 				throw new IllegalStateException();
 			}
 			down(SubstateId.fromBytes(rawSubstate.getId()));
 
 		} else {
-			var typeByte = deserialization.classToByte(ValidatorStakeData.class);
 			var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
 			if (localParent.isPresent()) {
-				var pair = serialization.serializeVirtual(ValidatorStakeData.class, key);
 				lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), pair.getSecond());
-				validatorStakeData = pair.getFirst();
 			} else {
 				var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte)
 					.orElseThrow(() -> new TxBuilderException("Can't find parent with typeByte " + Bytes.toHexString(typeByte)));
-				var pair = serialization.serializeVirtual(ValidatorStakeData.class, key);
 
 				lowLevelBuilder.virtualDown(parent.getId(), pair.getSecond());
-				validatorStakeData = pair.getFirst();
 			}
+			t = pair.getFirst();
 		}
-		return validatorStakeData;
+		return t;
 	}
 
 
-	public ValidatorStakeData read(ECPublicKey key) throws TxBuilderException {
-		var raw = remoteSubstate.get(key.getCompressedBytes());
+	public <T extends Particle> T read(Class<T> substateClass, Object key) throws TxBuilderException {
+		var pair = serialization.serializeVirtual(substateClass, key);
+		var typeByte = deserialization.classToByte(substateClass);
+		var raw = remoteSubstate.get(SystemMapKey.create(typeByte, pair.getSecond()));
+
 		if (raw.isPresent()) {
 			var rawSubstate = raw.get();
 			read(SubstateId.fromBytes(rawSubstate.getId()));
 			try {
-				return (ValidatorStakeData) deserialization.deserialize(rawSubstate.getData());
+				return (T) deserialization.deserialize(rawSubstate.getData());
 			} catch (DeserializeException e) {
 				throw new IllegalStateException();
 			}
 		} else {
-			return this.virtualRead(ValidatorStakeData.class, key);
+			return this.virtualRead(substateClass, key);
 		}
 	}
 
