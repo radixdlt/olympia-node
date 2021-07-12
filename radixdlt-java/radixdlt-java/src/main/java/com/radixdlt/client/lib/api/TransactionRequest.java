@@ -28,7 +28,7 @@ import com.radixdlt.client.lib.api.action.StakeAction;
 import com.radixdlt.client.lib.api.action.TransferAction;
 import com.radixdlt.client.lib.api.action.UnregisterValidatorAction;
 import com.radixdlt.client.lib.api.action.UnstakeAction;
-import com.radixdlt.client.lib.api.action.UpdateValidatorAction;
+import com.radixdlt.client.lib.api.action.UpdateValidatorMetadataAction;
 import com.radixdlt.client.lib.api.action.UpdateValidatorAllowDelegationFlagAction;
 import com.radixdlt.client.lib.api.action.UpdateValidatorFeeAction;
 import com.radixdlt.client.lib.api.action.UpdateValidatorOwnerAction;
@@ -123,8 +123,8 @@ public class TransactionRequest {
 			return this;
 		}
 
-		public TransactionRequestBuilder updateValidator(ValidatorAddress validator, Optional<String> name, Optional<String> url) {
-			actions.add(new UpdateValidatorAction(validator, name.orElse(null), url.orElse(null)));
+		public TransactionRequestBuilder updateValidatorMetadata(ValidatorAddress validator, Optional<String> name, Optional<String> url) {
+			actions.add(new UpdateValidatorMetadataAction(validator, name.orElse(null), url.orElse(null)));
 			return this;
 		}
 
