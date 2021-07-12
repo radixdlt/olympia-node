@@ -18,13 +18,11 @@
 
 package com.radixdlt.atom;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.scrypt.Syscall;
-import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokenResource;
@@ -265,7 +263,7 @@ public final class TxBuilder {
 	public <T extends Particle> T down(Class<T> substateClass, Object key) throws TxBuilderException {
 		var pair = serialization.serializeVirtual(substateClass, key);
 		var typeByte = deserialization.classToByte(substateClass);
-		var mapKey = SystemMapKey.create(typeByte, pair.getSecond());
+		var mapKey = SystemMapKey.ofValidatorData(typeByte, pair.getSecond());
 		var localMaybe = lowLevelBuilder.get(mapKey);
 		if (localMaybe.isPresent()) {
 			var local = localMaybe.get();
@@ -304,7 +302,7 @@ public final class TxBuilder {
 	public <T extends Particle> T read(Class<T> substateClass, Object key) throws TxBuilderException {
 		var pair = serialization.serializeVirtual(substateClass, key);
 		var typeByte = deserialization.classToByte(substateClass);
-		var mapKey = SystemMapKey.create(typeByte, pair.getSecond());
+		var mapKey = SystemMapKey.ofValidatorData(typeByte, pair.getSecond());
 		var localMaybe = lowLevelBuilder.get(mapKey);
 		if (localMaybe.isPresent()) {
 			var local = localMaybe.get();
@@ -323,6 +321,25 @@ public final class TxBuilder {
 			}
 		} else {
 			return this.virtualRead(substateClass, key);
+		}
+	}
+
+	public <T extends Particle> T readSystem(Class<T> substateClass) throws TxBuilderException {
+		var typeByte = deserialization.classToByte(substateClass);
+		var mapKey = SystemMapKey.ofSystem(typeByte);
+		var localMaybe = lowLevelBuilder.get(mapKey);
+		if (localMaybe.isPresent()) {
+			var local = localMaybe.get();
+			lowLevelBuilder.localRead(local.getIndex());
+			return (T) local.getParticle();
+		}
+
+		var rawSubstate = remoteSubstate.get(mapKey).orElseThrow();
+		read(SubstateId.fromBytes(rawSubstate.getId()));
+		try {
+			return (T) deserialization.deserialize(rawSubstate.getData());
+		} catch (DeserializeException e) {
+			throw new IllegalStateException();
 		}
 	}
 
@@ -377,47 +394,6 @@ public final class TxBuilder {
 
 			if (substateDown.isEmpty()) {
 				throw exceptionSupplier.get();
-			}
-
-			return substateDown.get();
-		}
-	}
-
-	public <T extends Particle> T read(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		Optional<Object> keyToVirtual,
-		String errorMessage
-	) throws TxBuilderException {
-		var localRead = lowLevelBuilder.localUpSubstate().stream()
-			.filter(s -> {
-				if (!particleClass.isInstance(s.getParticle())) {
-					return false;
-				}
-
-				return particlePredicate.test(particleClass.cast(s.getParticle()));
-			})
-			.peek(s -> this.localRead(s.getIndex()))
-			.map(LocalSubstate::getParticle)
-			.map(particleClass::cast)
-			.findFirst();
-
-		if (localRead.isPresent()) {
-			return localRead.get();
-		}
-
-		try (var cursor = createRemoteSubstateCursor(particleClass)) {
-			var substateDown = iteratorToStream(cursor)
-				.map(this::deserialize)
-				.filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
-				.peek(s -> this.read(s.getId()))
-				.map(Substate::getParticle)
-				.map(particleClass::cast)
-				.findFirst()
-				.or(() -> keyToVirtual.map(k -> this.virtualRead(particleClass, k)));
-
-			if (substateDown.isEmpty()) {
-				throw new TxBuilderException(errorMessage + " (Substate not found)");
 			}
 
 			return substateDown.get();

@@ -20,7 +20,7 @@ package com.radixdlt.atom;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.application.system.scrypt.Syscall;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
@@ -132,7 +132,11 @@ public final class TxLowLevelBuilder {
 		if (particle instanceof ValidatorData) {
 			var p = (ValidatorData) particle;
 			var b = serialization.classToByte(p.getClass());
-			var k = SystemMapKey.create(b, p.getValidatorKey().getCompressedBytes());
+			var k = SystemMapKey.ofValidatorData(b, p.getValidatorKey().getCompressedBytes());
+			this.localMapValues.put(k, localSubstate);
+		} else if (particle instanceof EpochData) {
+			var b = serialization.classToByte(particle.getClass());
+			var k = SystemMapKey.ofSystem(b);
 			this.localMapValues.put(k, localSubstate);
 		}
 		this.localUpParticles.put(upParticleCount, localSubstate);

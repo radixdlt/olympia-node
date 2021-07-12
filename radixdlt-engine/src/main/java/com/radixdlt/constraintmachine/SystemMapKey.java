@@ -18,6 +18,8 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.identifiers.REAddr;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -28,7 +30,12 @@ public final class SystemMapKey {
 		this.key = key;
 	}
 
-	public static SystemMapKey create(byte typeId, byte[] mapKey) {
+
+	public static SystemMapKey ofSystem(byte key) {
+		return new SystemMapKey(new byte[] { REAddr.REAddrType.SYSTEM.byteValue(), key});
+	}
+
+	public static SystemMapKey ofValidatorData(byte typeId, byte[] mapKey) {
 		var buf = ByteBuffer.allocate(2 + mapKey.length);
 		buf.put((byte) 2); // TODO: corresponds to REAddr addressing scheme
 		buf.put(typeId);

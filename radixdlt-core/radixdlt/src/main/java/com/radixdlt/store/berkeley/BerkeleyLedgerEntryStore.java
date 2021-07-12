@@ -18,10 +18,8 @@
 package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.Streams;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.validators.state.ValidatorData;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
@@ -754,21 +752,17 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				resourceDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
-			} else if (stateUpdate.getParsed() instanceof ValidatorStakeData) {
-				var p = (ValidatorStakeData) stateUpdate.getParsed();
-				var mapKey = SystemMapKey.create(
+			} else if (stateUpdate.getParsed() instanceof ValidatorData) {
+				var p = (ValidatorData) stateUpdate.getParsed();
+				var mapKey = SystemMapKey.ofValidatorData(
 					stateUpdate.getStateBuf().get(),
 					p.getValidatorKey().getCompressedBytes()
 				);
 				var key = new DatabaseEntry(mapKey.array());
 				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
 				mapDatabase.put(txn, key, value);
-			} else if (stateUpdate.getParsed() instanceof ValidatorData) {
-				var p = (ValidatorData) stateUpdate.getParsed();
-				var mapKey = SystemMapKey.create(
-					stateUpdate.getStateBuf().get(),
-					p.getValidatorKey().getCompressedBytes()
-				);
+			} else if (stateUpdate.getParsed() instanceof EpochData) {
+				var mapKey = SystemMapKey.ofSystem(stateUpdate.getStateBuf().get());
 				var key = new DatabaseEntry(mapKey.array());
 				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
 				mapDatabase.put(txn, key, value);

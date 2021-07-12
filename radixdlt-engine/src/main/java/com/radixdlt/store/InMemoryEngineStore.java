@@ -18,14 +18,11 @@
 package com.radixdlt.store;
 
 import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.VirtualParent;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorData;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.SubstateIndex;
@@ -36,7 +33,6 @@ import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 
@@ -73,10 +69,13 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 								addrParticles.put(tokenDef.getAddr(), update::getStateBuf);
 							} else if (update.getParsed() instanceof ValidatorData) {
 								var data = (ValidatorData) update.getParsed();
-								var mapKey = SystemMapKey.create(
+								var mapKey = SystemMapKey.ofValidatorData(
 									update.getStateBuf().get(),
 									data.getValidatorKey().getCompressedBytes()
 								);
+								maps.put(mapKey, update.getRawSubstateBytes());
+							} else if (update.getParsed() instanceof EpochData) {
+								var mapKey = SystemMapKey.ofSystem(update.getStateBuf().get());
 								maps.put(mapKey, update.getRawSubstateBytes());
 							}
 						});

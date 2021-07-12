@@ -54,7 +54,7 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
 		}
 
 		var epochDiff = isIncrease ? rakeIncreaseDebounceEpochLength : 1;
-		var curEpoch = builder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
+		var curEpoch = builder.readSystem(EpochData.class);
 		var epoch = curEpoch.getEpoch() + epochDiff;
 		builder.up(new ValidatorRakeCopy(
 			OptionalLong.of(epoch),

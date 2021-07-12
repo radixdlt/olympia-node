@@ -32,7 +32,7 @@ public final class UnregisterValidatorConstructor implements ActionConstructor<U
 	@Override
 	public void construct(UnregisterValidator action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.down(ValidatorRegisteredCopy.class, action.validatorKey());
-		var curEpoch = txBuilder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
+		var curEpoch = txBuilder.readSystem(EpochData.class);
 		txBuilder.up(new ValidatorRegisteredCopy(OptionalLong.of(curEpoch.getEpoch() + 1), action.validatorKey(), false));
 		txBuilder.end();
 	}

@@ -25,14 +25,13 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateValidatorOwner;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 
-import java.util.Optional;
 import java.util.OptionalLong;
 
 public class UpdateValidatorOwnerConstructor implements ActionConstructor<UpdateValidatorOwner> {
 	@Override
 	public void construct(UpdateValidatorOwner action, TxBuilder txBuilder) throws TxBuilderException {
 		txBuilder.down(ValidatorOwnerCopy.class, action.validatorKey());
-		var curEpoch = txBuilder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
+		var curEpoch = txBuilder.readSystem(EpochData.class);
 		txBuilder.up(new ValidatorOwnerCopy(
 			OptionalLong.of(curEpoch.getEpoch() + 1), action.validatorKey(), action.getOwnerAddress()
 		));
