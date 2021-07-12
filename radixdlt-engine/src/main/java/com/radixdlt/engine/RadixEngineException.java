@@ -31,10 +31,18 @@ public final class RadixEngineException extends Exception {
 
 	public RadixEngineException(int txnIndex, int batchSize, Txn txn, Exception cause) {
 		super("index=" + txnIndex + " batchSize=" + batchSize + " txnId=" + txn.getId()
-			+ " txn_size=" + txn.getPayload().length + (txn.getPayload().length < 5000 ? (" txn=" + Bytes.toHexString(txn.getPayload())) : ""), cause);
+			+ " txn_size=" + txn.getPayload().length + " txn=" + txnToString(txn), cause);
 		this.txn = txn;
 		this.txnIndex = txnIndex;
 		this.batchSize = batchSize;
+	}
+
+	private static String txnToString(Txn txn) {
+		if (txn.getPayload().length > 2048) {
+			return Bytes.toHexString(txn.getPayload()).substring(0, 2048) + "...";
+		} else {
+			return Bytes.toHexString(txn.getPayload());
+		}
 	}
 
 	public int getBatchSize() {

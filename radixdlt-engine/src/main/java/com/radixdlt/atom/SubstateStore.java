@@ -21,8 +21,6 @@ package com.radixdlt.atom;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateIndex;
 
-import java.util.NoSuchElementException;
-
 /**
  * Store which contains an index into up substates
  */

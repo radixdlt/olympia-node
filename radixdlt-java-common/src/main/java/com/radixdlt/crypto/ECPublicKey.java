@@ -60,7 +60,7 @@ public final class ECPublicKey {
 	}
 
 	private int computeHashCode() {
-		return Arrays.hashCode(uncompressedBytes.get());
+		return Arrays.hashCode(compressed);
 	}
 
 	public static ECPublicKey fromEcPoint(ECPoint ecPoint) {

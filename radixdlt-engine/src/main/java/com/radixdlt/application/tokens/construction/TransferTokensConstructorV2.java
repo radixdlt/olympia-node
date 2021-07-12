@@ -26,7 +26,6 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 
 import java.nio.ByteBuffer;
 
@@ -50,7 +49,9 @@ public class TransferTokensConstructorV2 implements ActionConstructor<TransferTo
 			action.amount(),
 			() -> new TxBuilderException("Not enough balance for transfer.")
 		);
-		txBuilder.up(new TokensInAccount(action.from(), action.resourceAddr(), change));
+		if (!change.isZero()) {
+			txBuilder.up(new TokensInAccount(action.from(), action.resourceAddr(), change));
+		}
 		txBuilder.up(new TokensInAccount(action.to(), action.resourceAddr(), action.amount()));
 		txBuilder.end();
 	}
