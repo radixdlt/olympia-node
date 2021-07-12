@@ -18,6 +18,7 @@
 package com.radixdlt.store;
 
 import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.validators.state.ValidatorData;
@@ -60,26 +61,38 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			public void storeTxn(Txn txn, List<REStateUpdate> stateUpdates) {
 				synchronized (lock) {
 					stateUpdates.forEach(i -> storedState.put(i.getId(), i));
-					stateUpdates.stream()
-						.filter(REStateUpdate::isBootUp)
-						.forEach(update -> {
-							// FIXME: Superhack
+					stateUpdates.forEach(update -> {
+						// FIXME: Superhack
+						if (update.isBootUp()) {
 							if (update.getParsed() instanceof TokenResource) {
 								var tokenDef = (TokenResource) update.getParsed();
 								addrParticles.put(tokenDef.getAddr(), update::getStateBuf);
 							} else if (update.getParsed() instanceof ValidatorData) {
 								var data = (ValidatorData) update.getParsed();
 								var mapKey = SystemMapKey.ofValidatorData(
-									update.getStateBuf().get(),
+									update.typeByte(),
 									data.getValidatorKey().getCompressedBytes()
 								);
 								maps.put(mapKey, update.getRawSubstateBytes());
 							} else if (update.getParsed() instanceof SystemData) {
-								var mapKey = SystemMapKey.ofSystem(update.getStateBuf().get());
+								var mapKey = SystemMapKey.ofSystem(update.typeByte());
 								maps.put(mapKey, update.getRawSubstateBytes());
 							}
-						});
-					}
+						} else if (update.isShutDown()) {
+							if (update.getParsed() instanceof ValidatorData) {
+								var data = (ValidatorData) update.getParsed();
+								var mapKey = SystemMapKey.ofValidatorData(
+									update.typeByte(),
+									data.getValidatorKey().getCompressedBytes()
+								);
+								maps.remove(mapKey);
+							} else if (update.getParsed() instanceof SystemData) {
+								var mapKey = SystemMapKey.ofSystem(update.typeByte());
+								maps.remove(mapKey);
+							}
+						}
+					});
+				}
 			}
 
 			@Override

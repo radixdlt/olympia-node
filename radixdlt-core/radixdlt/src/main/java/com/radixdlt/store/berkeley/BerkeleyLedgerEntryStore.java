@@ -755,23 +755,49 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			} else if (stateUpdate.getParsed() instanceof ValidatorData) {
 				var p = (ValidatorData) stateUpdate.getParsed();
 				var mapKey = SystemMapKey.ofValidatorData(
-					stateUpdate.getStateBuf().get(),
+					stateUpdate.typeByte(),
 					p.getValidatorKey().getCompressedBytes()
 				);
 				var key = new DatabaseEntry(mapKey.array());
 				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
-				mapDatabase.put(txn, key, value);
+				var result = mapDatabase.putNoOverwrite(txn, key, value);
+				if (result != SUCCESS) {
+					throw new IllegalStateException();
+				}
 			} else if (stateUpdate.getParsed() instanceof SystemData) {
-				var mapKey = SystemMapKey.ofSystem(stateUpdate.getStateBuf().get());
+				var mapKey = SystemMapKey.ofSystem(stateUpdate.typeByte());
 				var key = new DatabaseEntry(mapKey.array());
 				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
-				mapDatabase.put(txn, key, value);
+				var result = mapDatabase.putNoOverwrite(txn, key, value);
+				if (result != SUCCESS) {
+					throw new IllegalStateException();
+				}
 			}
 		} else if (stateUpdate.isShutDown()) {
 			if (stateUpdate.getId().isVirtual()) {
 				downVirtualSubstate(txn, stateUpdate.getId());
 			} else {
 				downSubstate(txn, stateUpdate.getId());
+
+				if (stateUpdate.getParsed() instanceof ValidatorData) {
+					var p = (ValidatorData) stateUpdate.getParsed();
+					var mapKey = SystemMapKey.ofValidatorData(
+						stateUpdate.typeByte(),
+						p.getValidatorKey().getCompressedBytes()
+					);
+					var key = new DatabaseEntry(mapKey.array());
+					var result = mapDatabase.delete(txn, key);
+					if (result != SUCCESS) {
+						throw new IllegalStateException();
+					}
+				} else if (stateUpdate.getParsed() instanceof SystemData) {
+					var mapKey = SystemMapKey.ofSystem(stateUpdate.typeByte());
+					var key = new DatabaseEntry(mapKey.array());
+					var result = mapDatabase.delete(txn, key);
+					if (result != SUCCESS) {
+						throw new IllegalStateException();
+					}
+				}
 			}
 		} else {
 			throw new IllegalStateException("Must bootup or shutdown to update particle: " + stateUpdate);
