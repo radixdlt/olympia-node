@@ -20,6 +20,7 @@ package com.radixdlt.store;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.system.state.VirtualParent;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
@@ -64,28 +65,28 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 					stateUpdates.forEach(i -> storedState.put(i.getId(), i));
 					stateUpdates.stream()
 						.filter(REStateUpdate::isBootUp)
-						.forEach(p -> {
+						.forEach(update -> {
 							// FIXME: Superhack
-							if (p.getParsed() instanceof TokenResource) {
-								var tokenDef = (TokenResource) p.getParsed();
-								addrParticles.put(tokenDef.getAddr(), p::getStateBuf);
-							} else if (p.getParsed() instanceof ValidatorStakeData) {
-								var data = (ValidatorStakeData) p.getParsed();
+							if (update.getParsed() instanceof TokenResource) {
+								var tokenDef = (TokenResource) update.getParsed();
+								addrParticles.put(tokenDef.getAddr(), update::getStateBuf);
+							} else if (update.getParsed() instanceof ValidatorStakeData) {
+								var data = (ValidatorStakeData) update.getParsed();
 								var mapKey = SystemMapKey.create(
-									SubstateTypeId.VALIDATOR_STAKE_DATA.id(),
+									update.getStateBuf().get(),
 									data.getValidatorKey().getCompressedBytes()
 								);
-								maps.put(mapKey, p.getRawSubstateBytes());
-							} else if (p.getParsed() instanceof ValidatorRegisteredCopy) {
-								var data = (ValidatorRegisteredCopy) p.getParsed();
+								maps.put(mapKey, update.getRawSubstateBytes());
+							} else if (update.getParsed() instanceof ValidatorRegisteredCopy) {
+								var data = (ValidatorRegisteredCopy) update.getParsed();
 								var mapKey = SystemMapKey.create(
-									SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(),
+									update.getStateBuf().get(),
 									data.getValidatorKey().getCompressedBytes()
 								);
-								maps.put(mapKey, p.getRawSubstateBytes());
+								maps.put(mapKey, update.getRawSubstateBytes());
 							}
 						});
-				}
+					}
 			}
 
 			@Override

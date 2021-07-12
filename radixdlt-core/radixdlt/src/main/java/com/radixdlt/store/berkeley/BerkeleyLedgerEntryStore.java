@@ -19,6 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.Streams;
 import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
@@ -755,7 +756,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			} else if (stateUpdate.getParsed() instanceof ValidatorStakeData) {
 				var p = (ValidatorStakeData) stateUpdate.getParsed();
 				var mapKey = SystemMapKey.create(
-					SubstateTypeId.VALIDATOR_STAKE_DATA.id(),
+					stateUpdate.getStateBuf().get(),
 					p.getValidatorKey().getCompressedBytes()
 				);
 				var key = new DatabaseEntry(mapKey.array());
@@ -764,7 +765,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			} else if (stateUpdate.getParsed() instanceof ValidatorRegisteredCopy) {
 				var p = (ValidatorRegisteredCopy) stateUpdate.getParsed();
 				var mapKey = SystemMapKey.create(
-					SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(),
+					stateUpdate.getStateBuf().get(),
 					p.getValidatorKey().getCompressedBytes()
 				);
 				var key = new DatabaseEntry(mapKey.array());
