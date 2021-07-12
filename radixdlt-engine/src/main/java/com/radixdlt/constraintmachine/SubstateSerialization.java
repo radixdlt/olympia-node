@@ -48,6 +48,14 @@ public final class SubstateSerialization {
 			));
 	}
 
+	public byte classToByte(Class<? extends Particle> substateClass) {
+		var b = this.classToTypeByte.get(substateClass);
+		if (b == null) {
+			throw new IllegalStateException("No serializer for substate: " + substateClass);
+		}
+		return b;
+	}
+
 	public byte[] serialize(Particle p) {
 		var serializer = classToSerializer.get(p.getClass());
 		if (serializer == null) {

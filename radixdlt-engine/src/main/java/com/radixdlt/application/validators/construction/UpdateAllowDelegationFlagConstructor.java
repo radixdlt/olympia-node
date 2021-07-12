@@ -24,23 +24,14 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 
-import java.util.List;
-import java.util.Optional;
-
 public class UpdateAllowDelegationFlagConstructor implements ActionConstructor<UpdateAllowDelegationFlag> {
 	@Override
 	public void construct(UpdateAllowDelegationFlag action, TxBuilder builder) throws TxBuilderException {
-		builder.swap(
-			AllowDelegationFlag.class,
-			p -> p.getValidatorKey().equals(action.validatorKey()) && p.allowsDelegation() != action.allowDelegation(),
-			Optional.of(action.validatorKey()),
-			() -> new TxBuilderException("Flag already set to " + action.allowDelegation())
-		).with(
-			substateDown -> List.of(new AllowDelegationFlag(
-				action.validatorKey(),
-				action.allowDelegation()
-			))
-		);
+		builder.down(AllowDelegationFlag.class, action.validatorKey());
+		builder.up(new AllowDelegationFlag(
+			action.validatorKey(),
+			action.allowDelegation()
+		));
 		builder.end();
 	}
 }

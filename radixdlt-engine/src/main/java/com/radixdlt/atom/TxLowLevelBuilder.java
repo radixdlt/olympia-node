@@ -21,6 +21,7 @@ package com.radixdlt.atom;
 import com.google.common.hash.HashCode;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateIndex;
@@ -128,9 +129,10 @@ public final class TxLowLevelBuilder {
 
 		var localSubstate = LocalSubstate.create(upParticleCount, particle);
 
-		if (particle instanceof AllowDelegationFlag) {
-			var p = (AllowDelegationFlag) particle;
-			var k = SystemMapKey.create(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id(), p.getValidatorKey().getCompressedBytes());
+		if (particle instanceof ValidatorData) {
+			var p = (ValidatorData) particle;
+			var b = serialization.classToByte(p.getClass());
+			var k = SystemMapKey.create(b, p.getValidatorKey().getCompressedBytes());
 			this.localMapValues.put(k, localSubstate);
 		}
 		this.localUpParticles.put(upParticleCount, localSubstate);

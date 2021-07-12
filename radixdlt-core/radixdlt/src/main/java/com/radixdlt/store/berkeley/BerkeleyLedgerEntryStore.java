@@ -20,6 +20,7 @@ package com.radixdlt.store.berkeley;
 import com.google.common.collect.Streams;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
@@ -762,17 +763,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var key = new DatabaseEntry(mapKey.array());
 				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
 				mapDatabase.put(txn, key, value);
-			} else if (stateUpdate.getParsed() instanceof ValidatorRegisteredCopy) {
-				var p = (ValidatorRegisteredCopy) stateUpdate.getParsed();
-				var mapKey = SystemMapKey.create(
-					stateUpdate.getStateBuf().get(),
-					p.getValidatorKey().getCompressedBytes()
-				);
-				var key = new DatabaseEntry(mapKey.array());
-				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
-				mapDatabase.put(txn, key, value);
-			} else if (stateUpdate.getParsed() instanceof AllowDelegationFlag) {
-				var p = (AllowDelegationFlag) stateUpdate.getParsed();
+			} else if (stateUpdate.getParsed() instanceof ValidatorData) {
+				var p = (ValidatorData) stateUpdate.getParsed();
 				var mapKey = SystemMapKey.create(
 					stateUpdate.getStateBuf().get(),
 					p.getValidatorKey().getCompressedBytes()

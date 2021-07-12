@@ -21,6 +21,7 @@ import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
@@ -70,22 +71,8 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 							if (update.getParsed() instanceof TokenResource) {
 								var tokenDef = (TokenResource) update.getParsed();
 								addrParticles.put(tokenDef.getAddr(), update::getStateBuf);
-							} else if (update.getParsed() instanceof ValidatorStakeData) {
-								var data = (ValidatorStakeData) update.getParsed();
-								var mapKey = SystemMapKey.create(
-									update.getStateBuf().get(),
-									data.getValidatorKey().getCompressedBytes()
-								);
-								maps.put(mapKey, update.getRawSubstateBytes());
-							} else if (update.getParsed() instanceof ValidatorRegisteredCopy) {
-								var data = (ValidatorRegisteredCopy) update.getParsed();
-								var mapKey = SystemMapKey.create(
-									update.getStateBuf().get(),
-									data.getValidatorKey().getCompressedBytes()
-								);
-								maps.put(mapKey, update.getRawSubstateBytes());
-							} else if (update.getParsed() instanceof AllowDelegationFlag) {
-								var data = (AllowDelegationFlag) update.getParsed();
+							} else if (update.getParsed() instanceof ValidatorData) {
+								var data = (ValidatorData) update.getParsed();
 								var mapKey = SystemMapKey.create(
 									update.getStateBuf().get(),
 									data.getValidatorKey().getCompressedBytes()
