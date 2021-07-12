@@ -18,6 +18,7 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
+import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxAction;
@@ -30,6 +31,8 @@ import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -38,6 +41,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.SubstateSerialization;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.engine.parser.REParser;
@@ -55,6 +59,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -390,6 +395,7 @@ public final class RadixEngine<M> {
 			} catch (TxnParseException | AuthorizationException | ConstraintMachineException e) {
 				throw new RadixEngineException(i, txns.size(), txn, e);
 			}
+
 			// Carry sigs left to the next transaction
 			sigsLeft = context.sigsLeft();
 
@@ -433,9 +439,18 @@ public final class RadixEngine<M> {
 
 	private TxBuilder construct(TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
-			SubstateStore filteredStore = b ->
-				engineStore.openIndexedCursor(b)
-					.filter(i -> !avoid.contains(SubstateId.fromBytes(i.getId())));
+			SubstateStore filteredStore = new SubstateStore() {
+				@Override
+				public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
+					return engineStore.openIndexedCursor(index)
+						.filter(i -> !avoid.contains(SubstateId.fromBytes(i.getId())));
+				}
+
+				@Override
+				public Optional<RawSubstateBytes> get(byte[] key) {
+					return engineStore.get(key);
+				}
+			};
 
 			var txBuilder = TxBuilder.newBuilder(
 				filteredStore,

@@ -80,16 +80,14 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		TreeMap<ECPublicKey, ValidatorScratchPad> validatorsToUpdate,
 		boolean canBeVirtual
 	) throws TxBuilderException {
-		if (!validatorsToUpdate.containsKey(k)) {
-			var validatorData = txBuilder.down(
-				ValidatorStakeData.class,
-				p -> p.getValidatorKey().equals(k),
-				canBeVirtual ? Optional.of(k) : Optional.empty(),
-				() -> new TxBuilderException("Validator not found")
-			);
-			validatorsToUpdate.put(k, new ValidatorScratchPad(validatorData));
+		var scratchPad = validatorsToUpdate.get(k);
+		if (scratchPad == null) {
+			var validatorData = txBuilder.down(k);
+			scratchPad = new ValidatorScratchPad(validatorData);
+			validatorsToUpdate.put(k, scratchPad);
 		}
-		return validatorsToUpdate.get(k);
+
+		return scratchPad;
 	}
 
 	private static <T extends ValidatorData, U extends ValidatorData> void prepare(

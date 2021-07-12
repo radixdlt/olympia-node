@@ -18,6 +18,7 @@
 package com.radixdlt.store;
 
 import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
@@ -30,6 +31,7 @@ import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 
@@ -48,6 +50,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	private final Object lock = new Object();
 	private final Map<SubstateId, REStateUpdate> storedState = new HashMap<>();
 	private final Map<REAddr, Supplier<ByteBuffer>> addrParticles = new HashMap<>();
+	private final Map<byte[], RawSubstateBytes> maps = new HashMap<>();
 
 	@Override
 	public <R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException {
@@ -63,6 +66,9 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 							if (p.getParsed() instanceof TokenResource) {
 								var tokenDef = (TokenResource) p.getParsed();
 								addrParticles.put(tokenDef.getAddr(), p::getStateBuf);
+							} else if (p.getParsed() instanceof ValidatorStakeData) {
+								var data = (ValidatorStakeData) p.getParsed();
+								maps.put(data.getValidatorKey().getCompressedBytes(), p.getRawSubstateBytes());
 							}
 						});
 				}
@@ -136,6 +142,11 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 		substates.sort(Comparator.comparing(RawSubstateBytes::getData, UnsignedBytes.lexicographicalComparator().reversed()));
 
 		return CloseableCursor.wrapIterator(substates.iterator());
+	}
+
+	@Override
+	public Optional<RawSubstateBytes> get(byte[] key) {
+		return Optional.ofNullable(maps.get(key));
 	}
 
 	public boolean contains(SubstateId substateId) {

@@ -18,6 +18,7 @@
 package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.Streams;
+import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
@@ -105,13 +106,14 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private final StoreConfig storeConfig;
 
 	// Engine Store databases
-	private static final String RESOURCE_DB_NAME = "radix.resource_db";
 	private static final String SUBSTATE_DB_NAME = "radix.substate_db";
-	private static final String VIRTUAL_STATE_DB_NAME = "radix.virtual_state_db";
+	private static final String RESOURCE_DB_NAME = "radix.resource_db";
+	private static final String MAP_DB_NAME = "radix.map_db";
 	private static final String INDEXED_SUBSTATE_DB_NAME = "radix.indexed_substate_db";
 	private Database substatesDatabase; // Write/Delete
 	private SecondaryDatabase indexedSubstatesDatabase; // Write/Delete
 	private Database resourceDatabase; // Write-only (Resources are immutable)
+	private Database mapDatabase;
 
 	// Metadata databases
 	private static final String TXN_ID_DB_NAME = "radix.txn_id_db";
@@ -147,6 +149,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	public void close() {
 		safeClose(txnDatabase);
 		safeClose(resourceDatabase);
+		safeClose(mapDatabase);
 
 		safeClose(txnIdDatabase);
 
@@ -265,6 +268,19 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return BerkeleyLedgerEntryStore.this.openIndexedCursor(null, index);
 	}
 
+	@Override
+	public Optional<RawSubstateBytes> get(byte[] key) {
+		var substateId = new DatabaseEntry();
+		var result = mapDatabase.get(null, new DatabaseEntry(key), substateId, null);
+		if (result != SUCCESS) {
+			return Optional.empty();
+		}
+
+		var substate = loadSubstate(null, SubstateId.fromBytes(substateId.getData())).orElseThrow();
+		var substateBytes = new RawSubstateBytes(substateId.getData(), substate.array());
+		return Optional.of(substateBytes);
+	}
+
 	private void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
 		withTime(() -> doStore(dbTxn, txn, stateUpdates), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
@@ -367,6 +383,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			txnDatabase = env.openDatabase(null, TXN_DB_NAME, primaryConfig);
 
 			resourceDatabase = env.openDatabase(null, RESOURCE_DB_NAME, rriConfig);
+			mapDatabase = env.openDatabase(null, MAP_DB_NAME, rriConfig);
 			substatesDatabase = env.openDatabase(null, SUBSTATE_DB_NAME, primaryConfig);
 
 			indexedSubstatesDatabase = env.openSecondaryDatabase(
@@ -732,6 +749,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				resourceDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
+			} else if (stateUpdate.getParsed() instanceof ValidatorStakeData) {
+				var p = (ValidatorStakeData) stateUpdate.getParsed();
+				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
+				var e = new DatabaseEntry(p.getValidatorKey().getCompressedBytes());
+				mapDatabase.put(txn, e, value);
 			}
 		} else if (stateUpdate.isShutDown()) {
 			if (stateUpdate.getId().isVirtual()) {

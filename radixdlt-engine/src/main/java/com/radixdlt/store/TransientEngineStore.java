@@ -10,6 +10,7 @@ import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 
@@ -92,5 +93,10 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 		return transientStore.openIndexedCursor(index)
 			.concat(() -> base.openIndexedCursor(index)
 				.filter(s -> !transientStore.contains(SubstateId.fromBytes(s.getId()))));
+	}
+
+	@Override
+	public Optional<RawSubstateBytes> get(byte[] key) {
+		return transientStore.get(key).or(() -> base.get(key));
 	}
 }

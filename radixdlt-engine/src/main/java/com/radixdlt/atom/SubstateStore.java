@@ -20,6 +20,9 @@ package com.radixdlt.atom;
 
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
+
+import java.util.Optional;
 
 /**
  * Store which contains an index into up substates
@@ -27,8 +30,19 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 public interface SubstateStore {
 
 	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index);
+	Optional<RawSubstateBytes> get(byte[] key);
 
 	static SubstateStore empty() {
-		return t -> CloseableCursor.empty();
+		return new SubstateStore() {
+			@Override
+			public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
+				return CloseableCursor.empty();
+			}
+
+			@Override
+			public Optional<RawSubstateBytes> get(byte[] key) {
+				return Optional.empty();
+			}
+		};
 	}
 }

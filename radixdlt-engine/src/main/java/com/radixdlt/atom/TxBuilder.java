@@ -18,11 +18,13 @@
 
 package com.radixdlt.atom;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokenResource;
@@ -40,6 +42,8 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
@@ -49,6 +53,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -59,6 +64,7 @@ import java.util.stream.StreamSupport;
  * Creates a transaction from high level user actions
  */
 public final class TxBuilder {
+	private static final Logger logger = LogManager.getLogger();
 	private final TxLowLevelBuilder lowLevelBuilder;
 	private final SubstateStore remoteSubstate;
 	private final SubstateDeserialization deserialization;
@@ -255,6 +261,55 @@ public final class TxBuilder {
 				.findFirst();
 		}
 	}
+
+	public ValidatorStakeData down(ECPublicKey key) throws TxBuilderException {
+		var raw = remoteSubstate.get(key.getCompressedBytes());
+		final ValidatorStakeData validatorStakeData;
+		if (raw.isPresent()) {
+			var rawSubstate = raw.get();
+			try {
+				validatorStakeData = (ValidatorStakeData) deserialization.deserialize(rawSubstate.getData());
+			} catch (DeserializeException e) {
+				throw new IllegalStateException();
+			}
+			down(SubstateId.fromBytes(rawSubstate.getId()));
+
+		} else {
+			var typeByte = deserialization.classToByte(ValidatorStakeData.class);
+			var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
+			if (localParent.isPresent()) {
+				var pair = serialization.serializeVirtual(ValidatorStakeData.class, key);
+				lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), pair.getSecond());
+				validatorStakeData = pair.getFirst();
+			} else {
+				var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte)
+					.orElseThrow(() -> new TxBuilderException("Can't find parent with typeByte " + Bytes.toHexString(typeByte)));
+				var pair = serialization.serializeVirtual(ValidatorStakeData.class, key);
+
+				lowLevelBuilder.virtualDown(parent.getId(), pair.getSecond());
+				validatorStakeData = pair.getFirst();
+			}
+		}
+		return validatorStakeData;
+	}
+
+
+	public ValidatorStakeData read(ECPublicKey key) throws TxBuilderException {
+		var raw = remoteSubstate.get(key.getCompressedBytes());
+		if (raw.isPresent()) {
+			var rawSubstate = raw.get();
+			read(SubstateId.fromBytes(rawSubstate.getId()));
+			try {
+				return (ValidatorStakeData) deserialization.deserialize(rawSubstate.getData());
+			} catch (DeserializeException e) {
+				throw new IllegalStateException();
+			}
+		} else {
+			return this.virtualRead(ValidatorStakeData.class, key);
+		}
+	}
+
+
 
 	public <T extends Particle> T down(
 		Class<T> particleClass,
