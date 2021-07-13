@@ -101,8 +101,8 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 		testNetworkRunner.addressBook(1).addUncheckedPeers(Set.of(uriOfNode(0)));
 
 		// ban node1 and node3 on node0
-		testNetworkRunner.getInstance(0, PeerControl.class).banPeer(uriOfNode(1).getNodeId(), Duration.ofHours(1));
-		testNetworkRunner.getInstance(0, PeerControl.class).banPeer(uriOfNode(3).getNodeId(), Duration.ofHours(1));
+		testNetworkRunner.getInstance(0, PeerControl.class).banPeer(uriOfNode(1).getNodeId(), Duration.ofHours(1), "");
+		testNetworkRunner.getInstance(0, PeerControl.class).banPeer(uriOfNode(3).getNodeId(), Duration.ofHours(1), "");
 
 		// try outbound connection (to node3)
 		final var channel1Future = testNetworkRunner.peerManager(0)
@@ -143,7 +143,7 @@ public final class PeerManagerTest extends DeterministicP2PNetworkTest {
 		assertEquals(1L, testNetworkRunner.peerManager(1).activeChannels().size());
 
 		// ban node0 on node1
-		testNetworkRunner.getInstance(1, PeerControl.class).banPeer(uriOfNode(0).getNodeId(), Duration.ofHours(1));
+		testNetworkRunner.getInstance(1, PeerControl.class).banPeer(uriOfNode(0).getNodeId(), Duration.ofHours(1), "");
 
 		processAll();
 
