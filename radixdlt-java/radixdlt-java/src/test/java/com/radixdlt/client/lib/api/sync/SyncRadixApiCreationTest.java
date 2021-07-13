@@ -162,7 +162,10 @@ public class SyncRadixApiCreationTest {
 	@Ignore
 	public void testCreateFixedSupplyToken() {
 		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
-			.createFixed(ACCOUNT_ADDRESS1, KEY_PAIR1.getPublicKey(), "fix", "fix", "fix", "https://some.host.com/", "https://some.other.host.com", amount(1000).tokens())
+			.createFixed(ACCOUNT_ADDRESS1, KEY_PAIR1.getPublicKey(),
+						 "fix", "fix", "fix",
+						 "https://some.host.com/", "https://some.other.host.com",
+						 amount(1000).tokens())
 			.build();
 
 		RadixApi.connect(BASE_URL)
