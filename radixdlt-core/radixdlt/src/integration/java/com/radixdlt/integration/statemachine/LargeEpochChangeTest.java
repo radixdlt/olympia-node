@@ -107,7 +107,7 @@ public class LargeEpochChangeTest {
 		var rt = Runtime.getRuntime();
 		logger.info("max mem: {}MB", rt.maxMemory() / 1024 / 1024);
 
-		long numStakes = 10000 * 3;
+		long numStakes = 10000 * 10;
 
 		createInjector().injectMembers(this);
 		// Arrange
@@ -154,12 +154,19 @@ public class LargeEpochChangeTest {
 			});
 
 		// Act
-		logger.info("constructing...");
+		construction.reset();
+		construction.start();
+		logger.info("constructing epoch...");
 		var txn = sut.construct(TxnConstructionRequest.create()
 			.action(new NextRound(10, true, 0, v -> TEST_KEY.getPublicKey()))
 			.action(new NextEpoch(1))
 		).buildWithoutSignature();
-		logger.info("preparing...");
+		construction.stop();
+		logger.info("epoch_construction: size={}MB time={}s", txn.getPayload().length / 1024 / 1024, construction.elapsed(TimeUnit.SECONDS));
+
+		construction.reset();
+		construction.start();
+		logger.info("preparing epoch...");
 		var result = sut.transientBranch().execute(List.of(txn), PermissionLevel.SUPER_USER);
 		sut.deleteBranches();
 		var nextValidatorSet = result.get(0).getEvents().stream()
@@ -171,12 +178,17 @@ public class LargeEpochChangeTest {
 					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
 			);
 		var stateUpdates = result.get(0).stateUpdates().count();
-		logger.info("epoch_txn size={} state_updates={}", txn.getPayload().length, stateUpdates);
+		construction.stop();
+		logger.info("epoch_preparation: state_updates={} time={}s", stateUpdates, construction.elapsed(TimeUnit.SECONDS));
+		construction.reset();
+		construction.start();
+		logger.info("executing epoch...");
 		var acc = new AccumulatorState(2 + 1 + numStakes, HashUtils.zero256());
 		var header = LedgerHeader.create(1, View.of(10), acc, 0, nextValidatorSet.orElseThrow());
 		var proof2 = new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
 		var result2 = this.sut.execute(List.of(txn), LedgerAndBFTProof.create(proof2), PermissionLevel.SUPER_USER);
-		logger.info("executed...");
+		construction.stop();
+		logger.info("epoch_execution: time={}s", construction.elapsed(TimeUnit.SECONDS));
 		for (var v : nextValidatorSet.orElseThrow().getValidators()) {
 			logger.info("validator {} {}", v.getNode(), v.getPower());
 		}
