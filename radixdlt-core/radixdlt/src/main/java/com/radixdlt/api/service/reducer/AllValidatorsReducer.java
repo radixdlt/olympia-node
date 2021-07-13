@@ -53,7 +53,7 @@ public final class AllValidatorsReducer {
 		return (prev, p) -> {
 			if (p instanceof ValidatorRegisteredCopy) {
 				var v = (ValidatorRegisteredCopy) p;
-				return prev.add(v.getValidatorKey());
+				return prev.setRegistered(v.getValidatorKey(), v.isRegistered());
 			} else if (p instanceof ValidatorMetaData) {
 				var s = (ValidatorMetaData) p;
 				return prev.set(s);

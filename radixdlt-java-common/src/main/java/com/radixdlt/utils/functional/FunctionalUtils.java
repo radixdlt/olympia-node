@@ -19,10 +19,14 @@ package com.radixdlt.utils.functional;
 
 import com.google.common.collect.ImmutableMap;
 
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public interface FunctionalUtils {
@@ -96,5 +100,59 @@ public interface FunctionalUtils {
 		return existingMap.entrySet().stream()
 			.filter(e -> !keyToRemove.equals(e.getKey()))
 			.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+	}
+
+	/**
+	 * Return copy of the input set with specified element removed.
+	 *
+	 * @param element element to remove
+	 * @param input input set
+	 *
+	 * @return new set with specified element removed
+	 */
+	static <T> Set<T> removeElement(T element, Set<T> input) {
+		return input.stream().filter(e -> !e.equals(element)).collect(Collectors.toSet());
+	}
+
+	/**
+	 * Return copy of the input set with provided element added.
+	 *
+	 * @param element element to add
+	 * @param input input set
+	 *
+	 * @return new set with provided element added
+	 */
+	static <T> Set<T> addElement(T element, Set<T> input) {
+		return Stream.concat(input.stream(), Stream.of(element)).collect(Collectors.toSet());
+	}
+
+	/**
+	 * Merge several sets into one.
+	 *
+	 * @param inputs sets to merge
+	 *
+	 * @return merged set
+	 */
+	@SafeVarargs
+	static <T> Set<T> mergeAll(Set<T>... inputs) {
+		var output = new HashSet<T>();
+
+		for (var input : inputs) {
+			output.addAll(input);
+		}
+
+		return Set.copyOf(output);
+	}
+
+	/**
+	 * Create new immutable map entry.
+	 *
+	 * @param key entry key
+	 * @param value entry value
+	 *
+	 * @return created entry
+	 */
+	static <K, V> Map.Entry<K, V> newEntry(K key, V value) {
+		return new SimpleImmutableEntry<>(key, value);
 	}
 }

@@ -17,8 +17,6 @@
 
 package com.radixdlt.api.service.reducer;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -32,6 +30,10 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.radixdlt.utils.functional.FunctionalUtils.addElement;
+import static com.radixdlt.utils.functional.FunctionalUtils.mergeAll;
+import static com.radixdlt.utils.functional.FunctionalUtils.newEntry;
+import static com.radixdlt.utils.functional.FunctionalUtils.removeElement;
 import static com.radixdlt.utils.functional.FunctionalUtils.removeKey;
 import static com.radixdlt.utils.functional.FunctionalUtils.replaceEntry;
 
@@ -45,7 +47,7 @@ public final class AllValidators {
 	private final Map<ECPublicKey, UInt256> stake;
 	private final Map<ECPublicKey, REAddr> owners;
 	private final Map<ECPublicKey, Boolean> delegationFlags;
-	private final Map<ECPublicKey, Integer> rakes;
+	private final Map<ECPublicKey, Integer> fees;
 	private final Set<ECPublicKey> registered;
 
 	private AllValidators(
@@ -54,14 +56,14 @@ public final class AllValidators {
 		Map<ECPublicKey, REAddr> owners,
 		Map<ECPublicKey, Boolean> delegationFlags,
 		Map<ECPublicKey, ValidatorMetaData> metadata,
-		Map<ECPublicKey, Integer> rakes
+		Map<ECPublicKey, Integer> fees
 	) {
 		this.registered = registered;
 		this.stake = stake;
 		this.owners = owners;
 		this.delegationFlags = delegationFlags;
 		this.metadata = metadata;
-		this.rakes = rakes;
+		this.fees = fees;
 	}
 
 	public static AllValidators create() {
@@ -69,55 +71,27 @@ public final class AllValidators {
 	}
 
 	public AllValidators set(ValidatorMetaData metaData) {
-		var nextMetadata = replaceEntry(Maps.immutableEntry(metaData.getValidatorKey(), metaData), metadata);
-		return new AllValidators(registered, stake, owners, delegationFlags, nextMetadata, rakes);
+		var newMetadata = replaceEntry(newEntry(metaData.getValidatorKey(), metaData), metadata);
+		return new AllValidators(
+			registered,
+			stake,
+			owners,
+			delegationFlags,
+			newMetadata,
+			fees
+		);
 	}
 
 	public AllValidators setRegistered(ECPublicKey validatorKey, boolean isRegistered) {
 		if (registered.contains(validatorKey) == isRegistered) {
 			return this;
 		}
+
 		if (!isRegistered) {
-			return new AllValidators(
-				registered.stream()
-					.filter(e -> !e.equals(validatorKey))
-					.collect(Collectors.toSet()),
-				stake,
-				owners,
-				delegationFlags,
-				metadata,
-				rakes
-			);
+			return new AllValidators(removeElement(validatorKey, registered), stake, owners, delegationFlags, metadata, fees);
 		} else {
-			var set = ImmutableSet.<ECPublicKey>builder()
-				.addAll(registered)
-				.add(validatorKey)
-				.build();
-
-			return new AllValidators(set, stake, owners, delegationFlags, metadata, rakes);
+			return new AllValidators(addElement(validatorKey, registered), stake, owners, delegationFlags, metadata, fees);
 		}
-	}
-
-	public AllValidators add(ECPublicKey validatorKey) {
-		var set = ImmutableSet.<ECPublicKey>builder()
-			.addAll(registered)
-			.add(validatorKey)
-			.build();
-
-		return new AllValidators(set, stake, owners, delegationFlags, metadata, rakes);
-	}
-
-	public AllValidators remove(ECPublicKey validatorKey) {
-		return new AllValidators(
-			registered.stream()
-				.filter(e -> !e.equals(validatorKey))
-				.collect(Collectors.toSet()),
-			stake,
-			owners,
-			delegationFlags,
-			metadata,
-			rakes
-		);
 	}
 
 	public ValidatorMetaData getMetadata(ECPublicKey validatorKey) {
@@ -147,26 +121,26 @@ public final class AllValidators {
 	}
 
 	private int getRake(ECPublicKey validatorKey) {
-		return ofNullable(rakes.get(validatorKey)).orElse(0);
+		return ofNullable(fees.get(validatorKey)).orElse(0);
 	}
 
 	public AllValidators setAllowDelegationFlag(ECPublicKey validatorKey, boolean allowDelegation) {
-		var nextFlags = replaceEntry(Maps.immutableEntry(validatorKey, allowDelegation), delegationFlags);
-		return new AllValidators(registered, stake, owners, nextFlags, metadata, rakes);
+		var nextFlags = replaceEntry(newEntry(validatorKey, allowDelegation), delegationFlags);
+		return new AllValidators(registered, stake, owners, nextFlags, metadata, fees);
 	}
 
 	public AllValidators setOwner(ECPublicKey validatorKey, REAddr owner) {
-		var nextOwners = replaceEntry(Maps.immutableEntry(validatorKey, owner), owners);
-		return new AllValidators(registered, stake, nextOwners, delegationFlags, metadata, rakes);
+		var nextOwners = replaceEntry(newEntry(validatorKey, owner), owners);
+		return new AllValidators(registered, stake, nextOwners, delegationFlags, metadata, fees);
 	}
 
 	public AllValidators setStake(ECPublicKey delegatedKey, UInt256 amount) {
-		var nextStake = replaceEntry(Maps.immutableEntry(delegatedKey, amount), stake);
-		return new AllValidators(registered, nextStake, owners, delegationFlags, metadata, rakes);
+		var nextStake = replaceEntry(newEntry(delegatedKey, amount), stake);
+		return new AllValidators(registered, nextStake, owners, delegationFlags, metadata, fees);
 	}
 
 	public AllValidators setRake(ECPublicKey validatorKey, int curRakePercentage) {
-		var nextRakes = replaceEntry(Maps.immutableEntry(validatorKey, curRakePercentage), rakes);
+		var nextRakes = replaceEntry(newEntry(validatorKey, curRakePercentage), fees);
 		return new AllValidators(registered, stake, owners, delegationFlags, metadata, nextRakes);
 	}
 
@@ -177,9 +151,9 @@ public final class AllValidators {
 		}
 
 		var nextAmount = stake.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
-		var nextStakedAmounts = replaceEntry(Maps.immutableEntry(delegatedKey, nextAmount), stake);
+		var nextStakedAmounts = replaceEntry(newEntry(delegatedKey, nextAmount), stake);
 
-		return new AllValidators(registered, nextStakedAmounts, owners, delegationFlags, metadata, rakes);
+		return new AllValidators(registered, nextStakedAmounts, owners, delegationFlags, metadata, fees);
 	}
 
 	public AllValidators remove(ECPublicKey delegatedKey, UInt256 amount) {
@@ -198,30 +172,27 @@ public final class AllValidators {
 			// remove stake
 			var nextStakedAmounts = removeKey(delegatedKey, stake);
 
-			return new AllValidators(registered, nextStakedAmounts, owners, delegationFlags, metadata, rakes);
+			return new AllValidators(registered, nextStakedAmounts, owners, delegationFlags, metadata, fees);
 		} else if (comparison < 0) {
 			// reduce stake
 			var nextAmount = oldAmount.subtract(amount);
-			var nextStakedAmounts = replaceEntry(Maps.immutableEntry(delegatedKey, nextAmount), stake);
+			var nextStakedAmounts = replaceEntry(newEntry(delegatedKey, nextAmount), stake);
 
-			return new AllValidators(registered, nextStakedAmounts, owners, delegationFlags, metadata, rakes);
+			return new AllValidators(registered, nextStakedAmounts, owners, delegationFlags, metadata, fees);
 		} else {
 			throw new IllegalStateException("Removing stake which doesn't exist.");
 		}
 	}
 
 	public <T> List<T> map(Function<ValidatorDetails, T> mapper) {
-		var validators = ImmutableSet.<ECPublicKey>builder()
-			.addAll(registered)
-			.addAll(metadata.keySet())
-			.addAll(stake.keySet())
-			.addAll(owners.keySet())
-			.addAll(delegationFlags.keySet())
-			.addAll(rakes.keySet())
-			.build();
-
-		return validators
-			.stream()
+		return mergeAll(
+			registered,
+			metadata.keySet(),
+			stake.keySet(),
+			owners.keySet(),
+			delegationFlags.keySet(),
+			fees.keySet()
+		).stream()
 			.map(this::fillDetails)
 			.map(mapper)
 			.collect(Collectors.toList());
@@ -233,7 +204,7 @@ public final class AllValidators {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(registered, stake, owners, rakes, delegationFlags, metadata);
+		return Objects.hash(registered, stake, owners, fees, delegationFlags, metadata);
 	}
 
 	@Override
@@ -247,7 +218,7 @@ public final class AllValidators {
 			&& Objects.equals(registered, other.registered)
 			&& Objects.equals(stake, other.stake)
 			&& Objects.equals(owners, other.owners)
-			&& Objects.equals(rakes, other.rakes)
+			&& Objects.equals(fees, other.fees)
 			&& Objects.equals(delegationFlags, other.delegationFlags);
 	}
 
