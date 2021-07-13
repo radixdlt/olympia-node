@@ -19,7 +19,6 @@
 package com.radixdlt.application.system.state;
 
 import com.radixdlt.application.validators.state.ValidatorData;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;

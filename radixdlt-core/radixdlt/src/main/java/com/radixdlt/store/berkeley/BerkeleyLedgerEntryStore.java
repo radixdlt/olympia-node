@@ -399,7 +399,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 							}
 
 							var substateTypeId = data.getData()[data.getOffset()];
-							var subType = data.getData()[data.getOffset() + 1];
 							final int prefixIndexSize;
 							if (substateTypeId == SubstateTypeId.TOKENS.id()) {
 								// Indexing not necessary for verification at the moment but useful for construction
@@ -407,7 +406,15 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2-37: Account Address
-								prefixIndexSize = 2 + 1 + ECPublicKey.COMPRESSED_BYTES;
+								prefixIndexSize = 2 + (1 + ECPublicKey.COMPRESSED_BYTES);
+							} else if (substateTypeId == SubstateTypeId.STAKE_OWNERSHIP.id()) {
+								// Indexing not necessary for verification at the moment but useful for construction
+
+								// 0: Type Byte
+								// 1: Reserved Byte
+								// 2-36: Validator Key
+								// 37-69: Account Address
+								prefixIndexSize = 2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES);
 							} else if (substateTypeId == SubstateTypeId.EXITTING_STAKE.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte

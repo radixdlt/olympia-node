@@ -19,12 +19,17 @@
 package com.radixdlt.application.tokens.construction;
 
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
+
+import java.nio.ByteBuffer;
 
 public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
 	@Override
@@ -38,13 +43,27 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 			.multiply(validatorStake.getTotalOwnership())
 			.divide(validatorStake.getAmount());
 
-		txBuilder.swapFungible(
-			StakeOwnership.class,
+		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES));
+		buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
+		buf.put((byte) 0);
+		buf.put(action.from().getCompressedBytes());
+		buf.put(action.accountAddr().getBytes());
+		if (buf.hasRemaining()) {
+			// Sanity
+			throw new IllegalStateException();
+		}
+
+		var index = SubstateIndex.create(buf.array(), StakeOwnership.class);
+		var change = txBuilder.downFungible(
+			index,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
-			amt -> new StakeOwnership(action.from(), action.accountAddr(), amt),
 			ownershipAmt,
-			() -> new TxBuilderException("Not enough staked")
-		).with(amt -> new PreparedUnstakeOwnership(action.from(), action.accountAddr(), amt));
+			() -> new TxBuilderException("Not enough balance for transfer.")
+		);
+		if (!change.isZero()) {
+			txBuilder.up(new StakeOwnership(action.from(), action.accountAddr(), change));
+		}
+		txBuilder.up(new PreparedUnstakeOwnership(action.from(), action.accountAddr(), ownershipAmt));
 		txBuilder.end();
 	}
 }

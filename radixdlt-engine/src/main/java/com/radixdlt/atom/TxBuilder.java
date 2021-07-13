@@ -19,7 +19,6 @@
 package com.radixdlt.atom;
 
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.scrypt.Syscall;
@@ -44,6 +43,7 @@ import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -449,14 +449,6 @@ public final class TxBuilder {
 		}
 	}
 
-	public interface FungibleMapper<U extends Particle> {
-		U map(UInt256 t) throws TxBuilderException;
-	}
-
-	public interface FungibleReplacer<U extends Particle> {
-		void with(FungibleMapper<U> mapper) throws TxBuilderException;
-	}
-
 	public <T extends ResourceInBucket> UInt256 downFungible(
 		SubstateIndex<T> index,
 		Predicate<T> particlePredicate,
@@ -507,21 +499,25 @@ public final class TxBuilder {
 	}
 
 	public <T extends ResourceInBucket> void putFeeReserve(
-		Predicate<TokensInAccount> particlePredicate,
-		FungibleMapper<T> remainderMapper,
+		REAddr feePayer,
 		UInt256 amount,
 		Supplier<TxBuilderException> exceptionSupplier
 	) throws TxBuilderException {
+		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
+		buf.put(SubstateTypeId.TOKENS.id());
+		buf.put((byte) 0);
+		buf.put(feePayer.getBytes());
+		var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
 		// Take
 		var remainder = downFungible(
-			SubstateIndex.create(deserialization.classToByte(TokensInAccount.class), TokensInAccount.class),
-			particlePredicate,
+			index,
+			p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(feePayer),
 			amount,
 			exceptionSupplier
 		);
 		lowLevelBuilder.syscall(Syscall.FEE_RESERVE_PUT, amount);
 		if (!remainder.isZero()) {
-			up(remainderMapper.map(remainder));
+			up(new TokensInAccount(feePayer, REAddr.ofNativeToken(), remainder));
 		}
 		this.feeReservePut = amount;
 	}
@@ -535,48 +531,6 @@ public final class TxBuilder {
 			up(new TokensInAccount(addr, REAddr.ofNativeToken(), amount));
 		}
 		this.feeReserveTake = this.feeReserveTake.add(amount);
-	}
-
-	private <T extends ResourceInBucket> void downFungible(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		FungibleMapper<T> remainderMapper,
-		UInt256 amount,
-		Supplier<TxBuilderException> exceptionSupplier
-	) throws TxBuilderException {
-		// Take
-		var remainder = downFungible(
-			SubstateIndex.create(deserialization.classToByte(particleClass), particleClass),
-			particlePredicate,
-			amount,
-			exceptionSupplier
-		);
-		if (!remainder.isZero()) {
-			up(remainderMapper.map(remainder));
-		}
-	}
-
-	public <T extends ResourceInBucket, U extends ResourceInBucket> FungibleReplacer<U> swapFungible(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		FungibleMapper<T> remainderMapper,
-		UInt256 amount,
-		Supplier<TxBuilderException> exceptionSupplier
-	) {
-		return mapper -> {
-			// Take
-			downFungible(
-				particleClass,
-				particlePredicate,
-				remainderMapper,
-				amount,
-				exceptionSupplier
-			);
-
-			// Put
-			var substateUp = mapper.map(amount);
-			up(substateUp);
-		};
 	}
 
 	public TxBuilder mutex(ECPublicKey key, String id) throws TxBuilderException {
