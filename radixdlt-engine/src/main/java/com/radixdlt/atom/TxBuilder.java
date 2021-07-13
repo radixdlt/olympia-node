@@ -198,7 +198,7 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends Particle> Optional<LocalSubstate> findLocalSubstate(
+	private <T extends Particle> Optional<LocalSubstate> findLocalSubstate(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate
 	) {
@@ -208,7 +208,7 @@ public final class TxBuilder {
 			.findFirst();
 	}
 
-	public <T extends Particle> Optional<Substate> findRemoteSubstate(
+	private <T extends Particle> Optional<Substate> findRemoteSubstate(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate
 	) {
@@ -221,19 +221,25 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends Particle> Optional<T> find(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate
-	) throws TxBuilderException {
-		try (var cursor = createRemoteSubstateCursor(particleClass)) {
-			return Streams.concat(
-				lowLevelBuilder.localUpSubstate().stream().map(LocalSubstate::getParticle),
-				iteratorToStream(cursor).map(this::deserialize).map(Substate::getParticle)
-			)
-				.filter(particleClass::isInstance)
-				.map(particleClass::cast)
-				.filter(particlePredicate)
-				.findFirst();
+	public <T extends Particle> T find(Class<T> substateClass, Object key) throws TxBuilderException {
+		var keyBytes = serialization.serializeKey(substateClass, key);
+		var typeByte = deserialization.classToByte(substateClass);
+		var mapKey = SystemMapKey.ofValidatorData(typeByte, keyBytes);
+		var localMaybe = lowLevelBuilder.get(mapKey);
+		if (localMaybe.isPresent()) {
+			return (T) localMaybe.get().getParticle();
+		}
+		var raw = remoteSubstate.get(mapKey);
+
+		if (raw.isPresent()) {
+			var rawSubstate = raw.get();
+			try {
+				return (T) deserialization.deserialize(rawSubstate.getData());
+			} catch (DeserializeException e) {
+				throw new IllegalStateException();
+			}
+		} else {
+			return serialization.mapVirtual(substateClass, key);
 		}
 	}
 
@@ -531,7 +537,7 @@ public final class TxBuilder {
 		this.feeReserveTake = this.feeReserveTake.add(amount);
 	}
 
-	public <T extends ResourceInBucket> void downFungible(
+	private <T extends ResourceInBucket> void downFungible(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
 		FungibleMapper<T> remainderMapper,

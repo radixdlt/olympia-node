@@ -29,9 +29,7 @@ import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
 	@Override
 	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
-		var validatorStake = txBuilder.find(ValidatorStakeData.class, v -> v.getValidatorKey().equals(action.from()))
-			.orElseThrow(() -> new TxBuilderException("Validator does not exist."));
-
+		var validatorStake = txBuilder.find(ValidatorStakeData.class, action.from());
 		if (action.amount().isZero()) {
 			throw new TxBuilderException("Unstake amount can't be zero.");
 		}
