@@ -23,6 +23,7 @@ import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.SubstateIndex;
@@ -66,6 +67,13 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 							if (update.getParsed() instanceof TokenResource) {
 								var tokenDef = (TokenResource) update.getParsed();
 								addrParticles.put(tokenDef.getAddr(), update::getStateBuf);
+							} else if (update.getParsed() instanceof VirtualParent) {
+								var p = (VirtualParent) update.getParsed();
+								var typeByte = p.getData()[0];
+								if (typeByte != SubstateTypeId.UNCLAIMED_READDR.id()) {
+									var mapKey = SystemMapKey.ofValidatorDataParent(typeByte);
+									maps.put(mapKey, update.getRawSubstateBytes());
+								}
 							} else if (update.getParsed() instanceof ValidatorData) {
 								var data = (ValidatorData) update.getParsed();
 								var mapKey = SystemMapKey.ofValidatorData(

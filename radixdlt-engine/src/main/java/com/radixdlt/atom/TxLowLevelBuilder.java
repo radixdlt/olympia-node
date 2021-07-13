@@ -21,6 +21,7 @@ package com.radixdlt.atom;
 import com.google.common.hash.HashCode;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.state.SystemData;
+import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
@@ -138,7 +139,15 @@ public final class TxLowLevelBuilder {
 			var b = serialization.classToByte(particle.getClass());
 			var k = SystemMapKey.ofSystem(b);
 			this.localMapValues.put(k, localSubstate);
+		} else if (particle instanceof VirtualParent) {
+			var p = (VirtualParent) particle;
+			var typeByte = p.getData()[0];
+			if (typeByte != SubstateTypeId.UNCLAIMED_READDR.id()) {
+				var k = SystemMapKey.ofValidatorDataParent(typeByte);
+				this.localMapValues.put(k, localSubstate);
+			}
 		}
+
 		this.localUpParticles.put(upParticleCount, localSubstate);
 
 		var buf = ByteBuffer.allocate(1024);

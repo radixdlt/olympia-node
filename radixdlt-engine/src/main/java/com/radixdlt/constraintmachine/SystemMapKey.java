@@ -35,6 +35,10 @@ public final class SystemMapKey {
 		return new SystemMapKey(new byte[] {REAddr.REAddrType.SYSTEM.byteValue(), key});
 	}
 
+	public static SystemMapKey ofValidatorDataParent(byte typeId) {
+		return new SystemMapKey(new byte[] {2, typeId});
+	}
+
 	public static SystemMapKey ofValidatorData(byte typeId, byte[] mapKey) {
 		var buf = ByteBuffer.allocate(2 + mapKey.length);
 		buf.put((byte) 2); // TODO: corresponds to REAddr addressing scheme

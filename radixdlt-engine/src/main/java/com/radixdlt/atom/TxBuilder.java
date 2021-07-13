@@ -233,7 +233,8 @@ public final class TxBuilder {
 
 
 	private void virtualReadDownInternal(byte typeByte, byte[] keyBytes, boolean down) {
-		var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
+		var mapKey = SystemMapKey.ofValidatorDataParent(typeByte);
+		var localParent = lowLevelBuilder.get(mapKey);
 		if (localParent.isPresent()) {
 			if (down) {
 				lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), keyBytes);
@@ -241,11 +242,12 @@ public final class TxBuilder {
 				lowLevelBuilder.localVirtualRead(localParent.get().getIndex(), keyBytes);
 			}
 		} else {
-			var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte).orElseThrow();
+			var parent = remoteSubstate.get(mapKey).orElseThrow();
+			var substateId = SubstateId.fromBytes(parent.getId());
 			if (down) {
-				lowLevelBuilder.virtualDown(parent.getId(), keyBytes);
+				lowLevelBuilder.virtualDown(substateId, keyBytes);
 			} else {
-				lowLevelBuilder.virtualRead(parent.getId(), keyBytes);
+				lowLevelBuilder.virtualRead(substateId, keyBytes);
 			}
 		}
 	}

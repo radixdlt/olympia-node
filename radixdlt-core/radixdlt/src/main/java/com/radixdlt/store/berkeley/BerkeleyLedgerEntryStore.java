@@ -19,6 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.Streams;
 import com.radixdlt.application.system.state.SystemData;
+import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
@@ -759,6 +760,18 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				resourceDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
+			} else if (stateUpdate.getParsed() instanceof VirtualParent) {
+				var p = (VirtualParent) stateUpdate.getParsed();
+				var typeByte = p.getData()[0];
+				if (typeByte != SubstateTypeId.UNCLAIMED_READDR.id()) {
+					var mapKey = SystemMapKey.ofValidatorDataParent(typeByte);
+					var key = new DatabaseEntry(mapKey.array());
+					var value = new DatabaseEntry(stateUpdate.getId().asBytes());
+					var result = mapDatabase.putNoOverwrite(txn, key, value);
+					if (result != SUCCESS) {
+						throw new IllegalStateException();
+					}
+				}
 			} else if (stateUpdate.getParsed() instanceof ValidatorData) {
 				var p = (ValidatorData) stateUpdate.getParsed();
 				var mapKey = SystemMapKey.ofValidatorData(
