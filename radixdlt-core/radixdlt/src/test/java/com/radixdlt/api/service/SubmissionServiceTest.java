@@ -194,8 +194,8 @@ public class SubmissionServiceTest {
 
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		var processed = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
-		var genesisValidatorSet = processed.get(0).getEvents().stream()
+		var result = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
+		var genesisValidatorSet = result.getProcessedTxns().get(0).getEvents().stream()
 			.filter(NextValidatorSetEvent.class::isInstance)
 			.map(NextValidatorSetEvent.class::cast)
 			.findFirst()

@@ -155,10 +155,10 @@ public class TransferTokensTest {
 		var to = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 		var transfer = this.engine.construct(new TransferToken(tokenAddr, accountAddr, to, transferAmt))
 			.signAndBuild(key::sign);
-		var processed = this.engine.execute(List.of(transfer));
+		var result = this.engine.execute(List.of(transfer));
 
 		// Assert
-		var accounting = REResourceAccounting.compute(processed.get(0).getGroupedStateUpdates().get(0));
+		var accounting = REResourceAccounting.compute(result.getProcessedTxn().getGroupedStateUpdates().get(0));
 		assertThat(accounting.bucketAccounting())
 			.hasSize(2)
 			.containsEntry(

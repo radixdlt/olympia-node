@@ -169,7 +169,7 @@ public class LargeEpochChangeTest {
 		logger.info("preparing epoch...");
 		var result = sut.transientBranch().execute(List.of(txn), PermissionLevel.SUPER_USER);
 		sut.deleteBranches();
-		var nextValidatorSet = result.get(0).getEvents().stream()
+		var nextValidatorSet = result.getProcessedTxn().getEvents().stream()
 			.filter(NextValidatorSetEvent.class::isInstance)
 			.map(NextValidatorSetEvent.class::cast)
 			.findFirst()
@@ -177,18 +177,29 @@ public class LargeEpochChangeTest {
 				e.nextValidators().stream()
 					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
 			);
-		var stateUpdates = result.get(0).stateUpdates().count();
+		var stateUpdates = result.getProcessedTxn().stateUpdates().count();
 		construction.stop();
-		logger.info("epoch_preparation: state_updates={} time={}s", stateUpdates, construction.elapsed(TimeUnit.SECONDS));
+		logger.info(
+			"epoch_preparation: state_updates={} verification_time={}s store_time={}s total_time={}s",
+			stateUpdates,
+			result.getVerificationTime() / 1000,
+			result.getStoreTime() / 1000,
+			construction.elapsed(TimeUnit.SECONDS)
+		);
 		construction.reset();
 		construction.start();
 		logger.info("executing epoch...");
 		var acc = new AccumulatorState(2 + 1 + numStakes, HashUtils.zero256());
 		var header = LedgerHeader.create(1, View.of(10), acc, 0, nextValidatorSet.orElseThrow());
 		var proof2 = new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
-		var result2 = this.sut.execute(List.of(txn), LedgerAndBFTProof.create(proof2), PermissionLevel.SUPER_USER);
+		var executionResult = this.sut.execute(List.of(txn), LedgerAndBFTProof.create(proof2), PermissionLevel.SUPER_USER);
 		construction.stop();
-		logger.info("epoch_execution: time={}s", construction.elapsed(TimeUnit.SECONDS));
+		logger.info(
+			"epoch_execution: verification_time={}s store_time={}s total_time={}s",
+			executionResult.getVerificationTime() / 1000,
+			executionResult.getStoreTime() / 1000,
+			construction.elapsed(TimeUnit.SECONDS)
+		);
 		for (var v : nextValidatorSet.orElseThrow().getValidators()) {
 			logger.info("validator {} {}", v.getNode(), v.getPower());
 		}

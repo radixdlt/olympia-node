@@ -50,6 +50,7 @@ import com.radixdlt.engine.MetadataException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.engine.RadixEngineResult;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.CommittedBadTxnException;
@@ -223,11 +224,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		final Txn systemUpdate;
-		final List<REProcessedTxn> txs;
+		final RadixEngineResult result;
 		try {
 			// TODO: combine construct/execute
 			systemUpdate = branch.construct(systemActions).buildWithoutSignature();
-			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
+			result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException | TxBuilderException e) {
 			throw new IllegalStateException(
 				String.format("Failed to execute system updates: %s", systemActions), e
@@ -235,7 +236,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 		return new RadixEngineTxn(
 			systemUpdate,
-			txs.get(0),
+			result.getProcessedTxn(),
 			PermissionLevel.SUPER_USER
 		);
 	}
@@ -256,16 +257,16 @@ public final class RadixEngineStateComputer implements StateComputer {
 		var numToProcess = Integer.min(nextTxns.size(), this.maxSigsPerRound.orElse(Integer.MAX_VALUE));
 		for (int i = 0; i < numToProcess; i++) {
 			var txn = nextTxns.get(i);
-			final List<REProcessedTxn> parsed;
+			final RadixEngineResult result;
 			try {
-				parsed = branch.execute(List.of(txn));
+				result = branch.execute(List.of(txn));
 			} catch (RadixEngineException e) {
 				errorBuilder.put(txn, e);
 				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedTxn.create(proposer.getKey(), txn, e));
 				return;
 			}
 
-			var radixEngineCommand = new RadixEngineTxn(txn, parsed.get(0), PermissionLevel.USER);
+			var radixEngineCommand = new RadixEngineTxn(txn, result.getProcessedTxn(), PermissionLevel.USER);
 			successBuilder.add(radixEngineCommand);
 		}
 	}
@@ -315,9 +316,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 		var proof = verifiedTxnsAndProof.getProof();
 		var ledgerAndBFTProof = LedgerAndBFTProof.create(proof, vertexStoreState);
 
-		final List<REProcessedTxn> radixEngineTxns;
+		final RadixEngineResult result;
 		try {
-			radixEngineTxns = this.radixEngine.execute(
+			result = this.radixEngine.execute(
 				verifiedTxnsAndProof.getTxns(),
 				ledgerAndBFTProof,
 				PermissionLevel.SUPER_USER
@@ -345,7 +346,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				});
 		}
 
-		radixEngineTxns.forEach(t -> {
+		result.getProcessedTxns().forEach(t -> {
 			if (t.isSystemOnly()) {
 				systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);
 			} else {
@@ -353,7 +354,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			}
 		});
 
-		return radixEngineTxns;
+		return result.getProcessedTxns();
 	}
 
 	@Override
