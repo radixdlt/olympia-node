@@ -124,18 +124,6 @@ public final class TxBuilder {
 		lowLevelBuilder.read(substateId);
 	}
 
-	private <T extends Particle> T virtualRead(Class<T> substateClass, Object key) {
-		var typeByte = deserialization.classToByte(substateClass);
-		var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
-		var keyBytes = serialization.serializeKey(substateClass, key);
-		if (localParent.isPresent()) {
-			lowLevelBuilder.localVirtualRead(localParent.get().getIndex(), keyBytes);
-		} else {
-			var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte).orElseThrow();
-			lowLevelBuilder.virtualRead(parent.getId(), keyBytes);
-		}
-		return serialization.mapVirtual(substateClass, key);
-	}
 
 	private CloseableCursor<RawSubstateBytes> createRemoteSubstateCursor(SubstateIndex<?> index) {
 		return remoteSubstate.openIndexedCursor(index)
@@ -243,70 +231,69 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends Particle> T down(Class<T> substateClass, Object key) throws TxBuilderException {
-		var keyBytes = serialization.serializeKey(substateClass, key);
-		var typeByte = deserialization.classToByte(substateClass);
-		var mapKey = SystemMapKey.ofValidatorData(typeByte, keyBytes);
-		var localMaybe = lowLevelBuilder.get(mapKey);
-		if (localMaybe.isPresent()) {
-			var local = localMaybe.get();
-			lowLevelBuilder.localDown(local.getIndex());
-			return (T) local.getParticle();
-		}
 
-		var raw = remoteSubstate.get(mapKey);
-
-		final T t;
-		if (raw.isPresent()) {
-			var rawSubstate = raw.get();
-			try {
-				t = (T) deserialization.deserialize(rawSubstate.getData());
-			} catch (DeserializeException e) {
-				throw new IllegalStateException();
-			}
-			down(SubstateId.fromBytes(rawSubstate.getId()));
-
-		} else {
-			var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
-			if (localParent.isPresent()) {
+	private void virtualReadDownInternal(byte typeByte, byte[] keyBytes, boolean down) {
+		var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
+		if (localParent.isPresent()) {
+			if (down) {
 				lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), keyBytes);
 			} else {
-				var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte)
-					.orElseThrow(() -> new TxBuilderException("Can't find parent with typeByte " + Bytes.toHexString(typeByte)));
-				lowLevelBuilder.virtualDown(parent.getId(), keyBytes);
+				lowLevelBuilder.localVirtualRead(localParent.get().getIndex(), keyBytes);
 			}
-			t = serialization.mapVirtual(substateClass, key);
+		} else {
+			var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte).orElseThrow();
+			if (down) {
+				lowLevelBuilder.virtualDown(parent.getId(), keyBytes);
+			} else {
+				lowLevelBuilder.virtualRead(parent.getId(), keyBytes);
+			}
 		}
-		return t;
 	}
 
-
-	public <T extends Particle> T read(Class<T> substateClass, Object key) throws TxBuilderException {
+	private <T extends Particle> T readDownInternal(Class<T> substateClass, Object key, boolean down) {
 		var keyBytes = serialization.serializeKey(substateClass, key);
 		var typeByte = deserialization.classToByte(substateClass);
 		var mapKey = SystemMapKey.ofValidatorData(typeByte, keyBytes);
 		var localMaybe = lowLevelBuilder.get(mapKey);
 		if (localMaybe.isPresent()) {
 			var local = localMaybe.get();
-			lowLevelBuilder.localRead(local.getIndex());
+			if (down) {
+				lowLevelBuilder.localDown(local.getIndex());
+			} else {
+				lowLevelBuilder.localRead(local.getIndex());
+			}
 			return (T) local.getParticle();
 		}
 
 		var raw = remoteSubstate.get(mapKey);
+
 		if (raw.isPresent()) {
 			var rawSubstate = raw.get();
-			read(SubstateId.fromBytes(rawSubstate.getId()));
+			if (down) {
+				down(SubstateId.fromBytes(rawSubstate.getId()));
+			} else {
+				read(SubstateId.fromBytes(rawSubstate.getId()));
+			}
 			try {
 				return (T) deserialization.deserialize(rawSubstate.getData());
 			} catch (DeserializeException e) {
 				throw new IllegalStateException();
 			}
 		} else {
-			return this.virtualRead(substateClass, key);
+			this.virtualReadDownInternal(typeByte, keyBytes, down);
+			return serialization.mapVirtual(substateClass, key);
 		}
 	}
 
-	public <T extends Particle> T downSystem(Class<T> substateClass) throws TxBuilderException {
+	public <T extends Particle> T down(Class<T> substateClass, Object key) {
+		return readDownInternal(substateClass, key, true);
+	}
+
+	public <T extends Particle> T read(Class<T> substateClass, Object key) {
+		return readDownInternal(substateClass, key, false);
+	}
+
+	public <T extends Particle> T downSystem(Class<T> substateClass) {
 		var typeByte = deserialization.classToByte(substateClass);
 		var mapKey = SystemMapKey.ofSystem(typeByte);
 		var localMaybe = lowLevelBuilder.get(mapKey);
