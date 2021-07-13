@@ -43,6 +43,7 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 			.multiply(validatorStake.getTotalOwnership())
 			.divide(validatorStake.getAmount());
 
+		// TODO: construct this in substate definition
 		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES));
 		buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
 		buf.put((byte) 0);

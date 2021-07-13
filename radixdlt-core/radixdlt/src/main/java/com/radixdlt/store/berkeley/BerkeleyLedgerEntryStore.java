@@ -748,6 +748,23 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return Optional.of(ByteBuffer.wrap(e.getData()));
 	}
 
+	private void insertIntoMapDatabaseOrFail(com.sleepycat.je.Transaction txn, SystemMapKey mapKey, SubstateId substateId) {
+		var key = new DatabaseEntry(mapKey.array());
+		var value = new DatabaseEntry(substateId.asBytes());
+		var result = mapDatabase.putNoOverwrite(txn, key, value);
+		if (result != SUCCESS) {
+			throw new IllegalStateException("Unable to insert into map database");
+		}
+	}
+
+	private void deleteFromMapDatabaseOrFail(com.sleepycat.je.Transaction txn, SystemMapKey mapKey) {
+		var key = new DatabaseEntry(mapKey.array());
+		var result = mapDatabase.delete(txn, key);
+		if (result != SUCCESS) {
+			throw new IllegalStateException("Unable to delete from map database");
+		}
+	}
+
 	private void executeStateUpdate(com.sleepycat.je.Transaction txn, REStateUpdate stateUpdate) {
 		if (stateUpdate.isBootUp()) {
 			var buf = stateUpdate.getStateBuf();
@@ -765,12 +782,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var typeByte = p.getData()[0];
 				if (typeByte != SubstateTypeId.UNCLAIMED_READDR.id()) {
 					var mapKey = SystemMapKey.ofValidatorDataParent(typeByte);
-					var key = new DatabaseEntry(mapKey.array());
-					var value = new DatabaseEntry(stateUpdate.getId().asBytes());
-					var result = mapDatabase.putNoOverwrite(txn, key, value);
-					if (result != SUCCESS) {
-						throw new IllegalStateException();
-					}
+					insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
 				}
 			} else if (stateUpdate.getParsed() instanceof ValidatorData) {
 				var p = (ValidatorData) stateUpdate.getParsed();
@@ -778,20 +790,10 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 					stateUpdate.typeByte(),
 					p.getValidatorKey().getCompressedBytes()
 				);
-				var key = new DatabaseEntry(mapKey.array());
-				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
-				var result = mapDatabase.putNoOverwrite(txn, key, value);
-				if (result != SUCCESS) {
-					throw new IllegalStateException();
-				}
+				insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
 			} else if (stateUpdate.getParsed() instanceof SystemData) {
 				var mapKey = SystemMapKey.ofSystem(stateUpdate.typeByte());
-				var key = new DatabaseEntry(mapKey.array());
-				var value = new DatabaseEntry(stateUpdate.getId().asBytes());
-				var result = mapDatabase.putNoOverwrite(txn, key, value);
-				if (result != SUCCESS) {
-					throw new IllegalStateException();
-				}
+				insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
 			}
 		} else if (stateUpdate.isShutDown()) {
 			if (stateUpdate.getId().isVirtual()) {
@@ -805,18 +807,10 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 						stateUpdate.typeByte(),
 						p.getValidatorKey().getCompressedBytes()
 					);
-					var key = new DatabaseEntry(mapKey.array());
-					var result = mapDatabase.delete(txn, key);
-					if (result != SUCCESS) {
-						throw new IllegalStateException();
-					}
+					deleteFromMapDatabaseOrFail(txn, mapKey);
 				} else if (stateUpdate.getParsed() instanceof SystemData) {
 					var mapKey = SystemMapKey.ofSystem(stateUpdate.typeByte());
-					var key = new DatabaseEntry(mapKey.array());
-					var result = mapDatabase.delete(txn, key);
-					if (result != SUCCESS) {
-						throw new IllegalStateException();
-					}
+					deleteFromMapDatabaseOrFail(txn, mapKey);
 				}
 			}
 		} else {

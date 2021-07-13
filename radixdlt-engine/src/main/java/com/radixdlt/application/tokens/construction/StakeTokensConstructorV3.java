@@ -47,6 +47,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 			throw new TxBuilderException("Minimum to stake is " + minimumStake + " but trying to stake " + action.amount());
 		}
 
+		// TODO: construct this based on substate definition
 		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
 		buf.put(SubstateTypeId.TOKENS.id());
 		buf.put((byte) 0);
@@ -67,9 +68,8 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 		var flag = builder.read(AllowDelegationFlag.class, action.to());
 
 		if (!flag.allowsDelegation()) {
-			final REAddr owner;
 			var validator = builder.read(ValidatorOwnerCopy.class, action.to());
-			owner = validator.getOwner();
+			var owner = validator.getOwner();
 			if (!action.from().equals(owner)) {
 				throw new TxBuilderException("Delegation flag is false and you are not the owner.");
 			}
