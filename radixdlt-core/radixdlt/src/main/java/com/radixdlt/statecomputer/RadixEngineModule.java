@@ -117,8 +117,6 @@ public class RadixEngineModule extends AbstractModule {
 			rules.getBatchVerifier()
 		);
 
-		radixEngine.addStateReducer(new CurrentValidatorsReducer(), false);
-
 		// Additional state reducers are not required for consensus so don't need to include their
 		// state in transient branches;
 		logger.info("RE - Initializing stateReducers: {} {}", stateReducers, namedStateReducers);
