@@ -27,13 +27,18 @@ public class FixedSupplyTokens extends AcceptanceTest {
     @When("I create a fixed supply token with name {string}")
     public void i_create_a_fixed_supply_token_with_name(String name) {
         txBuffer = account1.fixedSupplyToken("symbol", name, "description",
-            "www.icon-url.com", "www.token-url.com", Amount.ofTokens(200));
+            "https://www.icon.com", "https://www.url.com", Amount.ofTokens(200));
+    }
+
+    @Then("I can observe that the last token creation failed")
+    public void i_can_observe_that_the_last_token_creation_failed() {
+        throw new io.cucumber.java.PendingException();
     }
 
     @Then("I can observe that the token has been created, with the correct values")
     public void i_can_observe_that_the_token_has_been_created_with_the_correct_values() {
+        // TODO this returns "Other", so no assertions can be made
         TransactionDTO transaction = account1.lookup(txBuffer);
-        System.out.println(transaction); // TODO wip
     }
 
 }

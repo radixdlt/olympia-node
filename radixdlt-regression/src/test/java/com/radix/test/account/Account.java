@@ -5,6 +5,7 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
+import com.radixdlt.client.lib.api.sync.RadixApiException;
 import com.radixdlt.client.lib.dto.Balance;
 import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TokenInfo;
@@ -12,9 +13,11 @@ import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.CommonErrors;
 import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Failure;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -158,11 +161,12 @@ public final class Account implements ImperativeRadixApi, RadixAccount {
     @Override
     public AID stake(String validatorAddressString, Amount amount) {
         try {
+            // TODO hardcoded HRP might fail if this is used on another network
             ECPublicKey validatorPublicKey = ValidatorAddressing.bech32("dv").parse(validatorAddressString);
             ValidatorAddress validatorAddress = ValidatorAddress.of(validatorPublicKey);
             return TransactionUtils.stake(this, validatorAddress, amount);
         } catch (DeserializeException e) {
-            throw new RuntimeException(e); // TODO better exception
+            throw new RadixApiException(Failure.failure(CommonErrors.UNABLE_TO_DESERIALIZE.code(), e.getMessage()));
         }
     }
 

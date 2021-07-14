@@ -130,7 +130,7 @@ public final class TransactionUtils {
                 return status.getStatus().equals(TransactionStatus.CONFIRMED);
             });
         } catch (ConditionTimeoutException e) {
-            throw new TestFailureException("Transaction was not CONFRIMED within " + DEFAULT_TX_CONFIRMATION_PATIENCE);
+            throw new TestFailureException("Transaction was not CONFIRMED within " + DEFAULT_TX_CONFIRMATION_PATIENCE);
         }
     }
 

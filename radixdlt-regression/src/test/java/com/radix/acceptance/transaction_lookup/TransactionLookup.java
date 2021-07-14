@@ -6,6 +6,7 @@ import com.radix.test.TestFailureException;
 import com.radix.test.TransactionUtils;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.NavigationCursor;
+import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatus;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -15,9 +16,11 @@ import org.awaitility.Durations;
 
 import java.util.Collections;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -60,8 +63,18 @@ public class TransactionLookup extends AcceptanceTest {
 
     @Then("I can observe those {int} transactions in my transaction history")
     public void i_can_observe_those_transactions_in_my_transaction_history(Integer numOfExpectedTransactions) {
-        var history = account1.account().history(account1.getAddress(), 100, NavigationCursor.create(""));
-        var transactions = history.getTransactions().stream()
+        // wait until 5 transactions are visible in the history
+        var history = new AtomicReference<TransactionHistory>();
+        await().until(() -> {
+            var historyBuffer = account1.account().history(account1.getAddress(), 100, NavigationCursor.create(""));
+            if (historyBuffer.getTransactions().size() >= 5) {
+                history.set(historyBuffer);
+                return true;
+            }
+            return false;
+        });
+
+        var transactions = history.get().getTransactions().stream()
             .filter(transactionDTO -> transactionDTO.getActions().get(0).getFrom().get().equals(account1.getAddress()))
             .collect(Collectors.toList());
         assertEquals(numOfExpectedTransactions.intValue(), transactions.size());

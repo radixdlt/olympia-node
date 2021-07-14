@@ -20,7 +20,6 @@ package com.radix.acceptance.staking;
 import com.radix.acceptance.AcceptanceTest;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
-import com.radixdlt.identifiers.ValidatorAddressing;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -43,7 +42,7 @@ public class Staking extends AcceptanceTest {
 
     @Given("I have an account with funds at a suitable Radix network")
     public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
-        faucet(account1);
+        faucet(account1, Amount.ofTokens(120));
     }
 
     @When("I request validator information")
@@ -67,7 +66,7 @@ public class Staking extends AcceptanceTest {
         account1.stake(validatorsBuffer.get(0).getAddress(), Amount.ofTokens(stake));
     }
 
-    @Then("I observe that validator having {int}XRD more stake")
+    @Then("I observe that the validator has {int}XRD more stake")
     public void i_observe_that_validator_having_xrd_more_stake(int stake) {
         Amount expectedStake = Amount.ofTokens(5);
         var previousStake = validatorsBuffer.get(0).getTotalDelegatedStake();
