@@ -22,18 +22,20 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.DispatcherModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.StartProcessorOnRunner;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
-import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -123,12 +125,12 @@ public final class P2PTestNetworkRunner {
 								.toInstance(uri -> p2pNetwork.createChannel(selfNodeIndex, uri));
 							bind(P2PConfig.class).toInstance(p2pConfig);
 							bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
+							bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 						}
 					}
 				),
 				new PeerDiscoveryModule(),
 				new PeerLivenessMonitorModule(),
-				new DeterministicEnvironmentModule(),
 				new DispatcherModule(),
 				new AbstractModule() {
 					@Override
@@ -150,7 +152,7 @@ public final class P2PTestNetworkRunner {
 							Addressing.ofNetwork(Network.LOCALNET).forValidators().of(nodeKey.getPublicKey()).substring(0, 10)
 						);
 						bind(ECKeyOps.class).toInstance(ECKeyOps.fromKeyPair(nodeKey));
-						bind(ControlledSenderFactory.class).toInstance(network::createSender);
+						bind(Environment.class).toInstance(network.createSender(BFTNode.create(nodeKey.getPublicKey())));
 						bind(RuntimeProperties.class).toInstance(properties);
 						bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
 						bind(DeterministicProcessor.class);

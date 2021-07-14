@@ -55,7 +55,7 @@ public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
 				// TODO: Move this check into Meter
 				var stateUpdates = processed.getGroupedStateUpdates();
 				if (stateUpdates.get(stateUpdates.size() - 1).stream()
-					.noneMatch(u -> u.getRawSubstate() instanceof EpochData)) {
+					.noneMatch(u -> u.getParsed() instanceof EpochData)) {
 					throw new MetadataException("Epoch update is not the last execution.");
 				}
 

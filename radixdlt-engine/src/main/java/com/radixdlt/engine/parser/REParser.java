@@ -25,12 +25,11 @@ import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.constraintmachine.exceptions.TxnParseException;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
@@ -38,7 +37,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class REParser {
-	private static final int MAX_TXN_SIZE = 1024 * 1024;
 	private final SubstateDeserialization substateDeserialization;
 
 	public REParser(SubstateDeserialization substateDeserialization) {
@@ -56,20 +54,33 @@ public final class REParser {
 		private int upSubstateCount = 0;
 		private int substateUpdateCount = 0;
 		private int endCount = 0;
+		private int position = 0;
 		private boolean disableResourceAllocAndDestroy = false;
 
 		ParserState(Txn txn) {
 			this.txn = txn;
 		}
 
+		public List<REInstruction> instructions() {
+			return instructions;
+		}
+
 		void header(boolean disableResourceAllocAndDestroy) throws TxnParseException {
 			if (instructions.size() != 1) {
-				throw new TxnParseException("Header must be first");
+				throw new TxnParseException(this, "Header must be first");
 			}
 			this.disableResourceAllocAndDestroy = disableResourceAllocAndDestroy;
 		}
 
 		void read() {
+		}
+
+		void pos(int curPos) {
+			this.position = curPos;
+		}
+
+		public int curPosition() {
+			return this.position;
 		}
 
 		void nextInstruction(REInstruction inst) {
@@ -90,7 +101,7 @@ public final class REParser {
 
 		void msg(byte[] msg) throws TxnParseException {
 			if (this.msg != null) {
-				throw new TxnParseException("Too many messages");
+				throw new TxnParseException(this, "Too many messages");
 			}
 			this.msg = msg;
 		}
@@ -104,7 +115,7 @@ public final class REParser {
 
 		void end() throws TxnParseException {
 			if (substateUpdateCount == 0) {
-				throw new TxnParseException("Empty group");
+				throw new TxnParseException(this, "Empty group");
 			}
 			endCount++;
 			substateUpdateCount = 0;
@@ -112,21 +123,17 @@ public final class REParser {
 
 		void finish() throws TxnParseException {
 			if (substateUpdateCount != 0) {
-				throw new TxnParseException("Missing end");
+				throw new TxnParseException(this, "Missing end");
 			}
 
 			if (endCount == 0) {
-				throw new TxnParseException("No state updates");
+				throw new TxnParseException(this, "No state updates");
 			}
 		}
 	}
 
 	@SuppressWarnings("rawtypes")
 	public ParsedTxn parse(Txn txn) throws TxnParseException {
-		if (txn.getPayload().length > MAX_TXN_SIZE) {
-			throw new TxnParseException("Transaction is too big: " + txn.getPayload().length + " > " + MAX_TXN_SIZE);
-		}
-
 		UInt256 feePaid = null;
 		ECDSASignature sig = null;
 		int sigPosition = 0;
@@ -135,15 +142,16 @@ public final class REParser {
 		var buf = ByteBuffer.wrap(txn.getPayload());
 		while (buf.hasRemaining()) {
 			if (sig != null) {
-				throw new TxnParseException("Signature must be last");
+				throw new TxnParseException(parserState, "Signature must be last");
 			}
 
 			int curPos = buf.position();
+			parserState.pos(curPos);
 			final REInstruction inst;
 			try {
-				inst = REInstruction.readFrom(parserState, buf, substateDeserialization);
-			} catch (DeserializeException e) {
-				throw new TxnParseException("Could not read instruction", e);
+				inst = REInstruction.readFrom(parserState, buf);
+			} catch (Exception e) {
+				throw new TxnParseException(parserState, "Could not read instruction", e);
 			}
 			parserState.nextInstruction(inst);
 
@@ -157,32 +165,34 @@ public final class REParser {
 				try {
 					CallData callData = inst.getData();
 					byte id = callData.get(0);
-					var syscall = Syscall.of(id).orElseThrow(() -> new TxnParseException("Invalid call data type: " + id));
+					var syscall = Syscall.of(id).orElseThrow(() -> new TxnParseException(parserState, "Invalid call data type: " + id));
 
 					switch (syscall) {
 						case FEE_RESERVE_PUT:
 							if (feePaid != null) {
-								throw new TxnParseException("Should only pay fees once.");
+								throw new TxnParseException(parserState, "Should only pay fees once.");
 							}
 							feePaid = callData.getUInt256(1);
 							break;
 						case FEE_RESERVE_TAKE:
 							if (feePaid == null) {
-								throw new TxnParseException("No fees paid");
+								throw new TxnParseException(parserState, "No fees paid");
 							}
 							var takeAmount = callData.getUInt256(1);
 							if (takeAmount.compareTo(feePaid) > 0) {
-								throw new TxnParseException("Trying to take more fees than paid");
+								throw new TxnParseException(parserState, "Trying to take more fees than paid");
 							}
 							feePaid = feePaid.subtract(takeAmount);
+							break;
+						case READDR_CLAIM:
 							break;
 						// TODO: Need to rethink how stateless verification occurs here
 						// TODO: Along with FeeConstraintScrypt.java
 						default:
-							throw new TxnParseException("Invalid call data type: " + id);
+							throw new TxnParseException(parserState, "Invalid call data type: " + id);
 					}
 				} catch (CallDataAccessException e) {
-					throw new TxnParseException(e);
+					throw new TxnParseException(parserState, e);
 				}
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.MSG) {
 				parserState.msg(inst.getData());
@@ -192,7 +202,7 @@ public final class REParser {
 				sigPosition = curPos;
 				sig = inst.getData();
 			} else {
-				throw new TxnParseException("Unknown CM Op " + inst.getMicroOp());
+				throw new TxnParseException(parserState, "Unknown CM Op " + inst.getMicroOp());
 			}
 		}
 
@@ -202,9 +212,9 @@ public final class REParser {
 		if (sig != null) {
 			var hash = HashUtils.sha256(txn.getPayload(), 0, sigPosition); // This is a double hash
 			pubKey = ECPublicKey.recoverFrom(hash, sig)
-				.orElseThrow(() -> new TxnParseException("Invalid signature"));
+				.orElseThrow(() -> new TxnParseException(parserState, "Invalid signature"));
 			if (!pubKey.verify(hash, sig)) {
-				throw new TxnParseException("Invalid signature");
+				throw new TxnParseException(parserState, "Invalid signature");
 			}
 		} else {
 			pubKey = null;

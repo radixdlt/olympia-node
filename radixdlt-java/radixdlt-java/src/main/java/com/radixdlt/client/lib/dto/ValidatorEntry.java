@@ -24,7 +24,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-public class ValidatorEntry {
+public final class ValidatorEntry {
 	private final UInt256 stake;
 	private final ValidatorAddress address;
 

@@ -18,11 +18,10 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateId;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -30,34 +29,32 @@ import java.util.function.Supplier;
  */
 public final class REStateUpdate {
 	private final REOp op;
-	private final Substate substate;
-	private final byte[] arg;
+	private final SubstateId id;
 	private final Supplier<ByteBuffer> stateBuf;
+	private final Object parsed;
 
-	private REStateUpdate(REOp op, Substate substate, byte[] arg, Supplier<ByteBuffer> stateBuf) {
+	private REStateUpdate(REOp op, SubstateId id, Supplier<ByteBuffer> stateBuf, Object parsed) {
 		Objects.requireNonNull(op);
-		Objects.requireNonNull(substate);
 
 		this.op = op;
-		this.substate = substate;
-		this.arg = arg;
+		this.id = id;
 		this.stateBuf = stateBuf;
+		this.parsed = parsed;
 	}
 
-	public static REStateUpdate of(REOp op, Substate substate, byte[] arg, Supplier<ByteBuffer> stateBuf) {
-		return new REStateUpdate(op, substate, arg, stateBuf);
+	public static REStateUpdate of(REOp op, SubstateId substateId, Supplier<ByteBuffer> stateBuf, Object parsed) {
+		if (op != REOp.DOWN && op != REOp.UP) {
+			throw new IllegalArgumentException();
+		}
+		return new REStateUpdate(op, substateId, stateBuf, parsed);
+	}
+
+	public SubstateId getId() {
+		return id;
 	}
 
 	public ByteBuffer getStateBuf() {
 		return stateBuf.get();
-	}
-
-	public Optional<byte[]> getArg() {
-		return Optional.ofNullable(arg);
-	}
-
-	public REOp getOp() {
-		return op;
 	}
 
 	public boolean isBootUp() {
@@ -68,8 +65,8 @@ public final class REStateUpdate {
 		return this.op == REOp.DOWN;
 	}
 
-	public Substate getSubstate() {
-		return substate;
+	public Object getParsed() {
+		return parsed;
 	}
 
 	public RawSubstateBytes getRawSubstateBytes() {
@@ -77,15 +74,11 @@ public final class REStateUpdate {
 		int remaining = buffer.remaining();
 		var buf = new byte[remaining];
 		buffer.get(buf);
-		return new RawSubstateBytes(substate.getId().asBytes(), buf);
-	}
-
-	public Particle getRawSubstate() {
-		return substate.getParticle();
+		return new RawSubstateBytes(id.asBytes(), buf);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{op=%s state=%s}", getClass().getSimpleName(), op, substate);
+		return String.format("%s{op=%s state=%s}", getClass().getSimpleName(), op, parsed);
 	}
 }

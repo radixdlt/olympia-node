@@ -20,25 +20,30 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.constraintmachine.meter.Meter;
 
-import java.util.function.Predicate;
-
 public final class ConstraintMachineConfig {
-	private final Predicate<Particle> virtualStoreLayer;
 	private final Procedures procedures;
+	private final SubstateDeserialization deserialization;
+	private final VirtualSubstateDeserialization virtualSubstateDeserialization;
 	private final Meter metering;
 
 	public ConstraintMachineConfig(
-		Predicate<Particle> virtualStoreLayer,
 		Procedures procedures,
+		SubstateDeserialization deserialization,
+		VirtualSubstateDeserialization virtualSubstateDeserialization,
 		Meter metering
 	) {
-		this.virtualStoreLayer = virtualStoreLayer;
 		this.procedures = procedures;
+		this.deserialization = deserialization;
+		this.virtualSubstateDeserialization = virtualSubstateDeserialization;
 		this.metering = metering;
 	}
 
-	public Predicate<Particle> getVirtualStoreLayer() {
-		return virtualStoreLayer;
+	public SubstateDeserialization getDeserialization() {
+		return deserialization;
+	}
+
+	public VirtualSubstateDeserialization getVirtualSubstateDeserialization() {
+		return virtualSubstateDeserialization;
 	}
 
 	public Procedures getProcedures() {
@@ -49,9 +54,4 @@ public final class ConstraintMachineConfig {
 		return metering;
 	}
 
-	public ConstraintMachineConfig metering(Meter metering) {
-		return new ConstraintMachineConfig(
-			virtualStoreLayer, procedures, metering
-		);
-	}
 }

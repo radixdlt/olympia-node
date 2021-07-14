@@ -12,6 +12,8 @@ pub struct Boolean {
     pub raw: u8,
 }
 
+pub type Size = u16;
+
 /// Unsigned 256-bit integer
 #[derive(Debug)]
 pub struct U256 {
@@ -20,14 +22,15 @@ pub struct U256 {
 
 /// Byte array of variable length
 pub struct Bytes {
-    pub length: u8,
+    pub length: Size,
     pub data: Vec<u8>,
 }
 
 /// UTF-8 string
 #[derive(Debug)]
 pub struct UTF8 {
-    pub raw: String,
+    pub length: Size,
+    pub data: String,
 }
 
 /// Hash value
@@ -52,6 +55,20 @@ pub struct Signature {
 pub struct SubstateId {
     pub hash: Hash,
     pub index: u32,
+}
+
+pub type SubstateIndex = u16;
+
+/// Virtual Substate ID
+pub struct VirtualSubstateID {
+    pub length: Size,
+    pub data: Vec<u8>,
+}
+
+/// Virtual Substate ID
+pub struct LocalVirtualSubstateID {
+    pub length: Size,
+    pub data: Vec<u8>,
 }
 
 /// Radix Engine address
@@ -95,7 +112,7 @@ impl U256 {
 
 impl Bytes {
     pub fn from_buffer(buffer: &mut ByteBuffer) -> Self {
-        let length = buffer.read_u8();
+        let length = buffer.read_u16();
         let data = buffer.read_bytes(length as usize);
         Self { length, data }
     }
@@ -103,10 +120,11 @@ impl Bytes {
 
 impl UTF8 {
     pub fn from_buffer(buffer: &mut ByteBuffer) -> Self {
-        let length = buffer.read_u8();
+        let length = buffer.read_u16();
         let data = buffer.read_bytes(length as usize);
         Self {
-            raw: str::from_utf8(&data).unwrap().to_owned(),
+            length,
+            data: str::from_utf8(&data).unwrap().to_owned(),
         }
     }
 }
@@ -143,6 +161,22 @@ impl SubstateId {
             hash: Hash::from_buffer(buffer),
             index: buffer.read_u32(),
         }
+    }
+}
+
+impl VirtualSubstateID {
+    pub fn from_buffer(buffer: &mut ByteBuffer) -> Self {
+        let length = buffer.read_u16();
+        let data = buffer.read_bytes(length as usize);
+        Self { length, data }
+    }
+}
+
+impl LocalVirtualSubstateID {
+    pub fn from_buffer(buffer: &mut ByteBuffer) -> Self {
+        let length = buffer.read_u16();
+        let data = buffer.read_bytes(length as usize);
+        Self { length, data }
     }
 }
 
@@ -197,5 +231,17 @@ impl fmt::Debug for Signature {
             hex::encode(self.r),
             hex::encode(self.s)
         )
+    }
+}
+
+impl fmt::Debug for VirtualSubstateID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "0x{}", hex::encode(&self.data))
+    }
+}
+
+impl fmt::Debug for LocalVirtualSubstateID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "0x{}", hex::encode(&self.data))
     }
 }

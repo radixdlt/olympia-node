@@ -19,9 +19,10 @@
 package com.radixdlt.application.system;
 
 import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
-import com.radixdlt.application.system.scrypt.FeeConstraintScrypt;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
@@ -31,6 +32,7 @@ import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.atom.actions.MintToken;
@@ -56,6 +58,7 @@ import org.junit.runners.Parameterized;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -85,10 +88,11 @@ public class TxnSizeFeeTest {
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		cmAtomOS.load(new FeeConstraintScrypt());
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures(),
+			cmAtomOS.buildSubstateDeserialization(),
+			cmAtomOS.buildVirtualSubstateDeserialization(),
 			TxnSizeFeeMeter.create(costPerByte.toSubunits())
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
@@ -98,6 +102,7 @@ public class TxnSizeFeeTest {
 			parser,
 			serialization,
 			REConstructor.newBuilder()
+				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(TransferToken.class, new TransferTokensConstructorV2())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
@@ -109,6 +114,7 @@ public class TxnSizeFeeTest {
 		);
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
+				.action(new CreateSystem(0))
 				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, Amount.ofTokens(2).toSubunits()))
 		).buildWithoutSignature();
@@ -117,7 +123,7 @@ public class TxnSizeFeeTest {
 
 	@Test
 	public void paying_for_fees_should_work() throws Exception {
-		var expectedTxnSize = 355;
+		var expectedTxnSize = 360;
 		// Act
 		var nextKey = ECKeyPair.generateNew();
 		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
@@ -135,7 +141,7 @@ public class TxnSizeFeeTest {
 
 	@Test
 	public void paying_for_fees_should_work_2() throws Exception {
-		var expectedTxnSize = 355;
+		var expectedTxnSize = 360;
 		// Act
 		var nextKey = ECKeyPair.generateNew();
 		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());

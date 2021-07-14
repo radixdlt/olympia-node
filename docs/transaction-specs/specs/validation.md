@@ -10,7 +10,6 @@ For transaction parsing, please check [this doc](./parsing.md).
 ## Transaction Limit
 
 - The maximum number of signatures must be less or equal to `50` per round proposal
-- The maximum transaction size is `1024 * 1024` bytes.
 
 ## Stateless Validation
 
@@ -35,9 +34,7 @@ If no violation is found, a list of parsed instructions, an optional message dat
 - `DOWNINDEX` and `READINDEX`:
    * The `prefix` length should be less than 10 and the first byte must be a valid `class_id`.
 - `SYSCALL`:
-   * The `calldata` operand must be one of the following:
-      - `0x00 + u256`: Deposit into the fee reserve
-      - `0x01 + u256`: Withdraw from the fee reserve
+   * The `calldata` length must match exactly what's required; see system functions section below.
 
 #### Substate Static Check
 
@@ -60,11 +57,8 @@ If a substate is created by one instruction, its content must be statically chec
 | `VALIDATOR_BFT_DATA`              | <ul><li>None</li></ul>                                                                                                                         |
 | `VALIDATOR_ALLOW_DELEGATION_FLAG` | <ul><li>None</li></ul>                                                                                                                         |
 | `VALIDATOR_REGISTERED_FLAG_COPY`  | <ul><li>None</li></ul>                                                                                                                         |
-| `PREPARED_REGISTERED_FLAG_UPDATE` | <ul><li>None</li></ul>                                                                                                                         |
-| `VALIDATOR_RAKE_COPY`             | <ul><li>None</li></ul>                                                                                                                         |
-| `PREPARED_RAKE_UPDATE`            | <ul><li>`current_rake_percentage`: must be in [0, 10000]</li><li>`next_rake_percentage`: must be in [0, 10000]</li></ul>                                                                                                                         |
-| `VALIDATOR_OWNER_COPY`            | <ul><li>None</li></ul>                                                                                                                         |
-| `PREPARED_VALIDATOR_OWNER_UPDATE` | <ul><li>`owner`: must be an account address</li></ul>                                                                                                                         |
+| `VALIDATOR_RAKE_COPY`             | <ul><li>`rake_percentage`: must be in [0, 10000]</li></ul>                                                                                     |
+| `VALIDATOR_OWNER_COPY`            | <ul><li>`owner`: must be an account address</li></ul>                                                                                          |
 
 #### Signature Validation
 
@@ -74,7 +68,7 @@ The signature from `SIG` instructions must be verified against the hash of all i
 
 Instructions are organized into groups, by splitting with `END` instruction.
 
-Each instruction group must contain at least one state update instruction, which can be `UP`, `VDOWN`, `VDOWNARG`, `DOWN`, `LDOWN`, `DOWNALL` and `DOWNINDEX`.
+Each instruction group must contain at least one state update instruction, which can be `UP`, `VDOWN`, `DOWN`, `LDOWN` and `DOWNINDEX`.
 
 Each transaction must include at least one instruction group and incomplete instruction group is not allowed (not ended).
 
@@ -114,7 +108,7 @@ Validation state is the internal state of the constraint machine, which includes
 | `current_instruction`         | The current instruction                                                               |
 | `current_index`               | The index of the current instruction                                                  |
 | `up_instruction_count`        | The number of `UP` instruction processed so far                                       |
-| `reducer_state`               | The current reducer state                                                             |
+| `current_state`               | The current current state                                                             |
 | `end_expected`                | A flag indicates if an `END` instruction is expected                                  |
 | `local_up_substates`          | A map of substates created locally, keyed off the substate index                      |
 | `remote_down_substates`       | A set of substate IDs that are spun down remotely                                     |
@@ -129,74 +123,77 @@ Currently, we have two instruction meters:
 A procedure decides whether a transition is allowed and how. It contains three parts:
 - Defines the required permission level
 - Defines how authorization should be performed
-- Defines how to compute the next reducer state, given the current reducer state and instruction
+- Defines how to compute the next current state, given the current current state and instruction
 
-A procedure is registered to a procedure key, which is tuple of `<reducer_state, operation, substate>`.
+A procedure is registered to a procedure key, which is tuple of `<current_state, operation, substate>`.
 
 At mainnet, we have the following procedures.
 
-| **Reducer State**           | **Operation** | **Substate**             | **Definition**                                                    |
-|-----------------------------|---------------|--------------------------|-------------------------------------------------------------------|
-| AllocatingSystem            | `UP`          | RoundData                | `EpochUpdateConstraintScrypt$$Lambda$142/0x00000008000c0c40`      |
-| CreatingNextValidatorSet    | `UP`          | EpochData                | `EpochUpdateConstraintScrypt$$Lambda$180/0x00000008000ca440`      |
-| CreatingNextValidatorSet    | `UP`          | ValidatorBFTData         | `EpochUpdateConstraintScrypt$$Lambda$178/0x00000008000c9c40`      |
-| EndPrevRound                | `DOWN`        | EpochData                | `EpochUpdateConstraintScrypt$$Lambda$144/0x00000008000c1440`      |
-| EndPrevRound                | `DOWN`        | ValidatorBFTData         | `RoundUpdateConstraintScrypt$$Lambda$121/0x00000008000bb440`      |
-| LoadingStake                | `DOWN`        | ValidatorStakeData       | `EpochUpdateConstraintScrypt$$Lambda$156/0x00000008000c4440`      |
-| NeedFixedTokenSupply        | `UP`          | TokensInAccount          | `TokensConstraintScryptV3$$Lambda$74/0x00000008000a6c40`          |
-| OwnerStakePrepare           | `READ`        | ValidatorOwnerCopy       | `StakingConstraintScryptV4$$Lambda$96/0x00000008000ad440`         |
-| OwnerStakePrepare           | `READ`        | PreparedOwnerUpdate      | `StakingConstraintScryptV4$$Lambda$98/0x00000008000acc40`         |
-| PreparingOwnerUpdate        | `DOWNALL`     | PreparedOwnerUpdate      | `EpochUpdateConstraintScrypt$$Lambda$166/0x00000008000c6c40`      |
-| PreparingRakeUpdate         | `DOWNALL`     | PreparedRakeUpdate       | `EpochUpdateConstraintScrypt$$Lambda$162/0x00000008000c5c40`      |
-| PreparingRegisteredUpdate   | `DOWNALL`     | PreparedRegisteredUpdate | `EpochUpdateConstraintScrypt$$Lambda$170/0x00000008000c7c40`      |
-| PreparingStake              | `DOWNALL`     | PreparedStake            | `EpochUpdateConstraintScrypt$$Lambda$160/0x00000008000c5440`      |
-| PreparingUnstake            | `DOWNALL`     | PreparedUnstakeOwnership | `EpochUpdateConstraintScrypt$$Lambda$154/0x00000008000c3c40`      |
-| ProcessExittingStake        | `UP`          | TokensInAccount          | `EpochUpdateConstraintScrypt$$Lambda$150/0x00000008000c2c40`      |
-| ProcessExittingStake        | `UP`          | ExittingStake            | `EpochUpdateConstraintScrypt$$Lambda$148/0x00000008000c2440`      |
-| REAddrClaim                 | `UP`          | EpochData                | `EpochUpdateConstraintScrypt$$Lambda$140/0x00000008000c0440`      |
-| REAddrClaim                 | `END`         | null                     | `MutexConstraintScrypt$$Lambda$112/0x00000008000b9040`            |
-| REAddrClaim                 | `UP`          | TokenResource            | `TokensConstraintScryptV3$$Lambda$72/0x00000008000a6440`          |
-| ResetOwnerUpdate            | `UP`          | ValidatorOwnerCopy       | `EpochUpdateConstraintScrypt$$Lambda$168/0x00000008000c7440`      |
-| ResetRakeUpdate             | `UP`          | ValidatorRakeCopy        | `EpochUpdateConstraintScrypt$$Lambda$164/0x00000008000c6440`      |
-| ResetRegisteredUpdate       | `UP`          | ValidatorRegisteredCopy  | `EpochUpdateConstraintScrypt$$Lambda$172/0x00000008000c8440`      |
-| RewardingValidators         | `DOWNALL`     | ValidatorBFTData         | `EpochUpdateConstraintScrypt$$Lambda$152/0x00000008000c3440`      |
-| StakeOwnershipHoldingBucket | `UP`          | PreparedUnstakeOwnership | `StakingConstraintScryptV4$$Lambda$108/0x00000008000aa440`        |
-| StakeOwnershipHoldingBucket | `END`         | null                     | `StakingConstraintScryptV4$$Lambda$110/0x00000008000b8440`        |
-| StakeOwnershipHoldingBucket | `UP`          | StakeOwnership           | `StakingConstraintScryptV4$$Lambda$106/0x00000008000aac40`        |
-| StakeOwnershipHoldingBucket | `DOWN`        | StakeOwnership           | `StakingConstraintScryptV4$$Lambda$104/0x00000008000ab440`        |
-| StakePrepare                | `UP`          | PreparedStake            | `StakingConstraintScryptV4$$Lambda$100/0x00000008000ac440`        |
-| Staking                     | `UP`          | StakeOwnership           | `EpochUpdateConstraintScrypt$$Lambda$174/0x00000008000c8c40`      |
-| StartNextRound              | `UP`          | RoundData                | `RoundUpdateConstraintScrypt$$Lambda$129/0x00000008000bd840`      |
-| StartValidatorBFTUpdate     | `UP`          | ValidatorBFTData         | `RoundUpdateConstraintScrypt$$Lambda$125/0x00000008000bc440`      |
-| StartValidatorBFTUpdate     | `DOWN`        | ValidatorBFTData         | `RoundUpdateConstraintScrypt$$Lambda$123/0x00000008000bbc40`      |
-| StartingEpochRound          | `UP`          | RoundData                | `EpochUpdateConstraintScrypt$$Lambda$182/0x00000008000cac40`      |
-| TokenHoldingBucket          | `SYSCALL`     | 00                       | `FeeConstraintScrypt$$Lambda$88/0x00000008000af440`               |
-| TokenHoldingBucket          | `UP`          | TokensInAccount          | `TokensConstraintScryptV3$$Lambda$84/0x00000008000a9840`          |
-| TokenHoldingBucket          | `END`         | null                     | `TokensConstraintScryptV3$$Lambda$78/0x00000008000a8040`          |
-| TokenHoldingBucket          | `READ`        | AllowDelegationFlag      | `StakingConstraintScryptV4$$Lambda$94/0x00000008000adc40`         |
-| TokenHoldingBucket          | `DOWN`        | TokensInAccount          | `TokensConstraintScryptV3$$Lambda$82/0x00000008000a9040`          |
-| Unstaking                   | `UP`          | ExittingStake            | `EpochUpdateConstraintScrypt$$Lambda$158/0x00000008000c4c40`      |
-| UpdatingDelegationFlag      | `UP`          | AllowDelegationFlag      | `ValidatorConstraintScryptV2$$Lambda$43/0x000000080009f040`       |
-| UpdatingEpoch               | `DOWNALL`     | ExittingStake            | `EpochUpdateConstraintScrypt$$Lambda$146/0x00000008000c1c40`      |
-| UpdatingRake                | `UP`          | PreparedRakeUpdate       | `ValidatorConstraintScryptV2$$Lambda$36/0x000000080009d440`       |
-| UpdatingRegistered          | `UP`          | PreparedRegisteredUpdate | `ValidatorRegisterConstraintScrypt$$Lambda$66/0x00000008000a4c40` |
-| UpdatingValidator           | `UP`          | PreparedOwnerUpdate      | `ValidatorConstraintScryptV2$$Lambda$54/0x00000008000a1c40`       |
-| UpdatingValidatorBFTData    | `UP`          | ValidatorBFTData         | `RoundUpdateConstraintScrypt$$Lambda$127/0x00000008000bcc40`      |
-| UpdatingValidatorInfo       | `UP`          | ValidatorMetaData        | `ValidatorConstraintScryptV2$$Lambda$24/0x000000080009a440`       |
-| UpdatingValidatorStakes     | `UP`          | ValidatorStakeData       | `EpochUpdateConstraintScrypt$$Lambda$176/0x00000008000c9440`      |
-| VoidReducerState            | `DOWN`        | StakeOwnership           | `StakingConstraintScryptV4$$Lambda$102/0x00000008000abc40`        |
-| VoidReducerState            | `DOWN`        | AllowDelegationFlag      | `ValidatorConstraintScryptV2$$Lambda$41/0x000000080009e840`       |
-| VoidReducerState            | `DOWN`        | PreparedRakeUpdate       | `ValidatorConstraintScryptV2$$Lambda$32/0x000000080009c440`       |
-| VoidReducerState            | `DOWN`        | ValidatorRegisteredCopy  | `ValidatorRegisterConstraintScrypt$$Lambda$62/0x00000008000a3c40` |
-| VoidReducerState            | `DOWN`        | PreparedOwnerUpdate      | `ValidatorConstraintScryptV2$$Lambda$50/0x00000008000a0c40`       |
-| VoidReducerState            | `DOWN`        | ValidatorOwnerCopy       | `ValidatorConstraintScryptV2$$Lambda$52/0x00000008000a1440`       |
-| VoidReducerState            | `DOWN`        | PreparedRegisteredUpdate | `ValidatorRegisterConstraintScrypt$$Lambda$64/0x00000008000a4440` |
-| VoidReducerState            | `DOWN`        | RoundData                | `RoundUpdateConstraintScrypt$$Lambda$119/0x00000008000bac40`      |
-| VoidReducerState            | `UP`          | TokensInAccount          | `TokensConstraintScryptV3$$Lambda$76/0x00000008000a7440`          |
-| VoidReducerState            | `DOWN`        | ValidatorMetaData        | `ValidatorConstraintScryptV2$$Lambda$22/0x0000000800099c40`       |
-| VoidReducerState            | `DOWN`        | TokensInAccount          | `TokensConstraintScryptV3$$Lambda$80/0x00000008000a8840`          |
-| VoidReducerState            | `DOWN`        | UnclaimedREAddr          | `CMAtomOS$$Lambda$11/0x0000000800063c40`                          |
-| VoidReducerState            | `DOWN`        | ValidatorRakeCopy        | `ValidatorConstraintScryptV2$$Lambda$34/0x000000080009cc40`       |
+| **Current state**                 | **Operation** | **Substate**             | **Transition**                                                        |
+|-----------------------------------|---------------|--------------------------|-----------------------------------------------------------------------|
+| AllocatingSystem                  | `UP`          | RoundData                | `EpochUpdateConstraintScrypt$$Lambda$205/0x0000000100250840`          |
+| BootupValidator                   | `UP`          | ValidatorBFTData         | `EpochUpdateConstraintScrypt$$Lambda$241/0x0000000100259840`          |
+| CreatingNextValidatorSet          | `READINDEX`   | ValidatorStakeData       | `EpochUpdateConstraintScrypt$$Lambda$239/0x0000000100259040`          |
+| EndPrevRound                      | `DOWN`        | ValidatorBFTData         | `RoundUpdateConstraintScrypt$$Lambda$183/0x000000010024b040`          |
+| EndPrevRound                      | `DOWN`        | EpochData                | `EpochUpdateConstraintScrypt$$Lambda$207/0x0000000100251040`          |
+| LoadingStake                      | `DOWN`        | ValidatorStakeData       | `EpochUpdateConstraintScrypt$$Lambda$217/0x0000000100253840`          |
+| NeedFixedTokenSupply              | `UP`          | TokensInAccount          | `TokensConstraintScryptV3$$Lambda$129/0x0000000100235040`             |
+| NeedMetadata                      | `UP`          | TokenResourceMetadata    | `TokensConstraintScryptV3$$Lambda$131/0x0000000100235840`             |
+| OwnerStakePrepare                 | `READ`        | ValidatorOwnerCopy       | `StakingConstraintScryptV4$$Lambda$161/0x000000010023d840`            |
+| PreparingOwnerUpdate              | `DOWNINDEX`   | ValidatorOwnerCopy       | `EpochUpdateConstraintScrypt$$Lambda$227/0x0000000100256040`          |
+| PreparingRakeUpdate               | `DOWNINDEX`   | ValidatorRakeCopy        | `EpochUpdateConstraintScrypt$$Lambda$223/0x0000000100255040`          |
+| PreparingRegisteredUpdate         | `DOWNINDEX`   | ValidatorRegisteredCopy  | `EpochUpdateConstraintScrypt$$Lambda$231/0x0000000100257040`          |
+| PreparingStake                    | `DOWNINDEX`   | PreparedStake            | `EpochUpdateConstraintScrypt$$Lambda$221/0x0000000100254840`          |
+| PreparingUnstake                  | `DOWNINDEX`   | PreparedUnstakeOwnership | `EpochUpdateConstraintScrypt$$Lambda$215/0x0000000100253040`          |
+| ProcessExittingStake              | `UP`          | TokensInAccount          | `EpochUpdateConstraintScrypt$$Lambda$211/0x0000000100252040`          |
+| REAddrClaim                       | `UP`          | EpochData                | `EpochUpdateConstraintScrypt$$Lambda$203/0x0000000100250040`          |
+| REAddrClaim                       | `UP`          | TokenResource            | `TokensConstraintScryptV3$$Lambda$127/0x0000000100234440`             |
+| REAddrClaim                       | `END`         |                          | `MutexConstraintScrypt$$Lambda$175/0x0000000100249040`                |
+| REAddrClaimStart                  | `DOWN`        | UnclaimedREAddr          | `SystemConstraintScrypt$$Lambda$153/0x000000010023b840`               |
+| ResetOwnerUpdate                  | `UP`          | ValidatorOwnerCopy       | `EpochUpdateConstraintScrypt$$Lambda$229/0x0000000100256840`          |
+| ResetRakeUpdate                   | `UP`          | ValidatorRakeCopy        | `EpochUpdateConstraintScrypt$$Lambda$225/0x0000000100255840`          |
+| ResetRegisteredUpdate             | `UP`          | ValidatorRegisteredCopy  | `EpochUpdateConstraintScrypt$$Lambda$233/0x0000000100257840`          |
+| RewardingValidators               | `DOWNINDEX`   | ValidatorBFTData         | `EpochUpdateConstraintScrypt$$Lambda$213/0x0000000100252840`          |
+| StakeOwnershipHoldingBucket       | `UP`          | StakeOwnership           | `StakingConstraintScryptV4$$Lambda$169/0x000000010023e840`            |
+| StakeOwnershipHoldingBucket       | `END`         |                          | `StakingConstraintScryptV4$$Lambda$173/0x0000000100248840`            |
+| StakeOwnershipHoldingBucket       | `UP`          | PreparedUnstakeOwnership | `StakingConstraintScryptV4$$Lambda$171/0x0000000100248040`            |
+| StakeOwnershipHoldingBucket       | `DOWN`        | StakeOwnership           | `StakingConstraintScryptV4$$Lambda$167/0x000000010023f040`            |
+| StakePrepare                      | `UP`          | PreparedStake            | `StakingConstraintScryptV4$$Lambda$163/0x000000010023e040`            |
+| Staking                           | `UP`          | StakeOwnership           | `EpochUpdateConstraintScrypt$$Lambda$235/0x0000000100258040`          |
+| StartNextRound                    | `UP`          | RoundData                | `RoundUpdateConstraintScrypt$$Lambda$191/0x000000010024d040`          |
+| StartValidatorBFTUpdate           | `UP`          | ValidatorBFTData         | `RoundUpdateConstraintScrypt$$Lambda$187/0x000000010024c040`          |
+| StartValidatorBFTUpdate           | `DOWN`        | ValidatorBFTData         | `RoundUpdateConstraintScrypt$$Lambda$185/0x000000010024b840`          |
+| StartingEpochRound                | `UP`          | RoundData                | `EpochUpdateConstraintScrypt$$Lambda$245/0x000000010025a840`          |
+| StartingNextEpoch                 | `UP`          | EpochData                | `EpochUpdateConstraintScrypt$$Lambda$243/0x000000010025a040`          |
+| TokenHoldingBucket                | `END`         |                          | `TokensConstraintScryptV3$$Lambda$135/0x0000000100236c40`             |
+| TokenHoldingBucket                | `DOWN`        | TokensInAccount          | `TokensConstraintScryptV3$$Lambda$139/0x0000000100237c40`             |
+| TokenHoldingBucket                | `SYSCALL`     |                          | `SystemConstraintScrypt$$Lambda$145/0x0000000100239840`               |
+| TokenHoldingBucket                | `UP`          | TokensInAccount          | `TokensConstraintScryptV3$$Lambda$141/0x0000000100238440`             |
+| TokenHoldingBucket                | `READ`        | AllowDelegationFlag      | `StakingConstraintScryptV4$$Lambda$159/0x000000010023d040`            |
+| Unstaking                         | `UP`          | ExittingStake            | `EpochUpdateConstraintScrypt$$Lambda$219/0x0000000100254040`          |
+| UpdatingDelegationFlag            | `UP`          | AllowDelegationFlag      | `ValidatorConstraintScryptV2$$Lambda$80/0x0000000100228440`           |
+| UpdatingEpoch                     | `DOWNINDEX`   | ExittingStake            | `EpochUpdateConstraintScrypt$$Lambda$209/0x0000000100251840`          |
+| UpdatingOwnerNeedToReadEpoch      | `READ`        | EpochData                | `ValidatorUpdateOwnerConstraintScrypt$$Lambda$115/0x0000000100231440` |
+| UpdatingRakeNeedToReadCurrentRake | `READ`        | ValidatorStakeData       | `ValidatorUpdateRakeConstraintScrypt$$Lambda$95/0x000000010022c440`   |
+| UpdatingRakeNeedToReadEpoch       | `READ`        | EpochData                | `ValidatorUpdateRakeConstraintScrypt$$Lambda$93/0x000000010022bc40`   |
+| UpdatingRakeReady                 | `UP`          | ValidatorRakeCopy        | `ValidatorUpdateRakeConstraintScrypt$$Lambda$97/0x000000010022cc40`   |
+| UpdatingRegistered                | `UP`          | ValidatorRegisteredCopy  | `ValidatorRegisterConstraintScrypt$$Lambda$107/0x000000010022f440`    |
+| UpdatingRegisteredNeedToReadEpoch | `READ`        | EpochData                | `ValidatorRegisterConstraintScrypt$$Lambda$105/0x000000010022ec40`    |
+| UpdatingValidatorBFTData          | `UP`          | ValidatorBFTData         | `RoundUpdateConstraintScrypt$$Lambda$189/0x000000010024c840`          |
+| UpdatingValidatorInfo             | `UP`          | ValidatorMetaData        | `ValidatorConstraintScryptV2$$Lambda$72/0x00000001001ed440`           |
+| UpdatingValidatorOwner            | `UP`          | ValidatorOwnerCopy       | `ValidatorUpdateOwnerConstraintScrypt$$Lambda$117/0x0000000100231c40` |
+| UpdatingValidatorStakes           | `UP`          | ValidatorStakeData       | `EpochUpdateConstraintScrypt$$Lambda$237/0x0000000100258840`          |
+| VoidReducerState                  | `UP`          | TokensInAccount          | `TokensConstraintScryptV3$$Lambda$133/0x0000000100236040`             |
+| VoidReducerState                  | `DOWN`        | ValidatorRakeCopy        | `ValidatorUpdateRakeConstraintScrypt$$Lambda$91/0x000000010022b440`   |
+| VoidReducerState                  | `DOWN`        | StakeOwnership           | `StakingConstraintScryptV4$$Lambda$165/0x000000010023f840`            |
+| VoidReducerState                  | `DOWN`        | ValidatorOwnerCopy       | `ValidatorUpdateOwnerConstraintScrypt$$Lambda$113/0x0000000100230c40` |
+| VoidReducerState                  | `DOWN`        | TokensInAccount          | `TokensConstraintScryptV3$$Lambda$137/0x0000000100237440`             |
+| VoidReducerState                  | `DOWN`        | AllowDelegationFlag      | `ValidatorConstraintScryptV2$$Lambda$78/0x00000001001ebc40`           |
+| VoidReducerState                  | `DOWN`        | ValidatorMetaData        | `ValidatorConstraintScryptV2$$Lambda$70/0x00000001001edc40`           |
+| VoidReducerState                  | `DOWN`        | ValidatorRegisteredCopy  | `ValidatorRegisterConstraintScrypt$$Lambda$103/0x000000010022e440`    |
+| VoidReducerState                  | `SYSCALL`     |                          | `SystemConstraintScrypt$$Lambda$147/0x000000010023a040`               |
+| VoidReducerState                  | `DOWN`        | RoundData                | `RoundUpdateConstraintScrypt$$Lambda$181/0x000000010024a840`          |
+
 
 ### Validation Procedure
 
@@ -214,17 +211,19 @@ Constraint machine executes transaction instructions sequentially, based on the 
    * Look up transition procedure with procedure key and abort if not found
    * Verify the required permission level
    * Verify authorization
-   * Update `reducer_state` to the output of the state reducing rule
-   * Update `end_expected` to `true` if `reducer_state` is void
+   * Update `current_state` to the output of the state reducing rule
+   * Update `end_expected` to `true` if `current_state` is void
 1. If current instruction is `READ`, `LREAD`, `VREAD` or `READINDEX`
    * If `current_instruction == READINDEX`
       * Prepare an iterator for all the substates with the given prefix (including the ones in `local_up_substates` and excluding the ones in `remote_down_substates`)
+   * Else
+      * Assert the state to read and abort on error
    * Look up transition procedure with procedure key and abort if not found
    * Verify the required permission level
    * Verify authorization
-   * Update `reducer_state` to the output of the state reducing rule
-   * Update `end_expected` to `true` if `reducer_state` is void
-1. If current instruction is a state update
+   * Update `current_state` to the output of the state reducing rule
+   * Update `end_expected` to `true` if `current_state` is void
+1. If current instruction is `UP`, `VDOWN`, `DOWN`, `LDOWN` or `DOWNINDEX`
    * If `current_instruction == DOWNINDEX`
       * Prepare an iterator for all the substates with the given prefix (including the ones in `local_up_substates` and excluding the ones in `remote_down_substates`)
    * Else
@@ -232,31 +231,47 @@ Constraint machine executes transaction instructions sequentially, based on the 
    * Look up transition procedure with procedure key and abort if not found
    * Verify the required permission level
    * Verify authorization
-   * Update `reducer_state` to the output of the state reducing rule
-   * Update `end_expected` to `true` if `reducer_state` is void
+   * Update `current_state` to the output of the state reducing rule
+   * Update `end_expected` to `true` if `current_state` is void
 1. If `current_instruction == END`
-   * If `reducer_state` is not void
+   * If `current_state` is not void
       * Look up transition procedure with procedure key and abort if not found
-      * Verify the required permission level for burning the `reducer_state`, if not `SYSTEM`
-      * Verify authorization for the `reducer_state`
-      * Update `reducer_state` to the output of the state reducing rule (void expected)
+      * Verify the required permission level for burning the `current_state`, if not `SYSTEM`
+      * Verify authorization for the `current_state`
+      * Update `current_state` to the output of the state reducing rule (void expected)
    * Update `end_expected` to `false`
 1. Jump to step 1
 
-### SYSCALL and Transaction Fee
+### System Functions
+
+System functions are special functionalities provided to transactions through the `SYSCALL` instruction.
+
+Currently, we have three system functions:
+
+| **Function Name**  | **Description**                                                                             | **Code** | **Arguments**    |
+|--------------------|---------------------------------------------------------------------------------------------|----------|------------------|
+| `FEE_RESERVE_PUT`  | Deposit a fee into the fee reserve managed by fee checker (**can be invoked at most once**) | `0x00`   | `amount (u256)`  |
+| `FEE_RESERVE_TAKE` | Withdraw fund from the fee reserve                                                          | `0x01`   | `amount (u256)`  |
+| `READDR_CLAIM`     | Claim a RE Address                                                                          | `0x02`   | `symbol (bytes)` |
+
+The `calldata` is structued as follows:
+
+```
++--------------------+------------+
+| function code (u8) | arguments  |
++--------------------+------------+
+```
+
+### Transaction Fee
 
 At Radix, transaction fees are charged based on transaction size (bytes). The price is `0.0002XRD per byte`.
 
-The way to pay transaction fee is through spending XRD tokens and making system call (`SYSCALL` instructions).
-
-Currently, there are two system functions:
-- `FEE_RESERVE_PUT` - Deposit a fee into the fee reserve managed by fee checker (at most once)
-- `FEE_RESERVE_TAKE` - Withdraw some amount from the fee reserve
+The way to pay transaction fee is through spending XRD tokens and making system calls.
 
 The billing system works as follows:
 - Before a transaction gets executed, it's granted a loan (`200 XRD`) from the system and the loan goes directly into the fee reserve;
 - Then, the transaction fee (based on size) is immediately charged from the reserve (if not covered, exception is thrown);
-- After that, XRDs are deposited into the reserve through a combination of `HEADER`, `SYSCALL`, `DOWN` instructions;
+- After that, XRDs can be deposited into the reserve through a combination of `HEADER`, `SYSCALL`, `DOWN` instructions;
 - At the first non-`HEADER`/`SYSCALL`/`DOWN` instruction or transaction end, the system takes back the loan from the reserve (if not covered, exception is thrown).
 - Additionally, there is a cost associated with each instruction:
     - Token creation (`UP` token resource): `1000 XRD`
@@ -271,8 +286,8 @@ SYSCALL <FEE_RESERVE_PUT (0x00) + amount (u256)>
 UP <xrd_remainder>
 END
 ...
-SYSCALL <FEE_RESERVE_TAKE (0x01) + amount (u256)>
-UP <xrd_remainder>
+SYSCALL <FEE_RESERVE_TAKE (0x01) + amount (u256)>    // when the fee reserve balance is non-zero
+UP <xrd_remainder>                                   // when the fee reserve balance is non-zero
 END
 SIG <signature>
 ```

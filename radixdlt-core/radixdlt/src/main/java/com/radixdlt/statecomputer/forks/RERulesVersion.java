@@ -18,12 +18,16 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.radixdlt.application.misc.FaucetTokensTransferConstructor;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
+import com.radixdlt.atom.actions.FaucetTokensTransfer;
 import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.NextEpoch;
@@ -37,7 +41,7 @@ import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeOwnership;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.atom.actions.UpdateRake;
+import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
@@ -45,13 +49,13 @@ import com.radixdlt.application.system.construction.NextEpochConstructorV3;
 import com.radixdlt.application.system.construction.NextViewConstructorV3;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
-import com.radixdlt.application.system.scrypt.FeeConstraintScrypt;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.application.tokens.construction.CreateFixedTokenConstructor;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
-import com.radixdlt.application.tokens.construction.SplitTokenConstructor;
+import com.radixdlt.application.misc.SplitTokenConstructor;
 import com.radixdlt.application.tokens.construction.StakeTokensConstructorV3;
 import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.application.tokens.construction.UnstakeOwnershipConstructor;
@@ -63,7 +67,7 @@ import com.radixdlt.application.validators.construction.RegisterValidatorConstru
 import com.radixdlt.application.validators.construction.UnregisterValidatorConstructor;
 import com.radixdlt.application.validators.construction.UpdateAllowDelegationFlagConstructor;
 import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
-import com.radixdlt.application.validators.construction.UpdateValidatorConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorMetadataConstructor;
 import com.radixdlt.application.validators.construction.UpdateValidatorOwnerConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
@@ -89,11 +93,13 @@ public enum RERulesVersion {
 			var perResourceFee = config.getFeeTable().getPerResourceFee().toSubunits();
 			var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
 
-			final CMAtomOS v4 = new CMAtomOS(Set.of("xrd"));
-			v4.load(new ValidatorConstraintScryptV2(rakeIncreaseDebouncerEpochLength));
+			final CMAtomOS v4 = new CMAtomOS();
+			v4.load(new ValidatorConstraintScryptV2());
+			v4.load(new ValidatorUpdateRakeConstraintScrypt(rakeIncreaseDebouncerEpochLength));
 			v4.load(new ValidatorRegisterConstraintScrypt());
+			v4.load(new ValidatorUpdateOwnerConstraintScrypt());
 			v4.load(new TokensConstraintScryptV3());
-			v4.load(new FeeConstraintScrypt());
+			v4.load(new SystemConstraintScrypt(Set.of("xrd")));
 			v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));
 			v4.load(new MutexConstraintScrypt());
 			v4.load(new RoundUpdateConstraintScrypt(maxRounds));
@@ -112,8 +118,9 @@ public enum RERulesVersion {
 				)
 			);
 			var betanet4 = new ConstraintMachineConfig(
-				v4.virtualizedUpParticles(),
 				v4.getProcedures(),
+				v4.buildSubstateDeserialization(),
+				v4.buildVirtualSubstateDeserialization(),
 				meter
 			);
 			var parser = new REParser(v4.buildSubstateDeserialization());
@@ -133,16 +140,20 @@ public enum RERulesVersion {
 				))
 				.put(NextRound.class, new NextViewConstructorV3())
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
+				.put(FaucetTokensTransfer.class, new FaucetTokensTransferConstructor())
 				.put(SplitToken.class, new SplitTokenConstructor())
 				.put(StakeTokens.class, new StakeTokensConstructorV3(config.getMinimumStake().toSubunits()))
 				.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())
 				.put(UnstakeOwnership.class, new UnstakeOwnershipConstructor())
 				.put(TransferToken.class, new TransferTokensConstructorV2())
 				.put(UnregisterValidator.class, new UnregisterValidatorConstructor())
-				.put(UpdateValidatorMetadata.class, new UpdateValidatorConstructor())
+				.put(UpdateValidatorMetadata.class, new UpdateValidatorMetadataConstructor())
 				.put(FeeReservePut.class, new FeeReservePutConstructor())
 				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(config.getFeeTable()))
-				.put(UpdateRake.class, new UpdateRakeConstructor(rakeIncreaseDebouncerEpochLength))
+				.put(UpdateValidatorFee.class, new UpdateRakeConstructor(
+					rakeIncreaseDebouncerEpochLength,
+					ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE
+				))
 				.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 				.build();

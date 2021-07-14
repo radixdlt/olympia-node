@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class ForkDetails {
+public final class ForkDetails {
 	private final String name;
 	private final String version;
 	private final long epoch;

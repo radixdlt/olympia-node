@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class ConsensusConfiguration {
+public final class ConsensusConfiguration {
 	private final long pacemakerTimeout;
 	private final long bftSyncPatienceMs;
 

@@ -31,11 +31,13 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-public class FinalizedTransaction {
+public final class FinalizedTransaction {
 	private final byte[] blob;
 	private final ECDSASignature signature;
 	private final ECPublicKey publicKey;
@@ -67,6 +69,40 @@ public class FinalizedTransaction {
 
 	public FinalizedTransaction withTxId(AID txId) {
 		return create(blob, signature, publicKey, txId);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof FinalizedTransaction)) {
+			return false;
+		}
+
+		var that = (FinalizedTransaction) o;
+		return Arrays.equals(blob, that.blob)
+			&& signature.equals(that.signature)
+			&& publicKey.equals(that.publicKey)
+			&& Objects.equals(txId, that.txId);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hash(signature, publicKey, txId);
+		result = 31 * result + Arrays.hashCode(blob);
+		return result;
+	}
+
+	@Override
+	public String toString() {
+		return "{"
+			+ "blob=" + Arrays.toString(blob)
+			+ ", signature=" + signature
+			+ ", publicKey=" + publicKey
+			+ ", txId=" + txId
+			+ '}';
 	}
 
 	@JsonProperty("blob")

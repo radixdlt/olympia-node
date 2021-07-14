@@ -32,6 +32,7 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.application.system.NextValidatorSetEvent;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.SubstateId;
@@ -63,7 +64,6 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
@@ -94,6 +94,7 @@ import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
 import org.junit.Before;
@@ -134,11 +135,8 @@ public class RadixEngineStateComputerTest {
 
 	private Module getExternalModule() {
 		return new AbstractModule() {
-
 			@Override
 			public void configure() {
-				bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-					.toInstance(registeredNodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
 				var validatorSet = BFTValidatorSet.from(registeredNodes.stream().map(ECKeyPair::getPublicKey)
 					.map(BFTNode::create)
 					.map(n -> BFTValidator.from(n, UInt256.ONE)));
@@ -209,7 +207,11 @@ public class RadixEngineStateComputerTest {
 			new RadixEngineCheckpointModule(),
 			new RadixEngineStateComputerModule(),
 			new RadixEngineModule(),
-			new MockedGenesisModule(),
+			new MockedGenesisModule(
+				registeredNodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+				Amount.ofTokens(1000),
+				Amount.ofTokens(100)
+			),
 			getExternalModule()
 		).injectMembers(this);
 		setupGenesis();

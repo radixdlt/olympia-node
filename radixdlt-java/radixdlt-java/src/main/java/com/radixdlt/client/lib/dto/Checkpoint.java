@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Objects;
 
-public class Checkpoint {
+public final class Checkpoint {
 	private final List<String> txn;
 	private final Proof proof;
 

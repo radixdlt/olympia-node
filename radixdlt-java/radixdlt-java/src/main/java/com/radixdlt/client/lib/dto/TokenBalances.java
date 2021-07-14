@@ -26,7 +26,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class TokenBalances {
+public final class TokenBalances {
 	private final AccountAddress owner;
 	private final List<Balance> tokenBalances;
 

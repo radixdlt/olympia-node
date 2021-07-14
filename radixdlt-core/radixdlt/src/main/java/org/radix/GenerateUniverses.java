@@ -17,6 +17,18 @@
 
 package org.radix;
 
+import com.google.inject.Key;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.OptionalBinder;
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.utils.PrivateKeys;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -28,41 +40,29 @@ import org.json.JSONObject;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
-import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.security.Security;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -96,39 +96,32 @@ public final class GenerateUniverses {
 			return;
 		}
 
-		var allValidatorKeysBuilder = ImmutableList.<ECPublicKey>builder();
+		var validatorKeys = new HashSet<ECPublicKey>();
 		if (cmd.getOptionValue("p") != null) {
 			var hexKeys = cmd.getOptionValue("p").split(",");
 			for (var hexKey : hexKeys) {
-				allValidatorKeysBuilder.add(ECPublicKey.fromHex(hexKey));
+				validatorKeys.add(ECPublicKey.fromHex(hexKey));
 			}
 		}
 		final int validatorsCount = cmd.getOptionValue("v") != null ? Integer.parseInt(cmd.getOptionValue("v")) : 0;
-		var nextGeneratedKey = new AtomicInteger(6);
-		var generatedValidatorKeys = IntStream.generate(() -> nextGeneratedKey.getAndAdd(1))
-			.mapToObj(GenerateUniverses::privKeyOf)
+		var generatedValidatorKeys = PrivateKeys.numeric(6)
 			.limit(validatorsCount)
 			.collect(Collectors.toList());
-		generatedValidatorKeys.stream().map(ECKeyPair::getPublicKey).forEach(allValidatorKeysBuilder::add);
-		var allValidatorKeys = allValidatorKeysBuilder.build();
-
+		generatedValidatorKeys.stream().map(ECKeyPair::getPublicKey).forEach(validatorKeys::add);
 
 		// Issuances to mnemomic account, keys 1-5, and 1st validator
 		final var mnemomicKey = ECPublicKey.fromHex(mnemomicKeyHex);
 		final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
 		tokenIssuancesBuilder.add(TokenIssuance.of(mnemomicKey, DEFAULT_ISSUANCE));
-		tokenIssuancesBuilder.add(
-			TokenIssuance.of(pubkeyOf(1), DEFAULT_ISSUANCE),
-			TokenIssuance.of(pubkeyOf(2), DEFAULT_ISSUANCE),
-			TokenIssuance.of(pubkeyOf(3), DEFAULT_ISSUANCE),
-			TokenIssuance.of(pubkeyOf(4), DEFAULT_ISSUANCE),
-			TokenIssuance.of(pubkeyOf(5), DEFAULT_ISSUANCE)
-		);
+		PrivateKeys.numeric(1)
+			.limit(5)
+			.map(k -> TokenIssuance.of(k.getPublicKey(), DEFAULT_ISSUANCE))
+			.forEach(tokenIssuancesBuilder::add);
 		// Issue tokens to initial validators for now to support application services
-		allValidatorKeys.forEach(pk -> tokenIssuancesBuilder.add(TokenIssuance.of(pk, DEFAULT_ISSUANCE)));
+		validatorKeys.forEach(pk -> tokenIssuancesBuilder.add(TokenIssuance.of(pk, DEFAULT_ISSUANCE)));
 
 		// Stakes issued by mnemomic account
-		var stakes = allValidatorKeys.stream()
+		var stakes = validatorKeys.stream()
 			.map(pk -> new StakeTokens(REAddr.ofPubKeyAccount(mnemomicKey), pk, DEFAULT_STAKE))
 			.collect(Collectors.toSet());
 
@@ -150,9 +143,10 @@ public final class GenerateUniverses {
 				bind(new TypeLiteral<Set<StakeTokens>>() { }).annotatedWith(Genesis.class).toInstance(stakes);
 				bind(new TypeLiteral<ImmutableList<TokenIssuance>>() {}).annotatedWith(Genesis.class)
 					.toInstance(tokenIssuancesBuilder.build());
-				bind(new TypeLiteral<ImmutableList<ECPublicKey>>() {}).annotatedWith(Genesis.class)
-					.toInstance(allValidatorKeys);
+				bind(new TypeLiteral<Set<ECPublicKey>>() {}).annotatedWith(Genesis.class).toInstance(validatorKeys);
 				bindConstant().annotatedWith(MaxValidators.class).to(100);
+				OptionalBinder.newOptionalBinder(binder(), Key.get(new TypeLiteral<List<TxAction>>() { }, Genesis.class));
+
 			}
 		}).getInstance(GenesisProvider.class);
 
@@ -168,21 +162,6 @@ public final class GenerateUniverses {
 				writer.write(new JSONObject().put("genesis", Bytes.toHexString(genesis.getPayload())).toString());
 			}
 		}
-	}
-
-	private static ECKeyPair privKeyOf(int pk) {
-		var privateKey = new byte[ECKeyPair.BYTES];
-		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
-
-		try {
-			return ECKeyPair.fromPrivateKey(privateKey);
-		} catch (PrivateKeyException | PublicKeyException e) {
-			throw new IllegalArgumentException("Error while generating public key", e);
-		}
-	}
-
-	private static ECPublicKey pubkeyOf(int pk) {
-		return privKeyOf(pk).getPublicKey();
 	}
 
 	private static void usage(Options options) {

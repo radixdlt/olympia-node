@@ -22,7 +22,6 @@ import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.ProcedureKey;
 import com.radixdlt.constraintmachine.REOp;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 import com.radixdlt.utils.UInt256;
 
 public final class FixedFeeMeter implements Meter {
@@ -45,11 +44,9 @@ public final class FixedFeeMeter implements Meter {
 		}
 
 		// TODO: Clean this up
-		if (procedureKey.opSignature().op() == REOp.DOWN
-			&& param instanceof SubstateWithArg) {
-			var substateWithArg = (SubstateWithArg) param;
-			if (substateWithArg.getSubstate() instanceof TokensInAccount) {
-				var tokensInAccount = (TokensInAccount) substateWithArg.getSubstate();
+		if (procedureKey.opSignature().op() == REOp.DOWN) {
+			if (param instanceof TokensInAccount) {
+				var tokensInAccount = (TokensInAccount) param;
 				if (tokensInAccount.getResourceAddr().isNativeToken()) {
 					return;
 				}

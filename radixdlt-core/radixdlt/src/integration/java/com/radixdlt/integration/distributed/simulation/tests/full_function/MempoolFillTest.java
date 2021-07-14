@@ -71,8 +71,7 @@ public class MempoolFillTest {
 				install(new MempoolFillerModule());
 				install(new NodeApplicationModule());
 			}
-		})
-		.addGenesisConfigModule(new AbstractModule() {
+
 			@ProvidesIntoSet
 			private TokenIssuance mempoolFillerIssuance(@Genesis ImmutableList<ECPublicKey> validators) {
 				return TokenIssuance.of(validators.get(0), TokenUnitConversions.unitsToSubunits(10000000000L));

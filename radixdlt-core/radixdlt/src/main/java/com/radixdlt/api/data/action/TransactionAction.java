@@ -56,11 +56,11 @@ public interface TransactionAction {
 		return new UnregisterValidatorAction(validatorKey);
 	}
 
-	static TransactionAction update(ECPublicKey validatorKey, Optional<String> name, Optional<String> url) {
-		return new UpdateValidatorAction(validatorKey, name.orElse(null), url.orElse(null));
+	static TransactionAction updateMetadata(ECPublicKey validatorKey, Optional<String> name, Optional<String> url) {
+		return new UpdateValidatorMetadataAction(validatorKey, name.orElse(null), url.orElse(null));
 	}
 
-	static TransactionAction updateRake(ECPublicKey validatorKey, int percentage) {
+	static TransactionAction updateValidatorFee(ECPublicKey validatorKey, int percentage) {
 		return new UpdateRakeAction(validatorKey, percentage);
 	}
 
@@ -77,7 +77,7 @@ public interface TransactionAction {
 		String description, String iconUrl, String tokenUrl, UInt256 amount
 	) {
 		return new CreateFixedTokenAction(
-			from, amount, REAddr.ofPubKeyAccount(signer), name,
+			from, amount, REAddr.ofHashedKey(signer, symbol), name,
 			symbol, iconUrl, tokenUrl, description
 		);
 	}

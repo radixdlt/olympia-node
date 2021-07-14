@@ -49,16 +49,18 @@ public final class ECPublicKey {
 	private final Supplier<byte[]> uncompressedBytes;
 	private final Supplier<EUID> uid;
 	private final int hashCode;
+	private final byte[] compressed;
 
 	private ECPublicKey(ECPoint ecPoint) {
 		this.ecPoint = Objects.requireNonNull(ecPoint);
 		this.uncompressedBytes = Suppliers.memoize(() -> this.ecPoint.getEncoded(false));
+		this.compressed = this.ecPoint.getEncoded(true);
 		this.uid = Suppliers.memoize(this::computeUID);
 		this.hashCode = computeHashCode();
 	}
 
 	private int computeHashCode() {
-		return Arrays.hashCode(uncompressedBytes.get());
+		return Arrays.hashCode(compressed);
 	}
 
 	public static ECPublicKey fromEcPoint(ECPoint ecPoint) {
@@ -100,7 +102,7 @@ public final class ECPublicKey {
 	}
 
 	public byte[] getCompressedBytes() {
-		return ecPoint.getEncoded(true);
+		return compressed;
 	}
 
 	public boolean verify(HashCode hash, ECDSASignature signature) {
@@ -131,7 +133,7 @@ public final class ECPublicKey {
 		}
 		if (object instanceof ECPublicKey) {
 			final var that = (ECPublicKey) object;
-			return Arrays.equals(uncompressedBytes.get(), that.uncompressedBytes.get());
+			return Arrays.equals(this.compressed, that.compressed);
 		}
 		return false;
 	}

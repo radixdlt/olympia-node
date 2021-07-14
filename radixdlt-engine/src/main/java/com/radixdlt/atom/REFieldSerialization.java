@@ -28,6 +28,8 @@ import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.regex.Pattern;
 
 public final class REFieldSerialization {
@@ -74,6 +76,28 @@ public final class REFieldSerialization {
 		return flag == 1;
 	}
 
+	public static void serializeOptionalKey(ByteBuffer buf, Optional<ECPublicKey> addr) {
+		addr.ifPresentOrElse(
+			o -> {
+				buf.put((byte) 0x1);
+				REFieldSerialization.serializeKey(buf, o);
+			},
+			() -> buf.put((byte) 0x0)
+		);
+	}
+
+	public static Optional<ECPublicKey> deserializeOptionalKey(ByteBuffer buf) throws DeserializeException {
+		var type = buf.get();
+		if (type == 0) {
+			return Optional.empty();
+		} else if (type == 1) {
+			return Optional.of(REFieldSerialization.deserializeKey(buf));
+		} else {
+			throw new DeserializeException("Unknown optionalAccountREAddr: " + type);
+		}
+	}
+
+
 	public static void serializeREAddr(ByteBuffer buf, REAddr rri) {
 		buf.put(rri.getBytes());
 	}
@@ -85,7 +109,7 @@ public final class REFieldSerialization {
 			throw new DeserializeException("Unknown address type " + v);
 		}
 		if (!allowed.contains(type.get())) {
-			throw new DeserializeException("Address type not allowed. Allowed: " + allowed);
+			throw new DeserializeException("Expected address type: " + allowed + " but was: " + type.get());
 		}
 		return type.get().parse(buf);
 	}
@@ -109,8 +133,44 @@ public final class REFieldSerialization {
 		}
 	}
 
+	public static int deserializeUnsignedShort(ByteBuffer buf, int min, int max) throws DeserializeException {
+		var s = buf.getShort();
+		var i = Short.toUnsignedInt(s);
+
+		if (i < min) {
+			throw new DeserializeException("Min of short value is " + min + " but value is: " + i);
+		}
+
+		if (i > max) {
+			throw new DeserializeException("Max of short value is " + max + " but value is: " + i);
+		}
+
+		return i;
+	}
+
 	public static void serializeReservedByte(ByteBuffer buf) {
 		buf.put((byte) 0);
+	}
+
+	public static void serializeOptionalLong(ByteBuffer buf, OptionalLong optionalLong) {
+		optionalLong.ifPresentOrElse(
+			e -> {
+				buf.put((byte) 0x1);
+				buf.putLong(e);
+			},
+			() -> buf.put((byte) 0x0)
+		);
+	}
+
+	public static OptionalLong deserializeOptionalNonNegativeLong(ByteBuffer buf) throws DeserializeException {
+		var type = buf.get();
+		if (type == 0) {
+			return OptionalLong.empty();
+		} else if (type == 1) {
+			return OptionalLong.of(REFieldSerialization.deserializeNonNegativeLong(buf));
+		} else {
+			throw new DeserializeException("Unknown optionalLongType: " + type);
+		}
 	}
 
 	public static Long deserializeNonNegativeLong(ByteBuffer buf) throws DeserializeException {
@@ -160,23 +220,20 @@ public final class REFieldSerialization {
 		if (sBytes.length > 255) {
 			throw new IllegalArgumentException("string cannot be greater than 255 chars");
 		}
-		var len = (byte) sBytes.length;
-		buf.put(len); // url length
+		var len = (short) sBytes.length;
+		buf.putShort(len); // url length
 		buf.put(sBytes); // url
 	}
 
-	public static String deserializeString(ByteBuffer buf) {
-		var len = Byte.toUnsignedInt(buf.get()); // url
+	public static String deserializeString(ByteBuffer buf) throws DeserializeException {
+		var len = REFieldSerialization.deserializeUnsignedShort(buf, 0, 255);
 		var dest = new byte[len];
 		buf.get(dest);
 		return new String(dest, RadixConstants.STANDARD_CHARSET);
 	}
 
 	public static String deserializeUrl(ByteBuffer buf) throws DeserializeException {
-		var len = Byte.toUnsignedInt(buf.get()); // url
-		var dest = new byte[len];
-		buf.get(dest);
-		var url = new String(dest, RadixConstants.STANDARD_CHARSET);
+		var url = deserializeString(buf);
 		if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
 			throw new DeserializeException("URL: not a valid URL: " + url);
 		}

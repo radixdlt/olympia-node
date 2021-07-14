@@ -18,11 +18,11 @@
 
 package com.radixdlt.atom.actions;
 
-import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxValidatorAction;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
-public final class UpdateValidatorOwnerAddress implements TxAction {
+public final class UpdateValidatorOwnerAddress implements TxValidatorAction {
 	private final ECPublicKey validatorKey;
 	private final REAddr ownerAddress;
 
@@ -31,7 +31,8 @@ public final class UpdateValidatorOwnerAddress implements TxAction {
 		this.ownerAddress = ownerAddress;
 	}
 
-	public ECPublicKey getValidatorKey() {
+	@Override
+	public ECPublicKey validatorKey() {
 		return validatorKey;
 	}
 

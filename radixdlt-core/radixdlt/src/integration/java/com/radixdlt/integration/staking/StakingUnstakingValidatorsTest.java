@@ -18,12 +18,22 @@
 
 package com.radixdlt.integration.staking;
 
+import com.google.common.collect.ClassToInstanceMap;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.deterministic.LastEventsModule;
+import com.radixdlt.integration.FailOnEvent;
+import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
+import org.assertj.core.util.Throwables;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,7 +41,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.radix.TokenIssuance;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
@@ -43,10 +52,7 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
-import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.application.system.state.ValidatorStakeData;
@@ -55,7 +61,6 @@ import com.radixdlt.application.tokens.state.ExittingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.PreparedRakeUpdate;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.RegisterValidator;
@@ -64,37 +69,25 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.atom.actions.UpdateRake;
+import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
@@ -104,24 +97,18 @@ import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
-import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import io.reactivex.rxjava3.schedulers.Timed;
 
@@ -166,23 +153,17 @@ public class StakingUnstakingValidatorsTest {
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
-
-	@Inject
-	@Genesis
-	private VerifiedTxnsAndProof genesis;
-
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
-	private List<Injector> nodes = new ArrayList<>();
+	private final List<Injector> nodes = new ArrayList<>();
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final Module radixEngineConfiguration;
 	private final Module byzantineModule;
 	private final long maxRounds;
 
 	public StakingUnstakingValidatorsTest(Module forkModule, long maxRounds, Module byzantineModule) {
-		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
+		this.nodeKeys = PrivateKeys.numeric(1)
 			.limit(20)
-			.sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
 			new ForksModule(),
@@ -202,30 +183,6 @@ public class StakingUnstakingValidatorsTest {
 
 		List<BFTNode> allNodes = nodeKeys.stream()
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
-
-		Guice.createInjector(
-			new MockedGenesisModule(),
-			new CryptoModule(),
-			new RadixEngineModule(),
-			this.radixEngineConfiguration,
-			new AbstractModule() {
-				@Override
-				public void configure() {
-					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
-					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(new InMemoryEngineStore<>());
-					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() {}).annotatedWith(Genesis.class)
-						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
-
-					nodeKeys.forEach(key ->
-						Multibinder.newSetBinder(binder(), TokenIssuance.class)
-							.addBinding().toInstance(TokenIssuance.of(key.getPublicKey(), Amount.ofTokens(10 * 10).toSubunits()))
-					);
-				}
-			}
-		).injectMembers(this);
-
 		this.nodeCreators = Streams.mapWithIndex(nodeKeys.stream(), (k, i) ->
 			(Supplier<Injector>) () -> createRunner(i == 1, k, allNodes)).collect(Collectors.toList());
 
@@ -252,32 +209,29 @@ public class StakingUnstakingValidatorsTest {
 			: this.radixEngineConfiguration;
 
 		return Guice.createInjector(
+			new MockedGenesisModule(
+				nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+				Amount.ofTokens(100000),
+				Amount.ofTokens(1000)
+			),
 			MempoolConfig.asModule(10, 10),
 			reConfig,
 			new PersistedNodeForTestingModule(),
+			new LastEventsModule(LedgerUpdate.class),
+			FailOnEvent.asModule(InvalidProposedTxn.class),
+			FailOnEvent.asModule(MempoolAddFailure.class, e -> {
+				if (!(e.getException().getCause() instanceof RadixEngineException)) {
+					return false;
+				}
+				return !(Throwables.getRootCause(e.getException()) instanceof SubstateNotFoundException);
+			}),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesis);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-					bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
-					bind(ControlledSenderFactory.class).toInstance(network::createSender);
+					bind(Environment.class).toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
-					bind(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() {})
-						.toInstance(new DeterministicSavedLastEvent<>(LedgerUpdate.class));
-					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() {})
-						.addBinding().toProvider(new TypeLiteral<DeterministicSavedLastEvent<LedgerUpdate>>() {});
-				}
-
-				@ProvidesIntoSet
-				EventProcessorOnDispatch<?> failOnEvent() {
-					return new EventProcessorOnDispatch<>(
-						InvalidProposedTxn.class,
-						i -> {
-							throw new IllegalStateException("Invalid proposed transaction occurred: " + i, i.getException());
-						}
-					);
 				}
 
 				@Provides
@@ -331,21 +285,21 @@ public class StakingUnstakingValidatorsTest {
 
 	private static class NodeState {
 		private final String self;
-		private final DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate;
 		private final EpochChange epochChange;
 		private final BerkeleyLedgerEntryStore entryStore;
 		private final Forks forks;
+		private final ClassToInstanceMap<Object> lastEvents;
 
 		@Inject
 		private NodeState(
 			@Self String self,
-			DeterministicSavedLastEvent<LedgerUpdate> lastLedgerUpdate,
+			ClassToInstanceMap<Object> lastEvents,
 			EpochChange epochChange,
 			BerkeleyLedgerEntryStore entryStore,
 			Forks forks
 		) {
 			this.self = self;
-			this.lastLedgerUpdate = lastLedgerUpdate;
+			this.lastEvents = lastEvents;
 			this.epochChange = epochChange;
 			this.entryStore = entryStore;
 			this.forks = forks;
@@ -356,14 +310,14 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public long getEpoch() {
-			if (lastLedgerUpdate.getLastEvent() == null) {
+			if (lastEvents.getInstance(LedgerUpdate.class) == null) {
 				return epochChange.getEpoch();
 			}
-			var epochChange = lastLedgerUpdate.getLastEvent().getStateComputerOutput().getInstance(EpochChange.class);
+			var epochChange = lastEvents.getInstance(LedgerUpdate.class).getStateComputerOutput().getInstance(EpochChange.class);
 			if (epochChange != null) {
 				return epochChange.getEpoch();
 			} else {
-				return lastLedgerUpdate.getLastEvent().getTail().getEpoch();
+				return lastEvents.getInstance(LedgerUpdate.class).getTail().getEpoch();
 			}
 		}
 
@@ -514,7 +468,7 @@ public class StakingUnstakingValidatorsTest {
 					restartNode(nodeIndex);
 					continue;
 				case 6:
-					action = new UpdateRake(privKey.getPublicKey(), random.nextInt(PreparedRakeUpdate.RAKE_MAX + 1));
+					action = new UpdateValidatorFee(privKey.getPublicKey(), random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
 					break;
 				case 7:
 					action = new UpdateValidatorOwnerAddress(privKey.getPublicKey(), REAddr.ofPubKeyAccount(to));

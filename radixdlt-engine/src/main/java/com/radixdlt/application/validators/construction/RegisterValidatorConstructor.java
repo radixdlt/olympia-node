@@ -18,38 +18,28 @@
 
 package com.radixdlt.application.validators.construction;
 
+import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 public class RegisterValidatorConstructor implements ActionConstructor<RegisterValidator> {
 	@Override
 	public void construct(RegisterValidator action, TxBuilder txBuilder) throws TxBuilderException {
-		var updateInFlight = txBuilder
-			.find(PreparedRegisteredUpdate.class, p -> p.getValidatorKey().equals(action.validatorKey()));
-		if (updateInFlight.isPresent()) {
-			txBuilder.swap(
-				PreparedRegisteredUpdate.class,
-				p -> p.getValidatorKey().equals(action.validatorKey()),
-				Optional.empty(),
-				() -> new TxBuilderException("Cannot find state")
-			).with(substateDown -> List.of(new PreparedRegisteredUpdate(action.validatorKey(), true)));
-		} else {
-			txBuilder.swap(
-				ValidatorRegisteredCopy.class,
-				p -> p.getValidatorKey().equals(action.validatorKey()),
-				Optional.of(SubstateWithArg.noArg(new ValidatorRegisteredCopy(action.validatorKey(), false))),
-				() -> new TxBuilderException("Cannot find state")
+		txBuilder.down(
+			ValidatorRegisteredCopy.class,
+			p -> p.getValidatorKey().equals(action.validatorKey()),
+			Optional.of(action.validatorKey()),
+			() -> new TxBuilderException("Cannot find state")
+		);
 
-			).with(substateDown -> List.of(new PreparedRegisteredUpdate(action.validatorKey(), true)));
-		}
+		var curEpoch = txBuilder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
+		txBuilder.up(new ValidatorRegisteredCopy(OptionalLong.of(curEpoch.getEpoch() + 1), action.validatorKey(), true));
 		txBuilder.end();
 	}
 }

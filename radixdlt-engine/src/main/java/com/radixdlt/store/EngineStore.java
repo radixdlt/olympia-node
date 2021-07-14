@@ -17,19 +17,17 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.atom.CloseableCursor;
+import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.engine.RadixEngineException;
 
 import java.util.List;
 import java.util.function.BiFunction;
 
-public interface EngineStore<M> {
+public interface EngineStore<M> extends SubstateStore {
 	/**
 	 * For verification
 	 */
@@ -41,11 +39,6 @@ public interface EngineStore<M> {
 		R start(EngineStoreInTransaction<M> store) throws RadixEngineException;
 	}
 	<R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException;
-
-	/**
-	 * For construction
-	 */
-	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index);
 
 	/**
 	 * Deterministically computes a value from a list of particles of a given type.

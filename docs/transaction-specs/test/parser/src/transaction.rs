@@ -1,14 +1,10 @@
-
-
 extern crate bytebuffer;
 
 use bytebuffer::ByteBuffer;
 use std::fmt;
 
 use crate::substates::*;
-use crate::types::Bytes;
-use crate::types::Signature;
-use crate::types::SubstateId;
+use crate::types::*;
 
 pub struct Transaction {
     pub instructions: Vec<Instruction>,
@@ -24,17 +20,19 @@ pub enum Instruction {
 
     READ(SubstateId),
 
-    LREAD(u32),
+    LREAD(SubstateIndex),
 
-    VREAD(Box<dyn Substate>),
+    VREAD(VirtualSubstateID),
+
+    LVREAD(LocalVirtualSubstateID),
 
     DOWN(SubstateId),
 
-    LDOWN(u32),
+    LDOWN(SubstateIndex),
 
-    VDOWN(Box<dyn Substate>),
+    VDOWN(VirtualSubstateID),
 
-    VDOWNARG(Box<dyn Substate>, Bytes),
+    LVDOWN(LocalVirtualSubstateID),
 
     SIG(Signature),
 
@@ -78,36 +76,37 @@ impl Instruction {
             0x01 => Self::SYSCALL(Bytes::from_buffer(buffer)),
             0x02 => Self::UP(Self::read_substate(buffer)),
             0x03 => Self::READ(SubstateId::from_buffer(buffer)),
-            0x04 => Self::LREAD(buffer.read_u32()),
-            0x05 => Self::VREAD(Self::read_substate(buffer)),
-            0x06 => Self::DOWN(SubstateId::from_buffer(buffer)),
-            0x07 => Self::LDOWN(buffer.read_u32()),
-            0x08 => Self::VDOWN(Self::read_substate(buffer)),
-            0x09 => Self::VDOWNARG(Self::read_substate(buffer), Bytes::from_buffer(buffer)),
-            0x0A => Self::SIG(Signature::from_buffer(buffer)),
-            0x0B => Self::MSG(Bytes::from_buffer(buffer)),
-            0x0C => Self::HEADER(buffer.read_u8(), buffer.read_u8()),
-            0x0D => Self::READINDEX(Bytes::from_buffer(buffer)),
-            0x0E => Self::DOWNINDEX(Bytes::from_buffer(buffer)),
+            0x04 => Self::LREAD(buffer.read_u16()),
+            0x05 => Self::VREAD(VirtualSubstateID::from_buffer(buffer)),
+            0x06 => Self::LVREAD(LocalVirtualSubstateID::from_buffer(buffer)),
+            0x07 => Self::DOWN(SubstateId::from_buffer(buffer)),
+            0x08 => Self::LDOWN(buffer.read_u16()),
+            0x09 => Self::VDOWN(VirtualSubstateID::from_buffer(buffer)),
+            0x0A => Self::LVDOWN(LocalVirtualSubstateID::from_buffer(buffer)),
+            0x0B => Self::SIG(Signature::from_buffer(buffer)),
+            0x0C => Self::MSG(Bytes::from_buffer(buffer)),
+            0x0D => Self::HEADER(buffer.read_u8(), buffer.read_u8()),
+            0x0E => Self::READINDEX(Bytes::from_buffer(buffer)),
+            0x0F => Self::DOWNINDEX(Bytes::from_buffer(buffer)),
             _ => panic!("Unexpected opcode: {:#04X}", t),
         }
     }
 
     fn read_substate(buffer: &mut ByteBuffer) -> Box<dyn Substate> {
+        let _size = buffer.read_u16();
         let t = buffer.read_u8();
         match t {
-            0x00 => Box::new(REAddress::from_buffer(buffer)),
-            0x03 => Box::new(TokenResource::from_buffer(buffer)),
-            0x04 => Box::new(TokenResourceMetadata::from_buffer(buffer)),
-            0x05 => Box::new(Tokens::from_buffer(buffer)),
-            0x06 => Box::new(PreparedStake::from_buffer(buffer)),
-            0x07 => Box::new(StakeOwnership::from_buffer(buffer)),
-            0x08 => Box::new(PreparedUnstake::from_buffer(buffer)),
-            0x09 => Box::new(ExitingStake::from_buffer(buffer)),
-            0x0D => Box::new(ValidatorAllowDelegationFlag::from_buffer(buffer)),
-            0x0E => Box::new(ValidatorRegisteredFlagCopy::from_buffer(buffer)),
-            0x0F => Box::new(PreparedRegisteredFlagUpdate::from_buffer(buffer)),
-            0x12 => Box::new(ValidatorOwnerCopy::from_buffer(buffer)),
+            0x04 => Box::new(TokenResource::from_buffer(buffer)),
+            0x05 => Box::new(TokenResourceMetadata::from_buffer(buffer)),
+            0x06 => Box::new(Tokens::from_buffer(buffer)),
+            0x07 => Box::new(PreparedStake::from_buffer(buffer)),
+            0x08 => Box::new(StakeOwnership::from_buffer(buffer)),
+            0x09 => Box::new(PreparedUnstake::from_buffer(buffer)),
+            0x0A => Box::new(ExitingStake::from_buffer(buffer)),
+            0x0E => Box::new(ValidatorAllowDelegationFlag::from_buffer(buffer)),
+            0x0F => Box::new(ValidatorRegisteredFlagCopy::from_buffer(buffer)),
+            0x10 => Box::new(ValidatorRakeCopy::from_buffer(buffer)),
+            0x11 => Box::new(ValidatorOwnerCopy::from_buffer(buffer)),
             _ => panic!("Unsupported substate type: {:#04X}", t),
         }
     }

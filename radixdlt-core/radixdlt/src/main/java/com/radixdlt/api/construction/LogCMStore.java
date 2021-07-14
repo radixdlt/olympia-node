@@ -24,7 +24,8 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.exceptions.TxnParseException;
+import com.radixdlt.constraintmachine.UpSubstate;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.TxnIndex;
@@ -56,8 +57,10 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public boolean isVirtualDown(SubstateId substateId) {
-		return false;
+	public ByteBuffer verifyVirtualSubstate(SubstateId substateId) {
+		return substateId.getVirtualParent()
+			.flatMap(this::loadSubstate)
+			.orElseThrow();
 	}
 
 	@Override
@@ -77,7 +80,10 @@ public final class LogCMStore implements CMStore {
 						.filter(i -> i.getMicroOp() == REInstruction.REMicroOp.UP)
 						.skip(index)
 						.findFirst()
-						.map(i -> i.getDataByteBuffer());
+						.map(i -> {
+							UpSubstate upSubstate = i.getData();
+							return upSubstate.getSubstateBuffer();
+						});
 				} catch (TxnParseException e) {
 					throw new IllegalStateException("Cannot deserialize txn", e);
 				}

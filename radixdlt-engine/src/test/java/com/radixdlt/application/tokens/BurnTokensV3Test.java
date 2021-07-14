@@ -19,16 +19,20 @@
 package com.radixdlt.application.tokens;
 
 import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.application.tokens.construction.BurnTokenConstructor;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
@@ -45,6 +49,7 @@ import org.junit.Test;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,12 +58,14 @@ public class BurnTokensV3Test {
 	private RadixEngine<Void> engine;
 
 	@Before
-	public void setup() {
+	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
+			cmAtomOS.getProcedures(),
+			cmAtomOS.buildSubstateDeserialization(),
+			cmAtomOS.buildVirtualSubstateDeserialization()
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
@@ -67,6 +74,7 @@ public class BurnTokensV3Test {
 			parser,
 			serialization,
 			REConstructor.newBuilder()
+				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(BurnToken.class, new BurnTokenConstructor())
@@ -74,6 +82,8 @@ public class BurnTokensV3Test {
 			cm,
 			store
 		);
+		var genesis = this.engine.construct(new CreateSystem(0)).buildWithoutSignature();
+		this.engine.execute(List.of(genesis), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test
@@ -87,6 +97,35 @@ public class BurnTokensV3Test {
 		this.engine.execute(List.of(txn));
 		var account = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var mintTxn = this.engine.construct(new MintToken(tokenAddr, account, UInt256.TEN)).signAndBuild(key::sign);
+		this.engine.execute(List.of(mintTxn));
+
+		// Act
+		var burnTxn = this.engine.construct(new BurnToken(tokenAddr, account, UInt256.TEN))
+			.signAndBuild(key::sign);
+		var processed = this.engine.execute(List.of(burnTxn));
+
+		// Assert
+		var accounting = REResourceAccounting.compute(processed.get(0).getGroupedStateUpdates().get(0));
+		assertThat(accounting.resourceAccounting())
+			.hasSize(1)
+			.containsEntry(tokenAddr, BigInteger.valueOf(-10));
+	}
+
+	@Test
+	public void can_burn_tokens_of_multiple_utxos() throws Exception {
+		// Arrange
+		var key = ECKeyPair.generateNew();
+		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
+		var txn = this.engine.construct(
+			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
+		).signAndBuild(key::sign);
+		this.engine.execute(List.of(txn));
+		var account = REAddr.ofPubKeyAccount(key.getPublicKey());
+		var mintTxn = this.engine.construct(
+			TxnConstructionRequest.create()
+				.action(new MintToken(tokenAddr, account, UInt256.FIVE))
+				.action(new MintToken(tokenAddr, account, UInt256.FIVE))
+		).signAndBuild(key::sign);
 		this.engine.execute(List.of(mintTxn));
 
 		// Act

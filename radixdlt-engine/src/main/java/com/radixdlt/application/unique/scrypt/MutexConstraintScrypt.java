@@ -18,7 +18,7 @@
 
 package com.radixdlt.application.unique.scrypt;
 
-import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.Authorization;
@@ -29,7 +29,7 @@ public class MutexConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(Loader os) {
 		os.procedure(new EndProcedure<>(
-			CMAtomOS.REAddrClaim.class,
+			SystemConstraintScrypt.REAddrClaim.class,
 			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, c, r) -> { }
 		));

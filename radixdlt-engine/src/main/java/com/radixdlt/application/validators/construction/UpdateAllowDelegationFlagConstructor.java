@@ -23,7 +23,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.constraintmachine.SubstateWithArg;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,12 +32,12 @@ public class UpdateAllowDelegationFlagConstructor implements ActionConstructor<U
 	public void construct(UpdateAllowDelegationFlag action, TxBuilder builder) throws TxBuilderException {
 		builder.swap(
 			AllowDelegationFlag.class,
-			p -> p.getValidatorKey().equals(action.getValidatorKey()) && p.allowsDelegation() != action.allowDelegation(),
-			Optional.of(SubstateWithArg.noArg(new AllowDelegationFlag(action.getValidatorKey(), false))),
+			p -> p.getValidatorKey().equals(action.validatorKey()) && p.allowsDelegation() != action.allowDelegation(),
+			Optional.of(action.validatorKey()),
 			() -> new TxBuilderException("Flag already set to " + action.allowDelegation())
 		).with(
 			substateDown -> List.of(new AllowDelegationFlag(
-				action.getValidatorKey(),
+				action.validatorKey(),
 				action.allowDelegation()
 			))
 		);

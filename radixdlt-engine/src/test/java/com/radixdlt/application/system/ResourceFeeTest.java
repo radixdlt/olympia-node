@@ -18,9 +18,10 @@
 
 package com.radixdlt.application.system;
 
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
-import com.radixdlt.application.system.scrypt.FeeConstraintScrypt;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
@@ -30,6 +31,7 @@ import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.atom.actions.MintToken;
@@ -49,6 +51,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -62,10 +65,11 @@ public final class ResourceFeeTest {
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new TokensConstraintScryptV3());
-		cmAtomOS.load(new FeeConstraintScrypt());
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of("xrd")));
 		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
 			cmAtomOS.getProcedures(),
+			cmAtomOS.buildSubstateDeserialization(),
+			cmAtomOS.buildVirtualSubstateDeserialization(),
 			ResourceFeeMeter.create(Amount.ofTokens(1).toSubunits())
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
@@ -75,6 +79,7 @@ public final class ResourceFeeTest {
 			parser,
 			serialization,
 			REConstructor.newBuilder()
+				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(TransferToken.class, new TransferTokensConstructorV2())
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
@@ -86,6 +91,7 @@ public final class ResourceFeeTest {
 		);
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
+				.action(new CreateSystem(0))
 				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, Amount.ofTokens(4).toSubunits()))
 		).buildWithoutSignature();

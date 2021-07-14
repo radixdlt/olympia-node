@@ -24,17 +24,15 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 
 /**
  * A sender within a deterministic network.
  */
-public final class ControlledSender implements DeterministicSender, Environment {
+public final class ControlledSender implements Environment {
 	private final DeterministicNetwork network;
 	private final BFTNode self;
 	private final int senderIndex;
 	private final ChannelId localChannel;
-
 
 	ControlledSender(DeterministicNetwork network, BFTNode self, int senderIndex) {
 		this.network = network;

@@ -24,22 +24,22 @@ import com.radixdlt.crypto.ECPublicKey;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class CreateMutableTokenAction implements Action {
 	private final ActionType type = ActionType.CREATE_MUTABLE;
-	private final ECPublicKey signer;
-	private final String name;
+	private final ECPublicKey publicKeyOfSigner;
 	private final String symbol;
+	private final String name;
+	private final String description;
 	private final String iconUrl;
 	private final String tokenUrl;
-	private final String description;
 
 	public CreateMutableTokenAction(
-		ECPublicKey signer, String name, String symbol,
-		String iconUrl, String tokenUrl, String description
+		ECPublicKey publicKeyOfSigner, String symbol, String name,
+		String description, String iconUrl, String tokenUrl
 	) {
-		this.signer = signer;
-		this.name = name;
+		this.publicKeyOfSigner = publicKeyOfSigner;
 		this.symbol = symbol;
+		this.name = name;
+		this.description = description;
 		this.iconUrl = iconUrl;
 		this.tokenUrl = tokenUrl;
-		this.description = description;
 	}
 }

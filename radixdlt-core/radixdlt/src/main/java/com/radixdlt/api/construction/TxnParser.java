@@ -26,7 +26,7 @@ import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.exceptions.TxnParseException;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.functional.Result;
 
@@ -50,8 +50,9 @@ public final class TxnParser {
 		var parsedTxn = parser.parse(txn);
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
-			cmConfig.getVirtualStoreLayer(),
 			cmConfig.getProcedures(),
+			cmConfig.getDeserialization(),
+			cmConfig.getVirtualSubstateDeserialization(),
 			cmConfig.getMeter()
 		);
 		var context = new ExecutionContext(
@@ -62,7 +63,6 @@ public final class TxnParser {
 		);
 
 		var stateUpdates = cm.verify(
-			parser.getSubstateDeserialization(),
 			logCMStore,
 			context,
 			parsedTxn.instructions()

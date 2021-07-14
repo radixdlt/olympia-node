@@ -21,10 +21,10 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.PreparedOwnerUpdate;
-import com.radixdlt.application.validators.state.PreparedRakeUpdate;
-import com.radixdlt.application.validators.state.PreparedRegisteredUpdate;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.Particle;
 
 import java.util.Set;
@@ -40,35 +40,35 @@ public final class AllValidatorsReducer {
 		// after ValidatorStake to get to the correct state
 		return ImmutableSet.of(
 			ValidatorStakeData.class,
-			PreparedRegisteredUpdate.class,
+			ValidatorRegisteredCopy.class,
 			PreparedStake.class,
-			PreparedOwnerUpdate.class,
+			ValidatorOwnerCopy.class,
 			AllowDelegationFlag.class,
 			ValidatorMetaData.class,
-			PreparedRakeUpdate.class
+			ValidatorRakeCopy.class
 		);
 	}
 
 	public BiFunction<AllValidators, Particle, AllValidators> outputReducer() {
 		return (prev, p) -> {
-			if (p instanceof PreparedRegisteredUpdate) {
-				var v = (PreparedRegisteredUpdate) p;
-				return prev.add(v.getValidatorKey());
+			if (p instanceof ValidatorRegisteredCopy) {
+				var v = (ValidatorRegisteredCopy) p;
+				return prev.setRegistered(v.getValidatorKey(), v.isRegistered());
 			} else if (p instanceof ValidatorMetaData) {
 				var s = (ValidatorMetaData) p;
 				return prev.set(s);
 			} else if (p instanceof PreparedStake) { // TODO: Remove for mainnet
 				var s = (PreparedStake) p;
 				return prev.add(s.getDelegateKey(), s.getAmount());
-			} else if (p instanceof PreparedOwnerUpdate) {
-				var s = (PreparedOwnerUpdate) p;
-				return prev.setOwner(s.getValidatorKey(), s.getOwnerAddress());
+			} else if (p instanceof ValidatorOwnerCopy) {
+				var s = (ValidatorOwnerCopy) p;
+				return prev.setOwner(s.getValidatorKey(), s.getOwner());
 			} else if (p instanceof AllowDelegationFlag) {
 				var s = (AllowDelegationFlag) p;
 				return prev.setAllowDelegationFlag(s.getValidatorKey(), s.allowsDelegation());
-			} else if (p instanceof PreparedRakeUpdate) {
-				var s = (PreparedRakeUpdate) p;
-				return prev.setRake(s.getValidatorKey(), s.getCurRakePercentage());
+			} else if (p instanceof ValidatorRakeCopy) {
+				var s = (ValidatorRakeCopy) p;
+				return prev.setRake(s.getValidatorKey(), s.getRakePercentage());
 			} else {
 				var s = (ValidatorStakeData) p;
 				return prev.setOwner(s.getValidatorKey(), s.getOwnerAddr())

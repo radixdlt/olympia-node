@@ -18,7 +18,10 @@
 
 package com.radixdlt.application.tokens;
 
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.validators.construction.RegisterValidatorConstructor;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxAction;
@@ -66,6 +69,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -87,8 +91,10 @@ public class UnstakeTokensV2Test {
 					),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2),
-					new ValidatorRegisterConstraintScrypt()
+					new ValidatorConstraintScryptV2(),
+					new ValidatorRegisterConstraintScrypt(),
+					new ValidatorUpdateRakeConstraintScrypt(2),
+					new ValidatorUpdateOwnerConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
 				new UnstakeOwnershipConstructor()
@@ -104,8 +110,10 @@ public class UnstakeTokensV2Test {
 					),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2),
-					new ValidatorRegisterConstraintScrypt()
+					new ValidatorConstraintScryptV2(),
+					new ValidatorRegisterConstraintScrypt(),
+					new ValidatorUpdateRakeConstraintScrypt(2),
+					new ValidatorUpdateOwnerConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
 				new UnstakeOwnershipConstructor()
@@ -121,8 +129,10 @@ public class UnstakeTokensV2Test {
 					),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2),
-					new ValidatorRegisterConstraintScrypt()
+					new ValidatorConstraintScryptV2(),
+					new ValidatorRegisterConstraintScrypt(),
+					new ValidatorUpdateRakeConstraintScrypt(2),
+					new ValidatorUpdateOwnerConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
 				new UnstakeOwnershipConstructor()
@@ -138,8 +148,10 @@ public class UnstakeTokensV2Test {
 					),
 					new TokensConstraintScryptV3(),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new ValidatorConstraintScryptV2(2),
-					new ValidatorRegisterConstraintScrypt()
+					new ValidatorConstraintScryptV2(),
+					new ValidatorRegisterConstraintScrypt(),
+					new ValidatorUpdateRakeConstraintScrypt(2),
+					new ValidatorUpdateOwnerConstraintScrypt()
 				),
 				new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()),
 				new UnstakeOwnershipConstructor()
@@ -176,10 +188,12 @@ public class UnstakeTokensV2Test {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
 		scrypts.forEach(cmAtomOS::load);
 		var cm = new ConstraintMachine(
-			cmAtomOS.virtualizedUpParticles(),
-			cmAtomOS.getProcedures()
+			cmAtomOS.getProcedures(),
+			cmAtomOS.buildSubstateDeserialization(),
+			cmAtomOS.buildVirtualSubstateDeserialization()
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();

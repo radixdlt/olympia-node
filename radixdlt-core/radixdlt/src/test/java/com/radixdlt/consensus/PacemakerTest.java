@@ -17,7 +17,9 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.utils.PrivateKeys;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,6 +45,8 @@ import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -66,8 +70,12 @@ public class PacemakerTest {
 			MempoolConfig.asModule(10, 10),
 			new ForksModule(),
 			new RadixEngineForksLatestOnlyModule(),
-			new MockedGenesisModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(),
+			new MockedGenesisModule(
+				Set.of(PrivateKeys.ofNumeric(1).getPublicKey()),
+				Amount.ofTokens(1000),
+				Amount.ofTokens(100)
+			),
+			new SingleNodeAndPeersDeterministicNetworkModule(PrivateKeys.ofNumeric(1)),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

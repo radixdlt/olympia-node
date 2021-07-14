@@ -59,8 +59,9 @@ public final class GenesisBuilder {
 		this.ledgerAccumulator = ledgerAccumulator;
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
-			cmConfig.getVirtualStoreLayer(),
 			cmConfig.getProcedures(),
+			cmConfig.getDeserialization(),
+			cmConfig.getVirtualSubstateDeserialization(),
 			cmConfig.getMeter()
 		);
 		this.radixEngine = new RadixEngine<>(

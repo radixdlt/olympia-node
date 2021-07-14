@@ -16,6 +16,7 @@
  */
 package com.radixdlt.api.store.berkeley;
 
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
@@ -28,6 +29,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.store.LastStoredProof;
+import com.radixdlt.utils.PrivateKeys;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -79,6 +81,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -93,6 +96,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class BerkeleyClientApiStoreTest {
+	private static final ECKeyPair VALIDATOR_KEY = PrivateKeys.ofNumeric(1);
+
 	private static final ECKeyPair OWNER_KEYPAIR = ECKeyPair.generateNew();
 	private static final REAddr OWNER_ACCOUNT = REAddr.ofPubKeyAccount(OWNER_KEYPAIR.getPublicKey());
 	private static final ECKeyPair TOKEN_KEYPAIR = ECKeyPair.generateNew();
@@ -133,8 +138,12 @@ public class BerkeleyClientApiStoreTest {
 			MempoolConfig.asModule(1000, 0),
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(),
+			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
+			new MockedGenesisModule(
+				Set.of(VALIDATOR_KEY.getPublicKey()),
+				Amount.ofTokens(1000),
+				Amount.ofTokens(100)
+			),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
@@ -146,7 +155,7 @@ public class BerkeleyClientApiStoreTest {
 	}
 
 	@Before
-	public void setUp() {
+	public void setUp() throws Exception {
 		environment = new DatabaseEnvironment(folder.getRoot().getAbsolutePath(), 0);
 		var injector = createInjector();
 		injector.injectMembers(this);

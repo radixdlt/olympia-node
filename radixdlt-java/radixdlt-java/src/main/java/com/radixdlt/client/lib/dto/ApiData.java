@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class ApiData {
+public final class ApiData {
 	private final ApiDataElapsed elapsed;
 	private final ApiDataCount count;
 

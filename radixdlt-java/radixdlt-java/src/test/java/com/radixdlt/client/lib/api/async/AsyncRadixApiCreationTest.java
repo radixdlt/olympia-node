@@ -42,7 +42,6 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -50,6 +49,7 @@ import static org.mockito.Mockito.when;
 
 import static com.radixdlt.client.lib.api.token.Amount.amount;
 
+//TODO: test remaining actions!!!
 public class AsyncRadixApiCreationTest {
 	private static final String BASE_URL = "http://localhost/";
 	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
@@ -157,34 +157,57 @@ public class AsyncRadixApiCreationTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.transaction().build(request).join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(builtTransactionDTO -> assertEquals(amount(73800).micros(), builtTransactionDTO.getFee()))
-				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false).join()
-					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-					.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction).join()
-						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId())))));
+				.onSuccess(builtTransaction -> assertEquals(amount(73800).micros(), builtTransaction.getFee()))
+				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
+				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true).join()
+					.onFailure(failure -> fail(failure.toString()))));
 	}
 
 	@Test
 	@Ignore
-	public void testRegisterValidator() {
-		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS3)
-			.registerValidator(VALIDATOR_ADDRESS, Optional.of("MyValidator"), Optional.of("http://my.validator.url.com/"))
+	public void testCreateFixedSupplyToken() {
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
+			.createFixed(ACCOUNT_ADDRESS1, KEY_PAIR1.getPublicKey(),
+						 "fix", "fix", "fix",
+						 "https://some.host.com/", "https://some.other.host.com",
+						 amount(1000).tokens())
 			.build();
 
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
+			.join()
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.transaction().build(request)
+				.join()
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(builtTransaction -> assertEquals(amount(1000109).millis(), builtTransaction.getFee()))
+				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
+				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
+					.join()
+					.onFailure(failure -> fail(failure.toString()))));
+	}
+
+	@Test
+	@Ignore
+	//TODO: for some reason operation succeeds only if transaction contains only one action
+	public void testRegisterValidator() {
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS3)
+			.registerValidator(VALIDATOR_ADDRESS, Optional.of("MyValidator"), Optional.of("http://my.validator.url.com/"))
+			.updateValidatorFee(VALIDATOR_ADDRESS, 3.1)
+			.updateValidatorOwner(VALIDATOR_ADDRESS, ACCOUNT_ADDRESS3)
+			.updateValidatorAllowDelegationFlag(VALIDATOR_ADDRESS, true)
+			.build();
+
+		RadixApi.connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.transaction().build(request)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
-				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR3))
-				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false)
-					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-					.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
-						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId())))));
+				.onSuccess(builtTransaction -> assertEquals(amount(102600).micros(), builtTransaction.getFee()))
+				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR3))
+				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true).join()
+					.onFailure(failure -> fail(failure.toString()))));
 	}
 
 	private TxBlobDTO buildBlobDto() {
@@ -193,9 +216,9 @@ public class AsyncRadixApiCreationTest {
 
 	private FinalizedTransaction buildFinalizedTransaction() throws PublicKeyException {
 		var sig = ECDSASignature.decodeFromHexDer(SIG);
-		var pubkey = ECPublicKey.fromHex(PUB_KEY);
-		var blobDTO = buildBlobDto();
-		return FinalizedTransaction.create(blobDTO.getBlob(), sig, pubkey, blobDTO.getTxId());
+		var publicKey = ECPublicKey.fromHex(PUB_KEY);
+		var blob = buildBlobDto();
+		return FinalizedTransaction.create(blob.getBlob(), sig, publicKey, blob.getTxId());
 	}
 
 	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
