@@ -33,7 +33,7 @@ public class FixedSupplyTokens extends AcceptanceTest {
     @Then("I can observe that the token has been created, with the correct values")
     public void i_can_observe_that_the_token_has_been_created_with_the_correct_values() {
         TransactionDTO transaction = account1.lookup(txBuffer);
-        System.out.println(transaction);
+        System.out.println(transaction); // TODO wip
     }
 
 }

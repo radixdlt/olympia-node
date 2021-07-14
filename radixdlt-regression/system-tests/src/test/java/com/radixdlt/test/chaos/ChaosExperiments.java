@@ -20,11 +20,13 @@ package com.radixdlt.test.chaos;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AccountAddressing;
@@ -69,10 +71,35 @@ public class ChaosExperiments {
     }
 
     @Test
+    public void stake() throws DeserializeException {
+        ECKeyPair richKeyPair = keyPairOf(2);
+        AccountAddress richAccount = AccountAddress.create(richKeyPair.getPublicKey());
+        System.out.println("\n" + richAccount.toString(Network.RCNET.getId()) + "\n");
+
+        ImperativeRadixApi client = ImperativeRadixApi
+            .connect("https://rcnet.radixdlt.com", 443, 443);
+        //52.63.12.179
+        ECPublicKey validatorKey = Addressing.ofNetwork(Network.RCNET).forValidators()
+            .parse("tv41qfw7gsl80lek83r5j6u6dcx6tyck9v0e9eh6h6nn46rm05p8tg3ycf94ffg");
+        ValidatorAddress validatorAddress = ValidatorAddress.of(validatorKey);
+
+        Amount amount = Amount.ofTokens(1000);
+        FinalizedTransaction finalized = client.transaction().build(TransactionRequest
+            .createBuilder(richAccount)
+            .unstake(richAccount, validatorAddress, amount.toSubunits())
+            .build())
+            .toFinalized(richKeyPair);
+        TxBlobDTO postFinal = client.transaction().finalize(finalized, false);
+        TxDTO response = client.transaction().submit(postFinal);
+        System.out.println(response);
+
+    }
+
+   // @Test
     public void a() throws PrivateKeyException, PublicKeyException, DeserializeException {
         ECKeyPair richKeyPair = keyPairOf(1);
         AccountAddress richAccount = AccountAddress.create(richKeyPair.getPublicKey());
-        System.out.println(richAccount.getAddress());
+
         //REAddr faucetREAddr = AccountAddressing.bech32("tdx").parse("tdx1qspjpz3asp8fkq97e2xyvfc7h47wwf78597ssufw75kxrgr7nrdj5ng35dnc3");
         REAddr faucetREAddr = Addressing.ofNetwork(Network.RCNET).forAccounts().parse("tdx1qspn50wwphz8jeu6nnxgv9lmwhf0tw9h9jk0cv2rwp54h5442m757ys3nvc6f");
         AccountAddress faucetAccount = AccountAddress.create(faucetREAddr);
@@ -83,7 +110,6 @@ public class ChaosExperiments {
         FinalizedTransaction finalized = client.transaction().build(TransactionRequest
             .createBuilder(richAccount)
             .transfer(richAccount, faucetAccount, amount.toSubunits(), "xrd_tr1qyf0x76s")
-            .message("a loaf")
             .build())
             .toFinalized(richKeyPair);
         TxBlobDTO postFinal = client.transaction().finalize(finalized, false);
