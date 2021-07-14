@@ -19,8 +19,8 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.utils.functional.Either;
-import java.util.function.Function;
+
+import java.util.Optional;
 
 /**
  * An intermediate class used for creating fork configurations.
@@ -29,7 +29,8 @@ import java.util.function.Function;
 public final class ForkBuilder {
 	private final String name;
 	private final HashCode hash;
-	private final Either<Long, CandidateForkPredicate> forkExecution;
+	private final long epoch;
+	private final Optional<Integer> requiredStake;
 	private final RERulesVersion reRulesVersion;
 	private final RERulesConfig reRulesConfig;
 
@@ -40,29 +41,32 @@ public final class ForkBuilder {
 		RERulesVersion reRulesVersion,
 		RERulesConfig reRulesConfig
 	) {
-		this(name, hash, Either.left(fixedEpoch), reRulesVersion, reRulesConfig);
+		this(name, hash, fixedEpoch, Optional.empty(), reRulesVersion, reRulesConfig);
 	}
 
 	public ForkBuilder(
 		String name,
 		HashCode hash,
-		CandidateForkPredicate predicate,
+		long minEpoch,
+		int requiredStake,
 		RERulesVersion reRulesVersion,
 		RERulesConfig reRulesConfig
 	) {
-		this(name, hash, Either.right(predicate), reRulesVersion, reRulesConfig);
+		this(name, hash, minEpoch, Optional.of(requiredStake), reRulesVersion, reRulesConfig);
 	}
 
 	private ForkBuilder(
 		String name,
 		HashCode hash,
-		Either<Long, CandidateForkPredicate> forkExecution,
+		long epoch,
+		Optional<Integer> requiredStake,
 		RERulesVersion reRulesVersion,
 		RERulesConfig reRulesConfig
 	) {
 		this.name = name;
 		this.hash = hash;
-		this.forkExecution = forkExecution;
+		this.epoch = epoch;
+		this.requiredStake = requiredStake;
 		this.reRulesVersion = reRulesVersion;
 		this.reRulesConfig = reRulesConfig;
 	}
@@ -80,32 +84,32 @@ public final class ForkBuilder {
 	}
 
 	public ForkBuilder withEngineRulesConfig(RERulesConfig newEngineRulesConfig) {
-		return new ForkBuilder(name, hash, forkExecution, reRulesVersion, newEngineRulesConfig);
+		return new ForkBuilder(name, hash, epoch, requiredStake, reRulesVersion, newEngineRulesConfig);
 	}
 
 	public ForkBuilder atFixedEpoch(long fixedEpoch) {
-		return new ForkBuilder(name, hash, Either.left(fixedEpoch), reRulesVersion, reRulesConfig);
+		return new ForkBuilder(name, hash, fixedEpoch, Optional.empty(), reRulesVersion, reRulesConfig);
 	}
 
 	public ForkBuilder withStakeVoting(long minEpoch, int requiredStake) {
 		return new ForkBuilder(
 			name,
 			hash,
-			Either.right(CandidateForkPredicates.stakeVoting(minEpoch, requiredStake)),
-				reRulesVersion,
+			minEpoch,
+			Optional.of(requiredStake),
+			reRulesVersion,
 			reRulesConfig
 		);
 	}
 
-	public long fixedOrMinEpoch() {
-		return forkExecution.fold(Function.identity(), CandidateForkPredicate::minEpoch);
+	public long epoch() {
+		return epoch;
 	}
 
 	public ForkConfig build() {
 		final var reRules = reRulesVersion.create(reRulesConfig);
-		return forkExecution.fold(
-			fixedEpoch -> new FixedEpochForkConfig(name, hash, reRules, fixedEpoch),
-			predicate -> new CandidateForkConfig(name, hash, reRules, predicate)
-		);
+		return requiredStake
+			.<ForkConfig>map(rs -> new CandidateForkConfig(name, hash, reRules, rs, epoch))
+			.orElseGet(() -> new FixedEpochForkConfig(name, hash, reRules, epoch));
 	}
 }

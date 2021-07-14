@@ -25,26 +25,15 @@ import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.utils.UInt256;
-import org.junit.Test;
-
-import static com.radixdlt.statecomputer.forks.CandidateForkPredicates.stakeVoting;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import static com.radixdlt.utils.TypedMocks.rmock;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -69,9 +58,10 @@ public final class CandidateForkPredicatesTest {
 
 	private final REParser reParser = reRules.getParser();
 
+	/* TODO: move to forks test
 	@Test
 	public void test_stake_voting() {
-		final var forkConfig = new CandidateForkConfig("fork1", HashCode.fromInt(1), null, null);
+		final var forkConfig = new CandidateForkConfig("fork1", HashCode.fromInt(1), null, );
 
 		final EngineStore<LedgerAndBFTProof> engineStore = rmock(EngineStore.class);
 		final var node1 = BFTNode.random();
@@ -125,6 +115,7 @@ public final class CandidateForkPredicatesTest {
 		assertTrue(stakeVoting(0, 5000).test(forkConfig, engineStore, reParser, proofWithValidatorSet(validatorSet)));
 		assertTrue(stakeVoting(0, 10000).test(forkConfig, engineStore, reParser, proofWithValidatorSet(validatorSet)));
 	}
+	 */
 
 	private CloseableCursor<RawSubstateBytes> votesOf(ForkConfig forkConfig, BFTNode... nodes) {
 		return CloseableCursor.of(

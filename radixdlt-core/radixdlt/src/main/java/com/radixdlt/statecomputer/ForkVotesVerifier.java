@@ -18,9 +18,16 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.MetadataException;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
 
@@ -56,8 +63,37 @@ public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof>
 			return metadata;
 		}
 
-		return forks.findNextForkConfig(engineStore, metadata)
+		// add next fork hash
+		final var metadataWithForks = forks.findNextForkConfig(engineStore, metadata)
 			.map(nextForkConfig -> metadata.withNextForkHash(nextForkConfig.hash()))
 			.orElse(metadata);
+
+		// add next validators metadata
+		return metadataWithForks
+			.withValidatorsSystemMetadata(getValidatorsSystemMetadata(engineStore, metadata));
+	}
+
+	private ImmutableList<RawSubstateBytes> getValidatorsSystemMetadata(
+		EngineStore<LedgerAndBFTProof> engineStore,
+		LedgerAndBFTProof ledgerAndBFTProof
+	) {
+		final var currentFork = forks.getByHash(ledgerAndBFTProof.getCurrentForkHash()).orElseThrow();
+		final var substateDeserialization = currentFork.engineRules().getParser().getSubstateDeserialization();
+		final var validatorSet = ledgerAndBFTProof.getProof().getNextValidatorSet().orElseThrow();
+
+		try (var validatorMetadataCursor = engineStore.openIndexedCursor(
+			SubstateIndex.create(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))
+		) {
+			return Streams.stream(validatorMetadataCursor)
+				.filter(rawSubstate -> {
+					try {
+						final var meta = (ValidatorSystemMetadata) substateDeserialization.deserialize(rawSubstate.getData());
+						return validatorSet.containsNode(meta.getValidatorKey());
+					} catch (DeserializeException ex) {
+						throw new RuntimeException(ex);
+					}
+				})
+				.collect(ImmutableList.toImmutableList());
+		}
 	}
 }

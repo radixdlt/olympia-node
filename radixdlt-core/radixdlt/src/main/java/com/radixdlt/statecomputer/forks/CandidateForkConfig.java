@@ -24,22 +24,29 @@ public final class CandidateForkConfig implements ForkConfig {
 	private final String name;
 	private final HashCode hash;
 	private final RERules reRules;
-	private final CandidateForkPredicate predicate;
+	private int requiredStake;
+	private long minEpoch;
 
 	public CandidateForkConfig(
 		String name,
 		HashCode hash,
 		RERules reRules,
-		CandidateForkPredicate predicate
+		int requiredStake,
+		long minEpoch
 	) {
 		this.name = name;
 		this.hash = hash;
 		this.reRules = reRules;
-		this.predicate = predicate;
+		this.requiredStake = requiredStake;
+		this.minEpoch = minEpoch;
 	}
 
-	public CandidateForkPredicate getPredicate() {
-		return predicate;
+	public long minEpoch() {
+		return minEpoch;
+	}
+
+	public int requiredStake() {
+		return requiredStake;
 	}
 
 	@Override
@@ -63,7 +70,8 @@ public final class CandidateForkConfig implements ForkConfig {
 			name,
 			hash,
 			reRules.withForksVerifier(forks),
-			predicate
+			requiredStake,
+			minEpoch
 		);
 	}
 }

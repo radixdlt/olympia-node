@@ -32,7 +32,6 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
-import com.radixdlt.statecomputer.forks.CandidateForkPredicates;
 import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
@@ -64,7 +63,7 @@ public final class ForkVoteStatusServiceTest {
 		final var otherNode = BFTNode.random();
 		final var engineStore = (EngineStore<LedgerAndBFTProof>) rmock(EngineStore.class);
 		final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
-		final var candidateFork = new CandidateForkConfig("fork2", HashCode.fromInt(2), reRules, CandidateForkPredicates.stakeVoting(2L, 5100));
+		final var candidateFork = new CandidateForkConfig("fork2", HashCode.fromInt(2), reRules, 5100, 2L);
 		final var forks = Forks.create(Set.of(initialFork, candidateFork));
 
 		final var forkVoteStatusService = new ForkVoteStatusService(self, engineStore, forks, initialFork);
@@ -102,7 +101,13 @@ public final class ForkVoteStatusServiceTest {
 
 		assertEquals("fork1", forkVoteStatusService.currentFork().get("name").toString());
 
-		final var ledgerAndBftProof = LedgerAndBFTProof.create(mock(LedgerProof.class), null, HashCode.fromInt(1), Optional.of(HashCode.fromInt(2)));
+		final var ledgerAndBftProof = LedgerAndBFTProof.create(
+			mock(LedgerProof.class),
+			null,
+			HashCode.fromInt(1),
+			Optional.of(HashCode.fromInt(2)),
+			Optional.empty()
+		);
 		final var radixEngineResult = new RadixEngine.RadixEngineResult<>(List.of(), ledgerAndBftProof);
 		final var ledgerUpdate = new LedgerUpdate(mock(VerifiedTxnsAndProof.class),
 			ImmutableClassToInstanceMap.of(RadixEngine.RadixEngineResult.class, radixEngineResult));

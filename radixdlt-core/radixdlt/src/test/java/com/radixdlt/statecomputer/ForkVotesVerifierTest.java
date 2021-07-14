@@ -19,12 +19,15 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
 import com.radixdlt.store.EngineStore;
 import org.junit.Test;
 
@@ -34,6 +37,7 @@ import java.util.Optional;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,12 +45,13 @@ import static org.mockito.Mockito.when;
 public final class ForkVotesVerifierTest {
 
 	@Test
-	public void should_update_the_metadata_with_next_fork_hash() {
+	public void should_update_the_metadata_with_next_fork_hash_and() {
 		final var baseVerifier = (BatchVerifier<LedgerAndBFTProof>) rmock(BatchVerifier.class);
 		final var forks = mock(Forks.class);
 		final var forkVotesVerifier = new ForkVotesVerifier(baseVerifier, forks);
 		final var proof = mock(LedgerProof.class);
-		final var inputMetadata = LedgerAndBFTProof.create(proof, null, HashCode.fromInt(2));
+		final var currentForkHash = HashCode.fromInt(2);
+		final var inputMetadata = LedgerAndBFTProof.create(proof, null, currentForkHash);
 		final var engineStore = (EngineStore<LedgerAndBFTProof>) rmock(EngineStore.class);
 		final var txns = List.<REProcessedTxn>of();
 
@@ -59,6 +64,10 @@ public final class ForkVotesVerifierTest {
 		when(nextFork.hash()).thenReturn(HashCode.fromInt(1));
 		when(forks.findNextForkConfig(engineStore, inputMetadata)).thenReturn(Optional.of(nextFork));
 
+		final var currentFork = mock(ForkConfig.class);
+		when(currentFork.engineRules()).thenReturn(RERulesVersion.OLYMPIA_V1.create(RERulesConfig.testingDefault()));
+		when(forks.getByHash(currentForkHash)).thenReturn(Optional.of(currentFork));
+		when(engineStore.openIndexedCursor(any())).thenReturn(CloseableCursor.empty());
 		final var result = forkVotesVerifier.processMetadata(inputMetadata, engineStore, txns);
 
 		assertEquals(nextFork.hash(), result.getNextForkHash().get());

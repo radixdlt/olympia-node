@@ -32,7 +32,6 @@ import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
-import com.radixdlt.statecomputer.forks.CandidateForkPredicates;
 import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERules;
@@ -58,7 +57,7 @@ public final class PeersForksHashesInfoServiceTest {
 	@Test
 	public void should_collect_unknown_forks_hashes_from_peer_events() {
 		final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
-		final var candidateFork = new CandidateForkConfig("fork2", HashCode.fromInt(2), reRules, CandidateForkPredicates.stakeVoting(2L, 5100));
+		final var candidateFork = new CandidateForkConfig("fork2", HashCode.fromInt(2), reRules, 5100, 2L);
 		final var forks = Forks.create(Set.of(initialFork, candidateFork));
 
 		final var initialValidator = BFTNode.random();

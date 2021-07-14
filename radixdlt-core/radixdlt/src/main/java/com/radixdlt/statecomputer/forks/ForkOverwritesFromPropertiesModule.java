@@ -54,7 +54,7 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
 						final var requiredStakeVotes = Integer.parseInt(requiredStakeVotesOverwrite);
 						final var minEpochOverwrite = properties.get("overwrite_forks." + c.getName() + ".min_epoch", "");
 						final var minEpoch = minEpochOverwrite.isBlank()
-							? c.fixedOrMinEpoch()
+							? c.epoch()
 							: Long.parseLong(minEpochOverwrite);
 						c = c.withStakeVoting(minEpoch, requiredStakeVotes);
 					} else if (!epochOverwrite.isBlank()) {

@@ -365,7 +365,7 @@ public class SystemConfigService {
 		if (forkConfig instanceof FixedEpochForkConfig) {
 			json.put("epoch", ((FixedEpochForkConfig) forkConfig).getEpoch());
 		} else if (forkConfig instanceof CandidateForkConfig) {
-			json.put("min_epoch", ((CandidateForkConfig) forkConfig).getPredicate().minEpoch());
+			json.put("min_epoch", ((CandidateForkConfig) forkConfig).minEpoch());
 		}
 
 		return json;

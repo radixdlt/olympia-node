@@ -20,11 +20,19 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,6 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Manages forks and their transitions. There are two kinds of forks:
@@ -85,7 +94,7 @@ public final class Forks {
 		final var latestFixedEpochFork = fixedEpochForks.get(fixedEpochForks.size() - 1);
 
 		if (maybeCandidateFork.isPresent()
-			&& maybeCandidateFork.get().getPredicate().minEpoch() <= latestFixedEpochFork.getEpoch()) {
+			&& maybeCandidateFork.get().minEpoch() <= latestFixedEpochFork.getEpoch()) {
 			throw new IllegalArgumentException("Candidate fork's minEpoch must be greater than the last fixed fork epoch.");
 		}
 
@@ -175,16 +184,18 @@ public final class Forks {
 		CommittedReader committedReader,
 		ForksEpochStore forksEpochStore
 	) {
-		final var currentEpoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
+		final var maybeLastProof = committedReader.getLastProof();
 		final var currentFork = getCurrentFork(forksEpochStore.getEpochsForkHashes());
 
+		// TODO: use validator's system metadata db
 		if (!latestKnownFork().hash().equals(currentFork.hash())) {
-			committedReader.getLastProof()
-				.map(lastProof -> LedgerAndBFTProof.create(lastProof, null, currentFork.hash()))
+			maybeLastProof
+				.flatMap(lastProof -> committedReader.getEpochProof(lastProof.getEpoch()))
+				.map(epochProof -> LedgerAndBFTProof.create(epochProof, null, currentFork.hash()))
 				.flatMap(ledgerAndBftProof -> findNextForkConfig(engineStore, ledgerAndBftProof))
 				.ifPresent(nextFork -> {
 					log.info("Found a missed fork config: {}", nextFork.name());
-					forksEpochStore.storeEpochForkHash(currentEpoch, nextFork.hash());
+					forksEpochStore.storeEpochForkHash(maybeLastProof.get().getEpoch(), nextFork.hash());
 				});
 		}
 	}
@@ -192,11 +203,13 @@ public final class Forks {
 	public void sanityCheck(CommittedReader committedReader, ForksEpochStore forksEpochStore) {
 		final var currentEpoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
 		final var storedForks = forksEpochStore.getEpochsForkHashes();
+
+		log.info("[Forks sanity check] Stored forks: {}", storedForks);
+		log.info("[Forks sanity check] Expected forks: {}", forkConfigs());
+
 		final var fixedEpochForksMap = fixedEpochForks.stream()
 			.collect(ImmutableMap.toImmutableMap(FixedEpochForkConfig::getEpoch, Function.identity()));
 
-		// TODO: this should also include a check for the candidate fork
-		// i.e. if there are enough votes on ledger at any point after `minEpoch`, then the fork should have been executed
 		final var expectedForksAreStored = fixedEpochForks.stream()
 			.filter(f -> f.getEpoch() <= currentEpoch && f.getEpoch() > 0)
 			.allMatch(fork -> {
@@ -211,7 +224,7 @@ public final class Forks {
 					Optional.ofNullable(fixedEpochForksMap.get(e.getKey()));
 
 				final var maybeExpectedCandidate = candidateFork
-					.filter(f -> e.getKey() >= f.getPredicate().minEpoch());
+					.filter(f -> e.getKey() >= f.minEpoch());
 
 				final var expectedAtFixedEpochMatches =
 					maybeExpectedAtFixedEpoch.isPresent() && maybeExpectedAtFixedEpoch.get().hash().equals(e.getValue());
@@ -223,15 +236,33 @@ public final class Forks {
 			});
 
 		if (!expectedForksAreStored) {
-			log.warn("Stored forks: {}", storedForks);
-			log.warn("Expected forks: {}", forkConfigs());
-			throw new RuntimeException("Forks inconsistency! Found a fork config that should have been executed, but wasn't.");
+			throw new IllegalStateException("Forks inconsistency! Found a fork config that should have been executed, but wasn't.");
 		}
 
 		if (!storedForksAreExpected) {
-			log.warn("Stored forks: {}", storedForks);
-			log.warn("Expected forks: {}", forkConfigs());
-			throw new RuntimeException("Forks inconsistency! Found a fork config that was executed, but shouldn't have been.");
+			throw new IllegalStateException("Forks inconsistency! Found a fork config that was executed, but shouldn't have been.");
+		}
+
+		if (candidateFork.isPresent()) {
+			// if there is a candidate fork, we need to make sure it has been executed correctly according to stake votes
+			for (long epoch = candidateFork.orElseThrow().minEpoch(); epoch <= currentEpoch; epoch++) {
+				final var e = epoch;
+				final var forkAtEpoch = fixedEpochForks.reverse().stream()
+					.filter(fork -> e >= fork.getEpoch()).findFirst().orElseThrow();
+				final var substateDeserialization = forkAtEpoch.engineRules().getParser().getSubstateDeserialization();
+				try (var cursor = forksEpochStore.validatorsSystemMetadataCursor(epoch)) {
+					final var candidateExecuted =
+						testCandidate(
+							committedReader.getEpochProof(epoch).orElseThrow(),
+							Streams.stream(cursor).map(data -> deserializeValidatorSystemMetadata(substateDeserialization, data.asBytes()))
+						);
+					if (candidateExecuted && !storedForks.get(epoch).equals(candidateFork.get().hash())) {
+						throw new IllegalStateException(String.format(
+							"Forks inconsistency! Candidate fork should have been executed at epoch %s, but wasn't.", epoch
+						));
+					}
+				}
+			}
 		}
 	}
 
@@ -272,13 +303,66 @@ public final class Forks {
 		} else if (currentFixedEpochFork.hash().equals(latestFixedEpochFork.hash())) {
 			// if we're at the latest fixed epoch fork, then consider the candidate fork
 			final var reParser = currentFixedEpochFork.engineRules().getParser();
-			return (Optional) candidateFork
-				.filter(f ->
-					nextEpoch >= f.getPredicate().minEpoch()
-						&& f.getPredicate().test(f, engineStore, reParser, ledgerAndBFTProof)
-				);
+			return (Optional) candidateFork.filter(unused -> testCandidate(engineStore, reParser, ledgerAndBFTProof.getProof()));
 		} else {
 			return Optional.empty();
 		}
+	}
+
+	private boolean testCandidate(
+		EngineStore<LedgerAndBFTProof> engineStore,
+		REParser reParser,
+		LedgerProof ledgerProof
+	) {
+		final var substateDeserialization = reParser.getSubstateDeserialization();
+		try (var validatorMetadataCursor = engineStore.openIndexedCursor(
+			SubstateIndex.create(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))
+		) {
+			return testCandidate(
+				ledgerProof,
+				Streams.stream(validatorMetadataCursor)
+					.map(s -> deserializeValidatorSystemMetadata(substateDeserialization, s.getData()))
+			);
+		}
+	}
+
+	private ValidatorSystemMetadata deserializeValidatorSystemMetadata(
+		SubstateDeserialization substateDeserialization,
+		byte[] data
+	) {
+		try {
+			return (ValidatorSystemMetadata) substateDeserialization.deserialize(data);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Failed to deserialize ValidatorSystemMetadata substate");
+		}
+	}
+
+	private boolean testCandidate(LedgerProof ledgerProof, Stream<ValidatorSystemMetadata> validatorsMetadata) {
+		if (candidateFork.isEmpty() || ledgerProof.getNextValidatorSet().isEmpty()) {
+			return false;
+		}
+
+		final var nextEpoch = ledgerProof.getEpoch() + 1;
+		if (nextEpoch < candidateFork.get().minEpoch()) {
+			return false;
+		}
+
+		final var candidate = candidateFork.get();
+
+		final var validatorSet = ledgerProof.getNextValidatorSet().get();
+
+		final var requiredPower = validatorSet.getTotalPower().multiply(UInt256.from(candidate.requiredStake()))
+			.divide(UInt256.from(10000));
+
+		final var forkVotesPower = validatorsMetadata
+			.filter(vm -> validatorSet.containsNode(vm.getValidatorKey()))
+			.filter(vm -> {
+				final var expectedVoteHash = ForkConfig.voteHash(vm.getValidatorKey(), candidate);
+				return vm.getAsHash().equals(expectedVoteHash);
+			})
+			.map(validatorMetadata -> validatorSet.getPower(validatorMetadata.getValidatorKey()))
+			.reduce(UInt256.ZERO, UInt256::add);
+
+		return forkVotesPower.compareTo(requiredPower) >= 0;
 	}
 }

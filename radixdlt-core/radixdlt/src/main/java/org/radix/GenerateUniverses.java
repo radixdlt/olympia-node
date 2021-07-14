@@ -151,7 +151,7 @@ public final class GenerateUniverses {
 					@InitialForkConfig
 					private ForkConfig initialForkConfig(Set<ForkBuilder> forkBuilders) {
 						return forkBuilders.stream()
-							.min((a, b) -> (int) (a.fixedOrMinEpoch() - b.fixedOrMinEpoch()))
+							.min((a, b) -> (int) (a.epoch() - b.epoch()))
 							.get()
 							.build();
 					}
@@ -161,7 +161,7 @@ public final class GenerateUniverses {
 					@LatestKnownForkConfig
 					private ForkConfig latestKnownForkConfig(Set<ForkBuilder> forkBuilders) {
 						return forkBuilders.stream()
-							.max((a, b) -> (int) (a.fixedOrMinEpoch() - b.fixedOrMinEpoch()))
+							.max((a, b) -> (int) (a.epoch() - b.epoch()))
 							.get()
 							.build();
 					}

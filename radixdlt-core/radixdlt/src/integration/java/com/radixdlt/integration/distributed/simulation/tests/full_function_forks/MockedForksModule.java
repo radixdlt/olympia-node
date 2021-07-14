@@ -9,7 +9,6 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
-import com.radixdlt.statecomputer.forks.CandidateForkPredicates;
 import com.radixdlt.statecomputer.forks.RERulesVersion;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 
@@ -81,7 +80,8 @@ public final class MockedForksModule extends AbstractModule {
 		return new ForkBuilder(
 			name,
 			HashUtils.sha256(name.getBytes(StandardCharsets.UTF_8)),
-			CandidateForkPredicates.stakeVoting(minEpoch, percentage),
+			minEpoch,
+			percentage,
 			baseForkBuilder.getReRulesVersion(),
 			baseForkBuilder.getEngineRulesConfig()
 		);

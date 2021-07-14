@@ -18,9 +18,11 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -33,17 +35,20 @@ public final class LedgerAndBFTProof {
 	private final VerifiedVertexStoreState vertexStoreState;
 	private final HashCode currentForkHash;
 	private final Optional<HashCode> nextForkHash;
+	private final Optional<ImmutableList<RawSubstateBytes>> validatorsSystemMetadata;
 
 	private LedgerAndBFTProof(
 		LedgerProof ledgerProof,
 		VerifiedVertexStoreState vertexStoreState,
 		HashCode currentForkHash,
-		Optional<HashCode> nextForkHash
+		Optional<HashCode> nextForkHash,
+		Optional<ImmutableList<RawSubstateBytes>> validatorsSystemMetadata
 	) {
 		this.ledgerProof = ledgerProof;
 		this.vertexStoreState = vertexStoreState;
 		this.currentForkHash = currentForkHash;
 		this.nextForkHash = nextForkHash;
+		this.validatorsSystemMetadata = validatorsSystemMetadata;
 	}
 
 	public static LedgerAndBFTProof create(
@@ -51,17 +56,18 @@ public final class LedgerAndBFTProof {
 		VerifiedVertexStoreState vertexStoreState,
 		HashCode currentForkHash
 	) {
-		return create(ledgerProof, vertexStoreState, currentForkHash, Optional.empty());
+		return create(ledgerProof, vertexStoreState, currentForkHash, Optional.empty(), Optional.empty());
 	}
 
 	public static LedgerAndBFTProof create(
 		LedgerProof ledgerProof,
 		VerifiedVertexStoreState vertexStoreState,
 		HashCode currentForkHash,
-		Optional<HashCode> nextForkHash
+		Optional<HashCode> nextForkHash,
+		Optional<ImmutableList<RawSubstateBytes>> validatorsSystemMetadata
 	) {
 		Objects.requireNonNull(ledgerProof);
-		return new LedgerAndBFTProof(ledgerProof, vertexStoreState, currentForkHash, nextForkHash);
+		return new LedgerAndBFTProof(ledgerProof, vertexStoreState, currentForkHash, nextForkHash, validatorsSystemMetadata);
 	}
 
 	public LedgerProof getProof() {
@@ -80,13 +86,21 @@ public final class LedgerAndBFTProof {
 		return nextForkHash;
 	}
 
+	public Optional<ImmutableList<RawSubstateBytes>> getValidatorsSystemMetadata() {
+		return validatorsSystemMetadata;
+	}
+
 	public LedgerAndBFTProof withNextForkHash(HashCode nextForkHash) {
-		return new LedgerAndBFTProof(ledgerProof, vertexStoreState, currentForkHash, Optional.of(nextForkHash));
+		return new LedgerAndBFTProof(ledgerProof, vertexStoreState, currentForkHash, Optional.of(nextForkHash), validatorsSystemMetadata);
+	}
+
+	public LedgerAndBFTProof withValidatorsSystemMetadata(ImmutableList<RawSubstateBytes> validatorsSystemMetadata) {
+		return new LedgerAndBFTProof(ledgerProof, vertexStoreState, currentForkHash, nextForkHash, Optional.of(validatorsSystemMetadata));
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(ledgerProof, vertexStoreState, currentForkHash, nextForkHash);
+		return Objects.hash(ledgerProof, vertexStoreState, currentForkHash, nextForkHash, validatorsSystemMetadata);
 	}
 
 	@Override
@@ -99,6 +113,7 @@ public final class LedgerAndBFTProof {
 		return Objects.equals(this.ledgerProof, other.ledgerProof)
 			&& Objects.equals(this.vertexStoreState, other.vertexStoreState)
 			&& Objects.equals(this.currentForkHash, other.currentForkHash)
-			&& Objects.equals(this.nextForkHash, other.nextForkHash);
+			&& Objects.equals(this.nextForkHash, other.nextForkHash)
+			&& Objects.equals(this.validatorsSystemMetadata, other.validatorsSystemMetadata);
 	}
 }

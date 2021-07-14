@@ -66,7 +66,7 @@ public final class MainnetForksModule extends AbstractModule {
 					Amount.ofTokens(1000) // 1000XRD per resource
 				),
 				OptionalInt.of(50), // 50 Txns per round
-				10_000,
+				300,
 				150, // Two weeks worth of epochs
 				Amount.ofTokens(100), // Minimum stake
 				150, // Two weeks worth of epochs

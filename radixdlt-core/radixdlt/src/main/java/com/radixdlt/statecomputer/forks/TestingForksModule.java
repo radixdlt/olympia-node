@@ -82,7 +82,8 @@ public final class TestingForksModule extends AbstractModule {
 		return new ForkBuilder(
 			"testing-fork-v3",
 			HashUtils.sha256("testing-fork-v3".getBytes(StandardCharsets.UTF_8)),
-			CandidateForkPredicates.stakeVoting(5L, 5500),
+			5L,
+			5500, // 55%
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				FeeTable.create(
@@ -100,5 +101,4 @@ public final class TestingForksModule extends AbstractModule {
 			)
 		);
 	}
-
 }
