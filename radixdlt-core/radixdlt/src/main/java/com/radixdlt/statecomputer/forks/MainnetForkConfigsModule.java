@@ -42,9 +42,9 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				),
 				OptionalInt.of(50), // 50 Txns per round
 				10_000,
-				150, // Two weeks worth of epochs
+				2, // atleast 1 epoch for rake increase
 				Amount.ofTokens(100), // Minimum stake
-				150, // Two weeks worth of epochs
+				1, // atleast 1 epoch for unstaking delay
 				Amount.ofTokens(10),   // Rewards per proposal
 				9800, // 98.00% threshold for completed proposals to get any rewards,
 				100 // 100 max validators
