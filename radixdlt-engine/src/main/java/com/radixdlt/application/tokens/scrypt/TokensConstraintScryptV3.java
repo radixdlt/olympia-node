@@ -89,7 +89,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 					var description = REFieldSerialization.deserializeString(buf);
 					var url = REFieldSerialization.deserializeUrl(buf);
 					var iconUrl = REFieldSerialization.deserializeUrl(buf);
-					return new TokenResourceMetadata(addr, name, description, url, iconUrl);
+					return new TokenResourceMetadata(addr, name, description, iconUrl, url);
 				},
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
