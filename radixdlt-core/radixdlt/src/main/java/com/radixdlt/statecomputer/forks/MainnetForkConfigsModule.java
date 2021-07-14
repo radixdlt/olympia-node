@@ -41,7 +41,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 					Amount.ofTokens(1000) // 1000XRD per resource
 				),
 				OptionalInt.of(50), // 50 Txns per round
-				1_500_000, // Two weeks worth of rounds for first epoch
+				2_000, // Two weeks worth of rounds for first epoch
 				150, // Two weeks worth of epochs
 				Amount.ofTokens(100), // Minimum stake
 				150, // Two weeks worth of epochs
@@ -64,7 +64,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 					Amount.ofTokens(1000) // 1000XRD per resource
 				),
 				OptionalInt.of(50), // 50 Txns per round
-				10_000,
+				2_000,
 				150, // Two weeks worth of epochs
 				Amount.ofTokens(100), // Minimum stake
 				150, // Two weeks worth of epochs
