@@ -167,7 +167,7 @@ public final class Account implements ImperativeRadixApi, RadixAccount {
     }
 
     @Override
-    public AID fixedSupplyToken(String rri, String symbol, String name, String description, String iconUrl,
+    public AID fixedSupplyToken(String symbol, String name, String description, String iconUrl,
                                 String tokenUrl, Amount supply) {
         return TransactionUtils.createFixedSupplyToken(this, symbol, name, description, iconUrl, tokenUrl, supply);
     }

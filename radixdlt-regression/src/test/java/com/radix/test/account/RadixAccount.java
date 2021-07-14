@@ -14,6 +14,6 @@ public interface RadixAccount {
 
     AID stake(String validatorAddress, Amount amount);
 
-    AID fixedSupplyToken(String rri, String symbol, String name, String description, String iconUrl, String tokenUrl, Amount supply);
+    AID fixedSupplyToken(String symbol, String name, String description, String iconUrl, String tokenUrl, Amount supply);
 
 }

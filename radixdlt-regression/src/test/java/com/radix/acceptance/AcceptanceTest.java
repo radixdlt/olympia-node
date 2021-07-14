@@ -3,7 +3,9 @@ package com.radix.acceptance;
 import com.radix.test.TransactionUtils;
 import com.radix.test.account.Account;
 import com.radix.test.network.RadixNetwork;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.dto.Balance;
 import com.radixdlt.identifiers.AID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,6 +13,8 @@ import org.assertj.core.util.Lists;
 
 import java.util.List;
 import java.util.stream.IntStream;
+
+import static org.awaitility.Awaitility.await;
 
 public abstract class AcceptanceTest {
 
@@ -53,9 +57,25 @@ public abstract class AcceptanceTest {
      * @return the txID of the faucet's transaction
      */
     public String faucet(Account account) {
+        Balance balanceBeforeFaucet = account.getOwnNativeTokenBalance();
         String txID = faucet(account.getAddress());
         TransactionUtils.waitForConfirmation(account, AID.from(txID));
+        await().until(() ->
+            // wait until the account's balance increases, just to be sure that the faucet delivered something
+            balanceBeforeFaucet.getAmount().compareTo(account.getOwnNativeTokenBalance().getAmount()) == -1
+        );
         return txID;
+    }
+
+    /**
+     * Repeatedly calls the faucet until the given amount is credited
+     */
+    public void faucet(Account account, Amount amount) {
+        Balance originalBalance = account.getOwnNativeTokenBalance();
+        while (account.getOwnNativeTokenBalance().getAmount().subtract(originalBalance.getAmount())
+            .compareTo(amount.toSubunits()) == -1) {
+            faucet(account);
+        }
     }
 
 }

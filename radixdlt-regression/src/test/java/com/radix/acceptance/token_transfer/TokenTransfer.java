@@ -32,7 +32,7 @@ public class TokenTransfer extends AcceptanceTest {
         var transferTxId = account1.transfer(account2, transferredAmount, Optional.of("hello!"));
         UInt256 fee = account1.lookup(transferTxId).getFee();
 
-        assertEquals(account1BalanceBefore.subtract(transferredAmount.toSubunits().subtract(fee)),
+        assertEquals(account1BalanceBefore.subtract(transferredAmount.toSubunits()).subtract(fee),
             account1.getOwnNativeTokenBalance().getAmount());
         assertEquals(account2BalanceBefore.add(transferredAmount.toSubunits()),
             account2.getOwnNativeTokenBalance().getAmount());
@@ -47,7 +47,7 @@ public class TokenTransfer extends AcceptanceTest {
         var transferTxId = account2.transfer(account1, transferredAmount, Optional.of("hello back!"));
         UInt256 fee = account2.lookup(transferTxId).getFee();
 
-        assertEquals(account2BalanceBefore.subtract(transferredAmount.toSubunits().subtract(fee)),
+        assertEquals(account2BalanceBefore.subtract(transferredAmount.toSubunits()).subtract(fee),
             account2.getOwnNativeTokenBalance().getAmount());
         assertEquals(account1BalanceBefore.add(transferredAmount.toSubunits()),
             account1.getOwnNativeTokenBalance().getAmount());

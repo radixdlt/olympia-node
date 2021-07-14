@@ -26,7 +26,7 @@ public class Fees extends AcceptanceTest {
 
     @When("I transfer {int} XRD, attaching a small message to the transaction")
     public void i_transfer_xrd_attaching_a_small_message_to_the_transaction(int xrdMajor) {
-        this.txBuffer = account1.transfer(account2, Amount.ofTokens(xrdMajor), Optional.of("hello"));
+        this.txBuffer = account1.transfer(account2, Amount.ofTokens(xrdMajor), Optional.of("  "));
     }
 
     @When("I transfer {int} XRD, attaching a large message to the transaction")
@@ -43,10 +43,10 @@ public class Fees extends AcceptanceTest {
         String message = transaction.getMessage().get();
         logger.debug("Paid {}({})XRD in fees for token transfer with message '{}'", feesMinor, feesMajor, message);
 
-        // This token transfer seems to have a baseline cost of 0.0714, so we expect to pay this plus 0.0002 per char.
+        // This token transfer seems to have a baseline cost of 0.0726, so we expect to pay this plus 0.0002 per char.
         // TODO the above should not be hardcoded, but extracted from the fork config. Fees can vary between forks.
         Amount feePerByteMicros = Amount.ofMicroTokens(200);
-        Amount feeBaselineMicros = Amount.ofMicroTokens(71400);
+        Amount feeBaselineMicros = Amount.ofMicroTokens(72600);
         Amount messageCostMicros = feePerByteMicros.times(message.length());
         Amount totalCostMicros = Amount.ofSubunits(feeBaselineMicros.toSubunits().add(messageCostMicros.toSubunits()));
         assertEquals(totalCostMicros.toSubunits(), feesMinor);
