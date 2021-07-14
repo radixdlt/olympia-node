@@ -21,6 +21,7 @@ package com.radixdlt.integration.distributed.simulation.tests.full_function;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
@@ -61,6 +62,7 @@ public class MempoolFillTest {
 		)
 		.fullFunctionNodes(SyncConfig.of(800L, 10, 5000L))
 		.addRadixEngineConfigModules(
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule()
 		)

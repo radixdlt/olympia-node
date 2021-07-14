@@ -24,6 +24,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.CryptoModule;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.engine.RadixEngineException;
@@ -67,6 +68,7 @@ public class GenesisTest {
 	@Test
 	public void genesis_should_be_a_valid_transaction() throws RadixEngineException {
 		Guice.createInjector(
+			new MainnetForkConfigsModule(),
 			new ForksModule(),
 			new CryptoModule(),
 			new AbstractModule() {

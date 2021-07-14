@@ -18,6 +18,7 @@
 
 package com.radixdlt.api.chaos.mempoolfiller;
 
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.statecomputer.forks.ForksModule;
@@ -69,6 +70,7 @@ public class MempoolFillerTest {
 
 	private Injector getInjector() {
 		return Guice.createInjector(
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(),
 			MempoolConfig.asModule(10, 10),
 			new ForksModule(),

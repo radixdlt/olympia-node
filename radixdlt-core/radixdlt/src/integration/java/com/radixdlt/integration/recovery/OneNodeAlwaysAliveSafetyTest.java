@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventProcessorOnDispatch;
@@ -189,6 +190,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 					9800,
 					10
 				)),
+			new MainnetForkConfigsModule(),
 			new ForksModule(),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {

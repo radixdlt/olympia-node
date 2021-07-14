@@ -29,7 +29,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.ModuleRunner;
+import com.radixdlt.environment.ModuleRunner;
 import com.radixdlt.RadixNodeModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;

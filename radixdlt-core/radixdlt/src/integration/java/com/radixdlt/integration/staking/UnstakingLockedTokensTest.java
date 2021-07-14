@@ -18,6 +18,7 @@
 
 package com.radixdlt.integration.staking;
 
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -113,6 +114,7 @@ public class UnstakingLockedTokensTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),

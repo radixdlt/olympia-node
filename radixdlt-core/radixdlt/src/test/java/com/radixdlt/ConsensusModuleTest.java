@@ -37,6 +37,8 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.ConsensusModule;
+import com.radixdlt.consensus.CryptoModule;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Proposal;

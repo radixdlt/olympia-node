@@ -17,6 +17,7 @@
 package com.radixdlt.api.service;
 
 import com.google.inject.Provides;
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;
@@ -140,6 +141,7 @@ public class SubmissionServiceTest {
 
 			@Override
 			public void configure() {
+				install(new MainnetForkConfigsModule());
 				install(new RadixEngineForksLatestOnlyModule(
 					RERulesConfig.testingDefault().overrideFeeTable(
 						FeeTable.create(

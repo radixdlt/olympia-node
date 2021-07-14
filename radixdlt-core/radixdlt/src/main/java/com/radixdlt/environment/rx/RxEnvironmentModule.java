@@ -24,7 +24,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
+import com.radixdlt.environment.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.Epoched;

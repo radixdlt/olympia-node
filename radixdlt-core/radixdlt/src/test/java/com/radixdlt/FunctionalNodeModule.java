@@ -20,8 +20,12 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.application.NodeApplicationModule;
+import com.radixdlt.consensus.ConsensusModule;
+import com.radixdlt.consensus.epoch.EpochsConsensusModule;
+import com.radixdlt.environment.DispatcherModule;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
+import com.radixdlt.ledger.LedgerModule;
 import com.radixdlt.ledger.MockedCommandGeneratorModule;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
@@ -32,7 +36,9 @@ import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.sync.EpochsSyncModule;
 import com.radixdlt.sync.MockedSyncServiceModule;
+import com.radixdlt.sync.SyncServiceModule;
 
 /**
  * Manages the functional components of a node

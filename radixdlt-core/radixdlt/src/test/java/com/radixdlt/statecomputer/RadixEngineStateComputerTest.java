@@ -31,6 +31,7 @@ import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxBuilder;
@@ -148,6 +149,7 @@ public class RadixEngineStateComputerTest {
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 
 				install(MempoolConfig.asModule(10, 10));
+				install(new MainnetForkConfigsModule());
 				install(new ForksModule());
 				install(new RadixEngineForksLatestOnlyModule());
 

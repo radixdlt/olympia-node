@@ -17,6 +17,7 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.SubstateId;
@@ -88,6 +89,7 @@ public class MempoolTest {
 		return Guice.createInjector(
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().removeSigsPerRoundLimit()),
 			MempoolConfig.asModule(10, 10, 200, 500, 10),
+			new MainnetForkConfigsModule(),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
 			new MockedGenesisModule(

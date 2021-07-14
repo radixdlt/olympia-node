@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
@@ -47,6 +48,7 @@ public class IncreasingValidatorsTest {
 		.pacemakerTimeout(3000)
 		.numNodes(50, 2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
 		.addRadixEngineConfigModules(
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
 			new ForksModule()
 		)

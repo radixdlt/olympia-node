@@ -18,7 +18,7 @@
 package com.radixdlt.environment.rx;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.ModuleRunner;
+import com.radixdlt.environment.ModuleRunner;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;

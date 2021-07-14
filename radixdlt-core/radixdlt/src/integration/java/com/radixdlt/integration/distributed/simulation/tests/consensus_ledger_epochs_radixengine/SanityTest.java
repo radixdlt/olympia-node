@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
@@ -44,6 +45,7 @@ public class SanityTest {
 			NetworkLatencies.fixed()
 		)
 		.addRadixEngineConfigModules(
+			new MainnetForkConfigsModule(),
 			new ForksModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault())
 		)

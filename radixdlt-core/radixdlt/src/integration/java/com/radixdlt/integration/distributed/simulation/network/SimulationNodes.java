@@ -28,7 +28,7 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
-import com.radixdlt.ModuleRunner;
+import com.radixdlt.environment.ModuleRunner;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;

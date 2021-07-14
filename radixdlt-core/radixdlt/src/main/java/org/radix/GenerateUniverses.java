@@ -21,6 +21,7 @@ import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.OptionalBinder;
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.counters.SystemCounters;
@@ -41,7 +42,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.CryptoModule;
+import com.radixdlt.consensus.CryptoModule;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -136,6 +137,7 @@ public final class GenerateUniverses {
 			@Override
 			protected void configure() {
 				install(new CryptoModule());
+				install(new MainnetForkConfigsModule());
 				install(new ForksModule());
 				bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(List.of());
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);

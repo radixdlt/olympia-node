@@ -18,6 +18,7 @@
 
 package com.radixdlt.integration.mempool;
 
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -114,6 +115,7 @@ public class TxStatusTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
+			new MainnetForkConfigsModule(),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
 			new MockedGenesisModule(

@@ -23,6 +23,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.tokens.Amount;
@@ -84,6 +85,7 @@ public class LargeEpochChangeTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),

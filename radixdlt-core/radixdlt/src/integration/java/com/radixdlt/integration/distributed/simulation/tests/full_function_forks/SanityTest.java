@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function_forks;
 
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
@@ -72,6 +73,7 @@ public class SanityTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
+				new MainnetForkConfigsModule(),
 				new ForkOverwritesWithShorterEpochsModule(
 					new RERulesConfig(
 						FeeTable.noFees(),

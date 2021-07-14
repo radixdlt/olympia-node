@@ -24,8 +24,8 @@ import org.apache.logging.log4j.Logger;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.EndpointConfig;
-import com.radixdlt.ModuleRunner;
+import com.radixdlt.api.EndpointConfig;
+import com.radixdlt.environment.ModuleRunner;
 import com.radixdlt.api.server.NodeHttpServer;
 import com.radixdlt.environment.Runners;
 

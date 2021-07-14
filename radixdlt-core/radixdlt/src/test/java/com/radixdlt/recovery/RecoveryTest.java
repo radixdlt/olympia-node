@@ -18,6 +18,7 @@
 package com.radixdlt.recovery;
 
 import com.google.common.collect.ClassToInstanceMap;
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.application.system.FeeTable;
@@ -143,6 +144,7 @@ public class RecoveryTest {
 				Amount.ofTokens(1000),
 				Amount.ofTokens(100)
 			),
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					FeeTable.noFees(),

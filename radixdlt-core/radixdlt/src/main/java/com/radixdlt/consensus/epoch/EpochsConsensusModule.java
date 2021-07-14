@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,9 +13,10 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt;
+package com.radixdlt.consensus.epoch;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
@@ -35,19 +36,12 @@ import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.epoch.Epoched;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.epoch.VertexStoreFactory;
-import com.radixdlt.consensus.epoch.BFTSyncFactory;
-import com.radixdlt.consensus.epoch.BFTSyncRequestProcessorFactory;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerState;

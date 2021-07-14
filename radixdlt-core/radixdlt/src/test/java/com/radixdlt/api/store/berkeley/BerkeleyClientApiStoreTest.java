@@ -16,6 +16,7 @@
  */
 package com.radixdlt.api.store.berkeley;
 
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.consensus.LedgerHeader;
@@ -136,6 +137,7 @@ public class BerkeleyClientApiStoreTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 0),
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),

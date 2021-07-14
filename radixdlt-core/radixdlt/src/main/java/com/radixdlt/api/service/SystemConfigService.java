@@ -23,7 +23,7 @@ import org.json.JSONObject;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.EndpointStatus;
+import com.radixdlt.api.EndpointStatus;
 import com.radixdlt.api.qualifier.Endpoints;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;

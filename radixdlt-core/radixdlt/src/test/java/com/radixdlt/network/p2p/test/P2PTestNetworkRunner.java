@@ -26,7 +26,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.DispatcherModule;
+import com.radixdlt.environment.DispatcherModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;

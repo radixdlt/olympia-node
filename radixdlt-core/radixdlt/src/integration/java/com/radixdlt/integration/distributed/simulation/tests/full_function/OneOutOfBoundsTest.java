@@ -18,6 +18,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function;
 
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -67,6 +68,7 @@ public class OneOutOfBoundsTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
+				new MainnetForkConfigsModule(),
 				new RadixEngineForksLatestOnlyModule(
 					new RERulesConfig(
 						FeeTable.create(

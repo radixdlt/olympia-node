@@ -17,6 +17,19 @@
 
 package com.radixdlt;
 
+import com.radixdlt.api.EndpointConfig;
+import com.radixdlt.api.EndpointStatus;
+import com.radixdlt.consensus.ConsensusModule;
+import com.radixdlt.consensus.ConsensusRecoveryModule;
+import com.radixdlt.consensus.CryptoModule;
+import com.radixdlt.consensus.epoch.EpochsConsensusModule;
+import com.radixdlt.environment.DispatcherModule;
+import com.radixdlt.ledger.LedgerModule;
+import com.radixdlt.ledger.LedgerRecoveryModule;
+import com.radixdlt.statecomputer.RadixEngineStoreModule;
+import com.radixdlt.sync.EpochsSyncModule;
+import com.radixdlt.sync.SyncServiceModule;
+import com.radixdlt.systeminfo.SystemInfoModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
@@ -70,9 +83,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
-import static com.radixdlt.EndpointConfig.enabledArchiveEndpoints;
-import static com.radixdlt.EndpointConfig.enabledNodeEndpoints;
-import static com.radixdlt.EndpointConfig.endpointStatuses;
+import static com.radixdlt.api.EndpointConfig.enabledArchiveEndpoints;
+import static com.radixdlt.api.EndpointConfig.enabledNodeEndpoints;
+import static com.radixdlt.api.EndpointConfig.endpointStatuses;
 
 /**
  * Module which manages everything in a single node
@@ -151,7 +164,14 @@ public final class RadixNodeModule extends AbstractModule {
 		var addressing = Addressing.ofNetworkId(networkId);
 		bind(Addressing.class).toInstance(addressing);
 		bindConstant().annotatedWith(NetworkId.class).to(networkId);
-		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
+		var genesis = loadGenesis(networkId);
+		bind(Txn.class).annotatedWith(Genesis.class).toInstance(genesis);
+		// TODO: Refactor
+		if (networkId == Network.MAINNET.getId()) {
+			install(new MainnetForkConfigsModule());
+		} else {
+			install(new StokenetForkConfigsModule());
+		}
 		bind(RuntimeProperties.class).toInstance(properties);
 
 		// Consensus configuration

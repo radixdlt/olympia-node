@@ -19,6 +19,7 @@
 package com.radixdlt.integration.staking;
 
 import com.google.common.collect.ClassToInstanceMap;
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
@@ -166,6 +167,7 @@ public class StakingUnstakingValidatorsTest {
 			.limit(20)
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
+			new MainnetForkConfigsModule(),
 			new ForksModule(),
 			forkModule
 		);

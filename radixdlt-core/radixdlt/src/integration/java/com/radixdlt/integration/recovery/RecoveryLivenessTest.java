@@ -19,6 +19,7 @@ package com.radixdlt.integration.recovery;
 
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.inject.Provides;
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -159,6 +160,7 @@ public class RecoveryLivenessTest {
 				Amount.ofTokens(1000)
 			),
 			MempoolConfig.asModule(10, 10),
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					FeeTable.noFees(),

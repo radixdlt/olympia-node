@@ -21,7 +21,7 @@ package com.radixdlt.api.server;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.radixdlt.ModuleRunner;
+import com.radixdlt.environment.ModuleRunner;
 import com.radixdlt.api.Controller;
 import com.radixdlt.properties.RuntimeProperties;
 import com.stijndewitt.undertow.cors.AllowAll;

@@ -16,19 +16,19 @@
  *
  */
 
-package com.radixdlt.statecomputer.forks;
+package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
 
 import java.util.OptionalInt;
 
-/**
- * The forks for betanet and the epochs at which they will occur.
- */
-public final class MainnetForkConfigsModule extends AbstractModule {
+public final class StokenetForkConfigsModule extends AbstractModule {
 	@ProvidesIntoSet
 	ForkConfig stokenet() {
 		return new ForkConfig(
@@ -51,29 +51,4 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 			)
 		);
 	}
-
-	/*
-	@ProvidesIntoSet
-	ForkConfig olympia() {
-		return new ForkConfig(
-			2L,
-			"olympia",
-			RERulesVersion.OLYMPIA_V1,
-			new RERulesConfig(
-				FeeTable.create(
-					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
-					Amount.ofTokens(1000) // 1000XRD per resource
-				),
-				OptionalInt.of(50), // 50 Txns per round
-				10_000,
-				150, // Two weeks worth of epochs
-				Amount.ofTokens(100), // Minimum stake
-				150, // Two weeks worth of epochs
-				Amount.ofTokens(10), // Rewards per proposal
-				9800, // 98.00% threshold for completed proposals to get any rewards
-				100 // 100 max validators
-			)
-		);
-	}
-	 */
 }

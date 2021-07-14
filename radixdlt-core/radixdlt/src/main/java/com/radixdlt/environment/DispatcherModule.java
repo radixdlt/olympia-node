@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,9 +13,10 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt;
+package com.radixdlt.environment;
 
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.api.service.ScheduledCacheCleanup;
@@ -68,14 +69,6 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.environment.Dispatchers;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;

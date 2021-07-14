@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function;
 
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.integration.distributed.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
@@ -62,6 +63,7 @@ public class SanityTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
+				new MainnetForkConfigsModule(),
 				new RadixEngineForksLatestOnlyModule(),
 				new ForksModule()
 			)

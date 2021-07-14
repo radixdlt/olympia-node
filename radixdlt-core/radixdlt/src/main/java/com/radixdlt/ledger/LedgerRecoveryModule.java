@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2021 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in
@@ -13,9 +13,10 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
+ *
  */
 
-package com.radixdlt;
+package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
@@ -34,7 +35,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;

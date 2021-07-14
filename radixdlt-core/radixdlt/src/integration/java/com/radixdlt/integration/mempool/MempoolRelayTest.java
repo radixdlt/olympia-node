@@ -18,6 +18,7 @@
 package com.radixdlt.integration.mempool;
 
 import com.google.inject.Provides;
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.application.tokens.Amount;
@@ -148,6 +149,7 @@ public class MempoolRelayTest {
 				Amount.ofTokens(1000)
 			),
 			MempoolConfig.asModule(500, 100, 10, 10, 10),
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
 			new ForksModule(),
 			new PersistedNodeForTestingModule(),

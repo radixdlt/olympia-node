@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.MainnetForkConfigsModule;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
@@ -54,6 +55,7 @@ public class RandomVoteAndViewTimeoutDropperTest {
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
 		)
 		.addRadixEngineConfigModules(
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
 			new ForksModule()
 		)
