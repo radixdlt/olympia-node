@@ -17,11 +17,13 @@
 
 package com.radixdlt.api.controller;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.api.service.ForkVoteStatusService;
 import static com.radixdlt.api.service.ForkVoteStatusService.ForkVoteStatus.NO_ACTION_NEEDED;
 import static com.radixdlt.api.service.ForkVoteStatusService.ForkVoteStatus.VOTE_REQUIRED;
 
 import com.radixdlt.api.service.PeersForksHashesInfoService;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -47,7 +49,9 @@ public class HealthControllerTest {
 	private final NetworkInfoService networkInfoService = mock(NetworkInfoService.class);
 	private final ForkVoteStatusService forkVoteStatusService = mock(ForkVoteStatusService.class);
 	private final PeersForksHashesInfoService peersForksHashesInfoService = mock(PeersForksHashesInfoService.class);
-	private final HealthController controller = new HealthController(networkInfoService, forkVoteStatusService, peersForksHashesInfoService);
+	private final ForksEpochStore forksEpochStore = mock(ForksEpochStore.class);
+	private final HealthController controller = new HealthController(
+		networkInfoService, forkVoteStatusService, peersForksHashesInfoService, forksEpochStore);
 
 	@Test
 	public void routesAreConfigured() {
@@ -74,21 +78,26 @@ public class HealthControllerTest {
 			new JSONObject().put("name", "fork4")
 		);
 		when(peersForksHashesInfoService.getUnknownReportedForksHashes()).thenReturn(new JSONObject());
+		when(forksEpochStore.getEpochsForkHashes()).thenReturn(ImmutableMap.of());
 
 		controller.handleHealthRequest(exchange);
 		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\","
-			+ "\"network_status\":\"BOOTING\",\"current_fork\":{\"name\":\"fork1\"}}");
+			+ "\"executed_forks\":[],\"network_status\":\"BOOTING\","
+			+ "\"current_fork\":{\"name\":\"fork1\"}}");
 
 		controller.handleHealthRequest(exchange);
 		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\","
-			+ "\"network_status\":\"SYNCING\",\"current_fork\":{\"name\":\"fork2\"}}");
+			+ "\"executed_forks\":[],\"network_status\":\"SYNCING\","
+			+ "\"current_fork\":{\"name\":\"fork2\"}}");
 
 		controller.handleHealthRequest(exchange);
 		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\","
-			+ "\"network_status\":\"UP\",\"current_fork\":{\"name\":\"fork3\"}}");
+			+ "\"executed_forks\":[],\"network_status\":\"UP\","
+			+ "\"current_fork\":{\"name\":\"fork3\"}}");
 
 		controller.handleHealthRequest(exchange);
 		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\","
-			+ "\"network_status\":\"STALLED\",\"current_fork\":{\"name\":\"fork4\"}}");
+			+ "\"executed_forks\":[],\"network_status\":\"STALLED\","
+			+ "\"current_fork\":{\"name\":\"fork4\"}}");
 	}
 }

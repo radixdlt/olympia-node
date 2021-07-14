@@ -17,17 +17,14 @@
 
 package com.radixdlt.sync;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.engine.RadixEngine.RadixEngineResult;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.util.List;
 import java.util.Map.Entry;
@@ -43,7 +40,6 @@ class InMemoryCommittedReader implements CommittedReader {
 	private final TreeMap<Long, VerifiedTxnsAndProof> commandsAndProof = new TreeMap<>();
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
 	private final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
-	private final TreeMap<Long, HashCode> epochsForkHashes = new TreeMap<>();
 
 	@Inject
 	InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier) {
@@ -71,12 +67,6 @@ class InMemoryCommittedReader implements CommittedReader {
 
 				if (update.getTail().isEndOfEpoch()) {
 					this.epochProofs.put(nextEpoch, update.getTail());
-				}
-
-				final var radixEngineResult = (RadixEngineResult<LedgerAndBFTProof>) update.getStateComputerOutput().get(RadixEngineResult.class);
-				if  (radixEngineResult != null) {
-					radixEngineResult.getMetadata().getNextForkHash()
-						.ifPresent(nextForkHash -> this.epochsForkHashes.put(nextEpoch, nextForkHash));
 				}
 			}
 		};

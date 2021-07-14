@@ -32,6 +32,7 @@ import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.network.p2p.PeerEvent;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 
 public class HealthEndpointModule extends AbstractModule {
 
@@ -47,9 +48,10 @@ public class HealthEndpointModule extends AbstractModule {
 	public Controller healthController(
 		NetworkInfoService networkInfoService,
 		ForkVoteStatusService forkVoteStatusService,
-		PeersForksHashesInfoService peersForksHashesInfoService
+		PeersForksHashesInfoService peersForksHashesInfoService,
+		ForksEpochStore forksEpochStore
 	) {
-		return new HealthController(networkInfoService, forkVoteStatusService, peersForksHashesInfoService);
+		return new HealthController(networkInfoService, forkVoteStatusService, peersForksHashesInfoService, forksEpochStore);
 	}
 
 	@ProvidesIntoSet
