@@ -22,6 +22,7 @@ import static com.radixdlt.api.service.ForkVoteStatusService.ForkVoteStatus.NO_A
 import static com.radixdlt.api.service.ForkVoteStatusService.ForkVoteStatus.VOTE_REQUIRED;
 
 import com.radixdlt.api.service.PeersForksHashesInfoService;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -47,7 +48,8 @@ public class HealthControllerTest {
 	private final NetworkInfoService networkInfoService = mock(NetworkInfoService.class);
 	private final ForkVoteStatusService forkVoteStatusService = mock(ForkVoteStatusService.class);
 	private final PeersForksHashesInfoService peersForksHashesInfoService = mock(PeersForksHashesInfoService.class);
-	private final HealthController controller = new HealthController(networkInfoService, forkVoteStatusService, peersForksHashesInfoService);
+	private final ForksEpochStore forksEpochStore = mock(ForksEpochStore.class);
+	private final HealthController controller = new HealthController(networkInfoService, forkVoteStatusService, peersForksHashesInfoService, forksEpochStore);
 
 	@Test
 	public void routesAreConfigured() {

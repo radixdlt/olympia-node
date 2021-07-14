@@ -48,22 +48,22 @@ public final class MockedForksModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	ForkBuilder fork1() {
-		return copyBaseAtEpoch("fork1", 0);
+		return copyBaseAtEpoch("fork0", 0);
 	}
 
 	@ProvidesIntoSet
 	ForkBuilder fork2() {
-		return copyBaseAtEpoch("fork2", 5);
+		return copyBaseAtEpoch("fork1", 5);
 	}
 
 	@ProvidesIntoSet
 	ForkBuilder fork3() {
-		return copyBaseAtEpoch("fork3", 10);
+		return copyBaseAtEpoch("fork2", 10);
 	}
 
 	@ProvidesIntoSet
 	ForkBuilder fork4() {
-		return copyBaseWithVoting("fork4", 5100, 20L);
+		return copyBaseWithVoting("fork3", 5100, 20L);
 	}
 
 	private ForkBuilder copyBaseAtEpoch(String name, long epoch) {

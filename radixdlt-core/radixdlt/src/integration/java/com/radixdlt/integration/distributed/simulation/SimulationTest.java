@@ -57,6 +57,7 @@ import com.radixdlt.MockedPersistenceStoreModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.integration.distributed.MockedPeersViewModule;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import com.radixdlt.statecomputer.forks.MockedForksEpochStoreModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
@@ -587,6 +588,7 @@ public class SimulationTest {
 			modules.add(new RxEnvironmentModule());
 			if (ledgerType.hasLedger && ledgerType.hasSync) {
 				modules.add(new MockedCommittedReaderModule());
+				modules.add(new MockedForksEpochStoreModule());
 			}
 
 			return new SimulationTest(
