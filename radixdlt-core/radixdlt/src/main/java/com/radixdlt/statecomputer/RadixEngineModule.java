@@ -62,8 +62,7 @@ public class RadixEngineModule extends AbstractModule {
 		ForksEpochStore forksEpochStore,
 		Forks forks
 	) {
-		forks.tryExecuteMissedFork(engineStore, committedReader, forksEpochStore);
-		forks.sanityCheck(committedReader, forksEpochStore);
+		forks.init(committedReader, forksEpochStore);
 		return forks.getCurrentFork(forksEpochStore.getEpochsForkHashes());
 	}
 

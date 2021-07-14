@@ -57,7 +57,7 @@ public class HealthEndpointModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> peerEventProcessorOnRunner(PeersForksHashesInfoService peersForksHashesInfoService) {
 		return new EventProcessorOnRunner<>(
-			Runners.NODE_API,
+			Runners.APPLICATION,
 			PeerEvent.class,
 			peersForksHashesInfoService.peerEventProcessor()
 		);
@@ -66,7 +66,7 @@ public class HealthEndpointModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> ledgerUpdateEventProcessorOnRunnerpPeersForksService(PeersForksHashesInfoService peersForksHashesInfoService) {
 		return new EventProcessorOnRunner<>(
-			Runners.NODE_API,
+			Runners.APPLICATION,
 			LedgerUpdate.class,
 			peersForksHashesInfoService.ledgerUpdateEventProcessor()
 		);
@@ -75,9 +75,9 @@ public class HealthEndpointModule extends AbstractModule {
 	@ProvidesIntoSet
 	public EventProcessorOnRunner<?> ledgerUpdateEventProcessorOnRunnerVoteStatusService(ForkVoteStatusService forkVoteStatusService) {
 		return new EventProcessorOnRunner<>(
-			Runners.NODE_API,
+			Runners.APPLICATION,
 			LedgerUpdate.class,
-				forkVoteStatusService.ledgerUpdateEventProcessor()
+			forkVoteStatusService.ledgerUpdateEventProcessor()
 		);
 	}
 }

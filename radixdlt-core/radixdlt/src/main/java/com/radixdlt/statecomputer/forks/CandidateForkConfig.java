@@ -74,4 +74,10 @@ public final class CandidateForkConfig implements ForkConfig {
 			minEpoch
 		);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s:%s, min_epoch=%s, required_stake=%s]",
+			getClass().getSimpleName(), name(), hash(), minEpoch, requiredStake);
+	}
 }

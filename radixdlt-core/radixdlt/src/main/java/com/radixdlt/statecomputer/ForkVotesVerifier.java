@@ -63,14 +63,14 @@ public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof>
 			return metadata;
 		}
 
-		// add next fork hash
-		final var metadataWithForks = forks.findNextForkConfig(engineStore, metadata)
-			.map(nextForkConfig -> metadata.withNextForkHash(nextForkConfig.hash()))
-			.orElse(metadata);
-
-		// add next validators metadata
-		return metadataWithForks
+		// add next validators system metadata substates
+		final var metadataWithValidators = metadata
 			.withValidatorsSystemMetadata(getValidatorsSystemMetadata(engineStore, metadata));
+
+		// add next fork hash, if needed
+		return forks.findNextForkConfig(metadataWithValidators)
+			.map(nextForkConfig -> metadataWithValidators.withNextForkHash(nextForkConfig.hash()))
+			.orElse(metadataWithValidators);
 	}
 
 	private ImmutableList<RawSubstateBytes> getValidatorsSystemMetadata(

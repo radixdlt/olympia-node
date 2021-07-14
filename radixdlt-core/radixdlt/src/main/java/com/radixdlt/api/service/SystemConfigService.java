@@ -363,7 +363,7 @@ public class SystemConfigService {
 			.put("maxSigsPerRound", forkConfig.engineRules().getMaxSigsPerRound().orElse(-1));
 
 		if (forkConfig instanceof FixedEpochForkConfig) {
-			json.put("epoch", ((FixedEpochForkConfig) forkConfig).getEpoch());
+			json.put("epoch", ((FixedEpochForkConfig) forkConfig).epoch());
 		} else if (forkConfig instanceof CandidateForkConfig) {
 			json.put("min_epoch", ((CandidateForkConfig) forkConfig).minEpoch());
 		}

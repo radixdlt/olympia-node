@@ -62,7 +62,7 @@ public final class ForkVotesVerifierTest {
 
 		final var nextFork = mock(ForkConfig.class);
 		when(nextFork.hash()).thenReturn(HashCode.fromInt(1));
-		when(forks.findNextForkConfig(engineStore, inputMetadata)).thenReturn(Optional.of(nextFork));
+		when(forks.findNextForkConfig(any())).thenReturn(Optional.of(nextFork));
 
 		final var currentFork = mock(ForkConfig.class);
 		when(currentFork.engineRules()).thenReturn(RERulesVersion.OLYMPIA_V1.create(RERulesConfig.testingDefault()));

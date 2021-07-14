@@ -42,7 +42,7 @@ public final class TestingForksModule extends AbstractModule {
 					Amount.ofTokens(1000) // 1000XRD per resource
 				),
 				OptionalInt.of(50), // 50 Txns per round
-				2500,
+				400,
 				150, // Two weeks worth of epochs
 				Amount.ofTokens(100), // Minimum stake
 				150, // Two weeks worth of epochs
@@ -66,7 +66,7 @@ public final class TestingForksModule extends AbstractModule {
 					Amount.ofTokens(1000) // 1000XRD per resource
 				),
 				OptionalInt.of(50), // 50 Txns per round
-				2500,
+				400,
 				150, // Two weeks worth of epochs
 				Amount.ofTokens(100), // Minimum stake
 				150, // Two weeks worth of epochs
@@ -91,7 +91,7 @@ public final class TestingForksModule extends AbstractModule {
 					Amount.ofTokens(200) // 1000XRD per resource
 				),
 				OptionalInt.of(40), // 50 Txns per round
-				2500,
+				400,
 				1000, // Two weeks worth of epochs
 				Amount.ofTokens(100), // Minimum stake
 				150, // Two weeks worth of epochs

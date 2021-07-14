@@ -38,7 +38,7 @@ public final class FixedEpochForkConfig implements ForkConfig {
 		this.epoch = epoch;
 	}
 
-	public long getEpoch() {
+	public long epoch() {
 		return epoch;
 	}
 

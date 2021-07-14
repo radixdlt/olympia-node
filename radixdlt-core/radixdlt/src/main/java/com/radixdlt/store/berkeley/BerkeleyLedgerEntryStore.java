@@ -103,7 +103,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	CommittedReader, PersistentVertexStore, ForksEpochStore {
 	private static final Logger log = LogManager.getLogger();
 
-	private static final int VALIDATORS_SYSTEM_METADATA_DB_MAX_EPOCHS = 10;
 
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
@@ -113,7 +112,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	// Engine Store databases
 	private static final String RESOURCE_DB_NAME = "radix.resource_db";
 	private static final String SUBSTATE_DB_NAME = "radix.substate_db";
-	private static final String VIRTUAL_STATE_DB_NAME = "radix.virtual_state_db";
 	private static final String INDEXED_SUBSTATE_DB_NAME = "radix.indexed_substate_db";
 	private Database substatesDatabase; // Write/Delete
 	private SecondaryDatabase indexedSubstatesDatabase; // Write/Delete
@@ -125,6 +123,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private static final String TXN_DB_NAME = "radix.txn_db";
 	private static final String FORK_CONFIG_DB = "radix.fork_config_db";
 	private static final String VALIDATORS_SYSTEM_METADATA_DB = "radix.validators_system_metadata_db";
+	private static final int VALIDATORS_SYSTEM_METADATA_DB_MAX_EPOCHS = 1000;
+
 	private Database vertexStoreDatabase; // Write/Delete
 	private Database proofDatabase; // Write/Delete
 	private SecondaryDatabase epochProofDatabase;

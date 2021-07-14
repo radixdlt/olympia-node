@@ -66,7 +66,8 @@ public class ForkVoteStatusService {
 	}
 
 	public ForkVoteStatus forkVoteStatus() {
-		if (forks.getCandidateFork().isEmpty()) {
+		if (forks.getCandidateFork().isEmpty()
+			|| forks.getCandidateFork().get().hash().equals(currentForkConfig.hash())) {
 			return ForkVoteStatus.NO_ACTION_NEEDED;
 		}
 
@@ -77,7 +78,7 @@ public class ForkVoteStatusService {
 
 		// TODO: this could be optimized
 		try (var validatorMetadataCursor = engineStore.openIndexedCursor(
-				SubstateIndex.create(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))) {
+			SubstateIndex.create(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))) {
 
 			final var maybeSelfForkVoteHash = Streams.stream(validatorMetadataCursor)
 				.map(s -> {
