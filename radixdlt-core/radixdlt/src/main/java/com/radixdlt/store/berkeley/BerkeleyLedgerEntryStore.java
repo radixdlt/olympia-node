@@ -17,6 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Streams;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
@@ -85,6 +86,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -719,18 +721,10 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	private void downSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
-		// TODO: check for up Particle state
-		final var downedParticle = entry();
-		var status = substatesDatabase.get(txn, entry(substateId.asBytes()), downedParticle, DEFAULT);
+		var status = substatesDatabase.delete(txn, entry(substateId.asBytes()));
 		if (status != SUCCESS) {
 			throw new IllegalStateException("Downing particle does not exist " + substateId);
 		}
-
-		if (downedParticle.getData().length == 0) {
-			throw new IllegalStateException("Particle was already spun down: " + substateId);
-		}
-
-		substatesDatabase.delete(txn, entry(substateId.asBytes()));
 	}
 
 	private DatabaseEntry downEntry() {
@@ -848,7 +842,26 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			addBytesWrite(atomPosData, idKey);
 			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
 
-			stateUpdates.forEach(i -> this.executeStateUpdate(transaction, i));
+			var elapsed = Stopwatch.createStarted();
+			for (int i = 0; i < stateUpdates.size(); i++) {
+				if (i > 0 && i % 100000 == 0) {
+					log.warn(
+						"engine_store large_state_update: {}/{} elapsed_time={}s",
+						i,
+						stateUpdates.size(),
+						elapsed.elapsed(TimeUnit.SECONDS)
+					);
+				}
+				var stateUpdate = stateUpdates.get(i);
+				try {
+					this.executeStateUpdate(transaction, stateUpdate);
+				} catch (Exception e) {
+					if (transaction != null) {
+						transaction.abort();
+					}
+					throw new BerkeleyStoreException("Unable to store transaction, failed on stateUpdate " + i + ": " + stateUpdate, e);
+				}
+			}
 		} catch (Exception e) {
 			if (transaction != null) {
 				transaction.abort();

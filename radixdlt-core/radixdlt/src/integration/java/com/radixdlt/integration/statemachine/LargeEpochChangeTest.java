@@ -26,6 +26,7 @@ import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.MintToken;
@@ -33,6 +34,9 @@ import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
+import com.radixdlt.atom.actions.UpdateValidatorFee;
+import com.radixdlt.atom.actions.UpdateValidatorOwner;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -107,17 +111,17 @@ public class LargeEpochChangeTest {
 		var rt = Runtime.getRuntime();
 		logger.info("max mem: {}MB", rt.maxMemory() / 1024 / 1024);
 
+		int privKeyStart = 2;
 		long numStakes = 10000 * 10;
 
 		createInjector().injectMembers(this);
 		// Arrange
 		var request = TxnConstructionRequest.create();
-		IntStream.range(1, (int) numStakes + 1)
+		IntStream.range(privKeyStart, (int) numStakes + privKeyStart)
 			.forEach(i -> {
 				var k = PrivateKeys.ofNumeric(i);
 				var addr = REAddr.ofPubKeyAccount(k.getPublicKey());
 				request.action(new MintToken(REAddr.ofNativeToken(), addr, Amount.ofTokens(numStakes * 100).toSubunits()));
-				request.action(new RegisterValidator(k.getPublicKey()));
 			});
 		var mint = sut.construct(request).buildWithoutSignature();
 		logger.info("mint_txn_size={}", mint.getPayload().length);
@@ -128,7 +132,7 @@ public class LargeEpochChangeTest {
 		var construction = Stopwatch.createUnstarted();
 		var execution = Stopwatch.createUnstarted();
 
-		IntStream.range(1, (int) numStakes + 1)
+		IntStream.range(privKeyStart, (int) numStakes + privKeyStart)
 			.forEach(i -> {
 				try {
 					if (i % 1000 == 0) {
@@ -140,9 +144,16 @@ public class LargeEpochChangeTest {
 					var k = PrivateKeys.ofNumeric(i);
 					var addr = REAddr.ofPubKeyAccount(k.getPublicKey());
 					construction.start();
-					var txn = sut.construct(new StakeTokens(addr, k.getPublicKey(), Amount.ofTokens(10 + i).toSubunits())).buildWithoutSignature();
+
+					var txn = sut.construct(
+						TxnConstructionRequest.create()
+							.action(new StakeTokens(addr, k.getPublicKey(), Amount.ofTokens(10 + i).toSubunits()))
+							.action(new RegisterValidator(k.getPublicKey()))
+							.action(new UpdateValidatorFee(k.getPublicKey(), 100))
+							.action(new UpdateValidatorOwner(k.getPublicKey(), REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey())))
+					).buildWithoutSignature();
 					construction.stop();
-					var acc = new AccumulatorState(2 + i, HashUtils.zero256());
+					var acc = new AccumulatorState(3 + i - privKeyStart, HashUtils.zero256());
 					var proof2 = new LedgerProof(HashUtils.zero256(), LedgerHeader.create(1, View.of(1), acc, 0), new TimestampedECDSASignatures());
 					execution.start();
 					sut.execute(List.of(txn), LedgerAndBFTProof.create(proof2), PermissionLevel.SYSTEM);
