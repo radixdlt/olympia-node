@@ -150,7 +150,7 @@ public class SystemConfigService {
 		CounterType.NETWORKING_RECEIVED_BYTES
 	);
 
-	private final JSONObject radixEngineConfiguration;
+	private final JSONArray radixEngineConfiguration;
 	private final JSONObject mempoolConfiguration;
 	private final JSONObject apiConfiguration;
 	private final JSONObject bftConfiguration;
@@ -173,7 +173,6 @@ public class SystemConfigService {
 		@MempoolThrottleMs long mempoolThrottleMs,
 		@Genesis VerifiedTxnsAndProof genesis,
 		Forks forks,
-		CommittedReader committedReader,
 		SyncConfig syncConfig,
 		InMemorySystemInfo inMemorySystemInfo,
 		SystemCounters systemCounters,
@@ -230,7 +229,7 @@ public class SystemConfigService {
 		return proof == null ? new JSONObject() : proof.asJSON(addressing);
 	}
 
-	public JSONObject getRadixEngineConfiguration() {
+	public JSONArray getRadixEngineConfiguration() {
 		return radixEngineConfiguration;
 	}
 
@@ -346,10 +345,10 @@ public class SystemConfigService {
 	}
 
 	@VisibleForTesting
-	static JSONObject prepareRadixEngineConfiguration(Forks forks) {
+	static JSONArray prepareRadixEngineConfiguration(Forks forks) {
 		final var forksJson = jsonArray();
 		forks.forkConfigs().forEach(forkConfig -> forksJson.put(forkConfigJson(forkConfig)));
-		return jsonObject().put(ARRAY, forks);
+		return forksJson;
 	}
 
 	static JSONObject forkConfigJson(ForkConfig forkConfig) {
