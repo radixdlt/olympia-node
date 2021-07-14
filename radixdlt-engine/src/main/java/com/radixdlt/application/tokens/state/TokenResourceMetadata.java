@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.tokens.state;
 
+import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.REAddr;
 
@@ -40,8 +41,8 @@ public final class TokenResourceMetadata implements Particle {
 		this.addr = Objects.requireNonNull(addr);
 		this.name = Objects.requireNonNull(name);
 		this.description = Objects.requireNonNull(description);
-		this.iconUrl = Objects.requireNonNull(iconUrl);
-		this.url = Objects.requireNonNull(url);
+		this.iconUrl = REFieldSerialization.requireValidUrl(iconUrl);
+		this.url = REFieldSerialization.requireValidUrl(url);
 	}
 
 	public REAddr getAddr() {
