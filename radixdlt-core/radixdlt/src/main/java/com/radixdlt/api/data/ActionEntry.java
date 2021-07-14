@@ -111,16 +111,23 @@ public class ActionEntry {
 	public JSONObject asJson() {
 		var json = jsonObject()
 			.put("type", type.toString())
-			.put("from", from)
 			.put("amount", amount);
 
 		switch (type) {
 			case TRANSFER:
-				return json.put("to", to).put("rri", rri);
+				return json
+					.put("from", from)
+					.put("to", to)
+					.put("rri", rri);
 
 			case UNSTAKE:
+				return json
+					.put("from", to) // FIXME: badness in API spec
+					.put("validator", from);
 			case STAKE:
-				return json.put("validator", to);
+				return json
+					.put("from", from)
+					.put("validator", to);
 
 			default:
 				return JSON_TYPE_OTHER;
