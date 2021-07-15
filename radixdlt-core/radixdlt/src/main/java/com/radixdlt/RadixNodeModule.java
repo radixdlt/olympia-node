@@ -17,6 +17,8 @@
 
 package com.radixdlt;
 
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.StokenetForkConfigsModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
@@ -151,6 +153,14 @@ public final class RadixNodeModule extends AbstractModule {
 		var addressing = Addressing.ofNetworkId(networkId);
 		bind(Addressing.class).toInstance(addressing);
 		bindConstant().annotatedWith(NetworkId.class).to(networkId);
+		var genesis = loadGenesis(networkId);
+		bind(Txn.class).annotatedWith(Genesis.class).toInstance(genesis);
+		// TODO: Refactor
+		if (networkId == Network.MAINNET.getId()) {
+			install(new MainnetForkConfigsModule());
+		} else {
+			install(new StokenetForkConfigsModule());
+		}
 		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
 		bind(RuntimeProperties.class).toInstance(properties);
 

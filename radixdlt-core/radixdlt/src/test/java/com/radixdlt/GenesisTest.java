@@ -33,6 +33,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.Bytes;
 import org.junit.Test;
@@ -67,6 +68,7 @@ public class GenesisTest {
 	@Test
 	public void genesis_should_be_a_valid_transaction() throws RadixEngineException {
 		Guice.createInjector(
+			new MainnetForkConfigsModule(),
 			new ForksModule(),
 			new CryptoModule(),
 			new AbstractModule() {

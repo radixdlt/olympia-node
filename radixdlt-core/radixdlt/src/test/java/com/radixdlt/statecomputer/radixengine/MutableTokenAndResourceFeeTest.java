@@ -24,6 +24,7 @@ import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.PrivateKeys;
 import org.junit.Rule;
@@ -81,6 +82,7 @@ public class MutableTokenAndResourceFeeTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideFeeTable(
 				FeeTable.create(
 					Amount.zero(),

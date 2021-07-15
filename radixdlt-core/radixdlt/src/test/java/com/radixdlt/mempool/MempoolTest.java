@@ -22,6 +22,7 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.PrivateKeys;
@@ -88,6 +89,7 @@ public class MempoolTest {
 		return Guice.createInjector(
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().removeSigsPerRoundLimit()),
 			MempoolConfig.asModule(10, 10, 200, 500, 10),
+			new MainnetForkConfigsModule(),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
 			new MockedGenesisModule(
