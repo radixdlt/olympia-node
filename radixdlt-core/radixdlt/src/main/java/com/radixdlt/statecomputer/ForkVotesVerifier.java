@@ -20,29 +20,38 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
+import com.google.common.hash.HashCode;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.MetadataException;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
 
+import java.util.Arrays;
 import java.util.List;
 
 public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof> {
 
 	private final BatchVerifier<LedgerAndBFTProof> baseVerifier;
+	private final HashCode curForkHash;
 	private final Forks forks;
 
 	public ForkVotesVerifier(
 		BatchVerifier<LedgerAndBFTProof> baseVerifier,
+	 	HashCode curForkHash,
 	 	Forks forks
 	) {
 		this.baseVerifier = baseVerifier;
+		this.curForkHash = curForkHash;
 		this.forks = forks;
 	}
 
@@ -68,7 +77,7 @@ public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof>
 			.withValidatorsSystemMetadata(getValidatorsSystemMetadata(engineStore, metadata));
 
 		// add next fork hash, if needed
-		return forks.findNextForkConfig(metadataWithValidators)
+		return forks.findNextForkConfig(curForkHash, metadataWithValidators)
 			.map(nextForkConfig -> metadataWithValidators.withNextForkHash(nextForkConfig.hash()))
 			.orElse(metadataWithValidators);
 	}
@@ -77,8 +86,6 @@ public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof>
 		EngineStore<LedgerAndBFTProof> engineStore,
 		LedgerAndBFTProof ledgerAndBFTProof
 	) {
-		final var currentFork = forks.getByHash(ledgerAndBFTProof.getCurrentForkHash()).orElseThrow();
-		final var substateDeserialization = currentFork.engineRules().getParser().getSubstateDeserialization();
 		final var validatorSet = ledgerAndBFTProof.getProof().getNextValidatorSet().orElseThrow();
 
 		try (var validatorMetadataCursor = engineStore.openIndexedCursor(
@@ -86,10 +93,11 @@ public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof>
 		) {
 			return Streams.stream(validatorMetadataCursor)
 				.filter(rawSubstate -> {
+					var keyBytes = Arrays.copyOfRange(rawSubstate.getData(), 2, 2 + ECPublicKey.COMPRESSED_BYTES);
 					try {
-						final var meta = (ValidatorSystemMetadata) substateDeserialization.deserialize(rawSubstate.getData());
-						return validatorSet.containsNode(meta.getValidatorKey());
-					} catch (DeserializeException ex) {
+						var key = ECPublicKey.fromBytes(keyBytes);
+						return validatorSet.containsNode(key);
+					} catch (PublicKeyException ex) {
 						throw new RuntimeException(ex);
 					}
 				})

@@ -102,7 +102,6 @@ public final class ForkVoteStatusServiceTest {
 		final var ledgerAndBftProof = LedgerAndBFTProof.create(
 			mock(LedgerProof.class),
 			null,
-			HashCode.fromInt(1),
 			Optional.of(HashCode.fromInt(2)),
 			Optional.empty()
 		);

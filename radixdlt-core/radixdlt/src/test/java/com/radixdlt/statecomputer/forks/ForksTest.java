@@ -136,7 +136,6 @@ public final class ForksTest {
 		final var proof = mock(LedgerProof.class);
 		when(proof.getEpoch()).thenReturn(epoch);
 		when(ledgerAndBftProof.getProof()).thenReturn(proof);
-		when(ledgerAndBftProof.getCurrentForkHash()).thenReturn(currentFork.hash());
 		return ledgerAndBftProof;
 	}
 }

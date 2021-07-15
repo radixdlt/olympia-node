@@ -98,7 +98,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private ProposerElection proposerElection;
 	private View epochCeilingView;
 	private OptionalInt maxSigsPerRound;
-	private ForkConfig currentForkConfig;
 
 	@Inject
 	public RadixEngineStateComputer(
@@ -114,8 +113,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
 		Hasher hasher,
 		SystemCounters systemCounters,
-		Forks forks,
-		@InitialForkConfig ForkConfig initialForkConfig
+		Forks forks
 	) {
 		if (epochCeilingView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -134,7 +132,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 		this.proposerElection = proposerElection;
 		this.forks = Objects.requireNonNull(forks);
-		this.currentForkConfig = Objects.requireNonNull(initialForkConfig);
 	}
 
 	public static class RadixEngineTxn implements PreparedTxn {
@@ -324,7 +321,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		try {
 			result = this.radixEngine.execute(
 				verifiedTxnsAndProof.getTxns(),
-				LedgerAndBFTProof.create(proof, vertexStoreState, this.currentForkConfig.hash()),
+				LedgerAndBFTProof.create(proof, vertexStoreState),
 				PermissionLevel.SUPER_USER
 			);
 		} catch (RadixEngineException e) {
@@ -346,7 +343,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 			);
 			this.epochCeilingView = rules.getMaxRounds();
 			this.maxSigsPerRound = rules.getMaxSigsPerRound();
-			this.currentForkConfig = nextForkConfig;
 		});
 
 		result.getProcessedTxns().forEach(t -> {

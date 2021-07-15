@@ -147,7 +147,7 @@ public class LargeEpochChangeTest {
 		logger.info("mint_txn_size={}", mint.getPayload().length);
 		var accumulator = new AccumulatorState(2, HashUtils.zero256());
 		var proof = new LedgerProof(HashUtils.zero256(), LedgerHeader.create(1, View.of(1), accumulator, 0), new TimestampedECDSASignatures());
-		sut.execute(List.of(mint), LedgerAndBFTProof.create(proof, null, null), PermissionLevel.SYSTEM);
+		sut.execute(List.of(mint), LedgerAndBFTProof.create(proof, null), PermissionLevel.SYSTEM);
 
 		var systemConstruction = Stopwatch.createUnstarted();
 		var construction = Stopwatch.createUnstarted();
@@ -197,7 +197,7 @@ public class LargeEpochChangeTest {
 			var acc = new AccumulatorState(2 + round * (numTxnsPerRound + 1), HashUtils.zero256());
 			var proof2 = new LedgerProof(HashUtils.zero256(), LedgerHeader.create(1, View.of(1), acc, 0), new TimestampedECDSASignatures());
 			execution.start();
-			var result = sut.execute(txns, LedgerAndBFTProof.create(proof2, null, null), PermissionLevel.SUPER_USER);
+			var result = sut.execute(txns, LedgerAndBFTProof.create(proof2, null), PermissionLevel.SUPER_USER);
 			execution.stop();
 			for (var p : result.getProcessedTxns()) {
 				feesPaid = feesPaid.add(p.getFeePaid());
@@ -241,7 +241,7 @@ public class LargeEpochChangeTest {
 		var acc = new AccumulatorState(2 + 1 + numRounds * (1 + numTxnsPerRound), HashUtils.zero256());
 		var header = LedgerHeader.create(1, View.of(10), acc, 0, nextValidatorSet.orElseThrow());
 		var proof2 = new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
-		var executionResult = this.sut.execute(List.of(txn), LedgerAndBFTProof.create(proof2, null, null), PermissionLevel.SUPER_USER);
+		var executionResult = this.sut.execute(List.of(txn), LedgerAndBFTProof.create(proof2, null), PermissionLevel.SUPER_USER);
 		construction.stop();
 		logger.info(
 			"epoch_execution: verification_time={}s store_time={}s total_time={}s",

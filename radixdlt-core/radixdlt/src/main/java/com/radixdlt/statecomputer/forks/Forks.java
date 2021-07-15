@@ -317,8 +317,8 @@ public final class Forks {
 	}
 
 	@SuppressWarnings("unchecked")
-	public Optional<ForkConfig> findNextForkConfig(LedgerAndBFTProof ledgerAndBFTProof) {
-		final var currentForkConfig = getByHash(ledgerAndBFTProof.getCurrentForkHash()).get();
+	public Optional<ForkConfig> findNextForkConfig(HashCode forkHash, LedgerAndBFTProof ledgerAndBFTProof) {
+		final var currentForkConfig = getByHash(forkHash).get();
 
 		if (currentForkConfig instanceof CandidateForkConfig) {
 			// if we're already running a candidate fork than no action is needed

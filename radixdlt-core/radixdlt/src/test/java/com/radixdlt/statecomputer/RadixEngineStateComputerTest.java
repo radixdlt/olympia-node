@@ -205,7 +205,7 @@ public class RadixEngineStateComputerTest {
 		}
 		radixEngine.execute(
 			genesisTxns.getTxns(),
-			LedgerAndBFTProof.create(genesisLedgerHeader, null, forkConfig.hash()),
+			LedgerAndBFTProof.create(genesisLedgerHeader, null),
 			PermissionLevel.SYSTEM
 		);
 	}

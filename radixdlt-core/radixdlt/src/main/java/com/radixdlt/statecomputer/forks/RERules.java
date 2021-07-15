@@ -18,6 +18,7 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
@@ -96,14 +97,14 @@ public final class RERules {
 		return config;
 	}
 
-	public RERules withForksVerifier(Forks forks) {
+	public RERules withForksVerifier(HashCode curHash, Forks forks) {
 		return new RERules(
 			version,
 			parser,
 			serialization,
 			constraintMachineConfig,
 			actionConstructors,
-			new ForkVotesVerifier(batchVerifier, forks),
+			new ForkVotesVerifier(batchVerifier, curHash, forks),
 			config
 		);
 	}

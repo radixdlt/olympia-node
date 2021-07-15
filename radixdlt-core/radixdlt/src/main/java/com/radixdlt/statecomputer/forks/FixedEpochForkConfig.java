@@ -62,7 +62,7 @@ public final class FixedEpochForkConfig implements ForkConfig {
 		return new FixedEpochForkConfig(
 			name,
 			hash,
-			reRules.withForksVerifier(forks),
+			reRules.withForksVerifier(hash, forks),
 			epoch
 		);
 	}

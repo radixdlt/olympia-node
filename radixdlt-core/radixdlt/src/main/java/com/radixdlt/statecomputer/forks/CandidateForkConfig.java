@@ -69,7 +69,7 @@ public final class CandidateForkConfig implements ForkConfig {
 		return new CandidateForkConfig(
 			name,
 			hash,
-			reRules.withForksVerifier(forks),
+			reRules.withForksVerifier(hash, forks),
 			requiredStake,
 			minEpoch
 		);
