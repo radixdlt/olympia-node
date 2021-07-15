@@ -81,18 +81,18 @@ public class ConstructionHandlerTest {
 		var prepared = PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.TEN);
 
 		when(submissionService.prepareTransaction(any(), any(), any(), eq(false)))
-				.thenReturn(Result.ok(prepared));
+			.thenReturn(Result.ok(prepared));
 
 		var actions = jsonArray()
-				.put(
-						jsonObject()
-								.put("type", "RegisterValidator")
-								.put("validator", addressing.forValidators().of(PUB_KEY))
-				);
+			.put(
+				jsonObject()
+					.put("type", "RegisterValidator")
+					.put("validator", addressing.forValidators().of(PUB_KEY))
+			);
 		var params = jsonArray()
-				.put(actions)
-				.put(FEE_PAYER)
-				.put("message");
+			.put(actions)
+			.put(FEE_PAYER)
+			.put("message");
 
 		var response = handler.handleConstructionBuildTransaction(requestWith(params));
 
@@ -110,18 +110,18 @@ public class ConstructionHandlerTest {
 		var prepared = PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.TEN);
 
 		when(submissionService.prepareTransaction(any(), any(), any(), eq(false)))
-				.thenReturn(Result.ok(prepared));
+			.thenReturn(Result.ok(prepared));
 
 		var actions = jsonArray()
-				.put(
-						jsonObject()
-								.put("type", "RegisterValidator")
-								.put("validator", addressing.forValidators().of(PUB_KEY))
-				);
+			.put(
+				jsonObject()
+					.put("type", "RegisterValidator")
+					.put("validator", addressing.forValidators().of(PUB_KEY))
+			);
 		var params = jsonObject()
-				.put("actions", actions)
-				.put("feePayer", FEE_PAYER)
-				.put("message", "message");
+			.put("actions", actions)
+			.put("feePayer", FEE_PAYER)
+			.put("message", "message");
 
 		var response = handler.handleConstructionBuildTransaction(requestWith(params));
 
