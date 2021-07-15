@@ -168,10 +168,10 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 			peerEventDispatcher.dispatch(PeerConnected.create(this));
 		} else {
 			final var errorResult = (AuthHandshakeError) handshakeResult;
-			log.trace("Auth handshake failed with {} [{}] because of: {}. Disconnecting and banning peer.",
+			log.warn("Auth handshake failed with {} [{}] because of: {}. Disconnecting and banning peer.",
 				remoteNodeId, this.nettyChannel.remoteAddress(), errorResult.getMsg());
 			errorResult.getMaybeNodeId().ifPresent(remoteNodeId ->
-				this.peerControl.banPeer(remoteNodeId, Duration.ofHours(1)));
+				this.peerControl.banPeer(remoteNodeId, Duration.ofHours(1), "Auth handshake failed"));
 			this.disconnect();
 		}
 	}

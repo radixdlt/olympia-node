@@ -30,23 +30,29 @@ import java.util.function.Supplier;
 public final class REStateUpdate {
 	private final REOp op;
 	private final SubstateId id;
-	private final Supplier<ByteBuffer> stateBuf;
+	private final byte typeByte;
 	private final Object parsed;
+	private final Supplier<ByteBuffer> stateBuf;
 
-	private REStateUpdate(REOp op, SubstateId id, Supplier<ByteBuffer> stateBuf, Object parsed) {
+	private REStateUpdate(REOp op, SubstateId id, byte typeByte, Object parsed, Supplier<ByteBuffer> stateBuf) {
 		Objects.requireNonNull(op);
 
 		this.op = op;
 		this.id = id;
-		this.stateBuf = stateBuf;
+		this.typeByte = typeByte;
 		this.parsed = parsed;
+		this.stateBuf = stateBuf;
 	}
 
-	public static REStateUpdate of(REOp op, SubstateId substateId, Supplier<ByteBuffer> stateBuf, Object parsed) {
+	public static REStateUpdate of(REOp op, SubstateId substateId, byte typeByte, Object parsed, Supplier<ByteBuffer> stateBuf) {
 		if (op != REOp.DOWN && op != REOp.UP) {
 			throw new IllegalArgumentException();
 		}
-		return new REStateUpdate(op, substateId, stateBuf, parsed);
+		return new REStateUpdate(op, substateId, typeByte, parsed, stateBuf);
+	}
+
+	public byte typeByte() {
+		return typeByte;
 	}
 
 	public SubstateId getId() {

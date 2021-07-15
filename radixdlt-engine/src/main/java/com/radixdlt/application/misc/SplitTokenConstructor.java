@@ -16,7 +16,7 @@
  *
  */
 
-package com.radixdlt.application.tokens.construction;
+package com.radixdlt.application.misc;
 
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;

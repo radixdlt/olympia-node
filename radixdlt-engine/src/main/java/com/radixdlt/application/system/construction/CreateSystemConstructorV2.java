@@ -27,11 +27,9 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.identifiers.REAddr;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem> {
 	@Override
@@ -41,12 +39,7 @@ public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem
 
 
 		builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, "sys".getBytes(StandardCharsets.UTF_8));
-		builder.down(
-			UnclaimedREAddr.class,
-			addr -> addr.getAddr().isSystem(),
-			Optional.of(REAddr.ofSystem()),
-			() -> new TxBuilderException("No system address")
-		);
+		builder.downREAddr(REAddr.ofSystem());
 		builder.up(new EpochData(0));
 		builder.up(new RoundData(0, action.getTimestamp()));
 		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_META_DATA.id()}));

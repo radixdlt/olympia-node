@@ -18,8 +18,11 @@
 
 package com.radixdlt.integration.statemachine;
 
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Rule;
@@ -46,8 +49,10 @@ import com.radixdlt.store.LastStoredProof;
 
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 public class RandomTxnTest {
+	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 	private static final Logger logger = LogManager.getLogger();
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
@@ -66,8 +71,12 @@ public class RandomTxnTest {
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
 			new MainnetForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new MockedGenesisModule(
+				Set.of(TEST_KEY.getPublicKey()),
+				Amount.ofTokens(100000),
+				Amount.ofTokens(1000)
+			),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

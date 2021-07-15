@@ -54,11 +54,11 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 
 		public ReducerState beginUpdate(ValidatorBFTData validatorBFTData) throws ProcedureException {
-			if (validatorsToUpdate.containsKey(validatorBFTData.validatorKey())) {
+			if (validatorsToUpdate.containsKey(validatorBFTData.getValidatorKey())) {
 				throw new ProcedureException("Validator already started to update.");
 			}
 
-			validatorsToUpdate.put(validatorBFTData.validatorKey(), validatorBFTData);
+			validatorsToUpdate.put(validatorBFTData.getValidatorKey(), validatorBFTData);
 			return this;
 		}
 
@@ -83,10 +83,11 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 				},
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
-					REFieldSerialization.serializeKey(buf, s.validatorKey());
+					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 					buf.putLong(s.proposalsCompleted());
 					buf.putLong(s.proposalsMissed());
-				}
+				},
+				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)
 			)
 		);
 

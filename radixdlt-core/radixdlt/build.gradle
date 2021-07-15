@@ -175,7 +175,7 @@ tasks.withType(JavaExec) {
 
 tasks.withType(Test){
     minHeapSize = "128m"
-    maxHeapSize = "512m"
+    maxHeapSize = "8096m"
 }
 
 // Compress distTar

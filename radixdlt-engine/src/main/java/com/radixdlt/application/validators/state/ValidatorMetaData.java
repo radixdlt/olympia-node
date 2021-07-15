@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.validators.state;
 
+import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
@@ -38,7 +39,7 @@ public final class ValidatorMetaData implements ValidatorData {
 	) {
 		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.name = Objects.requireNonNull(name);
-		this.url = Objects.requireNonNull(url);
+		this.url = REFieldSerialization.requireValidUrl(url);
 	}
 
 	@Override

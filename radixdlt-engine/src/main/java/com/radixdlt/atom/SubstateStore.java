@@ -20,8 +20,9 @@ package com.radixdlt.atom;
 
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.constraintmachine.SystemMapKey;
 
-import java.util.NoSuchElementException;
+import java.util.Optional;
 
 /**
  * Store which contains an index into up substates
@@ -29,21 +30,18 @@ import java.util.NoSuchElementException;
 public interface SubstateStore {
 
 	CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index);
+	Optional<RawSubstateBytes> get(SystemMapKey key);
 
 	static SubstateStore empty() {
-		return t -> new CloseableCursor<>() {
+		return new SubstateStore() {
 			@Override
-			public void close() {
+			public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
+				return CloseableCursor.empty();
 			}
 
 			@Override
-			public boolean hasNext() {
-				return false;
-			}
-
-			@Override
-			public RawSubstateBytes next() {
-				throw new NoSuchElementException();
+			public Optional<RawSubstateBytes> get(SystemMapKey key) {
+				return Optional.empty();
 			}
 		};
 	}

@@ -10,7 +10,6 @@ For transaction parsing, please check [this doc](./parsing.md).
 ## Transaction Limit
 
 - The maximum number of signatures must be less or equal to `50` per round proposal
-- The maximum transaction size is `1024 * 1024` bytes.
 
 ## Stateless Validation
 

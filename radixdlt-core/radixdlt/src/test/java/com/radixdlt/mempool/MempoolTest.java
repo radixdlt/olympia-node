@@ -18,6 +18,7 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.statecomputer.forks.ForkConfig;
@@ -25,6 +26,7 @@ import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.PrivateKeys;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,12 +62,14 @@ import com.radixdlt.store.DatabaseLocation;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class MempoolTest {
+	private static final ECKeyPair VALIDATOR_KEY = PrivateKeys.ofNumeric(1);
 	private static final int NUM_PEERS = 2;
 
 	@Rule
@@ -88,8 +92,12 @@ public class MempoolTest {
 			MempoolConfig.asModule(10, 10, 200, 500, 10),
 			new ForksModule(),
 			new MainnetForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(),
+			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
+			new MockedGenesisModule(
+				Set.of(VALIDATOR_KEY.getPublicKey()),
+				Amount.ofTokens(1000),
+				Amount.ofTokens(100)
+			),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

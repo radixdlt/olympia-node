@@ -16,10 +16,9 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.application.system.state;
 
-import java.nio.ByteBuffer;
+import com.radixdlt.constraintmachine.Particle;
 
-public interface VirtualSubstateSerializer<T extends Particle> {
-	T serialize(Object key, ByteBuffer buf);
+public interface SystemData extends Particle {
 }

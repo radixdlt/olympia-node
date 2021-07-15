@@ -25,20 +25,13 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 
-import java.util.Optional;
 import java.util.OptionalLong;
 
 public class RegisterValidatorConstructor implements ActionConstructor<RegisterValidator> {
 	@Override
 	public void construct(RegisterValidator action, TxBuilder txBuilder) throws TxBuilderException {
-		txBuilder.down(
-			ValidatorRegisteredCopy.class,
-			p -> p.getValidatorKey().equals(action.validatorKey()),
-			Optional.of(action.validatorKey()),
-			() -> new TxBuilderException("Cannot find state")
-		);
-
-		var curEpoch = txBuilder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
+		txBuilder.down(ValidatorRegisteredCopy.class, action.validatorKey());
+		var curEpoch = txBuilder.readSystem(EpochData.class);
 		txBuilder.up(new ValidatorRegisteredCopy(OptionalLong.of(curEpoch.getEpoch() + 1), action.validatorKey(), true));
 		txBuilder.end();
 	}

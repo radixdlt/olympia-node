@@ -23,14 +23,14 @@ import com.radixdlt.client.lib.api.ActionType;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public class UpdateValidatorAction implements Action {
-	private final ActionType type = ActionType.UPDATE_VALIDATOR;
+public class UpdateValidatorMetadataAction implements Action {
+	private final ActionType type = ActionType.UPDATE_VALIDATOR_METADATA;
 	private final ValidatorAddress delegate;
 	private final String name;
 	private final String url;
 	private final HashCode forkVoteHash;
 
-	public UpdateValidatorAction(ValidatorAddress delegate, String name, String url, HashCode forkVoteHash) {
+	public UpdateValidatorMetadataAction(ValidatorAddress delegate, String name, String url, HashCode forkVoteHash) {
 		this.delegate = delegate;
 		this.name = name;
 		this.url = url;

@@ -19,10 +19,15 @@
 package com.radixdlt.application.tokens.construction;
 
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
+
+import java.nio.ByteBuffer;
 
 public class TransferTokensConstructorV2 implements ActionConstructor<TransferToken> {
 	@Override
@@ -31,14 +36,23 @@ public class TransferTokensConstructorV2 implements ActionConstructor<TransferTo
 			throw new TxBuilderException("Must transfer > 0.");
 		}
 
-		txBuilder.swapFungible(
-			TokensInAccount.class,
+		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
+		buf.put(SubstateTypeId.TOKENS.id());
+		buf.put((byte) 0);
+		buf.put(action.from().getBytes());
+
+		var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
+		var change = txBuilder.downFungible(
+			index,
 			p -> p.getResourceAddr().equals(action.resourceAddr())
 				&& p.getHoldingAddr().equals(action.from()),
-			amt -> new TokensInAccount(action.from(), action.resourceAddr(), amt),
 			action.amount(),
 			() -> new TxBuilderException("Not enough balance for transfer.")
-		).with(amt -> new TokensInAccount(action.to(), action.resourceAddr(), action.amount()));
+		);
+		if (!change.isZero()) {
+			txBuilder.up(new TokensInAccount(action.from(), action.resourceAddr(), change));
+		}
+		txBuilder.up(new TokensInAccount(action.to(), action.resourceAddr(), action.amount()));
 		txBuilder.end();
 	}
 }

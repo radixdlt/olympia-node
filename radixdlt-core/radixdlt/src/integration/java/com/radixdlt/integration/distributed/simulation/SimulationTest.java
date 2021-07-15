@@ -36,8 +36,9 @@ import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.FunctionalNodeModule;
 import com.radixdlt.LedgerRecoveryModule;
 import com.radixdlt.MockedKeyModule;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.integration.distributed.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -96,8 +97,6 @@ import io.reactivex.rxjava3.core.Single;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -196,7 +195,6 @@ public class SimulationTest {
 		private Module overrideModule = null;
 		private Function<ImmutableList<ECKeyPair>, ImmutableMap<ECKeyPair, Module>> byzantineModuleCreator = i -> ImmutableMap.of();
 		private ImmutableMap<Integer, ImmutableList<Integer>> addressBookNodes;
-		private final List<Module> genesisModules = new ArrayList<>();
 
 		// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
 		// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
@@ -280,13 +278,6 @@ public class SimulationTest {
 				}
 			});
 
-			this.genesisModules.add(new AbstractModule() {
-				@Override
-				protected void configure() {
-					bind(BFTValidatorSet.class).toInstance(initialVset);
-				}
-			});
-
 			return this;
 		}
 
@@ -338,20 +329,6 @@ public class SimulationTest {
 				protected void configure() {
 					bind(SyncConfig.class).toInstance(syncConfig);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(List.of());
-				}
-			});
-
-			this.genesisModules.add(new AbstractModule() {
-				@Override
-				protected void configure() {
-					install(new MockedCryptoModule());
-					install(new RadixEngineModule());
-					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-						.toInstance(nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
-					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
-					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
 				}
 			});
 
@@ -419,32 +396,12 @@ public class SimulationTest {
 				}
 			});
 
-			this.genesisModules.add(new AbstractModule() {
-				@Override
-				protected void configure() {
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-						.toInstance(nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
-					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
-					install(new MockedCryptoModule());
-					install(new RadixEngineModule());
-					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
-				}
-			});
-
 			return this;
 		}
 
 		public Builder addRadixEngineConfigModules(Module... modules) {
 			this.modules.add(modules);
-			this.genesisModules.addAll(Arrays.asList(modules));
 			this.testModules.add(modules);
-			return this;
-		}
-
-		public Builder addGenesisConfigModule(Module module) {
-			this.genesisModules.add(module);
 			return this;
 		}
 
@@ -528,22 +485,11 @@ public class SimulationTest {
 			// Persistence
 			if (ledgerType.hasRadixEngine) {
 				modules.add(new MockedRadixEngineStoreModule());
-				// Hack to get nodes to have the same genesis atom
-				genesisModules.add(new MockedGenesisModule());
-				genesisModules.add(new AbstractModule() {
-					public void configure() {
-						bind(CommittedReader.class).toInstance(CommittedReader.mocked());
-						bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
-					}
-				});
-				var genesis = Guice.createInjector(genesisModules)
-					.getInstance(Key.get(VerifiedTxnsAndProof.class, Genesis.class));
-				modules.add(new AbstractModule() {
-					@Override
-					protected void configure() {
-						bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesis);
-					}
-				});
+				modules.add(new MockedGenesisModule(
+					nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+					Amount.ofTokens(1000000),
+					Amount.ofTokens(10000)
+				));
 				modules.add(new LedgerRecoveryModule());
 				modules.add(new ConsensusRecoveryModule());
 
@@ -552,16 +498,33 @@ public class SimulationTest {
 					public void configure() {
 						install(new MockedCryptoModule());
 						install(new RadixEngineModule());
+						install(new MockedGenesisModule(
+							nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+							Amount.ofTokens(1000000),
+							Amount.ofTokens(10000)
+						));
 						bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 						bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 						bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 						bind(CommittedReader.class).toInstance(CommittedReader.mocked());
 						bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
 					}
+
+					@Genesis
+					@Provides
+					Txn genesis(@Genesis VerifiedTxnsAndProof txnsAndProof) {
+						return txnsAndProof.getTxns().get(0);
+					}
 				});
 			} else {
-				modules.addAll(genesisModules);
 				modules.add(new MockedRecoveryModule());
+				var initialVset = BFTValidatorSet.from(nodes.stream()
+					.map(e -> BFTValidator.from(BFTNode.create(e.getPublicKey()), UInt256.ONE)));
+				modules.add(new AbstractModule() {
+					public void configure() {
+						bind(BFTValidatorSet.class).toInstance(initialVset);
+					}
+				});
 			}
 
 			modules.add(new MockedPersistenceStoreModule());

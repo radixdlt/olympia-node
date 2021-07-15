@@ -25,11 +25,9 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.identifiers.REAddr;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 public final class CreateMutableTokenConstructor implements ActionConstructor<CreateMutableToken> {
 	@Override
@@ -39,13 +37,7 @@ public final class CreateMutableTokenConstructor implements ActionConstructor<Cr
 			: REAddr.ofHashedKey(action.getKey(), action.getSymbol());
 
 		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
-
-		txBuilder.down(
-			UnclaimedREAddr.class,
-			p -> p.getAddr().equals(reAddress),
-			Optional.of(reAddress),
-			() -> new TxBuilderException("RRI not available")
-		);
+		txBuilder.downREAddr(reAddress);
 		txBuilder.up(TokenResource.createMutableSupplyResource(reAddress, action.getKey()));
 		txBuilder.up(new TokenResourceMetadata(
 			reAddress,

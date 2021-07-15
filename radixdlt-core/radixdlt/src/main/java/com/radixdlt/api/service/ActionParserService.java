@@ -17,7 +17,6 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import org.json.JSONArray;
@@ -28,6 +27,7 @@ import com.radixdlt.api.data.ActionType;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -135,7 +135,7 @@ public final class ActionParserService {
 					validator(element)
 				).map(TransactionAction::unregister);
 
-			case UPDATE_VALIDATOR:
+			case UPDATE_VALIDATOR_METADATA:
 				return allOf(
 					validator(element),
 					optionalName(element),
@@ -143,7 +143,7 @@ public final class ActionParserService {
 				).map((validatorKey, name, url) -> {
 					final var maybeForkVoteHash =
 						forks.getCandidateFork().map(f -> ForkConfig.voteHash(validatorKey, f));
-					return TransactionAction.update(validatorKey, name, url, maybeForkVoteHash);
+					return TransactionAction.updateMetadata(validatorKey, name, url, maybeForkVoteHash);
 				});
 
 			case UPDATE_VALIDATOR_FEE:

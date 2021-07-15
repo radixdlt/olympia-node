@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import com.radixdlt.statecomputer.forks.StokenetForksModule;
 import com.radixdlt.statecomputer.forks.TestingForksModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -208,11 +209,16 @@ public final class RadixNodeModule extends AbstractModule {
 		// State Computer
 		install(new ForksModule());
 
+		// TODO: Refactor
 		if (properties.get("testing_forks.enable", false)) {
-			log.info("Enabling testing forks");
+			log.info("Using testing forks");
 			install(new TestingForksModule());
-		} else {
+		} else if (networkId == Network.MAINNET.getId()) {
+			log.info("Using mainnet forks");
 			install(new MainnetForksModule());
+		} else {
+			log.info("Using stokenet forks");
+			install(new StokenetForksModule());
 		}
 
 		if (properties.get("overwrite_forks.enable", false)) {

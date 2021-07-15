@@ -59,7 +59,11 @@ public final class AddressBookEntry {
 		final var bannedUntil = rawBannedUntil > 0
 			? Optional.of(Instant.ofEpochMilli(rawBannedUntil))
 			: Optional.<Instant>empty();
-		return new AddressBookEntry(nodeId, bannedUntil, knownAddresses);
+		return new AddressBookEntry(
+			nodeId,
+			bannedUntil,
+			knownAddresses != null ? knownAddresses : ImmutableSet.of()
+		);
 	}
 
 	public static AddressBookEntry create(RadixNodeUri uri) {

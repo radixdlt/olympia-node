@@ -57,8 +57,8 @@ public interface TransactionAction {
 		return new UnregisterValidatorAction(validatorKey);
 	}
 
-	static TransactionAction update(ECPublicKey validatorKey, Optional<String> name, Optional<String> url, Optional<HashCode> forkVoteHash) {
-		return new UpdateValidatorAction(validatorKey, name.orElse(null), url.orElse(null), forkVoteHash);
+	static TransactionAction updateMetadata(ECPublicKey validatorKey, Optional<String> name, Optional<String> url, Optional<HashCode> forkVoteHash) {
+		return new UpdateValidatorMetadataAction(validatorKey, name.orElse(null), url.orElse(null), forkVoteHash);
 	}
 
 	static TransactionAction updateValidatorFee(ECPublicKey validatorKey, int percentage) {
@@ -99,4 +99,3 @@ public interface TransactionAction {
 		return ofNullable(rri).orElseThrow(() -> new IllegalStateException("Attempt to transfer with missing RRI"));
 	}
 }
-

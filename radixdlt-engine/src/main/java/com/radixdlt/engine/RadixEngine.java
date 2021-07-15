@@ -17,7 +17,9 @@
 
 package com.radixdlt.engine;
 
+import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
+import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxAction;
@@ -30,6 +32,9 @@ import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -55,7 +60,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -65,24 +72,6 @@ import java.util.stream.Collectors;
  */
 public final class RadixEngine<M> {
 	private static final Logger logger = LogManager.getLogger();
-
-	public static final class RadixEngineResult<M> {
-		private final List<REProcessedTxn> txns;
-		private final M metadata;
-
-		public RadixEngineResult(List<REProcessedTxn> txns, M metadata) {
-			this.txns = txns;
-			this.metadata = metadata;
-		}
-
-		public List<REProcessedTxn> getTxns() {
-			return txns;
-		}
-
-		public M getMetadata() {
-			return metadata;
-		}
-	}
 
 	private static class ApplicationStateReducer<U, M> {
 		private final Set<Class<? extends Particle>> particleClasses;
@@ -401,27 +390,33 @@ public final class RadixEngine<M> {
 		// FIXME: This is quite the hack to increase sigsLeft for execution on noncommits (e.g. mempool)
 		// FIXME: Should probably just change metering
 		var sigsLeft = meta != null ? 0 : 1000; // Start with 0
+		var storageStopwatch = Stopwatch.createUnstarted();
+		var verificationStopwatch = Stopwatch.createUnstarted();
 
 		for (int i = 0; i < txns.size(); i++) {
 			var txn = txns.get(i);
-			var context = new ExecutionContext(txn, permissionLevel, sigsLeft, Amount.ofTokens(200).toSubunits());
 
+			verificationStopwatch.start();
+			var context = new ExecutionContext(txn, permissionLevel, sigsLeft, Amount.ofTokens(200).toSubunits());
 			final REProcessedTxn parsedTxn;
-			// TODO: combine verification and storage
 			try {
 				parsedTxn = this.verify(engineStoreInTransaction, txn, context);
 			} catch (TxnParseException | AuthorizationException | ConstraintMachineException e) {
 				throw new RadixEngineException(i, txns.size(), txn, e);
 			}
+			verificationStopwatch.stop();
+
 			// Carry sigs left to the next transaction
 			sigsLeft = context.sigsLeft();
 
+			storageStopwatch.start();
 			try {
 				engineStoreInTransaction.storeTxn(txn, parsedTxn.stateUpdates().collect(Collectors.toList()));
 			} catch (Exception e) {
 				logger.error("Store of atom failed: " + parsedTxn, e);
 				throw e;
 			}
+			storageStopwatch.stop();
 
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state
@@ -437,7 +432,12 @@ public final class RadixEngine<M> {
 			if (processedMetadata != null) {
 				engineStoreInTransaction.storeMetadata(processedMetadata);
 			}
-			return new RadixEngineResult<>(processedTxns, processedMetadata);
+			return RadixEngineResult.create(
+				processedTxns,
+				processedMetadata,
+				verificationStopwatch.elapsed(TimeUnit.MILLISECONDS),
+				storageStopwatch.elapsed(TimeUnit.MILLISECONDS)
+			);
 		} catch (MetadataException e) {
 			logger.error("Invalid metadata: " + processedTxns);
 			throw e;
@@ -454,9 +454,18 @@ public final class RadixEngine<M> {
 
 	private TxBuilder construct(TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
-			SubstateStore filteredStore = b ->
-				engineStore.openIndexedCursor(b)
-					.filter(i -> !avoid.contains(SubstateId.fromBytes(i.getId())));
+			SubstateStore filteredStore = new SubstateStore() {
+				@Override
+				public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
+					return engineStore.openIndexedCursor(index)
+						.filter(i -> !avoid.contains(SubstateId.fromBytes(i.getId())));
+				}
+
+				@Override
+				public Optional<RawSubstateBytes> get(SystemMapKey key) {
+					return engineStore.get(key);
+				}
+			};
 
 			var txBuilder = TxBuilder.newBuilder(
 				filteredStore,

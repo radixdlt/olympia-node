@@ -18,6 +18,8 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.google.inject.Inject;
+import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
@@ -25,6 +27,10 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.InitialForkConfig;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * Generates a new unique rri consumer command. Because new addresses are used
@@ -38,13 +44,22 @@ public class RadixEngineUniqueGenerator implements TxnGenerator {
 	@InitialForkConfig
 	private ForkConfig forkConfig;
 
+	@Inject
+	@Genesis
+	private Txn genesis;
+
 	@Override
 	public Txn nextTxn() {
 		var keyPair = ECKeyPair.generateNew();
 		try {
-			return TxBuilder.newBuilder(parser.getSubstateDeserialization(), forkConfig.engineRules().getSerialization())
-				.mutex(keyPair.getPublicKey(), "test")
-				.signAndBuild(keyPair::sign);
+			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "smthng");
+			var builder = TxBuilder.newBuilder(parser.getSubstateDeserialization(), forkConfig.engineRules().getSerialization())
+				.toLowLevelBuilder()
+				.syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
+				.virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
+				.end();
+			var sig = keyPair.sign(builder.hashToSign());
+			return builder.sig(sig).build();
 		} catch (TxBuilderException e) {
 			throw new RuntimeException(e);
 		}

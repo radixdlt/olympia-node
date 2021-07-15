@@ -243,14 +243,9 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				(s, buf) -> {
 					throw new UnsupportedOperationException();
 				},
-				buf -> {
-					var addr = REFieldSerialization.deserializeREAddr(buf, claimableAddrTypes);
-					return new UnclaimedREAddr(addr);
-				},
-				(a, buf) -> {
-					REFieldSerialization.serializeREAddr(buf, (REAddr) a);
-					return new UnclaimedREAddr((REAddr) a);
-				}
+				buf -> REFieldSerialization.deserializeREAddr(buf, claimableAddrTypes),
+				(a, buf) -> REFieldSerialization.serializeREAddr(buf, (REAddr) a),
+				k -> new UnclaimedREAddr((REAddr) k)
 			));
 
 		os.procedure(new DownProcedure<>(

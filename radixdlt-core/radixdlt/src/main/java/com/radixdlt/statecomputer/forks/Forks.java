@@ -176,20 +176,20 @@ public final class Forks {
 
 		log.info("Forks init [stored_forks: {}, configured_forks: {}]", initialStoredForks, forkConfigs());
 
-		executeMissedFixedEpochForks(initialStoredForks, forksEpochStore);
+		executeMissedFixedEpochForks(initialStoredForks, currentEpoch, forksEpochStore);
 		executeAndCheckMissedCandidateFork(initialStoredForks, currentEpoch, forksEpochStore, committedReader);
 
 		sanityCheck(forksEpochStore, currentEpoch);
 	}
 
-	private void executeMissedFixedEpochForks(ImmutableMap<Long, HashCode> storedForks, ForksEpochStore forksEpochStore) {
+	private void executeMissedFixedEpochForks(ImmutableMap<Long, HashCode> storedForks, long currentEpoch, ForksEpochStore forksEpochStore) {
 		fixedEpochForks.forEach(fixedEpochFork -> {
 			final var forkAlreadyStored =
 				storedForks.entrySet().stream().anyMatch(e -> e.getValue().equals(fixedEpochFork.hash()));
 
 			// simply store the fork if not already in the database
 			// we do not check if the epoch matches here, that'll be caught by sanityCheck
-			if (!forkAlreadyStored) {
+			if (currentEpoch >= fixedEpochFork.epoch() && !forkAlreadyStored) {
 				log.info("Found a missed fork config {}, inserting at epoch {}", fixedEpochFork.name(), fixedEpochFork);
 				forksEpochStore.storeEpochForkHash(fixedEpochFork.epoch(), fixedEpochFork.hash());
 			}

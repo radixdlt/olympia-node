@@ -24,7 +24,6 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.engine.RadixEngine.RadixEngineResult;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.serialization.DeserializeException;
@@ -98,11 +97,10 @@ public class ForkVoteStatusService {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
 		return ledgerUpdate -> {
-			final var result = (RadixEngineResult<LedgerAndBFTProof>) ledgerUpdate.getStateComputerOutput().get(RadixEngineResult.class);
-			result.getMetadata().getNextForkHash()
+			final var ledgerAndBftProof = (LedgerAndBFTProof) ledgerUpdate.getStateComputerOutput().get(LedgerAndBFTProof.class);
+			ledgerAndBftProof.getNextForkHash()
 				.flatMap(forks::getByHash)
 				.ifPresent(nextFork -> currentForkConfig = nextFork);
 		};

@@ -28,6 +28,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.regex.Pattern;
@@ -244,9 +245,23 @@ public final class REFieldSerialization {
 
 	public static String deserializeUrl(ByteBuffer buf) throws DeserializeException {
 		var url = deserializeString(buf);
-		if (!url.isEmpty() && !OWASP_URL_REGEX.matcher(url).matches()) {
+		if (!isUrlValid(url)) {
 			throw new DeserializeException("URL: not a valid URL: " + url);
 		}
 		return url;
+	}
+
+	public static boolean isUrlValid(String url) {
+		return url.isEmpty() || OWASP_URL_REGEX.matcher(url).matches();
+	}
+
+	public static String requireValidUrl(String url) {
+		Objects.requireNonNull(url);
+
+		if (isUrlValid(url)) {
+			return url;
+		}
+
+		throw new IllegalArgumentException("URL: not a valid URL: " + url);
 	}
 }

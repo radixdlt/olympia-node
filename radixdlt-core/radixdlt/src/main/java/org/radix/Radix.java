@@ -232,9 +232,9 @@ public final class Radix {
 		} else {
 			var version = branchName(details) == null
 						  ? "detached-head-" + gitHash(details)
-						  : (lastTag(details) + "-" + branchName(details)).replace('/', '~');
+						  : (lastTag(details) + "-" + branchName(details)).replace('/', '~') + "-" + gitHash(details);
 
-			return version + "-SNAPSHOT";
+			return version;
 		}
 	}
 

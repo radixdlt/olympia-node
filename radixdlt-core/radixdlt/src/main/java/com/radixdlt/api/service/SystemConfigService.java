@@ -22,7 +22,6 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.sync.CommittedReader;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -50,7 +49,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.api.JsonRpcUtil.ARRAY;
 import static com.radixdlt.api.JsonRpcUtil.fromList;
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;

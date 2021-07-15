@@ -21,6 +21,8 @@ import com.google.inject.Provider;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.utils.functional.Result;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 
 import com.radixdlt.counters.SystemCounters;
@@ -40,6 +42,8 @@ import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
  * Handles incoming messages. Deserializes raw messages and validates them.
  */
 final class MessagePreprocessor {
+	private static final Logger log = LogManager.getLogger();
+
 	private final long messageTtlMs;
 	private final SystemCounters counters;
 	private final TimeSupplier timeSource;
@@ -88,7 +92,8 @@ final class MessagePreprocessor {
 			byte[] uncompressed = Compress.uncompress(in);
 			return Result.ok(serialization.fromDson(uncompressed, Message.class));
 		} catch (IOException e) {
-			peerControl.get().banPeer(inboundMessage.source(), Duration.ofMinutes(5));
+			log.error(String.format("Failed to deserialize message from peer %s", inboundMessage.source()), e);
+			peerControl.get().banPeer(inboundMessage.source(), Duration.ofMinutes(5), "Failed to deserialize inbound message");
 			return IO_ERROR.result();
 		}
 	}

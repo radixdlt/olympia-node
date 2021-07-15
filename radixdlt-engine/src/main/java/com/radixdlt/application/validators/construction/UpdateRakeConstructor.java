@@ -26,7 +26,6 @@ import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 
-import java.util.Optional;
 import java.util.OptionalLong;
 
 public final class UpdateRakeConstructor implements ActionConstructor<UpdateValidatorFee> {
@@ -43,19 +42,9 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
 
 	@Override
 	public void construct(UpdateValidatorFee action, TxBuilder builder) throws TxBuilderException {
-		builder.down(
-			ValidatorRakeCopy.class,
-			p -> p.getValidatorKey().equals(action.validatorKey()),
-			Optional.of(action.validatorKey()),
-			() -> new TxBuilderException("Cannot find state")
-		);
-
-		var curRakePercentage = builder.read(
-			ValidatorStakeData.class,
-			s -> s.getValidatorKey().equals(action.validatorKey()),
-			Optional.of(action.validatorKey()),
-			"Can't find validator stake"
-		).getRakePercentage();
+		builder.down(ValidatorRakeCopy.class, action.validatorKey());
+		var curRakePercentage = builder.read(ValidatorStakeData.class, action.validatorKey())
+			.getRakePercentage();
 
 		var isIncrease = action.getFeePercentage() > curRakePercentage;
 		var rakeIncrease = action.getFeePercentage() - curRakePercentage;
@@ -64,7 +53,7 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
 		}
 
 		var epochDiff = isIncrease ? rakeIncreaseDebounceEpochLength : 1;
-		var curEpoch = builder.read(EpochData.class, p -> true, Optional.empty(), "Cannot find epoch");
+		var curEpoch = builder.readSystem(EpochData.class);
 		var epoch = curEpoch.getEpoch() + epochDiff;
 		builder.up(new ValidatorRakeCopy(
 			OptionalLong.of(epoch),

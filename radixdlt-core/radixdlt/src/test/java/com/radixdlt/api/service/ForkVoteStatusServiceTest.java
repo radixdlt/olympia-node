@@ -27,7 +27,6 @@ import static com.radixdlt.api.service.ForkVoteStatusService.ForkVoteStatus.VOTE
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -42,7 +41,6 @@ import com.radixdlt.store.EngineStore;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -108,9 +106,8 @@ public final class ForkVoteStatusServiceTest {
 			Optional.of(HashCode.fromInt(2)),
 			Optional.empty()
 		);
-		final var radixEngineResult = new RadixEngine.RadixEngineResult<>(List.of(), ledgerAndBftProof);
 		final var ledgerUpdate = new LedgerUpdate(mock(VerifiedTxnsAndProof.class),
-			ImmutableClassToInstanceMap.of(RadixEngine.RadixEngineResult.class, radixEngineResult));
+			ImmutableClassToInstanceMap.of(LedgerAndBFTProof.class, ledgerAndBftProof));
 		forkVoteStatusService.ledgerUpdateEventProcessor().process(ledgerUpdate);
 
 		assertEquals("fork2", forkVoteStatusService.currentFork().get("name").toString());

@@ -25,13 +25,13 @@ import com.radixdlt.crypto.ECPublicKey;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-class UpdateValidatorAction implements TransactionAction {
+class UpdateValidatorMetadataAction implements TransactionAction {
 	private final ECPublicKey validatorKey;
 	private final String name;
 	private final String url;
 	private final Optional<HashCode> forkVoteHash;
 
-	UpdateValidatorAction(ECPublicKey validatorKey, String name, String url, Optional<HashCode> forkVoteHash) {
+	UpdateValidatorMetadataAction(ECPublicKey validatorKey, String name, String url, Optional<HashCode> forkVoteHash) {
 		this.validatorKey = validatorKey;
 		this.name = name;
 		this.url = url;

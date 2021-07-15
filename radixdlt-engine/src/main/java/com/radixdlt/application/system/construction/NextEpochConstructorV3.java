@@ -48,7 +48,6 @@ import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
@@ -77,19 +76,16 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 	private static ValidatorScratchPad loadValidatorStakeData(
 		TxBuilder txBuilder,
 		ECPublicKey k,
-		TreeMap<ECPublicKey, ValidatorScratchPad> validatorsToUpdate,
-		boolean canBeVirtual
+		TreeMap<ECPublicKey, ValidatorScratchPad> validatorsToUpdate
 	) throws TxBuilderException {
-		if (!validatorsToUpdate.containsKey(k)) {
-			var validatorData = txBuilder.down(
-				ValidatorStakeData.class,
-				p -> p.getValidatorKey().equals(k),
-				canBeVirtual ? Optional.of(k) : Optional.empty(),
-				() -> new TxBuilderException("Validator not found")
-			);
-			validatorsToUpdate.put(k, new ValidatorScratchPad(validatorData));
+		var scratchPad = validatorsToUpdate.get(k);
+		if (scratchPad == null) {
+			var validatorData = txBuilder.down(ValidatorStakeData.class, k);
+			scratchPad = new ValidatorScratchPad(validatorData);
+			validatorsToUpdate.put(k, scratchPad);
 		}
-		return validatorsToUpdate.get(k);
+
+		return scratchPad;
 	}
 
 	private static <T extends ValidatorData, U extends ValidatorData> void prepare(
@@ -115,7 +111,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		for (var e : preparing.entrySet()) {
 			var k = e.getKey();
 			var update = e.getValue();
-			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, true);
+			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
 			updater.accept(curValidator, update);
 			txBuilder.up(copy.apply(update));
 		}
@@ -123,18 +119,8 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 
 	@Override
 	public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
-		var closedRound = txBuilder.down(
-			RoundData.class,
-			p -> true,
-			Optional.empty(),
-			() -> new TxBuilderException("No round data available")
-		);
-		var closingEpoch = txBuilder.down(
-			EpochData.class,
-			p -> true,
-			Optional.empty(),
-			() -> new TxBuilderException("No epoch data available")
-		);
+		var closedRound = txBuilder.downSystem(RoundData.class);
+		var closingEpoch = txBuilder.downSystem(EpochData.class);
 
 		var unlockedStateIndexBuf = ByteBuffer.allocate(2 + Long.BYTES);
 		unlockedStateIndexBuf.put(SubstateTypeId.EXITTING_STAKE.id());
@@ -155,7 +141,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorScratchPad>(KeyComparator.instance());
 		var validatorBFTData = txBuilder.shutdownAll(ValidatorBFTData.class, i -> {
 			final TreeMap<ECPublicKey, ValidatorBFTData> bftData = new TreeMap<>(KeyComparator.instance());
-			i.forEachRemaining(e -> bftData.put(e.validatorKey(), e));
+			i.forEachRemaining(e -> bftData.put(e.getValidatorKey(), e));
 			return bftData;
 		});
 		var preparingStake = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(KeyComparator.instance());
@@ -178,7 +164,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 				continue;
 			}
 
-			var validatorStakeData = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, false);
+			var validatorStakeData = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
 			int rakePercentage = validatorStakeData.getRakePercentage();
 			final UInt256 rakedEmissions;
 			if (rakePercentage != 0) {
@@ -212,7 +198,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		});
 		for (var e : allPreparedUnstake.entrySet()) {
 			var k = e.getKey();
-			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, false);
+			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
 			var unstakes = e.getValue();
 			for (var entry : unstakes.entrySet()) {
 				var addr = entry.getKey();
@@ -238,7 +224,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		for (var e : allPreparedStake.entrySet()) {
 			var k = e.getKey();
 			var stakes = e.getValue();
-			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate, true);
+			var curValidator = loadValidatorStakeData(txBuilder, k, validatorsToUpdate);
 			for (var entry : stakes.entrySet()) {
 				var addr = entry.getKey();
 				var amt = entry.getValue();
@@ -289,7 +275,8 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		validatorsToUpdate.forEach((k, v) -> txBuilder.up(v.toSubstate()));
 
 		try (var cursor = txBuilder.readIndex(
-			SubstateIndex.create(new byte[] {SubstateTypeId.VALIDATOR_STAKE_DATA.id(), 0, 1}, ValidatorStakeData.class)
+			SubstateIndex.create(new byte[] {SubstateTypeId.VALIDATOR_STAKE_DATA.id(), 0, 1}, ValidatorStakeData.class),
+			true
 		)) {
 			// TODO: Explicitly specify next validatorset
 			Streams.stream(cursor)

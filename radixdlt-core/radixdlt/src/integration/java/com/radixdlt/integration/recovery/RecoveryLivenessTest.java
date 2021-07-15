@@ -17,25 +17,18 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.google.common.collect.ClassToInstanceMap;
 import com.google.inject.Provides;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.KeyComparator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,11 +45,9 @@ import org.junit.runners.Parameterized.Parameters;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.CryptoModule;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -64,19 +55,14 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.ControlledSenderFactory;
-import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
@@ -114,11 +100,6 @@ public class RecoveryLivenessTest {
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
-
-	@Inject
-	@Genesis
-	private VerifiedTxnsAndProof genesisTxns;
-
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
@@ -145,38 +126,6 @@ public class RecoveryLivenessTest {
 
 		List<BFTNode> allNodes = nodeKeys.stream()
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
-
-		Guice.createInjector(
-			new MockedGenesisModule(),
-			new CryptoModule(),
-			new RadixEngineForksLatestOnlyModule(
-				new RERulesConfig(
-					FeeTable.noFees(),
-					OptionalInt.of(50),
-					epochCeilingView,
-					2,
-					Amount.ofTokens(10),
-					1,
-					Amount.ofTokens(10),
-					9800,
-					10
-				)),
-			new ForksModule(),
-			new MainnetForksModule(),
-			new RadixEngineModule(),
-			new AbstractModule() {
-				@Override
-				public void configure() {
-					bind(CommittedReader.class).toInstance(CommittedReader.mocked());
-					bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
-					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-					bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
-					bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-					bind(new TypeLiteral<ImmutableList<ECPublicKey>>() { }).annotatedWith(Genesis.class)
-						.toInstance(nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()));
-				}
-			}
-		).injectMembers(this);
 
 		this.nodeCreators = nodeKeys.stream()
 			.<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes))
@@ -205,6 +154,11 @@ public class RecoveryLivenessTest {
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		return Guice.createInjector(
+			new MockedGenesisModule(
+				nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
+				Amount.ofTokens(100000),
+				Amount.ofTokens(1000)
+			),
 			MempoolConfig.asModule(10, 10),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
@@ -221,13 +175,13 @@ public class RecoveryLivenessTest {
 			new ForksModule(),
 			new MainnetForksModule(),
 			new PersistedNodeForTestingModule(),
+			new LastEventsModule(EpochViewUpdate.class),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(VerifiedTxnsAndProof.class).annotatedWith(Genesis.class).toInstance(genesisTxns);
 					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
-					bind(ControlledSenderFactory.class).toInstance(network::createSender);
+					bind(Environment.class).toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 				}
@@ -294,9 +248,8 @@ public class RecoveryLivenessTest {
 	}
 
 	private EpochView latestEpochView() {
-		final var lastEventKey = Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { });
 		return this.nodes.stream()
-			.map(i -> i.getInstance(lastEventKey).getLastEvent())
+			.map(i -> i.getInstance(Key.get(new TypeLiteral<ClassToInstanceMap<Object>>() { })).getInstance(EpochViewUpdate.class))
 			.map(e -> e == null ? new EpochView(0, View.genesis()) : e.getEpochView())
 			.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
 	}

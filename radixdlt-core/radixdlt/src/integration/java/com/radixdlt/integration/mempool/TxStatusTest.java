@@ -23,18 +23,17 @@ import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.PrivateKeys;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.radix.TokenIssuance;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.service.TransactionStatusService;
@@ -66,6 +65,7 @@ import com.radixdlt.store.DatabaseLocation;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -82,6 +82,8 @@ public class TxStatusTest {
 			{true}
 		});
 	}
+
+	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
@@ -115,8 +117,12 @@ public class TxStatusTest {
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForksModule(),
 			new MainnetForksModule(),
-			new SingleNodeAndPeersDeterministicNetworkModule(),
-			new MockedGenesisModule(),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new MockedGenesisModule(
+				Set.of(TEST_KEY.getPublicKey()),
+				Amount.ofTokens(1010),
+				Amount.ofTokens(1000)
+			),
 			new MempoolFillerModule(),
 			new AbstractModule() {
 				@Override
@@ -124,11 +130,6 @@ public class TxStatusTest {
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bind(ClientApiStore.class).toInstance(mock(ClientApiStore.class));
-				}
-
-				@ProvidesIntoSet
-				private TokenIssuance mempoolFillerIssuance(@Self ECPublicKey self) {
-					return TokenIssuance.of(self, Amount.ofTokens(10).toSubunits());
 				}
 			}
 		);

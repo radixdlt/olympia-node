@@ -28,12 +28,16 @@ A boolean value is encoded as a single byte:
 | `u64`    | 8                   | Unsigned 64-bit integer  |
 | `u256`   | 32                  | Unsigned 256-bit integer |
 
+### Size
+
+Sizes are encoded as `u16`.
+
 ### Bytes
 
 `bytes` is a byte array of variable length and is encoded as:
 ```
 +-------------+-----------+
-| length (u8) | raw_bytes |
+| size        | raw_bytes |
 +-------------+-----------+
 ```
 
@@ -342,7 +346,7 @@ The table below summarizes all opcodes.
 | `call_data`                 | System call data (`bytes`) and the content must match function requirements |
 | `substate`                  | Serialized substate                                                         |
 | `substate_id`               | Substate ID                                                                 |
-| `substate_index`            | Substate index (`u32`)                                                      |
+| `substate_index`            | Substate index (`u16`)                                                      |
 | `virtual_substate_id`       | Virtual substate index (`bytes`)                                            |
 | `local_virtual_substate_id` | Local virtual substate index (`bytes`)                                      |
 | `substate`                  | Spin down a virtual substate                                                |

@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.inject.Singleton;
 import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.engine.RadixEngine.RadixEngineResult;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -33,14 +32,13 @@ final class InMemoryForksEpochStore implements ForksEpochStore {
 	private final Object lock = new Object();
 	private final TreeMap<Long, HashCode> epochsForkHashes = new TreeMap<>();
 
-	@SuppressWarnings("unchecked")
 	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
 		return update -> {
 			synchronized (lock) {
-				final var radixEngineResult = (RadixEngineResult<LedgerAndBFTProof>) update.getStateComputerOutput().get(RadixEngineResult.class);
-				if  (radixEngineResult != null) {
+				final var ledgerAndBftProof = (LedgerAndBFTProof) update.getStateComputerOutput().get(LedgerAndBFTProof.class);
+				if  (ledgerAndBftProof != null) {
 					final var nextEpoch = update.getTail().getEpoch() + 1;
-					radixEngineResult.getMetadata().getNextForkHash()
+					ledgerAndBftProof.getNextForkHash()
 						.ifPresent(nextForkHash -> this.epochsForkHashes.put(nextEpoch, nextForkHash));
 				}
 			}

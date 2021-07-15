@@ -36,9 +36,7 @@ public final class RERules {
 	private final ConstraintMachineConfig constraintMachineConfig;
 	private final REConstructor actionConstructors;
 	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
-	private final View maxRounds;
-	private final OptionalInt maxSigsPerRound;
-	private final int maxValidators;
+	private final RERulesConfig config;
 
 	public RERules(
 		RERulesVersion version,
@@ -47,9 +45,7 @@ public final class RERules {
 		ConstraintMachineConfig constraintMachineConfig,
 		REConstructor actionConstructors,
 		BatchVerifier<LedgerAndBFTProof> batchVerifier,
-		View maxRounds,
-		OptionalInt maxSigsPerRound,
-		int maxValidators
+		RERulesConfig config
 	) {
 		this.version = version;
 		this.parser = parser;
@@ -57,9 +53,7 @@ public final class RERules {
 		this.constraintMachineConfig = constraintMachineConfig;
 		this.actionConstructors = actionConstructors;
 		this.batchVerifier = batchVerifier;
-		this.maxRounds = maxRounds;
-		this.maxSigsPerRound = maxSigsPerRound;
-		this.maxValidators = maxValidators;
+		this.config = config;
 	}
 
 	public RERulesVersion getVersion() {
@@ -87,15 +81,19 @@ public final class RERules {
 	}
 
 	public View getMaxRounds() {
-		return maxRounds;
+		return View.of(config.getMaxRounds());
 	}
 
 	public OptionalInt getMaxSigsPerRound() {
-		return maxSigsPerRound;
+		return config.getMaxSigsPerRound();
 	}
 
 	public int getMaxValidators() {
-		return maxValidators;
+		return config.getMaxValidators();
+	}
+
+	public RERulesConfig getConfig() {
+		return config;
 	}
 
 	public RERules withForksVerifier(Forks forks) {
@@ -106,9 +104,7 @@ public final class RERules {
 			constraintMachineConfig,
 			actionConstructors,
 			new ForkVotesVerifier(batchVerifier, forks),
-			maxRounds,
-			maxSigsPerRound,
-			maxValidators
+			config
 		);
 	}
 }

@@ -151,10 +151,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var iter = i.iterator();
 			while (iter.hasNext()) {
 				var validatorEpochData = iter.next();
-				if (validatorBFTData.containsKey(validatorEpochData.validatorKey())) {
-					throw new ProcedureException("Already inserted " + validatorEpochData.validatorKey());
+				if (validatorBFTData.containsKey(validatorEpochData.getValidatorKey())) {
+					throw new ProcedureException("Already inserted " + validatorEpochData.getValidatorKey());
 				}
-				validatorBFTData.put(validatorEpochData.validatorKey(), validatorEpochData);
+				validatorBFTData.put(validatorEpochData.getValidatorKey(), validatorEpochData);
 			}
 
 			return next(context);
@@ -872,14 +872,9 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					buf.putInt(s.getRakePercentage());
 					REFieldSerialization.serializeREAddr(buf, s.getOwnerAddr());
 				},
-				buf -> {
-					var key = REFieldSerialization.deserializeKey(buf);
-					return ValidatorStakeData.createVirtual(key);
-				},
-				(k, buf) -> {
-					REFieldSerialization.serializeKey(buf, (ECPublicKey) k);
-					return ValidatorStakeData.createVirtual((ECPublicKey) k);
-				}
+				buf -> REFieldSerialization.deserializeKey(buf),
+				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
+				k -> ValidatorStakeData.createVirtual((ECPublicKey) k)
 			)
 		);
 		os.substate(

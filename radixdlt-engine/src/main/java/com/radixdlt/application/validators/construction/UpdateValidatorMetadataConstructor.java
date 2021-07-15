@@ -24,17 +24,11 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
-import java.util.Optional;
 
 public final class UpdateValidatorMetadataConstructor implements ActionConstructor<UpdateValidatorMetadata> {
 	@Override
 	public void construct(UpdateValidatorMetadata action, TxBuilder txBuilder) throws TxBuilderException {
-		var substateDown = txBuilder.down(
-			ValidatorMetaData.class,
-			p -> p.getValidatorKey().equals(action.validatorKey()),
-			Optional.of(action.validatorKey()),
-			() -> new TxBuilderException("Invalid state.")
-		);
+		var substateDown = txBuilder.down(ValidatorMetaData.class, action.validatorKey());
 		txBuilder.up(new ValidatorMetaData(
 			action.validatorKey(),
 			action.name() == null ? substateDown.getName() : action.name(),
@@ -43,12 +37,7 @@ public final class UpdateValidatorMetadataConstructor implements ActionConstruct
 		txBuilder.end();
 		var forkVoteHash = action.forkVoteHash();
 		if (forkVoteHash.isPresent()) {
-			txBuilder.down(
-				ValidatorSystemMetadata.class,
-				p -> p.getValidatorKey().equals(action.validatorKey()),
-				Optional.of(action.validatorKey()),
-				() -> new TxBuilderException("Could not find state")
-			);
+			txBuilder.down(ValidatorSystemMetadata.class, action.validatorKey());
 			txBuilder.up(new ValidatorSystemMetadata(action.validatorKey(), forkVoteHash.get().asBytes()));
 			txBuilder.end();
 		}

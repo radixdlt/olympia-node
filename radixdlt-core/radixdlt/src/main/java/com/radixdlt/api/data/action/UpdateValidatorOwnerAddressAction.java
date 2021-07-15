@@ -18,7 +18,7 @@
 package com.radixdlt.api.data.action;
 
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
+import com.radixdlt.atom.actions.UpdateValidatorOwner;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
@@ -35,6 +35,6 @@ class UpdateValidatorOwnerAddressAction implements TransactionAction {
 
 	@Override
 	public Stream<TxAction> toAction() {
-		return Stream.of(new UpdateValidatorOwnerAddress(validatorKey, ownerAddress));
+		return Stream.of(new UpdateValidatorOwner(validatorKey, ownerAddress));
 	}
 }

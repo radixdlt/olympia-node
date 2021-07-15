@@ -19,9 +19,8 @@
 package com.radixdlt.application.system.state;
 
 import com.google.common.base.Objects;
-import com.radixdlt.constraintmachine.Particle;
 
-public final class EpochData implements Particle, HasEpochData {
+public final class EpochData implements SystemData, HasEpochData {
 	private final long epoch;
 
 	public EpochData(long epoch) {

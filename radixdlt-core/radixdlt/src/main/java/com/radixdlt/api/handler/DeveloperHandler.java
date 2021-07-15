@@ -22,8 +22,10 @@ import com.google.inject.Inject;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.AccountAddressing;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
@@ -137,6 +139,24 @@ public final class DeveloperHandler {
 					return jsonObject()
 						.put("hrp", hrp)
 						.put("public_key", Bytes.toHexString(pubKey.getCompressedBytes()));
+				}
+			)
+		);
+	}
+
+	public JSONObject handleCreateAddress(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("public_key", "hrp"),
+			params -> Result.wrap(
+				e -> Failure.failure(-1, e.getMessage()),
+				() -> {
+					var publicKeyHex = params.getString("public_key");
+					var publicKey = ECPublicKey.fromHex(publicKeyHex);
+					var hrp = params.getString("hrp");
+					var address = AccountAddressing.bech32(hrp).of(REAddr.ofPubKeyAccount(publicKey));
+					return jsonObject()
+						.put("address", address);
 				}
 			)
 		);

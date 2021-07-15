@@ -16,19 +16,27 @@
  *
  */
 
-package com.radixdlt.api.faucet;
+package com.radixdlt.atom.actions;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.radixdlt.atom.TxValidatorAction;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public final class UpdateValidatorOwner implements TxValidatorAction {
+	private final ECPublicKey validatorKey;
+	private final REAddr ownerAddress;
 
-@Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
-@Retention(RUNTIME)
-public @interface FaucetToken {
+	public UpdateValidatorOwner(ECPublicKey validatorKey, REAddr ownerAddress) {
+		this.validatorKey = validatorKey;
+		this.ownerAddress = ownerAddress;
+	}
+
+	@Override
+	public ECPublicKey validatorKey() {
+		return validatorKey;
+	}
+
+	public REAddr getOwnerAddress() {
+		return ownerAddress;
+	}
 }

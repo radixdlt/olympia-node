@@ -20,6 +20,7 @@ package com.radixdlt.application.system.state;
 
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -28,7 +29,7 @@ import java.util.Objects;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 
-public final class ValidatorStakeData implements ResourceInBucket {
+public final class ValidatorStakeData implements ResourceInBucket, ValidatorData {
 	private final UInt256 totalStake;
 	private final UInt256 totalOwnership;
 	private final int rakePercentage;
@@ -97,6 +98,7 @@ public final class ValidatorStakeData implements ResourceInBucket {
 		return rakePercentage;
 	}
 
+	@Override
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;
 	}

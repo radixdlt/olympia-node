@@ -48,9 +48,9 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.MetadataException;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngine.RadixEngineResult;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.engine.RadixEngineResult;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.CommittedBadTxnException;
@@ -91,9 +91,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
-	private final Forks forks;
 	private final SystemCounters systemCounters;
 	private final Hasher hasher;
+	private final Forks forks;
 
 	private ProposerElection proposerElection;
 	private View epochCeilingView;
@@ -229,11 +229,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		final Txn systemUpdate;
-		final List<REProcessedTxn> txs;
+		final RadixEngineResult<LedgerAndBFTProof> result;
 		try {
 			// TODO: combine construct/execute
 			systemUpdate = branch.construct(systemActions).buildWithoutSignature();
-			txs = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER).getTxns();
+			result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException | TxBuilderException e) {
 			throw new IllegalStateException(
 				String.format("Failed to execute system updates: %s", systemActions), e
@@ -241,7 +241,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 		return new RadixEngineTxn(
 			systemUpdate,
-			txs.get(0),
+			result.getProcessedTxn(),
 			PermissionLevel.SUPER_USER
 		);
 	}
@@ -262,16 +262,16 @@ public final class RadixEngineStateComputer implements StateComputer {
 		var numToProcess = Integer.min(nextTxns.size(), this.maxSigsPerRound.orElse(Integer.MAX_VALUE));
 		for (int i = 0; i < numToProcess; i++) {
 			var txn = nextTxns.get(i);
-			final List<REProcessedTxn> parsed;
+			final RadixEngineResult<LedgerAndBFTProof> result;
 			try {
-				parsed = branch.execute(List.of(txn)).getTxns();
+				result = branch.execute(List.of(txn));
 			} catch (RadixEngineException e) {
 				errorBuilder.put(txn, e);
 				invalidProposedCommandEventDispatcher.dispatch(InvalidProposedTxn.create(proposer.getKey(), txn, e));
 				return;
 			}
 
-			var radixEngineCommand = new RadixEngineTxn(txn, parsed.get(0), PermissionLevel.USER);
+			var radixEngineCommand = new RadixEngineTxn(txn, result.getProcessedTxn(), PermissionLevel.USER);
 			successBuilder.add(radixEngineCommand);
 		}
 	}
@@ -320,9 +320,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 	) {
 		var proof = verifiedTxnsAndProof.getProof();
 
-		final RadixEngineResult<LedgerAndBFTProof> radixEngineResult;
+		final RadixEngineResult<LedgerAndBFTProof> result;
 		try {
-			radixEngineResult = this.radixEngine.execute(
+			result = this.radixEngine.execute(
 				verifiedTxnsAndProof.getTxns(),
 				LedgerAndBFTProof.create(proof, vertexStoreState, this.currentForkConfig.hash()),
 				PermissionLevel.SUPER_USER
@@ -333,7 +333,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new ByzantineQuorumException(e.getMessage());
 		}
 
-		radixEngineResult.getMetadata().getNextForkHash().ifPresent(nextForkHash -> {
+		result.getMetadata().getNextForkHash().ifPresent(nextForkHash -> {
 			final var nextForkConfig = forks.getByHash(nextForkHash).orElseThrow(); // guaranteed to be present
 			log.info("Epoch {} forking RadixEngine to {}", proof.getEpoch() + 1, nextForkConfig.name());
 			final var rules = nextForkConfig.engineRules();
@@ -349,7 +349,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			this.currentForkConfig = nextForkConfig;
 		});
 
-		radixEngineResult.getTxns().forEach(t -> {
+		result.getProcessedTxns().forEach(t -> {
 			if (t.isSystemOnly()) {
 				systemCounters.increment(SystemCounters.CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS);
 			} else {
@@ -357,14 +357,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 			}
 		});
 
-		return radixEngineResult;
+		return result;
 	}
 
 	@Override
 	public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
 		final var radixEngineResult = commitInternal(txnsAndProof, vertexStoreState);
-		final var txCommitted = radixEngineResult.getTxns();
-		final var ledgerAndBftProof = radixEngineResult.getMetadata();
+		final var txCommitted = radixEngineResult.getProcessedTxns();
 
 		// TODO: refactor mempool to be less generic and make this more efficient
 		// TODO: Move this into engine
@@ -404,7 +403,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			outputBuilder.put(EpochChange.class, e);
 		});
 		outputBuilder.put(REOutput.class, REOutput.create(txCommitted));
-		outputBuilder.put(RadixEngineResult.class, radixEngineResult);
+		outputBuilder.put(LedgerAndBFTProof.class, radixEngineResult.getMetadata());
 		var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
 		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
 	}

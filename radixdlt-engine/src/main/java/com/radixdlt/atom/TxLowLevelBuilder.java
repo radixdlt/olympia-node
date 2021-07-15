@@ -20,10 +20,14 @@ package com.radixdlt.atom;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.system.state.SystemData;
+import com.radixdlt.application.system.state.VirtualParent;
+import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.Shorts;
@@ -39,6 +43,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -46,6 +51,7 @@ import java.util.Set;
  */
 public final class TxLowLevelBuilder {
 	private final ByteArrayOutputStream blobStream;
+	private final Map<SystemMapKey, LocalSubstate> localMapValues = new HashMap<>();
 	private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
 	private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
 	private final SubstateSerialization serialization;
@@ -75,6 +81,10 @@ public final class TxLowLevelBuilder {
 		return remoteDownSubstate;
 	}
 
+	public Optional<LocalSubstate> get(SystemMapKey mapKey) {
+		return Optional.ofNullable(localMapValues.get(mapKey));
+	}
+
 	public List<LocalSubstate> localUpSubstate() {
 		return new ArrayList<>(localUpParticles.values());
 	}
@@ -89,6 +99,11 @@ public final class TxLowLevelBuilder {
 		data[1] = (byte) bytes.length;
 		System.arraycopy(bytes, 0, data, 2, bytes.length);
 		return data;
+	}
+
+	private void instruction(REInstruction.REMicroOp op, ByteBuffer buffer) {
+		blobStream.write(op.opCode());
+		blobStream.write(buffer.array(), buffer.position(), buffer.remaining());
 	}
 
 	private void instruction(REInstruction.REMicroOp op, byte[] data) {
@@ -112,12 +127,37 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		this.localUpParticles.put(upParticleCount, LocalSubstate.create(upParticleCount, particle));
-		var bytes = serialization.serialize(particle);
-		var buf = ByteBuffer.allocate(Short.BYTES + bytes.length);
-		buf.putShort((short) bytes.length);
-		buf.put(bytes);
-		instruction(REInstruction.REMicroOp.UP, buf.array());
+
+		var localSubstate = LocalSubstate.create(upParticleCount, particle);
+
+		if (particle instanceof ValidatorData) {
+			var p = (ValidatorData) particle;
+			var b = serialization.classToByte(p.getClass());
+			var k = SystemMapKey.ofValidatorData(b, p.getValidatorKey().getCompressedBytes());
+			this.localMapValues.put(k, localSubstate);
+		} else if (particle instanceof SystemData) {
+			var b = serialization.classToByte(particle.getClass());
+			var k = SystemMapKey.ofSystem(b);
+			this.localMapValues.put(k, localSubstate);
+		} else if (particle instanceof VirtualParent) {
+			var p = (VirtualParent) particle;
+			var typeByte = p.getData()[0];
+			if (typeByte != SubstateTypeId.UNCLAIMED_READDR.id()) {
+				var k = SystemMapKey.ofValidatorDataParent(typeByte);
+				this.localMapValues.put(k, localSubstate);
+			}
+		}
+
+		this.localUpParticles.put(upParticleCount, localSubstate);
+
+		var buf = ByteBuffer.allocate(1024);
+		buf.putShort((short) 0);
+		serialization.serialize(particle, buf);
+		var limit = buf.position();
+		buf.putShort(0, (short) (limit - 2));
+		buf.position(0);
+		buf.limit(limit);
+		instruction(REInstruction.REMicroOp.UP, buf);
 		upParticleCount++;
 		return this;
 	}
@@ -181,7 +221,6 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder read(SubstateId substateId) {
 		instruction(REInstruction.REMicroOp.READ, substateId.asBytes());
-		this.remoteDownSubstate.add(substateId);
 		return this;
 	}
 
