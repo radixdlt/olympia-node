@@ -72,7 +72,6 @@ import com.radixdlt.application.validators.construction.UpdateValidatorOwnerCons
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.meter.Meter;
 import com.radixdlt.constraintmachine.meter.Meters;
@@ -165,9 +164,7 @@ public enum RERulesVersion {
 				betanet4,
 				actionConstructors,
 				new EpochProofVerifierV2(),
-				View.of(maxRounds),
-				config.getMaxSigsPerRound(),
-				config.getMaxValidators()
+				config
 			);
 		}
 	};
