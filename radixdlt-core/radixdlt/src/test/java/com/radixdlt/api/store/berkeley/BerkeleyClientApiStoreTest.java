@@ -26,8 +26,10 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.networks.Network;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.utils.PrivateKeys;
 import org.junit.Before;
@@ -136,6 +138,7 @@ public class BerkeleyClientApiStoreTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 0),
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
@@ -375,7 +378,8 @@ public class BerkeleyClientApiStoreTest {
 			mock(ScheduledEventDispatcher.class),
 			new TransactionParser(addressing),
 			true,
-			addressing
+			addressing,
+			mock(Forks.class)
 		);
 	}
 

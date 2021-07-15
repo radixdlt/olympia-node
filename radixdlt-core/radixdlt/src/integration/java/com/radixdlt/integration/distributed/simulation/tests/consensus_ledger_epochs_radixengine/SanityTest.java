@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineUniqueGenerator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -44,6 +45,7 @@ public class SanityTest {
 			NetworkLatencies.fixed()
 		)
 		.addRadixEngineConfigModules(
+			new MainnetForkConfigsModule(),
 			new ForksModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault())
 		)

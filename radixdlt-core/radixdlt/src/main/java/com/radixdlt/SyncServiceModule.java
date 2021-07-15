@@ -106,7 +106,7 @@ public class SyncServiceModule extends AbstractModule {
 		PeerControl peerControl
 	) {
 		return (sender, resp) -> {
-			peerControl.banPeer(NodeId.fromPublicKey(sender.getKey()), Duration.ofMinutes(10));
+			peerControl.banPeer(NodeId.fromPublicKey(sender.getKey()), Duration.ofMinutes(10), "Received invalid sync response");
 			counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
 		};
 	}

@@ -1,16 +1,13 @@
 package com.radix.test;
 
+import com.radix.test.account.Account;
+import com.radixdlt.application.tokens.TokenUtils;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Failure;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.Durations;
 import org.awaitility.core.ConditionTimeoutException;
-
-import com.radix.test.account.Account;
-import com.radixdlt.application.tokens.TokenUtils;
-import com.radixdlt.client.lib.api.ValidatorAddress;
-import com.radixdlt.client.lib.dto.ValidatorDTO;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Failure;
 
 import static org.awaitility.Awaitility.await;
 
@@ -37,6 +34,11 @@ public final class Utils {
         }
     }
 
+    public static String getEnvWithDefault(String envName, String defaultValue) {
+        String envValue = System.getenv(envName);
+        return (envValue == null || envValue.isBlank()) ? defaultValue : envValue;
+    }
+
     /**
      * Will wait until the native token balance reaches the given amount
      */
@@ -50,7 +52,7 @@ public final class Utils {
     }
 
     /**
-     * Will wait until the native token balance increases by any maount
+     * Will wait until the account's native token balance increases by any amount
      */
     public static void waitForBalanceToIncrease(Account account) {
         UInt256 initialAmount = account.getOwnNativeTokenBalance().getAmount();
@@ -88,33 +90,16 @@ public final class Utils {
         }
     }
 
-    public static UInt256 fromMinorToMajor(UInt256 minorAmount) {
-        return minorAmount.divide(TokenUtils.SUB_UNITS);
+    /**
+     * used for pretty printing
+     */
+    public static String fromMinorToMajorString(UInt256 minorAmount) {
+        double majorAmount = Double.parseDouble(minorAmount.toString()) / Math.pow(10, TokenUtils.SUB_UNITS_POW_10);
+        return String.valueOf(majorAmount);
     }
 
     public static <R> R toTestFailureException(Failure failure) {
         throw new TestFailureException(failure.message());
     }
 
-    public static UInt256 fromMajorToMinor(int amountMajor) {
-        return UInt256.from(amountMajor).multiply(TokenUtils.SUB_UNITS);
-    }
-
-    public static UInt256 fromMajorToMinor(long amountMajor) {
-        return UInt256.from(amountMajor).multiply(TokenUtils.SUB_UNITS);
-    }
-
-    public static UInt256 fromMajorToMinor(UInt256 amountMajor) {
-        return amountMajor.multiply(TokenUtils.SUB_UNITS);
-    }
-
-    //TODO: fix it. the method requires addressing or network ID as a parameter
-    public static ValidatorAddress createValidatorAddress(ValidatorDTO validatorDTO) {
-//        try {
-//            //return ValidatorAddress.create(validatorDTO.getAddress());
-//
-//        } catch (DeserializeException e) {
-            throw new IllegalStateException("Failed to parse validator address: " + validatorDTO.getAddress());
-//        }
-    }
 }

@@ -28,6 +28,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.utils.PrivateKeys;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -69,7 +70,6 @@ import java.util.stream.IntStream;
 public final class GenerateUniverses {
 	private GenerateUniverses() { }
 
-	private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").getEpochSecond());
 	private static final UInt256 DEFAULT_ISSUANCE = Amount.ofTokens(1000000000).toSubunits(); // 1 Billion!
 	private static final UInt256 DEFAULT_STAKE = Amount.ofTokens(100).toSubunits();
 	private static final String mnemomicKeyHex = "022873d192f4186907fbc725109d5679c983a167a4a06768ef7922664a5fc31fe2";
@@ -125,6 +125,8 @@ public final class GenerateUniverses {
 			.map(pk -> new StakeTokens(REAddr.ofPubKeyAccount(mnemomicKey), pk, DEFAULT_STAKE))
 			.collect(Collectors.toSet());
 
+		var timestamp = String.valueOf(Instant.now().getEpochSecond());
+
 		var genesisProvider = Guice.createInjector(new AbstractModule() {
 			@Provides
 			@Singleton
@@ -135,11 +137,12 @@ public final class GenerateUniverses {
 			@Override
 			protected void configure() {
 				install(new CryptoModule());
+				install(new MainnetForkConfigsModule());
 				install(new ForksModule());
 				bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(List.of());
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-				bindConstant().annotatedWith(Genesis.class).to(DEFAULT_TIMESTAMP);
+				bindConstant().annotatedWith(Genesis.class).to(timestamp);
 				bind(new TypeLiteral<Set<StakeTokens>>() { }).annotatedWith(Genesis.class).toInstance(stakes);
 				bind(new TypeLiteral<ImmutableList<TokenIssuance>>() {}).annotatedWith(Genesis.class)
 					.toInstance(tokenIssuancesBuilder.build());

@@ -36,7 +36,6 @@ public final class ForksModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() { });
-		install(new MainnetForkConfigsModule());
 	}
 
 	@Provides

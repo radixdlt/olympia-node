@@ -81,6 +81,8 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp'
     implementation 'com.squareup.okhttp3:logging-interceptor'
 
+    implementation 'org.slf4j:slf4j-simple:2.0.0-alpha2'
+
     testImplementation 'junit:junit'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'io.cucumber:cucumber-java:6.10.3'

@@ -160,6 +160,27 @@ public class SyncRadixApiCreationTest {
 
 	@Test
 	@Ignore
+	public void testCreateFixedSupplyToken() {
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
+			.createFixed(ACCOUNT_ADDRESS1, KEY_PAIR1.getPublicKey(),
+						 "fix", "fix", "fix",
+						 "https://some.host.com/", "https://some.other.host.com",
+						 amount(1000).tokens())
+			.build();
+
+		RadixApi.connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.transaction().build(request)
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(builtTransaction -> assertEquals(amount(1000109).millis(), builtTransaction.getFee()))
+				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
+				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
+					.onFailure(failure -> fail(failure.toString()))));
+	}
+
+	@Test
+	@Ignore
 	//TODO: for some reason operation succeeds only if transaction contains only one action
 	public void testRegisterValidator() {
 		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS3)

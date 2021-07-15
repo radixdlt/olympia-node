@@ -56,8 +56,8 @@ public interface TransactionAction {
 		return new UnregisterValidatorAction(validatorKey);
 	}
 
-	static TransactionAction update(ECPublicKey validatorKey, Optional<String> name, Optional<String> url) {
-		return new UpdateValidatorAction(validatorKey, name.orElse(null), url.orElse(null));
+	static TransactionAction updateMetadata(ECPublicKey validatorKey, Optional<String> name, Optional<String> url) {
+		return new UpdateValidatorMetadataAction(validatorKey, name.orElse(null), url.orElse(null));
 	}
 
 	static TransactionAction updateValidatorFee(ECPublicKey validatorKey, int percentage) {

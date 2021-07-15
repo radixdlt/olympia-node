@@ -1,6 +1,7 @@
 package com.radix.test;
 
 import com.radix.test.account.Account;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.ActionType;
 import com.radixdlt.client.lib.dto.Action;
 import com.radixdlt.client.lib.dto.TransactionDTO;
@@ -17,12 +18,12 @@ public class Assertions {
 
     }
 
-    public static void assertNativeTokenTransferTransaction(Account account1, Account account2, int expectAmountMajor,
+    public static void assertNativeTokenTransferTransaction(Account account1, Account account2, Amount expectedAmount,
                                                             TransactionDTO transactionDto) {
         assertTrue(transactionDto.getMessage().isEmpty());
         assertEquals(1, transactionDto.getActions().size());
         Action singleAction = transactionDto.getActions().get(0);
-        assertEquals(Utils.fromMajorToMinor(expectAmountMajor),
+        assertEquals(expectedAmount.toSubunits(),
             singleAction.getAmount().orElseThrow(() -> new TestFailureException("no amount in transaction")));
         assertEquals(account1.getAddress(),
             singleAction.getFrom().orElseThrow(() -> new TestFailureException("no sender in transaction")));

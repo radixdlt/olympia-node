@@ -85,6 +85,7 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
@@ -148,6 +149,7 @@ public class RadixEngineStateComputerTest {
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 
 				install(MempoolConfig.asModule(10, 10));
+				install(new MainnetForkConfigsModule());
 				install(new ForksModule());
 				install(new RadixEngineForksLatestOnlyModule());
 

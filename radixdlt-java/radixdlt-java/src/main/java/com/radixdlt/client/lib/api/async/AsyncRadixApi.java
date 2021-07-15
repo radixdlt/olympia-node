@@ -69,10 +69,13 @@ import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
 import com.radixdlt.client.lib.dto.serializer.AccountAddressDeserializer;
 import com.radixdlt.client.lib.dto.serializer.AccountAddressSerializer;
+import com.radixdlt.client.lib.dto.serializer.ECPublicKeyDeserializer;
+import com.radixdlt.client.lib.dto.serializer.ECPublicKeySerializer;
 import com.radixdlt.client.lib.dto.serializer.NodeAddressDeserializer;
 import com.radixdlt.client.lib.dto.serializer.NodeAddressSerializer;
 import com.radixdlt.client.lib.dto.serializer.ValidatorAddressDeserializer;
 import com.radixdlt.client.lib.dto.serializer.ValidatorAddressSerializer;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -598,9 +601,11 @@ public class AsyncRadixApi implements RadixApi {
 			.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkId))
 			.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkId))
 			.addSerializer(NodeAddress.class, new NodeAddressSerializer(networkId))
+			.addSerializer(ECPublicKey.class, new ECPublicKeySerializer())
 			.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkId))
 			.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(networkId))
-			.addDeserializer(NodeAddress.class, new NodeAddressDeserializer(networkId));
+			.addDeserializer(NodeAddress.class, new NodeAddressDeserializer(networkId))
+			.addDeserializer(ECPublicKey.class, new ECPublicKeyDeserializer());
 		objectMapper = createDefaultMapper().registerModule(module);
 	}
 

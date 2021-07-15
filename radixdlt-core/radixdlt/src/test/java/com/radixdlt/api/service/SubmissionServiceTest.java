@@ -30,6 +30,7 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.junit.Assert;
 import org.junit.Before;
@@ -140,6 +141,7 @@ public class SubmissionServiceTest {
 
 			@Override
 			public void configure() {
+				install(new MainnetForkConfigsModule());
 				install(new RadixEngineForksLatestOnlyModule(
 					RERulesConfig.testingDefault().overrideFeeTable(
 						FeeTable.create(
