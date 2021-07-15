@@ -71,7 +71,7 @@ import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateValidatorFee;
-import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
+import com.radixdlt.atom.actions.UpdateValidatorOwner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -107,6 +107,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -223,9 +224,14 @@ public class StakingUnstakingValidatorsTest {
 			FailOnEvent.asModule(InvalidProposedTxn.class),
 			FailOnEvent.asModule(MempoolAddFailure.class, e -> {
 				if (!(e.getException().getCause() instanceof RadixEngineException)) {
-					return false;
+					return Optional.empty();
 				}
-				return !(Throwables.getRootCause(e.getException()) instanceof SubstateNotFoundException);
+				var rootCause = Throwables.getRootCause(e.getException());
+				if (rootCause instanceof SubstateNotFoundException) {
+					return Optional.empty();
+				}
+
+				return Optional.of(e.getException());
 			}),
 			new AbstractModule() {
 				@Override
@@ -473,7 +479,7 @@ public class StakingUnstakingValidatorsTest {
 					action = new UpdateValidatorFee(privKey.getPublicKey(), random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
 					break;
 				case 7:
-					action = new UpdateValidatorOwnerAddress(privKey.getPublicKey(), REAddr.ofPubKeyAccount(to));
+					action = new UpdateValidatorOwner(privKey.getPublicKey(), REAddr.ofPubKeyAccount(to));
 					break;
 				case 8:
 					action = new UpdateAllowDelegationFlag(privKey.getPublicKey(), random.nextBoolean());

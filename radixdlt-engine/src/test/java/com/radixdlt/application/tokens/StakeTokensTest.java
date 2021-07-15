@@ -164,7 +164,7 @@ public class StakeTokensTest {
 		var transfer = this.engine.construct(new StakeTokens(accountAddr, key.getPublicKey(), stakeAmt))
 			.signAndBuild(key::sign);
 		var processed = this.engine.execute(List.of(transfer));
-		var accounting = REResourceAccounting.compute(processed.get(0).getGroupedStateUpdates().get(0));
+		var accounting = REResourceAccounting.compute(processed.getProcessedTxn().getGroupedStateUpdates().get(0));
 		assertThat(accounting.bucketAccounting())
 			.hasSize(2)
 			.containsEntry(

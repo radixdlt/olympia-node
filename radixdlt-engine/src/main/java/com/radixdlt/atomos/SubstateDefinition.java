@@ -17,10 +17,12 @@
 
 package com.radixdlt.atomos;
 
+import com.radixdlt.constraintmachine.KeyDeserializer;
+import com.radixdlt.constraintmachine.KeySerializer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateDeserializer;
 import com.radixdlt.constraintmachine.SubstateSerializer;
-import com.radixdlt.constraintmachine.VirtualSubstateSerializer;
+import com.radixdlt.constraintmachine.VirtualMapper;
 import com.radixdlt.serialization.DeserializeException;
 
 /**
@@ -33,9 +35,11 @@ public final class SubstateDefinition<T extends Particle> {
 	private final Class<T> substateClass;
 	private final byte typeByte;
 	private final SubstateDeserializer<T> deserializer;
-	private final SubstateDeserializer<T> virtualDeserializer;
 	private final SubstateSerializer<T> serializer;
-	private final VirtualSubstateSerializer virtualSerializer;
+
+	private final KeyDeserializer keyDeserializer;
+	private final KeySerializer keySerializer;
+	private final VirtualMapper virtualSerializer;
 
 	public SubstateDefinition(
 		Class<T> substateClass,
@@ -47,10 +51,13 @@ public final class SubstateDefinition<T extends Particle> {
 		this.typeByte = typeByte;
 		this.deserializer = deserializer;
 		this.serializer = serializer;
-		this.virtualDeserializer = buf -> {
+		this.keyDeserializer = buf -> {
 			throw new DeserializeException("Virtual substate not supported");
 		};
-		this.virtualSerializer = (o, buf) -> {
+		this.keySerializer = (k, buf) -> {
+			throw new IllegalStateException("Cannot create key");
+		};
+		this.virtualSerializer = o -> {
 			throw new IllegalStateException("Cannot virtualize");
 		};
 	}
@@ -60,15 +67,39 @@ public final class SubstateDefinition<T extends Particle> {
 		byte typeByte,
 		SubstateDeserializer<T> deserializer,
 		SubstateSerializer<T> serializer,
-		SubstateDeserializer<T> virtualDeserializer,
-		VirtualSubstateSerializer virtualSubstateSerializer
+		KeySerializer keySerializer
 	) {
 		this.substateClass = substateClass;
 		this.typeByte = typeByte;
 		this.deserializer = deserializer;
-		this.virtualDeserializer = virtualDeserializer;
 		this.serializer = serializer;
-		this.virtualSerializer = virtualSubstateSerializer;
+
+		this.keySerializer = keySerializer;
+		this.keyDeserializer = buf -> {
+			throw new DeserializeException("Virtual substate not supported");
+		};
+		this.virtualSerializer = o -> {
+			throw new IllegalStateException("Cannot virtualize");
+		};
+	}
+
+	public SubstateDefinition(
+		Class<T> substateClass,
+		byte typeByte,
+		SubstateDeserializer<T> deserializer,
+		SubstateSerializer<T> serializer,
+		KeyDeserializer keyDeserializer,
+		KeySerializer keySerializer,
+		VirtualMapper virtualMapper
+	) {
+		this.substateClass = substateClass;
+		this.typeByte = typeByte;
+		this.deserializer = deserializer;
+		this.serializer = serializer;
+
+		this.keyDeserializer = keyDeserializer;
+		this.keySerializer = keySerializer;
+		this.virtualSerializer = virtualMapper;
 	}
 
 	public byte getTypeByte() {
@@ -87,11 +118,15 @@ public final class SubstateDefinition<T extends Particle> {
 		return deserializer;
 	}
 
-	public SubstateDeserializer<T> getVirtualDeserializer() {
-		return virtualDeserializer;
+	public KeySerializer getKeySerializer() {
+		return keySerializer;
 	}
 
-	public VirtualSubstateSerializer getVirtualSerializer() {
+	public KeyDeserializer getKeyDeserializer() {
+		return keyDeserializer;
+	}
+
+	public VirtualMapper getVirtualMapper() {
 		return virtualSerializer;
 	}
 }

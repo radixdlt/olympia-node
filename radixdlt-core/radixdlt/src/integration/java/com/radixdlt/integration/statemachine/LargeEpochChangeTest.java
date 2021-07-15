@@ -24,15 +24,18 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.UpdateValidatorFee;
+import com.radixdlt.atom.actions.UpdateValidatorOwner;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -44,7 +47,6 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.mempool.MempoolConfig;
@@ -52,18 +54,22 @@ import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -86,7 +92,22 @@ public class LargeEpochChangeTest {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(),
+			new RadixEngineForksLatestOnlyModule(
+				new RERulesConfig(
+					FeeTable.create(
+						Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
+						Amount.ofTokens(1000) // 1000XRD per resource
+					),
+					OptionalInt.of(50), // 50 Txns per round
+					10_000,
+					1,
+					Amount.ofTokens(100), // Minimum stake
+					150, // Two weeks worth of epochs
+					Amount.ofTokens(10), // Rewards per proposal
+					9800, // 98.00% threshold for completed proposals to get any rewards
+					100 // 100 max validators
+				)
+			),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
 			new MockedGenesisModule(
@@ -106,17 +127,21 @@ public class LargeEpochChangeTest {
 
 	@Test
 	public void large_epoch() throws Exception {
-		long numStakes = 10000 * 3;
+		var rt = Runtime.getRuntime();
+		logger.info("max mem: {}MB", rt.maxMemory() / 1024 / 1024);
+
+		int privKeyStart = 2;
+		int numTxnsPerRound = 10;
+		int numRounds = 10000;
 
 		createInjector().injectMembers(this);
 		// Arrange
 		var request = TxnConstructionRequest.create();
-		IntStream.range(1, (int) numStakes + 1)
+		IntStream.range(privKeyStart, numRounds * numTxnsPerRound + privKeyStart)
 			.forEach(i -> {
 				var k = PrivateKeys.ofNumeric(i);
 				var addr = REAddr.ofPubKeyAccount(k.getPublicKey());
-				request.action(new MintToken(REAddr.ofNativeToken(), addr, Amount.ofTokens(numStakes * 100).toSubunits()));
-				request.action(new RegisterValidator(k.getPublicKey()));
+				request.action(new MintToken(REAddr.ofNativeToken(), addr, Amount.ofTokens(numRounds * 1000).toSubunits()));
 			});
 		var mint = sut.construct(request).buildWithoutSignature();
 		logger.info("mint_txn_size={}", mint.getPayload().length);
@@ -124,43 +149,76 @@ public class LargeEpochChangeTest {
 		var proof = new LedgerProof(HashUtils.zero256(), LedgerHeader.create(1, View.of(1), accumulator, 0), new TimestampedECDSASignatures());
 		sut.execute(List.of(mint), LedgerAndBFTProof.create(proof), PermissionLevel.SYSTEM);
 
+		var systemConstruction = Stopwatch.createUnstarted();
 		var construction = Stopwatch.createUnstarted();
+		var signatures = Stopwatch.createUnstarted();
 		var execution = Stopwatch.createUnstarted();
 
-		IntStream.range(1, (int) numStakes + 1)
-			.forEach(i -> {
-				try {
-					if (i % 1000 == 0) {
-						logger.info("Staking {}/{} Construction: {}s Execution: {}s", i, numStakes,
-							construction.elapsed(TimeUnit.SECONDS),
-							execution.elapsed(TimeUnit.SECONDS)
-						);
-					}
-					var k = PrivateKeys.ofNumeric(i);
-					var addr = REAddr.ofPubKeyAccount(k.getPublicKey());
-					construction.start();
-					var txn = sut.construct(new StakeTokens(addr, k.getPublicKey(), Amount.ofTokens(10 + i).toSubunits())).buildWithoutSignature();
-					construction.stop();
-					var acc = new AccumulatorState(2 + i, HashUtils.zero256());
-					var proof2 = new LedgerProof(HashUtils.zero256(), LedgerHeader.create(1, View.of(1), acc, 0), new TimestampedECDSASignatures());
-					execution.start();
-					sut.execute(List.of(txn), LedgerAndBFTProof.create(proof2), PermissionLevel.SYSTEM);
-					execution.stop();
-				} catch (TxBuilderException | RadixEngineException e) {
-					logger.error("key {}", i);
-					e.printStackTrace();
-				}
-			});
+		var feesPaid = UInt256.ZERO;
+
+		for (int round = 1; round <= 10000; round++) {
+			if (round % 1000 == 0) {
+				logger.info(
+					"Staking txn {}/{} sys_construct_time: {}s user_construct_time: {}s sig_time: {}s execute_time: {}s",
+					round * (numTxnsPerRound + 1),
+					numRounds * (numTxnsPerRound + 1),
+					systemConstruction.elapsed(TimeUnit.SECONDS),
+					construction.elapsed(TimeUnit.SECONDS),
+					signatures.elapsed(TimeUnit.SECONDS),
+					execution.elapsed(TimeUnit.SECONDS)
+				);
+			}
+			var txns = new ArrayList<Txn>();
+			systemConstruction.start();
+			var sysTxn = sut.construct(new NextRound(round, false, 1, v -> TEST_KEY.getPublicKey()))
+				.buildWithoutSignature();
+			systemConstruction.stop();
+			txns.add(sysTxn);
+			for (int i = 0; i < numTxnsPerRound; i++) {
+				var privateKey = PrivateKeys.ofNumeric((round - 1) * numTxnsPerRound + i + privKeyStart);
+				var pubKey = privateKey.getPublicKey();
+				var addr = REAddr.ofPubKeyAccount(privateKey.getPublicKey());
+				construction.start();
+				var builder = sut.construct(
+					TxnConstructionRequest.create()
+						.feePayer(addr)
+						.action(new StakeTokens(addr, pubKey, Amount.ofTokens(100 + i).toSubunits()))
+						.action(new RegisterValidator(pubKey))
+						.action(new UpdateValidatorFee(pubKey, 100))
+						.action(new UpdateValidatorOwner(pubKey, REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey())))
+				);
+				construction.stop();
+				signatures.start();
+				var txn = builder.signAndBuild(privateKey::sign);
+				signatures.stop();
+				txns.add(txn);
+			}
+
+			var acc = new AccumulatorState(2 + round * (numTxnsPerRound + 1), HashUtils.zero256());
+			var proof2 = new LedgerProof(HashUtils.zero256(), LedgerHeader.create(1, View.of(1), acc, 0), new TimestampedECDSASignatures());
+			execution.start();
+			var result = sut.execute(txns, LedgerAndBFTProof.create(proof2), PermissionLevel.SUPER_USER);
+			execution.stop();
+			for (var p : result.getProcessedTxns()) {
+				feesPaid = feesPaid.add(p.getFeePaid());
+			}
+		}
+		logger.info("total_fees_paid: {}", Amount.ofSubunits(feesPaid));
 
 		// Act
-		logger.info("preparing...");
-		var txn = sut.construct(TxnConstructionRequest.create()
-			.action(new NextRound(10, true, 0, v -> TEST_KEY.getPublicKey()))
-			.action(new NextEpoch(1))
-		).buildWithoutSignature();
+		construction.reset();
+		construction.start();
+		logger.info("constructing epoch...");
+		var txn = sut.construct(new NextEpoch(1)).buildWithoutSignature();
+		construction.stop();
+		logger.info("epoch_construction: size={}MB time={}s", txn.getPayload().length / 1024 / 1024, construction.elapsed(TimeUnit.SECONDS));
+
+		construction.reset();
+		construction.start();
+		logger.info("preparing epoch...");
 		var result = sut.transientBranch().execute(List.of(txn), PermissionLevel.SUPER_USER);
 		sut.deleteBranches();
-		var nextValidatorSet = result.get(0).getEvents().stream()
+		var nextValidatorSet = result.getProcessedTxn().getEvents().stream()
 			.filter(NextValidatorSetEvent.class::isInstance)
 			.map(NextValidatorSetEvent.class::cast)
 			.findFirst()
@@ -168,13 +226,29 @@ public class LargeEpochChangeTest {
 				e.nextValidators().stream()
 					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
 			);
-		var stateUpdates = result.get(0).stateUpdates().count();
-		logger.info("epoch_txn size={} state_updates={}", txn.getPayload().length, stateUpdates);
-		var acc = new AccumulatorState(2 + 1 + numStakes, HashUtils.zero256());
+		var stateUpdates = result.getProcessedTxn().stateUpdates().count();
+		construction.stop();
+		logger.info(
+			"epoch_preparation: state_updates={} verification_time={}s store_time={}s total_time={}s",
+			stateUpdates,
+			result.getVerificationTime() / 1000,
+			result.getStoreTime() / 1000,
+			construction.elapsed(TimeUnit.SECONDS)
+		);
+		construction.reset();
+		construction.start();
+		logger.info("executing epoch...");
+		var acc = new AccumulatorState(2 + 1 + numRounds * (1 + numTxnsPerRound), HashUtils.zero256());
 		var header = LedgerHeader.create(1, View.of(10), acc, 0, nextValidatorSet.orElseThrow());
 		var proof2 = new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
-		var result2 = this.sut.execute(List.of(txn), LedgerAndBFTProof.create(proof2), PermissionLevel.SUPER_USER);
-		logger.info("executed...");
+		var executionResult = this.sut.execute(List.of(txn), LedgerAndBFTProof.create(proof2), PermissionLevel.SUPER_USER);
+		construction.stop();
+		logger.info(
+			"epoch_execution: verification_time={}s store_time={}s total_time={}s",
+			executionResult.getVerificationTime() / 1000,
+			executionResult.getStoreTime() / 1000,
+			construction.elapsed(TimeUnit.SECONDS)
+		);
 		for (var v : nextValidatorSet.orElseThrow().getValidators()) {
 			logger.info("validator {} {}", v.getNode(), v.getPower());
 		}

@@ -53,7 +53,7 @@ public class UpdatingValidatorBFTData implements ReducerState {
 
 	public ReducerState update(ValidatorBFTData next, ExecutionContext context) throws ProcedureException {
 		var first = validatorsToUpdate.firstKey();
-		if (!next.validatorKey().equals(first)) {
+		if (!next.getValidatorKey().equals(first)) {
 			throw new ProcedureException("Invalid key for validator bft data update");
 		}
 		var old = validatorsToUpdate.remove(first);
@@ -69,7 +69,7 @@ public class UpdatingValidatorBFTData implements ReducerState {
 		var additionalProposalsCompleted = next.proposalsCompleted() - old.proposalsCompleted();
 		var additionalProposalsMissed = next.proposalsMissed() - old.proposalsMissed();
 		if (additionalProposalsMissed > 0) {
-			context.emitEvent(ValidatorMissedProposalsEvent.create(next.validatorKey(), additionalProposalsMissed));
+			context.emitEvent(ValidatorMissedProposalsEvent.create(next.getValidatorKey(), additionalProposalsMissed));
 		}
 
 		incrementViews(additionalProposalsCompleted);

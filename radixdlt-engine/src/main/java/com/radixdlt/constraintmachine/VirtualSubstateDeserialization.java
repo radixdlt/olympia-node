@@ -43,7 +43,8 @@ public class VirtualSubstateDeserialization {
 		}
 		Particle rawSubstate;
 		try {
-			rawSubstate = deserializer.getVirtualDeserializer().deserialize(buf);
+			var key = deserializer.getKeyDeserializer().deserialize(buf);
+			rawSubstate = deserializer.getVirtualMapper().map(key);
 		} catch (Exception e) {
 			throw new SubstateDeserializationException(deserializer.getSubstateClass(), e);
 		}

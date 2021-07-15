@@ -350,7 +350,8 @@ public final class ConstraintMachine {
 							// FIXME: do this via shutdownAll state update rather than individually
 							var substate = substateCursor.next();
 							if (inst.getMicroOp().getOp() == REOp.DOWNINDEX) {
-								tmp.add(REStateUpdate.of(REOp.DOWN, substate.getId(), null, substate.getParticle()));
+								var typeByte = deserialization.classToByte(substate.getParticle().getClass());
+								tmp.add(REStateUpdate.of(REOp.DOWN, substate.getId(), typeByte, substate.getParticle(), null));
 							}
 							return substate.getParticle();
 						}
@@ -401,7 +402,8 @@ public final class ConstraintMachine {
 					}
 
 					var op = inst.getMicroOp().getOp();
-					stateUpdates.add(REStateUpdate.of(op, substateId, substateBuffer, nextParticle));
+					var typeByte = deserialization.classToByte(nextParticle.getClass());
+					stateUpdates.add(REStateUpdate.of(op, substateId, typeByte, nextParticle, substateBuffer));
 					var eventId = OpSignature.ofSubstateUpdate(op, nextParticle.getClass());
 					var methodProcedure = loadProcedure(reducerState, eventId);
 					reducerState = callProcedure(methodProcedure, nextParticle, reducerState, readableAddrs, context);

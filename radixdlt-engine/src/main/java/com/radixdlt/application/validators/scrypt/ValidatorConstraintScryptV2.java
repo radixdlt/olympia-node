@@ -59,9 +59,6 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			if (!current.getValidatorKey().equals(next.getValidatorKey())) {
 				throw new ProcedureException("Invalid key update");
 			}
-			if (current.allowsDelegation() == next.allowsDelegation()) {
-				throw new ProcedureException("Already set.");
-			}
 		}
 	}
 
@@ -85,14 +82,9 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getUrl());
 				},
-				buf -> {
-					var key = REFieldSerialization.deserializeKey(buf);
-					return new ValidatorMetaData(key, "", "");
-				},
-				(k, buf) -> {
-					REFieldSerialization.serializeKey(buf, (ECPublicKey) k);
-					return new ValidatorMetaData((ECPublicKey) k, "", "");
-				}
+				buf -> REFieldSerialization.deserializeKey(buf),
+				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
+				k -> new ValidatorMetaData((ECPublicKey) k, "", "")
 			)
 		);
 
@@ -141,14 +133,9 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.allowsDelegation() ? 1 : 0));
 			},
-			buf -> {
-				var key = REFieldSerialization.deserializeKey(buf);
-				return new AllowDelegationFlag(key, false);
-			},
-			(k, buf) -> {
-				REFieldSerialization.serializeKey(buf, (ECPublicKey) k);
-				return new AllowDelegationFlag((ECPublicKey) k, false);
-			}
+			buf -> REFieldSerialization.deserializeKey(buf),
+			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
+			k -> new AllowDelegationFlag((ECPublicKey) k, false)
 		));
 
 		os.procedure(new DownProcedure<>(

@@ -26,6 +26,7 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.engine.RadixEngineResult;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -84,10 +85,10 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 			throw new MempoolDuplicateException(String.format("Mempool already has command %s", txn.getId()));
 		}
 
-		final List<REProcessedTxn> radixEngineTxns;
+		final RadixEngineResult result;
 		try {
 			RadixEngine.RadixEngineBranch<LedgerAndBFTProof> checker = radixEngine.transientBranch();
-			radixEngineTxns = checker.execute(List.of(txn));
+			result = checker.execute(List.of(txn));
 		} catch (RadixEngineException e) {
 			// TODO: allow missing dependency atoms to live for a certain amount of time
 			throw new MempoolRejectedException(e);
@@ -96,9 +97,9 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 		}
 
 		var mempoolTxn = MempoolMetadata.create(System.currentTimeMillis());
-		var data = Pair.of(radixEngineTxns.get(0), mempoolTxn);
+		var data = Pair.of(result.getProcessedTxn(), mempoolTxn);
 		this.data.put(txn.getId(), data);
-		radixEngineTxns.get(0).substateDependencies()
+		result.getProcessedTxn().substateDependencies()
 			.forEach(substateId -> substateIndex.merge(substateId, Set.of(txn.getId()), Sets::union));
 	}
 

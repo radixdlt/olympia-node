@@ -27,19 +27,12 @@ import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.KeyComparator;
 
-import java.util.Optional;
 import java.util.TreeMap;
 
 public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 	@Override
 	public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
-		var prevRound = txBuilder.down(
-			RoundData.class,
-			p -> true,
-			Optional.empty(),
-			() -> new TxBuilderException("No round state available.")
-		);
-
+		var prevRound = txBuilder.downSystem(RoundData.class);
 		if (action.view() <= prevRound.getView()) {
 			throw new TxBuilderException("Next view: " + action + " isn't higher than current view: " + prevRound);
 		}
@@ -48,11 +41,7 @@ public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 		for (long view = prevRound.getView() + 1; view < action.view(); view++) {
 			var missingLeader = action.leaderMapping().apply(view);
 			if (!validatorsToUpdate.containsKey(missingLeader)) {
-				var validatorData = txBuilder.down(
-					ValidatorBFTData.class,
-					p -> p.validatorKey().equals(missingLeader),
-					() -> new TxBuilderException("Could not find validator")
-				);
+				var validatorData = txBuilder.down(ValidatorBFTData.class, missingLeader);
 				validatorsToUpdate.put(missingLeader, validatorData);
 			}
 			var nextData = validatorsToUpdate.get(missingLeader).incrementProposalsMissed();
@@ -61,11 +50,7 @@ public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 
 		var curLeader = action.leaderMapping().apply(action.view());
 		if (!validatorsToUpdate.containsKey(curLeader)) {
-			var validatorData = txBuilder.down(
-				ValidatorBFTData.class,
-				p -> p.validatorKey().equals(curLeader),
-				() -> new TxBuilderException("Could not find validator")
-			);
+			var validatorData = txBuilder.down(ValidatorBFTData.class, curLeader);
 			validatorsToUpdate.put(curLeader, validatorData);
 		}
 		var nextData = action.isTimeout()

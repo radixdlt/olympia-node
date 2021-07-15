@@ -26,11 +26,9 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.identifiers.REAddr;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 public final class CreateFixedTokenConstructor implements ActionConstructor<CreateFixedToken> {
 	@Override
@@ -39,12 +37,7 @@ public final class CreateFixedTokenConstructor implements ActionConstructor<Crea
 			throw new TxBuilderException("Invalid resource address.");
 		}
 		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
-		txBuilder.down(
-			UnclaimedREAddr.class,
-			p -> p.getAddr().equals(action.getResourceAddr()),
-			Optional.of(action.getResourceAddr()),
-			() -> new TxBuilderException("RRI not available")
-		);
+		txBuilder.downREAddr(action.getResourceAddr());
 		txBuilder.up(TokenResource.createFixedSupplyResource(action.getResourceAddr()));
 		txBuilder.up(new TokensInAccount(action.getAccountAddr(), action.getResourceAddr(), action.getSupply()));
 		txBuilder.up(new TokenResourceMetadata(

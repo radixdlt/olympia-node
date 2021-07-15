@@ -16,10 +16,27 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.atom.actions;
 
-import java.nio.ByteBuffer;
+import com.radixdlt.atom.TxValidatorAction;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
-public interface VirtualSubstateSerializer<T extends Particle> {
-	T serialize(Object key, ByteBuffer buf);
+public final class UpdateValidatorOwner implements TxValidatorAction {
+	private final ECPublicKey validatorKey;
+	private final REAddr ownerAddress;
+
+	public UpdateValidatorOwner(ECPublicKey validatorKey, REAddr ownerAddress) {
+		this.validatorKey = validatorKey;
+		this.ownerAddress = ownerAddress;
+	}
+
+	@Override
+	public ECPublicKey validatorKey() {
+		return validatorKey;
+	}
+
+	public REAddr getOwnerAddress() {
+		return ownerAddress;
+	}
 }

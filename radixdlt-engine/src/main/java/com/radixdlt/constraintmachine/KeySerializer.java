@@ -16,20 +16,10 @@
  *
  */
 
-package com.radixdlt.application.system.construction;
+package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.FeeReservePut;
+import java.nio.ByteBuffer;
 
-public class FeeReservePutConstructor implements ActionConstructor<FeeReservePut> {
-	@Override
-	public void construct(FeeReservePut action, TxBuilder txBuilder) throws TxBuilderException {
-		if (action.amount().isZero()) {
-			return;
-		}
-		txBuilder.putFeeReserve(action.from(), action.amount(), FeeReserveNotEnoughBalanceException::new);
-		txBuilder.end();
-	}
+public interface KeySerializer {
+	void serialize(Object key, ByteBuffer buf);
 }

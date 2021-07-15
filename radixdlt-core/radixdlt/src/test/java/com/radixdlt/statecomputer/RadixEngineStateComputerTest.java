@@ -181,7 +181,7 @@ public class RadixEngineStateComputerTest {
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
 		var processed = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
-		var genesisValidatorSet = processed.get(0).getEvents().stream()
+		var genesisValidatorSet = processed.getProcessedTxns().get(0).getEvents().stream()
 			.filter(NextValidatorSetEvent.class::isInstance)
 			.map(NextValidatorSetEvent.class::cast)
 			.findFirst()

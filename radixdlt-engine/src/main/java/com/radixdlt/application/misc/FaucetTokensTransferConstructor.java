@@ -26,9 +26,11 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.FaucetTokensTransfer;
 import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
@@ -38,7 +40,12 @@ public class FaucetTokensTransferConstructor implements ActionConstructor<Faucet
 	@Override
 	public void construct(FaucetTokensTransfer action, TxBuilder txBuilder) throws TxBuilderException {
 		var map = new HashMap<REAddr, UInt256>();
-		var index = SubstateIndex.create(SubstateTypeId.TOKENS.id(), TokensInAccount.class);
+		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
+		buf.put(SubstateTypeId.TOKENS.id());
+		buf.put((byte) 0);
+		buf.put(action.from().getBytes());
+
+		var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
 		try (var cursor = txBuilder.readIndex(index, false)) {
 			cursor
 				.filter(p -> p.getHoldingAddr().equals(action.from()))
@@ -49,14 +56,16 @@ public class FaucetTokensTransferConstructor implements ActionConstructor<Faucet
 			.filter(e -> e.getValue().compareTo(AMOUNT_TO_TRANSFER.toSubunits()) >= 0)
 			.collect(Collectors.toList());
 		for (var e : toSend) {
-			txBuilder.swapFungible(
-				TokensInAccount.class,
-				p -> p.getResourceAddr().equals(e.getKey())
-					&& p.getHoldingAddr().equals(action.from()),
-				amt -> new TokensInAccount(action.from(), e.getKey(), amt),
+			var change = txBuilder.downFungible(
+				index,
+				p -> p.getResourceAddr().equals(e.getKey()) && p.getHoldingAddr().equals(action.from()),
 				AMOUNT_TO_TRANSFER.toSubunits(),
 				() -> new TxBuilderException("Not enough balance for transfer.")
-			).with(amt -> new TokensInAccount(action.to(), e.getKey(), AMOUNT_TO_TRANSFER.toSubunits()));
+			);
+			if (!change.isZero()) {
+				txBuilder.up(new TokensInAccount(action.from(), e.getKey(), change));
+			}
+			txBuilder.up(new TokensInAccount(action.to(), e.getKey(), AMOUNT_TO_TRANSFER.toSubunits()));
 			txBuilder.end();
 		}
 	}

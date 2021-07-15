@@ -16,27 +16,12 @@
  *
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.TxValidatorAction;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.serialization.DeserializeException;
 
-public final class UpdateValidatorOwnerAddress implements TxValidatorAction {
-	private final ECPublicKey validatorKey;
-	private final REAddr ownerAddress;
+import java.nio.ByteBuffer;
 
-	public UpdateValidatorOwnerAddress(ECPublicKey validatorKey, REAddr ownerAddress) {
-		this.validatorKey = validatorKey;
-		this.ownerAddress = ownerAddress;
-	}
-
-	@Override
-	public ECPublicKey validatorKey() {
-		return validatorKey;
-	}
-
-	public REAddr getOwnerAddress() {
-		return ownerAddress;
-	}
+public interface KeyDeserializer {
+	Object deserialize(ByteBuffer buf) throws DeserializeException;
 }

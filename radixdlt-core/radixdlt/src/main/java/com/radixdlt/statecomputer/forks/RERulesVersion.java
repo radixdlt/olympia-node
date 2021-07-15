@@ -43,7 +43,7 @@ import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
-import com.radixdlt.atom.actions.UpdateValidatorOwnerAddress;
+import com.radixdlt.atom.actions.UpdateValidatorOwner;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.NextEpochConstructorV3;
 import com.radixdlt.application.system.construction.NextViewConstructorV3;
@@ -153,7 +153,7 @@ public enum RERulesVersion {
 					rakeIncreaseDebouncerEpochLength,
 					ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE
 				))
-				.put(UpdateValidatorOwnerAddress.class, new UpdateValidatorOwnerConstructor())
+				.put(UpdateValidatorOwner.class, new UpdateValidatorOwnerConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 				.build();
 

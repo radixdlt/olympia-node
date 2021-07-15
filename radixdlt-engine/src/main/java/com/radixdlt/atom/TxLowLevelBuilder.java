@@ -20,10 +20,14 @@ package com.radixdlt.atom;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.system.state.SystemData;
+import com.radixdlt.application.system.state.VirtualParent;
+import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.Shorts;
@@ -39,6 +43,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -46,6 +51,7 @@ import java.util.Set;
  */
 public final class TxLowLevelBuilder {
 	private final ByteArrayOutputStream blobStream;
+	private final Map<SystemMapKey, LocalSubstate> localMapValues = new HashMap<>();
 	private final Map<Integer, LocalSubstate> localUpParticles = new HashMap<>();
 	private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
 	private final SubstateSerialization serialization;
@@ -73,6 +79,10 @@ public final class TxLowLevelBuilder {
 
 	public Set<SubstateId> remoteDownSubstate() {
 		return remoteDownSubstate;
+	}
+
+	public Optional<LocalSubstate> get(SystemMapKey mapKey) {
+		return Optional.ofNullable(localMapValues.get(mapKey));
 	}
 
 	public List<LocalSubstate> localUpSubstate() {
@@ -117,7 +127,29 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder up(Particle particle) {
 		Objects.requireNonNull(particle, "particle is required");
-		this.localUpParticles.put(upParticleCount, LocalSubstate.create(upParticleCount, particle));
+
+		var localSubstate = LocalSubstate.create(upParticleCount, particle);
+
+		if (particle instanceof ValidatorData) {
+			var p = (ValidatorData) particle;
+			var b = serialization.classToByte(p.getClass());
+			var k = SystemMapKey.ofValidatorData(b, p.getValidatorKey().getCompressedBytes());
+			this.localMapValues.put(k, localSubstate);
+		} else if (particle instanceof SystemData) {
+			var b = serialization.classToByte(particle.getClass());
+			var k = SystemMapKey.ofSystem(b);
+			this.localMapValues.put(k, localSubstate);
+		} else if (particle instanceof VirtualParent) {
+			var p = (VirtualParent) particle;
+			var typeByte = p.getData()[0];
+			if (typeByte != SubstateTypeId.UNCLAIMED_READDR.id()) {
+				var k = SystemMapKey.ofValidatorDataParent(typeByte);
+				this.localMapValues.put(k, localSubstate);
+			}
+		}
+
+		this.localUpParticles.put(upParticleCount, localSubstate);
+
 		var buf = ByteBuffer.allocate(1024);
 		buf.putShort((short) 0);
 		serialization.serialize(particle, buf);

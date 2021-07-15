@@ -23,7 +23,8 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 
-import java.util.function.Predicate;
+import java.util.Optional;
+import java.util.function.Function;
 
 public final class FailOnEvent {
 	private FailOnEvent() {
@@ -44,15 +45,16 @@ public final class FailOnEvent {
 		};
 	}
 
-	public static <T> Module asModule(Class<T> eventClass, Predicate<T> predicate) {
+	public static <T> Module asModule(Class<T> eventClass, Function<T, Optional<Throwable>> mapper) {
 		return new AbstractModule() {
 			@ProvidesIntoSet
 			EventProcessorOnDispatch<?> failOnEvent() {
 				return new EventProcessorOnDispatch<>(
 					eventClass,
 					i -> {
-						if (predicate.test(i)) {
-							throw new IllegalStateException("Invalid event: " + i);
+						var maybeError = mapper.apply(i);
+						if (maybeError.isPresent()) {
+							throw new IllegalStateException("Invalid event: " + i, maybeError.get());
 						}
 					}
 				);

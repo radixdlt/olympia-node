@@ -100,9 +100,9 @@ public final class GenesisBuilder {
 
 	public LedgerProof generateGenesisProof(Txn txn) throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		var processed = branch.execute(List.of(txn), PermissionLevel.SYSTEM);
+		var result = branch.execute(List.of(txn), PermissionLevel.SYSTEM);
 		radixEngine.deleteBranches();
-		var genesisValidatorSet = processed.get(0).getEvents().stream()
+		var genesisValidatorSet = result.getProcessedTxn().getEvents().stream()
 			.filter(NextValidatorSetEvent.class::isInstance)
 			.map(NextValidatorSetEvent.class::cast)
 			.findFirst()

@@ -17,7 +17,9 @@
 
 package com.radixdlt.engine;
 
+import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
+import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxAction;
@@ -30,6 +32,9 @@ import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.FeeReservePut;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -55,7 +60,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -269,12 +276,12 @@ public final class RadixEngine<M> {
 			}
 		}
 
-		public List<REProcessedTxn> execute(List<Txn> txns) throws RadixEngineException {
+		public RadixEngineResult execute(List<Txn> txns) throws RadixEngineException {
 			assertNotDeleted();
 			return engine.execute(txns);
 		}
 
-		public List<REProcessedTxn> execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
+		public RadixEngineResult execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
 			assertNotDeleted();
 			return engine.execute(txns, null, permissionLevel);
 		}
@@ -342,7 +349,7 @@ public final class RadixEngine<M> {
 	 *
 	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
 	 */
-	public List<REProcessedTxn> execute(List<Txn> txns) throws RadixEngineException {
+	public RadixEngineResult execute(List<Txn> txns) throws RadixEngineException {
 		return execute(txns, null, PermissionLevel.USER);
 	}
 
@@ -354,7 +361,7 @@ public final class RadixEngine<M> {
 	 * @param permissionLevel permission level to execute on
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
-	public List<REProcessedTxn> execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+	public RadixEngineResult execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
 		synchronized (stateUpdateEngineLock) {
 			if (!branches.isEmpty()) {
 				throw new IllegalStateException(
@@ -368,7 +375,7 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	private List<REProcessedTxn> executeInternal(
+	private RadixEngineResult executeInternal(
 		EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction,
 		List<Txn> txns,
 		M meta,
@@ -379,26 +386,33 @@ public final class RadixEngine<M> {
 		// FIXME: This is quite the hack to increase sigsLeft for execution on noncommits (e.g. mempool)
 		// FIXME: Should probably just change metering
 		var sigsLeft = meta != null ? 0 : 1000; // Start with 0
+		var storageStopwatch = Stopwatch.createUnstarted();
+		var verificationStopwatch = Stopwatch.createUnstarted();
 
 		for (int i = 0; i < txns.size(); i++) {
 			var txn = txns.get(i);
-			var context = new ExecutionContext(txn, permissionLevel, sigsLeft, Amount.ofTokens(200).toSubunits());
 
+			verificationStopwatch.start();
+			var context = new ExecutionContext(txn, permissionLevel, sigsLeft, Amount.ofTokens(200).toSubunits());
 			final REProcessedTxn parsedTxn;
 			try {
 				parsedTxn = this.verify(engineStoreInTransaction, txn, context);
 			} catch (TxnParseException | AuthorizationException | ConstraintMachineException e) {
 				throw new RadixEngineException(i, txns.size(), txn, e);
 			}
+			verificationStopwatch.stop();
+
 			// Carry sigs left to the next transaction
 			sigsLeft = context.sigsLeft();
 
+			storageStopwatch.start();
 			try {
 				engineStoreInTransaction.storeTxn(txn, parsedTxn.stateUpdates().collect(Collectors.toList()));
 			} catch (Exception e) {
 				logger.error("Store of atom failed: " + parsedTxn, e);
 				throw e;
 			}
+			storageStopwatch.stop();
 
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			// Non-persisted computed state
@@ -420,7 +434,11 @@ public final class RadixEngine<M> {
 			engineStoreInTransaction.storeMetadata(meta);
 		}
 
-		return processedTxns;
+		return RadixEngineResult.create(
+			processedTxns,
+			verificationStopwatch.elapsed(TimeUnit.MILLISECONDS),
+			storageStopwatch.elapsed(TimeUnit.MILLISECONDS)
+		);
 	}
 
 	public interface TxBuilderExecutable {
@@ -433,9 +451,18 @@ public final class RadixEngine<M> {
 
 	private TxBuilder construct(TxBuilderExecutable executable, Set<SubstateId> avoid) throws TxBuilderException {
 		synchronized (stateUpdateEngineLock) {
-			SubstateStore filteredStore = b ->
-				engineStore.openIndexedCursor(b)
-					.filter(i -> !avoid.contains(SubstateId.fromBytes(i.getId())));
+			SubstateStore filteredStore = new SubstateStore() {
+				@Override
+				public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
+					return engineStore.openIndexedCursor(index)
+						.filter(i -> !avoid.contains(SubstateId.fromBytes(i.getId())));
+				}
+
+				@Override
+				public Optional<RawSubstateBytes> get(SystemMapKey key) {
+					return engineStore.get(key);
+				}
+			};
 
 			var txBuilder = TxBuilder.newBuilder(
 				filteredStore,

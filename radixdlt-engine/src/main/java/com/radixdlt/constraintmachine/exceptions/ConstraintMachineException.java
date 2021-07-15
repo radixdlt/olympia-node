@@ -31,9 +31,10 @@ public final class ConstraintMachineException extends Exception {
 	private static String toMessage(int instIndex, List<REInstruction> instructions) {
 		var builder = new StringBuilder();
 
-		var countToDisplay = Math.min(instructions.size(), 64);
+		var start = Math.max(0, instIndex - 32);
+		var end = Math.min(instructions.size(), instIndex + 32);
 
-		for (int i = 0; i < countToDisplay; i++) {
+		for (int i = start; i < end; i++) {
 			if (i == instIndex) {
 				builder.append("<<<<Issue here>>>> ");
 			}
