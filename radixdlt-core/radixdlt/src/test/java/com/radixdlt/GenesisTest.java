@@ -21,7 +21,6 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.counters.SystemCounters;
@@ -31,10 +30,8 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
-import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
-import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.Bytes;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -76,10 +73,6 @@ public class GenesisTest {
 				public void configure() {
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-				}
-				@Provides
-				RERules rules(Forks forks) {
-					return forks.genesisFork().engineRules();
 				}
 			}
 		).injectMembers(this);
