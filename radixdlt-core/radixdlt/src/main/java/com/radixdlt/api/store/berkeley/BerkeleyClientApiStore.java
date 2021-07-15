@@ -21,6 +21,7 @@ import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.forks.Forks;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -156,6 +157,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final TransactionParser transactionParser;
 	private final REParser parser;
 	private final Addressing addressing;
+	private final Forks forks;
 
 	private Database transactionHistory;
 	private Database tokenDefinitions;
@@ -176,7 +178,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		TransactionParser transactionParser,
 		boolean isTest,
-		Addressing addressing
+		Addressing addressing,
+		Forks forks
 	) {
 		this.dbEnv = dbEnv;
 		this.parser = parser;
@@ -187,6 +190,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
 		this.transactionParser = transactionParser;
 		this.addressing = addressing;
+		this.forks = forks;
 
 		open(isTest);
 	}
@@ -201,10 +205,11 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		TransactionParser transactionParser,
-		Addressing addressing
+		Addressing addressing,
+		Forks forks
 	) {
 		this(dbEnv, parser, txnParser, store, serialization, systemCounters,
-			 scheduledFlushEventDispatcher, transactionParser, false, addressing
+			 scheduledFlushEventDispatcher, transactionParser, false, addressing, forks
 		);
 	}
 
@@ -276,9 +281,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					.map(entry -> entry.rri().equals("stake-ownership") ? computeStakeEntry(entry) : entry)
 					.ifPresent(list::add);
 
+
 				status = readBalance(() -> cursor.getNext(key, data, null), data);
-			}
-			while (status == OperationStatus.SUCCESS);
+			} while (status == OperationStatus.SUCCESS);
 
 			return Result.ok(list);
 		}
@@ -748,6 +753,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	private REResourceAccounting processGroupedStateUpdates(List<REStateUpdate> updates, AID txId) {
+		var curEpoch = currentEpoch.get();
 		for (var update : updates) {
 			var substate = update.getParsed();
 			if (substate instanceof RoundData) {
@@ -762,6 +768,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 		}
 
+		var rules = forks.get(curEpoch);
+
 		var accounting = REResourceAccounting.compute(updates);
 		var bucketAccounting = accounting.bucketAccounting();
 		var bucketEntries = bucketAccounting.entrySet().stream()
@@ -769,15 +777,19 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				var r = e.getKey();
 				var i = e.getValue();
 				var rri = r.resourceAddr() != null ? getRriOrFail(r.resourceAddr()) : "stake-ownership";
-				return BalanceEntry.create(
+				var epochUnlock = r.getEpochUnlock();
+				var entry = BalanceEntry.create(
 					r.getOwner(),
 					r.getValidatorKey(),
 					rri,
 					UInt384.from(i.abs().toByteArray()),
 					i.signum() == -1,
-					r.getEpochUnlock(),
+					(epochUnlock != null && epochUnlock == 0)
+						? (Long) (curEpoch + 1 + rules.getConfig().getUnstakingEpochDelay())
+						: epochUnlock,
 					txId
 				);
+				return entry;
 			});
 		var stakeOwnershipEntries = accounting.stakeOwnershipAccounting().entrySet().stream()
 			.filter(e -> !e.getValue().equals(BigInteger.ZERO))

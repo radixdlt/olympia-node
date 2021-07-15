@@ -26,6 +26,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.store.LastStoredProof;
@@ -374,7 +375,8 @@ public class BerkeleyClientApiStoreTest {
 			mock(ScheduledEventDispatcher.class),
 			new TransactionParser(addressing),
 			true,
-			addressing
+			addressing,
+			mock(Forks.class)
 		);
 	}
 

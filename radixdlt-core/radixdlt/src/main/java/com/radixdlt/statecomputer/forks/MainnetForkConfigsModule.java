@@ -30,7 +30,7 @@ import java.util.OptionalInt;
  */
 public final class MainnetForkConfigsModule extends AbstractModule {
 	@ProvidesIntoSet
-	ForkConfig olympiaFirstEpoch() {
+	ForkConfig stokenet() {
 		return new ForkConfig(
 			0L,
 			"olympia-first-epoch",
@@ -41,17 +41,18 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 					Amount.ofTokens(1000) // 1000XRD per resource
 				),
 				OptionalInt.of(50), // 50 Txns per round
-				1_500_000, // Two weeks worth of rounds for first epoch
-				150, // Two weeks worth of epochs
+				10_000,
+				2, // atleast 1 epoch for rake increase
 				Amount.ofTokens(100), // Minimum stake
-				150, // Two weeks worth of epochs
-				Amount.ofTokens(0),   // No rewards for epoch 1 where it will only be radix foundation nodes
+				1, // atleast 1 epoch for unstaking delay
+				Amount.ofTokens(10),   // Rewards per proposal
 				9800, // 98.00% threshold for completed proposals to get any rewards,
 				100 // 100 max validators
 			)
 		);
 	}
 
+	/*
 	@ProvidesIntoSet
 	ForkConfig olympia() {
 		return new ForkConfig(
@@ -74,4 +75,5 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 			)
 		);
 	}
+	 */
 }
