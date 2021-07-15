@@ -48,7 +48,7 @@ public class RadixVersionStringTest {
 
 		var version = calculateVersionString(details);
 
-		assertEquals("1.0-beta.35.1-feature~rpnv1-1306-refactor-json-rpc-implementation-SNAPSHOT", version);
+		assertEquals("1.0-beta.35.1-feature~rpnv1-1306-refactor-json-rpc-implementation-ed0717c", version);
 	}
 
 	@Test
@@ -61,7 +61,7 @@ public class RadixVersionStringTest {
 
 		var version = calculateVersionString(details);
 
-		assertEquals("detached-head-ed0717c-SNAPSHOT", version);
+		assertEquals("detached-head-ed0717c", version);
 	}
 
 }
