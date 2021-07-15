@@ -28,6 +28,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.utils.PrivateKeys;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -136,6 +137,7 @@ public final class GenerateUniverses {
 			@Override
 			protected void configure() {
 				install(new CryptoModule());
+				install(new MainnetForkConfigsModule());
 				install(new ForksModule());
 				bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(List.of());
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
