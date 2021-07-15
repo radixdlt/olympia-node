@@ -1,6 +1,7 @@
 package com.radix.test.network;
 
 import com.radix.test.docker.DockerClient;
+import com.radix.test.docker.LocalDockerClient;
 import com.radix.test.network.client.RadixHttpClient;
 import com.radixdlt.application.system.construction.FeeReserveNotEnoughBalanceException;
 import com.radixdlt.client.lib.api.AccountAddress;
@@ -30,6 +31,7 @@ public class RadixNetworkNodeLocator {
 
     public static List<RadixNode> locateNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient,
                                               DockerClient dockerClient) {
+        ((LocalDockerClient) dockerClient).printAllContainers();
         var peers = configuration.connect().network().peers();
         var peersSizePlusOne = peers.size() + 1;
         switch (configuration.getType()) {
@@ -45,10 +47,11 @@ public class RadixNetworkNodeLocator {
 
     private static List<RadixNode> locateLocalNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient,
                                                     DockerClient dockerClient, int expectedNoOfNodes) {
-        int primaryPort = configuration.getPrimaryPort();
-        int secondaryPort = configuration.getSecondaryPort();
+        var primaryPort = configuration.getPrimaryPort();
+        var secondaryPort = configuration.getSecondaryPort();
+        var dockerContainerName = configuration.getDockerConfiguration().getContainerName();
         return IntStream.range(0, expectedNoOfNodes).mapToObj(counter -> {
-            String containerName = String.format("docker_core%d_1", counter);
+            String containerName = String.format(dockerContainerName, counter);
             return figureOutNode(configuration.getJsonRpcRootUrl(), primaryPort + counter, secondaryPort + counter,
                 containerName, httpClient, dockerClient);
         }).collect(Collectors.toList());
@@ -56,8 +59,8 @@ public class RadixNetworkNodeLocator {
 
     /**
      * TODO explain
-     *
-     * TODO handle exceptions better. Right now, the test will fail is anything goes wrong here
+     * <p>
+     * TODO handle exceptions be    tter. Right now, the test will fail is anything goes wrong here
      */
     private static RadixNode figureOutNode(String jsonRpcRootUrl, int primaryPort, int secondaryPort,
                                            String expectedContainerName, RadixHttpClient httpClient, DockerClient dockerClient) {

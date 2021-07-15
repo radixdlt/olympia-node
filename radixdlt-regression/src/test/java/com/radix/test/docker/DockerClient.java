@@ -15,4 +15,5 @@ public interface DockerClient {
     void connect();
 
     String runShellCommandAndGetOutput(String containerId, String... commands);
+
 }
