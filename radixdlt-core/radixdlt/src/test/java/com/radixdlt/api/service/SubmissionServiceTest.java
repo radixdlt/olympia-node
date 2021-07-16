@@ -19,6 +19,7 @@ package com.radixdlt.api.service;
 import com.google.inject.Provides;
 import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.MintToken;
@@ -90,6 +91,7 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -146,7 +148,7 @@ public class SubmissionServiceTest {
 					RERulesConfig.testingDefault().overrideFeeTable(
 						FeeTable.create(
 							Amount.ofSubunits(UInt256.ONE),
-							Amount.ofSubunits(UInt256.ONE)
+							Map.of(TokenResource.class, Amount.ofSubunits(UInt256.ONE))
 						)
 					)
 				));

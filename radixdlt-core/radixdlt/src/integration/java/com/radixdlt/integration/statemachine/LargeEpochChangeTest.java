@@ -27,6 +27,7 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.MintToken;
@@ -69,6 +70,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -96,7 +98,7 @@ public class LargeEpochChangeTest {
 				new RERulesConfig(
 					FeeTable.create(
 						Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
-						Amount.ofTokens(1000) // 1000XRD per resource
+						Map.of(TokenResource.class, Amount.ofTokens(1000)) // 1000XRD per resource
 					),
 					OptionalInt.of(50), // 50 Txns per round
 					10_000,

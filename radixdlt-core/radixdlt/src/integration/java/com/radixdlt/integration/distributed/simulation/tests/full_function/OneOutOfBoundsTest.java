@@ -42,6 +42,7 @@ import org.junit.runners.Parameterized;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 
@@ -73,7 +74,7 @@ public class OneOutOfBoundsTest {
 					new RERulesConfig(
 						FeeTable.create(
 							Amount.ofSubunits(perByteFee),
-							Amount.zero()
+							Map.of()
 						),
 						OptionalInt.of(5),
 						20L,
