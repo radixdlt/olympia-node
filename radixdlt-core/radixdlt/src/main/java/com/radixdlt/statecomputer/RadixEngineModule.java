@@ -20,36 +20,25 @@ package com.radixdlt.statecomputer;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.StateReducer;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.utils.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.OptionalInt;
-import java.util.Set;
 
 /**
  * Module which manages execution of commands
  */
 public class RadixEngineModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();
-
-	@Override
-	protected void configure() {
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { });
-		Multibinder.newSetBinder(binder(), new TypeLiteral<Pair<String, StateReducer<?>>>() { });
-	}
 
 	@Provides
 	@Singleton
@@ -97,8 +86,6 @@ public class RadixEngineModule extends AbstractModule {
 	@Singleton
 	private RadixEngine<LedgerAndBFTProof> getRadixEngine(
 		EngineStore<LedgerAndBFTProof> engineStore,
-		Set<StateReducer<?>> stateReducers,
-		Set<Pair<String, StateReducer<?>>> namedStateReducers,
 		RERules rules
 	) {
 		var cmConfig = rules.getConstraintMachineConfig();
@@ -108,7 +95,7 @@ public class RadixEngineModule extends AbstractModule {
 			cmConfig.getVirtualSubstateDeserialization(),
 			cmConfig.getMeter()
 		);
-		var radixEngine = new RadixEngine<>(
+		return new RadixEngine<>(
 			rules.getParser(),
 			rules.getSerialization(),
 			rules.getActionConstructors(),
@@ -116,13 +103,5 @@ public class RadixEngineModule extends AbstractModule {
 			engineStore,
 			rules.getBatchVerifier()
 		);
-
-		// Additional state reducers are not required for consensus so don't need to include their
-		// state in transient branches;
-		logger.info("RE - Initializing stateReducers: {} {}", stateReducers, namedStateReducers);
-		stateReducers.forEach(r -> radixEngine.addStateReducer(r, false));
-		namedStateReducers.forEach(n -> radixEngine.addStateReducer(n.getSecond(), n.getFirst(), false));
-
-		return radixEngine;
 	}
 }

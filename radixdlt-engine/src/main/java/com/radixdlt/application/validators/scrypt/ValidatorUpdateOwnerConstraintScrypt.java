@@ -36,7 +36,6 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 
 import java.util.OptionalLong;
 

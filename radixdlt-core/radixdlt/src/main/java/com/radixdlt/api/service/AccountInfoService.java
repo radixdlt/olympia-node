@@ -42,7 +42,6 @@ import org.json.JSONObject;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -57,30 +56,24 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
 
 public class AccountInfoService {
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final EngineStore<LedgerAndBFTProof> engineStore;
 	private final ECPublicKey bftKey;
 	private final Addressing addressing;
-	private final ValidatorInfoService validatorInfoService;
 	private final Forks forks;
 	private final InMemorySystemInfo inMemorySystemInfo;
 
 	@Inject
 	public AccountInfoService(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
 		EngineStore<LedgerAndBFTProof> engineStore,
 		@Self ECPublicKey bftKey,
 		Addressing addressing,
 		Forks forks,
-		InMemorySystemInfo inMemorySystemInfo, // TODO: This is a hack, remove
-		ValidatorInfoService validatorInfoService
+		InMemorySystemInfo inMemorySystemInfo // TODO: This is a hack, remove
 	) {
-		this.radixEngine = radixEngine;
 		this.engineStore = engineStore;
 		this.bftKey = bftKey;
 		this.addressing = addressing;
 		this.forks = forks;
-		this.validatorInfoService = validatorInfoService;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 	}
 
