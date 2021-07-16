@@ -91,7 +91,7 @@ public final class NodeAddressing {
 		}
 	}
 
-	public static Pair<String, ECPublicKey> parseWithHrp(String v) throws DeserializeException {
+	public static Pair<String, ECPublicKey> parseUnknownHrp(String v) throws DeserializeException {
 		Bech32.Bech32Data bech32Data;
 		try {
 			bech32Data = Bech32.decode(v);
