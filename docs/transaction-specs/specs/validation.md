@@ -42,21 +42,11 @@ If a substate is created by one instruction, its content must be statically chec
 
 | **Substate Type**                 | **Static Rules**                                                                                                                               |
 |-----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
-| `UNCLAIMED_READDR`                | <ul><li>None</li></ul>                                                                                                                         |
-| `ROUND_DATA`                      | <ul><li>None</li></ul>                                                                                                                         |
-| `EPOCH_DATA`                      | <ul><li>None</li></ul>                                                                                                                         |
-| `TOKEN_RESOURCE`                  | <ul><li>None</li></ul>                                                                                                                         |
 | `TOKEN_RESOURCE_METADATA`         | <ul><li>`description`: max 200 characters</li><li>`icon_url`: must be of OWASP URL format</li><li>`url`: must be of OWASP URL format</li></ul> |
-| `TOKENS`                          | <ul><li>`amount`: must be non-zero</li><li>`owner`: must of an account address</li></ul>                                                       |
+| `TOKENS`                          | <ul><li>`amount`: must be non-zero</li><li>`owner`: must be an account address</li></ul>                                                       |
 | `PREPARED_STAKE`                  | <ul><li>`amount`: must be non-zero</li></ul>                                                                                                   |
 | `STAKE_OWNERSHIP`                 | <ul><li>`amount`: must be non-zero</li></ul>                                                                                                   |
-| `PREPARED_UNSTAKE`                | <ul><li>None</li></ul>                                                                                                                         |
-| `EXITING_STAKE`                   | <ul><li>None</li></ul>                                                                                                                         |
 | `VALIDATOR_META_DATA`             | <ul><li>`url`: must be of OWASP URL format</li></ul>                                                                                           |
-| `VALIDATOR_STAKE_DATA`            | <ul><li>None</li></ul>                                                                                                                         |
-| `VALIDATOR_BFT_DATA`              | <ul><li>None</li></ul>                                                                                                                         |
-| `VALIDATOR_ALLOW_DELEGATION_FLAG` | <ul><li>None</li></ul>                                                                                                                         |
-| `VALIDATOR_REGISTERED_FLAG_COPY`  | <ul><li>None</li></ul>                                                                                                                         |
 | `VALIDATOR_RAKE_COPY`             | <ul><li>`rake_percentage`: must be in [0, 10000]</li></ul>                                                                                     |
 | `VALIDATOR_OWNER_COPY`            | <ul><li>`owner`: must be an account address</li></ul>                                                                                          |
 
@@ -112,11 +102,9 @@ Validation state is the internal state of the constraint machine, which includes
 | `end_expected`                | A flag indicates if an `END` instruction is expected                                  |
 | `local_up_substates`          | A map of substates created locally, keyed off the substate index                      |
 | `remote_down_substates`       | A set of substate IDs that are spun down remotely                                     |
-| `meters`                      | Instruction metering handlers                                                         |
+| `meters`                      | Transaction execution meters                                                          |
 
-Currently, we have two instruction meters:
-- Fee checker
-- Max signatures per round checker
+The `meters` keep track of how many signature validations are left within the current proposal and bill transactions based on its usage.
 
 #### Transition Procedure
 
@@ -242,52 +230,35 @@ Constraint machine executes transaction instructions sequentially, based on the 
    * Update `end_expected` to `false`
 1. Jump to step 1
 
-### System Functions
+### Transaction Billing
 
-System functions are special functionalities provided to transactions through the `SYSCALL` instruction.
+At Radix, transactions are billed based on transaction size (bytes) and the number and type of new substates created.
 
-Currently, we have three system functions:
-
-| **Function Name**  | **Description**                                                                             | **Code** | **Arguments**    |
-|--------------------|---------------------------------------------------------------------------------------------|----------|------------------|
-| `FEE_RESERVE_PUT`  | Deposit a fee into the fee reserve managed by fee checker (**can be invoked at most once**) | `0x00`   | `amount (u256)`  |
-| `FEE_RESERVE_TAKE` | Withdraw fund from the fee reserve                                                          | `0x01`   | `amount (u256)`  |
-| `READDR_CLAIM`     | Claim a RE Address                                                                          | `0x02`   | `symbol (bytes)` |
-
-The `calldata` is structued as follows:
+Transaction bytes are charged
 
 ```
-+--------------------+------------+
-| function code (u8) | arguments  |
-+--------------------+------------+
+0.0002 XRD per byte
 ```
 
-### Transaction Fee
+New substates are charged based on the following scheme:
 
-At Radix, transaction fees are charged based on transaction size (bytes). The price is `0.0002XRD per byte`.
+| **Substate Type**                 | **Fee**        | **Description**                             |
+|-----------------------------------|----------------|---------------------------------------------|
+| `TOKENS`                          | 1000 XRD       | Create a new resource                       |
+| `VALIDATOR_REGISTERED_FLAG_COPY`  | 5 XRD          | Update validator registered flag            |
+| `VALIDATOR_RAKE_COPY`             | 5 XRD          | Update validator fee                        |
+| `VALIDATOR_OWNER_COPY`            | 5 XRD          | Update validator owner                      |
+| `VALIDATOR_META_DATA`             | 5 XRD          | Update validator metadata                   |
+| `VALIDATOR_ALLOW_DELEGATION_FLAG` | 5 XRD          | Update validator allow delegation flag      |
+| `PREPARED_STAKE`                  | 0.5 XRD        | Stake                                       |
+| `PREPARED_UNSTAKE`                | 0.5 XRD        | Unstake                                     |
 
-The way to pay transaction fee is through spending XRD tokens and making system calls.
+#### Mechanism
 
-The billing system works as follows:
-- Before a transaction gets executed, it's granted a loan (`200 XRD`) from the system and the loan goes directly into the fee reserve;
-- Then, the transaction fee (based on size) is immediately charged from the reserve (if not covered, exception is thrown);
-- After that, XRDs can be deposited into the reserve through a combination of `HEADER`, `SYSCALL`, `DOWN` instructions;
-- At the first non-`HEADER`/`SYSCALL`/`DOWN` instruction or transaction end, the system takes back the loan from the reserve (if not covered, exception is thrown).
-- Additionally, there is a cost associated with each instruction:
-    - Token creation (`UP` token resource): `1000 XRD`
-    - Others: `0`
-    - (If the fee reserve is unable to cover it, exception is thrown)
+Transactions are billed as follows:
+- Before a transaction is executed, it's granted a loan (`200 XRD`) from the system, and the loan goes directly into the fee reserve;
+- Then, transaction size is immediately charged from the reserve and every instruction step is billed (currently, `UP` instructions only);
+   * XRDs are expected to be deposited into the reserve through a combination of `HEADER`, `SYSCALL`, `DOWN` instructions;
+- At the first non-`HEADER`/`SYSCALL`/`DOWN` instruction or transaction end, whichever is first, the system takes back the loan from the reserve.
 
-Example transaction structure:
-```
-HEADER(0, 1)
-DOWN <xrd_substate_id>
-SYSCALL <FEE_RESERVE_PUT (0x00) + amount (u256)>
-UP <xrd_remainder>
-END
-...
-SYSCALL <FEE_RESERVE_TAKE (0x01) + amount (u256)>    // when the fee reserve balance is non-zero
-UP <xrd_remainder>                                   // when the fee reserve balance is non-zero
-END
-SIG <signature>
-```
+If the fee reserve goes out of balance at any step, transaction aborts.
