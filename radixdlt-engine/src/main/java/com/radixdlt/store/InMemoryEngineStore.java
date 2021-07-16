@@ -28,9 +28,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
@@ -44,8 +42,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M> {
@@ -183,31 +179,4 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			return inst != null;
 		}
 	}
-
-	@Override
-	public <V> V reduceUpParticles(
-		V initial,
-		BiFunction<V, Particle, V> outputReducer,
-		SubstateDeserialization substateDeserialization,
-		Class<? extends Particle>... particleClass
-	) {
-		V v = initial;
-		var types = Set.of(particleClass);
-
-		synchronized (lock) {
-			for (var i : storedState.values()) {
-				if (!i.isBootUp() || !isOneOf(types, i.getParsed())) {
-					continue;
-				}
-
-				v = outputReducer.apply(v, (Particle) i.getParsed());
-			}
-		}
-		return v;
-	}
-
-	private static boolean isOneOf(Set<Class<? extends Particle>> bundle, Object instance) {
-		return bundle.stream().anyMatch(v -> v.isInstance(instance));
-	}
-
 }

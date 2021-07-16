@@ -372,16 +372,17 @@ public class StakingUnstakingValidatorsTest {
 			var forkConfig = forks.get(getEpoch());
 			var reParser = forkConfig.getParser();
 			var deserialization = reParser.getSubstateDeserialization();
-			var totalTokens = entryStore.reduceUpParticles(
-				UInt256.ZERO,
-				(i, p) -> {
-					var tokens = (TokensInAccount) p;
-					return i.add(tokens.getAmount());
-				},
-				reParser.getSubstateDeserialization(),
-				TokensInAccount.class
-			);
+
+			final UInt256 totalTokens;
+			try (var cursor = entryStore.openIndexedCursor(deserialization.index(TokensInAccount.class))) {
+				totalTokens = Streams.stream(cursor)
+					.map(s -> {
+						TokensInAccount tokens = deserialize(deserialization, s.getData());
+						return tokens.getAmount();
+					}).reduce(UInt256::add).orElse(UInt256.ZERO);
+			}
 			logger.info("Total tokens: {}", Amount.ofSubunits(totalTokens));
+
 			var index = deserialization.index(ValidatorStakeData.class);
 			final UInt256 totalStaked;
 			try (var stakeCursor = entryStore.openIndexedCursor(index)) {

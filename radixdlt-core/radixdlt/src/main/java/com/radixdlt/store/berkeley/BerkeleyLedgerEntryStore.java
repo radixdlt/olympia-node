@@ -18,14 +18,12 @@
 package com.radixdlt.store.berkeley;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Streams;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
@@ -47,7 +45,6 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.counters.SystemCounters;
@@ -87,12 +84,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.utils.Longs.fromByteArray;
@@ -674,35 +667,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		var cursor = new BerkeleySubstateCursor(dbTxn, indexedSubstatesDatabase, index.getPrefix());
 		cursor.open();
 		return cursor;
-	}
-
-	@Override
-	public <V> V reduceUpParticles(
-		V initial,
-		BiFunction<V, Particle, V> outputReducer,
-		SubstateDeserialization substateDeserialization,
-		Class<? extends Particle>... particleClass
-	) {
-		var typeBytes = Stream.of(particleClass)
-			.map(substateDeserialization::classToByte)
-			.collect(Collectors.toSet());
-		var v = new AtomicReference<>(initial);
-		for (var typeByte : typeBytes) {
-			try (var cursor = new BerkeleySubstateCursor(null, indexedSubstatesDatabase, new byte[] {typeByte})) {
-				cursor.open();
-				Streams.stream(cursor)
-					.map(b -> {
-						try {
-							return substateDeserialization.deserialize(b.getData());
-						} catch (DeserializeException e) {
-							throw new IllegalStateException();
-						}
-					})
-					.forEach(s -> v.set(outputReducer.apply(v.get(), s)));
-			}
-		}
-
-		return v.get();
 	}
 
 	private void upParticle(
