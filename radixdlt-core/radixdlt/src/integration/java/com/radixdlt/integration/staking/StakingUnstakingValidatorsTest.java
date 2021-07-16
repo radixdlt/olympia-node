@@ -332,33 +332,30 @@ public class StakingUnstakingValidatorsTest {
 		public Map<BFTNode, Map<String, String>> getValidators() {
 			var forkConfig = forks.get(getEpoch());
 			var reParser = forkConfig.getParser();
-			Map<BFTNode, Map<String, String>> map = entryStore.reduceUpParticles(
-				new HashMap<>(), (i, p) -> {
-					var stakeData = (ValidatorStakeData) p;
+			var map = new HashMap<BFTNode, Map<String, String>>();
+			var deserialization = reParser.getSubstateDeserialization();
+			try (var cursor = entryStore.openIndexedCursor(deserialization.index(ValidatorStakeData.class))) {
+				while (cursor.hasNext()) {
+					ValidatorStakeData stakeData = deserialize(deserialization, cursor.next().getData());
 					var data = new HashMap<String, String>();
 					data.put("stake", Amount.ofSubunits(stakeData.getAmount()).toString());
 					data.put("rake", Integer.toString(stakeData.getRakePercentage()));
-					i.put(BFTNode.create(stakeData.getValidatorKey()), data);
-					return i;
-				},
-				reParser.getSubstateDeserialization(),
-				ValidatorStakeData.class
-			);
+					map.put(BFTNode.create(stakeData.getValidatorKey()), data);
+				}
+			}
 
-			entryStore.reduceUpParticles(
-				map, (i, p) -> {
-					var flag = (AllowDelegationFlag) p;
+			try (var cursor = entryStore.openIndexedCursor(deserialization.index(AllowDelegationFlag.class))) {
+				while (cursor.hasNext()) {
+					AllowDelegationFlag flag = deserialize(deserialization, cursor.next().getData());
 					var data = new HashMap<String, String>();
 					data.put("allowDelegation", Boolean.toString(flag.allowsDelegation()));
-					i.merge(BFTNode.create(flag.getValidatorKey()), data, (a, b) -> {
+					map.merge(BFTNode.create(flag.getValidatorKey()), data, (a, b) -> {
 						a.putAll(b);
 						return a;
 					});
-					return i;
-				},
-				reParser.getSubstateDeserialization(),
-				AllowDelegationFlag.class
-			);
+				}
+			}
+
 			return map;
 		}
 
@@ -395,25 +392,25 @@ public class StakingUnstakingValidatorsTest {
 					}).reduce(UInt256::add).orElse(UInt256.ZERO);
 			}
 			logger.info("Total staked: {}", Amount.ofSubunits(totalStaked));
-			var totalStakePrepared = entryStore.reduceUpParticles(
-				UInt256.ZERO,
-				(i, p) -> {
-					var tokens = (PreparedStake) p;
-					return i.add(tokens.getAmount());
-				},
-				reParser.getSubstateDeserialization(),
-				PreparedStake.class
-			);
+
+			final UInt256 totalStakePrepared;
+			try (var stakeCursor = entryStore.openIndexedCursor(deserialization.index(PreparedStake.class))) {
+				totalStakePrepared = Streams.stream(stakeCursor)
+					.map(s -> {
+						PreparedStake preparedStake = deserialize(deserialization, s.getData());
+						return preparedStake.getAmount();
+					}).reduce(UInt256::add).orElse(UInt256.ZERO);
+			}
 			logger.info("Total preparing stake: {}", Amount.ofSubunits(totalStakePrepared));
-			var totalStakeExitting = entryStore.reduceUpParticles(
-				UInt256.ZERO,
-				(i, p) -> {
-					var tokens = (ExittingStake) p;
-					return i.add(tokens.getAmount());
-				},
-				reParser.getSubstateDeserialization(),
-				ExittingStake.class
-			);
+
+			final UInt256 totalStakeExitting;
+			try (var cursor = entryStore.openIndexedCursor(deserialization.index(ExittingStake.class))) {
+				totalStakeExitting = Streams.stream(cursor)
+					.map(s -> {
+						ExittingStake exittingStake = deserialize(deserialization, s.getData());
+						return exittingStake.getAmount();
+					}).reduce(UInt256::add).orElse(UInt256.ZERO);
+			}
 			logger.info("Total exitting stake: {}", Amount.ofSubunits(totalStakeExitting));
 			var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
 			logger.info("Total: {}", Amount.ofSubunits(total));
