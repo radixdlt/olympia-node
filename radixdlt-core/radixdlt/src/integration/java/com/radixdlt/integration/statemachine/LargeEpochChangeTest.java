@@ -147,7 +147,7 @@ public class LargeEpochChangeTest {
 		logger.info("max mem: {}MB", rt.maxMemory() / 1024 / 1024);
 
 		int privKeyStart = 2;
-		int numTxnsPerRound = 50;
+		int numTxnsPerRound = 10;
 		int numRounds = 10000;
 
 		createInjector().injectMembers(this);
