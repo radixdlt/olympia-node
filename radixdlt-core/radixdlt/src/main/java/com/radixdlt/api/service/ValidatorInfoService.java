@@ -19,12 +19,19 @@ package com.radixdlt.api.service;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.data.ValidatorInfoDetails;
-import com.radixdlt.api.service.reducer.AllValidators;
-import com.radixdlt.api.service.reducer.AllValidatorsReducer;
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.api.service.reducer.NextEpochValidators;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
@@ -36,7 +43,6 @@ import com.radixdlt.utils.functional.Result.Mapper2;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.api.data.ApiErrors.UNKNOWN_VALIDATOR;
@@ -88,16 +94,31 @@ public class ValidatorInfoService {
 	}
 
 	public List<ValidatorInfoDetails> getAllValidators() {
-		var reducer = new AllValidatorsReducer();
-
-		var validators = entryStore.reduceUpParticles(
-			AllValidators.create(),
-			reducer.outputReducer(),
-			retrieveEpochParser(),
-			asArray(reducer.particleClasses())
+		// TODO: Use NextEpoch action to compute all of this
+		var indices = List.of(
+			SubstateIndex.create(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), ValidatorStakeData.class),
+			SubstateIndex.create(SubstateTypeId.PREPARED_STAKE.id(), PreparedStake.class),
+			SubstateIndex.create(SubstateTypeId.VALIDATOR_OWNER_COPY.id(), ValidatorOwnerCopy.class),
+			SubstateIndex.create(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id(), AllowDelegationFlag.class),
+			SubstateIndex.create(SubstateTypeId.VALIDATOR_META_DATA.id(), ValidatorMetaData.class),
+			SubstateIndex.create(SubstateTypeId.VALIDATOR_RAKE_COPY.id(), ValidatorRakeCopy.class)
 		);
+		var nextEpochValidators = NextEpochValidators.create();
+		var deserialization = retrieveEpochParser();
+		for (var index : indices) {
+			try (var cursor = entryStore.openIndexedCursor(index)) {
+				while (cursor.hasNext()) {
+					try {
+						var p = deserialization.deserialize(cursor.next().getData());
+						nextEpochValidators.process(p);
+					} catch (DeserializeException e) {
+						throw new IllegalStateException();
+					}
+				}
+			}
+		}
 
-		var result = validators.map(ValidatorInfoDetails::create);
+		var result = nextEpochValidators.map(ValidatorInfoDetails::create);
 		result.sort(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed());
 
 		return result;
@@ -107,10 +128,5 @@ public class ValidatorInfoService {
 		return forks.get(inMemorySystemInfo.getCurrentProof().getEpoch())
 			.getParser()
 			.getSubstateDeserialization();
-	}
-
-	@SuppressWarnings("unchecked")
-	private Class<? extends Particle>[] asArray(Set<Class<? extends Particle>> particleClasses) {
-		return particleClasses.toArray(new Class[particleClasses.size()]);
 	}
 }
