@@ -215,7 +215,7 @@ public class MetricsService {
 	}
 
 	private UInt384 getXrdBalance() {
-		return accountInfoService.getMyBalances()
+		return accountInfoService.getMyBalances().entrySet()
 			.stream()
 			.filter(e -> e.getKey().isNativeToken())
 			.map(Map.Entry::getValue)

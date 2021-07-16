@@ -17,12 +17,23 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
+import org.bouncycastle.util.Arrays;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.application.MyBalances;
-import com.radixdlt.application.MyStakedBalance;
 import com.radixdlt.application.MyValidator;
 import com.radixdlt.application.MyValidatorInfo;
 import com.radixdlt.consensus.bft.Self;
@@ -35,27 +46,45 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
 
 public class AccountInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final EngineStore<LedgerAndBFTProof> engineStore;
 	private final ECPublicKey bftKey;
 	private final Addressing addressing;
 	private final ValidatorInfoService validatorInfoService;
+	private final Forks forks;
+	private final InMemorySystemInfo inMemorySystemInfo;
 
 	@Inject
 	public AccountInfoService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
+		EngineStore<LedgerAndBFTProof> engineStore,
 		@Self ECPublicKey bftKey,
 		Addressing addressing,
+		Forks forks,
+		InMemorySystemInfo inMemorySystemInfo, // TODO: This is a hack, remove
 		ValidatorInfoService validatorInfoService
 	) {
 		this.radixEngine = radixEngine;
+		this.engineStore = engineStore;
 		this.bftKey = bftKey;
 		this.addressing = addressing;
+		this.forks = forks;
 		this.validatorInfoService = validatorInfoService;
+		this.inMemorySystemInfo = inMemorySystemInfo;
+	}
+
+	private SubstateDeserialization retrieveEpochParser() {
+		return forks.get(inMemorySystemInfo.getCurrentProof().getEpoch())
+			.getParser()
+			.getSubstateDeserialization();
 	}
 
 	public JSONObject getAccountInfo() {
@@ -131,13 +160,90 @@ public class AccountInfoService {
 		return bftKey;
 	}
 
-	public MyBalances getMyBalances() {
-		return radixEngine.getComputedState(MyBalances.class);
+	public Map<REAddr, UInt384> getMyBalances() {
+		var index = SubstateIndex.create(
+			Arrays.concatenate(new byte[] {SubstateTypeId.TOKENS.id(), 0}, REAddr.ofPubKeyAccount(bftKey).getBytes()),
+			TokensInAccount.class
+		);
+		final Map<REAddr, UInt384> balances = new HashMap<>();
+		var deserializer = retrieveEpochParser();
+		try (var cursor = engineStore.openIndexedCursor(index)) {
+			while (cursor.hasNext()) {
+				try {
+					var tokens = (TokensInAccount) deserializer.deserialize(cursor.next().getData());
+					balances.merge(tokens.getResourceAddr(), UInt384.from(tokens.getAmount()), UInt384::add);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			}
+		}
+
+		return balances;
+	}
+
+	public Map<ECPublicKey, UInt384> getMyPreparedStakes() {
+		var deserializer = retrieveEpochParser();
+
+		var preparedStakeIndex = SubstateIndex.create(SubstateTypeId.PREPARED_STAKE.id(), PreparedStake.class);
+		final Map<ECPublicKey, UInt384> preparedStakes = new HashMap<>();
+		try (var cursor = engineStore.openIndexedCursor(preparedStakeIndex)) {
+			while (cursor.hasNext()) {
+				try {
+					var preparedStake = (PreparedStake) deserializer.deserialize(cursor.next().getData());
+					if (preparedStake.getOwner().equals(REAddr.ofPubKeyAccount(bftKey))) {
+						preparedStakes.merge(preparedStake.getDelegateKey(), UInt384.from(preparedStake.getAmount()), UInt384::add);
+					}
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			}
+		}
+
+		return preparedStakes;
+	}
+
+	public Map<ECPublicKey, UInt384> getMyStakeBalances() {
+		var deserializer = retrieveEpochParser();
+
+		var index = SubstateIndex.create(SubstateTypeId.STAKE_OWNERSHIP.id(), TokensInAccount.class);
+		final Map<ECPublicKey, UInt384> stakeOwnerships = new HashMap<>();
+		try (var cursor = engineStore.openIndexedCursor(index)) {
+			while (cursor.hasNext()) {
+				try {
+					var stakeOwnership = (StakeOwnership) deserializer.deserialize(cursor.next().getData());
+					if (stakeOwnership.getOwner().equals(REAddr.ofPubKeyAccount(bftKey))) {
+						stakeOwnerships.merge(stakeOwnership.getDelegateKey(), UInt384.from(stakeOwnership.getAmount()), UInt384::add);
+					}
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			}
+		}
+
+		final Map<ECPublicKey, UInt384> stakes = new HashMap<>();
+		for (var e : stakeOwnerships.entrySet()) {
+			var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), e.getKey().getCompressedBytes());
+			var raw = engineStore.get(validatorDataKey).orElseThrow();
+			try {
+				var validatorData = (ValidatorStakeData) deserializer.deserialize(raw.getData());
+				var stake = e.getValue().multiply(validatorData.getTotalStake()).divide(validatorData.getTotalOwnership());
+				stakes.put(e.getKey(), stake);
+			} catch (DeserializeException ex) {
+				throw new IllegalStateException(ex);
+			}
+		}
+
+
+		return stakes;
 	}
 
 	private JSONObject getOwnBalance() {
 		var balances = getMyBalances();
-		var stakedBalance = radixEngine.getComputedState(MyStakedBalance.class);
+		var stakedBalance = getMyStakeBalances();
+		var preparedStakes = getMyPreparedStakes();
+
+		var preparedStakesArray = jsonArray();
+		preparedStakes.forEach((publicKey, amount) -> preparedStakesArray.put(constructStakeEntry(publicKey, amount)));
 
 		var stakesArray = jsonArray();
 		stakedBalance.forEach((publicKey, amount) -> stakesArray.put(constructStakeEntry(publicKey, amount)));
@@ -147,14 +253,15 @@ public class AccountInfoService {
 
 		return jsonObject()
 			.put("tokens", balancesArray)
+			.put("prepared_stakes", preparedStakesArray)
 			.put("stakes", stakesArray);
 	}
 
-	private JSONObject constructBalanceEntry(REAddr rri, UInt384 amount) {
-		return jsonObject().put("rri", rri.toString()).put("amount", amount);
+	private JSONObject constructBalanceEntry(REAddr resourceAddress, UInt384 amount) {
+		return jsonObject().put("resource_address", resourceAddress.toString()).put("amount", amount);
 	}
 
-	private JSONObject constructStakeEntry(ECPublicKey publicKey, UInt256 amount) {
+	private JSONObject constructStakeEntry(ECPublicKey publicKey, UInt384 amount) {
 		return jsonObject().put("delegate", addressing.forValidators().of(publicKey)).put("amount", amount);
 	}
 }

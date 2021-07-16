@@ -29,6 +29,7 @@ import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
+import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
@@ -92,6 +93,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 				.sorted(KeyComparator.instance())
 				.forEach(k -> {
 					actions.add(new RegisterValidator(k));
+					actions.add(new UpdateValidatorFee(k, 0));
 					actions.add(new UpdateAllowDelegationFlag(k, true));
 				});
 
