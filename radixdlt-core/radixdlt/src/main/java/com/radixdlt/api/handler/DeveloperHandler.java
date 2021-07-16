@@ -30,6 +30,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
@@ -128,6 +129,19 @@ public final class DeveloperHandler {
 		);
 	}
 
+	private static Pair<String, ECPublicKey> parseAddress(String type, String address) throws DeserializeException {
+		switch (type) {
+			case "account":
+				return AccountAddressing.parseUnknownHrp(address).mapSecond(addr -> addr.publicKey().orElseThrow());
+			case "node":
+				return NodeAddressing.parseUnknownHrp(address);
+			case "validator":
+				return ValidatorAddressing.parseUnknownHrp(address);
+			default:
+				throw new IllegalArgumentException("type must be: [account|node|validator]");
+		}
+	}
+
 	public JSONObject handleParseAddress(JSONObject request) {
 		return withRequiredParameters(
 			request,
@@ -137,20 +151,7 @@ public final class DeveloperHandler {
 				() -> {
 					var type = params.getString("type");
 					var address = params.getString("address");
-					Pair<String, ECPublicKey> pair;
-					switch (type) {
-						case "account":
-							pair = AccountAddressing.parseUnknownHrp(address).mapSecond(addr -> addr.publicKey().orElseThrow());
-							break;
-						case "node":
-							pair = NodeAddressing.parseUnknownHrp(address);
-							break;
-						case "validator":
-							pair = ValidatorAddressing.parseUnknownHrp(address);
-							break;
-						default:
-							throw new IllegalArgumentException("type must be: [account|node|validator]");
-					}
+					var pair = parseAddress(type, address);
 					var hrp = pair.getFirst();
 					var pubKey = pair.getSecond();
 					return jsonObject()
@@ -159,6 +160,19 @@ public final class DeveloperHandler {
 				}
 			)
 		);
+	}
+
+	private static String createAddress(String type, String hrp, ECPublicKey key) {
+		switch (type) {
+			case "account":
+				return AccountAddressing.bech32(hrp).of(REAddr.ofPubKeyAccount(key));
+			case "node":
+				return NodeAddressing.bech32(hrp).of(key);
+			case "validator":
+				return ValidatorAddressing.bech32(hrp).of(key);
+			default:
+				throw new IllegalArgumentException("type must be: [account|node|validator]");
+		}
 	}
 
 	public JSONObject handleCreateAddress(JSONObject request) {
@@ -172,21 +186,7 @@ public final class DeveloperHandler {
 					var publicKeyHex = params.getString("public_key");
 					var publicKey = ECPublicKey.fromHex(publicKeyHex);
 					var hrp = params.getString("hrp");
-					final String address;
-					switch (type) {
-						case "account":
-							address = AccountAddressing.bech32(hrp).of(REAddr.ofPubKeyAccount(publicKey));
-							break;
-						case "node":
-							address = NodeAddressing.bech32(hrp).of(publicKey);
-							break;
-						case "validator":
-							address = ValidatorAddressing.bech32(hrp).of(publicKey);
-							break;
-						default:
-							throw new IllegalArgumentException("type must be: [account|node|validator]");
-					}
-
+					var address = createAddress(type, hrp, publicKey);
 					return jsonObject()
 						.put("address", address);
 				}
