@@ -72,8 +72,7 @@ public final class GenerateUniverses {
 
 	private static final UInt256 DEFAULT_ISSUANCE = Amount.ofTokens(1000000000).toSubunits(); // 1 Billion!
 	private static final UInt256 DEFAULT_STAKE = Amount.ofTokens(100).toSubunits();
-	private static final String mnemomicKeyHex = "022873d192f4186907fbc725109d5679c983a167a4a06768ef7922664a5fc31fe2";
-
+	private static final String mnemomicKeyHex = "0236856ea9fa8c243e45fc94ec27c29cf3f17e3a9e19a410ee4a41f4858e379918";
 
 	public static void main(String[] args) throws Exception {
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
