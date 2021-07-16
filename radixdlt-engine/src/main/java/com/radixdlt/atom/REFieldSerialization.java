@@ -83,13 +83,21 @@ public final class REFieldSerialization {
 				buf.put((byte) 0x1);
 				REFieldSerialization.serializeKey(buf, o);
 			},
-			() -> buf.put((byte) 0x0)
+			() -> {
+				buf.put((byte) 0x0);
+				buf.put(new byte[ECPublicKey.COMPRESSED_BYTES]);
+			}
 		);
 	}
 
 	public static Optional<ECPublicKey> deserializeOptionalKey(ByteBuffer buf) throws DeserializeException {
 		var type = buf.get();
 		if (type == 0) {
+			for (int i = 0; i < ECPublicKey.COMPRESSED_BYTES; i++) {
+				if (buf.get() != 0) {
+					throw new DeserializeException("Empty key must have 0 value.");
+				}
+			}
 			return Optional.empty();
 		} else if (type == 1) {
 			return Optional.of(REFieldSerialization.deserializeKey(buf));
@@ -159,13 +167,20 @@ public final class REFieldSerialization {
 				buf.put((byte) 0x1);
 				buf.putLong(e);
 			},
-			() -> buf.put((byte) 0x0)
+			() -> {
+				buf.put((byte) 0x0);
+				buf.putLong(0);
+			}
 		);
 	}
 
 	public static OptionalLong deserializeOptionalNonNegativeLong(ByteBuffer buf) throws DeserializeException {
 		var type = buf.get();
 		if (type == 0) {
+			var value = REFieldSerialization.deserializeNonNegativeLong(buf);
+			if (value != 0) {
+				throw new DeserializeException("Empty long must be 0 value.");
+			}
 			return OptionalLong.empty();
 		} else if (type == 1) {
 			return OptionalLong.of(REFieldSerialization.deserializeNonNegativeLong(buf));

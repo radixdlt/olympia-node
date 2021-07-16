@@ -18,7 +18,6 @@
 
 package com.radixdlt.constraintmachine.meter;
 
-import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ProcedureKey;
@@ -26,15 +25,17 @@ import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.utils.UInt256;
 
-public final class ResourceFeeMeter implements Meter {
-	private final UInt256 perResourceCreationFee;
+import java.util.Map;
 
-	private ResourceFeeMeter(UInt256 perResourceCreationFee) {
-		this.perResourceCreationFee = perResourceCreationFee;
+public final class UpSubstateFeeMeter implements Meter {
+	private final Map<Class<? extends Particle>, UInt256> perUpSubstateFee;
+
+	private UpSubstateFeeMeter(Map<Class<? extends Particle>, UInt256> perUpSubstateFee) {
+		this.perUpSubstateFee = perUpSubstateFee;
 	}
 
-	public static ResourceFeeMeter create(UInt256 perResourceCreationFee) {
-		return new ResourceFeeMeter(perResourceCreationFee);
+	public static UpSubstateFeeMeter create(Map<Class<? extends Particle>, UInt256> perUpSubstateFee) {
+		return new UpSubstateFeeMeter(perUpSubstateFee);
 	}
 
 	@Override
@@ -42,8 +43,10 @@ public final class ResourceFeeMeter implements Meter {
 		// TODO: Clean this up
 		if (procedureKey.opSignature().op() == REOp.UP && param instanceof Particle) {
 			var substate = (Particle) param;
-			if (substate instanceof TokenResource) {
-				context.charge(perResourceCreationFee);
+			var c = substate.getClass();
+			var fee = perUpSubstateFee.get(c);
+			if (fee != null) {
+				context.charge(fee);
 			}
 		}
 	}
