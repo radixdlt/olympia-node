@@ -28,10 +28,6 @@ public final class ValidatorMetaData implements ValidatorData {
 	private final String name;
 	private final String url;
 
-	public ValidatorMetaData(ECPublicKey validatorKey) {
-		this(validatorKey, "", "");
-	}
-
 	public ValidatorMetaData(
 		ECPublicKey validatorKey,
 		String name,
@@ -40,6 +36,10 @@ public final class ValidatorMetaData implements ValidatorData {
 		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.name = Objects.requireNonNull(name);
 		this.url = REFieldSerialization.requireValidUrl(url);
+	}
+
+	public static ValidatorMetaData createVirtual(ECPublicKey validatorKey) {
+		return new ValidatorMetaData(validatorKey, "", "");
 	}
 
 	@Override

@@ -84,7 +84,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				},
 				buf -> REFieldSerialization.deserializeKey(buf),
 				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-				k -> new ValidatorMetaData((ECPublicKey) k, "", "")
+				k -> ValidatorMetaData.createVirtual((ECPublicKey) k)
 			)
 		);
 

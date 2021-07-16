@@ -47,6 +47,10 @@ public final class ValidatorRegisteredCopy implements ValidatorData {
 		this.isRegistered = isRegistered;
 	}
 
+	public static ValidatorRegisteredCopy createVirtual(ECPublicKey validatorKey) {
+		return new ValidatorRegisteredCopy(validatorKey, false);
+	}
+
 	public OptionalLong getEpochUpdate() {
 		return epochUpdate;
 	}

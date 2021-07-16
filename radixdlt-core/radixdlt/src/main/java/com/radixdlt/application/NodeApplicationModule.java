@@ -44,11 +44,6 @@ public final class NodeApplicationModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(MempoolFiller.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
-			.addBinding().to(MyValidatorStakesReducer.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
-			.addBinding().to(MyValidatorInfoReducer.class).in(Scopes.SINGLETON);
-
 		bind(NodeApplication.class).in(Scopes.SINGLETON);
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)

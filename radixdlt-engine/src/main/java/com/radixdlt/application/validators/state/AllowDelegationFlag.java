@@ -31,6 +31,10 @@ public final class AllowDelegationFlag implements ValidatorData {
 		this.allowDelegation = allowDelegation;
 	}
 
+	public static AllowDelegationFlag createVirtual(ECPublicKey validatorKey) {
+		return new AllowDelegationFlag(validatorKey, false);
+	}
+
 	@Override
 	public ECPublicKey getValidatorKey() {
 		return validatorKey;

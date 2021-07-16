@@ -21,6 +21,11 @@ import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
@@ -29,20 +34,18 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.radixdlt.utils.Pair;
 import org.bouncycastle.util.Arrays;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.application.MyValidator;
-import com.radixdlt.application.MyValidatorInfo;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
@@ -94,62 +97,145 @@ public class AccountInfoService {
 	}
 
 	public JSONObject getValidatorInfo() {
-		var validator = validatorInfoService.getAllValidators().stream()
-			.filter(validatorInfoDetails -> validatorInfoDetails.getValidatorKey().equals(bftKey))
-			.findAny();
-
-		var validatorStakes = getValidatorStakes();
-
-		var result = jsonObject()
+		var metadata = getMyValidatorMetadata();
+		var stakeData = getStakeData();
+		var allowDelegationFlag = getMyValidatorDelegationFlag();
+		var validatorRakeCopy = getMyNextValidatorFee();
+		var nextEpochRegisteredFlag = getMyNextEpochRegisteredFlag().isRegistered();
+		var nextEpochOwner = getMyNextEpochValidatorOwner().getOwner();
+		return jsonObject()
+			.put("name", metadata.getName())
+			.put("url", metadata.getUrl())
 			.put("address", getValidatorAddress())
-			.put("totalStake", validatorStakes.getFirst())
-			.put("stakes", validatorStakes.getSecond());
-
-		validator.ifPresentOrElse(
-			details -> result
-				.put("name", details.getName())
-				.put("url", details.getInfoUrl())
-				.put("registered", details.isRegistered())
-				.put("owner", addressing.forAccounts().of(details.getOwner()))
-				.put("validatorFee", (double) details.getPercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "")
-				.put("allowDelegation", details.isExternalStakesAllowed()),
-			() -> result
-				.put("name", "")
-				.put("url", "")
-				.put("registered", false)
-				.put("owner", addressing.forAccounts().of(REAddr.ofPubKeyAccount(bftKey)))
-				.put("validatorFee", 0.0 + "")
-				.put("allowDelegation", true)
-		);
-
-		return result;
+			.put("registered", nextEpochRegisteredFlag)
+			.put("owner", addressing.forAccounts().of(nextEpochOwner))
+			.put("validatorFee", (double) validatorRakeCopy.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "")
+			.put("totalStake", stakeData.getFirst().getTotalStake())
+			.put("allowDelegation", allowDelegationFlag.allowsDelegation())
+			.put("stakes", stakeData.getSecond());
 	}
 
 	public String getValidatorAddress() {
 		return addressing.forValidators().of(bftKey);
 	}
 
-	public MyValidatorInfo getValidatorInfoDetails() {
-		return radixEngine.getComputedState(MyValidatorInfo.class);
+	public AllowDelegationFlag getMyValidatorDelegationFlag() {
+		var deserializer = retrieveEpochParser();
+		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id(), bftKey.getCompressedBytes());
+		return engineStore.get(validatorDataKey)
+			.map(raw -> {
+				try {
+					return (AllowDelegationFlag) deserializer.deserialize(raw.getData());
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
+			.orElse(AllowDelegationFlag.createVirtual(bftKey));
 	}
 
-	public MyValidator getValidatorStakeData() {
-		return radixEngine.getComputedState(MyValidator.class);
+	public ValidatorRegisteredCopy getMyNextEpochRegisteredFlag() {
+		var deserializer = retrieveEpochParser();
+		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(), bftKey.getCompressedBytes());
+		return engineStore.get(validatorDataKey)
+			.map(raw -> {
+				try {
+					return (ValidatorRegisteredCopy) deserializer.deserialize(raw.getData());
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
+			.orElse(ValidatorRegisteredCopy.createVirtual(bftKey));
 	}
 
-	private Pair<UInt256, JSONArray> getValidatorStakes() {
-		var stakeReceived = getValidatorStakeData();
+	public ValidatorRakeCopy getMyNextValidatorFee() {
+		var deserializer = retrieveEpochParser();
+		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_RAKE_COPY.id(), bftKey.getCompressedBytes());
+		return engineStore.get(validatorDataKey)
+			.map(raw -> {
+				try {
+					return (ValidatorRakeCopy) deserializer.deserialize(raw.getData());
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
+			.orElse(ValidatorRakeCopy.createVirtual(bftKey));
+	}
+
+	public ValidatorOwnerCopy getMyNextEpochValidatorOwner() {
+		var deserializer = retrieveEpochParser();
+		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_OWNER_COPY.id(), bftKey.getCompressedBytes());
+		return engineStore.get(validatorDataKey)
+			.map(raw -> {
+				try {
+					return (ValidatorOwnerCopy) deserializer.deserialize(raw.getData());
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
+			.orElse(ValidatorOwnerCopy.createVirtual(bftKey));
+	}
+
+	public ValidatorMetaData getMyValidatorMetadata() {
+		var deserializer = retrieveEpochParser();
+		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_META_DATA.id(), bftKey.getCompressedBytes());
+		return engineStore.get(validatorDataKey)
+			.map(raw -> {
+				try {
+					return (ValidatorMetaData) deserializer.deserialize(raw.getData());
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
+			.orElse(ValidatorMetaData.createVirtual(bftKey));
+	}
+
+	public UInt256 getTotalStake() {
+		return getMyValidator().getTotalStake();
+	}
+
+	public ValidatorStakeData getMyValidator() {
+		var deserializer = retrieveEpochParser();
+		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), bftKey.getCompressedBytes());
+		return engineStore.get(validatorDataKey)
+			.map(raw -> {
+				try {
+					return (ValidatorStakeData) deserializer.deserialize(raw.getData());
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			})
+			.orElse(ValidatorStakeData.createVirtual(bftKey));
+	}
+
+	private Pair<ValidatorStakeData, JSONArray> getStakeData() {
+		var deserializer = retrieveEpochParser();
+		var myValidator = getMyValidator();
+
+		var index = SubstateIndex.create(
+			Arrays.concatenate(new byte[] {SubstateTypeId.STAKE_OWNERSHIP.id(), 0}, bftKey.getCompressedBytes()),
+			StakeOwnership.class
+		);
+		final Map<REAddr, UInt384> stakeReceived = new HashMap<>();
+		try (var cursor = engineStore.openIndexedCursor(index)) {
+			while (cursor.hasNext()) {
+				try {
+					var ownership = (StakeOwnership) deserializer.deserialize(cursor.next().getData());
+					stakeReceived.merge(ownership.getOwner(), UInt384.from(ownership.getAmount()), UInt384::add);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			}
+		}
+
 		var stakeFrom = jsonArray();
-
 		stakeReceived.forEach((address, amt) -> {
 			stakeFrom.put(
 				jsonObject()
 					.put("delegator", addressing.forAccounts().of(address))
-					.put("amount", amt)
+					.put("amount", amt.multiply(myValidator.getTotalStake()).divide(myValidator.getTotalOwnership()))
 			);
 		});
-
-		return Pair.of(stakeReceived.getTotalStake(), stakeFrom);
+		return Pair.of(myValidator, stakeFrom);
 	}
 
 	public String getOwnAddress() {

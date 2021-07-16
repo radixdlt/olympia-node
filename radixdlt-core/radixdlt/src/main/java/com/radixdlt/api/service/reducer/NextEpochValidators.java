@@ -114,7 +114,7 @@ public final class NextEpochValidators {
 	}
 
 	public ValidatorMetaData getMetadata(ECPublicKey validatorKey) {
-		return ofNullable(metadataMap.get(validatorKey)).orElse(new ValidatorMetaData(validatorKey));
+		return ofNullable(metadataMap.get(validatorKey)).orElse(ValidatorMetaData.createVirtual(validatorKey));
 	}
 
 	public REAddr getOwner(ECPublicKey validatorKey) {

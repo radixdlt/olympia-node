@@ -96,7 +96,7 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 			},
 			buf -> REFieldSerialization.deserializeKey(buf),
 			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-			k -> new ValidatorOwnerCopy(OptionalLong.empty(), (ECPublicKey) k, REAddr.ofPubKeyAccount((ECPublicKey) k))
+			k -> ValidatorOwnerCopy.createVirtual((ECPublicKey) k)
 		));
 
 		os.procedure(new DownProcedure<>(
