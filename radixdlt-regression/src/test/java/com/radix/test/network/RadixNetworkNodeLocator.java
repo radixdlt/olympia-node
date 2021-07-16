@@ -1,7 +1,6 @@
 package com.radix.test.network;
 
 import com.radix.test.docker.DockerClient;
-import com.radix.test.docker.LocalDockerClient;
 import com.radix.test.network.client.RadixHttpClient;
 import com.radixdlt.application.system.construction.FeeReserveNotEnoughBalanceException;
 import com.radixdlt.client.lib.api.AccountAddress;
@@ -31,7 +30,6 @@ public class RadixNetworkNodeLocator {
 
     public static List<RadixNode> locateNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient,
                                               DockerClient dockerClient) {
-        ((LocalDockerClient) dockerClient).printAllContainers();
         var peers = configuration.connect().network().peers();
         var peersSizePlusOne = peers.size() + 1;
         switch (configuration.getType()) {
@@ -58,9 +56,10 @@ public class RadixNetworkNodeLocator {
     }
 
     /**
-     * TODO explain
+     * Tries to figure out which endpoints are available (e.g. /account, /construction) and also tries to use the
+     * docker client to establish a connection to this node's container.
      * <p>
-     * TODO handle exceptions be    tter. Right now, the test will fail is anything goes wrong here
+     * TODO handle exceptions better. Right now, the test will fail is anything goes wrong here
      */
     private static RadixNode figureOutNode(String jsonRpcRootUrl, int primaryPort, int secondaryPort,
                                            String expectedContainerName, RadixHttpClient httpClient, DockerClient dockerClient) {

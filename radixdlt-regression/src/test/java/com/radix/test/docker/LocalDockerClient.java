@@ -37,12 +37,6 @@ public class LocalDockerClient implements DockerClient {
         dockerClient.pingCmd().exec();
     }
 
-    public void printAllContainers() {
-        dockerClient.listContainersCmd().withShowAll(true).exec().forEach(container -> {
-            logger.info(container.toString());
-        });
-    }
-
     public String runShellCommandAndGetOutput(String containerId, String... commands) {
         var output = new ByteArrayOutputStream();
         var error = new ByteArrayOutputStream();
