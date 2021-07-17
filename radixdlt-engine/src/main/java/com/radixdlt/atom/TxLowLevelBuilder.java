@@ -142,10 +142,9 @@ public final class TxLowLevelBuilder {
 		} else if (particle instanceof VirtualParent) {
 			var p = (VirtualParent) particle;
 			var typeByte = p.getData()[0];
-			if (typeByte != SubstateTypeId.UNCLAIMED_READDR.id()) {
-				var k = SystemMapKey.ofValidatorDataParent(typeByte);
-				this.localMapValues.put(k, localSubstate);
-			}
+			var k = typeByte == SubstateTypeId.UNCLAIMED_READDR.id()
+				? SystemMapKey.ofSystem(typeByte) : SystemMapKey.ofValidatorDataParent(typeByte);
+			this.localMapValues.put(k, localSubstate);
 		}
 
 		this.localUpParticles.put(upParticleCount, localSubstate);

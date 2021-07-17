@@ -22,7 +22,6 @@ import com.google.common.collect.Iterators;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.scrypt.Syscall;
-import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
@@ -37,7 +36,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
@@ -186,29 +184,6 @@ public final class TxBuilder {
 		}
 	}
 
-	private <T extends Particle> Optional<LocalSubstate> findLocalSubstate(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate
-	) {
-		return lowLevelBuilder.localUpSubstate().stream()
-			.filter(l -> particleClass.isInstance(l.getParticle()))
-			.filter(l -> particlePredicate.test((T) l.getParticle()))
-			.findFirst();
-	}
-
-	private <T extends Particle> Optional<Substate> findRemoteSubstate(
-		Class<T> particleClass,
-		Predicate<T> particlePredicate
-	) {
-		try (var cursor = createRemoteSubstateCursor(particleClass)) {
-			return iteratorToStream(cursor)
-				.map(this::deserialize)
-				.filter(l -> particleClass.isInstance(l.getParticle()))
-				.filter(l -> particlePredicate.test((T) l.getParticle()))
-				.findFirst();
-		}
-	}
-
 	public <T extends Particle> T find(Class<T> substateClass, Object key) throws TxBuilderException {
 		var keyBytes = serialization.serializeKey(substateClass, key);
 		var typeByte = deserialization.classToByte(substateClass);
@@ -230,7 +205,6 @@ public final class TxBuilder {
 			return serialization.mapVirtual(substateClass, key);
 		}
 	}
-
 
 	private void virtualReadDownInternal(byte typeByte, byte[] keyBytes, boolean down) {
 		var mapKey = SystemMapKey.ofValidatorDataParent(typeByte);
@@ -333,18 +307,17 @@ public final class TxBuilder {
 		}
 	}
 
-	// TODO: check if address is already claimed
-	public UnclaimedREAddr downREAddr(REAddr addr) throws TxBuilderException {
+	public UnclaimedREAddr downREAddr(REAddr addr) {
 		var keyBytes = serialization.serializeKey(UnclaimedREAddr.class, addr);
 		var typeByte = deserialization.classToByte(UnclaimedREAddr.class);
-		var localParent = findLocalSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte);
+		var mapKey = SystemMapKey.ofSystem(typeByte);
+		var localParent = lowLevelBuilder.get(mapKey);
 		if (localParent.isPresent()) {
 			lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), keyBytes);
 		} else {
-			var parent = findRemoteSubstate(VirtualParent.class, p -> p.getData()[0] == typeByte)
-				.orElseThrow(() -> new TxBuilderException("Can't find parent with typeByte " + Bytes.toHexString(typeByte)));
-
-			lowLevelBuilder.virtualDown(parent.getId(), keyBytes);
+			var parent = remoteSubstate.get(mapKey).orElseThrow();
+			var substateId = SubstateId.fromBytes(parent.getId());
+			lowLevelBuilder.virtualDown(substateId, keyBytes);
 		}
 		return serialization.mapVirtual(UnclaimedREAddr.class, addr);
 	}

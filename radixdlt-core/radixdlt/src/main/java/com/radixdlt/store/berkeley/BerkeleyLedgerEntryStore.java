@@ -738,10 +738,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			} else if (stateUpdate.getParsed() instanceof VirtualParent) {
 				var p = (VirtualParent) stateUpdate.getParsed();
 				var typeByte = p.getData()[0];
-				if (typeByte != SubstateTypeId.UNCLAIMED_READDR.id()) {
-					var mapKey = SystemMapKey.ofValidatorDataParent(typeByte);
-					insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
-				}
+				var mapKey = typeByte == SubstateTypeId.UNCLAIMED_READDR.id()
+					? SystemMapKey.ofSystem(typeByte) : SystemMapKey.ofValidatorDataParent(typeByte);
+				insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
 			} else if (stateUpdate.getParsed() instanceof ValidatorData) {
 				var p = (ValidatorData) stateUpdate.getParsed();
 				var mapKey = SystemMapKey.ofValidatorData(

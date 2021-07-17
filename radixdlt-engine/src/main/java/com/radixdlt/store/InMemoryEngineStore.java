@@ -66,10 +66,9 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 							} else if (update.getParsed() instanceof VirtualParent) {
 								var p = (VirtualParent) update.getParsed();
 								var typeByte = p.getData()[0];
-								if (typeByte != SubstateTypeId.UNCLAIMED_READDR.id()) {
-									var mapKey = SystemMapKey.ofValidatorDataParent(typeByte);
-									maps.put(mapKey, update.getRawSubstateBytes());
-								}
+								var mapKey = typeByte == SubstateTypeId.UNCLAIMED_READDR.id()
+									? SystemMapKey.ofSystem(typeByte) : SystemMapKey.ofValidatorDataParent(typeByte);
+								maps.put(mapKey, update.getRawSubstateBytes());
 							} else if (update.getParsed() instanceof ValidatorData) {
 								var data = (ValidatorData) update.getParsed();
 								var mapKey = SystemMapKey.ofValidatorData(
