@@ -54,7 +54,7 @@ public class ReadIndexProcedure<D extends Particle, S extends ReducerState> impl
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,
-		ImmutableAddrs immutableAddrs,
+		Resources immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
 		return readReducer.reduce((S) reducerState, (IndexedSubstateIterator<D>) o, context, immutableAddrs);

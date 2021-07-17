@@ -51,7 +51,7 @@ public class EndProcedure<S extends ReducerState> implements Procedure {
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,
-		ImmutableAddrs immutableAddrs,
+		Resources immutableAddrs,
 		ExecutionContext executionContext
 	) throws ProcedureException {
 		try {

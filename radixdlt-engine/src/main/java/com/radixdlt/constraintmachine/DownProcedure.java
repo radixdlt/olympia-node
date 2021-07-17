@@ -53,7 +53,7 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,
-		ImmutableAddrs immutableAddrs,
+		Resources immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
 		try {

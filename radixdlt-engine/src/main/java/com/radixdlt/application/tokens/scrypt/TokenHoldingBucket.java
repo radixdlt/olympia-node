@@ -18,12 +18,12 @@
 
 package com.radixdlt.application.tokens.scrypt;
 
-import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
+import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.constraintmachine.ImmutableAddrs;
+import com.radixdlt.constraintmachine.Resources;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
 import com.radixdlt.identifiers.REAddr;
@@ -62,20 +62,12 @@ public final class TokenHoldingBucket implements ReducerState {
 		return p.getFirst();
 	}
 
-	public void destroy(ExecutionContext c, ImmutableAddrs r) throws ResourceAllocationAndDestructionException, ProcedureException {
+	public void destroy(ExecutionContext c, Resources r) throws ResourceAllocationAndDestructionException, NotAResourceException, ProcedureException {
 		if (!tokens.isZero()) {
 			c.verifyCanAllocAndDestroyResources();
 
-			var p = r.loadAddr(tokens.getResourceAddr());
-			if (p.isEmpty()) {
-				throw new ProcedureException("Token does not exist.");
-			}
-			var particle = p.get();
-			if (!(particle instanceof TokenResource)) {
-				throw new ProcedureException("Rri is not a token");
-			}
-			var tokenDef = (TokenResource) particle;
-			if (!tokenDef.isMutable()) {
+			var tokenResource = r.loadResource(tokens.getResourceAddr());
+			if (!tokenResource.isMutable()) {
 				throw new ProcedureException("Can only burn mutable tokens.");
 			}
 		}

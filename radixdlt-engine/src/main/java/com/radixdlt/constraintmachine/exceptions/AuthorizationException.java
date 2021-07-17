@@ -19,6 +19,11 @@
 package com.radixdlt.constraintmachine.exceptions;
 
 public class AuthorizationException extends Exception {
+
+	public AuthorizationException(Exception cause) {
+		super(cause);
+	}
+
 	public AuthorizationException(String msg) {
 		super(msg);
 	}

@@ -28,6 +28,7 @@ import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.LocalSubstateNotFoundException;
 import com.radixdlt.constraintmachine.exceptions.MeterException;
 import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
+import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
@@ -89,6 +90,7 @@ public final class ConstraintMachine {
 	}
 
 	private static final class CMValidationState {
+		private final Map<REAddr, TokenResource> localResources = new HashMap<>();
 		private final Map<Integer, Pair<Substate, Supplier<ByteBuffer>>> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
 		private final CMStore store;
@@ -106,24 +108,29 @@ public final class ConstraintMachine {
 			this.store = store;
 		}
 
-		public ImmutableAddrs immutableAddrs() {
-			return addr ->
-				localUpParticles.values().stream()
-					.map(Pair::getFirst)
-					.map(Substate::getParticle)
-					.filter(TokenResource.class::isInstance)
-					.map(TokenResource.class::cast)
-					.filter(p -> p.getAddr().equals(addr))
-					.findFirst()
-					.map(Particle.class::cast)
-					.or(() ->
-						store.loadResource(addr).map(b -> {
-							try {
-								return deserialization.deserialize(b);
-							} catch (DeserializeException e) {
-								throw new IllegalStateException(e);
-							}
-						}));
+		public Resources resources() {
+			return addr -> {
+				var local = localResources.get(addr);
+				if (local != null) {
+					return local;
+				}
+
+				var p = store.loadResource(addr).map(b -> {
+					try {
+						return deserialization.deserialize(b);
+					} catch (DeserializeException e) {
+						throw new IllegalStateException(e);
+					}
+				});
+				if (p.isEmpty()) {
+					throw new NotAResourceException(addr);
+				}
+				var substate = p.get();
+				if (!(substate instanceof TokenResource)) {
+					throw new NotAResourceException(addr);
+				}
+				return (TokenResource) substate;
+			};
 		}
 
 		public Optional<Particle> loadUpParticle(SubstateId substateId) {
@@ -143,6 +150,10 @@ public final class ConstraintMachine {
 
 		public void bootUp(Substate substate, Supplier<ByteBuffer> buffer) {
 			localUpParticles.put(bootupCount, Pair.of(substate, buffer));
+			if (substate.getParticle() instanceof TokenResource) {
+				var resource = (TokenResource) substate.getParticle();
+				localResources.put(resource.getAddr(), resource);
+			}
 			bootupCount++;
 		}
 
@@ -258,7 +269,7 @@ public final class ConstraintMachine {
 		Procedure procedure,
 		Object procedureParam,
 		ReducerState reducerState,
-		ImmutableAddrs immutableAddrs,
+		Resources immutableAddrs,
 		ExecutionContext context
 	) throws SignedSystemException, InvalidPermissionException, AuthorizationException, MeterException, ProcedureException {
 		// System permissions don't require additional authorization
@@ -276,7 +287,11 @@ public final class ConstraintMachine {
 				throw new MeterException(e);
 			}
 
-			authorization.authorizer().verify(immutableAddrs, context);
+			try {
+				authorization.authorizer().verify(immutableAddrs, context);
+			} catch (Exception e) {
+				throw new AuthorizationException(e);
+			}
 		}
 
 		return procedure.call(procedureParam, reducerState, immutableAddrs, context).state();
@@ -297,7 +312,7 @@ public final class ConstraintMachine {
 		int instIndex = 0;
 		var expectEnd = false;
 		ReducerState reducerState = null;
-		var readableAddrs = validationState.immutableAddrs();
+		var readableAddrs = validationState.resources();
 		var groupedStateUpdates = new ArrayList<List<REStateUpdate>>();
 		var stateUpdates = new ArrayList<REStateUpdate>();
 

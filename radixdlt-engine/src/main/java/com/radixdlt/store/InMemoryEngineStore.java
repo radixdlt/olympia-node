@@ -47,7 +47,7 @@ import java.util.function.Supplier;
 public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	private final Object lock = new Object();
 	private final Map<SubstateId, REStateUpdate> storedState = new HashMap<>();
-	private final Map<REAddr, Supplier<ByteBuffer>> addrParticles = new HashMap<>();
+	private final Map<REAddr, Supplier<ByteBuffer>> resources = new HashMap<>();
 	private final Map<SystemMapKey, RawSubstateBytes> maps = new HashMap<>();
 
 	@Override
@@ -63,7 +63,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 						if (update.isBootUp()) {
 							if (update.getParsed() instanceof TokenResource) {
 								var tokenDef = (TokenResource) update.getParsed();
-								addrParticles.put(tokenDef.getAddr(), update::getStateBuf);
+								resources.put(tokenDef.getAddr(), update::getStateBuf);
 							} else if (update.getParsed() instanceof VirtualParent) {
 								var p = (VirtualParent) update.getParsed();
 								var typeByte = p.getData()[0];
@@ -142,7 +142,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			@Override
 			public Optional<ByteBuffer> loadResource(REAddr addr) {
 				synchronized (lock) {
-					var supplier = addrParticles.get(addr);
+					var supplier = resources.get(addr);
 					return supplier == null ? Optional.empty() : Optional.of(supplier.get());
 				}
 			}

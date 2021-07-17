@@ -25,6 +25,6 @@ public interface IndexedReducer<D extends Particle, S extends ReducerState> {
 		S reducerState,
 		IndexedSubstateIterator<D> inputState,
 		ExecutionContext context,
-		ImmutableAddrs immutableAddrs
+		Resources immutableAddrs
 	) throws ProcedureException;
 }

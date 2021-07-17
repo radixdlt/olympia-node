@@ -26,7 +26,7 @@ public interface Procedure {
 	ReducerResult call(
 		Object o,
 		ReducerState reducerState,
-		ImmutableAddrs immutableAddrs,
+		Resources immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException;
 }

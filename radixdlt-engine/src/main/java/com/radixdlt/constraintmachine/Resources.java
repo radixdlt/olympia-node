@@ -18,8 +18,10 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
+import com.radixdlt.identifiers.REAddr;
 
-public interface ReadReducer<I extends Particle, S extends ReducerState> {
-	ReducerResult reduce(S reducerState, I readSubstate, Resources immutableAddrs) throws ProcedureException;
+public interface Resources {
+	TokenResource loadResource(REAddr addr) throws NotAResourceException;
 }

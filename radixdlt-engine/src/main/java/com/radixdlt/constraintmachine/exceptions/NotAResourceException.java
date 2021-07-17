@@ -16,12 +16,12 @@
  *
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.constraintmachine.exceptions;
 
 import com.radixdlt.identifiers.REAddr;
 
-import java.util.Optional;
-
-public interface ImmutableAddrs {
-	Optional<Particle> loadAddr(REAddr addr);
+public class NotAResourceException extends Exception {
+	public NotAResourceException(REAddr addr) {
+		super(addr + " is not a resource");
+	}
 }
