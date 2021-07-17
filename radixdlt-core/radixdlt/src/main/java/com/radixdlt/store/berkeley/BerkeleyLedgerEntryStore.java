@@ -22,6 +22,7 @@ import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
@@ -206,8 +207,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		try {
 			var result = consumer.start(new EngineStoreInTransaction<>() {
 				@Override
-				public void storeTxn(Txn txn, List<REStateUpdate> stateUpdates) {
-					BerkeleyLedgerEntryStore.this.storeTxn(dbTxn, txn, stateUpdates);
+				public void storeTxn(REProcessedTxn txn) {
+					BerkeleyLedgerEntryStore.this.storeTxn(dbTxn, txn);
 				}
 
 				@Override
@@ -280,8 +281,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return Optional.of(substateBytes);
 	}
 
-	private void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
-		withTime(() -> doStore(dbTxn, txn, stateUpdates), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
+	private void storeTxn(Transaction dbTxn, REProcessedTxn txn) {
+		withTime(() -> doStore(dbTxn, txn), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
 
 	private void storeMetadata(Transaction dbTxn, LedgerAndBFTProof ledgerAndBFTProof) {
@@ -775,11 +776,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private void doStore(
-		com.sleepycat.je.Transaction transaction,
-		Txn txn,
-		List<REStateUpdate> stateUpdates
-	) {
+	private void doStore(com.sleepycat.je.Transaction transaction, REProcessedTxn txn) {
 		final long stateVersion;
 		try (var cursor = txnDatabase.openCursor(transaction, null)) {
 			var key = entry();
@@ -792,9 +789,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 
 		try {
-			var aid = txn.getId();
+			var aid = txn.getTxn().getId();
 			// Write atom data as soon as possible
-			var offset = txnLog.write(txn.getPayload());
+			var offset = txnLog.write(txn.getTxn().getPayload());
 			// Store atom indices
 			var pKey = toPKey(stateVersion);
 			var atomPosData = entry(offset, aid);
@@ -806,23 +803,27 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
 
 			var elapsed = Stopwatch.createStarted();
-			for (int i = 0; i < stateUpdates.size(); i++) {
-				if (i > 0 && i % 100000 == 0) {
-					log.warn(
-						"engine_store large_state_update: {}/{} elapsed_time={}s",
-						i,
-						stateUpdates.size(),
-						elapsed.elapsed(TimeUnit.SECONDS)
-					);
-				}
-				var stateUpdate = stateUpdates.get(i);
-				try {
-					this.executeStateUpdate(transaction, stateUpdate);
-				} catch (Exception e) {
-					if (transaction != null) {
-						transaction.abort();
+			int totalCount = txn.getGroupedStateUpdates().stream().mapToInt(List::size).reduce(Integer::sum).orElse(0);
+			int count = 0;
+			for (var group : txn.getGroupedStateUpdates()) {
+				for (var stateUpdate : group) {
+					if (count > 0 && count % 100000 == 0) {
+						log.warn(
+							"engine_store large_state_update: {}/{} elapsed_time={}s",
+							count,
+							totalCount,
+							elapsed.elapsed(TimeUnit.SECONDS)
+						);
 					}
-					throw new BerkeleyStoreException("Unable to store transaction, failed on stateUpdate " + i + ": " + stateUpdate, e);
+					try {
+						this.executeStateUpdate(transaction, stateUpdate);
+						count++;
+					} catch (Exception e) {
+						if (transaction != null) {
+							transaction.abort();
+						}
+						throw new BerkeleyStoreException("Unable to store transaction, failed on stateUpdate " + count + ": " + stateUpdate, e);
+					}
 				}
 			}
 		} catch (Exception e) {

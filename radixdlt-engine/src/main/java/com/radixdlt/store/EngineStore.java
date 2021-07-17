@@ -18,18 +18,15 @@
 package com.radixdlt.store;
 
 import com.radixdlt.atom.SubstateStore;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.REStateUpdate;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.RadixEngineException;
-
-import java.util.List;
 
 public interface EngineStore<M> extends SubstateStore {
 	/**
 	 * For verification
 	 */
 	interface EngineStoreInTransaction<M> extends CMStore {
-		void storeTxn(Txn txn, List<REStateUpdate> instructions);
+		void storeTxn(REProcessedTxn txn);
 		void storeMetadata(M metadata);
 	}
 	interface TransactionEngineStoreConsumer<M, R> {

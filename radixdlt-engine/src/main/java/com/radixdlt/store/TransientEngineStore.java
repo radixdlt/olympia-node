@@ -3,6 +3,7 @@ package com.radixdlt.store;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
@@ -31,8 +32,8 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 			transientStore.transaction(tStore ->
 				consumer.start(new EngineStoreInTransaction<M>() {
 					@Override
-					public void storeTxn(Txn txn, List<REStateUpdate> instructions) {
-						tStore.storeTxn(txn, instructions);
+					public void storeTxn(REProcessedTxn txn) {
+						tStore.storeTxn(txn);
 					}
 
 					@Override

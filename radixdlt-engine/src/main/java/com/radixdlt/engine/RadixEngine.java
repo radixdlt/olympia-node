@@ -279,9 +279,9 @@ public final class RadixEngine<M> {
 
 			verificationStopwatch.start();
 			var context = new ExecutionContext(txn, permissionLevel, sigsLeft, Amount.ofTokens(200).toSubunits());
-			final REProcessedTxn parsedTxn;
+			final REProcessedTxn processedTxn;
 			try {
-				parsedTxn = this.verify(engineStoreInTransaction, txn, context);
+				processedTxn = this.verify(engineStoreInTransaction, txn, context);
 			} catch (TxnParseException | AuthorizationException | ConstraintMachineException e) {
 				throw new RadixEngineException(i, txns.size(), txn, e);
 			}
@@ -292,14 +292,14 @@ public final class RadixEngine<M> {
 
 			storageStopwatch.start();
 			try {
-				engineStoreInTransaction.storeTxn(txn, parsedTxn.stateUpdates().collect(Collectors.toList()));
+				engineStoreInTransaction.storeTxn(processedTxn);
 			} catch (Exception e) {
-				logger.error("Store of atom failed: " + parsedTxn, e);
+				logger.error("Store of atom failed: " + processedTxn, e);
 				throw e;
 			}
 			storageStopwatch.stop();
 
-			processedTxns.add(parsedTxn);
+			processedTxns.add(processedTxn);
 		}
 
 		try {

@@ -24,8 +24,8 @@ import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
@@ -54,10 +54,11 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	public <R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException {
 		return consumer.start(new EngineStoreInTransaction<M>() {
 			@Override
-			public void storeTxn(Txn txn, List<REStateUpdate> stateUpdates) {
+			public void storeTxn(REProcessedTxn txn) {
 				synchronized (lock) {
-					stateUpdates.forEach(i -> storedState.put(i.getId(), i));
-					stateUpdates.forEach(update -> {
+					txn.stateUpdates().forEach(update -> {
+						storedState.put(update.getId(), update);
+
 						// FIXME: Superhack
 						if (update.isBootUp()) {
 							if (update.getParsed() instanceof TokenResource) {
