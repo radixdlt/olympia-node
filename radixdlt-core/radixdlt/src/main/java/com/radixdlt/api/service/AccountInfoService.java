@@ -27,13 +27,9 @@ import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.utils.Pair;
 import org.bouncycastle.util.Arrays;
 import org.json.JSONArray;
@@ -56,31 +52,19 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
 
 public class AccountInfoService {
-	private final EngineStore<LedgerAndBFTProof> engineStore;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ECPublicKey bftKey;
 	private final Addressing addressing;
-	private final Forks forks;
-	private final InMemorySystemInfo inMemorySystemInfo;
 
 	@Inject
 	public AccountInfoService(
-		EngineStore<LedgerAndBFTProof> engineStore,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		@Self ECPublicKey bftKey,
-		Addressing addressing,
-		Forks forks,
-		InMemorySystemInfo inMemorySystemInfo // TODO: This is a hack, remove
+		Addressing addressing
 	) {
-		this.engineStore = engineStore;
+		this.radixEngine = radixEngine;
 		this.bftKey = bftKey;
 		this.addressing = addressing;
-		this.forks = forks;
-		this.inMemorySystemInfo = inMemorySystemInfo;
-	}
-
-	private SubstateDeserialization retrieveEpochParser() {
-		return forks.get(inMemorySystemInfo.getCurrentProof().getEpoch())
-			.getParser()
-			.getSubstateDeserialization();
 	}
 
 	public JSONObject getAccountInfo() {
@@ -113,73 +97,28 @@ public class AccountInfoService {
 	}
 
 	public AllowDelegationFlag getMyValidatorDelegationFlag() {
-		var deserializer = retrieveEpochParser();
 		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id(), bftKey.getCompressedBytes());
-		return engineStore.get(validatorDataKey)
-			.map(raw -> {
-				try {
-					return (AllowDelegationFlag) deserializer.deserialize(raw.getData());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			})
-			.orElse(AllowDelegationFlag.createVirtual(bftKey));
+		return (AllowDelegationFlag) radixEngine.get(validatorDataKey).orElse(AllowDelegationFlag.createVirtual(bftKey));
 	}
 
 	public ValidatorRegisteredCopy getMyNextEpochRegisteredFlag() {
-		var deserializer = retrieveEpochParser();
 		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(), bftKey.getCompressedBytes());
-		return engineStore.get(validatorDataKey)
-			.map(raw -> {
-				try {
-					return (ValidatorRegisteredCopy) deserializer.deserialize(raw.getData());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			})
-			.orElse(ValidatorRegisteredCopy.createVirtual(bftKey));
+		return (ValidatorRegisteredCopy) radixEngine.get(validatorDataKey).orElse(ValidatorRegisteredCopy.createVirtual(bftKey));
 	}
 
 	public ValidatorRakeCopy getMyNextValidatorFee() {
-		var deserializer = retrieveEpochParser();
 		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_RAKE_COPY.id(), bftKey.getCompressedBytes());
-		return engineStore.get(validatorDataKey)
-			.map(raw -> {
-				try {
-					return (ValidatorRakeCopy) deserializer.deserialize(raw.getData());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			})
-			.orElse(ValidatorRakeCopy.createVirtual(bftKey));
+		return (ValidatorRakeCopy) radixEngine.get(validatorDataKey).orElse(ValidatorRakeCopy.createVirtual(bftKey));
 	}
 
 	public ValidatorOwnerCopy getMyNextEpochValidatorOwner() {
-		var deserializer = retrieveEpochParser();
 		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_OWNER_COPY.id(), bftKey.getCompressedBytes());
-		return engineStore.get(validatorDataKey)
-			.map(raw -> {
-				try {
-					return (ValidatorOwnerCopy) deserializer.deserialize(raw.getData());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			})
-			.orElse(ValidatorOwnerCopy.createVirtual(bftKey));
+		return (ValidatorOwnerCopy) radixEngine.get(validatorDataKey).orElse(ValidatorOwnerCopy.createVirtual(bftKey));
 	}
 
 	public ValidatorMetaData getMyValidatorMetadata() {
-		var deserializer = retrieveEpochParser();
 		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_META_DATA.id(), bftKey.getCompressedBytes());
-		return engineStore.get(validatorDataKey)
-			.map(raw -> {
-				try {
-					return (ValidatorMetaData) deserializer.deserialize(raw.getData());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			})
-			.orElse(ValidatorMetaData.createVirtual(bftKey));
+		return (ValidatorMetaData) radixEngine.get(validatorDataKey).orElse(ValidatorMetaData.createVirtual(bftKey));
 	}
 
 	public UInt256 getTotalStake() {
@@ -187,39 +126,17 @@ public class AccountInfoService {
 	}
 
 	public ValidatorStakeData getMyValidator() {
-		var deserializer = retrieveEpochParser();
 		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), bftKey.getCompressedBytes());
-		return engineStore.get(validatorDataKey)
-			.map(raw -> {
-				try {
-					return (ValidatorStakeData) deserializer.deserialize(raw.getData());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			})
-			.orElse(ValidatorStakeData.createVirtual(bftKey));
+		return (ValidatorStakeData) radixEngine.get(validatorDataKey).orElse(ValidatorStakeData.createVirtual(bftKey));
 	}
 
 	private Pair<ValidatorStakeData, JSONArray> getStakeData() {
-		var deserializer = retrieveEpochParser();
 		var myValidator = getMyValidator();
-
 		var index = SubstateIndex.create(
 			Arrays.concatenate(new byte[] {SubstateTypeId.STAKE_OWNERSHIP.id(), 0}, bftKey.getCompressedBytes()),
 			StakeOwnership.class
 		);
-		final Map<REAddr, UInt384> stakeReceived = new HashMap<>();
-		try (var cursor = engineStore.openIndexedCursor(index)) {
-			while (cursor.hasNext()) {
-				try {
-					var ownership = (StakeOwnership) deserializer.deserialize(cursor.next().getData());
-					stakeReceived.merge(ownership.getOwner(), UInt384.from(ownership.getAmount()), UInt384::add);
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			}
-		}
-
+		var stakeReceived = radixEngine.reduceResources(index, StakeOwnership::getOwner);
 		var stakeFrom = jsonArray();
 		stakeReceived.forEach((address, amt) -> {
 			stakeFrom.put(
@@ -244,74 +161,29 @@ public class AccountInfoService {
 			Arrays.concatenate(new byte[] {SubstateTypeId.TOKENS.id(), 0}, REAddr.ofPubKeyAccount(bftKey).getBytes()),
 			TokensInAccount.class
 		);
-		final Map<REAddr, UInt384> balances = new HashMap<>();
-		var deserializer = retrieveEpochParser();
-		try (var cursor = engineStore.openIndexedCursor(index)) {
-			while (cursor.hasNext()) {
-				try {
-					var tokens = (TokensInAccount) deserializer.deserialize(cursor.next().getData());
-					balances.merge(tokens.getResourceAddr(), UInt384.from(tokens.getAmount()), UInt384::add);
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			}
-		}
-
-		return balances;
+		return radixEngine.reduceResources(index, TokensInAccount::getResourceAddr);
 	}
 
 	public Map<ECPublicKey, UInt384> getMyPreparedStakes() {
-		var deserializer = retrieveEpochParser();
-
-		var preparedStakeIndex = SubstateIndex.create(SubstateTypeId.PREPARED_STAKE.id(), PreparedStake.class);
-		final Map<ECPublicKey, UInt384> preparedStakes = new HashMap<>();
-		try (var cursor = engineStore.openIndexedCursor(preparedStakeIndex)) {
-			while (cursor.hasNext()) {
-				try {
-					var preparedStake = (PreparedStake) deserializer.deserialize(cursor.next().getData());
-					if (preparedStake.getOwner().equals(REAddr.ofPubKeyAccount(bftKey))) {
-						preparedStakes.merge(preparedStake.getDelegateKey(), UInt384.from(preparedStake.getAmount()), UInt384::add);
-					}
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			}
-		}
-
-		return preparedStakes;
+		var index = SubstateIndex.create(SubstateTypeId.PREPARED_STAKE.id(), PreparedStake.class);
+		return radixEngine.reduceResources(index, PreparedStake::getDelegateKey, p -> p.getOwner().equals(REAddr.ofPubKeyAccount(bftKey)));
 	}
 
 	public Map<ECPublicKey, UInt384> getMyStakeBalances() {
-		var deserializer = retrieveEpochParser();
-
-		var index = SubstateIndex.create(SubstateTypeId.STAKE_OWNERSHIP.id(), TokensInAccount.class);
-		final Map<ECPublicKey, UInt384> stakeOwnerships = new HashMap<>();
-		try (var cursor = engineStore.openIndexedCursor(index)) {
-			while (cursor.hasNext()) {
-				try {
-					var stakeOwnership = (StakeOwnership) deserializer.deserialize(cursor.next().getData());
-					if (stakeOwnership.getOwner().equals(REAddr.ofPubKeyAccount(bftKey))) {
-						stakeOwnerships.merge(stakeOwnership.getDelegateKey(), UInt384.from(stakeOwnership.getAmount()), UInt384::add);
-					}
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
-			}
-		}
+		var index = SubstateIndex.create(SubstateTypeId.STAKE_OWNERSHIP.id(), StakeOwnership.class);
+		var stakeOwnerships = radixEngine.reduceResources(
+			index,
+			StakeOwnership::getDelegateKey,
+			p -> p.getOwner().equals(REAddr.ofPubKeyAccount(bftKey))
+		);
 
 		final Map<ECPublicKey, UInt384> stakes = new HashMap<>();
 		for (var e : stakeOwnerships.entrySet()) {
 			var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), e.getKey().getCompressedBytes());
-			var raw = engineStore.get(validatorDataKey).orElseThrow();
-			try {
-				var validatorData = (ValidatorStakeData) deserializer.deserialize(raw.getData());
-				var stake = e.getValue().multiply(validatorData.getTotalStake()).divide(validatorData.getTotalOwnership());
-				stakes.put(e.getKey(), stake);
-			} catch (DeserializeException ex) {
-				throw new IllegalStateException(ex);
-			}
+			var validatorData = (ValidatorStakeData) radixEngine.get(validatorDataKey).orElseThrow();
+			var stake = e.getValue().multiply(validatorData.getTotalStake()).divide(validatorData.getTotalOwnership());
+			stakes.put(e.getKey(), stake);
 		}
-
 
 		return stakes;
 	}

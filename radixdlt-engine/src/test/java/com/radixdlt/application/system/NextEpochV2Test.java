@@ -22,7 +22,6 @@ import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
@@ -49,7 +48,6 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
@@ -157,6 +155,6 @@ public class NextEpochV2Test {
 		this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
 
 		// Assert
-		assertThat(store.openIndexedCursor(SubstateIndex.create(SubstateTypeId.PREPARED_STAKE.id(), PreparedStake.class))).isEmpty();
+		assertThat(sut.reduceResources(PreparedStake.class, PreparedStake::getDelegateKey)).isEmpty();
 	}
 }

@@ -20,6 +20,7 @@ package com.radixdlt.engine;
 import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.SubstateId;
@@ -50,22 +51,23 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.TransientEngineStore;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -406,11 +408,66 @@ public final class RadixEngine<M> {
 		throw new TxBuilderException("Not enough fees: unable to construct with fees after " + maxTries + " tries.");
 	}
 
-	public <U, T extends Particle> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator) {
+	public Optional<Particle> get(SystemMapKey mapKey) {
+		synchronized (stateUpdateEngineLock) {
+			var deserialization = constraintMachine.getDeserialization();
+			return engineStore.get(mapKey).map(raw -> {
+				try {
+					return deserialization.deserialize(raw.getData());
+				} catch (DeserializeException e) {
+					throw new IllegalStateException(e);
+				}
+			});
+		}
+	}
+
+	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
+		Class<T> c,
+		Function<T, K> keyMapper
+	) {
+		synchronized (stateUpdateEngineLock) {
+			var deserialization = constraintMachine.getDeserialization();
+			return reduce(deserialization.index(c), new HashMap<>(),
+				(m, t) -> {
+					m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+					return m;
+				}
+			);
+		}
+	}
+
+	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
+		SubstateIndex<T> index,
+		Function<T, K> keyMapper
+	) {
+		return reduce(index, new HashMap<>(),
+			(m, t) -> {
+				m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+				return m;
+			}
+		);
+	}
+
+	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
+		SubstateIndex<T> index,
+		Function<T, K> keyMapper,
+		Predicate<T> predicate
+	) {
+		return reduce(index, new HashMap<>(),
+			(m, t) -> {
+				if (predicate.test(t)) {
+					m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+				}
+				return m;
+			}
+		);
+	}
+
+	public <U, T extends Particle> U reduce(SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator) {
 		synchronized (stateUpdateEngineLock) {
 			var deserialization = constraintMachine.getDeserialization();
 			var u = identity;
-			try (var cursor = engineStore.openIndexedCursor(deserialization.index(c))) {
+			try (var cursor = engineStore.openIndexedCursor(i)) {
 				while (cursor.hasNext()) {
 					try {
 						var t = (T) deserialization.deserialize(cursor.next().getData());
@@ -421,6 +478,13 @@ public final class RadixEngine<M> {
 				}
 			}
 			return u;
+		}
+	}
+
+	public <U, T extends Particle> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator) {
+		synchronized (stateUpdateEngineLock) {
+			var deserialization = constraintMachine.getDeserialization();
+			return reduce(deserialization.index(c), identity, accumulator);
 		}
 	}
 }
