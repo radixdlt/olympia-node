@@ -56,7 +56,7 @@ public final class SubstateDeserialization {
 		return b;
 	}
 
-	public SubstateIndex index(Class<? extends Particle> substateClass) {
+	public <T extends Particle> SubstateIndex<T> index(Class<T> substateClass) {
 		return SubstateIndex.create(classToByte(substateClass), substateClass);
 	}
 

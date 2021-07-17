@@ -19,38 +19,40 @@ package com.radixdlt.engine;
 
 import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.REConstructor;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.FeeReservePut;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.parser.exceptions.TxnParseException;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.EngineStore;
-
 import com.radixdlt.store.TransientEngineStore;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,7 +61,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -398,5 +404,23 @@ public final class RadixEngine<M> {
 		}
 
 		throw new TxBuilderException("Not enough fees: unable to construct with fees after " + maxTries + " tries.");
+	}
+
+	public <U, T extends Particle> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator) {
+		synchronized (stateUpdateEngineLock) {
+			var deserialization = constraintMachine.getDeserialization();
+			var u = identity;
+			try (var cursor = engineStore.openIndexedCursor(deserialization.index(c))) {
+				while (cursor.hasNext()) {
+					try {
+						var t = (T) deserialization.deserialize(cursor.next().getData());
+						u = accumulator.apply(u, t);
+					} catch (DeserializeException e) {
+						throw new IllegalStateException(e);
+					}
+				}
+			}
+			return u;
+		}
 	}
 }
