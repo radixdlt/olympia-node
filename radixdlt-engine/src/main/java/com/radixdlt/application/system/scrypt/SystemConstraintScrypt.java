@@ -213,6 +213,10 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 						return ReducerResult.incomplete(new TokenHoldingBucket(tokens));
 					} else if (syscall == Syscall.READDR_CLAIM) {
 						var bytes = d.getRemainingBytes(1);
+						if (bytes.length > 32) {
+							throw new ProcedureException("RRI length too large.");
+						}
+
 						var str = new String(bytes);
 						if (systemNames.contains(str) && c.permissionLevel() != PermissionLevel.SYSTEM) {
 							throw new ProcedureException("Not allowed to use name " + str);
