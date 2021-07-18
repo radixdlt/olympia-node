@@ -32,4 +32,9 @@ public final class RegisterValidator implements TxValidatorAction {
 	public ECPublicKey validatorKey() {
 		return validatorKey;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{key=%s}", this.getClass().getSimpleName(), validatorKey.toHex());
+	}
 }
