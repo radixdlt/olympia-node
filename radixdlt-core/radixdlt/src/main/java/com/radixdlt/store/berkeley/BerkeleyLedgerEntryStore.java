@@ -416,31 +416,42 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2-5: Epoch
-								prefixIndexSize = 2 + Long.BYTES;
+								// 6-40: Validator Key
+								// 41-73: Account Address
+								prefixIndexSize = 2 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES);
+							} else if (substateTypeId == SubstateTypeId.PREPARED_STAKE.id()) {
+								// 0: Type Byte
+								// 1: Reserved Byte
+								// 2-36: Validator Key
+								// 37-69: Account Address
+								prefixIndexSize = 2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES);
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_OWNER_COPY.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2: Optional flag
 								// 3-6: Epoch
-								prefixIndexSize = 3 + Long.BYTES;
+								// 7-41: Validator Key
+								prefixIndexSize = 3 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES;
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2: Optional flag
 								// 3-6: Epoch
-								prefixIndexSize = 3 + Long.BYTES;
+								// 7-41: Validator Key
+								prefixIndexSize = 3 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES;
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_RAKE_COPY.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2: Optional flag
 								// 3-6: Epoch
-								prefixIndexSize = 3 + Long.BYTES;
+								// 7-41: Validator Key
+								prefixIndexSize = 3 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES;
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_STAKE_DATA.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2: Registered Byte
 								// 3-34: Stake amount
-								// 35-67: Public key
+								// 35-67: Validator key
 								prefixIndexSize = 3 + UInt256.BYTES + ECPublicKey.COMPRESSED_BYTES;
 							} else {
 								// 0: Type Byte
