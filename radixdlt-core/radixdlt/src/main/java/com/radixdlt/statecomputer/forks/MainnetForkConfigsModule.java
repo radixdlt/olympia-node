@@ -39,6 +39,10 @@ import java.util.Set;
  * The forks for betanet and the epochs at which they will occur.
  */
 public final class MainnetForkConfigsModule extends AbstractModule {
+	private static final Set<String> RESERVED_SYMBOLS = Set.of(
+		"xrd", "xrds", "exrd", "exrds", "rad", "rads", "rdx", "rdxs", "radix"
+	);
+
 	@ProvidesIntoSet
 	ForkConfig olympiaFirstEpoch() {
 		return new ForkConfig(
@@ -46,7 +50,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 			"olympia-first-epoch",
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
-				Set.of("xrd"), // Reserved token symbols
+				RESERVED_SYMBOLS,
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 					Map.of(
@@ -79,7 +83,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 			"olympia",
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
-				Set.of("xrd"), // Reserved token symbols
+				RESERVED_SYMBOLS,
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 					Map.of(

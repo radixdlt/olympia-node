@@ -36,6 +36,10 @@ import java.util.OptionalInt;
 import java.util.Set;
 
 public final class StokenetForkConfigsModule extends AbstractModule {
+	private static final Set<String> RESERVED_SYMBOLS = Set.of(
+		"xrd", "xrds", "exrd", "exrds", "rad", "rads", "rdx", "rdxs", "radix"
+	);
+
 	@ProvidesIntoSet
 	ForkConfig stokenet() {
 		return new ForkConfig(
@@ -43,7 +47,7 @@ public final class StokenetForkConfigsModule extends AbstractModule {
 			"olympia-first-epoch",
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
-				Set.of("xrd"),
+				RESERVED_SYMBOLS,
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 					Map.of(
