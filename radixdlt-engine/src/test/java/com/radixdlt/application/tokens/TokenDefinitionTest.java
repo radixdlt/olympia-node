@@ -67,8 +67,8 @@ public class TokenDefinitionTest {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
-		cmAtomOS.load(new TokensConstraintScryptV3());
+		cmAtomOS.load(new SystemConstraintScrypt());
+		cmAtomOS.load(new TokensConstraintScryptV3(Set.of()));
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
 			cmAtomOS.buildSubstateDeserialization(),

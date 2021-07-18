@@ -45,17 +45,8 @@ import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedList;
-import java.util.Set;
-
-import static com.radixdlt.identifiers.Naming.NAME_PATTERN;
 
 public final class SystemConstraintScrypt implements ConstraintScrypt {
-	private final Set<String> systemNames;
-
-	public SystemConstraintScrypt(Set<String> systemNames) {
-		this.systemNames = systemNames;
-	}
-
 	private static class AllocatingSystem implements ReducerState {
 	}
 
@@ -213,14 +204,6 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 						return ReducerResult.incomplete(new TokenHoldingBucket(tokens));
 					} else if (syscall == Syscall.READDR_CLAIM) {
 						var bytes = d.getRemainingBytes(1);
-						var str = new String(bytes);
-						if (systemNames.contains(str) && c.permissionLevel() != PermissionLevel.SYSTEM) {
-							throw new ProcedureException("Not allowed to use name " + str);
-						}
-						if (!NAME_PATTERN.matcher(str).matches()) {
-							throw new ProcedureException("invalid rri name: " + str);
-						}
-
 						return ReducerResult.incomplete(new REAddrClaimStart(bytes));
 					} else {
 						throw new ProcedureException("Invalid call type: " + syscall);

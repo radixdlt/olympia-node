@@ -77,7 +77,7 @@ public class DelegationFlagTest {
 				List.of(
 					new RoundUpdateConstraintScrypt(10),
 					new EpochUpdateConstraintScrypt(10, UInt256.NINE, 1, 1, 10),
-					new TokensConstraintScryptV3(),
+					new TokensConstraintScryptV3(Set.of()),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(),
 					new ValidatorUpdateOwnerConstraintScrypt()
@@ -126,7 +126,7 @@ public class DelegationFlagTest {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
+		cmAtomOS.load(new SystemConstraintScrypt());
 		scrypts.forEach(cmAtomOS::load);
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),

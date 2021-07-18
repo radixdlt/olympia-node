@@ -43,8 +43,17 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
+
+import static com.radixdlt.identifiers.Naming.NAME_PATTERN;
 
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
+	private final Set<String> systemNames;
+
+	public TokensConstraintScryptV3(Set<String> systemNames) {
+		this.systemNames = systemNames;
+	}
+
 	@Override
 	public void main(Loader os) {
 		registerParticles(os);
@@ -157,6 +166,14 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			(s, u, c, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
 					throw new ProcedureException("Addresses don't match");
+				}
+
+				var str = new String(s.getArg());
+				if (systemNames.contains(str) && c.permissionLevel() != PermissionLevel.SYSTEM) {
+					throw new ProcedureException("Not allowed to use name " + str);
+				}
+				if (!NAME_PATTERN.matcher(str).matches()) {
+					throw new ProcedureException("invalid rri name: " + str);
 				}
 
 				if (u.isMutable()) {

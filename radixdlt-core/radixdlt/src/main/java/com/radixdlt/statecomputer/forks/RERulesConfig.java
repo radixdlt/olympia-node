@@ -23,8 +23,10 @@ import com.radixdlt.application.system.FeeTable;
 
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Set;
 
 public final class RERulesConfig {
+	private final Set<String> reservedSymbols;
 	private final FeeTable feeTable;
 	private final long maxRounds;
 	private final OptionalInt maxSigsPerRound;
@@ -36,6 +38,7 @@ public final class RERulesConfig {
 	private final int maxValidators;
 
 	public RERulesConfig(
+		Set<String> reservedSymbols,
 		FeeTable feeTable,
 		OptionalInt maxSigsPerRound,
 		long maxRounds,
@@ -46,6 +49,7 @@ public final class RERulesConfig {
 		int minimumCompletedProposalsPercentage,
 		int maxValidators
 	) {
+		this.reservedSymbols = reservedSymbols;
 		this.feeTable = feeTable;
 		this.maxSigsPerRound = maxSigsPerRound;
 		this.maxRounds = maxRounds;
@@ -59,6 +63,7 @@ public final class RERulesConfig {
 
 	public static RERulesConfig testingDefault() {
 		return new RERulesConfig(
+			Set.of("xrd"),
 			FeeTable.create(Amount.zero(), Map.of()),
 			OptionalInt.of(2),
 			10,
@@ -69,6 +74,10 @@ public final class RERulesConfig {
 			9800,
 			10
 		);
+	}
+
+	public Set<String> getReservedSymbols() {
+		return reservedSymbols;
 	}
 
 	public OptionalInt getMaxSigsPerRound() {
@@ -109,6 +118,7 @@ public final class RERulesConfig {
 
 	public RERulesConfig overrideMaxSigsPerRound(int maxSigsPerRound) {
 		return new RERulesConfig(
+			this.reservedSymbols,
 			this.feeTable,
 			OptionalInt.of(maxSigsPerRound),
 			this.maxRounds,
@@ -123,6 +133,7 @@ public final class RERulesConfig {
 
 	public RERulesConfig removeSigsPerRoundLimit() {
 		return new RERulesConfig(
+			this.reservedSymbols,
 			this.feeTable,
 			OptionalInt.empty(),
 			this.maxRounds,
@@ -137,6 +148,7 @@ public final class RERulesConfig {
 
 	public RERulesConfig overrideFeeTable(FeeTable feeTable) {
 		return new RERulesConfig(
+			this.reservedSymbols,
 			feeTable,
 			this.maxSigsPerRound,
 			this.maxRounds,
@@ -151,6 +163,7 @@ public final class RERulesConfig {
 
 	public RERulesConfig overrideMaxRounds(long maxRounds) {
 		return new RERulesConfig(
+			this.reservedSymbols,
 			this.feeTable,
 			this.maxSigsPerRound,
 			maxRounds,

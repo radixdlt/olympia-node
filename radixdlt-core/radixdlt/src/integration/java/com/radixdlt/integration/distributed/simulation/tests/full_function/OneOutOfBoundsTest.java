@@ -44,6 +44,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -72,6 +73,7 @@ public class OneOutOfBoundsTest {
 				new MainnetForkConfigsModule(),
 				new RadixEngineForksLatestOnlyModule(
 					new RERulesConfig(
+						Set.of("xrd"),
 						FeeTable.create(
 							Amount.ofSubunits(perByteFee),
 							Map.of()

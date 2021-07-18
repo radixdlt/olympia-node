@@ -33,6 +33,7 @@ import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Set;
 
 public final class StokenetForkConfigsModule extends AbstractModule {
 	@ProvidesIntoSet
@@ -42,6 +43,7 @@ public final class StokenetForkConfigsModule extends AbstractModule {
 			"olympia-first-epoch",
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
+				Set.of("xrd"),
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 					Map.of(

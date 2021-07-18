@@ -74,8 +74,8 @@ public class StakeTokensTest {
 		var scrypts = List.of(
 			Pair.of(
 				List.of(
-					new SystemConstraintScrypt(Set.of()),
-					new TokensConstraintScryptV3(),
+					new SystemConstraintScrypt(),
+					new TokensConstraintScryptV3(Set.of()),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(),
 					new ValidatorUpdateOwnerConstraintScrypt()

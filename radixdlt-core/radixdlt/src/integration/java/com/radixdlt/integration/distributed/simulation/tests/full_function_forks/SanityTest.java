@@ -46,6 +46,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -76,6 +77,7 @@ public class SanityTest {
 				new MainnetForkConfigsModule(),
 				new ForkOverwritesWithShorterEpochsModule(
 					new RERulesConfig(
+						Set.of("xrd"),
 						FeeTable.noFees(),
 						OptionalInt.of(5),
 						10,

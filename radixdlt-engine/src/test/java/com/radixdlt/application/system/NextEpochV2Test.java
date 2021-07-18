@@ -83,7 +83,7 @@ public class NextEpochV2Test {
 						10
 					),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
-					new TokensConstraintScryptV3(),
+					new TokensConstraintScryptV3(Set.of()),
 					new ValidatorConstraintScryptV2(),
 					new ValidatorUpdateRakeConstraintScrypt(2),
 					new ValidatorRegisterConstraintScrypt(),
@@ -120,7 +120,7 @@ public class NextEpochV2Test {
 	@Before
 	public void setup() {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
+		cmAtomOS.load(new SystemConstraintScrypt());
 		scrypts.forEach(cmAtomOS::load);
 		cmAtomOS.load(new MutexConstraintScrypt()); // For v1 start
 		var cm = new ConstraintMachine(
