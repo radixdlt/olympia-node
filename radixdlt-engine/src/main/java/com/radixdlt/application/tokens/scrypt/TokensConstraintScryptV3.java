@@ -39,6 +39,7 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 
@@ -48,10 +49,10 @@ import java.util.Set;
 import static com.radixdlt.identifiers.Naming.NAME_PATTERN;
 
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
-	private final Set<String> systemNames;
+	private final Set<String> reservedSymbols;
 
-	public TokensConstraintScryptV3(Set<String> systemNames) {
-		this.systemNames = systemNames;
+	public TokensConstraintScryptV3(Set<String> reservedSymbols) {
+		this.reservedSymbols = reservedSymbols;
 	}
 
 	@Override
@@ -169,8 +170,8 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				}
 
 				var str = new String(s.getArg());
-				if (systemNames.contains(str) && c.permissionLevel() != PermissionLevel.SYSTEM) {
-					throw new ProcedureException("Not allowed to use name " + str);
+				if (reservedSymbols.contains(str) && c.permissionLevel() != PermissionLevel.SYSTEM) {
+					throw new ReservedSymbolException(str);
 				}
 				if (!NAME_PATTERN.matcher(str).matches()) {
 					throw new ProcedureException("invalid rri name: " + str);
