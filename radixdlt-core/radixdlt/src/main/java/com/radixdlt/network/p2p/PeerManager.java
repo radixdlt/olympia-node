@@ -47,6 +47,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.radixdlt.network.messaging.MessagingErrors.PEER_BANNED;
 import static com.radixdlt.network.messaging.MessagingErrors.SELF_CONNECTION_ATTEMPT;
@@ -55,7 +56,6 @@ import static java.util.function.Predicate.not;
 /**
  * Manages active connections to other peers.
  */
-@Singleton
 public final class PeerManager {
 	private static final Logger log = LogManager.getLogger();
 
@@ -65,7 +65,7 @@ public final class PeerManager {
 	private final Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager;
 
 	private final Object lock = new Object();
-	private final Map<NodeId, Set<PeerChannel>> activeChannels = new HashMap<>();
+	private final Map<NodeId, Set<PeerChannel>> activeChannels = new ConcurrentHashMap<>();
 	private final PublishSubject<Observable<InboundMessage>> inboundMessagesFromChannels = PublishSubject.create();
 
 	@Inject

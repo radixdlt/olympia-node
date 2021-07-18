@@ -19,6 +19,7 @@ package com.radixdlt.network.p2p;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -52,6 +53,7 @@ public final class P2PModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(PeerEvent.class);
 		eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
 
+		bind(PeerManager.class).in(Scopes.SINGLETON);
 		bind(PeersView.class).to(PeerManagerPeersView.class);
 		bind(PeerControl.class).to(AddressBookPeerControl.class);
 		bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class);
