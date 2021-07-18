@@ -152,7 +152,7 @@ public final class REInstruction {
 		},
 		SIG((byte) 0xb, REOp.SIG, LengthType.FIXED, 1 + 32 + 32, 1 + 32 + 32) {
 			@Override
-			Object read(REParser.ParserState parserState, ByteBuffer b) {
+			Object read(REParser.ParserState parserState, ByteBuffer b) throws DeserializeException {
 				return REFieldSerialization.deserializeSignature(b);
 			}
 		},

@@ -56,8 +56,11 @@ public final class REFieldSerialization {
 		return buf.array();
 	}
 
-	public static ECDSASignature deserializeSignature(ByteBuffer buf) {
+	public static ECDSASignature deserializeSignature(ByteBuffer buf) throws DeserializeException {
 		var v = buf.get();
+		if (v != 0 && v != 1) {
+			throw new DeserializeException("Invalid V byte " + v);
+		}
 		var rArray = new byte[32];
 		buf.get(rArray);
 		var sArray = new byte[32];
