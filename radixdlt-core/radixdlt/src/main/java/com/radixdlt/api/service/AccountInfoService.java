@@ -20,6 +20,7 @@ package com.radixdlt.api.service;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
@@ -209,7 +210,10 @@ public class AccountInfoService {
 	}
 
 	private JSONObject constructBalanceEntry(REAddr resourceAddress, UInt384 amount) {
-		return jsonObject().put("resource_address", resourceAddress.toString()).put("amount", amount);
+		var mapKey = SystemMapKey.ofResourceData(resourceAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+		var metadata = (TokenResourceMetadata) radixEngine.get(mapKey).orElseThrow();
+		var rri = addressing.forResources().of(metadata.getSymbol(), resourceAddress);
+		return jsonObject().put("rri", rri).put("amount", amount);
 	}
 
 	private JSONObject constructStakeEntry(ECPublicKey publicKey, UInt384 amount) {

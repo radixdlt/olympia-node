@@ -47,6 +47,13 @@ public final class SystemMapKey {
 		return new SystemMapKey(buf.array());
 	}
 
+	public static SystemMapKey ofResourceData(REAddr addr, byte typeId) {
+		var buf = ByteBuffer.allocate(addr.getBytes().length + 1);
+		buf.put(addr.getBytes());
+		buf.put(typeId);
+		return new SystemMapKey(buf.array());
+	}
+
 	public byte[] array() {
 		return key;
 	}

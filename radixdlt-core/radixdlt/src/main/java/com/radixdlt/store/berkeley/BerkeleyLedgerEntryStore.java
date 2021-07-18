@@ -20,6 +20,7 @@ package com.radixdlt.store.berkeley;
 import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
+import com.radixdlt.application.tokens.state.ResourceData;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -747,11 +748,22 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				resourceDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
-			} else if (stateUpdate.getParsed() instanceof VirtualParent) {
+			}
+
+			// TODO: The following is not required for verification. Only useful for construction
+			// TODO: and stateful reads, move this into a separate store at some point.
+			if (stateUpdate.getParsed() instanceof VirtualParent) {
 				var p = (VirtualParent) stateUpdate.getParsed();
 				var typeByte = p.getData()[0];
 				var mapKey = typeByte == SubstateTypeId.UNCLAIMED_READDR.id()
 					? SystemMapKey.ofSystem(typeByte) : SystemMapKey.ofValidatorDataParent(typeByte);
+				insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
+			} else if (stateUpdate.getParsed() instanceof ResourceData) {
+				var p = (ResourceData) stateUpdate.getParsed();
+				var mapKey = SystemMapKey.ofResourceData(
+					p.getAddr(),
+					stateUpdate.typeByte()
+				);
 				insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
 			} else if (stateUpdate.getParsed() instanceof ValidatorData) {
 				var p = (ValidatorData) stateUpdate.getParsed();
@@ -770,7 +782,14 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			} else {
 				downSubstate(txn, stateUpdate.getId());
 
-				if (stateUpdate.getParsed() instanceof ValidatorData) {
+				if (stateUpdate.getParsed() instanceof ResourceData) {
+					var p = (ResourceData) stateUpdate.getParsed();
+					var mapKey = SystemMapKey.ofResourceData(
+						p.getAddr(),
+						stateUpdate.typeByte()
+					);
+					deleteFromMapDatabaseOrFail(txn, mapKey);
+				} else if (stateUpdate.getParsed() instanceof ValidatorData) {
 					var p = (ValidatorData) stateUpdate.getParsed();
 					var mapKey = SystemMapKey.ofValidatorData(
 						stateUpdate.typeByte(),

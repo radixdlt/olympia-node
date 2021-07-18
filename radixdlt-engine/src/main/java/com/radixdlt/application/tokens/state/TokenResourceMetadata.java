@@ -19,12 +19,11 @@
 package com.radixdlt.application.tokens.state;
 
 import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public final class TokenResourceMetadata implements Particle {
+public final class TokenResourceMetadata implements ResourceData {
 	private final REAddr addr;
 	private final String name;
 	private final String symbol;
@@ -48,6 +47,7 @@ public final class TokenResourceMetadata implements Particle {
 		this.url = REFieldSerialization.requireValidUrl(url);
 	}
 
+	@Override
 	public REAddr getAddr() {
 		return addr;
 	}

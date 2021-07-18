@@ -19,7 +19,6 @@
 package com.radixdlt.application.tokens.state;
 
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -30,7 +29,7 @@ import java.util.Optional;
 /**
  * Particle representing a fixed supply token definition
  */
-public final class TokenResource implements Particle {
+public final class TokenResource implements ResourceData {
 	private final REAddr addr;
 	private final UInt256 granularity;
 	private final boolean isMutable;
@@ -83,6 +82,7 @@ public final class TokenResource implements Particle {
 		return isMutable;
 	}
 
+	@Override
 	public REAddr getAddr() {
 		return addr;
 	}
