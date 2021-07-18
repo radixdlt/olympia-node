@@ -27,6 +27,7 @@ import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructo
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
+import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
@@ -40,7 +41,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
-import com.radixdlt.constraintmachine.meter.ResourceFeeMeter;
+import com.radixdlt.constraintmachine.meter.UpSubstateFeeMeter;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
@@ -51,6 +52,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -66,11 +68,15 @@ public final class ResourceFeeTest {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new TokensConstraintScryptV3());
 		cmAtomOS.load(new SystemConstraintScrypt(Set.of("xrd")));
+		var feeTable = FeeTable.create(
+			Amount.zero(),
+			Map.of(TokenResource.class, Amount.ofTokens(1))
+		);
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
 			cmAtomOS.buildSubstateDeserialization(),
 			cmAtomOS.buildVirtualSubstateDeserialization(),
-			ResourceFeeMeter.create(Amount.ofTokens(1).toSubunits())
+			UpSubstateFeeMeter.create(feeTable.getPerUpSubstateFee())
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
@@ -84,7 +90,7 @@ public final class ResourceFeeTest {
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(FeeReservePut.class, new FeeReservePutConstructor())
-				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(FeeTable.create(Amount.zero(), Amount.ofTokens(1))))
+				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(feeTable))
 				.build(),
 			cm,
 			store

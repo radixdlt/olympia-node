@@ -19,29 +19,36 @@
 package com.radixdlt.application.system;
 
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.utils.UInt256;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public final class FeeTable {
 	private final Amount perByteFee;
-	private final Amount perResourceFee;
+	private final Map<Class<? extends Particle>, UInt256> perUpSubstateFee;
 
-	private FeeTable(Amount perByteFee, Amount perResourceFee) {
+	private FeeTable(Amount perByteFee, Map<Class<? extends Particle>, UInt256> perUpSubstateFee) {
 		this.perByteFee = perByteFee;
-		this.perResourceFee = perResourceFee;
+		this.perUpSubstateFee = perUpSubstateFee;
 	}
 
-	public static FeeTable create(Amount perByteFee, Amount perResourceFee) {
-		return new FeeTable(perByteFee, perResourceFee);
+	public static FeeTable create(Amount perByteFee, Map<Class<? extends Particle>, Amount> perUpSubstateFee) {
+		var map = new HashMap<Class<? extends Particle>, UInt256>();
+		perUpSubstateFee.forEach((k, v) -> map.put(k, v.toSubunits()));
+		return new FeeTable(perByteFee, map);
 	}
 
 	public static FeeTable noFees() {
-		return new FeeTable(Amount.zero(), Amount.zero());
+		return new FeeTable(Amount.zero(), Map.of());
 	}
 
-	public Amount getPerByteFee() {
-		return perByteFee;
+	public UInt256 getPerByteFee() {
+		return perByteFee.toSubunits();
 	}
 
-	public Amount getPerResourceFee() {
-		return perResourceFee;
+	public Map<Class<? extends Particle>, UInt256> getPerUpSubstateFee() {
+		return perUpSubstateFee;
 	}
 }

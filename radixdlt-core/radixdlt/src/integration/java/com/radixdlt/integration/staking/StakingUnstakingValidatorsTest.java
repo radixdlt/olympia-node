@@ -135,7 +135,7 @@ public class StakingUnstakingValidatorsTest {
 					config.overrideMaxRounds(100).overrideFeeTable(
 						FeeTable.create(
 							PER_BYTE_FEE,
-							Amount.zero()
+							Map.of()
 						)
 					)
 				), 100, null},
@@ -144,7 +144,7 @@ public class StakingUnstakingValidatorsTest {
 					config.overrideFeeTable(
 						FeeTable.create(
 							PER_BYTE_FEE,
-							Amount.zero()
+							Map.of()
 						)
 					)
 				), 10, null},

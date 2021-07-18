@@ -46,7 +46,7 @@ public final class RadixNodeUri {
 	}
 
 	public static RadixNodeUri fromUri(URI uri) throws DeserializeException {
-		var hrpAndKey = NodeAddressing.parseWithHrp(uri.getUserInfo());
+		var hrpAndKey = NodeAddressing.parseUnknownHrp(uri.getUserInfo());
 		return new RadixNodeUri(uri.getHost(), uri.getPort(), hrpAndKey.getFirst(), NodeId.fromPublicKey(hrpAndKey.getSecond()));
 	}
 

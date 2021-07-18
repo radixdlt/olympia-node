@@ -21,6 +21,7 @@ package com.radixdlt.statecomputer.forks;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
 
+import java.util.Map;
 import java.util.OptionalInt;
 
 public final class RERulesConfig {
@@ -58,7 +59,7 @@ public final class RERulesConfig {
 
 	public static RERulesConfig testingDefault() {
 		return new RERulesConfig(
-			FeeTable.create(Amount.zero(), Amount.zero()),
+			FeeTable.create(Amount.zero(), Map.of()),
 			OptionalInt.of(2),
 			10,
 			1,

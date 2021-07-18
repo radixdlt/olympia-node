@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer.radixengine;
 
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.serialization.DeserializeException;
@@ -57,6 +58,7 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -86,7 +88,7 @@ public class MutableTokenAndResourceFeeTest {
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideFeeTable(
 				FeeTable.create(
 					Amount.zero(),
-					Amount.ofTokens(1)
+					Map.of(TokenResource.class, Amount.ofTokens(1))
 				)
 			)),
 			new ForksModule(),
