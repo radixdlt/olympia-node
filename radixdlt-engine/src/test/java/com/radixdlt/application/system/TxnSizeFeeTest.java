@@ -155,7 +155,7 @@ public class TxnSizeFeeTest {
 		var expectedTxnSize = 212;
 		// Act
 		var fee = costPerByte.toSubunits().multiply(UInt256.from(expectedTxnSize));
-		var txn= this.engine.construct(txBuilder -> {
+		var txn = this.engine.construct(txBuilder -> {
 			var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
 			buf.put(SubstateTypeId.TOKENS.id());
 			buf.put((byte) 0);
