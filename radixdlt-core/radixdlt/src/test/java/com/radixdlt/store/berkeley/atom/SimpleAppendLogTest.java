@@ -82,9 +82,9 @@ public class SimpleAppendLogTest {
 	}
 
 	private void writeLogEntriesAndClose(final AppendLog appendLog) throws IOException {
-		appendLog.write(new byte[]{0x01});
-		appendLog.write(new byte[]{0x01, 0x02, 0x03, 0x04, 0x05});
-		appendLog.write(new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x0C, 0x7F, -1});
+		var s0 = appendLog.write(new byte[]{0x01}, 0);
+		var s1 = appendLog.write(new byte[]{0x01, 0x02, 0x03, 0x04, 0x05}, s0);
+		appendLog.write(new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x0C, 0x7F, -1}, s0 + s1);
 		appendLog.close();
 	}
 
@@ -96,7 +96,7 @@ public class SimpleAppendLogTest {
 
 	private void checkReadAfterWrite(AppendLog appendLog, byte[] data) throws IOException {
 		long pos = appendLog.position();
-		appendLog.write(data);
+		appendLog.write(data, pos);
 
 		assertArrayEquals(data, appendLog.read(pos));
 	}

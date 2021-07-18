@@ -76,7 +76,7 @@ public interface AppendLog {
 	 *
 	 * @return successful result with chunk length or failure with error description.
 	 */
-	long write(byte[] data) throws IOException;
+	long write(byte[] data, long expectedOffset) throws IOException;
 
 	/**
 	 * Read chunk at specified position.
