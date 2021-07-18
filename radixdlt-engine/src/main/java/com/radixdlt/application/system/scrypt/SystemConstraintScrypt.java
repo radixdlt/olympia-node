@@ -68,6 +68,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY);
 			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_RAKE_COPY);
 			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_OWNER_COPY);
+			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA);
 		}
 
 		public ReducerState createVirtualSubstate(VirtualParent virtualParent) throws ProcedureException {

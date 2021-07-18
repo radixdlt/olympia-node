@@ -18,6 +18,7 @@
 
 package com.radixdlt.application.validators.scrypt;
 
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
@@ -35,11 +36,27 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 
 import java.util.Objects;
 
 
 public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
+
+	private static class UpdatingValidatorHashMetadata implements ReducerState {
+		private final ValidatorSystemMetadata prevState;
+
+		private UpdatingValidatorHashMetadata(ValidatorSystemMetadata prevState) {
+			this.prevState = prevState;
+		}
+
+		void update(ValidatorSystemMetadata next) throws ProcedureException {
+			if (!prevState.getValidatorKey().equals(next.getValidatorKey())) {
+				throw new ProcedureException("Invalid key");
+			}
+		}
+	}
+
 	private static class UpdatingValidatorInfo implements ReducerState {
 		private final ValidatorMetaData prevState;
 
@@ -64,6 +81,47 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 	@Override
 	public void main(Loader os) {
+		os.substate(
+			new SubstateDefinition<>(
+				ValidatorSystemMetadata.class,
+				SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(),
+				buf -> {
+					REFieldSerialization.deserializeReservedByte(buf);
+					var key = REFieldSerialization.deserializeKey(buf);
+					var bytes = REFieldSerialization.deserializeFixedLengthBytes(buf, 32);
+					return new ValidatorSystemMetadata(key, bytes);
+				},
+				(s, buf) -> {
+					REFieldSerialization.serializeReservedByte(buf);
+					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
+					REFieldSerialization.serializeFixedLengthBytes(buf, s.getData());
+				},
+				REFieldSerialization::deserializeKey,
+				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
+				k -> new ValidatorSystemMetadata((ECPublicKey) k, HashUtils.zero256().asBytes())
+			)
+		);
+
+		os.procedure(new DownProcedure<>(
+			VoidReducerState.class, ValidatorSystemMetadata.class,
+			d -> new Authorization(
+				PermissionLevel.USER,
+				(r, c) -> {
+					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
+						throw new AuthorizationException("Key does not match.");
+					}
+				}
+			),
+			(d, s, r, c) -> ReducerResult.incomplete(new UpdatingValidatorHashMetadata(d))
+		));
+		os.procedure(new UpProcedure<>(
+			UpdatingValidatorHashMetadata.class, ValidatorSystemMetadata.class,
+			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			(s, u, c, r) -> {
+				s.update(u);
+				return ReducerResult.complete();
+			}
+		));
 
 		os.substate(
 			new SubstateDefinition<>(
