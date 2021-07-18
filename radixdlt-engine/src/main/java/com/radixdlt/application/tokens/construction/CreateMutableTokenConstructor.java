@@ -41,6 +41,7 @@ public final class CreateMutableTokenConstructor implements ActionConstructor<Cr
 		txBuilder.up(TokenResource.createMutableSupplyResource(reAddress, action.getKey()));
 		txBuilder.up(new TokenResourceMetadata(
 			reAddress,
+			action.getSymbol(),
 			action.getName(),
 			action.getDescription(),
 			action.getIconUrl(),

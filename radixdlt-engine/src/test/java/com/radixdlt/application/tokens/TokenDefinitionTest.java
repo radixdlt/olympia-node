@@ -110,7 +110,7 @@ public class TokenDefinitionTest {
 			.virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
 			.up(tokenResource)
 			.up(tokensParticle)
-			.up(TokenResourceMetadata.empty(addr))
+			.up(TokenResourceMetadata.empty(addr, "test"))
 			.end();
 		var sig = keyPair.sign(builder.hashToSign().asBytes());
 		var txn = builder.sig(sig).build();

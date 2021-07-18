@@ -84,15 +84,17 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var addr = REFieldSerialization.deserializeResourceAddr(buf);
+					var symbol = REFieldSerialization.deserializeString(buf);
 					var name = REFieldSerialization.deserializeString(buf);
 					var description = REFieldSerialization.deserializeString(buf);
 					var url = REFieldSerialization.deserializeUrl(buf);
 					var iconUrl = REFieldSerialization.deserializeUrl(buf);
-					return new TokenResourceMetadata(addr, name, description, iconUrl, url);
+					return new TokenResourceMetadata(addr, symbol, name, description, iconUrl, url);
 				},
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeREAddr(buf, s.getAddr());
+					REFieldSerialization.serializeString(buf, s.getSymbol());
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getDescription());
 					REFieldSerialization.serializeString(buf, s.getUrl());
@@ -141,10 +143,13 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 
 		void metadata(TokenResourceMetadata metadata, ExecutionContext context) throws ProcedureException {
 			if (!metadata.getAddr().equals(tokenResource.getAddr())) {
-				throw new ProcedureException("Addresses don't match");
+				throw new ProcedureException("Addresses don't match.");
 			}
 
 			var symbol = new String(arg, StandardCharsets.UTF_8);
+			if (!symbol.equals(metadata.getSymbol())) {
+				throw new ProcedureException("Symbols don't match.");
+			}
 			context.emitEvent(new ResourceCreatedEvent(symbol, tokenResource, metadata));
 		}
 	}
