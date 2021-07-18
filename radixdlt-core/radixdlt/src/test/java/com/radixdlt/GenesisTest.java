@@ -23,6 +23,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -36,6 +37,8 @@ import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.Bytes;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -56,6 +59,7 @@ public class GenesisTest {
 			.collect(Collectors.toList());
 	}
 
+	private static final Logger logger = LogManager.getLogger();
 	private final Txn genesis;
 
 	@Inject
@@ -83,6 +87,11 @@ public class GenesisTest {
 				}
 			}
 		).injectMembers(this);
-		genesisBuilder.generateGenesisProof(genesis);
+		var proof = genesisBuilder.generateGenesisProof(genesis);
+		var validatorSet = proof.getNextValidatorSet().orElseThrow();
+		logger.info("validator_set{size={} stake={}}",
+			validatorSet.getValidators().size(),
+			Amount.ofSubunits(validatorSet.getTotalPower())
+		);
 	}
 }
