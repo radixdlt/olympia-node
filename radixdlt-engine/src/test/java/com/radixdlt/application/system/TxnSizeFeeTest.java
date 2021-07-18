@@ -22,6 +22,7 @@ import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
+import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
@@ -29,7 +30,10 @@ import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.AccountBucket;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.REConstructor;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
@@ -40,22 +44,28 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
 import com.radixdlt.constraintmachine.exceptions.ExecutionContextDestroyException;
 import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
+import org.bouncycastle.util.Arrays;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -138,6 +148,74 @@ public class TxnSizeFeeTest {
 
 		// Act
 		var result = this.engine.execute(List.of(transfer));
+	}
+
+	@Test
+	public void pay_just_fees_should_not_fail() throws Exception {
+		var expectedTxnSize = 212;
+		// Act
+		var fee = costPerByte.toSubunits().multiply(UInt256.from(expectedTxnSize));
+		var txn= this.engine.construct(txBuilder -> {
+			var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
+			buf.put(SubstateTypeId.TOKENS.id());
+			buf.put((byte) 0);
+			buf.put(accountAddr.getBytes());
+			var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
+			// Take
+			var remainder = txBuilder.downFungible(
+				index,
+				p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(accountAddr),
+				fee,
+				() -> new TxBuilderException("Oops")
+			);
+			txBuilder.toLowLevelBuilder().syscall(Syscall.FEE_RESERVE_PUT, fee.toByteArray());
+			if (!remainder.isZero()) {
+				txBuilder.up(new TokensInAccount(accountAddr, REAddr.ofNativeToken(), remainder));
+			}
+			txBuilder.end();
+		}).signAndBuild(key::sign);
+		assertThat(txn.getPayload().length).isEqualTo(expectedTxnSize);
+
+		// Act
+		var result = this.engine.execute(List.of(txn));
+		assertThat(result.getProcessedTxn().getFeePaid()).isEqualTo(fee);
+	}
+
+	@Test
+	public void adding_extra_bytes_to_call_data_should_fail() throws Exception {
+		var expectedTxnSize = 213;
+		// Act
+		var fee = costPerByte.toSubunits().multiply(UInt256.from(expectedTxnSize));
+		var txn = this.engine.construct(txBuilder -> {
+			var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
+			buf.put(SubstateTypeId.TOKENS.id());
+			buf.put((byte) 0);
+			buf.put(accountAddr.getBytes());
+			var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
+			// Take
+			var remainder = txBuilder.downFungible(
+				index,
+				p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(accountAddr),
+				fee,
+				() -> new TxBuilderException("Oops")
+			);
+
+			var data = new byte[Short.BYTES + 1 + UInt256.BYTES + 1];
+			data[0] = 0;
+			data[1] = (byte) (1 + UInt256.BYTES + 1);
+			data[2] = Syscall.FEE_RESERVE_PUT.id();
+			System.arraycopy(Arrays.concatenate(fee.toByteArray(), new byte[1]), 0, data, 3, UInt256.BYTES + 1);
+			txBuilder.toLowLevelBuilder().instruction(REInstruction.REMicroOp.SYSCALL, data);
+			if (!remainder.isZero()) {
+				txBuilder.up(new TokensInAccount(accountAddr, REAddr.ofNativeToken(), remainder));
+			}
+			txBuilder.end();
+		}).signAndBuild(key::sign);
+		assertThat(txn.getPayload().length).isEqualTo(expectedTxnSize);
+
+		// Act
+		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
+			.isInstanceOf(RadixEngineException.class);
 	}
 
 	@Test

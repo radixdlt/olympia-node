@@ -25,6 +25,7 @@ import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
@@ -191,7 +192,7 @@ public final class REParser {
 						default:
 							throw new TxnParseException(parserState, "Invalid call data type: " + id);
 					}
-				} catch (CallDataAccessException e) {
+				} catch (CallDataAccessException | TrailingBytesException e) {
 					throw new TxnParseException(parserState, e);
 				}
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.MSG) {
