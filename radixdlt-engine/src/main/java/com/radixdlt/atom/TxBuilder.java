@@ -187,7 +187,7 @@ public final class TxBuilder {
 	public <T extends Particle> T find(Class<T> substateClass, Object key) throws TxBuilderException {
 		var keyBytes = serialization.serializeKey(substateClass, key);
 		var typeByte = deserialization.classToByte(substateClass);
-		var mapKey = SystemMapKey.ofValidatorData(typeByte, keyBytes);
+		var mapKey = SystemMapKey.ofSystem(typeByte, keyBytes);
 		var localMaybe = lowLevelBuilder.get(mapKey);
 		if (localMaybe.isPresent()) {
 			return (T) localMaybe.get().getParticle();
@@ -207,8 +207,8 @@ public final class TxBuilder {
 	}
 
 	private void virtualReadDownInternal(byte typeByte, byte[] keyBytes, boolean down) {
-		var mapKey = SystemMapKey.ofValidatorDataParent(typeByte);
-		var localParent = lowLevelBuilder.get(mapKey);
+		var parentMapKey = SystemMapKey.ofSystem(typeByte);
+		var localParent = lowLevelBuilder.get(parentMapKey);
 		if (localParent.isPresent()) {
 			if (down) {
 				lowLevelBuilder.localVirtualDown(localParent.get().getIndex(), keyBytes);
@@ -216,7 +216,7 @@ public final class TxBuilder {
 				lowLevelBuilder.localVirtualRead(localParent.get().getIndex(), keyBytes);
 			}
 		} else {
-			var parent = remoteSubstate.get(mapKey).orElseThrow();
+			var parent = remoteSubstate.get(parentMapKey).orElseThrow();
 			var substateId = SubstateId.fromBytes(parent.getId());
 			if (down) {
 				lowLevelBuilder.virtualDown(substateId, keyBytes);
@@ -229,7 +229,7 @@ public final class TxBuilder {
 	private <T extends Particle> T readDownInternal(Class<T> substateClass, Object key, boolean down) {
 		var keyBytes = serialization.serializeKey(substateClass, key);
 		var typeByte = deserialization.classToByte(substateClass);
-		var mapKey = SystemMapKey.ofValidatorData(typeByte, keyBytes);
+		var mapKey = SystemMapKey.ofSystem(typeByte, keyBytes);
 		var localMaybe = lowLevelBuilder.get(mapKey);
 		if (localMaybe.isPresent()) {
 			var local = localMaybe.get();

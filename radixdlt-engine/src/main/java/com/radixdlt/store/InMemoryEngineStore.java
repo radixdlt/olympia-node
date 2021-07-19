@@ -23,7 +23,6 @@ import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.SubstateIndex;
@@ -67,12 +66,11 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 							} else if (update.getParsed() instanceof VirtualParent) {
 								var p = (VirtualParent) update.getParsed();
 								var typeByte = p.getData()[0];
-								var mapKey = typeByte == SubstateTypeId.UNCLAIMED_READDR.id()
-									? SystemMapKey.ofSystem(typeByte) : SystemMapKey.ofValidatorDataParent(typeByte);
+								var mapKey = SystemMapKey.ofSystem(typeByte);
 								maps.put(mapKey, update.getRawSubstateBytes());
 							} else if (update.getParsed() instanceof ValidatorData) {
 								var data = (ValidatorData) update.getParsed();
-								var mapKey = SystemMapKey.ofValidatorData(
+								var mapKey = SystemMapKey.ofSystem(
 									update.typeByte(),
 									data.getValidatorKey().getCompressedBytes()
 								);
@@ -84,7 +82,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 						} else if (update.isShutDown()) {
 							if (update.getParsed() instanceof ValidatorData) {
 								var data = (ValidatorData) update.getParsed();
-								var mapKey = SystemMapKey.ofValidatorData(
+								var mapKey = SystemMapKey.ofSystem(
 									update.typeByte(),
 									data.getValidatorKey().getCompressedBytes()
 								);

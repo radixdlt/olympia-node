@@ -98,27 +98,27 @@ public class AccountInfoService {
 	}
 
 	public AllowDelegationFlag getMyValidatorDelegationFlag() {
-		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id(), bftKey.getCompressedBytes());
+		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id(), bftKey.getCompressedBytes());
 		return (AllowDelegationFlag) radixEngine.get(validatorDataKey).orElse(AllowDelegationFlag.createVirtual(bftKey));
 	}
 
 	public ValidatorRegisteredCopy getMyNextEpochRegisteredFlag() {
-		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(), bftKey.getCompressedBytes());
+		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(), bftKey.getCompressedBytes());
 		return (ValidatorRegisteredCopy) radixEngine.get(validatorDataKey).orElse(ValidatorRegisteredCopy.createVirtual(bftKey));
 	}
 
 	public ValidatorRakeCopy getMyNextValidatorFee() {
-		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_RAKE_COPY.id(), bftKey.getCompressedBytes());
+		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_RAKE_COPY.id(), bftKey.getCompressedBytes());
 		return (ValidatorRakeCopy) radixEngine.get(validatorDataKey).orElse(ValidatorRakeCopy.createVirtual(bftKey));
 	}
 
 	public ValidatorOwnerCopy getMyNextEpochValidatorOwner() {
-		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_OWNER_COPY.id(), bftKey.getCompressedBytes());
+		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_OWNER_COPY.id(), bftKey.getCompressedBytes());
 		return (ValidatorOwnerCopy) radixEngine.get(validatorDataKey).orElse(ValidatorOwnerCopy.createVirtual(bftKey));
 	}
 
 	public ValidatorMetaData getMyValidatorMetadata() {
-		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_META_DATA.id(), bftKey.getCompressedBytes());
+		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_META_DATA.id(), bftKey.getCompressedBytes());
 		return (ValidatorMetaData) radixEngine.get(validatorDataKey).orElse(ValidatorMetaData.createVirtual(bftKey));
 	}
 
@@ -127,7 +127,7 @@ public class AccountInfoService {
 	}
 
 	public ValidatorStakeData getMyValidator() {
-		var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), bftKey.getCompressedBytes());
+		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), bftKey.getCompressedBytes());
 		return (ValidatorStakeData) radixEngine.get(validatorDataKey).orElse(ValidatorStakeData.createVirtual(bftKey));
 	}
 
@@ -180,7 +180,7 @@ public class AccountInfoService {
 
 		final Map<ECPublicKey, UInt384> stakes = new HashMap<>();
 		for (var e : stakeOwnerships.entrySet()) {
-			var validatorDataKey = SystemMapKey.ofValidatorData(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), e.getKey().getCompressedBytes());
+			var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), e.getKey().getCompressedBytes());
 			var validatorData = (ValidatorStakeData) radixEngine.get(validatorDataKey).orElseThrow();
 			var stake = e.getValue().multiply(validatorData.getTotalStake()).divide(validatorData.getTotalOwnership());
 			stakes.put(e.getKey(), stake);
@@ -205,7 +205,7 @@ public class AccountInfoService {
 
 		return jsonObject()
 			.put("tokens", balancesArray)
-			.put("prepared_stakes", preparedStakesArray)
+			.put("preparedStakes", preparedStakesArray)
 			.put("stakes", stakesArray);
 	}
 
