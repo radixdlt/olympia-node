@@ -27,33 +27,28 @@ import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.engine.BatchVerifier;
-import com.radixdlt.engine.MetadataException;
+import com.radixdlt.engine.PostProcessor;
+import com.radixdlt.engine.PostProcessorException;
 import com.radixdlt.store.EngineStore;
 
 import java.util.Arrays;
 import java.util.List;
 
-public final class AddValidatorsSystemMetadataVerifier implements BatchVerifier<LedgerAndBFTProof> {
-	private final BatchVerifier<LedgerAndBFTProof> baseVerifier;
-
-	public AddValidatorsSystemMetadataVerifier(BatchVerifier<LedgerAndBFTProof> baseVerifier) {
-		this.baseVerifier = baseVerifier;
-	}
-
+/**
+ * Adds validatorsSystemMetadata at epoch boundary to result metadata.
+ */
+public final class ValidatorsSystemMetadataPostProcessor implements PostProcessor<LedgerAndBFTProof> {
 	@Override
-	public LedgerAndBFTProof processMetadata(
+	public LedgerAndBFTProof process(
 		LedgerAndBFTProof metadata,
 		EngineStore<LedgerAndBFTProof> engineStore,
 		List<REProcessedTxn> txns
-	) throws MetadataException {
-		final var baseMetadata = baseVerifier.processMetadata(metadata, engineStore, txns);
-
-		if (baseMetadata.getProof().getNextValidatorSet().isPresent()) {
-			return baseMetadata
-				.withValidatorsSystemMetadata(getValidatorsSystemMetadata(engineStore, baseMetadata));
+	) throws PostProcessorException {
+		if (metadata.getProof().getNextValidatorSet().isPresent()) {
+			return metadata
+				.withValidatorsSystemMetadata(getValidatorsSystemMetadata(engineStore, metadata));
 		} else {
-			return baseMetadata;
+			return metadata;
 		}
 	}
 

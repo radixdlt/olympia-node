@@ -58,11 +58,11 @@ public final class FixedEpochForkConfig implements ForkConfig {
 	}
 
 	@Override
-	public FixedEpochForkConfig withForksVerifier(ForkConfig nextFork) {
+	public FixedEpochForkConfig withForksPostProcessor(ForkConfig nextFork) {
 		return new FixedEpochForkConfig(
 			name,
 			hash,
-			reRules.withForksVerifier(reRules.getParser(), nextFork),
+			reRules.withForksPostProcessor(reRules.getParser(), nextFork),
 			epoch
 		);
 	}

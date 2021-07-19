@@ -19,8 +19,8 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.engine.BatchVerifier;
-import com.radixdlt.engine.MetadataException;
+import com.radixdlt.engine.PostProcessor;
+import com.radixdlt.engine.PostProcessorException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
@@ -30,33 +30,29 @@ import com.radixdlt.store.EngineStore;
 
 import java.util.List;
 
-public final class ForksVerifier implements BatchVerifier<LedgerAndBFTProof> {
-	private final BatchVerifier<LedgerAndBFTProof> baseVerifier;
+/**
+ * Checks whether the engine should switch to the next fork.
+ * If so, adds nextForkHash to result metadata.
+ */
+public final class ForksPostProcessor implements PostProcessor<LedgerAndBFTProof> {
 	private final REParser reParser;
 	private final ForkConfig nextFork;
 
-	public ForksVerifier(
-		BatchVerifier<LedgerAndBFTProof> baseVerifier,
-		REParser reParser,
-		ForkConfig nextFork
-	) {
-		this.baseVerifier = baseVerifier;
+	public ForksPostProcessor(REParser reParser, ForkConfig nextFork) {
 		this.reParser = reParser;
 		this.nextFork = nextFork;
 	}
 
 	@Override
-	public LedgerAndBFTProof processMetadata(
+	public LedgerAndBFTProof process(
 		LedgerAndBFTProof metadata,
 		EngineStore<LedgerAndBFTProof> engineStore,
 		List<REProcessedTxn> txns
-	) throws MetadataException {
-		final var baseMetadata = baseVerifier.processMetadata(metadata, engineStore, txns);
-
-		if (baseMetadata.getProof().getNextValidatorSet().isPresent() && shouldSwitchToNextFork(baseMetadata)) {
-			return baseMetadata.withNextForkHash(nextFork.hash());
+	) throws PostProcessorException {
+		if (metadata.getProof().getNextValidatorSet().isPresent() && shouldSwitchToNextFork(metadata)) {
+			return metadata.withNextForkHash(nextFork.hash());
 		} else {
-			return baseMetadata;
+			return metadata;
 		}
 	}
 

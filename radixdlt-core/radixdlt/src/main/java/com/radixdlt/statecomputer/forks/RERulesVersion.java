@@ -78,8 +78,9 @@ import com.radixdlt.constraintmachine.meter.Meters;
 import com.radixdlt.constraintmachine.meter.UpSubstateFeeMeter;
 import com.radixdlt.constraintmachine.meter.SigsPerRoundMeter;
 import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
+import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.statecomputer.AddValidatorsSystemMetadataVerifier;
+import com.radixdlt.statecomputer.ValidatorsSystemMetadataPostProcessor;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
 
 import java.util.Set;
@@ -164,7 +165,10 @@ public enum RERulesVersion {
 				serialization,
 				constraintMachineConfig,
 				actionConstructors,
-				new AddValidatorsSystemMetadataVerifier(new EpochProofVerifierV2()),
+				PostProcessor.combine(
+					new EpochProofVerifierV2(),
+					new ValidatorsSystemMetadataPostProcessor()
+				),
 				config
 			);
 		}

@@ -121,14 +121,14 @@ public final class Forks {
 		ImmutableList<FixedEpochForkConfig> fixedEpochForks,
 		Optional<CandidateForkConfig> candidateFork
 	) {
-		// decorate base BatchVerifier with ForksVerifier
+		// decorate base PostProcessor with ForksPostProcessor
 		this.fixedEpochForks = IntStream.range(0, fixedEpochForks.size())
 			.mapToObj(idx -> {
 				final var forkConfig = fixedEpochForks.get(idx);
 				if (idx < fixedEpochForks.size() - 1) {
-					return forkConfig.withForksVerifier(fixedEpochForks.get(idx + 1));
+					return forkConfig.withForksPostProcessor(fixedEpochForks.get(idx + 1));
 				} else if (candidateFork.isPresent()) {
-					return forkConfig.withForksVerifier(candidateFork.get());
+					return forkConfig.withForksPostProcessor(candidateFork.get());
 				} else {
 					return forkConfig;
 				}

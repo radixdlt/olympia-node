@@ -24,20 +24,20 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.engine.BatchVerifier;
-import com.radixdlt.engine.MetadataException;
+import com.radixdlt.engine.PostProcessor;
+import com.radixdlt.engine.PostProcessorException;
 import com.radixdlt.store.EngineStore;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
+public class EpochProofVerifierV2 implements PostProcessor<LedgerAndBFTProof> {
 	@Override
-	public LedgerAndBFTProof processMetadata(
+	public LedgerAndBFTProof process(
 		LedgerAndBFTProof metadata,
 		EngineStore<LedgerAndBFTProof> engineStore,
 		List<REProcessedTxn> txns
-	) throws MetadataException {
+	) throws PostProcessorException {
 		NextValidatorSetEvent nextValidatorSetEvent = null;
 		for (int i = 0; i < txns.size(); i++) {
 			var processed = txns.get(i);
@@ -49,19 +49,19 @@ public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
 			if (!nextEpochEvents.isEmpty()) {
 				// TODO: Move this check into Meter
 				if (i != txns.size() - 1) {
-					throw new MetadataException("Additional txns added to end of epoch.");
+					throw new PostProcessorException("Additional txns added to end of epoch.");
 				}
 
 				// TODO: Move this check into Meter
 				if (nextEpochEvents.size() != 1) {
-					throw new MetadataException("Multiple epoch events occurred in batch.");
+					throw new PostProcessorException("Multiple epoch events occurred in batch.");
 				}
 
 				// TODO: Move this check into Meter
 				var stateUpdates = processed.getGroupedStateUpdates();
 				if (stateUpdates.get(stateUpdates.size() - 1).stream()
 					.noneMatch(u -> u.getParsed() instanceof EpochData)) {
-					throw new MetadataException("Epoch update is not the last execution.");
+					throw new PostProcessorException("Epoch update is not the last execution.");
 				}
 
 				nextValidatorSetEvent = nextEpochEvents.get(0);
@@ -70,7 +70,7 @@ public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
 
 		var nextValidatorSetMaybe = metadata.getProof().getNextValidatorSet();
 		if (nextValidatorSetEvent == null != nextValidatorSetMaybe.isEmpty()) {
-			throw new MetadataException("Epoch event does not match proof " + nextValidatorSetEvent + " " + nextValidatorSetMaybe);
+			throw new PostProcessorException("Epoch event does not match proof " + nextValidatorSetEvent + " " + nextValidatorSetMaybe);
 		}
 		if (nextValidatorSetEvent != null) {
 			// TODO: Comparison of ordering as well
@@ -78,7 +78,7 @@ public class EpochProofVerifierV2 implements BatchVerifier<LedgerAndBFTProof> {
 				.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount()));
 			var bftValidatorSet = BFTValidatorSet.from(nextValidatorSet);
 			if (!nextValidatorSetMaybe.orElseThrow().equals(bftValidatorSet)) {
-				throw new MetadataException("Validator set computed does not match proof.");
+				throw new PostProcessorException("Validator set computed does not match proof.");
 			}
 		}
 

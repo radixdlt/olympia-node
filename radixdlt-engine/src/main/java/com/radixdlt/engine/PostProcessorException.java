@@ -18,24 +18,8 @@
 
 package com.radixdlt.engine;
 
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.store.EngineStore;
-
-import java.util.List;
-
-/**
- * Verifies that batched atoms executed on Radix Engine follow some
- * specified rules.
- *
- * @param <M> class of metadata
- */
-/* TODO: consider renaming to PostProcessor (or similar) */
-public interface BatchVerifier<M> {
-	default M processMetadata(M metadata, EngineStore<M> engineStore, List<REProcessedTxn> txns) throws MetadataException {
-		return metadata;
-	}
-
-	static <M> BatchVerifier<M> empty() {
-		return new BatchVerifier<>() {};
+public final class PostProcessorException extends RuntimeException {
+	public PostProcessorException(String msg) {
+		super(msg);
 	}
 }

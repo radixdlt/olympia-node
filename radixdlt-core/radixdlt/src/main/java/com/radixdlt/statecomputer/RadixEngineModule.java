@@ -125,7 +125,7 @@ public class RadixEngineModule extends AbstractModule {
 			forkConfig.engineRules().getActionConstructors(),
 			cm,
 			engineStore,
-			forkConfig.engineRules().getBatchVerifier()
+			forkConfig.engineRules().getPostProcessor()
 		);
 
 		// Additional state reducers are not required for consensus so don't need to include their

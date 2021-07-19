@@ -71,7 +71,7 @@ public final class GenesisBuilder {
 			rules.getActionConstructors(),
 			cm,
 			new InMemoryEngineStore<>(),
-			rules.getBatchVerifier()
+			rules.getPostProcessor()
 		);
 	}
 

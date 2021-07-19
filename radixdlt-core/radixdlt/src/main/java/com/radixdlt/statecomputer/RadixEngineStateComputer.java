@@ -46,7 +46,7 @@ import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.engine.MetadataException;
+import com.radixdlt.engine.PostProcessorException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
@@ -324,7 +324,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			);
 		} catch (RadixEngineException e) {
 			throw new CommittedBadTxnException(verifiedTxnsAndProof, e);
-		} catch (MetadataException e) {
+		} catch (PostProcessorException e) {
 			throw new ByzantineQuorumException(e.getMessage());
 		}
 
@@ -336,7 +336,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				rules.getConstraintMachineConfig(),
 				rules.getSerialization(),
 				rules.getActionConstructors(),
-				rules.getBatchVerifier(),
+				rules.getPostProcessor(),
 				rules.getParser()
 			);
 			this.epochCeilingView = rules.getMaxRounds();

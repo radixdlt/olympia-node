@@ -22,9 +22,9 @@ import com.radixdlt.atom.REConstructor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.BatchVerifier;
+import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.statecomputer.ForksVerifier;
+import com.radixdlt.statecomputer.ForksPostProcessor;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.util.OptionalInt;
@@ -35,7 +35,7 @@ public final class RERules {
 	private final SubstateSerialization serialization;
 	private final ConstraintMachineConfig constraintMachineConfig;
 	private final REConstructor actionConstructors;
-	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
+	private final PostProcessor<LedgerAndBFTProof> postProcessor;
 	private final RERulesConfig config;
 
 	public RERules(
@@ -44,7 +44,7 @@ public final class RERules {
 		SubstateSerialization serialization,
 		ConstraintMachineConfig constraintMachineConfig,
 		REConstructor actionConstructors,
-		BatchVerifier<LedgerAndBFTProof> batchVerifier,
+		PostProcessor<LedgerAndBFTProof> postProcessor,
 		RERulesConfig config
 	) {
 		this.version = version;
@@ -52,7 +52,7 @@ public final class RERules {
 		this.serialization = serialization;
 		this.constraintMachineConfig = constraintMachineConfig;
 		this.actionConstructors = actionConstructors;
-		this.batchVerifier = batchVerifier;
+		this.postProcessor = postProcessor;
 		this.config = config;
 	}
 
@@ -72,8 +72,8 @@ public final class RERules {
 		return actionConstructors;
 	}
 
-	public BatchVerifier<LedgerAndBFTProof> getBatchVerifier() {
-		return batchVerifier;
+	public PostProcessor<LedgerAndBFTProof> getPostProcessor() {
+		return postProcessor;
 	}
 
 	public REParser getParser() {
@@ -96,14 +96,14 @@ public final class RERules {
 		return config;
 	}
 
-	public RERules withForksVerifier(REParser reParser, ForkConfig nextFork) {
+	public RERules withForksPostProcessor(REParser reParser, ForkConfig nextFork) {
 		return new RERules(
 			version,
 			parser,
 			serialization,
 			constraintMachineConfig,
 			actionConstructors,
-			new ForksVerifier(batchVerifier, reParser, nextFork),
+			PostProcessor.combine(postProcessor, new ForksPostProcessor(reParser, nextFork)),
 			config
 		);
 	}

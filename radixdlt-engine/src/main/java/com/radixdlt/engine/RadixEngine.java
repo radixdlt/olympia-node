@@ -135,7 +135,7 @@ public final class RadixEngine<M> {
 
 	private REParser parser;
 	private SubstateSerialization serialization;
-	private BatchVerifier<M> batchVerifier;
+	private PostProcessor<M> postProcessor;
 	private REConstructor actionConstructors;
 	private ConstraintMachine constraintMachine;
 
@@ -146,7 +146,7 @@ public final class RadixEngine<M> {
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore
 	) {
-		this(parser, serialization, actionConstructors, constraintMachine, engineStore, BatchVerifier.empty());
+		this(parser, serialization, actionConstructors, constraintMachine, engineStore, PostProcessor.empty());
 	}
 
 	public RadixEngine(
@@ -155,14 +155,14 @@ public final class RadixEngine<M> {
 		REConstructor actionConstructors,
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore,
-		BatchVerifier<M> batchVerifier
+		PostProcessor<M> postProcessor
 	) {
 		this.parser = Objects.requireNonNull(parser);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.actionConstructors = Objects.requireNonNull(actionConstructors);
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.engineStore = Objects.requireNonNull(engineStore);
-		this.batchVerifier = batchVerifier;
+		this.postProcessor = postProcessor;
 	}
 
 	/**
@@ -220,7 +220,7 @@ public final class RadixEngine<M> {
 		ConstraintMachineConfig constraintMachineConfig,
 		SubstateSerialization serialization,
 		REConstructor actionToConstructorMap,
-		BatchVerifier<M> batchVerifier,
+		PostProcessor<M> postProcessor,
 		REParser parser
 	) {
 		synchronized (stateUpdateEngineLock) {
@@ -231,7 +231,7 @@ public final class RadixEngine<M> {
 				constraintMachineConfig.getMeter()
 			);
 			this.actionConstructors = actionToConstructorMap;
-			this.batchVerifier = batchVerifier;
+			this.postProcessor = postProcessor;
 			this.parser = parser;
 			this.serialization = serialization;
 		}
@@ -261,7 +261,7 @@ public final class RadixEngine<M> {
 				actionToConstructorMap,
 				constraintMachine,
 				transientEngineStore,
-				BatchVerifier.empty()
+				PostProcessor.empty()
 			);
 			engine.stateComputers.putAll(stateComputers);
 		}
@@ -428,17 +428,17 @@ public final class RadixEngine<M> {
 		}
 
 		try {
-			final var processedMetadata = batchVerifier.processMetadata(meta, engineStore, processedTxns);
-			if (processedMetadata != null) {
-				engineStoreInTransaction.storeMetadata(processedMetadata);
+			final var postProcessedMetadata = postProcessor.process(meta, engineStore, processedTxns);
+			if (postProcessedMetadata != null) {
+				engineStoreInTransaction.storeMetadata(postProcessedMetadata);
 			}
 			return RadixEngineResult.create(
 				processedTxns,
-				processedMetadata,
+				postProcessedMetadata,
 				verificationStopwatch.elapsed(TimeUnit.MILLISECONDS),
 				storageStopwatch.elapsed(TimeUnit.MILLISECONDS)
 			);
-		} catch (MetadataException e) {
+		} catch (PostProcessorException e) {
 			logger.error("Invalid metadata: " + processedTxns);
 			throw e;
 		}

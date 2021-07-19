@@ -30,7 +30,7 @@ public interface ForkConfig {
 	String name();
 	HashCode hash();
 	RERules engineRules();
-	ForkConfig withForksVerifier(ForkConfig nextFork);
+	ForkConfig withForksPostProcessor(ForkConfig nextFork);
 
 	static HashCode voteHash(ECPublicKey publicKey, ForkConfig forkConfig) {
 		return voteHash(publicKey, forkConfig.hash());
