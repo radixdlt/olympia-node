@@ -35,8 +35,13 @@ import com.radixdlt.crypto.HashUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Set;
 
 public final class StokenetForksModule extends AbstractModule {
+	private static final Set<String> RESERVED_SYMBOLS = Set.of(
+		"xrd", "xrds", "exrd", "exrds", "rad", "rads", "rdx", "rdxs", "radix"
+	);
+
 	@ProvidesIntoSet
 	ForkBuilder stokenet() {
 		return new ForkBuilder(
@@ -45,6 +50,7 @@ public final class StokenetForksModule extends AbstractModule {
 			0L,
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
+				RESERVED_SYMBOLS,
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 					Map.of(

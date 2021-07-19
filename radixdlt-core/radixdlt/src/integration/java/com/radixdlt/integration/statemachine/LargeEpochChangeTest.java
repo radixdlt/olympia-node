@@ -100,6 +100,7 @@ public class LargeEpochChangeTest {
 			MempoolConfig.asModule(1000, 10),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
+					Set.of("xrd"),
 					FeeTable.create(
 						Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 						Map.of(

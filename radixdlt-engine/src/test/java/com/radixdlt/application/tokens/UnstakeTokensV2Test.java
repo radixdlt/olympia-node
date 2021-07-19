@@ -89,7 +89,7 @@ public class UnstakeTokensV2Test {
 						10, Amount.ofTokens(10).toSubunits(), 9800,
 						1, 10
 					),
-					new TokensConstraintScryptV3(),
+					new TokensConstraintScryptV3(Set.of()),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(),
 					new ValidatorRegisterConstraintScrypt(),
@@ -108,7 +108,7 @@ public class UnstakeTokensV2Test {
 						10, Amount.ofTokens(10).toSubunits(), 9800,
 						1, 10
 					),
-					new TokensConstraintScryptV3(),
+					new TokensConstraintScryptV3(Set.of()),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(),
 					new ValidatorRegisterConstraintScrypt(),
@@ -127,7 +127,7 @@ public class UnstakeTokensV2Test {
 						10, Amount.ofTokens(10).toSubunits(), 9800,
 						1, 10
 					),
-					new TokensConstraintScryptV3(),
+					new TokensConstraintScryptV3(Set.of()),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(),
 					new ValidatorRegisterConstraintScrypt(),
@@ -146,7 +146,7 @@ public class UnstakeTokensV2Test {
 						10, Amount.ofTokens(10).toSubunits(), 9800,
 						1, 10
 					),
-					new TokensConstraintScryptV3(),
+					new TokensConstraintScryptV3(Set.of()),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(),
 					new ValidatorRegisterConstraintScrypt(),
@@ -188,7 +188,7 @@ public class UnstakeTokensV2Test {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
+		cmAtomOS.load(new SystemConstraintScrypt());
 		scrypts.forEach(cmAtomOS::load);
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),

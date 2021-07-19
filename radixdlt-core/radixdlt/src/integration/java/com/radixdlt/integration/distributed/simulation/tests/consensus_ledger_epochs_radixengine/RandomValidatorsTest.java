@@ -28,6 +28,7 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
@@ -53,6 +54,7 @@ public class RandomValidatorsTest {
 		.addRadixEngineConfigModules(
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
+					Set.of("xrd"),
 					FeeTable.noFees(),
 					OptionalInt.of(5),
 					100,

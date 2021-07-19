@@ -14,6 +14,7 @@ import com.radixdlt.statecomputer.forks.RERulesConfig;
 
 import java.nio.charset.StandardCharsets;
 import java.util.OptionalInt;
+import java.util.Set;
 
 public final class MockedForksModule extends AbstractModule {
 
@@ -26,6 +27,7 @@ public final class MockedForksModule extends AbstractModule {
 			0L,
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
+				Set.of(),
 				FeeTable.noFees(),
 				OptionalInt.empty(),
 				epochCeilingView.number(),

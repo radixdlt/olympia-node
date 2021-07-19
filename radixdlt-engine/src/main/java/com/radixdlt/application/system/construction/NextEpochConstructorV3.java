@@ -282,6 +282,7 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			Streams.stream(cursor)
 				.map(ValidatorStakeData.class::cast)
 				.limit(maxValidators)
+				.filter(s -> !s.getTotalStake().isZero())
 				.forEach(v -> txBuilder.up(new ValidatorBFTData(v.getValidatorKey(), 0, 0)));
 		}
 		txBuilder.up(new EpochData(closingEpoch.getEpoch() + 1));

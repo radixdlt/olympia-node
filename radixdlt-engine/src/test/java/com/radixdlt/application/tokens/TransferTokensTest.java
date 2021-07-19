@@ -63,8 +63,8 @@ public class TransferTokensTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][] {
-			{UInt256.TEN, UInt256.TEN, new TokensConstraintScryptV3(), new TransferTokensConstructorV2()},
-			{UInt256.TEN, UInt256.SIX, new TokensConstraintScryptV3(), new TransferTokensConstructorV2()},
+			{UInt256.TEN, UInt256.TEN, new TokensConstraintScryptV3(Set.of()), new TransferTokensConstructorV2()},
+			{UInt256.TEN, UInt256.SIX, new TokensConstraintScryptV3(Set.of()), new TransferTokensConstructorV2()},
 		});
 	}
 
@@ -90,7 +90,7 @@ public class TransferTokensTest {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
+		cmAtomOS.load(new SystemConstraintScrypt());
 		cmAtomOS.load(scrypt);
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
