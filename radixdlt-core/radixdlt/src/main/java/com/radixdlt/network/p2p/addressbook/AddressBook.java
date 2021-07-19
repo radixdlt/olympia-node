@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.p2p.addressbook;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -155,5 +156,9 @@ public final class AddressBook {
 			}
 
 		}
+	}
+
+	public ImmutableMap<NodeId, AddressBookEntry> knownPeers() {
+		return ImmutableMap.copyOf(knownPeers);
 	}
 }

@@ -151,6 +151,13 @@ public class SystemEndpointModule extends AbstractModule {
 
 	@SystemEndpoint
 	@ProvidesIntoMap
+	@StringMapKey("networking.get_address_book")
+	public JsonRpcHandler networkingGetAddressBook(SystemHandler systemHandler) {
+		return systemHandler::networkingGetAddressBook;
+	}
+
+	@SystemEndpoint
+	@ProvidesIntoMap
 	@StringMapKey("networking.get_data")
 	public JsonRpcHandler networkingGetData(SystemHandler systemHandler) {
 		return systemHandler::networkingGetData;
