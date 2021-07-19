@@ -42,7 +42,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Set;
 
 public class UpdateValidatorFeeTest {
 	private RadixEngine<Void> engine;
@@ -52,7 +51,7 @@ public class UpdateValidatorFeeTest {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
+		cmAtomOS.load(new SystemConstraintScrypt());
 		cmAtomOS.load(new RoundUpdateConstraintScrypt(1));
 		cmAtomOS.load(new EpochUpdateConstraintScrypt(1, UInt256.TEN, 0, 1, 100));
 		cmAtomOS.load(new ValidatorConstraintScryptV2());

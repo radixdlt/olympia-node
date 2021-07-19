@@ -59,7 +59,7 @@ public class NativeTokensTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][] {
-			{new TokensConstraintScryptV3(), new TransferTokensConstructorV2()},
+			{new TokensConstraintScryptV3(Set.of()), new TransferTokensConstructorV2()},
 		});
 	}
 
@@ -77,7 +77,7 @@ public class NativeTokensTest {
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(scrypt);
-		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
+		cmAtomOS.load(new SystemConstraintScrypt());
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
 			cmAtomOS.buildSubstateDeserialization(),

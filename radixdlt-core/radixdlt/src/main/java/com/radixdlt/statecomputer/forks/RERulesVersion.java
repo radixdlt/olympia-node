@@ -81,8 +81,6 @@ import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
 
-import java.util.Set;
-
 public enum RERulesVersion {
 	OLYMPIA_V1 {
 		@Override
@@ -97,8 +95,8 @@ public enum RERulesVersion {
 			v4.load(new ValidatorUpdateRakeConstraintScrypt(rakeIncreaseDebouncerEpochLength));
 			v4.load(new ValidatorRegisterConstraintScrypt());
 			v4.load(new ValidatorUpdateOwnerConstraintScrypt());
-			v4.load(new TokensConstraintScryptV3());
-			v4.load(new SystemConstraintScrypt(Set.of("xrd")));
+			v4.load(new SystemConstraintScrypt());
+			v4.load(new TokensConstraintScryptV3(config.getReservedSymbols()));
 			v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));
 			v4.load(new MutexConstraintScrypt());
 			v4.load(new RoundUpdateConstraintScrypt(maxRounds));

@@ -111,9 +111,9 @@ public class TransactionParserTest {
 			10, Amount.ofTokens(10).toSubunits(), 9800, 1, 10
 		));
 		cmAtomOS.load(new ValidatorConstraintScryptV2());
-		cmAtomOS.load(new TokensConstraintScryptV3());
+		cmAtomOS.load(new TokensConstraintScryptV3(Set.of()));
 		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
-		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
+		cmAtomOS.load(new SystemConstraintScrypt());
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
 		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
 		cmAtomOS.load(new ValidatorUpdateOwnerConstraintScrypt());

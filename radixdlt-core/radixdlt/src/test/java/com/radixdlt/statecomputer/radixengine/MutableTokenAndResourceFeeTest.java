@@ -22,7 +22,7 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
@@ -129,7 +129,7 @@ public class MutableTokenAndResourceFeeTest {
 
 		// Act/Assert
 		assertThatThrownBy(() -> sut.execute(List.of(txn)))
-			.hasRootCauseInstanceOf(ProcedureException.class);
+			.hasRootCauseInstanceOf(ReservedSymbolException.class);
 	}
 
 	@Test
