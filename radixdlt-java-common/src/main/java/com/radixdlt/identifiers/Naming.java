@@ -22,6 +22,6 @@ import java.util.regex.Pattern;
 public final class Naming {
 	private Naming() { }
 
-	public static final String NAME_REGEX = "[a-z0-9]+";
+	public static final String NAME_REGEX = "[a-z]+";
 	public static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 }

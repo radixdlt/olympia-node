@@ -26,15 +26,14 @@ import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.network.p2p.RadixNodeUri;
 
-import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static java.util.function.Predicate.not;
@@ -42,7 +41,6 @@ import static java.util.function.Predicate.not;
 /**
  * Manages known peers network addresses and their metadata.
  */
-@Singleton
 public final class AddressBook {
 	private static final Comparator<AddressBookEntry.PeerAddressEntry> entryComparator = (a, b) -> {
 		final var aLastSuccess = a.getLastSuccessfulConnection().orElse(Instant.MIN);
@@ -54,7 +52,7 @@ public final class AddressBook {
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
 	private final AddressBookPersistence persistence;
 	private final Object lock = new Object();
-	private final Map<NodeId, AddressBookEntry> knownPeers = new HashMap<>();
+	private final Map<NodeId, AddressBookEntry> knownPeers = new ConcurrentHashMap<>();
 
 	@Inject
 	public AddressBook(

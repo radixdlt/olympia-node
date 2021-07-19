@@ -18,58 +18,56 @@
 
 package com.radixdlt.application.validators;
 
+import com.google.common.base.Strings;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
-import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorSystemMetadataConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
-import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.UpdateValidatorFee;
+import com.radixdlt.atom.actions.UpdateValidatorSystemMetadata;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Set;
 
-public class UpdateValidatorFeeTest {
+public class UpdateValidatorSystemMetadataTest {
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
-	private SubstateSerialization serialization;
 
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt());
-		cmAtomOS.load(new RoundUpdateConstraintScrypt(1));
-		cmAtomOS.load(new EpochUpdateConstraintScrypt(1, UInt256.TEN, 0, 1, 100));
+		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
+		cmAtomOS.load(new RoundUpdateConstraintScrypt(2));
+		cmAtomOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
 		cmAtomOS.load(new ValidatorConstraintScryptV2());
-		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
 			cmAtomOS.buildSubstateDeserialization(),
 			cmAtomOS.buildVirtualSubstateDeserialization()
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
-		this.serialization = cmAtomOS.buildSubstateSerialization();
 		this.store = new InMemoryEngineStore<>();
 		this.engine = new RadixEngine<>(
 			parser,
-			serialization,
+			cmAtomOS.buildSubstateSerialization(),
 			REConstructor.newBuilder()
+				.put(UpdateValidatorSystemMetadata.class, new UpdateValidatorSystemMetadataConstructor())
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
-				.put(UpdateValidatorFee.class, new UpdateRakeConstructor(2, ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE))
 				.build(),
 			cm,
 			store
@@ -79,13 +77,14 @@ public class UpdateValidatorFeeTest {
 	}
 
 	@Test
-	public void update_rake() throws Exception {
+	public void update_validator_metadata() throws Exception {
 		// Arrange
 		var key = ECKeyPair.generateNew();
 
+		var bytes = Bytes.fromHexString(Strings.repeat("0c", 32));
 		// Act and Assert
-		var registerTxn = this.engine.construct(new UpdateValidatorFee(key.getPublicKey(), 100))
+		var txn = this.engine.construct(new UpdateValidatorSystemMetadata(key.getPublicKey(), bytes))
 			.signAndBuild(key::sign);
-		this.engine.execute(List.of(registerTxn));
+		this.engine.execute(List.of(txn));
 	}
 }

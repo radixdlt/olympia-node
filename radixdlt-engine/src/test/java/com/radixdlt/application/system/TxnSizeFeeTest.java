@@ -98,8 +98,8 @@ public class TxnSizeFeeTest {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new TokensConstraintScryptV3());
-		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
+		cmAtomOS.load(new TokensConstraintScryptV3(Set.of()));
+		cmAtomOS.load(new SystemConstraintScrypt());
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
 			cmAtomOS.buildSubstateDeserialization(),

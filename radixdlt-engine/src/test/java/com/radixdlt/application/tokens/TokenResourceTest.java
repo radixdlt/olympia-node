@@ -40,6 +40,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
+import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -47,6 +48,7 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,7 +59,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TokenDefinitionTest {
+public class TokenResourceTest {
 	private RadixEngine<Void> engine;
 	private EngineStore<Void> store;
 	private REParser parser;
@@ -67,8 +69,8 @@ public class TokenDefinitionTest {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
-		cmAtomOS.load(new TokensConstraintScryptV3());
+		cmAtomOS.load(new SystemConstraintScrypt());
+		cmAtomOS.load(new TokensConstraintScryptV3(Set.of("xrd")));
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
 			cmAtomOS.buildSubstateDeserialization(),
@@ -118,6 +120,62 @@ public class TokenDefinitionTest {
 		// Act
 		// Assert
 		this.engine.execute(List.of(txn));
+	}
+
+	@Test
+	public void create_token_with_reserved_symbol_should_fail() throws Exception {
+		// Arrange
+		var keyPair = PrivateKeys.ofNumeric(1);
+		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "xrd");
+		var tokenResource = TokenResource.createFixedSupplyResource(addr);
+		var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
+		var tokensParticle = new TokensInAccount(
+			holdingAddress,
+			addr,
+			UInt256.TEN
+		);
+
+		var builder = TxLowLevelBuilder.newBuilder(serialization)
+			.syscall(Syscall.READDR_CLAIM, "xrd".getBytes(StandardCharsets.UTF_8))
+			.virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
+			.up(tokenResource)
+			.up(tokensParticle)
+			.up(TokenResourceMetadata.empty(addr))
+			.end();
+		var sig = keyPair.sign(builder.hashToSign().asBytes());
+		var txn = builder.sig(sig).build();
+
+		// Act
+		// Assert
+		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
+			.hasRootCauseInstanceOf(ReservedSymbolException.class);
+	}
+
+	@Test
+	public void create_token_with_reserved_symbol_with_system_permissions_should_pass() throws Exception {
+		// Arrange
+		var keyPair = PrivateKeys.ofNumeric(1);
+		var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "xrd");
+		var tokenResource = TokenResource.createFixedSupplyResource(addr);
+		var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
+		var tokensParticle = new TokensInAccount(
+			holdingAddress,
+			addr,
+			UInt256.TEN
+		);
+
+		var builder = TxLowLevelBuilder.newBuilder(serialization)
+			.syscall(Syscall.READDR_CLAIM, "xrd".getBytes(StandardCharsets.UTF_8))
+			.virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
+			.up(tokenResource)
+			.up(tokensParticle)
+			.up(TokenResourceMetadata.empty(addr))
+			.end();
+		var txn = builder.build();
+
+		// Act
+		// Assert
+		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}
 
 	@Test

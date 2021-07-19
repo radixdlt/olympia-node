@@ -147,6 +147,7 @@ public class RecoveryTest {
 			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
+					Set.of("xrd"),
 					FeeTable.noFees(),
 					OptionalInt.of(50),
 					epochCeilingView,

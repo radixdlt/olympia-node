@@ -36,7 +36,8 @@ public enum SubstateTypeId {
 	VALIDATOR_ALLOW_DELEGATION_FLAG((byte) 0xe),
 	VALIDATOR_REGISTERED_FLAG_COPY((byte) 0xf),
 	VALIDATOR_RAKE_COPY((byte) 0x10),
-	VALIDATOR_OWNER_COPY((byte) 0x11);
+	VALIDATOR_OWNER_COPY((byte) 0x11),
+	VALIDATOR_SYSTEM_META_DATA((byte) 0x12);
 
 	private final byte id;
 

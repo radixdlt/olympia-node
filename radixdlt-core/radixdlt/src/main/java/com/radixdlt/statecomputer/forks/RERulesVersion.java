@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer.forks;
 
 import com.radixdlt.application.misc.FaucetTokensTransferConstructor;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorSystemMetadataConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
@@ -71,6 +72,7 @@ import com.radixdlt.application.validators.construction.UpdateValidatorMetadataC
 import com.radixdlt.application.validators.construction.UpdateValidatorOwnerConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
+import com.radixdlt.atom.actions.UpdateValidatorSystemMetadata;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.meter.Meter;
@@ -80,8 +82,6 @@ import com.radixdlt.constraintmachine.meter.SigsPerRoundMeter;
 import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
-
-import java.util.Set;
 
 public enum RERulesVersion {
 	OLYMPIA_V1 {
@@ -97,8 +97,8 @@ public enum RERulesVersion {
 			v4.load(new ValidatorUpdateRakeConstraintScrypt(rakeIncreaseDebouncerEpochLength));
 			v4.load(new ValidatorRegisterConstraintScrypt());
 			v4.load(new ValidatorUpdateOwnerConstraintScrypt());
-			v4.load(new TokensConstraintScryptV3());
-			v4.load(new SystemConstraintScrypt(Set.of("xrd")));
+			v4.load(new SystemConstraintScrypt());
+			v4.load(new TokensConstraintScryptV3(config.getReservedSymbols()));
 			v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));
 			v4.load(new MutexConstraintScrypt());
 			v4.load(new RoundUpdateConstraintScrypt(maxRounds));
@@ -155,6 +155,7 @@ public enum RERulesVersion {
 				))
 				.put(UpdateValidatorOwner.class, new UpdateValidatorOwnerConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
+				.put(UpdateValidatorSystemMetadata.class, new UpdateValidatorSystemMetadataConstructor())
 				.build();
 
 			return new RERules(

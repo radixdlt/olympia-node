@@ -63,7 +63,7 @@ public final class MintTokensTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][] {
-			{new TokensConstraintScryptV3(), new TransferTokensConstructorV2()}
+			{new TokensConstraintScryptV3(Set.of()), new TransferTokensConstructorV2()}
 		});
 	}
 
@@ -80,7 +80,7 @@ public final class MintTokensTest {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt(Set.of()));
+		cmAtomOS.load(new SystemConstraintScrypt());
 		cmAtomOS.load(scrypt);
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),

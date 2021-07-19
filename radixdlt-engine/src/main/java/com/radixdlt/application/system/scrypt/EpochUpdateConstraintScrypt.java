@@ -259,6 +259,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					.reversed()
 				)
 				.limit(maxValidators)
+				.filter(v -> !v.getTotalStake().isZero())
 				.collect(Collectors.toCollection(LinkedList::new));
 
 			context.emitEvent(NextValidatorSetEvent.create(this.nextValidatorSet));

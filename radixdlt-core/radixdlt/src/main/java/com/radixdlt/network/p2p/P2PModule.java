@@ -19,6 +19,7 @@ package com.radixdlt.network.p2p;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -29,10 +30,12 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookPeerControl;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrapImpl;
+import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
@@ -52,10 +55,14 @@ public final class P2PModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(PeerEvent.class);
 		eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
 
-		bind(PeersView.class).to(PeerManagerPeersView.class);
-		bind(PeerControl.class).to(AddressBookPeerControl.class);
-		bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class);
-		bind(AddressBookPersistence.class).to(BerkeleyAddressBookPersistence.class);
+		bind(AddressBook.class).in(Scopes.SINGLETON);
+		bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
+		bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
+		bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
+		bind(AddressBookPersistence.class).to(BerkeleyAddressBookPersistence.class).in(Scopes.SINGLETON);
+		bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
+		bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
+		bind(PeerManager.class).in(Scopes.SINGLETON);
 	}
 
 	@ProvidesIntoSet

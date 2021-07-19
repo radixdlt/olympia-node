@@ -19,7 +19,6 @@ package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
@@ -48,7 +47,6 @@ import java.util.Objects;
 /**
  * Persistence for address book entries.
  */
-@Singleton
 public final class BerkeleyAddressBookPersistence implements AddressBookPersistence {
 	private static final Logger log = LogManager.getLogger();
 

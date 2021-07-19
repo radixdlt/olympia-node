@@ -45,17 +45,8 @@ import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedList;
-import java.util.Set;
-
-import static com.radixdlt.identifiers.Naming.NAME_PATTERN;
 
 public final class SystemConstraintScrypt implements ConstraintScrypt {
-	private final Set<String> systemNames;
-
-	public SystemConstraintScrypt(Set<String> systemNames) {
-		this.systemNames = systemNames;
-	}
-
 	private static class AllocatingSystem implements ReducerState {
 	}
 
@@ -68,6 +59,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY);
 			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_RAKE_COPY);
 			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_OWNER_COPY);
+			substatesToVirtualize.add(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA);
 		}
 
 		public ReducerState createVirtualSubstate(VirtualParent virtualParent) throws ProcedureException {
@@ -214,17 +206,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 					} else if (syscall == Syscall.READDR_CLAIM) {
 						var bytes = d.getRemainingBytes(1);
 						if (bytes.length > 32) {
-							throw new ProcedureException("RRI length too large.");
+							throw new ProcedureException("Address claim too large.");
 						}
-
-						var str = new String(bytes);
-						if (systemNames.contains(str) && c.permissionLevel() != PermissionLevel.SYSTEM) {
-							throw new ProcedureException("Not allowed to use name " + str);
-						}
-						if (!NAME_PATTERN.matcher(str).matches()) {
-							throw new ProcedureException("invalid rri name: " + str);
-						}
-
 						return ReducerResult.incomplete(new REAddrClaimStart(bytes));
 					} else {
 						throw new ProcedureException("Invalid call type: " + syscall);

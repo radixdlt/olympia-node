@@ -20,7 +20,6 @@ package com.radixdlt.network.p2p;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
@@ -40,13 +39,13 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.radixdlt.network.messaging.MessagingErrors.PEER_BANNED;
 import static com.radixdlt.network.messaging.MessagingErrors.SELF_CONNECTION_ATTEMPT;
@@ -55,7 +54,6 @@ import static java.util.function.Predicate.not;
 /**
  * Manages active connections to other peers.
  */
-@Singleton
 public final class PeerManager {
 	private static final Logger log = LogManager.getLogger();
 
@@ -65,7 +63,7 @@ public final class PeerManager {
 	private final Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager;
 
 	private final Object lock = new Object();
-	private final Map<NodeId, Set<PeerChannel>> activeChannels = new HashMap<>();
+	private final Map<NodeId, Set<PeerChannel>> activeChannels = new ConcurrentHashMap<>();
 	private final PublishSubject<Observable<InboundMessage>> inboundMessagesFromChannels = PublishSubject.create();
 
 	@Inject
