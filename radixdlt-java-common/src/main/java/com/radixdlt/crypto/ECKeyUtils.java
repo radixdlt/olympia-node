@@ -27,6 +27,7 @@ import org.bouncycastle.math.ec.ECAlgorithms;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointUtil;
+import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.UnsignedBytes;
@@ -78,13 +79,17 @@ public class ECKeyUtils {
 		return domain;
 	}
 
+	private static BigInteger getPrime() {
+		return ((SecP256K1Curve) curve.getCurve()).getQ();
+	}
+
 	static {
 		install();
 	}
 
 	static synchronized void install() {
 		if (RuntimeUtils.isAndroidRuntime()) {
-			// Reference class so static initialiser is called.
+			// Reference class so static initializer is called.
 			LinuxSecureRandom.class.getName();
 			// Ensure the library version of BouncyCastle is used for Android
 			Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
@@ -183,6 +188,8 @@ public class ECKeyUtils {
 	static int calculateV(BigInteger r, BigInteger s, byte[] publicKey, byte[] hash) {
 		return tryV(0, r, s, publicKey, hash)
 			.or(() -> tryV(1, r, s, publicKey, hash))
+			.or(() -> tryV(2, r, s, publicKey, hash))
+			.or(() -> tryV(3, r, s, publicKey, hash))
 			.orElseThrow(() -> new IllegalStateException("Unable to calculate V byte for public key"));
 	}
 
@@ -224,23 +231,28 @@ public class ECKeyUtils {
 	}
 
 	static Optional<ECPoint> recoverFromSignature(int v, BigInteger r, BigInteger s, byte[] hash) {
-		var curveN = curve.getN();
-		var decompressedPoint = decompressKey(r, (v & 1) == 1);
+		var curveN = curve().getN();
+		var point = r.add(BigInteger.valueOf((long) v / 2).multiply(curveN));
+
+		if (point.compareTo(getPrime()) >= 0) {
+			return Optional.empty();
+		}
+
+		var decompressedPoint = decompressKey(point, (v & 1) == 1);
 
 		if (decompressedPoint == null || !decompressedPoint.multiply(curveN).isInfinity()) {
 			return Optional.empty();
 		}
 
-		var inverse = r.modInverse(curveN);
-		var candidate = new BigInteger(1, hash);
-		var negModCandidate = BigInteger.ZERO.subtract(candidate).mod(curveN);
+		var negModCandidate = BigInteger.ZERO.subtract(new BigInteger(1, hash)).mod(curveN);
+		var modInverseCurve = r.modInverse(curveN);
 
 		return Optional.of(
 			ECAlgorithms.sumOfTwoMultiplies(
-				curve.getG(),
-				inverse.multiply(negModCandidate).mod(curveN),
+				curve().getG(),
+				modInverseCurve.multiply(negModCandidate).mod(curveN),
 				decompressedPoint,
-				inverse.multiply(s).mod(curveN)
+				modInverseCurve.multiply(s).mod(curveN)
 			))
 			.filter(Predicate.not(ECPoint::isInfinity));
 	}
