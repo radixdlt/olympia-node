@@ -30,7 +30,6 @@ import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeersView;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -39,7 +38,6 @@ import java.util.Set;
  * Periodically pings peers and awaits for pong response
  * if pong is not received on time then it fires a PeerLostLiveness event.
  */
-@Singleton
 public final class PeerLivenessMonitor {
 	private final P2PConfig config;
 	private final PeersView peersView;

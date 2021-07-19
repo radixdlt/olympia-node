@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -30,7 +29,6 @@ import static java.util.stream.Collectors.groupingBy;
 /**
  * A Peers view using PeersManager
  */
-@Singleton
 public final class PeerManagerPeersView implements PeersView {
 	private final PeerManager peerManager;
 

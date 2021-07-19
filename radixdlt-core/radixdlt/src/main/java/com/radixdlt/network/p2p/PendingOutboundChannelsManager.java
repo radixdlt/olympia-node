@@ -23,14 +23,12 @@ import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-@Singleton
 public final class PendingOutboundChannelsManager {
 	private final P2PConfig config;
 	private final PeerOutboundBootstrap peerOutboundBootstrap;

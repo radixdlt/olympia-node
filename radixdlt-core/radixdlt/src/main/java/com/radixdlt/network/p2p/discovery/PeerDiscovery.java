@@ -29,7 +29,6 @@ import com.radixdlt.network.p2p.addressbook.AddressBook;
 import org.radix.network.discovery.SeedNodesConfigParser;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
@@ -42,7 +41,6 @@ import static java.util.function.Predicate.not;
  * Initial (seed) peers are "discovered" from the config (bootstrapDiscovery)
  * and more peers are requested from the peers we're already connected to.
  */
-@Singleton
 public final class PeerDiscovery {
 	private static final int MAX_PEERS_IN_RESPONSE = 50;
 	private static final int MAX_REQUESTS_SENT_AT_ONCE = 5;

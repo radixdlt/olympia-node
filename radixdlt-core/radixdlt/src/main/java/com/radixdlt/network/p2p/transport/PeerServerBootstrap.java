@@ -19,7 +19,6 @@ package com.radixdlt.network.p2p.transport;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.google.inject.Singleton;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
@@ -38,7 +37,6 @@ import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Optional;
 
-@Singleton
 public final class PeerServerBootstrap {
 	private static final int BACKLOG_SIZE = 100;
 
