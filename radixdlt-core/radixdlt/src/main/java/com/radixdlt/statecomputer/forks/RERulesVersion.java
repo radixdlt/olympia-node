@@ -75,7 +75,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.meter.Meter;
 import com.radixdlt.constraintmachine.meter.Meters;
-import com.radixdlt.constraintmachine.meter.ResourceFeeMeter;
+import com.radixdlt.constraintmachine.meter.UpSubstateFeeMeter;
 import com.radixdlt.constraintmachine.meter.SigsPerRoundMeter;
 import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
 import com.radixdlt.engine.parser.REParser;
@@ -89,8 +89,8 @@ public enum RERulesVersion {
 		@Override
 		public RERules create(RERulesConfig config) {
 			final var maxRounds = config.getMaxRounds();
-			final var perByteFee = config.getFeeTable().getPerByteFee().toSubunits();
-			final var perResourceFee = config.getFeeTable().getPerResourceFee().toSubunits();
+			final var perByteFee = config.getFeeTable().getPerByteFee();
+			final var perUpSubstateFee = config.getFeeTable().getPerUpSubstateFee();
 			final var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
 
 			final CMAtomOS v4 = new CMAtomOS();
@@ -114,7 +114,7 @@ public enum RERulesVersion {
 				config.getMaxSigsPerRound().stream().<Meter>mapToObj(SigsPerRoundMeter::create).findAny().orElse(Meter.EMPTY),
 				Meters.combine(
 					TxnSizeFeeMeter.create(perByteFee),
-					ResourceFeeMeter.create(perResourceFee)
+					UpSubstateFeeMeter.create(perUpSubstateFee)
 				)
 			);
 			var constraintMachineConfig = new ConstraintMachineConfig(

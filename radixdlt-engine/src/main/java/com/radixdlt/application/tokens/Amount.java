@@ -35,6 +35,10 @@ public final class Amount {
 		return new Amount(UInt256.ZERO);
 	}
 
+	public static Amount ofMilliTokens(long units) {
+		return new Amount(UInt256.from(units).multiply(UInt256.TEN.pow(TokenUtils.SUB_UNITS_POW_10 - 3)));
+	}
+
 	public static Amount ofMicroTokens(long units) {
 		return new Amount(UInt256.from(units).multiply(UInt256.TEN.pow(TokenUtils.SUB_UNITS_POW_10 - 6)));
 	}

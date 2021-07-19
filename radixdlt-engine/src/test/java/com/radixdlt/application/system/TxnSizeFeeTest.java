@@ -58,6 +58,7 @@ import org.junit.runners.Parameterized;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -107,7 +108,7 @@ public class TxnSizeFeeTest {
 				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(FeeReservePut.class, new FeeReservePutConstructor())
-				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(FeeTable.create(costPerByte, Amount.zero())))
+				.put(FeeReserveComplete.class, new FeeReserveCompleteConstructor(FeeTable.create(costPerByte, Map.of())))
 				.build(),
 			cm,
 			store

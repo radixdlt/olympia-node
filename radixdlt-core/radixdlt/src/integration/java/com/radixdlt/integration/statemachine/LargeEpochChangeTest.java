@@ -27,6 +27,14 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.MintToken;
@@ -34,8 +42,6 @@ import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.atom.actions.NextRound;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.UpdateValidatorFee;
-import com.radixdlt.atom.actions.UpdateValidatorOwner;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -69,6 +75,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -95,7 +102,16 @@ public class LargeEpochChangeTest {
 				new RERulesConfig(
 					FeeTable.create(
 						Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
-						Amount.ofTokens(1000) // 1000XRD per resource
+						Map.of(
+							TokenResource.class, Amount.ofTokens(1000), // 1000XRD per resource
+							ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
+							ValidatorRakeCopy.class, Amount.ofTokens(5), // 5XRD per register update
+							ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
+							ValidatorMetaData.class, Amount.ofTokens(5), // 5XRD per register update
+							AllowDelegationFlag.class, Amount.ofTokens(5), // 5XRD per register update
+							PreparedStake.class, Amount.ofMilliTokens(500), // 0.5XRD per stake
+							PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
+						)
 					),
 					OptionalInt.of(50), // 50 Txns per round
 					10_000,
@@ -142,6 +158,7 @@ public class LargeEpochChangeTest {
 				var k = PrivateKeys.ofNumeric(i);
 				var addr = REAddr.ofPubKeyAccount(k.getPublicKey());
 				request.action(new MintToken(REAddr.ofNativeToken(), addr, Amount.ofTokens(numRounds * 1000).toSubunits()));
+				request.action(new RegisterValidator(k.getPublicKey()));
 			});
 		var mint = sut.construct(request).buildWithoutSignature();
 		logger.info("mint_txn_size={}", mint.getPayload().length);
@@ -183,9 +200,6 @@ public class LargeEpochChangeTest {
 					TxnConstructionRequest.create()
 						.feePayer(addr)
 						.action(new StakeTokens(addr, pubKey, Amount.ofTokens(100 + i).toSubunits()))
-						.action(new RegisterValidator(pubKey))
-						.action(new UpdateValidatorFee(pubKey, 100))
-						.action(new UpdateValidatorOwner(pubKey, REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey())))
 				);
 				construction.stop();
 				signatures.start();

@@ -18,6 +18,7 @@
 
 package com.radixdlt.identifiers;
 
+import com.radixdlt.utils.Pair;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
@@ -79,6 +80,22 @@ public final class ValidatorAddressing {
 			return ECPublicKey.fromBytes(keyBytes);
 		} catch (PublicKeyException e) {
 			throw new DeserializeException("Invalid bytes in validator address: " + v);
+		}
+	}
+
+	public static Pair<String, ECPublicKey> parseUnknownHrp(String v) throws DeserializeException {
+		Bech32.Bech32Data bech32Data;
+		try {
+			bech32Data = Bech32.decode(v);
+		} catch (AddressFormatException e) {
+			throw new DeserializeException("Could not decode string: " + v, e);
+		}
+
+		try {
+			var pubKeyBytes = fromBech32Data(bech32Data.data);
+			return Pair.of(bech32Data.hrp, ECPublicKey.fromBytes(pubKeyBytes));
+		} catch (IllegalArgumentException | PublicKeyException e) {
+			throw new DeserializeException("Invalid address", e);
 		}
 	}
 

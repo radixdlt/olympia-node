@@ -22,9 +22,18 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.crypto.HashUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.OptionalInt;
 
 public final class MainnetForksModule extends AbstractModule {
@@ -39,7 +48,16 @@ public final class MainnetForksModule extends AbstractModule {
 			new RERulesConfig(
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
-					Amount.ofTokens(1000) // 1000XRD per resource
+					Map.of(
+						TokenResource.class, Amount.ofTokens(1000), // 1000XRD per resource
+						ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
+						ValidatorRakeCopy.class, Amount.ofTokens(5), // 5XRD per register update
+						ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
+						ValidatorMetaData.class, Amount.ofTokens(5), // 5XRD per register update
+						AllowDelegationFlag.class, Amount.ofTokens(5), // 5XRD per register update
+						PreparedStake.class, Amount.ofMilliTokens(500), // 0.5XRD per stake
+						PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
+					)
 				),
 				OptionalInt.of(50), // 50 Txns per round
 				1_500_000, // Two weeks worth of rounds
@@ -63,7 +81,16 @@ public final class MainnetForksModule extends AbstractModule {
 			new RERulesConfig(
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
-					Amount.ofTokens(1000) // 1000XRD per resource
+					Map.of(
+						TokenResource.class, Amount.ofTokens(1000), // 1000XRD per resource
+						ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
+						ValidatorRakeCopy.class, Amount.ofTokens(5), // 5XRD per register update
+						ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
+						ValidatorMetaData.class, Amount.ofTokens(5), // 5XRD per register update
+						AllowDelegationFlag.class, Amount.ofTokens(5), // 5XRD per register update
+						PreparedStake.class, Amount.ofMilliTokens(500), // 0.5XRD per stake
+						PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
+					)
 				),
 				OptionalInt.of(50), // 50 Txns per round
 				10_000,
