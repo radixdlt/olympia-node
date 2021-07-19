@@ -231,6 +231,16 @@ public final class REFieldSerialization {
 		}
 	}
 
+	public static void serializeFixedLengthBytes(ByteBuffer buf, byte[] bytes) {
+		buf.put(bytes);
+	}
+
+	public static byte[] deserializeFixedLengthBytes(ByteBuffer buf, int length) {
+		final var dest = new byte[length];
+		buf.get(dest);
+		return dest;
+	}
+
 	public static void serializeString(ByteBuffer buf, String s) {
 		var sBytes = s.getBytes(RadixConstants.STANDARD_CHARSET);
 		if (sBytes.length > 255) {

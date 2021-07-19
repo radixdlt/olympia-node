@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer.forks;
 
 import com.radixdlt.application.misc.FaucetTokensTransferConstructor;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorSystemMetadataConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
@@ -71,6 +72,7 @@ import com.radixdlt.application.validators.construction.UpdateValidatorMetadataC
 import com.radixdlt.application.validators.construction.UpdateValidatorOwnerConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
+import com.radixdlt.atom.actions.UpdateValidatorSystemMetadata;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.meter.Meter;
@@ -153,6 +155,7 @@ public enum RERulesVersion {
 				))
 				.put(UpdateValidatorOwner.class, new UpdateValidatorOwnerConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
+				.put(UpdateValidatorSystemMetadata.class, new UpdateValidatorSystemMetadataConstructor())
 				.build();
 
 			return new RERules(
