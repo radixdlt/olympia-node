@@ -64,7 +64,7 @@ public class SimpleAppendLog implements AppendLog {
 			sizeBufferW.clear().putInt(data.length).clear();
 			checkedWrite(Integer.BYTES, sizeBufferW);
 			checkedWrite(data.length, ByteBuffer.wrap(data));
-			return Integer.BYTES + data.length;
+			return (long) Integer.BYTES + data.length;
 		}
 	}
 
