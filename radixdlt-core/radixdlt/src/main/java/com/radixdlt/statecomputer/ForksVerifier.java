@@ -27,10 +27,10 @@ import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
+
 import java.util.List;
 
 public final class ForksVerifier implements BatchVerifier<LedgerAndBFTProof> {
-
 	private final BatchVerifier<LedgerAndBFTProof> baseVerifier;
 	private final REParser reParser;
 	private final ForkConfig nextFork;
@@ -63,7 +63,7 @@ public final class ForksVerifier implements BatchVerifier<LedgerAndBFTProof> {
 	private boolean shouldSwitchToNextFork(LedgerAndBFTProof ledgerAndBFTProof) {
 		if (nextFork instanceof FixedEpochForkConfig) {
 			final var forkEpoch = ((FixedEpochForkConfig) nextFork).epoch();
-			final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch();
+			final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
 			return forkEpoch == nextEpoch;
 		} else if (nextFork instanceof CandidateForkConfig) {
 			return Forks.testCandidate((CandidateForkConfig) nextFork, reParser, ledgerAndBFTProof);

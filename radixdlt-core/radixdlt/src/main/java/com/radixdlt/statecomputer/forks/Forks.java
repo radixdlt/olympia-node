@@ -335,7 +335,7 @@ public final class Forks {
 		return testCandidate(candidateFork, ledgerAndBFTProof.getProof(), validatorsSystemMetadata);
 	}
 
-	public static boolean testCandidate(
+	private static boolean testCandidate(
 		CandidateForkConfig candidateFork,
 		LedgerProof ledgerProof,
 		ImmutableList<ValidatorSystemMetadata> validatorsMetadata
