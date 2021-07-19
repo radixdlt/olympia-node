@@ -88,6 +88,10 @@ public class SystemHandler {
 		return response(request, systemConfigService.getNetworkingPeers());
 	}
 
+	public JSONObject networkingGetAddressBook(JSONObject request) {
+		return response(request, systemConfigService.getNetworkingAddressBook());
+	}
+
 	public JSONObject networkingGetData(JSONObject request) {
 		return response(request, systemConfigService.getNetworkingData());
 	}
