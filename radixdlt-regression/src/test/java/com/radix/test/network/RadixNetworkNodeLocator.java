@@ -45,18 +45,20 @@ public class RadixNetworkNodeLocator {
 
     private static List<RadixNode> locateLocalNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient,
                                                     DockerClient dockerClient, int expectedNoOfNodes) {
-        int primaryPort = configuration.getPrimaryPort();
-        int secondaryPort = configuration.getSecondaryPort();
+        var primaryPort = configuration.getPrimaryPort();
+        var secondaryPort = configuration.getSecondaryPort();
+        var dockerContainerName = configuration.getDockerConfiguration().getContainerName();
         return IntStream.range(0, expectedNoOfNodes).mapToObj(counter -> {
-            String containerName = String.format("docker_core%d_1", counter);
+            String containerName = String.format(dockerContainerName, counter);
             return figureOutNode(configuration.getJsonRpcRootUrl(), primaryPort + counter, secondaryPort + counter,
                 containerName, httpClient, dockerClient);
         }).collect(Collectors.toList());
     }
 
     /**
-     * TODO explain
-     *
+     * Tries to figure out which endpoints are available (e.g. /account, /construction) and also tries to use the
+     * docker client to establish a connection to this node's container.
+     * <p>
      * TODO handle exceptions better. Right now, the test will fail is anything goes wrong here
      */
     private static RadixNode figureOutNode(String jsonRpcRootUrl, int primaryPort, int secondaryPort,
