@@ -51,13 +51,13 @@ public class CompressedAppendLog implements AppendLog {
 	}
 
 	@Override
-	public long write(final byte[] data) throws IOException {
+	public long write(final byte[] data, long expectedOffset) throws IOException {
 		byte[] compressedData = Compress.compress(data);
 
 		counters.add(PERSISTENCE_ATOM_LOG_WRITE_BYTES, data.length);
 		counters.add(PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED, compressedData.length);
 
-		return delegate.write(compressedData);
+		return delegate.write(compressedData, expectedOffset);
 	}
 
 	@Override

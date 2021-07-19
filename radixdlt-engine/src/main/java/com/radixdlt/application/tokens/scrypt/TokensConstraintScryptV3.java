@@ -38,12 +38,22 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
+
+import static com.radixdlt.identifiers.Naming.NAME_PATTERN;
 
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
+	private final Set<String> reservedSymbols;
+
+	public TokensConstraintScryptV3(Set<String> reservedSymbols) {
+		this.reservedSymbols = reservedSymbols;
+	}
+
 	@Override
 	public void main(Loader os) {
 		registerParticles(os);
@@ -161,6 +171,14 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			(s, u, c, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
 					throw new ProcedureException("Addresses don't match");
+				}
+
+				var str = new String(s.getArg());
+				if (reservedSymbols.contains(str) && c.permissionLevel() != PermissionLevel.SYSTEM) {
+					throw new ReservedSymbolException(str);
+				}
+				if (!NAME_PATTERN.matcher(str).matches()) {
+					throw new ProcedureException("invalid rri name: " + str);
 				}
 
 				if (u.isMutable()) {

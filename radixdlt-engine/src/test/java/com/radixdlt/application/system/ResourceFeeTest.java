@@ -66,8 +66,8 @@ public final class ResourceFeeTest {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new TokensConstraintScryptV3());
-		cmAtomOS.load(new SystemConstraintScrypt(Set.of("xrd")));
+		cmAtomOS.load(new TokensConstraintScryptV3(Set.of("xrd")));
+		cmAtomOS.load(new SystemConstraintScrypt());
 		var feeTable = FeeTable.create(
 			Amount.zero(),
 			Map.of(TokenResource.class, Amount.ofTokens(1))
@@ -122,8 +122,8 @@ public final class ResourceFeeTest {
 	public void paying_for_fees_should_work_2() throws Exception {
 		// Arrange
 		var tokDef1 = new MutableTokenDefinition(key.getPublicKey(), "test");
-		var tokDef2 = new MutableTokenDefinition(key.getPublicKey(), "test2");
-		var tokDef3 = new MutableTokenDefinition(key.getPublicKey(), "test3");
+		var tokDef2 = new MutableTokenDefinition(key.getPublicKey(), "testa");
+		var tokDef3 = new MutableTokenDefinition(key.getPublicKey(), "testb");
 		var create = this.engine.construct(
 			TxnConstructionRequest.create()
 				.action(new FeeReservePut(accountAddr, Amount.ofTokens(3).toSubunits()))

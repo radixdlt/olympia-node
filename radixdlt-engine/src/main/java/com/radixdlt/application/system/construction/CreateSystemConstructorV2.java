@@ -48,6 +48,7 @@ public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem
 		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id()}));
 		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_RAKE_COPY.id()}));
 		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_OWNER_COPY.id()}));
+		builder.up(new VirtualParent(new byte[] {SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id()}));
 		builder.end();
 	}
 }

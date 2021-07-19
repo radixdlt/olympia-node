@@ -37,9 +37,7 @@ public class ResourceAddressingTest {
 	private final BiMap<Pair<String, String>, String> reAddressToRri = HashBiMap.create(
 		Map.of(
 			Pair.of("xrd", "01"), "xrd_rb1qya85pwq",
-			Pair.of("xrd2", "01"), "xrd2_rb1qy557l44",
-			Pair.of("usdc", "03" + "00".repeat(26)), "usdc_rb1qvqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6gwwwd",
-			Pair.of("t2t2t2", "03" + "03".repeat(26)), "t2t2t2_rb1qvpsxqcrqvpsxqcrqvpsxqcrqvpsxqcrqvpsxqcrqvpsmr9n0r"
+			Pair.of("usdc", "03" + "00".repeat(26)), "usdc_rb1qvqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6gwwwd"
 		)
 	);
 

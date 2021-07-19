@@ -56,8 +56,11 @@ public final class REFieldSerialization {
 		return buf.array();
 	}
 
-	public static ECDSASignature deserializeSignature(ByteBuffer buf) {
+	public static ECDSASignature deserializeSignature(ByteBuffer buf) throws DeserializeException {
 		var v = buf.get();
+		if (v < 0 || v > 3) {
+			throw new DeserializeException("Invalid V byte " + v);
+		}
 		var rArray = new byte[32];
 		buf.get(rArray);
 		var sArray = new byte[32];
@@ -229,6 +232,16 @@ public final class REFieldSerialization {
 		} catch (PublicKeyException | IllegalArgumentException e) {
 			throw new DeserializeException("Could not deserialize key");
 		}
+	}
+
+	public static void serializeFixedLengthBytes(ByteBuffer buf, byte[] bytes) {
+		buf.put(bytes);
+	}
+
+	public static byte[] deserializeFixedLengthBytes(ByteBuffer buf, int length) {
+		final var dest = new byte[length];
+		buf.get(dest);
+		return dest;
 	}
 
 	public static void serializeString(ByteBuffer buf, String s) {

@@ -21,11 +21,18 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.TxValidatorAction;
 import com.radixdlt.crypto.ECPublicKey;
 
-public final class RegisterValidator implements TxValidatorAction {
-	private final ECPublicKey validatorKey;
+import java.util.Objects;
 
-	public RegisterValidator(ECPublicKey validatorKey) {
-		this.validatorKey = validatorKey;
+public class UpdateValidatorSystemMetadata implements TxValidatorAction {
+	private final ECPublicKey validatorKey;
+	private final byte[] bytes;
+
+	public UpdateValidatorSystemMetadata(
+		ECPublicKey validatorKey,
+		byte[] bytes
+	) {
+		this.validatorKey = Objects.requireNonNull(validatorKey);
+		this.bytes = bytes;
 	}
 
 	@Override
@@ -33,8 +40,7 @@ public final class RegisterValidator implements TxValidatorAction {
 		return validatorKey;
 	}
 
-	@Override
-	public String toString() {
-		return String.format("%s{key=%s}", this.getClass().getSimpleName(), validatorKey.toHex());
+	public byte[] bytes() {
+		return bytes;
 	}
 }

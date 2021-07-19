@@ -289,7 +289,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private void storeMetadata(Transaction dbTxn, LedgerAndBFTProof ledgerAndBFTProof) {
 		var proof = ledgerAndBFTProof.getProof();
 
-		// TODO: combine atom and proof store and remove these extra checks
 		try (var atomCursor = txnDatabase.openCursor(dbTxn, null)) {
 			var key = entry();
 			var status = atomCursor.getLast(key, null, DEFAULT);
@@ -807,23 +806,30 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	private void doStore(com.sleepycat.je.Transaction transaction, REProcessedTxn txn) {
 		final long stateVersion;
+		final long expectedOffset;
 		try (var cursor = txnDatabase.openCursor(transaction, null)) {
 			var key = entry();
-			var status = cursor.getLast(key, null, DEFAULT);
+			var data = entry();
+			var status = cursor.getLast(key, data, DEFAULT);
 			if (status == OperationStatus.NOTFOUND) {
 				stateVersion = 1;
+				expectedOffset = 0;
 			} else {
 				stateVersion = Longs.fromByteArray(key.getData()) + 1;
+				long prevOffset = Longs.fromByteArray(data.getData());
+				long prevSize = Longs.fromByteArray(data.getData(), Long.BYTES);
+				expectedOffset = prevOffset + prevSize;
 			}
 		}
 
 		try {
+			// Transaction / Syncing database
 			var aid = txn.getTxn().getId();
 			// Write atom data as soon as possible
-			var offset = txnLog.write(txn.getTxn().getPayload());
+			var storedSize = txnLog.write(txn.getTxn().getPayload(), expectedOffset);
 			// Store atom indices
 			var pKey = toPKey(stateVersion);
-			var atomPosData = entry(offset, aid);
+			var atomPosData = txnEntry(expectedOffset, storedSize, aid);
 			failIfNotSuccess(txnDatabase.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
 			addBytesWrite(atomPosData, pKey);
 			var idKey = entry(aid);
@@ -831,6 +837,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			addBytesWrite(atomPosData, idKey);
 			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
 
+			// State database
 			var elapsed = Stopwatch.createStarted();
 			int totalCount = txn.getGroupedStateUpdates().stream().mapToInt(List::size).reduce(Integer::sum).orElse(0);
 			int count = 0;
@@ -899,10 +906,10 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		final var atomSearchKey = toPKey(stateVersion + 1);
 		final var atomPosData = entry();
 
-		try (var atomCursor = txnDatabase.openCursor(null, null)) {
+		try (var txnCursor = txnDatabase.openCursor(null, null)) {
 			int atomCount = (int) (nextHeader.getStateVersion() - stateVersion);
 			int count = 0;
-			var atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, atomPosData, DEFAULT);
+			var atomCursorStatus = txnCursor.getSearchKeyRange(atomSearchKey, atomPosData, DEFAULT);
 			do {
 				if (atomCursorStatus != SUCCESS) {
 					throw new BerkeleyStoreException("Atom database search failure");
@@ -910,7 +917,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var offset = fromByteArray(atomPosData.getData());
 				var txnBytes = txnLog.read(offset);
 				txns.add(Txn.create(txnBytes));
-				atomCursorStatus = atomCursor.getNext(atomSearchKey, atomPosData, DEFAULT);
+				atomCursorStatus = txnCursor.getNext(atomSearchKey, atomPosData, DEFAULT);
 				count++;
 			} while (count < atomCount);
 
@@ -1009,11 +1016,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return new DatabaseEntry();
 	}
 
-	private static DatabaseEntry entry(long offset, AID aid) {
-		var value = new byte[Long.BYTES + AID.BYTES];
-		Longs.copyTo(offset, value, 0);
-		System.arraycopy(aid.getBytes(), 0, value, Long.BYTES, AID.BYTES);
-		return entry(value);
+	private static DatabaseEntry txnEntry(long offset, long size, AID aid) {
+		var buf = ByteBuffer.allocate(Long.BYTES + Long.BYTES + AID.BYTES);
+		buf.putLong(offset);
+		buf.putLong(size);
+		buf.put(aid.getBytes());
+		return entry(buf.array());
 	}
 
 	private static DatabaseEntry toPKey(long stateVersion) {

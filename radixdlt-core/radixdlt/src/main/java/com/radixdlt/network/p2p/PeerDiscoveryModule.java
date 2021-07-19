@@ -18,6 +18,7 @@
 package com.radixdlt.network.p2p;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -41,6 +42,8 @@ public final class PeerDiscoveryModule extends AbstractModule {
 		final var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
 		eventBinder.addBinding().toInstance(DiscoverPeers.class);
+
+		bind(PeerDiscovery.class).in(Scopes.SINGLETON);
 	}
 
 	@ProvidesIntoSet

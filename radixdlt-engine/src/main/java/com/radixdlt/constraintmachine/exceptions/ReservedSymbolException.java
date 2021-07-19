@@ -16,25 +16,10 @@
  *
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.atom.TxValidatorAction;
-import com.radixdlt.crypto.ECPublicKey;
-
-public final class RegisterValidator implements TxValidatorAction {
-	private final ECPublicKey validatorKey;
-
-	public RegisterValidator(ECPublicKey validatorKey) {
-		this.validatorKey = validatorKey;
-	}
-
-	@Override
-	public ECPublicKey validatorKey() {
-		return validatorKey;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{key=%s}", this.getClass().getSimpleName(), validatorKey.toHex());
+public class ReservedSymbolException extends Exception {
+	public ReservedSymbolException(String symbol) {
+		super("Trying to use reserved symbol " + symbol);
 	}
 }
