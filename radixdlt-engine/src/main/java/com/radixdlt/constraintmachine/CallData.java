@@ -19,6 +19,7 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
+import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 
@@ -38,10 +39,15 @@ public final class CallData {
 		return data[offset];
 	}
 
-	public UInt256 getUInt256(int offset) throws CallDataAccessException {
+	public UInt256 getUInt256(int offset) throws CallDataAccessException, TrailingBytesException {
 		if (offset < 0 || (offset + UInt256.BYTES) > data.length) {
 			throw new CallDataAccessException(data.length, offset, UInt256.BYTES);
 		}
+
+		if (data.length > offset + UInt256.BYTES) {
+			throw new TrailingBytesException("Call data has " + data.length + " bytes.");
+		}
+
 		return UInt256.from(data, offset);
 	}
 

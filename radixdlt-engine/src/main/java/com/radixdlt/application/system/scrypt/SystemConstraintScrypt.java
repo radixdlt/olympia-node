@@ -205,6 +205,9 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 						return ReducerResult.incomplete(new TokenHoldingBucket(tokens));
 					} else if (syscall == Syscall.READDR_CLAIM) {
 						var bytes = d.getRemainingBytes(1);
+						if (bytes.length > 32) {
+							throw new ProcedureException("Address claim too large.");
+						}
 						return ReducerResult.incomplete(new REAddrClaimStart(bytes));
 					} else {
 						throw new ProcedureException("Invalid call type: " + syscall);
