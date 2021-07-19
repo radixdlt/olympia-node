@@ -18,7 +18,6 @@
 package com.radixdlt.network.p2p.addressbook;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import org.apache.logging.log4j.LogManager;
@@ -27,7 +26,6 @@ import org.apache.logging.log4j.Logger;
 import java.time.Duration;
 import java.util.Objects;
 
-@Singleton
 public final class AddressBookPeerControl implements PeerControl {
 	private static final Logger log = LogManager.getLogger();
 
