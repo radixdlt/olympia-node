@@ -125,7 +125,7 @@ public final class AuthHandshaker {
 		final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
 		final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
 
-		if (message.getMagic() != this.magic) {
+		if (message.getNetworkId() != this.magic) {
 			return Pair.of(null, AuthHandshakeResult.error(
 				"Network ID mismatch",
 				Optional.of(NodeId.fromPublicKey(remotePubKey))
