@@ -21,5 +21,5 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
 public interface ReadReducer<I extends Particle, S extends ReducerState> {
-	ReducerResult reduce(S reducerState, I readSubstate, ImmutableAddrs immutableAddrs) throws ProcedureException;
+	ReducerResult reduce(S reducerState, I readSubstate, Resources immutableAddrs) throws ProcedureException;
 }

@@ -20,15 +20,14 @@ package com.radixdlt.integration.staking;
 
 import com.google.common.collect.ClassToInstanceMap;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.integration.FailOnEvent;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
@@ -92,7 +91,6 @@ import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
-import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
@@ -294,8 +292,7 @@ public class StakingUnstakingValidatorsTest {
 	private static class NodeState {
 		private final String self;
 		private final EpochChange epochChange;
-		private final BerkeleyLedgerEntryStore entryStore;
-		private final Forks forks;
+		private final RadixEngine<LedgerAndBFTProof> radixEngine;
 		private final ClassToInstanceMap<Object> lastEvents;
 
 		@Inject
@@ -303,14 +300,12 @@ public class StakingUnstakingValidatorsTest {
 			@Self String self,
 			ClassToInstanceMap<Object> lastEvents,
 			EpochChange epochChange,
-			BerkeleyLedgerEntryStore entryStore,
-			Forks forks
+			RadixEngine<LedgerAndBFTProof> radixEngine
 		) {
 			this.self = self;
 			this.lastEvents = lastEvents;
 			this.epochChange = epochChange;
-			this.entryStore = entryStore;
-			this.forks = forks;
+			this.radixEngine = radixEngine;
 		}
 
 		public String getSelf() {
@@ -330,90 +325,43 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public Map<BFTNode, Map<String, String>> getValidators() {
-			var forkConfig = forks.get(getEpoch());
-			var reParser = forkConfig.getParser();
-			Map<BFTNode, Map<String, String>> map = entryStore.reduceUpParticles(
-				new HashMap<>(), (i, p) -> {
-					var stakeData = (ValidatorStakeData) p;
+			var map = radixEngine.reduce(
+				ValidatorStakeData.class,
+				new HashMap<BFTNode, Map<String, String>>(),
+				(u, s) -> {
 					var data = new HashMap<String, String>();
-					data.put("stake", Amount.ofSubunits(stakeData.getAmount()).toString());
-					data.put("rake", Integer.toString(stakeData.getRakePercentage()));
-					i.put(BFTNode.create(stakeData.getValidatorKey()), data);
-					return i;
-				},
-				reParser.getSubstateDeserialization(),
-				ValidatorStakeData.class
+					data.put("stake", Amount.ofSubunits(s.getAmount()).toString());
+					data.put("rake", Integer.toString(s.getRakePercentage()));
+					u.put(BFTNode.create(s.getValidatorKey()), data);
+					return u;
+				}
 			);
 
-			entryStore.reduceUpParticles(
-				map, (i, p) -> {
-					var flag = (AllowDelegationFlag) p;
+			radixEngine.reduce(
+				AllowDelegationFlag.class,
+				map,
+				(u, flag) -> {
 					var data = new HashMap<String, String>();
 					data.put("allowDelegation", Boolean.toString(flag.allowsDelegation()));
-					i.merge(BFTNode.create(flag.getValidatorKey()), data, (a, b) -> {
+					u.merge(BFTNode.create(flag.getValidatorKey()), data, (a, b) -> {
 						a.putAll(b);
 						return a;
 					});
-					return i;
-				},
-				reParser.getSubstateDeserialization(),
-				AllowDelegationFlag.class
+					return u;
+				}
 			);
+
 			return map;
 		}
 
-		private <T extends Particle> T deserialize(SubstateDeserialization deserialization, byte[] data) {
-			try {
-				return (T) deserialization.deserialize(data);
-			} catch (DeserializeException e) {
-				throw new IllegalStateException(e);
-			}
-		}
-
-		@SuppressWarnings("unchecked")
 		public UInt256 getTotalNativeTokens() {
-			var forkConfig = forks.get(getEpoch());
-			var reParser = forkConfig.getParser();
-			var deserialization = reParser.getSubstateDeserialization();
-			var totalTokens = entryStore.reduceUpParticles(
-				UInt256.ZERO,
-				(i, p) -> {
-					var tokens = (TokensInAccount) p;
-					return i.add(tokens.getAmount());
-				},
-				reParser.getSubstateDeserialization(),
-				TokensInAccount.class
-			);
+			var totalTokens = radixEngine.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
 			logger.info("Total tokens: {}", Amount.ofSubunits(totalTokens));
-			var index = deserialization.index(ValidatorStakeData.class);
-			final UInt256 totalStaked;
-			try (var stakeCursor = entryStore.openIndexedCursor(index)) {
-				totalStaked = Streams.stream(stakeCursor)
-					.map(s -> {
-						ValidatorStakeData validatorStake = deserialize(deserialization, s.getData());
-						return validatorStake.getAmount();
-					}).reduce(UInt256::add).orElse(UInt256.ZERO);
-			}
+			var totalStaked = radixEngine.reduce(ValidatorStakeData.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
 			logger.info("Total staked: {}", Amount.ofSubunits(totalStaked));
-			var totalStakePrepared = entryStore.reduceUpParticles(
-				UInt256.ZERO,
-				(i, p) -> {
-					var tokens = (PreparedStake) p;
-					return i.add(tokens.getAmount());
-				},
-				reParser.getSubstateDeserialization(),
-				PreparedStake.class
-			);
+			var totalStakePrepared = radixEngine.reduce(PreparedStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
 			logger.info("Total preparing stake: {}", Amount.ofSubunits(totalStakePrepared));
-			var totalStakeExitting = entryStore.reduceUpParticles(
-				UInt256.ZERO,
-				(i, p) -> {
-					var tokens = (ExittingStake) p;
-					return i.add(tokens.getAmount());
-				},
-				reParser.getSubstateDeserialization(),
-				ExittingStake.class
-			);
+			var totalStakeExitting = radixEngine.reduce(ExittingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
 			logger.info("Total exitting stake: {}", Amount.ofSubunits(totalStakeExitting));
 			var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
 			logger.info("Total: {}", Amount.ofSubunits(total));

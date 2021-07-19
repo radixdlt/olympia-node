@@ -42,6 +42,7 @@ public final class CreateFixedTokenConstructor implements ActionConstructor<Crea
 		txBuilder.up(new TokensInAccount(action.getAccountAddr(), action.getResourceAddr(), action.getSupply()));
 		txBuilder.up(new TokenResourceMetadata(
 			action.getResourceAddr(),
+			action.getSymbol(),
 			action.getName(),
 			action.getDescription(),
 			action.getIconUrl(),

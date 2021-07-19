@@ -133,7 +133,7 @@ public final class TxLowLevelBuilder {
 		if (particle instanceof ValidatorData) {
 			var p = (ValidatorData) particle;
 			var b = serialization.classToByte(p.getClass());
-			var k = SystemMapKey.ofValidatorData(b, p.getValidatorKey().getCompressedBytes());
+			var k = SystemMapKey.ofSystem(b, p.getValidatorKey().getCompressedBytes());
 			this.localMapValues.put(k, localSubstate);
 		} else if (particle instanceof SystemData) {
 			var b = serialization.classToByte(particle.getClass());
@@ -142,10 +142,8 @@ public final class TxLowLevelBuilder {
 		} else if (particle instanceof VirtualParent) {
 			var p = (VirtualParent) particle;
 			var typeByte = p.getData()[0];
-			if (typeByte != SubstateTypeId.UNCLAIMED_READDR.id()) {
-				var k = SystemMapKey.ofValidatorDataParent(typeByte);
-				this.localMapValues.put(k, localSubstate);
-			}
+			var k = SystemMapKey.ofSystem(typeByte);
+			this.localMapValues.put(k, localSubstate);
 		}
 
 		this.localUpParticles.put(upParticleCount, localSubstate);

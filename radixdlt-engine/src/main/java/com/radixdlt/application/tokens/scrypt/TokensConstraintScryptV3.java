@@ -30,7 +30,6 @@ import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -95,15 +94,17 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var addr = REFieldSerialization.deserializeResourceAddr(buf);
+					var symbol = REFieldSerialization.deserializeString(buf);
 					var name = REFieldSerialization.deserializeString(buf);
 					var description = REFieldSerialization.deserializeString(buf);
 					var url = REFieldSerialization.deserializeUrl(buf);
 					var iconUrl = REFieldSerialization.deserializeUrl(buf);
-					return new TokenResourceMetadata(addr, name, description, iconUrl, url);
+					return new TokenResourceMetadata(addr, symbol, name, description, iconUrl, url);
 				},
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeREAddr(buf, s.getAddr());
+					REFieldSerialization.serializeString(buf, s.getSymbol());
 					REFieldSerialization.serializeString(buf, s.getName());
 					REFieldSerialization.serializeString(buf, s.getDescription());
 					REFieldSerialization.serializeString(buf, s.getUrl());
@@ -152,10 +153,13 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 
 		void metadata(TokenResourceMetadata metadata, ExecutionContext context) throws ProcedureException {
 			if (!metadata.getAddr().equals(tokenResource.getAddr())) {
-				throw new ProcedureException("Addresses don't match");
+				throw new ProcedureException("Addresses don't match.");
 			}
 
 			var symbol = new String(arg, StandardCharsets.UTF_8);
+			if (!symbol.equals(metadata.getSymbol())) {
+				throw new ProcedureException("Symbols don't match.");
+			}
 			context.emitEvent(new ResourceCreatedEvent(symbol, tokenResource, metadata));
 		}
 	}
@@ -220,9 +224,8 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				}
 
 				return new Authorization(PermissionLevel.USER, (r, c) -> {
-					var tokenDef = (TokenResource) r.loadAddr(u.getResourceAddr())
-						.orElseThrow(() -> new AuthorizationException("Invalid token address: " + u.getResourceAddr()));
-					tokenDef.verifyMintAuthorization(c.key());
+					var tokenResource = r.loadResource(u.getResourceAddr());
+					tokenResource.verifyMintAuthorization(c.key());
 				});
 			},
 			(s, u, c, r) -> {
@@ -238,9 +241,8 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				if (s.isEmpty()) {
 					return;
 				}
-				var tokenDef = (TokenResource) r.loadAddr(s.getResourceAddr())
-					.orElseThrow(() -> new AuthorizationException("Invalid token address: " + s.getResourceAddr()));
-				tokenDef.verifyBurnAuthorization(c.key());
+				var tokenResource = r.loadResource(s.getResourceAddr());
+				tokenResource.verifyBurnAuthorization(c.key());
 			}),
 			TokenHoldingBucket::destroy
 		));

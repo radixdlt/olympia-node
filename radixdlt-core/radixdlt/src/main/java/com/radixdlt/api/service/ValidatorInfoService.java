@@ -26,15 +26,11 @@ import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRakeCopy;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.store.EngineStore;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.functional.FunctionalUtils;
 import com.radixdlt.utils.functional.Result;
@@ -50,21 +46,17 @@ import static com.radixdlt.utils.functional.FunctionalUtils.skipUntil;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ValidatorInfoService {
-	private final EngineStore<LedgerAndBFTProof> entryStore;
-	private final Forks forks;
-	private final InMemorySystemInfo inMemorySystemInfo;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final Addressing addressing;
 
 	@Inject
 	public ValidatorInfoService(
-		EngineStore<LedgerAndBFTProof> entryStore,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		Forks forks,
 		InMemorySystemInfo inMemorySystemInfo,
 		Addressing addressing
 	) {
-		this.entryStore = entryStore;
-		this.forks = forks;
-		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.radixEngine = radixEngine;
 		this.addressing = addressing;
 	}
 
@@ -96,37 +88,24 @@ public class ValidatorInfoService {
 	public List<ValidatorInfoDetails> getAllValidators() {
 		// TODO: Use NextEpoch action to compute all of this
 		var indices = List.of(
-			SubstateIndex.create(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), ValidatorStakeData.class),
-			SubstateIndex.create(SubstateTypeId.PREPARED_STAKE.id(), PreparedStake.class),
-			SubstateIndex.create(SubstateTypeId.VALIDATOR_OWNER_COPY.id(), ValidatorOwnerCopy.class),
-			SubstateIndex.create(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id(), AllowDelegationFlag.class),
-			SubstateIndex.create(SubstateTypeId.VALIDATOR_META_DATA.id(), ValidatorMetaData.class),
-			SubstateIndex.create(SubstateTypeId.VALIDATOR_RAKE_COPY.id(), ValidatorRakeCopy.class)
+			ValidatorStakeData.class,
+			PreparedStake.class,
+			ValidatorOwnerCopy.class,
+			AllowDelegationFlag.class,
+			ValidatorMetaData.class,
+			ValidatorRakeCopy.class
 		);
 		var nextEpochValidators = NextEpochValidators.create();
-		var deserialization = retrieveEpochParser();
 		for (var index : indices) {
-			try (var cursor = entryStore.openIndexedCursor(index)) {
-				while (cursor.hasNext()) {
-					try {
-						var p = deserialization.deserialize(cursor.next().getData());
-						nextEpochValidators.process(p);
-					} catch (DeserializeException e) {
-						throw new IllegalStateException();
-					}
-				}
-			}
+			radixEngine.reduce(index, nextEpochValidators, (u, t) -> {
+				u.process(t);
+				return u;
+			});
 		}
 
 		var result = nextEpochValidators.map(ValidatorInfoDetails::create);
 		result.sort(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed());
 
 		return result;
-	}
-
-	private SubstateDeserialization retrieveEpochParser() {
-		return forks.get(inMemorySystemInfo.getCurrentProof().getEpoch())
-			.getParser()
-			.getSubstateDeserialization();
 	}
 }

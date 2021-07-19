@@ -48,6 +48,10 @@ public final class ValidatorOwnerCopy implements ValidatorData {
 		this.owner = owner;
 	}
 
+	public static ValidatorOwnerCopy createVirtual(ECPublicKey validatorKey) {
+		return new ValidatorOwnerCopy(validatorKey, REAddr.ofPubKeyAccount(validatorKey));
+	}
+
 	public OptionalLong getEpochUpdate() {
 		return epochUpdate;
 	}

@@ -23,6 +23,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import java.util.Objects;
 import java.util.OptionalLong;
 
+import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
+
 public final class ValidatorRakeCopy implements ValidatorData {
 	private final ECPublicKey validatorKey;
 	private final int curRakePercentage;
@@ -38,6 +40,10 @@ public final class ValidatorRakeCopy implements ValidatorData {
 		this.epochUpdate = OptionalLong.empty();
 		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.curRakePercentage = curRakePercentage;
+	}
+
+	public static ValidatorRakeCopy createVirtual(ECPublicKey validatorKey) {
+		return new ValidatorRakeCopy(validatorKey, RAKE_MAX);
 	}
 
 	public OptionalLong getEpochUpdate() {

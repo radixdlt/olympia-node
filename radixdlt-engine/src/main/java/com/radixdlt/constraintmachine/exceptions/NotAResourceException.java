@@ -16,31 +16,12 @@
  *
  */
 
-package com.radixdlt.application;
+package com.radixdlt.constraintmachine.exceptions;
 
-/**
- * Info about node as validator
- */
-public final class MyValidatorInfo {
-	private final String name;
-	private final String url;
-	private final boolean registered;
+import com.radixdlt.identifiers.REAddr;
 
-	public MyValidatorInfo(String name, String url, boolean registered) {
-		this.name = name;
-		this.url = url;
-		this.registered = registered;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public String getUrl() {
-		return url;
-	}
-
-	public boolean isRegistered() {
-		return registered;
+public class NotAResourceException extends Exception {
+	public NotAResourceException(REAddr addr) {
+		super(addr + " is not a resource");
 	}
 }

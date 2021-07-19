@@ -18,14 +18,14 @@
 package com.radixdlt.store.berkeley;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Streams;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
+import com.radixdlt.application.tokens.state.ResourceData;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
@@ -47,7 +47,6 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.counters.SystemCounters;
@@ -87,12 +86,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.utils.Longs.fromByteArray;
@@ -213,8 +208,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		try {
 			var result = consumer.start(new EngineStoreInTransaction<>() {
 				@Override
-				public void storeTxn(Txn txn, List<REStateUpdate> stateUpdates) {
-					BerkeleyLedgerEntryStore.this.storeTxn(dbTxn, txn, stateUpdates);
+				public void storeTxn(REProcessedTxn txn) {
+					BerkeleyLedgerEntryStore.this.storeTxn(dbTxn, txn);
 				}
 
 				@Override
@@ -287,8 +282,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return Optional.of(substateBytes);
 	}
 
-	private void storeTxn(Transaction dbTxn, Txn txn, List<REStateUpdate> stateUpdates) {
-		withTime(() -> doStore(dbTxn, txn, stateUpdates), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
+	private void storeTxn(Transaction dbTxn, REProcessedTxn txn) {
+		withTime(() -> doStore(dbTxn, txn), CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 	}
 
 	private void storeMetadata(Transaction dbTxn, LedgerAndBFTProof ledgerAndBFTProof) {
@@ -421,31 +416,42 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2-5: Epoch
-								prefixIndexSize = 2 + Long.BYTES;
+								// 6-40: Validator Key
+								// 41-73: Account Address
+								prefixIndexSize = 2 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES);
+							} else if (substateTypeId == SubstateTypeId.PREPARED_STAKE.id()) {
+								// 0: Type Byte
+								// 1: Reserved Byte
+								// 2-36: Validator Key
+								// 37-69: Account Address
+								prefixIndexSize = 2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES);
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_OWNER_COPY.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2: Optional flag
 								// 3-6: Epoch
-								prefixIndexSize = 3 + Long.BYTES;
+								// 7-41: Validator Key
+								prefixIndexSize = 3 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES;
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2: Optional flag
 								// 3-6: Epoch
-								prefixIndexSize = 3 + Long.BYTES;
+								// 7-41: Validator Key
+								prefixIndexSize = 3 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES;
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_RAKE_COPY.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2: Optional flag
 								// 3-6: Epoch
-								prefixIndexSize = 3 + Long.BYTES;
+								// 7-41: Validator Key
+								prefixIndexSize = 3 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES;
 							} else if (substateTypeId == SubstateTypeId.VALIDATOR_STAKE_DATA.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2: Registered Byte
 								// 3-34: Stake amount
-								// 35-67: Public key
+								// 35-67: Validator key
 								prefixIndexSize = 3 + UInt256.BYTES + ECPublicKey.COMPRESSED_BYTES;
 							} else {
 								// 0: Type Byte
@@ -675,35 +681,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return cursor;
 	}
 
-	@Override
-	public <V> V reduceUpParticles(
-		V initial,
-		BiFunction<V, Particle, V> outputReducer,
-		SubstateDeserialization substateDeserialization,
-		Class<? extends Particle>... particleClass
-	) {
-		var typeBytes = Stream.of(particleClass)
-			.map(substateDeserialization::classToByte)
-			.collect(Collectors.toSet());
-		var v = new AtomicReference<>(initial);
-		for (var typeByte : typeBytes) {
-			try (var cursor = new BerkeleySubstateCursor(null, indexedSubstatesDatabase, new byte[] {typeByte})) {
-				cursor.open();
-				Streams.stream(cursor)
-					.map(b -> {
-						try {
-							return substateDeserialization.deserialize(b.getData());
-						} catch (DeserializeException e) {
-							throw new IllegalStateException();
-						}
-					})
-					.forEach(s -> v.set(outputReducer.apply(v.get(), s)));
-			}
-		}
-
-		return v.get();
-	}
-
 	private void upParticle(
 		com.sleepycat.je.Transaction txn,
 		ByteBuffer bytes,
@@ -770,16 +747,25 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				var buf2 = stateUpdate.getStateBuf();
 				var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
 				resourceDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
-			} else if (stateUpdate.getParsed() instanceof VirtualParent) {
+			}
+
+			// TODO: The following is not required for verification. Only useful for construction
+			// TODO: and stateful reads, move this into a separate store at some point.
+			if (stateUpdate.getParsed() instanceof VirtualParent) {
 				var p = (VirtualParent) stateUpdate.getParsed();
 				var typeByte = p.getData()[0];
-				if (typeByte != SubstateTypeId.UNCLAIMED_READDR.id()) {
-					var mapKey = SystemMapKey.ofValidatorDataParent(typeByte);
-					insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
-				}
+				var mapKey = SystemMapKey.ofSystem(typeByte);
+				insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
+			} else if (stateUpdate.getParsed() instanceof ResourceData) {
+				var p = (ResourceData) stateUpdate.getParsed();
+				var mapKey = SystemMapKey.ofResourceData(
+					p.getAddr(),
+					stateUpdate.typeByte()
+				);
+				insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
 			} else if (stateUpdate.getParsed() instanceof ValidatorData) {
 				var p = (ValidatorData) stateUpdate.getParsed();
-				var mapKey = SystemMapKey.ofValidatorData(
+				var mapKey = SystemMapKey.ofSystem(
 					stateUpdate.typeByte(),
 					p.getValidatorKey().getCompressedBytes()
 				);
@@ -794,9 +780,16 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			} else {
 				downSubstate(txn, stateUpdate.getId());
 
-				if (stateUpdate.getParsed() instanceof ValidatorData) {
+				if (stateUpdate.getParsed() instanceof ResourceData) {
+					var p = (ResourceData) stateUpdate.getParsed();
+					var mapKey = SystemMapKey.ofResourceData(
+						p.getAddr(),
+						stateUpdate.typeByte()
+					);
+					deleteFromMapDatabaseOrFail(txn, mapKey);
+				} else if (stateUpdate.getParsed() instanceof ValidatorData) {
 					var p = (ValidatorData) stateUpdate.getParsed();
-					var mapKey = SystemMapKey.ofValidatorData(
+					var mapKey = SystemMapKey.ofSystem(
 						stateUpdate.typeByte(),
 						p.getValidatorKey().getCompressedBytes()
 					);
@@ -811,11 +804,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private void doStore(
-		com.sleepycat.je.Transaction transaction,
-		Txn txn,
-		List<REStateUpdate> stateUpdates
-	) {
+	private void doStore(com.sleepycat.je.Transaction transaction, REProcessedTxn txn) {
 		final long stateVersion;
 		final long expectedOffset;
 		try (var cursor = txnDatabase.openCursor(transaction, null)) {
@@ -835,9 +824,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 		try {
 			// Transaction / Syncing database
-			var aid = txn.getId();
+			var aid = txn.getTxn().getId();
 			// Write atom data as soon as possible
-			var storedSize = txnLog.write(txn.getPayload(), expectedOffset);
+			var storedSize = txnLog.write(txn.getTxn().getPayload(), expectedOffset);
 			// Store atom indices
 			var pKey = toPKey(stateVersion);
 			var atomPosData = txnEntry(expectedOffset, storedSize, aid);
@@ -850,23 +839,27 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 			// State database
 			var elapsed = Stopwatch.createStarted();
-			for (int i = 0; i < stateUpdates.size(); i++) {
-				if (i > 0 && i % 100000 == 0) {
-					log.warn(
-						"engine_store large_state_update: {}/{} elapsed_time={}s",
-						i,
-						stateUpdates.size(),
-						elapsed.elapsed(TimeUnit.SECONDS)
-					);
-				}
-				var stateUpdate = stateUpdates.get(i);
-				try {
-					this.executeStateUpdate(transaction, stateUpdate);
-				} catch (Exception e) {
-					if (transaction != null) {
-						transaction.abort();
+			int totalCount = txn.getGroupedStateUpdates().stream().mapToInt(List::size).reduce(Integer::sum).orElse(0);
+			int count = 0;
+			for (var group : txn.getGroupedStateUpdates()) {
+				for (var stateUpdate : group) {
+					if (count > 0 && count % 100000 == 0) {
+						log.warn(
+							"engine_store large_state_update: {}/{} elapsed_time={}s",
+							count,
+							totalCount,
+							elapsed.elapsed(TimeUnit.SECONDS)
+						);
 					}
-					throw new BerkeleyStoreException("Unable to store transaction, failed on stateUpdate " + i + ": " + stateUpdate, e);
+					try {
+						this.executeStateUpdate(transaction, stateUpdate);
+						count++;
+					} catch (Exception e) {
+						if (transaction != null) {
+							transaction.abort();
+						}
+						throw new BerkeleyStoreException("Unable to store transaction, failed on stateUpdate " + count + ": " + stateUpdate, e);
+					}
 				}
 			}
 		} catch (Exception e) {

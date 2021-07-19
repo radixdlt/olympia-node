@@ -19,20 +19,21 @@
 package com.radixdlt.application.tokens.state;
 
 import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
-public final class TokenResourceMetadata implements Particle {
+public final class TokenResourceMetadata implements ResourceData {
 	private final REAddr addr;
 	private final String name;
+	private final String symbol;
 	private final String description;
 	private final String iconUrl;
 	private final String url;
 
 	public TokenResourceMetadata(
 		REAddr addr,
+		String symbol,
 		String name,
 		String description,
 		String iconUrl,
@@ -40,13 +41,19 @@ public final class TokenResourceMetadata implements Particle {
 	) {
 		this.addr = Objects.requireNonNull(addr);
 		this.name = Objects.requireNonNull(name);
+		this.symbol = Objects.requireNonNull(symbol);
 		this.description = Objects.requireNonNull(description);
 		this.iconUrl = REFieldSerialization.requireValidUrl(iconUrl);
 		this.url = REFieldSerialization.requireValidUrl(url);
 	}
 
+	@Override
 	public REAddr getAddr() {
 		return addr;
+	}
+
+	public String getSymbol() {
+		return symbol;
 	}
 
 	public String getName() {
@@ -65,13 +72,13 @@ public final class TokenResourceMetadata implements Particle {
 		return url;
 	}
 
-	public static TokenResourceMetadata empty(REAddr addr) {
-		return new TokenResourceMetadata(addr, "", "", "", "");
+	public static TokenResourceMetadata empty(REAddr addr, String symbol) {
+		return new TokenResourceMetadata(addr, symbol, "", "", "", "");
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(addr, name, description, iconUrl, url);
+		return Objects.hash(addr, symbol, name, description, iconUrl, url);
 	}
 
 	@Override
@@ -81,6 +88,7 @@ public final class TokenResourceMetadata implements Particle {
 		}
 		var other = (TokenResourceMetadata) o;
 		return Objects.equals(this.addr, other.addr)
+			&& Objects.equals(this.symbol, other.symbol)
 			&& Objects.equals(this.name, other.name)
 			&& Objects.equals(this.description, other.description)
 			&& Objects.equals(this.iconUrl, other.iconUrl)

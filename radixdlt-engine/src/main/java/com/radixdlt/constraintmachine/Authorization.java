@@ -17,14 +17,12 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
-
 /**
  * Validates whether a specific transition procedure is permissible
  */
 public final class Authorization {
 	public interface Authorizer {
-		void verify(ImmutableAddrs immutableAddrs, ExecutionContext context) throws AuthorizationException;
+		void verify(Resources immutableAddrs, ExecutionContext context) throws Exception;
 	}
 	private final PermissionLevel permissionLevel;
 	private final Authorizer authorizer;

@@ -18,10 +18,10 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
 import com.radixdlt.identifiers.REAddr;
 
-import java.util.Optional;
-
-public interface ImmutableAddrs {
-	Optional<Particle> loadAddr(REAddr addr);
+public interface Resources {
+	TokenResource loadResource(REAddr addr) throws NotAResourceException;
 }

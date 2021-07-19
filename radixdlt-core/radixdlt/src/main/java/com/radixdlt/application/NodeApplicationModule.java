@@ -28,7 +28,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFiller;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.StateReducer;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
@@ -44,15 +43,6 @@ public final class NodeApplicationModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(MempoolFiller.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
-			.addBinding().to(MyBalanceReducer.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
-			.addBinding().to(MyStakedBalanceReducer.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
-			.addBinding().to(MyValidatorStakesReducer.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<StateReducer<?>>() { })
-			.addBinding().to(MyValidatorInfoReducer.class).in(Scopes.SINGLETON);
-
 		bind(NodeApplication.class).in(Scopes.SINGLETON);
 
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)

@@ -141,7 +141,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 			},
 			buf -> REFieldSerialization.deserializeKey(buf),
 			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-			k -> new ValidatorRakeCopy(OptionalLong.empty(), (ECPublicKey) k, RAKE_MAX)
+			k -> ValidatorRakeCopy.createVirtual((ECPublicKey) k)
 		));
 
 		os.procedure(new DownProcedure<>(

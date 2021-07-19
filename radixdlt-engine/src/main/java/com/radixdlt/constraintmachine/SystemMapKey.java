@@ -30,21 +30,31 @@ public final class SystemMapKey {
 		this.key = key;
 	}
 
+	private static SystemMapKey of(REAddr addr, byte key) {
+		var buf = ByteBuffer.allocate(addr.getBytes().length + 1);
+		buf.put(addr.getBytes());
+		buf.put(key);
+		return new SystemMapKey(buf.array());
+	}
+
+	private static SystemMapKey of(REAddr addr, byte key0, byte[] key1) {
+		var buf = ByteBuffer.allocate(addr.getBytes().length + 1 + key1.length);
+		buf.put(addr.getBytes());
+		buf.put(key0);
+		buf.put(key1);
+		return new SystemMapKey(buf.array());
+	}
 
 	public static SystemMapKey ofSystem(byte key) {
-		return new SystemMapKey(new byte[] {REAddr.REAddrType.SYSTEM.byteValue(), key});
+		return of(REAddr.ofSystem(), key);
 	}
 
-	public static SystemMapKey ofValidatorDataParent(byte typeId) {
-		return new SystemMapKey(new byte[] {2, typeId});
+	public static SystemMapKey ofSystem(byte typeId, byte[] mapKey) {
+		return of(REAddr.ofSystem(), typeId, mapKey);
 	}
 
-	public static SystemMapKey ofValidatorData(byte typeId, byte[] mapKey) {
-		var buf = ByteBuffer.allocate(2 + mapKey.length);
-		buf.put((byte) 2); // TODO: corresponds to REAddr addressing scheme
-		buf.put(typeId);
-		buf.put(mapKey);
-		return new SystemMapKey(buf.array());
+	public static SystemMapKey ofResourceData(REAddr addr, byte typeId) {
+		return of(addr, typeId);
 	}
 
 	public byte[] array() {

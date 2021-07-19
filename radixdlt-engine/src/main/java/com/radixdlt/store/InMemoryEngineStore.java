@@ -23,14 +23,11 @@ import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
@@ -44,39 +41,36 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	private final Object lock = new Object();
 	private final Map<SubstateId, REStateUpdate> storedState = new HashMap<>();
-	private final Map<REAddr, Supplier<ByteBuffer>> addrParticles = new HashMap<>();
+	private final Map<REAddr, Supplier<ByteBuffer>> resources = new HashMap<>();
 	private final Map<SystemMapKey, RawSubstateBytes> maps = new HashMap<>();
 
 	@Override
 	public <R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException {
 		return consumer.start(new EngineStoreInTransaction<M>() {
 			@Override
-			public void storeTxn(Txn txn, List<REStateUpdate> stateUpdates) {
+			public void storeTxn(REProcessedTxn txn) {
 				synchronized (lock) {
-					stateUpdates.forEach(i -> storedState.put(i.getId(), i));
-					stateUpdates.forEach(update -> {
+					txn.stateUpdates().forEach(update -> {
+						storedState.put(update.getId(), update);
+
 						// FIXME: Superhack
 						if (update.isBootUp()) {
 							if (update.getParsed() instanceof TokenResource) {
 								var tokenDef = (TokenResource) update.getParsed();
-								addrParticles.put(tokenDef.getAddr(), update::getStateBuf);
+								resources.put(tokenDef.getAddr(), update::getStateBuf);
 							} else if (update.getParsed() instanceof VirtualParent) {
 								var p = (VirtualParent) update.getParsed();
 								var typeByte = p.getData()[0];
-								if (typeByte != SubstateTypeId.UNCLAIMED_READDR.id()) {
-									var mapKey = SystemMapKey.ofValidatorDataParent(typeByte);
-									maps.put(mapKey, update.getRawSubstateBytes());
-								}
+								var mapKey = SystemMapKey.ofSystem(typeByte);
+								maps.put(mapKey, update.getRawSubstateBytes());
 							} else if (update.getParsed() instanceof ValidatorData) {
 								var data = (ValidatorData) update.getParsed();
-								var mapKey = SystemMapKey.ofValidatorData(
+								var mapKey = SystemMapKey.ofSystem(
 									update.typeByte(),
 									data.getValidatorKey().getCompressedBytes()
 								);
@@ -88,7 +82,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 						} else if (update.isShutDown()) {
 							if (update.getParsed() instanceof ValidatorData) {
 								var data = (ValidatorData) update.getParsed();
-								var mapKey = SystemMapKey.ofValidatorData(
+								var mapKey = SystemMapKey.ofSystem(
 									update.typeByte(),
 									data.getValidatorKey().getCompressedBytes()
 								);
@@ -146,7 +140,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			@Override
 			public Optional<ByteBuffer> loadResource(REAddr addr) {
 				synchronized (lock) {
-					var supplier = addrParticles.get(addr);
+					var supplier = resources.get(addr);
 					return supplier == null ? Optional.empty() : Optional.of(supplier.get());
 				}
 			}
@@ -183,31 +177,4 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 			return inst != null;
 		}
 	}
-
-	@Override
-	public <V> V reduceUpParticles(
-		V initial,
-		BiFunction<V, Particle, V> outputReducer,
-		SubstateDeserialization substateDeserialization,
-		Class<? extends Particle>... particleClass
-	) {
-		V v = initial;
-		var types = Set.of(particleClass);
-
-		synchronized (lock) {
-			for (var i : storedState.values()) {
-				if (!i.isBootUp() || !isOneOf(types, i.getParsed())) {
-					continue;
-				}
-
-				v = outputReducer.apply(v, (Particle) i.getParsed());
-			}
-		}
-		return v;
-	}
-
-	private static boolean isOneOf(Set<Class<? extends Particle>> bundle, Object instance) {
-		return bundle.stream().anyMatch(v -> v.isInstance(instance));
-	}
-
 }

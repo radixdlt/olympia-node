@@ -211,11 +211,11 @@ public class MetricsService {
 	}
 
 	private UInt384 getTotalStake() {
-		return UInt384.from(accountInfoService.getValidatorStakeData().getTotalStake());
+		return UInt384.from(accountInfoService.getTotalStake());
 	}
 
 	private UInt384 getXrdBalance() {
-		return accountInfoService.getMyBalances()
+		return accountInfoService.getMyBalances().entrySet()
 			.stream()
 			.filter(e -> e.getKey().isNativeToken())
 			.map(Map.Entry::getValue)
@@ -244,7 +244,7 @@ public class MetricsService {
 
 		addEndpontStatuses(builder);
 		appendField(builder, "owner_address", accountInfoService.getOwnAddress());
-		appendField(builder, "validator_registered", accountInfoService.getValidatorInfoDetails().isRegistered());
+		appendField(builder, "validator_registered", accountInfoService.getMyNextEpochRegisteredFlag());
 		addBranchAndCommit(builder);
 		addValidatorAddress(builder);
 		addAccumulatorState(builder);

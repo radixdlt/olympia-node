@@ -47,25 +47,25 @@ public final class AuthInitiateMessage {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final HashCode nonce;
 
-	@JsonProperty("magic")
+	@JsonProperty("networkId")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final int magic;
+	private final int networkId;
 
 	@JsonCreator
 	public static AuthInitiateMessage deserialize(
 		@JsonProperty("signature") ECDSASignature signature,
 		@JsonProperty("publicKey") HashCode publicKey,
 		@JsonProperty("nonce") HashCode nonce,
-		@JsonProperty("magic") int magic
+		@JsonProperty("networkId") int networkId
 	) {
-		return new AuthInitiateMessage(signature, publicKey, nonce, magic);
+		return new AuthInitiateMessage(signature, publicKey, nonce, networkId);
 	}
 
-	public AuthInitiateMessage(ECDSASignature signature, HashCode publicKey, HashCode nonce, int magic) {
+	public AuthInitiateMessage(ECDSASignature signature, HashCode publicKey, HashCode nonce, int networkId) {
 		this.signature = signature;
 		this.publicKey = publicKey;
 		this.nonce = nonce;
-		this.magic = magic;
+		this.networkId = networkId;
 	}
 
 	public ECDSASignature getSignature() {
@@ -80,8 +80,8 @@ public final class AuthInitiateMessage {
 		return nonce;
 	}
 
-	public int getMagic() {
-		return magic;
+	public int getNetworkId() {
+		return networkId;
 	}
 
 	@Override
@@ -96,11 +96,11 @@ public final class AuthInitiateMessage {
 		return Objects.equals(signature, that.signature)
 			&& Objects.equals(publicKey, that.publicKey)
 			&& Objects.equals(nonce, that.nonce)
-			&& magic == that.magic;
+			&& networkId == that.networkId;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(signature, publicKey, nonce, magic);
+		return Objects.hash(signature, publicKey, nonce, networkId);
 	}
 }

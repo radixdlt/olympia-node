@@ -55,7 +55,7 @@ public class SystemCallProcedure<S extends ReducerState> implements Procedure {
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,
-		ImmutableAddrs immutableAddrs,
+		Resources immutableAddrs,
 		ExecutionContext context
 	) throws ProcedureException {
 		try {

@@ -18,41 +18,19 @@
 package com.radixdlt.store;
 
 import com.radixdlt.atom.SubstateStore;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.RadixEngineException;
-
-import java.util.List;
-import java.util.function.BiFunction;
 
 public interface EngineStore<M> extends SubstateStore {
 	/**
 	 * For verification
 	 */
 	interface EngineStoreInTransaction<M> extends CMStore {
-		void storeTxn(Txn txn, List<REStateUpdate> instructions);
+		void storeTxn(REProcessedTxn txn);
 		void storeMetadata(M metadata);
 	}
 	interface TransactionEngineStoreConsumer<M, R> {
 		R start(EngineStoreInTransaction<M> store) throws RadixEngineException;
 	}
 	<R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException;
-
-	/**
-	 * Deterministically computes a value from a list of particles of a given type.
-	 * Must implement this until we get rid of optimistic concurrency.
-	 *
-	 * @param <V> the class of the state to reduce to
-	 * @param initial the initial value of the state
-	 * @param particleClass the particle class to reduce
-	 * @return the computed, reduced state
-	 */
-	<V> V reduceUpParticles(
-		V initial,
-		BiFunction<V, Particle, V> outputReducer,
-		SubstateDeserialization deserialization,
-		Class<? extends Particle>... particleClass
-	);
 }

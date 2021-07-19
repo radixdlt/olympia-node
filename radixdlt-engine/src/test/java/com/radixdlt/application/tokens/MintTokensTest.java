@@ -37,6 +37,7 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
 import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -117,7 +118,7 @@ public final class MintTokensTest {
 		var mintTxn = this.engine.construct(new MintToken(tokenAddr, accountAddr, UInt256.TEN))
 			.signAndBuild(key::sign);
 		assertThatThrownBy(() -> this.engine.execute(List.of(mintTxn)))
-			.hasRootCauseInstanceOf(AuthorizationException.class);
+			.hasRootCauseInstanceOf(NotAResourceException.class);
 	}
 
 	@Test

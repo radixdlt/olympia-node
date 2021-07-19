@@ -2,12 +2,9 @@ package com.radixdlt.store;
 
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
@@ -15,10 +12,8 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiFunction;
 
 public class TransientEngineStore<M> implements EngineStore<M> {
 	private final EngineStore<M> base;
@@ -29,23 +24,13 @@ public class TransientEngineStore<M> implements EngineStore<M> {
 	}
 
 	@Override
-	public <V> V reduceUpParticles(
-		V v,
-		BiFunction<V, Particle, V> biFunction,
-		SubstateDeserialization substateDeserialization,
-		Class<? extends Particle>... aClass
-	) {
-		throw new UnsupportedOperationException("Transient store should not require reduction.");
-	}
-
-	@Override
 	public <R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException {
 		return base.transaction(baseStore ->
 			transientStore.transaction(tStore ->
 				consumer.start(new EngineStoreInTransaction<M>() {
 					@Override
-					public void storeTxn(Txn txn, List<REStateUpdate> instructions) {
-						tStore.storeTxn(txn, instructions);
+					public void storeTxn(REProcessedTxn txn) {
+						tStore.storeTxn(txn);
 					}
 
 					@Override

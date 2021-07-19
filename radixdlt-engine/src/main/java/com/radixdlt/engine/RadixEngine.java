@@ -19,39 +19,39 @@ package com.radixdlt.engine;
 
 import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.REConstructor;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.FeeReservePut;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.parser.exceptions.TxnParseException;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.EngineStore;
-
 import com.radixdlt.store.TransientEngineStore;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -65,72 +65,16 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
 public final class RadixEngine<M> {
 	private static final Logger logger = LogManager.getLogger();
-
-	private static class ApplicationStateReducer<U, M> {
-		private final Set<Class<? extends Particle>> particleClasses;
-		private final REParser reParser;
-		private final BiFunction<U, Particle, U> outputReducer;
-		private final BiFunction<U, Particle, U> inputReducer;
-		private final boolean includeInBranches;
-		private U curValue;
-
-		ApplicationStateReducer(
-			Set<Class<? extends Particle>> particleClasses,
-			U initialValue,
-			BiFunction<U, Particle, U> outputReducer,
-			BiFunction<U, Particle, U> inputReducer,
-			boolean includeInBranches,
-			REParser reParser
-		) {
-			this.particleClasses = particleClasses;
-			this.reParser = reParser;
-			this.curValue = initialValue;
-			this.outputReducer = outputReducer;
-			this.inputReducer = inputReducer;
-			this.includeInBranches = includeInBranches;
-		}
-
-		ApplicationStateReducer<U, M> copy() {
-			return new ApplicationStateReducer<>(
-				particleClasses,
-				curValue,
-				outputReducer,
-				inputReducer,
-				includeInBranches,
-				reParser
-			);
-		}
-
-		void initialize(EngineStore<M> engineStore) {
-			for (var particleClass : particleClasses) {
-				curValue = engineStore.reduceUpParticles(curValue, outputReducer, reParser.getSubstateDeserialization(), particleClass);
-			}
-		}
-
-		void processStateUpdate(REStateUpdate stateUpdate) {
-			for (var particleClass : particleClasses) {
-				var p = stateUpdate.getParsed();
-				if (particleClass.isInstance(p)) {
-					if (stateUpdate.isBootUp()) {
-						curValue = outputReducer.apply(curValue, (Particle) p);
-					} else {
-						curValue = inputReducer.apply(curValue, (Particle) p);
-					}
-				}
-			}
-		}
-	}
-
 	private final EngineStore<M> engineStore;
 	private final Object stateUpdateEngineLock = new Object();
-	private final Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers = new HashMap<>();
 	private final List<RadixEngineBranch<M>> branches = new ArrayList<>();
 
 	private REParser parser;
@@ -163,57 +107,6 @@ public final class RadixEngine<M> {
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.batchVerifier = batchVerifier;
-	}
-
-	/**
-	 * Add a deterministic computation engine which maps an ordered list of
-	 * particles which have been created and destroyed to a state.
-	 * Initially runs the computation with all the atoms currently in the store
-	 * and then updates the state value as atoms get stored.
-	 *
-	 * @param stateReducer the reducer
-	 * @param <U> the class of the state
-	 */
-	public <U> void addStateReducer(StateReducer<U> stateReducer, String name, boolean includeInBranches) {
-		ApplicationStateReducer<U, M> applicationStateComputer = new ApplicationStateReducer<>(
-			stateReducer.particleClasses(),
-			stateReducer.initial().get(),
-			stateReducer.outputReducer(),
-			stateReducer.inputReducer(),
-			includeInBranches,
-			parser
-		);
-
-		synchronized (stateUpdateEngineLock) {
-			applicationStateComputer.initialize(this.engineStore);
-			stateComputers.put(Pair.of(stateReducer.stateClass(), name), applicationStateComputer);
-		}
-	}
-
-	public <U> void addStateReducer(StateReducer<U> stateReducer, boolean includeInBranches) {
-		addStateReducer(stateReducer, null, includeInBranches);
-	}
-
-	/**
-	 * Retrieves the latest state
-	 * @param applicationStateClass the class of the state to retrieve
-	 * @param <U> the class of the state to retrieve
-	 * @return the current state
-	 */
-	public <U> U getComputedState(Class<U> applicationStateClass) {
-		return getComputedState(applicationStateClass, null);
-	}
-
-	/**
-	 * Retrieves the latest state
-	 * @param applicationStateClass the class of the state to retrieve
-	 * @param <U> the class of the state to retrieve
-	 * @return the current state
-	 */
-	public <U> U getComputedState(Class<U> applicationStateClass, String name) {
-		synchronized (stateUpdateEngineLock) {
-			return applicationStateClass.cast(stateComputers.get(Pair.of(applicationStateClass, name)).curValue);
-		}
 	}
 
 	public void replaceConstraintMachine(
@@ -250,8 +143,7 @@ public final class RadixEngine<M> {
 			SubstateSerialization serialization,
 			REConstructor actionToConstructorMap,
 			ConstraintMachine constraintMachine,
-			EngineStore<M> parentStore,
-			Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> stateComputers
+			EngineStore<M> parentStore
 		) {
 			var transientEngineStore = new TransientEngineStore<>(parentStore);
 
@@ -263,7 +155,6 @@ public final class RadixEngine<M> {
 				transientEngineStore,
 				BatchVerifier.empty()
 			);
-			engine.stateComputers.putAll(stateComputers);
 		}
 
 		private void delete() {
@@ -306,19 +197,12 @@ public final class RadixEngine<M> {
 
 	public RadixEngineBranch<M> transientBranch() {
 		synchronized (stateUpdateEngineLock) {
-			Map<Pair<Class<?>, String>, ApplicationStateReducer<?, M>> branchedStateComputers = new HashMap<>();
-			this.stateComputers.forEach((c, computer) -> {
-				if (computer.includeInBranches) {
-					branchedStateComputers.put(c, computer.copy());
-				}
-			});
 			RadixEngineBranch<M> branch = new RadixEngineBranch<>(
 				this.parser,
 				this.serialization,
 				this.actionConstructors,
 				this.constraintMachine,
-				this.engineStore,
-				branchedStateComputers
+				this.engineStore
 			);
 
 			branches.add(branch);
@@ -394,9 +278,9 @@ public final class RadixEngine<M> {
 
 			verificationStopwatch.start();
 			var context = new ExecutionContext(txn, permissionLevel, sigsLeft, Amount.ofTokens(200).toSubunits());
-			final REProcessedTxn parsedTxn;
+			final REProcessedTxn processedTxn;
 			try {
-				parsedTxn = this.verify(engineStoreInTransaction, txn, context);
+				processedTxn = this.verify(engineStoreInTransaction, txn, context);
 			} catch (TxnParseException | AuthorizationException | ConstraintMachineException e) {
 				throw new RadixEngineException(i, txns.size(), txn, e);
 			}
@@ -407,20 +291,14 @@ public final class RadixEngine<M> {
 
 			storageStopwatch.start();
 			try {
-				engineStoreInTransaction.storeTxn(txn, parsedTxn.stateUpdates().collect(Collectors.toList()));
+				engineStoreInTransaction.storeTxn(processedTxn);
 			} catch (Exception e) {
-				logger.error("Store of atom failed: " + parsedTxn, e);
+				logger.error("Store of atom failed: " + processedTxn, e);
 				throw e;
 			}
 			storageStopwatch.stop();
 
-			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
-			// Non-persisted computed state
-			for (var group : parsedTxn.getGroupedStateUpdates()) {
-				group.forEach(update -> stateComputers.forEach((a, computer) -> computer.processStateUpdate(update)));
-			}
-
-			processedTxns.add(parsedTxn);
+			processedTxns.add(processedTxn);
 		}
 
 		try {
@@ -527,5 +405,85 @@ public final class RadixEngine<M> {
 		}
 
 		throw new TxBuilderException("Not enough fees: unable to construct with fees after " + maxTries + " tries.");
+	}
+
+	public Optional<Particle> get(SystemMapKey mapKey) {
+		synchronized (stateUpdateEngineLock) {
+			var deserialization = constraintMachine.getDeserialization();
+			return engineStore.get(mapKey).map(raw -> {
+				try {
+					return deserialization.deserialize(raw.getData());
+				} catch (DeserializeException e) {
+					throw new IllegalStateException(e);
+				}
+			});
+		}
+	}
+
+	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
+		Class<T> c,
+		Function<T, K> keyMapper
+	) {
+		synchronized (stateUpdateEngineLock) {
+			var deserialization = constraintMachine.getDeserialization();
+			return reduce(deserialization.index(c), new HashMap<>(),
+				(m, t) -> {
+					m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+					return m;
+				}
+			);
+		}
+	}
+
+	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
+		SubstateIndex<T> index,
+		Function<T, K> keyMapper
+	) {
+		return reduce(index, new HashMap<>(),
+			(m, t) -> {
+				m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+				return m;
+			}
+		);
+	}
+
+	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
+		SubstateIndex<T> index,
+		Function<T, K> keyMapper,
+		Predicate<T> predicate
+	) {
+		return reduce(index, new HashMap<>(),
+			(m, t) -> {
+				if (predicate.test(t)) {
+					m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+				}
+				return m;
+			}
+		);
+	}
+
+	public <U, T extends Particle> U reduce(SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator) {
+		synchronized (stateUpdateEngineLock) {
+			var deserialization = constraintMachine.getDeserialization();
+			var u = identity;
+			try (var cursor = engineStore.openIndexedCursor(i)) {
+				while (cursor.hasNext()) {
+					try {
+						var t = (T) deserialization.deserialize(cursor.next().getData());
+						u = accumulator.apply(u, t);
+					} catch (DeserializeException e) {
+						throw new IllegalStateException(e);
+					}
+				}
+			}
+			return u;
+		}
+	}
+
+	public <U, T extends Particle> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator) {
+		synchronized (stateUpdateEngineLock) {
+			var deserialization = constraintMachine.getDeserialization();
+			return reduce(deserialization.index(c), identity, accumulator);
+		}
 	}
 }
