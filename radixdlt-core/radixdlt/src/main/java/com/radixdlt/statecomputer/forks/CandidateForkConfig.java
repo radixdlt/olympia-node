@@ -65,11 +65,11 @@ public final class CandidateForkConfig implements ForkConfig {
 	}
 
 	@Override
-	public CandidateForkConfig withForksVerifier(Forks forks) {
+	public CandidateForkConfig withForksVerifier(ForkConfig nextFork) {
 		return new CandidateForkConfig(
 			name,
 			hash,
-			reRules.withForksVerifier(hash, forks),
+			reRules.withForksVerifier(reRules.getParser(), nextFork),
 			requiredStake,
 			minEpoch
 		);

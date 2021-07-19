@@ -29,6 +29,7 @@ import java.util.List;
  *
  * @param <M> class of metadata
  */
+/* TODO: consider renaming to PostProcessor (or similar) */
 public interface BatchVerifier<M> {
 	default M processMetadata(M metadata, EngineStore<M> engineStore, List<REProcessedTxn> txns) throws MetadataException {
 		return metadata;

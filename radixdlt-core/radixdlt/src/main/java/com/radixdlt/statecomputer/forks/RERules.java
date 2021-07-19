@@ -18,14 +18,13 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.statecomputer.ForkVotesVerifier;
+import com.radixdlt.statecomputer.ForksVerifier;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.util.OptionalInt;
@@ -97,14 +96,14 @@ public final class RERules {
 		return config;
 	}
 
-	public RERules withForksVerifier(HashCode curHash, Forks forks) {
+	public RERules withForksVerifier(REParser reParser, ForkConfig nextFork) {
 		return new RERules(
 			version,
 			parser,
 			serialization,
 			constraintMachineConfig,
 			actionConstructors,
-			new ForkVotesVerifier(batchVerifier, curHash, forks),
+			new ForksVerifier(batchVerifier, reParser, nextFork),
 			config
 		);
 	}

@@ -20,39 +20,25 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
-import com.google.common.hash.HashCode;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.MetadataException;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
 
 import java.util.Arrays;
 import java.util.List;
 
-public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof> {
-
+public final class AddValidatorsSystemMetadataVerifier implements BatchVerifier<LedgerAndBFTProof> {
 	private final BatchVerifier<LedgerAndBFTProof> baseVerifier;
-	private final HashCode curForkHash;
-	private final Forks forks;
 
-	public ForkVotesVerifier(
-		BatchVerifier<LedgerAndBFTProof> baseVerifier,
-	 	HashCode curForkHash,
-	 	Forks forks
-	) {
+	public AddValidatorsSystemMetadataVerifier(BatchVerifier<LedgerAndBFTProof> baseVerifier) {
 		this.baseVerifier = baseVerifier;
-		this.curForkHash = curForkHash;
-		this.forks = forks;
 	}
 
 	@Override
@@ -61,25 +47,14 @@ public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof>
 		EngineStore<LedgerAndBFTProof> engineStore,
 		List<REProcessedTxn> txns
 	) throws MetadataException {
-		final var ignoredMetadata = baseVerifier.processMetadata(metadata, engineStore, txns);
-		// just a sanity check, otherwise it would be silently ignored
-		if (ignoredMetadata != metadata) {
-			throw new IllegalStateException("Unexpected metadata modification by the baseVerifier");
+		final var baseMetadata = baseVerifier.processMetadata(metadata, engineStore, txns);
+
+		if (baseMetadata.getProof().getNextValidatorSet().isPresent()) {
+			return baseMetadata
+				.withValidatorsSystemMetadata(getValidatorsSystemMetadata(engineStore, baseMetadata));
+		} else {
+			return baseMetadata;
 		}
-
-		// no forks checking if not end of epoch
-		if (metadata.getProof().getNextValidatorSet().isEmpty()) {
-			return metadata;
-		}
-
-		// add next validators system metadata substates
-		final var metadataWithValidators = metadata
-			.withValidatorsSystemMetadata(getValidatorsSystemMetadata(engineStore, metadata));
-
-		// add next fork hash, if needed
-		return forks.findNextForkConfig(curForkHash, metadataWithValidators)
-			.map(nextForkConfig -> metadataWithValidators.withNextForkHash(nextForkConfig.hash()))
-			.orElse(metadataWithValidators);
 	}
 
 	private ImmutableList<RawSubstateBytes> getValidatorsSystemMetadata(
@@ -93,9 +68,9 @@ public final class ForkVotesVerifier implements BatchVerifier<LedgerAndBFTProof>
 		) {
 			return Streams.stream(validatorMetadataCursor)
 				.filter(rawSubstate -> {
-					var keyBytes = Arrays.copyOfRange(rawSubstate.getData(), 2, 2 + ECPublicKey.COMPRESSED_BYTES);
+					final var keyBytes = Arrays.copyOfRange(rawSubstate.getData(), 2, 2 + ECPublicKey.COMPRESSED_BYTES);
 					try {
-						var key = ECPublicKey.fromBytes(keyBytes);
+						final var key = ECPublicKey.fromBytes(keyBytes);
 						return validatorSet.containsNode(key);
 					} catch (PublicKeyException ex) {
 						throw new RuntimeException(ex);

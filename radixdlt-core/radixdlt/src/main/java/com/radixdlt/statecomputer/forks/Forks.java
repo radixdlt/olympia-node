@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Manages forks and their transitions. There are two kinds of forks:
@@ -120,16 +121,21 @@ public final class Forks {
 		ImmutableList<FixedEpochForkConfig> fixedEpochForks,
 		Optional<CandidateForkConfig> candidateFork
 	) {
-		// decorate base batch verifier with forks (small hack to inject Forks to ForksBatchVerifier)
-		final var fixedEpochForksWithForkVerifier = fixedEpochForks.stream()
-			.map(forkConfig -> forkConfig.withForksVerifier(this))
+		// decorate base BatchVerifier with ForksVerifier
+		this.fixedEpochForks = IntStream.range(0, fixedEpochForks.size())
+			.mapToObj(idx -> {
+				final var forkConfig = fixedEpochForks.get(idx);
+				if (idx < fixedEpochForks.size() - 1) {
+					return forkConfig.withForksVerifier(fixedEpochForks.get(idx + 1));
+				} else if (candidateFork.isPresent()) {
+					return forkConfig.withForksVerifier(candidateFork.get());
+				} else {
+					return forkConfig;
+				}
+			})
 			.collect(ImmutableList.toImmutableList());
 
-		final var candidateForkWithForkVerifier = candidateFork
-			.map(forkConfig -> forkConfig.withForksVerifier(this));
-
-		this.fixedEpochForks = fixedEpochForksWithForkVerifier;
-		this.candidateFork = candidateForkWithForkVerifier;
+		this.candidateFork = candidateFork;
 	}
 
 	public Optional<CandidateForkConfig> getCandidateFork() {
@@ -256,7 +262,7 @@ public final class Forks {
 					.map(data -> deserializeValidatorSystemMetadata(substateDeserialization, data.asBytes()))
 					.collect(ImmutableList.toImmutableList());
 
-				if (testCandidate(committedReader.getEpochProof(epoch).orElseThrow(), validatorsMetadataAtEpoch)) {
+				if (testCandidate(candidateFork.get(), committedReader.getEpochProof(epoch).orElseThrow(), validatorsMetadataAtEpoch)) {
 					return Optional.of(epoch);
 				}
 			}
@@ -316,37 +322,7 @@ public final class Forks {
 			.orElseGet(this::genesisFork);
 	}
 
-	@SuppressWarnings("unchecked")
-	public Optional<ForkConfig> findNextForkConfig(HashCode forkHash, LedgerAndBFTProof ledgerAndBFTProof) {
-		final var currentForkConfig = getByHash(forkHash).get();
-
-		if (currentForkConfig instanceof CandidateForkConfig) {
-			// if we're already running a candidate fork than no action is needed
-			return Optional.empty();
-		}
-
-		final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
-		final var currentFixedEpochFork = (FixedEpochForkConfig) currentForkConfig;
-		final var latestFixedEpochFork = fixedEpochForks.get(fixedEpochForks.size() - 1);
-
-		final var maybeNextFixedEpochFork =
-			this.fixedEpochForks.stream()
-				.filter(f -> f.epoch() > currentFixedEpochFork.epoch() && nextEpoch == f.epoch())
-				.findFirst();
-
-		if (maybeNextFixedEpochFork.isPresent()) {
-			// move to a next fixed epoch fork, if there is one
-			return (Optional) maybeNextFixedEpochFork;
-		} else if (currentFixedEpochFork.hash().equals(latestFixedEpochFork.hash())) {
-			// if we're at the latest fixed epoch fork, then consider the candidate fork
-			final var reParser = currentFixedEpochFork.engineRules().getParser();
-			return (Optional) candidateFork.filter(unused -> testCandidate(reParser, ledgerAndBFTProof));
-		} else {
-			return Optional.empty();
-		}
-	}
-
-	private boolean testCandidate(REParser reParser, LedgerAndBFTProof ledgerAndBFTProof) {
+	public static boolean testCandidate(CandidateForkConfig candidateFork, REParser reParser, LedgerAndBFTProof ledgerAndBFTProof) {
 		if (ledgerAndBFTProof.getValidatorsSystemMetadata().isEmpty()) {
 			return false;
 		}
@@ -356,10 +332,41 @@ public final class Forks {
 			.map(s -> deserializeValidatorSystemMetadata(substateDeserialization, s.getData()))
 			.collect(ImmutableList.toImmutableList());
 
-		return testCandidate(ledgerAndBFTProof.getProof(), validatorsSystemMetadata);
+		return testCandidate(candidateFork, ledgerAndBFTProof.getProof(), validatorsSystemMetadata);
 	}
 
-	private ValidatorSystemMetadata deserializeValidatorSystemMetadata(
+	public static boolean testCandidate(
+		CandidateForkConfig candidateFork,
+		LedgerProof ledgerProof,
+		ImmutableList<ValidatorSystemMetadata> validatorsMetadata
+	) {
+		if (ledgerProof.getNextValidatorSet().isEmpty()) {
+			return false;
+		}
+
+		final var nextEpoch = ledgerProof.getEpoch() + 1;
+		if (nextEpoch < candidateFork.minEpoch()) {
+			return false;
+		}
+
+		final var validatorSet = ledgerProof.getNextValidatorSet().get();
+
+		final var requiredPower = validatorSet.getTotalPower().multiply(UInt256.from(candidateFork.requiredStake()))
+			.divide(UInt256.from(10000));
+
+		final var forkVotesPower = validatorsMetadata.stream()
+			.filter(vm -> validatorSet.containsNode(vm.getValidatorKey()))
+			.filter(vm -> {
+				final var expectedVoteHash = ForkConfig.voteHash(vm.getValidatorKey(), candidateFork);
+				return vm.getAsHash().equals(expectedVoteHash);
+			})
+			.map(validatorMetadata -> validatorSet.getPower(validatorMetadata.getValidatorKey()))
+			.reduce(UInt256.ZERO, UInt256::add);
+
+		return forkVotesPower.compareTo(requiredPower) >= 0;
+	}
+
+	private static ValidatorSystemMetadata deserializeValidatorSystemMetadata(
 		SubstateDeserialization substateDeserialization,
 		byte[] data
 	) {
@@ -368,34 +375,5 @@ public final class Forks {
 		} catch (DeserializeException e) {
 			throw new IllegalStateException("Failed to deserialize ValidatorSystemMetadata substate");
 		}
-	}
-
-	private boolean testCandidate(LedgerProof ledgerProof, ImmutableList<ValidatorSystemMetadata> validatorsMetadata) {
-		if (candidateFork.isEmpty() || ledgerProof.getNextValidatorSet().isEmpty()) {
-			return false;
-		}
-
-		final var nextEpoch = ledgerProof.getEpoch() + 1;
-		if (nextEpoch < candidateFork.get().minEpoch()) {
-			return false;
-		}
-
-		final var candidate = candidateFork.get();
-
-		final var validatorSet = ledgerProof.getNextValidatorSet().get();
-
-		final var requiredPower = validatorSet.getTotalPower().multiply(UInt256.from(candidate.requiredStake()))
-			.divide(UInt256.from(10000));
-
-		final var forkVotesPower = validatorsMetadata.stream()
-			.filter(vm -> validatorSet.containsNode(vm.getValidatorKey()))
-			.filter(vm -> {
-				final var expectedVoteHash = ForkConfig.voteHash(vm.getValidatorKey(), candidate);
-				return vm.getAsHash().equals(expectedVoteHash);
-			})
-			.map(validatorMetadata -> validatorSet.getPower(validatorMetadata.getValidatorKey()))
-			.reduce(UInt256.ZERO, UInt256::add);
-
-		return forkVotesPower.compareTo(requiredPower) >= 0;
 	}
 }
