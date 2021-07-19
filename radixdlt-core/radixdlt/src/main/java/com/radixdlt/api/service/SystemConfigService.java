@@ -18,6 +18,8 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -159,6 +161,7 @@ public class SystemConfigService {
 	private final SystemCounters systemCounters;
 	private final List<EndpointStatus> endpointStatuses;
 	private final PeersView peersView;
+	private final AddressBook addressBook;
 	private final Addressing addressing;
 
 	@Inject
@@ -174,6 +177,7 @@ public class SystemConfigService {
 		InMemorySystemInfo inMemorySystemInfo,
 		SystemCounters systemCounters,
 		PeersView peersView,
+		AddressBook addressBook,
 		P2PConfig p2PConfig,
 		Addressing addressing
 	) {
@@ -181,6 +185,7 @@ public class SystemConfigService {
 		this.systemCounters = systemCounters;
 		this.endpointStatuses = endpointStatuses;
 		this.peersView = peersView;
+		this.addressBook = addressBook;
 		this.addressing = addressing;
 
 		radixEngineConfiguration = prepareRadixEngineConfiguration(forks);
@@ -247,13 +252,19 @@ public class SystemConfigService {
 	}
 
 	public JSONArray getNetworkingPeers() {
-		var peerArray = new JSONArray();
+		var peerArray = jsonArray();
 
 		peersView.peers()
 			.map(this::peerToJson)
 			.forEach(peerArray::put);
 
 		return peerArray;
+	}
+
+	public JSONArray getNetworkingAddressBook() {
+		final var entriesArray = jsonArray();
+		addressBook.knownPeers().values().forEach(v -> entriesArray.put(addressBookEntryToJson(v)));
+		return entriesArray;
 	}
 
 	public long getNetworkingPeersCount() {
@@ -410,6 +421,25 @@ public class SystemConfigService {
 		});
 		peerJson.put("channels", channelsJson);
 		return peerJson;
+	}
+
+	private JSONObject addressBookEntryToJson(AddressBookEntry e) {
+		final var knownAddressesArray = jsonArray();
+
+		e.getKnownAddresses().forEach(addr -> {
+			final var addrObj = jsonObject().put("uri", addr.getUri());
+			addr.getLastSuccessfulConnection().ifPresent(ts -> addrObj.put("lastSuccessfulConnection", ts));
+			knownAddressesArray.put(addrObj);
+		});
+
+		final var entryObj = jsonObject()
+			.put("address", addressing.forNodes().of(e.getNodeId().getPublicKey()))
+			.put("banned", e.isBanned())
+			.put("knownAddresses", knownAddressesArray);
+
+		e.bannedUntil().ifPresent(bannedUntil -> entryObj.put("bannedUntil", bannedUntil));
+
+		return entryObj;
 	}
 }
 
