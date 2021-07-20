@@ -122,7 +122,7 @@ import static com.radixdlt.serialization.DsonOutput.Output;
 import static com.radixdlt.serialization.SerializationUtils.restore;
 import static com.radixdlt.utils.functional.Result.wrap;
 
-public class BerkeleyClientApiStore implements ClientApiStore {
+public final class BerkeleyClientApiStore implements ClientApiStore {
 	private static final Logger log = LogManager.getLogger();
 
 	private static final String EXECUTED_TRANSACTIONS_DB = "radix.executed_transactions_db";

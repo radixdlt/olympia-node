@@ -20,16 +20,20 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.CommittedReader;
 
 public class RadixEngineStoreModule extends AbstractModule {
 	@Override
 	protected void configure() {
+		bind(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { })
 			.to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
 		bind(CommittedReader.class).to(BerkeleyLedgerEntryStore.class);
+		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
 	}
 }

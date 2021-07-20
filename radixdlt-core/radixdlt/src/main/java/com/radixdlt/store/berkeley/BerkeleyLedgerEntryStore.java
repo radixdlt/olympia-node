@@ -39,7 +39,6 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.Txn;
@@ -85,6 +84,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -95,7 +95,6 @@ import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
-@Singleton
 public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, ResourceStore, TxnIndex,
 	CommittedReader, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
@@ -131,17 +130,21 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private Database txnIdDatabase; // Txns by AID; Append-only
 	private AppendLog txnLog; //Atom data append only log
 
+	private final Set<BerkeleyAdditionalStore> additionalStores;
+
 	@Inject
 	public BerkeleyLedgerEntryStore(
 		Serialization serialization,
 		DatabaseEnvironment dbEnv,
 		StoreConfig storeConfig,
-		SystemCounters systemCounters
+		SystemCounters systemCounters,
+		Set<BerkeleyAdditionalStore> additionalStores
 	) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.dbEnv = Objects.requireNonNull(dbEnv);
 		this.systemCounters = Objects.requireNonNull(systemCounters);
 		this.storeConfig = storeConfig;
+		this.additionalStores = additionalStores;
 
 		this.open();
 	}
@@ -160,6 +163,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		safeClose(proofDatabase);
 
 		safeClose(vertexStoreDatabase);
+
+		additionalStores.forEach(BerkeleyAdditionalStore::close);
 
 		if (txnLog != null) {
 			txnLog.close();
@@ -477,6 +482,8 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		} catch (Exception e) {
 			throw new BerkeleyStoreException("Error while opening databases", e);
 		}
+
+		this.additionalStores.forEach(b -> b.open(dbEnv));
 
 		if (System.getProperty("db.check_integrity", "1").equals("1")) {
 			// TODO implement integrity check
@@ -804,10 +811,10 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
-	private void doStore(com.sleepycat.je.Transaction transaction, REProcessedTxn txn) {
+	private void doStore(Transaction dbTxn, REProcessedTxn txn) {
 		final long stateVersion;
 		final long expectedOffset;
-		try (var cursor = txnDatabase.openCursor(transaction, null)) {
+		try (var cursor = txnDatabase.openCursor(dbTxn, null)) {
 			var key = entry();
 			var data = entry();
 			var status = cursor.getLast(key, data, DEFAULT);
@@ -830,10 +837,10 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			// Store atom indices
 			var pKey = toPKey(stateVersion);
 			var atomPosData = txnEntry(expectedOffset, storedSize, aid);
-			failIfNotSuccess(txnDatabase.putNoOverwrite(transaction, pKey, atomPosData), "Atom write for", aid);
+			failIfNotSuccess(txnDatabase.putNoOverwrite(dbTxn, pKey, atomPosData), "Atom write for", aid);
 			addBytesWrite(atomPosData, pKey);
 			var idKey = entry(aid);
-			failIfNotSuccess(txnIdDatabase.put(transaction, idKey, atomPosData), "Atom Id write for", aid);
+			failIfNotSuccess(txnIdDatabase.put(dbTxn, idKey, atomPosData), "Atom Id write for", aid);
 			addBytesWrite(atomPosData, idKey);
 			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
 
@@ -852,19 +859,22 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 						);
 					}
 					try {
-						this.executeStateUpdate(transaction, stateUpdate);
+						this.executeStateUpdate(dbTxn, stateUpdate);
 						count++;
 					} catch (Exception e) {
-						if (transaction != null) {
-							transaction.abort();
+						if (dbTxn != null) {
+							dbTxn.abort();
 						}
 						throw new BerkeleyStoreException("Unable to store transaction, failed on stateUpdate " + count + ": " + stateUpdate, e);
 					}
 				}
 			}
+
+			additionalStores.forEach(b -> b.process(dbTxn, txn));
+
 		} catch (Exception e) {
-			if (transaction != null) {
-				transaction.abort();
+			if (dbTxn != null) {
+				dbTxn.abort();
 			}
 			throw new BerkeleyStoreException("Unable to store atom:\n" + txn, e);
 		}

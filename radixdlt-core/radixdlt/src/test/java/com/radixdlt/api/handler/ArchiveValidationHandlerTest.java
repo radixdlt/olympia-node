@@ -16,6 +16,7 @@
  */
 package com.radixdlt.api.handler;
 
+import com.radixdlt.api.store.ValidatorUptime;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import org.json.JSONObject;
@@ -180,7 +181,8 @@ public class ArchiveValidationHandlerTest {
 			stake, UInt256.ZERO,
 			true,
 			true,
-			10
+			10,
+			ValidatorUptime.empty()
 		);
 	}
 

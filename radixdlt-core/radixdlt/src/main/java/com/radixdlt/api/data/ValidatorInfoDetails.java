@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.data;
 
+import com.radixdlt.api.store.ValidatorUptime;
 import org.json.JSONObject;
 
 import com.radixdlt.crypto.ECPublicKey;
@@ -40,6 +41,7 @@ public class ValidatorInfoDetails {
 	private final boolean externalStakesAllowed;
 	private final boolean registered;
 	private final int percentage;
+	private final ValidatorUptime uptime;
 
 	private ValidatorInfoDetails(
 		ECPublicKey validator,
@@ -50,7 +52,8 @@ public class ValidatorInfoDetails {
 		UInt256 ownerStake,
 		boolean externalStakesAllowed,
 		boolean registered,
-		int percentage
+		int percentage,
+		ValidatorUptime uptime
 	) {
 		this.validator = validator;
 		this.owner = owner;
@@ -61,6 +64,7 @@ public class ValidatorInfoDetails {
 		this.externalStakesAllowed = externalStakesAllowed;
 		this.registered = registered;
 		this.percentage = percentage;
+		this.uptime = uptime;
 	}
 
 	public static ValidatorInfoDetails create(
@@ -72,7 +76,8 @@ public class ValidatorInfoDetails {
 		UInt256 ownerStake,
 		boolean externalStakesAllowed,
 		boolean registered,
-		int percentage
+		int percentage,
+		ValidatorUptime uptime
 	) {
 		requireNonNull(validator);
 		requireNonNull(owner);
@@ -81,7 +86,7 @@ public class ValidatorInfoDetails {
 		requireNonNull(ownerStake);
 
 		return new ValidatorInfoDetails(
-			validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed, registered, percentage
+			validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed, registered, percentage, uptime
 		);
 	}
 
@@ -95,7 +100,8 @@ public class ValidatorInfoDetails {
 			details.getOwnerStake(),
 			details.allowsDelegation(),
 			details.registered(),
-			details.getPercentage()
+			details.getPercentage(),
+			details.getUptime()
 		);
 	}
 
@@ -148,6 +154,8 @@ public class ValidatorInfoDetails {
 			.put("address", addressing.forValidators().of(validator))
 			.put("ownerAddress", addressing.forAccounts().of(owner))
 			.put("name", name)
+			.put("proposalsCompleted", uptime.getProposalsCompleted())
+			.put("proposalsMissed", uptime.getProposalsMissed())
 			.put("infoURL", infoUrl)
 			.put("totalDelegatedStake", totalStake)
 			.put("ownerDelegation", ownerStake)

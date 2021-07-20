@@ -20,6 +20,7 @@ package com.radixdlt.api.service;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.api.service.reducer.NextEpochValidators;
+import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
@@ -30,8 +31,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.functional.FunctionalUtils;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Result.Mapper2;
@@ -47,16 +46,17 @@ import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ValidatorInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final BerkeleyValidatorUptimeArchiveStore uptimeStore;
 	private final Addressing addressing;
 
 	@Inject
 	public ValidatorInfoService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		Forks forks,
-		InMemorySystemInfo inMemorySystemInfo,
+		BerkeleyValidatorUptimeArchiveStore uptimeStore,
 		Addressing addressing
 	) {
 		this.radixEngine = radixEngine;
+		this.uptimeStore = uptimeStore;
 		this.addressing = addressing;
 	}
 
@@ -86,26 +86,33 @@ public class ValidatorInfoService {
 	}
 
 	public List<ValidatorInfoDetails> getAllValidators() {
-		// TODO: Use NextEpoch action to compute all of this
-		var indices = List.of(
-			ValidatorStakeData.class,
-			PreparedStake.class,
-			ValidatorOwnerCopy.class,
-			AllowDelegationFlag.class,
-			ValidatorMetaData.class,
-			ValidatorRakeCopy.class
-		);
-		var nextEpochValidators = NextEpochValidators.create();
-		for (var index : indices) {
-			radixEngine.reduce(index, nextEpochValidators, (u, t) -> {
-				u.process(t);
-				return u;
-			});
+		try {
+			// TODO: Use NextEpoch action to compute all of this
+			var indices = List.of(
+				ValidatorStakeData.class,
+				PreparedStake.class,
+				ValidatorOwnerCopy.class,
+				AllowDelegationFlag.class,
+				ValidatorMetaData.class,
+				ValidatorRakeCopy.class
+			);
+			var nextEpochValidators = NextEpochValidators.create();
+			for (var index : indices) {
+				radixEngine.reduce(index, nextEpochValidators, (u, t) -> {
+					u.process(t);
+					return u;
+				});
+			}
+
+			var uptime = uptimeStore.getUptimeTwoWeeks();
+			nextEpochValidators.process(uptime);
+
+			var result = nextEpochValidators.map(ValidatorInfoDetails::create);
+			result.sort(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed());
+			return result;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw e;
 		}
-
-		var result = nextEpochValidators.map(ValidatorInfoDetails::create);
-		result.sort(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed());
-
-		return result;
 	}
 }

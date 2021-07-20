@@ -22,12 +22,10 @@ import com.radixdlt.networks.Network;
 import org.json.JSONObject;
 import org.junit.Test;
 
-import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.api.service.AccountInfoService;
 import com.radixdlt.api.service.ValidatorInfoService;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import static org.junit.Assert.assertEquals;
@@ -79,17 +77,5 @@ public class ValidationHandlerTest {
 		assertEquals(true, result.get("registered"));
 		assertEquals(UInt256.FIVE, result.get("totalStake"));
 		assertEquals("https://validator1.com/", result.get("url"));
-	}
-
-
-	private ValidatorInfoDetails createValidator(ECPublicKey v1, String name, UInt256 stake) {
-		return ValidatorInfoDetails.create(
-			v1, REAddr.ofPubKeyAccount(v1),
-			name, "http://" + name + ".com",
-			stake, UInt256.ZERO,
-			true,
-			true,
-			100
-		);
 	}
 }

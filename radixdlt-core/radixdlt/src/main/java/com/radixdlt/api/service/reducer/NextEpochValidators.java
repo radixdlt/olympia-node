@@ -17,6 +17,7 @@
 
 package com.radixdlt.api.service.reducer;
 
+import com.radixdlt.api.store.ValidatorUptime;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
@@ -55,6 +56,7 @@ public final class NextEpochValidators {
 	private final Map<ECPublicKey, Boolean> delegationFlagsMap;
 	private final Map<ECPublicKey, Integer> feesMap;
 	private final Set<ECPublicKey> registered;
+	private Map<ECPublicKey, ValidatorUptime> uptime;
 
 	private NextEpochValidators() {
 		this.registered = new HashSet<>();
@@ -68,6 +70,10 @@ public final class NextEpochValidators {
 
 	public static NextEpochValidators create() {
 		return new NextEpochValidators();
+	}
+
+	public void process(Map<ECPublicKey, ValidatorUptime> uptime) {
+		this.uptime = uptime;
 	}
 
 	public void process(Particle p) {
@@ -139,6 +145,10 @@ public final class NextEpochValidators {
 			.orElse(UInt256.ZERO);
 	}
 
+	public ValidatorUptime getUptime(ECPublicKey key) {
+		return ofNullable(uptime.get(key)).orElse(ValidatorUptime.empty());
+	}
+
 	private int getRake(ECPublicKey validatorKey) {
 		return ofNullable(feesMap.get(validatorKey)).orElse(0);
 	}
@@ -169,7 +179,8 @@ public final class NextEpochValidators {
 			getOwnerStake(validatorKey),
 			allowsDelegation(validatorKey),
 			registered.contains(validatorKey),
-			getRake(validatorKey)
+			getRake(validatorKey),
+			getUptime(validatorKey)
 		);
 	}
 }
