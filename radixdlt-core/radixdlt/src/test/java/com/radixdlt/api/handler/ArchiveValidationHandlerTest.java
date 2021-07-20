@@ -23,7 +23,7 @@ import org.json.JSONObject;
 import org.junit.Test;
 
 import com.radixdlt.api.data.ValidatorInfoDetails;
-import com.radixdlt.api.service.ValidatorInfoService;
+import com.radixdlt.api.service.ValidatorArchiveInfoService;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -51,7 +51,7 @@ public class ArchiveValidationHandlerTest {
 	private static final ECPublicKey V3 = ECKeyPair.generateNew().getPublicKey();
 
 	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
-	private final ValidatorInfoService validatorInfoService = mock(ValidatorInfoService.class);
+	private final ValidatorArchiveInfoService validatorInfoService = mock(ValidatorArchiveInfoService.class);
 	private final ArchiveValidationHandler handler = new ArchiveValidationHandler(validatorInfoService, addressing);
 
 	@Test

@@ -44,13 +44,13 @@ import static com.radixdlt.api.data.ApiErrors.UNKNOWN_VALIDATOR;
 import static com.radixdlt.utils.functional.FunctionalUtils.skipUntil;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
-public class ValidatorInfoService {
+public class ValidatorArchiveInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final BerkeleyValidatorUptimeArchiveStore uptimeStore;
 	private final Addressing addressing;
 
 	@Inject
-	public ValidatorInfoService(
+	public ValidatorArchiveInfoService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		BerkeleyValidatorUptimeArchiveStore uptimeStore,
 		Addressing addressing
@@ -70,10 +70,6 @@ public class ValidatorInfoService {
 		var newCursor = list.stream().reduce(FunctionalUtils::findLast).map(ValidatorInfoDetails::getValidatorKey);
 
 		return () -> Result.ok(tuple(newCursor, list));
-	}
-
-	public long getValidatorsCount() {
-		return getAllValidators().size();
 	}
 
 	// TODO: Don't retrieve all validators

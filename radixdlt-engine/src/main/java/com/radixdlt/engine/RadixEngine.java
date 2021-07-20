@@ -463,14 +463,20 @@ public final class RadixEngine<M> {
 	}
 
 	public <U, T extends Particle> U reduce(SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator) {
+		return reduce(i, identity, accumulator, Long.MAX_VALUE);
+	}
+
+	public <U, T extends Particle> U reduce(SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator, long limit) {
 		synchronized (stateUpdateEngineLock) {
 			var deserialization = constraintMachine.getDeserialization();
 			var u = identity;
+			long count = 0;
 			try (var cursor = engineStore.openIndexedCursor(i)) {
-				while (cursor.hasNext()) {
+				while (cursor.hasNext() && count < limit) {
 					try {
 						var t = (T) deserialization.deserialize(cursor.next().getData());
 						u = accumulator.apply(u, t);
+						count++;
 					} catch (DeserializeException e) {
 						throw new IllegalStateException(e);
 					}
@@ -484,6 +490,13 @@ public final class RadixEngine<M> {
 		synchronized (stateUpdateEngineLock) {
 			var deserialization = constraintMachine.getDeserialization();
 			return reduce(deserialization.index(c), identity, accumulator);
+		}
+	}
+
+	public <U, T extends Particle> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator, long limit) {
+		synchronized (stateUpdateEngineLock) {
+			var deserialization = constraintMachine.getDeserialization();
+			return reduce(deserialization.index(c), identity, accumulator, limit);
 		}
 	}
 }

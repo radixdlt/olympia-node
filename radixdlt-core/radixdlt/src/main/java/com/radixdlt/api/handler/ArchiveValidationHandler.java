@@ -23,7 +23,7 @@ import org.json.JSONObject;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.api.data.ValidatorInfoDetails;
-import com.radixdlt.api.service.ValidatorInfoService;
+import com.radixdlt.api.service.ValidatorArchiveInfoService;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.functional.Result;
 
@@ -42,12 +42,12 @@ import static com.radixdlt.utils.functional.Result.ok;
 
 @Singleton
 public class ArchiveValidationHandler {
-	private final ValidatorInfoService validatorInfoService;
+	private final ValidatorArchiveInfoService validatorInfoService;
 	private final Addressing addressing;
 
 	@Inject
 	public ArchiveValidationHandler(
-		ValidatorInfoService validatorInfoService,
+		ValidatorArchiveInfoService validatorInfoService,
 		Addressing addressing
 	) {
 		this.validatorInfoService = validatorInfoService;

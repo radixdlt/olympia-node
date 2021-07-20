@@ -17,7 +17,9 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.api.store.ValidatorUptime;
 import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
@@ -50,7 +52,6 @@ import java.util.Map;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
 
 public class AccountInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
@@ -74,27 +75,16 @@ public class AccountInfoService {
 			.put("balance", getOwnBalance());
 	}
 
-	public JSONObject getValidatorInfo() {
-		var metadata = getMyValidatorMetadata();
-		var stakeData = getStakeData();
-		var allowDelegationFlag = getMyValidatorDelegationFlag();
-		var validatorRakeCopy = getMyNextValidatorFee();
-		var nextEpochRegisteredFlag = getMyNextEpochRegisteredFlag().isRegistered();
-		var nextEpochOwner = getMyNextEpochValidatorOwner().getOwner();
-		return jsonObject()
-			.put("name", metadata.getName())
-			.put("url", metadata.getUrl())
-			.put("address", getValidatorAddress())
-			.put("registered", nextEpochRegisteredFlag)
-			.put("owner", addressing.forAccounts().of(nextEpochOwner))
-			.put("validatorFee", (double) validatorRakeCopy.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "")
-			.put("totalStake", stakeData.getFirst().getTotalStake())
-			.put("allowDelegation", allowDelegationFlag.allowsDelegation())
-			.put("stakes", stakeData.getSecond());
-	}
-
 	public String getValidatorAddress() {
 		return addressing.forValidators().of(bftKey);
+	}
+
+	public ValidatorUptime getMyValidatorUptime() {
+		var validatorUptimeKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_BFT_DATA.id(), bftKey.getCompressedBytes());
+		return radixEngine.get(validatorUptimeKey)
+			.map(ValidatorBFTData.class::cast)
+			.map(d -> ValidatorUptime.create(d.proposalsCompleted(), d.proposalsMissed()))
+			.orElse(ValidatorUptime.empty());
 	}
 
 	public AllowDelegationFlag getMyValidatorDelegationFlag() {
@@ -131,7 +121,7 @@ public class AccountInfoService {
 		return (ValidatorStakeData) radixEngine.get(validatorDataKey).orElse(ValidatorStakeData.createVirtual(bftKey));
 	}
 
-	private Pair<ValidatorStakeData, JSONArray> getStakeData() {
+	public Pair<ValidatorStakeData, JSONArray> getStakeData() {
 		var myValidator = getMyValidator();
 		var index = SubstateIndex.create(
 			Arrays.concatenate(new byte[] {SubstateTypeId.STAKE_OWNERSHIP.id(), 0}, bftKey.getCompressedBytes()),
@@ -151,10 +141,6 @@ public class AccountInfoService {
 
 	public String getOwnAddress() {
 		return addressing.forAccounts().of(REAddr.ofPubKeyAccount(bftKey));
-	}
-
-	public ECPublicKey getOwnPubKey() {
-		return bftKey;
 	}
 
 	public Map<REAddr, UInt384> getMyBalances() {

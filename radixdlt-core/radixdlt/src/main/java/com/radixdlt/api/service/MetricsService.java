@@ -17,7 +17,11 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -154,27 +158,30 @@ public class MetricsService {
 	private final SystemCounters systemCounters;
 	private final InfoSupplier infoSupplier;
 	private final SystemConfigService systemConfigService;
-	private final ValidatorInfoService validatorInfoService;
 	private final AccountInfoService accountInfoService;
 	private final NetworkInfoService networkInfoService;
 	private final Addressing addressing;
+	private final InMemorySystemInfo inMemorySystemInfo;
+	private final BFTNode self;
 
 	@Inject
 	public MetricsService(
 		SystemCounters systemCounters,
 		InfoSupplier infoSupplier,
 		SystemConfigService systemConfigService,
-		ValidatorInfoService validatorInfoService,
 		AccountInfoService accountInfoService,
 		NetworkInfoService networkInfoService,
+		InMemorySystemInfo inMemorySystemInfo,
+		@Self BFTNode self,
 		Addressing addressing
 	) {
 		this.systemCounters = systemCounters;
 		this.infoSupplier = infoSupplier;
 		this.systemConfigService = systemConfigService;
-		this.validatorInfoService = validatorInfoService;
 		this.accountInfoService = accountInfoService;
 		this.networkInfoService = networkInfoService;
+		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.self = self;
 		this.addressing = addressing;
 	}
 
@@ -194,7 +201,8 @@ public class MetricsService {
 		appendCounter(builder, "info_epochmanager_currentview_view", currentView(snapshot));
 		appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpoch(snapshot));
 		appendCounter(builder, "total_peers", systemConfigService.getNetworkingPeersCount());
-		appendCounter(builder, "total_validators", validatorInfoService.getValidatorsCount());
+		var totalValidators = inMemorySystemInfo.getEpochProof().getNextValidatorSet().orElseThrow().getValidators().size();
+		appendCounter(builder, "total_validators", totalValidators);
 
 		appendCounter(builder, "balance_xrd", getXrdBalance());
 		appendCounter(builder, "validator_total_stake", getTotalStake());
@@ -215,12 +223,7 @@ public class MetricsService {
 	}
 
 	private UInt384 getXrdBalance() {
-		return accountInfoService.getMyBalances().entrySet()
-			.stream()
-			.filter(e -> e.getKey().isNativeToken())
-			.map(Map.Entry::getValue)
-			.findAny()
-			.orElse(UInt384.ZERO);
+		return accountInfoService.getMyBalances().getOrDefault(REAddr.ofNativeToken(), UInt384.ZERO);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -243,24 +246,21 @@ public class MetricsService {
 		var builder = new StringBuilder("nodeinfo{");
 
 		addEndpontStatuses(builder);
-		appendField(builder, "owner_address", accountInfoService.getOwnAddress());
+		appendField(builder, "owner_address", addressing.forAccounts().of(REAddr.ofPubKeyAccount(self.getKey())));
 		appendField(builder, "validator_registered", accountInfoService.getMyNextEpochRegisteredFlag());
 		addBranchAndCommit(builder);
 		addValidatorAddress(builder);
 		addAccumulatorState(builder);
 		appendField(builder, "health", networkInfoService.nodeStatus().name());
-		appendField(builder, "key", accountInfoService.getOwnPubKey().toHex());
+		appendField(builder, "key", self.getKey().toHex());
 
 		return builder.append("}").toString();
 	}
 
 	private void addValidatorAddress(StringBuilder builder) {
-		var validatorAddress = accountInfoService.getValidatorAddress();
-		appendField(builder, "own_validator_address", validatorAddress);
-
-		var inSet = validatorInfoService.getAllValidators()
-			.stream()
-			.anyMatch(v -> v.getValidatorAddress(addressing).equals(validatorAddress));
+		appendField(builder, "own_validator_address", addressing.forValidators().of(self.getKey()));
+		var validatorSet = inMemorySystemInfo.getEpochProof().getNextValidatorSet().orElseThrow();
+		var inSet = validatorSet.containsNode(self);
 		appendField(builder, "is_in_validator_set", inSet);
 	}
 
@@ -290,6 +290,10 @@ public class MetricsService {
 
 	private void exportCounters(StringBuilder builder) {
 		EXPORT_LIST.forEach(counterType -> generateCounterEntry(counterType, builder));
+
+		var uptime = accountInfoService.getMyValidatorUptime();
+		appendCounter(builder, COUNTER_PREFIX + "radix_engine_cur_epoch_completed_proposals", uptime.getProposalsCompleted());
+		appendCounter(builder, COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals", uptime.getProposalsMissed());
 	}
 
 	private void generateCounterEntry(CounterType counterType, StringBuilder builder) {
