@@ -64,6 +64,7 @@
 
 package com.radixdlt.statecomputer;
 
+import com.radixdlt.api.store.ValidatorUptime;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -79,10 +80,12 @@ public final class ValidatorDetails {
 	private final boolean allowDelegation;
 	private final boolean registered;
 	private final int percentage;
+	private final ValidatorUptime uptime;
 
 	private ValidatorDetails(
 		ECPublicKey key, REAddr owner, String name, String url, UInt256 stake,
-		UInt256 ownerStake, boolean allowDelegation, boolean registered, int percentage
+		UInt256 ownerStake, boolean allowDelegation, boolean registered, int percentage,
+		ValidatorUptime uptime
 	) {
 		this.key = key;
 		this.name = name;
@@ -93,15 +96,18 @@ public final class ValidatorDetails {
 		this.allowDelegation = allowDelegation;
 		this.registered = registered;
 		this.percentage = percentage;
+		this.uptime = uptime;
 	}
 
 	public static ValidatorDetails fromParticle(
 		ValidatorMetaData metaData, REAddr owner, UInt256 stake,
-		UInt256 ownerStake, boolean allowDelegation, boolean registered, int percentage
+		UInt256 ownerStake, boolean allowDelegation, boolean registered, int percentage,
+		ValidatorUptime uptime
 	) {
 		return new ValidatorDetails(
 			metaData.getValidatorKey(), owner, metaData.getName(), metaData.getUrl(),
-			stake, ownerStake, allowDelegation, registered, percentage
+			stake, ownerStake, allowDelegation, registered, percentage,
+			uptime
 		);
 	}
 
@@ -139,5 +145,9 @@ public final class ValidatorDetails {
 
 	public boolean registered() {
 		return registered;
+	}
+
+	public ValidatorUptime getUptime() {
+		return uptime;
 	}
 }

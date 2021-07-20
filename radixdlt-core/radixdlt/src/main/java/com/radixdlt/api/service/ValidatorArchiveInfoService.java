@@ -67,6 +67,7 @@ package com.radixdlt.api.service;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.api.service.reducer.NextEpochValidators;
+import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
@@ -77,8 +78,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.functional.FunctionalUtils;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Result.Mapper2;
@@ -92,18 +91,19 @@ import static com.radixdlt.api.data.ApiErrors.UNKNOWN_VALIDATOR;
 import static com.radixdlt.utils.functional.FunctionalUtils.skipUntil;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
-public class ValidatorInfoService {
+public class ValidatorArchiveInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final BerkeleyValidatorUptimeArchiveStore uptimeStore;
 	private final Addressing addressing;
 
 	@Inject
-	public ValidatorInfoService(
+	public ValidatorArchiveInfoService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		Forks forks,
-		InMemorySystemInfo inMemorySystemInfo,
+		BerkeleyValidatorUptimeArchiveStore uptimeStore,
 		Addressing addressing
 	) {
 		this.radixEngine = radixEngine;
+		this.uptimeStore = uptimeStore;
 		this.addressing = addressing;
 	}
 
@@ -119,10 +119,7 @@ public class ValidatorInfoService {
 		return () -> Result.ok(tuple(newCursor, list));
 	}
 
-	public long getValidatorsCount() {
-		return getAllValidators().size();
-	}
-
+	// TODO: Don't retrieve all validators
 	public Result<ValidatorInfoDetails> getValidator(ECPublicKey validatorPublicKey) {
 		return getAllValidators()
 			.stream()
@@ -150,9 +147,11 @@ public class ValidatorInfoService {
 			});
 		}
 
+		var uptime = uptimeStore.getUptimeTwoWeeks();
+		nextEpochValidators.process(uptime);
+
 		var result = nextEpochValidators.map(ValidatorInfoDetails::create);
 		result.sort(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed());
-
 		return result;
 	}
 }

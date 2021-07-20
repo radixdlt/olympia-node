@@ -62,153 +62,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.data;
+package com.radixdlt.api.store;
 
-import com.radixdlt.api.store.ValidatorUptime;
-import org.json.JSONObject;
+public final class ValidatorUptime {
+	private final long proposalsCompleted;
+	private final long proposalsMissed;
 
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.ValidatorDetails;
-import com.radixdlt.utils.UInt256;
-
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
-
-import static java.util.Objects.requireNonNull;
-
-public class ValidatorInfoDetails {
-	private final ECPublicKey validator;
-	private final REAddr owner;
-	private final String name;
-	private final String infoUrl;
-	private final UInt256 totalStake;
-	private final UInt256 ownerStake;
-	private final boolean externalStakesAllowed;
-	private final boolean registered;
-	private final int percentage;
-	private final ValidatorUptime uptime;
-
-	private ValidatorInfoDetails(
-		ECPublicKey validator,
-		REAddr owner,
-		String name,
-		String infoUrl,
-		UInt256 totalStake,
-		UInt256 ownerStake,
-		boolean externalStakesAllowed,
-		boolean registered,
-		int percentage,
-		ValidatorUptime uptime
-	) {
-		this.validator = validator;
-		this.owner = owner;
-		this.name = name;
-		this.infoUrl = infoUrl;
-		this.totalStake = totalStake;
-		this.ownerStake = ownerStake;
-		this.externalStakesAllowed = externalStakesAllowed;
-		this.registered = registered;
-		this.percentage = percentage;
-		this.uptime = uptime;
+	private ValidatorUptime(long proposalsCompleted, long proposalsMissed) {
+		this.proposalsCompleted = proposalsCompleted;
+		this.proposalsMissed = proposalsMissed;
 	}
 
-	public static ValidatorInfoDetails create(
-		ECPublicKey validator,
-		REAddr owner,
-		String name,
-		String infoUrl,
-		UInt256 totalStake,
-		UInt256 ownerStake,
-		boolean externalStakesAllowed,
-		boolean registered,
-		int percentage,
-		ValidatorUptime uptime
-	) {
-		requireNonNull(validator);
-		requireNonNull(owner);
-		requireNonNull(name);
-		requireNonNull(totalStake);
-		requireNonNull(ownerStake);
+	public static ValidatorUptime create(long proposalsCompleted, long proposalsMissed) {
+		return new ValidatorUptime(proposalsCompleted, proposalsMissed);
+	}
 
-		return new ValidatorInfoDetails(
-			validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed, registered, percentage, uptime
+	public static ValidatorUptime empty() {
+		return new ValidatorUptime(0, 0);
+	}
+
+	public ValidatorUptime merge(ValidatorUptime other) {
+		return new ValidatorUptime(
+			this.proposalsCompleted + other.proposalsCompleted,
+			this.proposalsMissed + other.proposalsMissed
 		);
 	}
 
-	public static ValidatorInfoDetails create(ValidatorDetails details) {
-		return create(
-			details.getKey(),
-			details.getOwner(),
-			details.getName(),
-			details.getUrl(),
-			details.getStake(),
-			details.getOwnerStake(),
-			details.allowsDelegation(),
-			details.registered(),
-			details.getPercentage(),
-			details.getUptime()
-		);
+	public long getProposalsCompleted() {
+		return proposalsCompleted;
 	}
 
-	public String getValidatorAddress(Addressing addressing) {
-		return addressing.forValidators().of(validator);
+	public long getProposalsMissed() {
+		return proposalsMissed;
 	}
 
-	public ECPublicKey getValidatorKey() {
-		return validator;
+	public String toPercentageString() {
+		if (proposalsCompleted == 0 && proposalsMissed == 0) {
+			return "0.00";
+		}
+		var uptimePercentage = proposalsCompleted * 10000 / (proposalsCompleted + proposalsMissed);
+		var uptimeDouble = uptimePercentage / 100.0;
+		return String.format("%.2f", uptimeDouble);
 	}
 
-	public REAddr getOwner() {
-		return owner;
-	}
-
-	public UInt256 getTotalStake() {
-		return totalStake;
-	}
-
-	public ECPublicKey getValidator() {
-		return validator;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public String getInfoUrl() {
-		return infoUrl;
-	}
-
-	public UInt256 getOwnerStake() {
-		return ownerStake;
-	}
-
-	public boolean isExternalStakesAllowed() {
-		return externalStakesAllowed;
-	}
-
-	public boolean isRegistered() {
-		return registered;
-	}
-
-	public int getPercentage() {
-		return percentage;
-	}
-
-	public JSONObject asJson(Addressing addressing) {
-		return jsonObject()
-			.put("address", addressing.forValidators().of(validator))
-			.put("ownerAddress", addressing.forAccounts().of(owner))
-			.put("name", name)
-			.put("proposalsCompleted", uptime.getProposalsCompleted())
-			.put("proposalsMissed", uptime.getProposalsMissed())
-			.put("uptimePercentage", uptime.toPercentageString())
-			.put("infoURL", infoUrl)
-			.put("totalDelegatedStake", totalStake)
-			.put("ownerDelegation", ownerStake)
-			.put("validatorFee", (double) percentage / (double) RAKE_PERCENTAGE_GRANULARITY + "")
-			.put("registered", registered)
-			.put("isExternalStakeAccepted", externalStakesAllowed);
+	@Override
+	public String toString() {
+		return String.format("%s{completed=%s missed=%s}", this.getClass().getSimpleName(), proposalsCompleted, proposalsMissed);
 	}
 }
