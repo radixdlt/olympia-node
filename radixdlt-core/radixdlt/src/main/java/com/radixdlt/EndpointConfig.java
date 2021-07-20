@@ -66,6 +66,7 @@ package com.radixdlt;
 
 import com.radixdlt.networks.Network;
 import com.radixdlt.api.module.DeveloperEndpointModule;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -86,6 +87,7 @@ import com.radixdlt.properties.RuntimeProperties;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.radixdlt.EndpointConfig.Environment.ALL;
 import static com.radixdlt.EndpointConfig.Environment.DEV_ONLY;
@@ -192,7 +194,7 @@ public final class EndpointConfig {
 	}
 
 	public static List<EndpointStatus> endpointStatuses(RuntimeProperties properties, int networkId) {
-		return NODE_ENDPOINTS.stream()
+		return Stream.concat(NODE_ENDPOINTS.stream(), ARCHIVE_ENDPOINTS.stream())
 			.map(e -> EndpointStatus.create(e.name, isEnabled(e, properties, networkId)))
 			.collect(Collectors.toList());
 	}

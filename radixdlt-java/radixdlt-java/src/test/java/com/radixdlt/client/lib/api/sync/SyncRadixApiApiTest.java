@@ -81,9 +81,9 @@ public class SyncRadixApiApiTest {
 	private static final String BASE_URL = "http://localhost/";
 
 	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String CONFIGURATION = "{\"result\":{\"endpoints\":[\"/metrics\",\"/system\",\"/account\","
-		+ "\"/validation\",\"/universe\",\"/faucet\",\"/chaos\",\"/health\",\"/version\",\"/developer\"]},\"id\":"
-		+ "\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String CONFIGURATION = "{\"result\":{\"endpoints\":[\"/metrics\",\"/system\","
+		+ "\"/account\",\"/validation\",\"/universe\",\"/faucet\",\"/chaos\",\"/health\",\"/version\","
+		+ "\"/developer\",\"/archive\",\"/construction\"]},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 	private static final String DATA = "{\"result\":{\"elapsed\":{\"apidb\":{\"balance\":{\"read\":1672,\""
 		+ "write\":4790},\"flush\":{\"time\":630722},\"transaction\":{\"read\":0,\"write\":1453},\"token\":"
 		+ "{\"read\":134,\"write\":842}}},\"count\":{\"apidb\":{\"flush\":{\"count\":1627},\"balance\":{\"t"
@@ -101,7 +101,7 @@ public class SyncRadixApiApiTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.api().configuration()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configurationDTO -> assertEquals(10, configurationDTO.getEndpoints().size())));
+				.onSuccess(configurationDTO -> assertEquals(12, configurationDTO.getEndpoints().size())));
 	}
 
 	@Test
