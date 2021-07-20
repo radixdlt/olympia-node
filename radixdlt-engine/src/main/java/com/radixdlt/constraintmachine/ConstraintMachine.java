@@ -1,18 +1,65 @@
-/*
- * (C) Copyright 2020 Radix DLT Ltd
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
- * Radix DLT Ltd licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in
- * compliance with the License.  You may obtain a copy of the
- * License at
+ * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at:
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * radixfoundation.org/licenses/LICENSE-v1
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied.  See the License for the specific
- * language governing permissions and limitations under the License.
+ * The Licensor hereby grants permission for the Canonical version of the Work to be
+ * published, distributed and used under or by reference to the Licensor’s trademark
+ * Radix ® and use of any unregistered trade names, logos or get-up.
+ *
+ * The Licensor provides the Work (and each Contributor provides its Contributions) on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
+ * including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT,
+ * MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * Whilst the Work is capable of being deployed, used and adopted (instantiated) to create
+ * a distributed ledger it is your responsibility to test and validate the code, together
+ * with all logic and performance of that code under all foreseeable scenarios.
+ *
+ * The Licensor does not make or purport to make and hereby excludes liability for all
+ * and any representation, warranty or undertaking in any form whatsoever, whether express
+ * or implied, to any entity or person, including any representation, warranty or
+ * undertaking, as to the functionality security use, value or other characteristics of
+ * any distributed ledger nor in respect the functioning or value of any tokens which may
+ * be created stored or transferred using the Work. The Licensor does not warrant that the
+ * Work or any use of the Work complies with any law or regulation in any territory where
+ * it may be implemented or used or that it will be appropriate for any specific purpose.
+ *
+ * Neither the licensor nor any current or former employees, officers, directors, partners,
+ * trustees, representatives, agents, advisors, contractors, or volunteers of the Licensor
+ * shall be liable for any direct or indirect, special, incidental, consequential or other
+ * losses of any kind, in tort, contract or otherwise (including but not limited to loss
+ * of revenue, income or profits, or loss of use or data, or loss of reputation, or loss
+ * of any economic or other opportunity of whatsoever nature or howsoever arising), arising
+ * out of or in connection with (without limitation of any use, misuse, of any ledger system
+ * or use made or its functionality or any performance or operation of any code or protocol
+ * caused by bugs or programming or logic errors or otherwise);
+ *
+ * A. any offer, purchase, holding, use, sale, exchange or transmission of any
+ * cryptographic keys, tokens or assets created, exchanged, stored or arising from any
+ * interaction with the Work;
+ *
+ * B. any failure in a transmission or loss of any token or assets keys or other digital
+ * artefacts due to errors in transmission;
+ *
+ * C. bugs, hacks, logic errors or faults in the Work or any communication;
+ *
+ * D. system software or apparatus including but not limited to losses caused by errors
+ * in holding or transmitting tokens by any third-party;
+ *
+ * E. breaches or failure of security including hacker attacks, loss or disclosure of
+ * password, loss of private key, unauthorised use or misuse of such passwords or keys;
+ *
+ * F. any losses including loss of anticipated savings or other benefits resulting from
+ * use of the Work or any changes to the Work (however implemented).
+ *
+ * You are solely responsible for; testing, validating and evaluation of all operation
+ * logic, functionality, security and appropriateness of using the Work for any commercial
+ * or non-commercial purpose and for any reproduction or redistribution by You of the
+ * Work. You assume all risks associated with Your use of the Work and the exercise of
+ * permissions under this License.
  */
 
 package com.radixdlt.constraintmachine;
@@ -28,6 +75,7 @@ import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.LocalSubstateNotFoundException;
 import com.radixdlt.constraintmachine.exceptions.MeterException;
 import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
+import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
@@ -62,7 +110,7 @@ public final class ConstraintMachine {
 	private final Procedures procedures;
 	private final VirtualSubstateDeserialization virtualSubstateDeserialization;
 	private final SubstateDeserialization deserialization;
-	private final Meter metering;
+	private final Meter meter;
 
 	public ConstraintMachine(
 		Procedures procedures,
@@ -76,12 +124,12 @@ public final class ConstraintMachine {
 		Procedures procedures,
 		SubstateDeserialization deserialization,
 		VirtualSubstateDeserialization virtualSubstateDeserialization,
-		Meter metering
+		Meter meter
 	) {
 		this.procedures = Objects.requireNonNull(procedures);
 		this.deserialization = deserialization;
 		this.virtualSubstateDeserialization = virtualSubstateDeserialization;
-		this.metering = Objects.requireNonNull(metering);
+		this.meter = Objects.requireNonNull(meter);
 	}
 
 	public SubstateDeserialization getDeserialization() {
@@ -89,6 +137,7 @@ public final class ConstraintMachine {
 	}
 
 	private static final class CMValidationState {
+		private final Map<REAddr, TokenResource> localResources = new HashMap<>();
 		private final Map<Integer, Pair<Substate, Supplier<ByteBuffer>>> localUpParticles = new HashMap<>();
 		private final Set<SubstateId> remoteDownParticles = new HashSet<>();
 		private final CMStore store;
@@ -106,24 +155,29 @@ public final class ConstraintMachine {
 			this.store = store;
 		}
 
-		public ImmutableAddrs immutableAddrs() {
-			return addr ->
-				localUpParticles.values().stream()
-					.map(Pair::getFirst)
-					.map(Substate::getParticle)
-					.filter(TokenResource.class::isInstance)
-					.map(TokenResource.class::cast)
-					.filter(p -> p.getAddr().equals(addr))
-					.findFirst()
-					.map(Particle.class::cast)
-					.or(() ->
-						store.loadResource(addr).map(b -> {
-							try {
-								return deserialization.deserialize(b);
-							} catch (DeserializeException e) {
-								throw new IllegalStateException(e);
-							}
-						}));
+		public Resources resources() {
+			return addr -> {
+				var local = localResources.get(addr);
+				if (local != null) {
+					return local;
+				}
+
+				var p = store.loadResource(addr).map(b -> {
+					try {
+						return deserialization.deserialize(b);
+					} catch (DeserializeException e) {
+						throw new IllegalStateException(e);
+					}
+				});
+				if (p.isEmpty()) {
+					throw new NotAResourceException(addr);
+				}
+				var substate = p.get();
+				if (!(substate instanceof TokenResource)) {
+					throw new NotAResourceException(addr);
+				}
+				return (TokenResource) substate;
+			};
 		}
 
 		public Optional<Particle> loadUpParticle(SubstateId substateId) {
@@ -143,6 +197,10 @@ public final class ConstraintMachine {
 
 		public void bootUp(Substate substate, Supplier<ByteBuffer> buffer) {
 			localUpParticles.put(bootupCount, Pair.of(substate, buffer));
+			if (substate.getParticle() instanceof TokenResource) {
+				var resource = (TokenResource) substate.getParticle();
+				localResources.put(resource.getAddr(), resource);
+			}
 			bootupCount++;
 		}
 
@@ -258,7 +316,7 @@ public final class ConstraintMachine {
 		Procedure procedure,
 		Object procedureParam,
 		ReducerState reducerState,
-		ImmutableAddrs immutableAddrs,
+		Resources immutableAddrs,
 		ExecutionContext context
 	) throws SignedSystemException, InvalidPermissionException, AuthorizationException, MeterException, ProcedureException {
 		// System permissions don't require additional authorization
@@ -268,15 +326,19 @@ public final class ConstraintMachine {
 		if (context.permissionLevel() != PermissionLevel.SYSTEM) {
 			try {
 				if (requiredLevel == PermissionLevel.USER) {
-					this.metering.onUserProcedure(procedure.key(), procedureParam, context);
+					this.meter.onUserProcedure(procedure.key(), procedureParam, context);
 				} else if (requiredLevel == PermissionLevel.SUPER_USER) {
-					this.metering.onSuperUserProcedure(procedure.key(), procedureParam, context);
+					this.meter.onSuperUserProcedure(procedure.key(), procedureParam, context);
 				}
 			} catch (Exception e) {
 				throw new MeterException(e);
 			}
 
-			authorization.authorizer().verify(immutableAddrs, context);
+			try {
+				authorization.authorizer().verify(immutableAddrs, context);
+			} catch (Exception e) {
+				throw new AuthorizationException(e);
+			}
 		}
 
 		return procedure.call(procedureParam, reducerState, immutableAddrs, context).state();
@@ -297,9 +359,11 @@ public final class ConstraintMachine {
 		int instIndex = 0;
 		var expectEnd = false;
 		ReducerState reducerState = null;
-		var readableAddrs = validationState.immutableAddrs();
+		var readableAddrs = validationState.resources();
 		var groupedStateUpdates = new ArrayList<List<REStateUpdate>>();
 		var stateUpdates = new ArrayList<REStateUpdate>();
+
+		meter.onStart(context);
 
 		for (REInstruction inst : instructions) {
 			try {
@@ -421,7 +485,7 @@ public final class ConstraintMachine {
 					expectEnd = false;
 				} else if (inst.getMicroOp() == REInstruction.REMicroOp.SIG) {
 					if (context.permissionLevel() != PermissionLevel.SYSTEM) {
-						metering.onSigInstruction(context);
+						meter.onSigInstruction(context);
 					}
 				} else {
 					// Collect no-ops here

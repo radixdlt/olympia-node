@@ -17,5 +17,4 @@ Please follow our [Code of Conduct](../CODE_OF_CONDUCT.md) in all your interacti
 
 ## License
 
-radix-engine-library is released under the [Apache 2.0 License](../LICENSE).
-
+The `radixdlt-engine` code is released under the [Radix License](../LICENSE).

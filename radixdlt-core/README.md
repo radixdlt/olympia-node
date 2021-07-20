@@ -71,4 +71,4 @@ Please follow our [Code of Conduct](../CODE_OF_CONDUCT.md) in all your interacti
 
 ## License
 
-The `radixdlt-core` code is released under the [Apache 2.0 License](../LICENSE).
+The `radixdlt-core` code is released under the [Radix License](../LICENSE).
