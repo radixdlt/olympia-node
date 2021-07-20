@@ -28,6 +28,7 @@ pub struct TokenResource {
 pub struct TokenResourceMetadata {
     pub reserved: u8,
     pub resource: Address,
+    pub symbol: UTF8,
     pub name: UTF8,
     pub description: UTF8,
     pub url: UTF8,
@@ -147,6 +148,7 @@ impl Substate for TokenResourceMetadata {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
         let reserved = read_reserved_byte(buffer);
         let resource = Address::from_buffer(buffer);
+        let symbol = UTF8::from_buffer(buffer);
         let name = UTF8::from_buffer(buffer);
         let description = UTF8::from_buffer(buffer);
         let url = UTF8::from_buffer(buffer);
@@ -155,6 +157,7 @@ impl Substate for TokenResourceMetadata {
         Self {
             reserved,
             resource,
+            symbol,
             name,
             description,
             url,
