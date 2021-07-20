@@ -83,33 +83,28 @@ public class ValidatorArchiveInfoService {
 	}
 
 	public List<ValidatorInfoDetails> getAllValidators() {
-		try {
-			// TODO: Use NextEpoch action to compute all of this
-			var indices = List.of(
-				ValidatorStakeData.class,
-				PreparedStake.class,
-				ValidatorOwnerCopy.class,
-				AllowDelegationFlag.class,
-				ValidatorMetaData.class,
-				ValidatorRakeCopy.class
-			);
-			var nextEpochValidators = NextEpochValidators.create();
-			for (var index : indices) {
-				radixEngine.reduce(index, nextEpochValidators, (u, t) -> {
-					u.process(t);
-					return u;
-				});
-			}
-
-			var uptime = uptimeStore.getUptimeTwoWeeks();
-			nextEpochValidators.process(uptime);
-
-			var result = nextEpochValidators.map(ValidatorInfoDetails::create);
-			result.sort(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed());
-			return result;
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw e;
+		// TODO: Use NextEpoch action to compute all of this
+		var indices = List.of(
+			ValidatorStakeData.class,
+			PreparedStake.class,
+			ValidatorOwnerCopy.class,
+			AllowDelegationFlag.class,
+			ValidatorMetaData.class,
+			ValidatorRakeCopy.class
+		);
+		var nextEpochValidators = NextEpochValidators.create();
+		for (var index : indices) {
+			radixEngine.reduce(index, nextEpochValidators, (u, t) -> {
+				u.process(t);
+				return u;
+			});
 		}
+
+		var uptime = uptimeStore.getUptimeTwoWeeks();
+		nextEpochValidators.process(uptime);
+
+		var result = nextEpochValidators.map(ValidatorInfoDetails::create);
+		result.sort(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed());
+		return result;
 	}
 }
