@@ -76,6 +76,7 @@ public class ValidatorInfoService {
 		return getAllValidators().size();
 	}
 
+	// TODO: Don't retrieve all validators
 	public Result<ValidatorInfoDetails> getValidator(ECPublicKey validatorPublicKey) {
 		return getAllValidators()
 			.stream()

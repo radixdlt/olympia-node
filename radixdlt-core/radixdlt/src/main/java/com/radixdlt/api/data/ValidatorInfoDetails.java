@@ -156,6 +156,7 @@ public class ValidatorInfoDetails {
 			.put("name", name)
 			.put("proposalsCompleted", uptime.getProposalsCompleted())
 			.put("proposalsMissed", uptime.getProposalsMissed())
+			.put("uptimePercentage", uptime.toPercentageString())
 			.put("infoURL", infoUrl)
 			.put("totalDelegatedStake", totalStake)
 			.put("ownerDelegation", ownerStake)

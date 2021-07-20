@@ -50,6 +50,15 @@ public final class ValidatorUptime {
 		return proposalsMissed;
 	}
 
+	public String toPercentageString() {
+		if (proposalsCompleted == 0 && proposalsMissed == 0) {
+			return "0.00";
+		}
+		var uptimePercentage = proposalsCompleted * 10000 / (proposalsCompleted + proposalsMissed);
+		var uptimeDouble = uptimePercentage / 100.0;
+		return String.format("%.2f", uptimeDouble);
+	}
+
 	@Override
 	public String toString() {
 		return String.format("%s{completed=%s missed=%s}", this.getClass().getSimpleName(), proposalsCompleted, proposalsMissed);
