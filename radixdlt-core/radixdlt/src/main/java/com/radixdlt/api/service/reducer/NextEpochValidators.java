@@ -71,7 +71,7 @@ import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.ECPublicKey;
@@ -150,8 +150,8 @@ public final class NextEpochValidators {
 		} else if (p instanceof AllowDelegationFlag) {
 			var s = (AllowDelegationFlag) p;
 			delegationFlagsMap.put(s.getValidatorKey(), s.allowsDelegation());
-		} else if (p instanceof ValidatorRakeCopy) {
-			var s = (ValidatorRakeCopy) p;
+		} else if (p instanceof ValidatorFeeCopy) {
+			var s = (ValidatorFeeCopy) p;
 			feesMap.put(s.getValidatorKey(), s.getRakePercentage());
 		} else {
 			var s = (ValidatorStakeData) p;

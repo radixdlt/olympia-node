@@ -70,7 +70,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 
 import java.util.OptionalLong;
 
@@ -88,7 +88,7 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
 
 	@Override
 	public void construct(UpdateValidatorFee action, TxBuilder builder) throws TxBuilderException {
-		builder.down(ValidatorRakeCopy.class, action.validatorKey());
+		builder.down(ValidatorFeeCopy.class, action.validatorKey());
 		var curRakePercentage = builder.read(ValidatorStakeData.class, action.validatorKey())
 			.getRakePercentage();
 
@@ -101,7 +101,7 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
 		var epochDiff = isIncrease ? rakeIncreaseDebounceEpochLength : 1;
 		var curEpoch = builder.readSystem(EpochData.class);
 		var epoch = curEpoch.getEpoch() + epochDiff;
-		builder.up(new ValidatorRakeCopy(
+		builder.up(new ValidatorFeeCopy(
 			OptionalLong.of(epoch),
 			action.validatorKey(),
 			action.getFeePercentage()

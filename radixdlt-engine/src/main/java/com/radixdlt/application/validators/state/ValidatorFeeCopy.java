@@ -71,25 +71,25 @@ import java.util.OptionalLong;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 
-public final class ValidatorRakeCopy implements ValidatorData {
+public final class ValidatorFeeCopy implements ValidatorData {
 	private final ECPublicKey validatorKey;
 	private final int curRakePercentage;
 	private final OptionalLong epochUpdate;
 
-	public ValidatorRakeCopy(OptionalLong epochUpdate, ECPublicKey validatorKey, int curRakePercentage) {
+	public ValidatorFeeCopy(OptionalLong epochUpdate, ECPublicKey validatorKey, int curRakePercentage) {
 		this.epochUpdate = epochUpdate;
 		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.curRakePercentage = curRakePercentage;
 	}
 
-	public ValidatorRakeCopy(ECPublicKey validatorKey, int curRakePercentage) {
+	public ValidatorFeeCopy(ECPublicKey validatorKey, int curRakePercentage) {
 		this.epochUpdate = OptionalLong.empty();
 		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.curRakePercentage = curRakePercentage;
 	}
 
-	public static ValidatorRakeCopy createVirtual(ECPublicKey validatorKey) {
-		return new ValidatorRakeCopy(validatorKey, RAKE_MAX);
+	public static ValidatorFeeCopy createVirtual(ECPublicKey validatorKey) {
+		return new ValidatorFeeCopy(validatorKey, RAKE_MAX);
 	}
 
 	public OptionalLong getEpochUpdate() {
@@ -112,10 +112,10 @@ public final class ValidatorRakeCopy implements ValidatorData {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof ValidatorRakeCopy)) {
+		if (!(o instanceof ValidatorFeeCopy)) {
 			return false;
 		}
-		var other = (ValidatorRakeCopy) o;
+		var other = (ValidatorFeeCopy) o;
 		return Objects.equals(this.epochUpdate, other.epochUpdate)
 			&& Objects.equals(this.validatorKey, other.validatorKey)
 			&& this.curRakePercentage == other.curRakePercentage;

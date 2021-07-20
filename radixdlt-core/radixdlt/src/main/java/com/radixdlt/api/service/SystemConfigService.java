@@ -401,17 +401,7 @@ public class SystemConfigService {
 	@VisibleForTesting
 	static JSONObject prepareRadixEngineConfiguration(TreeMap<Long, ForkConfig> forksConfigs) {
 		var forks = jsonArray();
-
-		forksConfigs.forEach((e, config) -> forks.put(
-			jsonObject()
-				.put("name", config.getName())
-				.put("version", config.getVersion().name().toLowerCase())
-				.put("maxRounds", config.getConfig().getMaxRounds())
-				.put("maxSigsPerRound", config.getConfig().getMaxSigsPerRound().orElse(-1))
-				.put("maxValidators", config.getConfig().getMaxValidators())
-				.put("epoch", e)
-		));
-
+		forksConfigs.forEach((e, config) -> forks.put(config.asJson()));
 		return jsonObject().put(ARRAY, forks);
 	}
 
