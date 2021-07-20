@@ -33,7 +33,7 @@
  * losses of any kind, in tort, contract or otherwise (including but not limited to loss
  * of revenue, income or profits, or loss of use or data, or loss of reputation, or loss
  * of any economic or other opportunity of whatsoever nature or howsoever arising), arising
- * out of or in connection with (without limitation of any use, misuse, of any ledger system 
+ * out of or in connection with (without limitation of any use, misuse, of any ledger system
  * or use made or its functionality or any performance or operation of any code or protocol
  * caused by bugs or programming or logic errors or otherwise);
  *
