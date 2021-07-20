@@ -64,6 +64,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 						PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
 					)
 				),
+				1024 * 1024, // 1MB max user transaction size
 				OptionalInt.of(50), // 50 Txns per round
 				1_500_000, // Two weeks worth of rounds
 				150, // Two weeks worth of epochs for rake debounce
@@ -97,6 +98,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 						PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
 					)
 				),
+				1024 * 1024, // 1MB max user transaction size
 				OptionalInt.of(50), // 50 Txns per round
 				10_000, // Rounds per epoch
 				150, // Two weeks worth of epochs

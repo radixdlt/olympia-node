@@ -184,6 +184,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 				new RERulesConfig(
 					Set.of("xrd"),
 					FeeTable.noFees(),
+					1024 * 1024,
 					OptionalInt.of(50),
 					88,
 					2,

@@ -112,7 +112,7 @@ public enum RERulesVersion {
 			var meter = Meters.combine(
 				config.getMaxSigsPerRound().stream().<Meter>mapToObj(SigsPerRoundMeter::create).findAny().orElse(Meter.EMPTY),
 				Meters.combine(
-					TxnSizeFeeMeter.create(perByteFee),
+					TxnSizeFeeMeter.create(perByteFee, config.getMaxTxnSize()),
 					UpSubstateFeeMeter.create(perUpSubstateFee)
 				)
 			);

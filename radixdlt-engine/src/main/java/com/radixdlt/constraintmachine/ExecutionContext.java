@@ -48,7 +48,7 @@ public final class ExecutionContext {
 	private ECPublicKey key;
 	private boolean disableResourceAllocAndDestroy;
 	private UInt256 feeDeposit;
-	private UInt256 systemLoan;
+	private UInt256 systemLoan = UInt256.ZERO;
 	private int sigsLeft;
 	private boolean chargedOneTimeFee = false;
 	private List<REEvent> events = new ArrayList<>();
@@ -56,14 +56,21 @@ public final class ExecutionContext {
 	public ExecutionContext(
 		Txn txn,
 		PermissionLevel level,
-		int sigsLeft,
-		UInt256 systemLoan
+		int sigsLeft
 	) {
 		this.txn = txn;
 		this.level = level;
 		this.sigsLeft = sigsLeft;
-		this.systemLoan = systemLoan;
-		this.reserve = new TokenHoldingBucket(Tokens.create(REAddr.ofNativeToken(), systemLoan));
+		this.reserve = new TokenHoldingBucket(Tokens.create(REAddr.ofNativeToken(), UInt256.ZERO));
+	}
+
+	public void addSystemLoan(UInt256 loan) {
+		this.systemLoan = this.systemLoan.add(loan);
+		try {
+			this.reserve.deposit(Tokens.create(REAddr.ofNativeToken(), loan));
+		} catch (InvalidResourceException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	public List<REEvent> getEvents() {

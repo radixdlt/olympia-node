@@ -78,6 +78,7 @@ public class OneOutOfBoundsTest {
 							Amount.ofSubunits(perByteFee),
 							Map.of()
 						),
+						1024 * 1024,
 						OptionalInt.of(5),
 						20L,
 						2,

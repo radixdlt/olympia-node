@@ -30,6 +30,12 @@ public final class Meters {
 	public static Meter combine(Meter m0, Meter m1) {
 		return new Meter() {
 			@Override
+			public void onStart(ExecutionContext context) {
+				m0.onStart(context);
+				m1.onStart(context);
+			}
+
+			@Override
 			public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
 				m0.onUserProcedure(procedureKey, param, context);
 				m1.onUserProcedure(procedureKey, param, context);

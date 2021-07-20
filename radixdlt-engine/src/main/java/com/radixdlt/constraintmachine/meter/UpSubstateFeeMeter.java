@@ -39,6 +39,11 @@ public final class UpSubstateFeeMeter implements Meter {
 	}
 
 	@Override
+	public void onStart(ExecutionContext context) {
+		// No-op
+	}
+
+	@Override
 	public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
 		// TODO: Clean this up
 		if (procedureKey.opSignature().op() == REOp.UP && param instanceof Particle) {

@@ -28,6 +28,7 @@ import java.util.Set;
 public final class RERulesConfig {
 	private final Set<String> reservedSymbols;
 	private final FeeTable feeTable;
+	private final long maxTxnSize;
 	private final long maxRounds;
 	private final OptionalInt maxSigsPerRound;
 	private final long rakeIncreaseDebouncerEpochLength;
@@ -40,6 +41,7 @@ public final class RERulesConfig {
 	public RERulesConfig(
 		Set<String> reservedSymbols,
 		FeeTable feeTable,
+		long maxTxnSize,
 		OptionalInt maxSigsPerRound,
 		long maxRounds,
 		long rakeIncreaseDebouncerEpochLength,
@@ -51,6 +53,7 @@ public final class RERulesConfig {
 	) {
 		this.reservedSymbols = reservedSymbols;
 		this.feeTable = feeTable;
+		this.maxTxnSize = maxTxnSize;
 		this.maxSigsPerRound = maxSigsPerRound;
 		this.maxRounds = maxRounds;
 		this.rakeIncreaseDebouncerEpochLength = rakeIncreaseDebouncerEpochLength;
@@ -65,6 +68,7 @@ public final class RERulesConfig {
 		return new RERulesConfig(
 			Set.of("xrd"),
 			FeeTable.create(Amount.zero(), Map.of()),
+			 1024 * 1024,
 			OptionalInt.of(2),
 			10,
 			1,
@@ -96,6 +100,10 @@ public final class RERulesConfig {
 		return feeTable;
 	}
 
+	public long getMaxTxnSize() {
+		return maxTxnSize;
+	}
+
 	public long getMaxRounds() {
 		return maxRounds;
 	}
@@ -120,6 +128,7 @@ public final class RERulesConfig {
 		return new RERulesConfig(
 			this.reservedSymbols,
 			this.feeTable,
+			this.maxTxnSize,
 			OptionalInt.of(maxSigsPerRound),
 			this.maxRounds,
 			this.rakeIncreaseDebouncerEpochLength,
@@ -135,6 +144,7 @@ public final class RERulesConfig {
 		return new RERulesConfig(
 			this.reservedSymbols,
 			this.feeTable,
+			this.maxTxnSize,
 			OptionalInt.empty(),
 			this.maxRounds,
 			this.rakeIncreaseDebouncerEpochLength,
@@ -150,6 +160,7 @@ public final class RERulesConfig {
 		return new RERulesConfig(
 			this.reservedSymbols,
 			feeTable,
+			this.maxTxnSize,
 			this.maxSigsPerRound,
 			this.maxRounds,
 			this.rakeIncreaseDebouncerEpochLength,
@@ -165,6 +176,7 @@ public final class RERulesConfig {
 		return new RERulesConfig(
 			this.reservedSymbols,
 			this.feeTable,
+			this.maxTxnSize,
 			this.maxSigsPerRound,
 			maxRounds,
 			this.rakeIncreaseDebouncerEpochLength,

@@ -35,6 +35,11 @@ public final class SigsPerRoundMeter implements Meter {
 	}
 
 	@Override
+	public void onStart(ExecutionContext context) {
+		// No-op
+	}
+
+	@Override
 	public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) {
 	}
 

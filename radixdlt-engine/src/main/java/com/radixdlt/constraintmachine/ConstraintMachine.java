@@ -63,7 +63,7 @@ public final class ConstraintMachine {
 	private final Procedures procedures;
 	private final VirtualSubstateDeserialization virtualSubstateDeserialization;
 	private final SubstateDeserialization deserialization;
-	private final Meter metering;
+	private final Meter meter;
 
 	public ConstraintMachine(
 		Procedures procedures,
@@ -77,12 +77,12 @@ public final class ConstraintMachine {
 		Procedures procedures,
 		SubstateDeserialization deserialization,
 		VirtualSubstateDeserialization virtualSubstateDeserialization,
-		Meter metering
+		Meter meter
 	) {
 		this.procedures = Objects.requireNonNull(procedures);
 		this.deserialization = deserialization;
 		this.virtualSubstateDeserialization = virtualSubstateDeserialization;
-		this.metering = Objects.requireNonNull(metering);
+		this.meter = Objects.requireNonNull(meter);
 	}
 
 	public SubstateDeserialization getDeserialization() {
@@ -279,9 +279,9 @@ public final class ConstraintMachine {
 		if (context.permissionLevel() != PermissionLevel.SYSTEM) {
 			try {
 				if (requiredLevel == PermissionLevel.USER) {
-					this.metering.onUserProcedure(procedure.key(), procedureParam, context);
+					this.meter.onUserProcedure(procedure.key(), procedureParam, context);
 				} else if (requiredLevel == PermissionLevel.SUPER_USER) {
-					this.metering.onSuperUserProcedure(procedure.key(), procedureParam, context);
+					this.meter.onSuperUserProcedure(procedure.key(), procedureParam, context);
 				}
 			} catch (Exception e) {
 				throw new MeterException(e);
@@ -315,6 +315,8 @@ public final class ConstraintMachine {
 		var readableAddrs = validationState.resources();
 		var groupedStateUpdates = new ArrayList<List<REStateUpdate>>();
 		var stateUpdates = new ArrayList<REStateUpdate>();
+
+		meter.onStart(context);
 
 		for (REInstruction inst : instructions) {
 			try {
@@ -436,7 +438,7 @@ public final class ConstraintMachine {
 					expectEnd = false;
 				} else if (inst.getMicroOp() == REInstruction.REMicroOp.SIG) {
 					if (context.permissionLevel() != PermissionLevel.SYSTEM) {
-						metering.onSigInstruction(context);
+						meter.onSigInstruction(context);
 					}
 				} else {
 					// Collect no-ops here

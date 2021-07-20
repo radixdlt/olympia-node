@@ -19,7 +19,6 @@ package com.radixdlt.engine;
 
 import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.REConstructor;
@@ -277,7 +276,7 @@ public final class RadixEngine<M> {
 			var txn = txns.get(i);
 
 			verificationStopwatch.start();
-			var context = new ExecutionContext(txn, permissionLevel, sigsLeft, Amount.ofTokens(200).toSubunits());
+			var context = new ExecutionContext(txn, permissionLevel, sigsLeft);
 			final REProcessedTxn processedTxn;
 			try {
 				processedTxn = this.verify(engineStoreInTransaction, txn, context);
