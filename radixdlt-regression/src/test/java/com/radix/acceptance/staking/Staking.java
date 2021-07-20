@@ -1,44 +1,83 @@
-/*
- * (C) Copyright 2021 Radix DLT Ltd
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
- * Radix DLT Ltd licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in
- * compliance with the License.  You may obtain a copy of the
- * License at
+ * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at:
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * radixfoundation.org/licenses/LICENSE-v1
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied.  See the License for the specific
- * language governing permissions and limitations under the License.
+ * The Licensor hereby grants permission for the Canonical version of the Work to be
+ * published, distributed and used under or by reference to the Licensor’s trademark
+ * Radix ® and use of any unregistered trade names, logos or get-up.
+ *
+ * The Licensor provides the Work (and each Contributor provides its Contributions) on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
+ * including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT,
+ * MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * Whilst the Work is capable of being deployed, used and adopted (instantiated) to create
+ * a distributed ledger it is your responsibility to test and validate the code, together
+ * with all logic and performance of that code under all foreseeable scenarios.
+ *
+ * The Licensor does not make or purport to make and hereby excludes liability for all
+ * and any representation, warranty or undertaking in any form whatsoever, whether express
+ * or implied, to any entity or person, including any representation, warranty or
+ * undertaking, as to the functionality security use, value or other characteristics of
+ * any distributed ledger nor in respect the functioning or value of any tokens which may
+ * be created stored or transferred using the Work. The Licensor does not warrant that the
+ * Work or any use of the Work complies with any law or regulation in any territory where
+ * it may be implemented or used or that it will be appropriate for any specific purpose.
+ *
+ * Neither the licensor nor any current or former employees, officers, directors, partners,
+ * trustees, representatives, agents, advisors, contractors, or volunteers of the Licensor
+ * shall be liable for any direct or indirect, special, incidental, consequential or other
+ * losses of any kind, in tort, contract or otherwise (including but not limited to loss
+ * of revenue, income or profits, or loss of use or data, or loss of reputation, or loss
+ * of any economic or other opportunity of whatsoever nature or howsoever arising), arising
+ * out of or in connection with (without limitation of any use, misuse, of any ledger system
+ * or use made or its functionality or any performance or operation of any code or protocol
+ * caused by bugs or programming or logic errors or otherwise);
+ *
+ * A. any offer, purchase, holding, use, sale, exchange or transmission of any
+ * cryptographic keys, tokens or assets created, exchanged, stored or arising from any
+ * interaction with the Work;
+ *
+ * B. any failure in a transmission or loss of any token or assets keys or other digital
+ * artefacts due to errors in transmission;
+ *
+ * C. bugs, hacks, logic errors or faults in the Work or any communication;
+ *
+ * D. system software or apparatus including but not limited to losses caused by errors
+ * in holding or transmitting tokens by any third-party;
+ *
+ * E. breaches or failure of security including hacker attacks, loss or disclosure of
+ * password, loss of private key, unauthorised use or misuse of such passwords or keys;
+ *
+ * F. any losses including loss of anticipated savings or other benefits resulting from
+ * use of the Work or any changes to the Work (however implemented).
+ *
+ * You are solely responsible for; testing, validating and evaluation of all operation
+ * logic, functionality, security and appropriateness of using the Work for any commercial
+ * or non-commercial purpose and for any reproduction or redistribution by You of the
+ * Work. You assume all risks associated with Your use of the Work and the exercise of
+ * permissions under this License.
  */
 
 package com.radix.acceptance.staking;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.assertj.core.util.Lists;
-import org.awaitility.Durations;
-import org.junit.Assert;
-
 import com.radix.acceptance.AcceptanceTest;
-import com.radix.test.TransactionUtils;
-import com.radix.test.Utils;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
-import com.radixdlt.client.lib.dto.ValidatorsResponse;
-import com.radixdlt.utils.UInt256;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.assertj.core.util.Lists;
+import org.junit.Assert;
 
-import static org.awaitility.Awaitility.await;
+import java.util.List;
+import java.util.Optional;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -46,49 +85,45 @@ public class Staking extends AcceptanceTest {
 
     private static final Logger logger = LogManager.getLogger();
 
-    // a buffer to store validator information
-    private List<ValidatorDTO> validators = Lists.newArrayList();
+    private List<ValidatorDTO> validatorsBuffer = Lists.newArrayList();
 
     @Given("I have an account with funds at a suitable Radix network")
     public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
-        callFaucetAndWaitForTokens(account1);
+        faucet(account1, Amount.ofTokens(120));
     }
 
     @When("I request validator information")
     public void i_request_validator_information() {
         updateValidatorInformation();
-        logger.info("Found {} validators", validators.size());
+        logger.info("Found {} validators", validatorsBuffer.size());
     }
 
     @Then("I observe that validators have stakes delegated to them")
     public void i_observe_that_validators_have_stakes_delegated_to_them() {
-        var totalDelegatedStakeAcrossNetwork = validators.stream()
+        var totalDelegatedStakeAcrossNetwork = validatorsBuffer.stream()
             .mapToDouble(value -> Double.parseDouble(value.getTotalDelegatedStake().toString())).sum();
         assertTrue("No stake was found in any validator, something is wrong with the test network",
             totalDelegatedStakeAcrossNetwork > 0);
     }
 
     @When("I stake {int}XRD to a validator")
-    public void i_stake_xrd_to_a_validator(Integer stake) {
+    public void i_stake_xrd_to_a_validator(int stake) {
         updateValidatorInformation();
-        var validatorAddress = Utils.createValidatorAddress(validators.get(0));
-        TransactionUtils.performStaking(account1, validatorAddress, Utils.fromMajorToMinor(stake));
+        // this test is hardcoded to use the 1st validator
+        account1.stake(validatorsBuffer.get(0).getAddress(), Amount.ofTokens(stake));
     }
 
-    @Then("I observe that validator having {int}XRD more stake")
-    public void i_observe_that_validator_having_xrd_more_stake(Integer stake) {
-        var oldStake = validators.get(0).getTotalDelegatedStake(); // we hardcode this test to the 1st validator
-        await().atMost(Durations.ONE_MINUTE).until(() -> { // wait until the first validator's stake increases
-            updateValidatorInformation();
-            var newStake = validators.get(0).getTotalDelegatedStake();
-            return newStake.subtract(oldStake).compareTo(UInt256.ZERO) > 0;
-        });
-        var difference = validators.get(0).getTotalDelegatedStake().subtract(oldStake);
-        assertEquals(difference, Utils.fromMajorToMinor(stake));
+    @Then("I observe that the validator has {int}XRD more stake")
+    public void i_observe_that_validator_having_xrd_more_stake(int stake) {
+        Amount expectedStake = Amount.ofTokens(5);
+        var previousStake = validatorsBuffer.get(0).getTotalDelegatedStake();
+        updateValidatorInformation();
+        var difference = validatorsBuffer.get(0).getTotalDelegatedStake().subtract(previousStake);
+        assertEquals(difference, expectedStake.toSubunits());
     }
 
     @When("I unstake {int}XRD from the same validator")
-    public void i_unstake_5xrd_from_the_same_validator(Integer unstake) {
+    public void i_unstake_xrd_from_the_same_validator(Integer unstake) {
         throw new io.cucumber.java.PendingException();
     }
 
@@ -97,15 +132,10 @@ public class Staking extends AcceptanceTest {
         throw new io.cucumber.java.PendingException();
     }
 
-    /**
-     *  Calls the 'radix.validators' JSON-RPC method to fetch the latest validator info. At least one validator is expected
-     *  to be found.
-     */
     private void updateValidatorInformation() {
-        validators.clear();
-		validators = getTestAccount().validator().list(1000, Optional.empty())
-            .fold(failure -> new ArrayList<>(), ValidatorsResponse::getValidators);
-        if (validators.isEmpty()) {
+        validatorsBuffer.clear();
+        validatorsBuffer = account1.validator().list(1000, Optional.empty()).getValidators();
+        if (validatorsBuffer.isEmpty()) {
             Assert.fail("No validators were found in the network, test cannot proceed.");
         }
     }

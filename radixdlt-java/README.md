@@ -261,4 +261,4 @@ Please follow our [Code of Conduct](../CODE_OF_CONDUCT.md) in all your interacti
 
 ## License
 
-The `radixdlt-java` library is released under the [MIT License](LICENSE).
+The `radixdlt-java` code is released under the [Radix License](../LICENSE).
