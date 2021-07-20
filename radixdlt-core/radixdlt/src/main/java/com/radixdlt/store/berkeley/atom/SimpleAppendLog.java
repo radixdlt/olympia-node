@@ -65,6 +65,8 @@
 package com.radixdlt.store.berkeley.atom;
 
 import com.radixdlt.utils.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -83,6 +85,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
  * Implementation of simple append-only log
  */
 public class SimpleAppendLog implements AppendLog {
+	private static final Logger logger = LogManager.getLogger();
 	private final FileChannel channel;
 	private final ByteBuffer sizeBufferW;
 	private final ByteBuffer sizeBufferR;
@@ -104,8 +107,13 @@ public class SimpleAppendLog implements AppendLog {
 	public long write(byte[] data, long expectedOffset) throws IOException {
 		synchronized (channel) {
 			var position = channel.position();
-			if (position != expectedOffset) {
-				throw new IOException("Expected position to be " + expectedOffset + " but is " + position + ". Possible database corruption.");
+			if (position > expectedOffset) {
+				logger.warn("Expected position to be " + expectedOffset + " but is " + position
+					+ ". Resetting position to " + expectedOffset);
+				channel.position(expectedOffset);
+			} else if (position < expectedOffset) {
+				throw new IOException("Expected position to be " + expectedOffset + " but is " + position
+					+ ". Cannot recover as there is missing data.");
 			}
 
 			sizeBufferW.clear().putInt(data.length).clear();
