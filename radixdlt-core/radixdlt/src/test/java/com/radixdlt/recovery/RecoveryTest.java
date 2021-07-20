@@ -196,6 +196,7 @@ public class RecoveryTest {
 				new RERulesConfig(
 					Set.of("xrd"),
 					FeeTable.noFees(),
+					1024 * 1024,
 					OptionalInt.of(50),
 					epochCeilingView,
 					2,

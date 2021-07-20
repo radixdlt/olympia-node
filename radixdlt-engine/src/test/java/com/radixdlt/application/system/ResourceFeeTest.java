@@ -86,7 +86,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
+import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
 import com.radixdlt.constraintmachine.meter.UpSubstateFeeMeter;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -194,6 +194,6 @@ public final class ResourceFeeTest {
 
 		// Act
 		assertThatThrownBy(() -> this.engine.execute(List.of(create)))
-			.hasRootCauseInstanceOf(DefaultedSystemLoanException.class);
+			.hasRootCauseInstanceOf(DepletedFeeReserveException.class);
 	}
 }

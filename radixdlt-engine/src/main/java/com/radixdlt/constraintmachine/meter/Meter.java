@@ -69,6 +69,8 @@ import com.radixdlt.constraintmachine.ProcedureKey;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 
 public interface Meter {
+	void onStart(ExecutionContext context);
+
 	void onUserProcedure(
 		ProcedureKey procedureKey,
 		Object param,
@@ -84,6 +86,11 @@ public interface Meter {
 	void onSigInstruction(ExecutionContext context) throws AuthorizationException;
 
 	Meter EMPTY = new Meter() {
+		@Override
+		public void onStart(ExecutionContext context) {
+			// no-op
+		}
+
 		@Override
 		public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) {
 			// no-op

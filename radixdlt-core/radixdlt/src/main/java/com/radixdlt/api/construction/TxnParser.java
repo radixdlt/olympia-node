@@ -66,7 +66,6 @@ package com.radixdlt.api.construction;
 
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
@@ -104,8 +103,7 @@ public final class TxnParser {
 		var context = new ExecutionContext(
 			txn,
 			PermissionLevel.SYSTEM,
-			1,
-			Amount.ofTokens(100).toSubunits()
+			1
 		);
 
 		var stateUpdates = cm.verify(

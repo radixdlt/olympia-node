@@ -82,6 +82,11 @@ public final class FixedFeeMeter implements Meter {
 	}
 
 	@Override
+	public void onStart(ExecutionContext context) {
+		context.addSystemLoan(fixedFee);
+	}
+
+	@Override
 	public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
 		context.chargeOneTimeTransactionFee(txn -> fixedFee);
 

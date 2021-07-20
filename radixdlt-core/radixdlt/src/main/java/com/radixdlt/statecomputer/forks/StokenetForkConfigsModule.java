@@ -107,6 +107,7 @@ public final class StokenetForkConfigsModule extends AbstractModule {
 						PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
 					)
 				),
+				(long) 1024 * 1024, // 1MB max user transaction size
 				OptionalInt.of(50), // 50 Txns per round
 				10_000,
 				2,

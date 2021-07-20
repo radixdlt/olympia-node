@@ -161,6 +161,7 @@ public class LargeEpochChangeTest {
 							PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
 						)
 					),
+					1024 * 1024,
 					OptionalInt.of(50), // 50 Txns per round
 					10_000,
 					1,

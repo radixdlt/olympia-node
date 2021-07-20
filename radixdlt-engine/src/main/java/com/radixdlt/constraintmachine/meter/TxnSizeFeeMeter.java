@@ -72,13 +72,21 @@ import com.radixdlt.utils.UInt256;
 
 public class TxnSizeFeeMeter implements Meter {
 	private final UInt256 feePerByte;
+	private final UInt256 systemLoan;
 
-	private TxnSizeFeeMeter(UInt256 feePerByte) {
+	private TxnSizeFeeMeter(UInt256 feePerByte, UInt256 systemLoan) {
 		this.feePerByte = feePerByte;
+		this.systemLoan = systemLoan;
 	}
 
-	public static TxnSizeFeeMeter create(UInt256 feePerByte) {
-		return new TxnSizeFeeMeter(feePerByte);
+	public static TxnSizeFeeMeter create(UInt256 feePerByte, long maxSize) {
+		var systemLoan = feePerByte.multiply(UInt256.from(maxSize));
+		return new TxnSizeFeeMeter(feePerByte, systemLoan);
+	}
+
+	@Override
+	public void onStart(ExecutionContext context) {
+		context.addSystemLoan(systemLoan);
 	}
 
 	@Override

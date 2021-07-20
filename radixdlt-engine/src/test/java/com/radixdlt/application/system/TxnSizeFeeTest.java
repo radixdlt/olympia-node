@@ -93,6 +93,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
+import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
 import com.radixdlt.constraintmachine.exceptions.ExecutionContextDestroyException;
 import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
 import com.radixdlt.crypto.ECKeyPair;
@@ -136,6 +137,7 @@ public class TxnSizeFeeTest {
 	private final ECKeyPair key = ECKeyPair.generateNew();
 	private final REAddr accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 	private final Amount costPerByte;
+	private static final long MAX_SIZE = 507;
 
 	public TxnSizeFeeTest(Amount costPerByte) {
 		this.costPerByte = costPerByte;
@@ -150,7 +152,7 @@ public class TxnSizeFeeTest {
 			cmAtomOS.getProcedures(),
 			cmAtomOS.buildSubstateDeserialization(),
 			cmAtomOS.buildVirtualSubstateDeserialization(),
-			TxnSizeFeeMeter.create(costPerByte.toSubunits())
+			TxnSizeFeeMeter.create(costPerByte.toSubunits(), MAX_SIZE)
 		);
 		var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
 		var serialization = cmAtomOS.buildSubstateSerialization();
@@ -176,6 +178,25 @@ public class TxnSizeFeeTest {
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, Amount.ofTokens(2).toSubunits()))
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
+	}
+
+	@Test
+	public void transaction_thats_over_allowed_size_should_fail() throws Exception {
+		// Act
+		var nextKey = ECKeyPair.generateNew();
+		var to = REAddr.ofPubKeyAccount(nextKey.getPublicKey());
+		var transfer = this.engine.construct(
+			TxnConstructionRequest.create()
+				.action(new FeeReservePut(accountAddr, costPerByte.toSubunits().multiply(UInt256.from(MAX_SIZE + 1))))
+				.action(new TransferToken(REAddr.ofNativeToken(), accountAddr, to, UInt256.ONE))
+				.action(new TransferToken(REAddr.ofNativeToken(), accountAddr, to, UInt256.ONE))
+		).signAndBuild(key::sign);
+
+		assertThat(transfer.getPayload().length).isEqualTo(MAX_SIZE + 1);
+
+		// Act
+		assertThatThrownBy(() -> this.engine.execute(List.of(transfer)))
+			.hasRootCauseInstanceOf(DepletedFeeReserveException.class);
 	}
 
 	@Test

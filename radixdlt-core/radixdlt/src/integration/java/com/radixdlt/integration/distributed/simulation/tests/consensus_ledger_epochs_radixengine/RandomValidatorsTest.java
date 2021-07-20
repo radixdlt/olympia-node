@@ -104,6 +104,7 @@ public class RandomValidatorsTest {
 				new RERulesConfig(
 					Set.of("xrd"),
 					FeeTable.noFees(),
+					1024 * 1024,
 					OptionalInt.of(5),
 					100,
 					2,
