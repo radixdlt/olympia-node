@@ -258,3 +258,7 @@ Please follow our [Code of Conduct](../CODE_OF_CONDUCT.md) in all your interacti
 [documentation](https://docs.radixdlt.com/) | Radix Knowledge Base
 [forum](https://forum.radixdlt.com/) | Radix Technical Forum
 [@radixdlt](https://twitter.com/radixdlt) | Follow Radix DLT on Twitter
+
+## License
+
+The `radixdlt-java` code is released under the [Radix License](../LICENSE).
