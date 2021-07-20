@@ -121,7 +121,6 @@ public final class ValidationHandler {
 			.put("validatorFee", (double) validatorData.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "")
 			.put("stakes", stakeData.getSecond())
 			.put("totalStake", validatorData.getTotalStake())
-			.put("allowDelegation", allowDelegationFlag.allowsDelegation())
 			.put("proposalsCompleted", uptime.getProposalsCompleted())
 			.put("proposalsMissed", uptime.getProposalsMissed())
 			.put("uptimePercentage", uptime.toPercentageString());
