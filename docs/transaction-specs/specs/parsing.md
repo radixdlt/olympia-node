@@ -132,6 +132,7 @@ Currently, we have the following types:
 | `VALIDATOR_REGISTERED_FLAG_COPY`  | `0x0F`   | Validator registered flag copy                                 |
 | `VALIDATOR_RAKE_COPY`             | `0x10`   | Validator rake (fee) copy                                      |
 | `VALIDATOR_OWNER_COPY`            | `0x11`   | Validator owner copy                                           |
+| `VALIDATOR_SYSTEM_META_DATA`      | `0x12`   | Validator system metadata                                      |
 
 ### Substate Schema
 
@@ -184,6 +185,7 @@ Substates are serialized and deserialized based on the following protocol:
 |---------------|-----------|-----------------------|
 | `reserved`    | `u8`      | Reserved, always `0`  |
 | `resource`    | `address` | The resource address  |
+| `symbol`      | `string`  | The token symbol      |
 | `name`        | `string`  | The token name        |
 | `description` | `string`  | The token description |
 | `url`         | `string`  | An URL                |
@@ -300,6 +302,14 @@ Substates are serialized and deserialized based on the following protocol:
 | `validator`    | `public_key` | Validator public key    |
 | `owner`        | `address`    | Validator owner address |
 
+#### `VALIDATOR_SYSTEM_META_DATA`
+
+| **Name**       | **Type**     | **Description**         |
+|----------------|--------------|-------------------------|
+| `reserved`     | `u8`         | Reserved, always `0`    |
+| `validator`    | `public_key` | Validator public key    |
+| `state`        | `Hash`       | Validator state hash    |
+
 ## Transaction Format
 
 A transaction consists of an array of instructions. The hash output of its serialization is considered as **Transaction ID**.
@@ -331,7 +341,6 @@ The table below summarizes all opcodes.
 
 ### Operand Format
 
-
 | **Name**                    | **Description**                                                             |
 |-----------------------------|-----------------------------------------------------------------------------|
 | `call_data`                 | System call data (`bytes`) and the content must match function requirements |
@@ -346,6 +355,49 @@ The table below summarizes all opcodes.
 | `version`                   | Header version (`u8`)                                                       |
 | `flags`                     | Header flags (`u8`)                                                         |
 | `prefix`                    | Substate prefix (`bytes`)                                                   |
+
+### System Functions
+
+System functions are special functionalities provided to transactions through the `SYSCALL` instruction.
+
+Currently, we have three system functions:
+
+| **Function Name**  | **Description**                                                                             | **Code** | **Arguments**    |
+|--------------------|---------------------------------------------------------------------------------------------|----------|------------------|
+| `FEE_RESERVE_PUT`  | Deposit a fee into the fee reserve managed by fee checker (**can be invoked at most once**) | `0x00`   | `amount (u256)`  |
+| `FEE_RESERVE_TAKE` | Withdraw fund from the fee reserve                                                          | `0x01`   | `amount (u256)`  |
+| `READDR_CLAIM`     | Claim a RE Address                                                                          | `0x02`   | `symbol (bytes)` |
+
+The `calldata` has the following structure:
+
+```
++--------------------+------------+
+| function code (u8) | arguments  |
++--------------------+------------+
+```
+
+### Transaction Fee
+
+Transaction fees are paid through a combination of `FEE_RESERVE_PUT` and `FEE_RESERVE_TAKE` system calls.
+
+Effectively:
+```
+fee paid = FEE_RESERVE_PUT - SUM(FEE_RESERVE_TAKE*)
+```
+
+Example:
+```
+HEADER(0, 1)
+DOWN <xrd_substate_id>
+SYSCALL <FEE_RESERVE_PUT (0x00) + amount (u256)>
+UP <xrd_remainder>
+END
+...
+SYSCALL <FEE_RESERVE_TAKE (0x01) + amount (u256)>    // when the fee reserve balance is non-zero
+UP <xrd_remainder>                                   // when the fee reserve balance is non-zero
+END
+SIG <signature>
+```
 
 ## Error Handling
 
