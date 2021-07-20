@@ -70,6 +70,7 @@ import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.identifiers.REAddr;
@@ -78,6 +79,7 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
+import com.radixdlt.store.TxnIndex;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.functional.Failure;
@@ -96,18 +98,21 @@ public final class DeveloperHandler {
 	private final ActionParserService actionParserService;
 	private final GenesisBuilder genesisBuilder;
 	private final REParser parser;
+	private final TxnIndex txnIndex;
 
 	@Inject
 	public DeveloperHandler(
 		ActionParserService actionParserService,
 		GenesisBuilder genesisBuilder,
 		Addressing addressing,
-		REParser parser
+		REParser parser,
+		TxnIndex txnIndex
 	) {
 		this.actionParserService = actionParserService;
 		this.genesisBuilder = genesisBuilder;
 		this.addressing = addressing;
 		this.parser = parser;
+		this.txnIndex = txnIndex;
 	}
 
 	private Result<VerifiedTxnsAndProof> build(List<TransactionAction> steps) {
@@ -144,6 +149,25 @@ public final class DeveloperHandler {
 		);
 	}
 
+	public JSONObject handleLookupTransaction(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("txn"),
+			params -> Result.wrap(
+				e -> Failure.failure(-1, e.getMessage()),
+				() -> {
+					var txnHex = params.getString("txId");
+					var txId = AID.from(txnHex);
+					return txnIndex.get(txId)
+						.map(txn -> jsonObject()
+							.put("result", "found")
+							.put("payload", Bytes.toHexString(txn.getPayload()))
+						)
+						.orElse(jsonObject().put("result", "notfound"));
+				}
+			)
+		);
+	}
 
 	public JSONObject handleParseTxn(JSONObject request) {
 		return withRequiredParameters(

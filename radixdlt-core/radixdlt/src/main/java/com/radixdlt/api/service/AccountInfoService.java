@@ -69,6 +69,7 @@ import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
@@ -122,10 +123,6 @@ public class AccountInfoService {
 			.put("balance", getOwnBalance());
 	}
 
-	public String getValidatorAddress() {
-		return addressing.forValidators().of(bftKey);
-	}
-
 	public ValidatorUptime getMyValidatorUptime() {
 		var validatorUptimeKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_BFT_DATA.id(), bftKey.getCompressedBytes());
 		return radixEngine.get(validatorUptimeKey)
@@ -168,6 +165,22 @@ public class AccountInfoService {
 		return (ValidatorStakeData) radixEngine.get(validatorDataKey).orElse(ValidatorStakeData.createVirtual(bftKey));
 	}
 
+	public Map<REAddr, UInt384> getPreparedStakesToMyValidator() {
+		var index = SubstateIndex.create(
+			Arrays.concatenate(new byte[] {SubstateTypeId.PREPARED_STAKE.id(), 0}, bftKey.getCompressedBytes()),
+			PreparedStake.class
+		);
+		return radixEngine.reduceResources(index, PreparedStake::getOwner);
+	}
+
+	public Map<REAddr, UInt384> getPreparedUnstakesFromMyValidator() {
+		var index = SubstateIndex.create(
+			Arrays.concatenate(new byte[] {SubstateTypeId.PREPARED_UNSTAKE.id(), 0}, bftKey.getCompressedBytes()),
+			PreparedUnstakeOwnership.class
+		);
+		return radixEngine.reduceResources(index, PreparedUnstakeOwnership::getOwner);
+	}
+
 	public Pair<ValidatorStakeData, JSONArray> getStakeData() {
 		var myValidator = getMyValidator();
 		var index = SubstateIndex.create(
@@ -175,6 +188,12 @@ public class AccountInfoService {
 			StakeOwnership.class
 		);
 		var stakeReceived = radixEngine.reduceResources(index, StakeOwnership::getOwner);
+		var unstakingOwnership = SubstateIndex.create(
+			Arrays.concatenate(new byte[] {SubstateTypeId.PREPARED_UNSTAKE.id(), 0}, bftKey.getCompressedBytes()),
+			PreparedUnstakeOwnership.class
+		);
+		radixEngine.reduceResources(unstakingOwnership, PreparedUnstakeOwnership::getOwner, stakeReceived);
+
 		var stakeFrom = jsonArray();
 		stakeReceived.forEach((address, amt) -> {
 			stakeFrom.put(
