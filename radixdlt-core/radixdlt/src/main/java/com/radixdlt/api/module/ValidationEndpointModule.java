@@ -111,11 +111,4 @@ public class ValidationEndpointModule extends AbstractModule {
 	public JsonRpcHandler getCurrentEpochData(ValidationHandler validationHandler) {
 		return validationHandler::handleGetCurrentEpochData;
 	}
-
-	@ValidationEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("validation.get_next_epoch_data")
-	public JsonRpcHandler getNextEpochData(ValidationHandler validationHandler) {
-		return validationHandler::handleGetNextEpochData;
-	}
 }

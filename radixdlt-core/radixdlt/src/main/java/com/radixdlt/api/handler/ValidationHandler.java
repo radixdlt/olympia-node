@@ -176,11 +176,6 @@ public final class ValidationHandler {
 		return response(request, getValidatorInfo());
 	}
 
-	public JSONObject handleGetNextEpochData(JSONObject request) {
-		// TODO
-		return jsonObject();
-	}
-
 	public JSONObject handleGetCurrentEpochData(JSONObject request) {
 		var validators = radixEngine.reduce(ValidatorStakeData.class, jsonArray(), (json, data) -> {
 			if (!data.isRegistered()) {
