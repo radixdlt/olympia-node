@@ -114,7 +114,7 @@ public final class RERulesConfig {
 		return new RERulesConfig(
 			Set.of("xrd"),
 			FeeTable.create(Amount.zero(), Map.of()),
-			 1024 * 1024,
+			(long) 1024 * 1024,
 			OptionalInt.of(2),
 			10,
 			1,
