@@ -121,7 +121,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 
 			var epoch = update.getEpochUpdate().orElseThrow(() -> new ProcedureException("Must contain epoch update"));
 			if (rakeIncrease > 0) {
-				var expectedEpoch = epochData.getEpoch() + rakeIncreaseDebounceEpochLength;
+				var expectedEpoch = epochData.getEpoch() + 1 + rakeIncreaseDebounceEpochLength;
 				if (epoch != expectedEpoch) {
 					throw new ProcedureException("Increasing rake requires epoch delay to " + expectedEpoch + " but was " + epoch);
 				}

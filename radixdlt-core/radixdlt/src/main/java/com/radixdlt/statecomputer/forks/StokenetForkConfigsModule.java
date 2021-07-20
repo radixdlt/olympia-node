@@ -110,9 +110,9 @@ public final class StokenetForkConfigsModule extends AbstractModule {
 				(long) 1024 * 1024, // 1MB max user transaction size
 				OptionalInt.of(50), // 50 Txns per round
 				10_000,
-				2,
+				1, // Atleast 1 full epoch delay for validator fee increase
 				Amount.ofTokens(100), // Minimum stake
-				1, // Two weeks worth of epochs
+				1, // Atleast 1 full epoch delay for unstaking
 				Amount.ofTokens(10),   // Rewards per proposal
 				9800, // 98.00% threshold for completed proposals to get any rewards,
 				100 // 100 max validators

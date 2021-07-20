@@ -82,6 +82,9 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
 		long rakeIncreaseDebounceEpochLength,
 		int maxRakeIncrease
 	) {
+		if (rakeIncreaseDebounceEpochLength < 0 || maxRakeIncrease < 0) {
+			throw new IllegalArgumentException();
+		}
 		this.rakeIncreaseDebounceEpochLength = rakeIncreaseDebounceEpochLength;
 		this.maxRakeIncrease = maxRakeIncrease;
 	}
@@ -98,7 +101,7 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
 			throw new TxBuilderException("Max rake increase is " + maxRakeIncrease + " but trying to increase " + rakeIncrease);
 		}
 
-		var epochDiff = isIncrease ? rakeIncreaseDebounceEpochLength : 1;
+		var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
 		var curEpoch = builder.readSystem(EpochData.class);
 		var epoch = curEpoch.getEpoch() + epochDiff;
 		builder.up(new ValidatorFeeCopy(
