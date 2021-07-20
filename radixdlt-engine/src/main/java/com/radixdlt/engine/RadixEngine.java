@@ -483,14 +483,22 @@ public final class RadixEngine<M> {
 
 	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
 		SubstateIndex<T> index,
-		Function<T, K> keyMapper
+		Function<T, K> keyMapper,
+		Map<K, UInt384> initial
 	) {
-		return reduce(index, new HashMap<>(),
+		return reduce(index, initial,
 			(m, t) -> {
 				m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
 				return m;
 			}
 		);
+	}
+
+	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
+		SubstateIndex<T> index,
+		Function<T, K> keyMapper
+	) {
+		return reduceResources(index, keyMapper, new HashMap<>());
 	}
 
 	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
