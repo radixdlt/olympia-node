@@ -18,16 +18,44 @@
 
 package com.radixdlt.statecomputer.radixengine;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import com.google.common.io.Files;
-import com.google.inject.*;
-import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.*;
+import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.FeeReserveComplete;
+import com.radixdlt.atom.actions.FeeReservePut;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.NextEpoch;
+import com.radixdlt.atom.actions.NextRound;
+import com.radixdlt.atom.actions.RegisterValidator;
+import com.radixdlt.atom.actions.StakeTokens;
+import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.actions.UnregisterValidator;
+import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -41,15 +69,16 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.*;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RERulesVersion;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.radix.TokenIssuance;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,12 +86,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.radixdlt.utils.Bytes.toHexString;
 
 
 public class TestSuite {
-    private final ECKeyPair keyPair = ECKeyPair.generateNew();
+    private static final ECKeyPair VALIDATOR_KEY = PrivateKeys.ofNumeric(1);
+
+    private static final ECKeyPair TEST_ACCOUNT = PrivateKeys.ofNumeric(2);
+    private static final ECKeyPair TEST_ACCOUNT_2 = PrivateKeys.ofNumeric(3);
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -79,33 +113,37 @@ public class TestSuite {
 
     private Injector createInjector() {
         return Guice.createInjector(
-                MempoolConfig.asModule(1000, 10),
+                new MainnetForkConfigsModule(),
                 new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideFeeTable(
-                        FeeTable.create(
-                                Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
-                                Amount.ofTokens(1000) // 1000XRD per resource
+                    FeeTable.create(
+                        Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
+                        Map.of(
+                            TokenResource.class, Amount.ofTokens(1000), // 1000XRD per resource
+                            ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
+                            ValidatorRakeCopy.class, Amount.ofTokens(5), // 5XRD per register update
+                            ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
+                            ValidatorMetaData.class, Amount.ofTokens(5), // 5XRD per register update
+                            AllowDelegationFlag.class, Amount.ofTokens(5), // 5XRD per register update
+                            PreparedStake.class, Amount.ofMilliTokens(500), // 0.5XRD per stake
+                            PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
                         )
+                    )
                 )),
                 new ForksModule(),
-                new SingleNodeAndPeersDeterministicNetworkModule(),
-                new MockedGenesisModule(),
+                new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
+                new MockedGenesisModule(
+                    Set.of(VALIDATOR_KEY.getPublicKey()),
+                    Amount.ofTokens(101),
+                    Amount.ofTokens(100)
+                ).setTestAccount(TEST_ACCOUNT.getPublicKey(), Amount.ofTokens(1_000_000)),
                 new AbstractModule() {
                     @Override
                     protected void configure() {
                         bindConstant().annotatedWith(NumPeers.class).to(0);
                         bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-                    }
-                },
-                new AbstractModule() {
-                    @Override
-                    protected void configure() {
-                        bindConstant().annotatedWith(NumPeers.class).to(0);
-                        bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-                    }
 
-                    @ProvidesIntoSet
-                    private TokenIssuance mempoolFillerIssuance() {
-                        return TokenIssuance.of(keyPair.getPublicKey(), Amount.ofTokens(1_000_000).toSubunits());
+                        install(MempoolConfig.asModule(1000, 200));
+                        install(new MempoolFillerModule());
                     }
                 }
         );
@@ -117,17 +155,16 @@ public class TestSuite {
         injector.injectMembers(this);
         var validator = injector.getInstance(Key.get(ECPublicKey.class, Self.class));
 
-        var accountAddr = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-        var tokenAddr = REAddr.ofHashedKey(keyPair.getPublicKey(), "symbol");
-        var otherAccount = ECKeyPair.generateNew();
-        var otherAccountAddr = REAddr.ofPubKeyAccount(otherAccount.getPublicKey());
+        var accountAddr = REAddr.ofPubKeyAccount(TEST_ACCOUNT.getPublicKey());
+        var tokenAddr = REAddr.ofHashedKey(TEST_ACCOUNT.getPublicKey(), "symbol");
+        var otherAccountAddr = REAddr.ofPubKeyAccount(TEST_ACCOUNT_2.getPublicKey());
         var tokDef = new MutableTokenDefinition(
-                keyPair.getPublicKey(),
-                "symbol",
-                "name",
-                "description",
-                "https://example.com/",
-                "https://example.com/icon.png"
+            TEST_ACCOUNT.getPublicKey(),
+            "symbol",
+            "name",
+            "description",
+            "https://example.com/",
+            "https://example.com/icon.png"
         );
 
         System.out.println("[This account] Create token resource...");
@@ -136,7 +173,7 @@ public class TestSuite {
                 .disableResourceAllocAndDestroy()
                 .actions(List.of(
                         new CreateMutableToken(tokDef)
-                ))).signAndBuild(keyPair::sign);
+                ))).signAndBuild(TEST_ACCOUNT::sign);
         System.out.println(toHexString(tx.getPayload()));
         var results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/token_create.txt"));
@@ -146,7 +183,7 @@ public class TestSuite {
                 .feePayer(accountAddr)
                 .actions(List.of(
                         new MintToken(tokenAddr, accountAddr, UInt256.NINE)
-                ))).signAndBuild(keyPair::sign);
+                ))).signAndBuild(TEST_ACCOUNT::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/token_mint.txt"));
@@ -157,7 +194,7 @@ public class TestSuite {
                 .feePayer(accountAddr)
                 .disableResourceAllocAndDestroy().actions(List.of(
                         new TransferToken(tokenAddr, accountAddr, otherAccountAddr, UInt256.ONE)
-                ))).signAndBuild(keyPair::sign);
+                ))).signAndBuild(TEST_ACCOUNT::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/token_transfer.txt"));
@@ -168,7 +205,7 @@ public class TestSuite {
                 .feePayer(accountAddr)
                 .actions(List.of(
                         new BurnToken(tokenAddr, accountAddr, UInt256.ONE)
-                ))).signAndBuild(keyPair::sign);
+                ))).signAndBuild(TEST_ACCOUNT::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/token_burn.txt"));
@@ -181,7 +218,7 @@ public class TestSuite {
                 .actions(List.of(
 
                         new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAccountAddr, Amount.ofTokens(1_000).toSubunits())
-                ))).signAndBuild(keyPair::sign);
+                ))).signAndBuild(TEST_ACCOUNT::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/xrd_transfer.txt"));
@@ -195,7 +232,7 @@ public class TestSuite {
                 .actions(List.of(
                         new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAccountAddr, Amount.ofTokens(5).toSubunits())
                 )))
-                .signAndBuild(keyPair::sign);
+                .signAndBuild(TEST_ACCOUNT::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/xrd_transfer_with_msg.txt"));
@@ -205,8 +242,8 @@ public class TestSuite {
                 .feePayer(otherAccountAddr)
                 .disableResourceAllocAndDestroy()
                 .actions(List.of(
-                        new RegisterValidator(otherAccount.getPublicKey())
-                ))).signAndBuild(otherAccount::sign);
+                        new RegisterValidator(TEST_ACCOUNT_2.getPublicKey())
+                ))).signAndBuild(TEST_ACCOUNT_2::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/validator_register.txt"));
@@ -216,8 +253,8 @@ public class TestSuite {
                 .feePayer(otherAccountAddr)
                 .disableResourceAllocAndDestroy()
                 .actions(List.of(
-                        new UnregisterValidator(otherAccount.getPublicKey())
-                ))).signAndBuild(otherAccount::sign);
+                        new UnregisterValidator(TEST_ACCOUNT_2.getPublicKey())
+                ))).signAndBuild(TEST_ACCOUNT_2::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/validator_unregister.txt"));
@@ -227,8 +264,8 @@ public class TestSuite {
                 .feePayer(otherAccountAddr)
                 .disableResourceAllocAndDestroy()
                 .actions(List.of(
-                        new RegisterValidator(otherAccount.getPublicKey())
-                ))).signAndBuild(otherAccount::sign);
+                        new RegisterValidator(TEST_ACCOUNT_2.getPublicKey())
+                ))).signAndBuild(TEST_ACCOUNT_2::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/validator_re_register.txt"));
@@ -238,8 +275,8 @@ public class TestSuite {
                 .feePayer(otherAccountAddr)
                 .disableResourceAllocAndDestroy()
                 .actions(List.of(
-                        new StakeTokens(otherAccountAddr, otherAccount.getPublicKey(), Amount.ofTokens(200).toSubunits())
-                ))).signAndBuild(otherAccount::sign);
+                        new StakeTokens(otherAccountAddr, TEST_ACCOUNT_2.getPublicKey(), Amount.ofTokens(200).toSubunits())
+                ))).signAndBuild(TEST_ACCOUNT_2::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/other_stake_from_validator_1.txt"));
@@ -249,8 +286,8 @@ public class TestSuite {
                 .feePayer(otherAccountAddr)
                 .disableResourceAllocAndDestroy()
                 .actions(List.of(
-                        new UpdateAllowDelegationFlag(otherAccount.getPublicKey(), true)
-                ))).signAndBuild(otherAccount::sign);
+                        new UpdateAllowDelegationFlag(TEST_ACCOUNT_2.getPublicKey(), true)
+                ))).signAndBuild(TEST_ACCOUNT_2::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/validator_allow_delegation.txt"));
@@ -260,8 +297,8 @@ public class TestSuite {
                 .feePayer(otherAccountAddr)
                 .disableResourceAllocAndDestroy()
                 .actions(List.of(
-                        new StakeTokens(otherAccountAddr, otherAccount.getPublicKey(), Amount.ofTokens(200).toSubunits())
-                ))).signAndBuild(otherAccount::sign);
+                        new StakeTokens(otherAccountAddr, TEST_ACCOUNT_2.getPublicKey(), Amount.ofTokens(200).toSubunits())
+                ))).signAndBuild(TEST_ACCOUNT_2::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/other_stake_from_validator_2.txt"));
@@ -271,8 +308,8 @@ public class TestSuite {
                 .feePayer(accountAddr)
                 .disableResourceAllocAndDestroy()
                 .actions(List.of(
-                        new StakeTokens(accountAddr, otherAccount.getPublicKey(), Amount.ofTokens(200).toSubunits())
-                ))).signAndBuild(keyPair::sign);
+                        new StakeTokens(accountAddr, TEST_ACCOUNT_2.getPublicKey(), Amount.ofTokens(200).toSubunits())
+                ))).signAndBuild(TEST_ACCOUNT::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/xrd_stake.txt"));
@@ -292,8 +329,8 @@ public class TestSuite {
                 .feePayer(accountAddr)
                 .disableResourceAllocAndDestroy()
                 .actions(List.of(
-                        new UnstakeTokens(accountAddr, otherAccount.getPublicKey(), Amount.ofTokens(100).toSubunits())
-                ))).signAndBuild(keyPair::sign);
+                        new UnstakeTokens(accountAddr, TEST_ACCOUNT_2.getPublicKey(), Amount.ofTokens(100).toSubunits())
+                ))).signAndBuild(TEST_ACCOUNT::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/xrd_unstake1.txt"));
@@ -303,8 +340,8 @@ public class TestSuite {
                 .feePayer(accountAddr)
                 .disableResourceAllocAndDestroy()
                 .actions(List.of(
-                        new UnstakeTokens(accountAddr, otherAccount.getPublicKey(), Amount.ofTokens(100).toSubunits())
-                ))).signAndBuild(keyPair::sign);
+                        new UnstakeTokens(accountAddr, TEST_ACCOUNT_2.getPublicKey(), Amount.ofTokens(100).toSubunits())
+                ))).signAndBuild(TEST_ACCOUNT::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/xrd_unstake2.txt"));
@@ -316,7 +353,7 @@ public class TestSuite {
                 .disableResourceAllocAndDestroy()
                 .actions(List.of(
                         new TransferToken(REAddr.ofNativeToken(), accountAddr, accountAddr, Amount.ofTokens(5).toSubunits())
-                ))).signAndBuild(keyPair::sign);
+                ))).signAndBuild(TEST_ACCOUNT::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/other_transfer_to_self.txt"));
@@ -329,7 +366,7 @@ public class TestSuite {
                 .actions(List.of(
                         new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAccountAddr, Amount.ofTokens(5).toSubunits()),
                         new TransferToken(tokenAddr, accountAddr, otherAccountAddr, UInt256.TWO)
-                ))).signAndBuild(keyPair::sign);
+                ))).signAndBuild(TEST_ACCOUNT::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/other_transfer_mixed_tokens.txt"));
@@ -341,7 +378,7 @@ public class TestSuite {
                         new FeeReservePut(accountAddr, Amount.ofTokens(5).toSubunits()),
                         new TransferToken(tokenAddr, accountAddr, otherAccountAddr, UInt256.TWO),
                         new FeeReserveComplete(accountAddr)
-                ))).signAndBuild(keyPair::sign);
+                ))).signAndBuild(TEST_ACCOUNT::sign);
         System.out.println(toHexString(tx.getPayload()));
         results = sut.execute(List.of(tx));
         Files.write(toHexString(tx.getPayload()).getBytes(), new File("/Users/yulong/Desktop/docs/transaction-specs/test/samples/other_complex_fee.txt"));

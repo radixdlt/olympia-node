@@ -93,11 +93,19 @@ public final class MockedGenesisModule extends AbstractModule {
 	private final Set<ECPublicKey> validators;
 	private final Amount xrdPerValidator;
 	private final Amount stakePerValidator;
+	private ECPublicKey testAccount;
+	private Amount testAccountBalance;
 
 	public MockedGenesisModule(Set<ECPublicKey> validators, Amount xrdPerValidator, Amount stakePerValidator) {
 		this.validators = validators;
 		this.xrdPerValidator = xrdPerValidator;
 		this.stakePerValidator = stakePerValidator;
+	}
+
+	public MockedGenesisModule setTestAccount(ECPublicKey testAccount, Amount testAccountBalance) {
+		this.testAccount = testAccount;
+		this.testAccountBalance = testAccountBalance;
+		return this;
 	}
 
 	@Override
@@ -124,8 +132,12 @@ public final class MockedGenesisModule extends AbstractModule {
 	@Provides
 	@Genesis
 	public ImmutableList<TokenIssuance> tokenIssuanceList(@Genesis Set<ECPublicKey> validators) {
-		return validators.stream().map(v -> TokenIssuance.of(v, xrdPerValidator.toSubunits()))
+		var x = validators.stream().map(v -> TokenIssuance.of(v, xrdPerValidator.toSubunits()))
 			.sorted(Comparator.comparing(t -> t.receiver().toHex()))
-			.collect(ImmutableList.toImmutableList());
+			.collect(Collectors.toList());
+		if (this.testAccount != null) {
+			x.add(TokenIssuance.of(this.testAccount, this.testAccountBalance.toSubunits()));
+		}
+		return ImmutableList.<TokenIssuance>builder().addAll(x).build();
 	}
 }
