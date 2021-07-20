@@ -188,7 +188,7 @@ public class AWSSecrets {
 				var keyFileAwsSecret = new HashMap<String, Object>();
 				var publicKeyFileAwsSecret = new HashMap<String, Object>();
 				final NodeAddressing nodeAddressing = NodeAddressing.bech32(network.getNodeHrp());
-				final ValidatorAddressing validatorAddressing = ValidatorAddressing.bech32(network.getAccountHrp());
+				final ValidatorAddressing validatorAddressing = ValidatorAddressing.bech32(network.getValidatorHrp());
 				try {
 					var data = Files.readAllBytes(keyFilePath);
 					keyFileAwsSecret.put("key", data);
