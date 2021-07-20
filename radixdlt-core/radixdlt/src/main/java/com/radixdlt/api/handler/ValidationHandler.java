@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.api.store.ValidatorUptime;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.atom.SubstateTypeId;
@@ -194,12 +195,14 @@ public final class ValidationHandler {
 
 			// TODO: need to surround this with a lock
 			var bftData = (ValidatorBFTData) radixEngine.get(bftDataKey).orElseThrow();
+			var uptime = ValidatorUptime.create(bftData.proposalsCompleted(), bftData.proposalsMissed());
 
 			var validatorJson = jsonObject()
 				.put("address", addressing.forValidators().of(data.getValidatorKey()))
 				.put("totalDelegatedStake", data.getTotalStake())
 				.put("proposalsCompleted", bftData.proposalsCompleted())
-				.put("proposalsMissed", bftData.proposalsMissed());
+				.put("proposalsMissed", bftData.proposalsMissed())
+				.put("uptimePercentage", uptime.toPercentageString());
 
 			return json.put(validatorJson);
 		}, 100); // TODO: remove the 100 hardcode
