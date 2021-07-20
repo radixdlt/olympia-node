@@ -151,6 +151,10 @@ public class ActionEntry {
 		return to;
 	}
 
+	public boolean isKnown() {
+		return type != ActionType.UNKNOWN;
+	}
+
 	public String toString() {
 		return asJson().toString(2);
 	}

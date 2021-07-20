@@ -119,8 +119,8 @@ public class ArchiveAccountHandler {
 		return withRequiredParameters(
 			request,
 			List.of("address", "size"),
-			List.of("cursor"),
-			params -> allOf(parseAddress(params), parseSize(params), ok(parseInstantCursor(params)))
+			List.of("cursor", "verbose"),
+			params -> allOf(parseAddress(params), parseSize(params), ok(parseInstantCursor(params)), parseVerboseFlag(params))
 				.flatMap(accountService::getTransactionHistory)
 				.map(tuple -> tuple.map(ArchiveAccountHandler::formatHistoryResponse))
 		);
@@ -223,5 +223,9 @@ public class ArchiveAccountHandler {
 
 	private Result<REAddr> parseAddress(JSONObject params) {
 		return addressing.forAccounts().parseFunctional(params.getString("address"));
+	}
+
+	private Result<Boolean> parseVerboseFlag(JSONObject params) {
+		return ok(params.optBoolean("verbose", false));
 	}
 }

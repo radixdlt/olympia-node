@@ -134,6 +134,10 @@ public class TxHistoryEntry {
 		return new TxHistoryEntry(txId, date, fee, message, actions);
 	}
 
+	public TxHistoryEntry withActions(List<ActionEntry> actions) {
+		return new TxHistoryEntry(txId, timestamp, fee, message, actions);
+	}
+
 	public Instant timestamp() {
 		return timestamp;
 	}

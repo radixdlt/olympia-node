@@ -220,7 +220,7 @@ public class ArchiveAccountHandlerTest {
 	public void testTransactionHistoryPositional() {
 		var entry = createTxHistoryEntry();
 
-		when(accountService.getTransactionHistory(any(), eq(5), any()))
+		when(accountService.getTransactionHistory(any(), eq(5), any(), eq(false)))
 			.thenReturn(Result.ok(tuple(Optional.ofNullable(entry.timestamp()), List.of(entry))));
 
 		var params = jsonArray().put(ADDRESS).put(5);
@@ -242,10 +242,54 @@ public class ArchiveAccountHandlerTest {
 	public void testTransactionHistoryNamed() {
 		var entry = createTxHistoryEntry();
 
-		when(accountService.getTransactionHistory(any(), eq(5), any()))
+		when(accountService.getTransactionHistory(any(), eq(5), any(), eq(false)))
 			.thenReturn(Result.ok(tuple(Optional.ofNullable(entry.timestamp()), List.of(entry))));
 
 		var params = jsonObject().put("address", ADDRESS).put("size", "5");
+		var response = handler.handleAccountGetTransactionHistory(requestWith(params));
+
+		assertNotNull(response);
+
+		var result = response.getJSONObject("result");
+
+		assertTrue(result.has("cursor"));
+		assertTrue(result.has("transactions"));
+		var transactions = result.getJSONArray("transactions");
+		assertEquals(1, transactions.length());
+
+		validateHistoryEntry(entry, transactions.getJSONObject(0));
+	}
+
+	@Test
+	public void testTransactionHistoryVerbosePositional() {
+		var entry = createTxHistoryEntry();
+
+		when(accountService.getTransactionHistory(any(), eq(5), any(), eq(true)))
+			.thenReturn(Result.ok(tuple(Optional.ofNullable(entry.timestamp()), List.of(entry))));
+
+		var params = jsonArray().put(ADDRESS).put(5).put("0:0").put("true");
+		var response = handler.handleAccountGetTransactionHistory(requestWith(params));
+
+		assertNotNull(response);
+
+		var result = response.getJSONObject("result");
+
+		assertTrue(result.has("cursor"));
+		assertTrue(result.has("transactions"));
+		var transactions = result.getJSONArray("transactions");
+		assertEquals(1, transactions.length());
+
+		validateHistoryEntry(entry, transactions.getJSONObject(0));
+	}
+
+	@Test
+	public void testTransactionHistoryVerboseNamed() {
+		var entry = createTxHistoryEntry();
+
+		when(accountService.getTransactionHistory(any(), eq(5), any(), eq(true)))
+			.thenReturn(Result.ok(tuple(Optional.ofNullable(entry.timestamp()), List.of(entry))));
+
+		var params = jsonObject().put("address", ADDRESS).put("size", "5").put("verbose", true);
 		var response = handler.handleAccountGetTransactionHistory(requestWith(params));
 
 		assertNotNull(response);

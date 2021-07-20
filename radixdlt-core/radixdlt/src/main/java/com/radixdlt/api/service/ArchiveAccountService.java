@@ -97,9 +97,9 @@ public class ArchiveAccountService {
 	}
 
 	public Result<Tuple2<Optional<Instant>, List<TxHistoryEntry>>> getTransactionHistory(
-		REAddr address, int size, Optional<Instant> cursor
+		REAddr address, int size, Optional<Instant> cursor, boolean verbose
 	) {
-		return clientApiStore.getTransactionHistory(address, size, cursor)
+		return clientApiStore.getTransactionHistory(address, size, cursor, verbose)
 			.map(response -> tuple(calculateNewCursor(response), response));
 	}
 

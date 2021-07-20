@@ -157,10 +157,10 @@ public class ArchiveAccountServiceTest {
 	public void testGetTransactionHistory() {
 		var entry = createTxHistoryEntry();
 
-		when(clientApiStore.getTransactionHistory(eq(OWNER_ACCOUNT), eq(1), eq(Optional.empty())))
+		when(clientApiStore.getTransactionHistory(eq(OWNER_ACCOUNT), eq(1), eq(Optional.empty()), eq(false)))
 			.thenReturn(Result.ok(List.of(entry)));
 
-		archiveService.getTransactionHistory(OWNER_ACCOUNT, 1, Optional.empty())
+		archiveService.getTransactionHistory(OWNER_ACCOUNT, 1, Optional.empty(), false)
 			.onSuccess(tuple -> tuple.map((cursor, list) -> {
 				assertTrue(cursor.isPresent());
 				assertEquals(entry.timestamp(), cursor.get());

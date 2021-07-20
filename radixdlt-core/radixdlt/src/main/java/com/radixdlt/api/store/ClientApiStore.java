@@ -130,10 +130,11 @@ public interface ClientApiStore {
 	 * @param address client address
 	 * @param size number of elements to return
 	 * @param cursor optional cursor from previous request
+	 * @param verbose
 	 *
 	 * @return list of transaction history entries.
 	 */
-	Result<List<TxHistoryEntry>> getTransactionHistory(REAddr address, int size, Optional<Instant> cursor);
+	Result<List<TxHistoryEntry>> getTransactionHistory(REAddr address, int size, Optional<Instant> cursor, boolean verbose);
 
 	/**
 	 * Retrieve single transaction history entry.
