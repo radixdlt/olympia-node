@@ -19,8 +19,15 @@
 package com.radixdlt.integration.staking;
 
 import com.google.common.collect.ClassToInstanceMap;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.store.ValidatorUptime;
+import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.Environment;
@@ -28,7 +35,9 @@ import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.integration.FailOnEvent;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -109,6 +118,8 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import io.reactivex.rxjava3.schedulers.Timed;
 
@@ -238,6 +249,9 @@ public class StakingUnstakingValidatorsTest {
 					bind(Environment.class).toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
+					bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
+					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class).addBinding()
+						.to(BerkeleyValidatorUptimeArchiveStore.class);
 				}
 
 				@Provides
@@ -294,33 +308,48 @@ public class StakingUnstakingValidatorsTest {
 		private final EpochChange epochChange;
 		private final RadixEngine<LedgerAndBFTProof> radixEngine;
 		private final ClassToInstanceMap<Object> lastEvents;
+		private final BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore;
+		private final Forks forks;
 
 		@Inject
 		private NodeState(
 			@Self String self,
 			ClassToInstanceMap<Object> lastEvents,
 			EpochChange epochChange,
-			RadixEngine<LedgerAndBFTProof> radixEngine
+			RadixEngine<LedgerAndBFTProof> radixEngine,
+			BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore,
+			Forks forks
 		) {
 			this.self = self;
 			this.lastEvents = lastEvents;
 			this.epochChange = epochChange;
 			this.radixEngine = radixEngine;
+			this.uptimeArchiveStore = uptimeArchiveStore;
+			this.forks = forks;
 		}
 
 		public String getSelf() {
 			return self;
 		}
 
-		public long getEpoch() {
+		public long getExpectedNumberOfRounds() {
+			var epochView = getEpochView();
+			var curEpoch = getEpochView().getEpoch();
+			return LongStream.range(1, curEpoch)
+				.map(i -> forks.get(i).getMaxRounds().number())
+				.sum() + epochView.getView().number();
+		}
+
+		public EpochView getEpochView() {
 			if (lastEvents.getInstance(LedgerUpdate.class) == null) {
-				return epochChange.getEpoch();
+				return EpochView.of(epochChange.getEpoch(), View.genesis());
 			}
 			var epochChange = lastEvents.getInstance(LedgerUpdate.class).getStateComputerOutput().getInstance(EpochChange.class);
 			if (epochChange != null) {
-				return epochChange.getEpoch();
+				return EpochView.of(epochChange.getEpoch(), View.genesis());
 			} else {
-				return lastEvents.getInstance(LedgerUpdate.class).getTail().getEpoch();
+				var tail = lastEvents.getInstance(LedgerUpdate.class).getTail();
+				return EpochView.of(tail.getEpoch(), tail.getView());
 			}
 		}
 
@@ -352,6 +381,10 @@ public class StakingUnstakingValidatorsTest {
 			);
 
 			return map;
+		}
+
+		public Map<ECPublicKey, ValidatorUptime> getUptime() {
+			return uptimeArchiveStore.getUptimeTwoWeeks();
 		}
 
 		public UInt256 getTotalNativeTokens() {
@@ -447,16 +480,21 @@ public class StakingUnstakingValidatorsTest {
 		var nodeState = reloadNodeState();
 		logger.info("Node {}", nodeState.getSelf());
 		logger.info("Initial {}", Amount.ofSubunits(initialCount));
-		var epoch = nodeState.getEpoch();
-		logger.info("Epoch {}", epoch);
+		var epochView = nodeState.getEpochView();
+		var epoch = epochView.getEpoch();
+		var totalRounds = nodeState.getExpectedNumberOfRounds();
+		logger.info("Epoch {} Round {} Total Rounds {}", epochView.getEpoch(), epochView.getView().number(), totalRounds);
 		var maxEmissions = UInt256.from(maxRounds).multiply(REWARDS_PER_PROPOSAL.toSubunits()).multiply(UInt256.from(epoch - 1));
 		logger.info("Max emissions {}", Amount.ofSubunits(maxEmissions));
 		var finalCount = nodeState.getTotalNativeTokens();
-
 		assertThat(finalCount).isGreaterThan(initialCount);
 		var diff = finalCount.subtract(initialCount);
 		logger.info("Difference {}", Amount.ofSubunits(diff));
 		assertThat(diff).isLessThanOrEqualTo(maxEmissions);
+		var totalUptime = nodeState.getUptime().values().stream().reduce(ValidatorUptime::merge).orElse(ValidatorUptime.empty());
+		assertThat(totalUptime.getProposalsCompleted() + totalUptime.getProposalsMissed())
+			.isEqualTo(totalRounds);
+		logger.info("Total uptime {}", totalUptime);
 
 		for (var e : nodeState.getValidators().entrySet()) {
 			logger.info("{} {}", e.getKey(), e.getValue());

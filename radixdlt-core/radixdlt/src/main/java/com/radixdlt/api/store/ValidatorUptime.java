@@ -49,4 +49,9 @@ public final class ValidatorUptime {
 	public long getProposalsMissed() {
 		return proposalsMissed;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{completed=%s missed=%s}", this.getClass().getSimpleName(), proposalsCompleted, proposalsMissed);
+	}
 }
