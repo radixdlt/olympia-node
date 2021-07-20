@@ -64,11 +64,6 @@
 
 package com.radixdlt.api.store.berkeley;
 
-import com.radixdlt.application.tokens.ResourceCreatedEvent;
-import com.radixdlt.constraintmachine.REEvent;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.forks.Forks;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -81,6 +76,7 @@ import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
 import com.radixdlt.api.construction.TxnParser;
+import com.radixdlt.api.data.ActionEntry;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.data.TxHistoryEntry;
@@ -88,23 +84,28 @@ import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.ClientApiStoreException;
 import com.radixdlt.api.store.TokenDefinitionRecord;
 import com.radixdlt.api.store.TransactionParser;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.application.tokens.ResourceCreatedEvent;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.REOutput;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt384;
@@ -435,7 +436,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<List<TxHistoryEntry>> getTransactionHistory(REAddr addr, int size, Optional<Instant> ptr) {
+	public Result<List<TxHistoryEntry>> getTransactionHistory(REAddr addr, int size, Optional<Instant> ptr, boolean verbose) {
 		if (size <= 0) {
 			return INVALID_PAGE_SIZE.with(size).result();
 		}
@@ -477,7 +478,10 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 				var reAddr = addrFromKey(key).fold(__ -> REAddr.ofSystem(), v -> v);
 
 				if (reAddr.equals(addr)) {
-					restore(serialization, data.getData(), TxHistoryEntry.class).onSuccess(list::add);
+					restore(serialization, data.getData(), TxHistoryEntry.class)
+						.flatMap(entry -> filterOtherActions(entry, verbose))
+						.onSuccess(list::add);
+
 					rangeStarted = true;
 				} else {
 					if (rangeStarted) {
@@ -497,6 +501,24 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 
 			return Result.ok(list);
 		}
+	}
+
+	private Result<TxHistoryEntry> filterOtherActions(TxHistoryEntry entry, boolean verbose) {
+		if (verbose) {
+			return Result.ok(entry);
+		}
+
+		var filteredActions = entry.getActions().stream()
+			.filter(ActionEntry::isKnown)
+			.collect(Collectors.toList());
+
+		return filteredActions.isEmpty()
+			   ? Result.fail(Failure.irrelevant())
+			   : Result.ok(entry.withActions(filteredActions));
+	}
+
+	private boolean validateHistoryEntry(TxHistoryEntry entry) {
+		return !entry.getActions().isEmpty();
 	}
 
 	@Override

@@ -323,7 +323,7 @@ public class BerkeleyClientApiStoreTest {
 		var clientApiStore = prepareApiStore(tx);
 		var newCursor = new AtomicReference<Instant>();
 
-		clientApiStore.getTransactionHistory(TOKEN_ACCOUNT, 1, Optional.empty())
+		clientApiStore.getTransactionHistory(TOKEN_ACCOUNT, 1, Optional.empty(), true)
 			.onFailure(this::failWithMessage)
 			.onSuccess(list -> {
 				assertEquals(1, list.size());
@@ -345,7 +345,7 @@ public class BerkeleyClientApiStoreTest {
 
 		assertNotNull(newCursor.get());
 
-		clientApiStore.getTransactionHistory(TOKEN_ACCOUNT, 1, Optional.of(newCursor.get()))
+		clientApiStore.getTransactionHistory(TOKEN_ACCOUNT, 1, Optional.of(newCursor.get()), true)
 			.onFailure(this::failWithMessage)
 			.onSuccess(list -> assertEquals(0, list.size()));
 	}
@@ -381,7 +381,7 @@ public class BerkeleyClientApiStoreTest {
 		).signAndBuild(TOKEN_KEYPAIR::sign);
 
 		var clientApiStore = prepareApiStore(tx);
-		clientApiStore.getTransactionHistory(TOKEN_ACCOUNT, 0, Optional.empty())
+		clientApiStore.getTransactionHistory(TOKEN_ACCOUNT, 0, Optional.empty(), false)
 			.onSuccess(list -> fail("Request must be rejected"));
 	}
 

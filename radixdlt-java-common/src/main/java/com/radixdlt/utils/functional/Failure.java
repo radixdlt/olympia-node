@@ -109,6 +109,15 @@ public interface Failure {
 		return new FailureImpl(code, message);
 	}
 
+	/**
+	 * Create instance of Failure for cases when exact error is irrelevant.
+	 *
+	 * @return created instance of Failure
+	 */
+	static Failure irrelevant() {
+		return failure(-1, "irrelevant");
+	}
+
 	class FailureImpl implements Failure {
 		private final int code;
 		private final String message;
