@@ -85,6 +85,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
@@ -457,6 +458,13 @@ public final class RadixEngine<M> {
 	public REParser getParser() {
 		synchronized (stateUpdateEngineLock) {
 			return parser;
+		}
+	}
+
+	public SubstateDeserialization getSubstateDeserialization() {
+		synchronized (stateUpdateEngineLock) {
+			var deserialization = constraintMachine.getDeserialization();
+			return deserialization;
 		}
 	}
 

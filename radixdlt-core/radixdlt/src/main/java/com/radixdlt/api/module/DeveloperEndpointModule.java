@@ -122,6 +122,13 @@ public class DeveloperEndpointModule extends AbstractModule {
 
 	@DeveloperEndpoint
 	@ProvidesIntoMap
+	@StringMapKey("developer.parse_substate")
+	public JsonRpcHandler developerParseSubstate(DeveloperHandler developerHandler) {
+		return developerHandler::handleParseSubstate;
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
 	@StringMapKey("developer.parse_address")
 	public JsonRpcHandler developerParseAddress(DeveloperHandler developerHandler) {
 		return developerHandler::handleParseAddress;

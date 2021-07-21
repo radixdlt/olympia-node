@@ -301,6 +301,24 @@ public final class DeveloperHandler {
 		);
 	}
 
+	public JSONObject handleParseSubstate(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("data"),
+			params -> Result.wrap(
+				e -> Failure.failure(-1, e.getMessage()),
+				() -> {
+					var data = Bytes.fromHexString(params.getString("data"));
+					var deserialization = radixEngine.getSubstateDeserialization();
+					var substate = deserialization.deserialize(data);
+					return jsonObject()
+						.put("parsed", substate.toString());
+				}
+			)
+		);
+	}
+
+
 	private static Pair<String, ECPublicKey> parseAddress(String type, String address) throws DeserializeException {
 		switch (type) {
 			case "account":
