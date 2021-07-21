@@ -135,10 +135,10 @@ public final class PeerDiscovery {
 			final var seedNodes = seedNodesConfigParser.getResolvedSeedNodes();
 			this.addressBook.addUncheckedPeers(seedNodes);
 
-			final var peersToAsk = new ArrayList<>(this.peerManager.activeChannels());
-
-			Collections.shuffle(peersToAsk);
-			peersToAsk.stream()
+			final var channels = new ArrayList<>(this.peerManager.activeChannels());
+			Collections.shuffle(channels);
+			channels.stream()
+				.filter(not(c -> peersAsked.contains(c.getRemoteNodeId())))
 				.limit(MAX_REQUESTS_SENT_AT_ONCE)
 				.forEach(peer -> {
 					peersAsked.add(peer.getRemoteNodeId());
