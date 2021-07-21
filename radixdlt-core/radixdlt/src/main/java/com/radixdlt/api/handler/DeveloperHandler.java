@@ -67,6 +67,7 @@ package com.radixdlt.api.handler;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.service.ActionParserService;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.atom.Txn;
@@ -86,6 +87,7 @@ import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.store.TxnIndex;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -316,6 +318,22 @@ public final class DeveloperHandler {
 					return jsonObject()
 						.put("hrp", hrp)
 						.put("public_key", Bytes.toHexString(pubKey.getCompressedBytes()));
+				}
+			)
+		);
+	}
+
+	public JSONObject handleParseAmount(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("amount"),
+			params -> Result.wrap(
+				e -> Failure.failure(-1, e.getMessage()),
+				() -> {
+					var amountString = params.getString("amount");
+					var amount = UInt256.from(amountString);
+					return jsonObject()
+						.put("parsed", Amount.ofSubunits(amount).toString());
 				}
 			)
 		);

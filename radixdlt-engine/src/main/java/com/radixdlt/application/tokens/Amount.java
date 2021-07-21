@@ -109,7 +109,7 @@ public final class Amount {
 	public String toString() {
 		var i = new BigInteger(1, subunits.toByteArray());
 		var d = new BigDecimal(i);
-		var amt = d.divide(new BigDecimal(10).pow(TokenUtils.SUB_UNITS_POW_10), 10, RoundingMode.DOWN);
-		return amt.toPlainString();
+		var amt = d.divide(new BigDecimal(10).pow(TokenUtils.SUB_UNITS_POW_10), TokenUtils.SUB_UNITS_POW_10, RoundingMode.DOWN);
+		return amt.stripTrailingZeros().toPlainString();
 	}
 }
