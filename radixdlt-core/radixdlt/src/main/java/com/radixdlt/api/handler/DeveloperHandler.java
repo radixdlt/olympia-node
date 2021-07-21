@@ -70,8 +70,11 @@ import com.radixdlt.api.service.ActionParserService;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
@@ -144,7 +147,15 @@ public final class DeveloperHandler {
 	private Function<Bucket, String> getKeyMapper(String groupBy) {
 		switch (groupBy) {
 			case "resource":
-				return b -> b.resourceAddr() == null ? "stake-ownership" : b.resourceAddr().toString();
+				return b -> {
+					if (b.resourceAddr() == null) {
+						return "stake-ownership";
+					}
+
+					var key = SystemMapKey.ofResourceData(b.resourceAddr(), SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+					var meta = (TokenResourceMetadata) radixEngine.get(key).orElseThrow();
+					return addressing.forResources().of(meta.getSymbol(), b.resourceAddr());
+				};
 			case "owner":
 				return b -> b.getOwner() == null ? "null" : addressing.forAccounts().of(b.getOwner());
 			case "validator":
