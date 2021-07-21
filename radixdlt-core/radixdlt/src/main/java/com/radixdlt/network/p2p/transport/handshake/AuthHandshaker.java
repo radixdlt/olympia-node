@@ -77,11 +77,14 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.utils.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
 import org.bouncycastle.crypto.digests.KeccakDigest;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -99,6 +102,8 @@ import static com.radixdlt.utils.Bytes.xor;
  * Handles the auth handshake to create an encrypted communication channel between peers.
  */
 public final class AuthHandshaker {
+	private static final Logger log = LogManager.getLogger();
+
 	private static final int NONCE_SIZE = 32;
 	private static final int MIN_PADDING = 100;
 	private static final int MAX_PADDING = 300;
@@ -167,8 +172,11 @@ public final class AuthHandshaker {
 	public Pair<byte[], AuthHandshakeResult> handleInitialMessage(byte[] data)
 			throws IOException, InvalidCipherTextException, PublicKeyException {
 		final var sizeBytes = Arrays.copyOfRange(data, 0, 2);
+		log.info("Handling auth initial message, payload size = {}", Hex.toHexString(sizeBytes));
 		final var encryptedPayload = Arrays.copyOfRange(data, 2, data.length);
+		log.info("Encrypted payload size = {}", encryptedPayload.length);
 		final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
+		log.info("Plaintext size = {}", plaintext.length);
 		final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
 		final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
 
