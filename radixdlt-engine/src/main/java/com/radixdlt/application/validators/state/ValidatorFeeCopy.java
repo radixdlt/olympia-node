@@ -120,4 +120,14 @@ public final class ValidatorFeeCopy implements ValidatorData {
 			&& Objects.equals(this.validatorKey, other.validatorKey)
 			&& this.curRakePercentage == other.curRakePercentage;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{epoch=%s validator=%s feePercentage=%s}",
+			this.getClass().getSimpleName(),
+			epochUpdate,
+			validatorKey.toHex(),
+			curRakePercentage
+		);
+	}
 }
