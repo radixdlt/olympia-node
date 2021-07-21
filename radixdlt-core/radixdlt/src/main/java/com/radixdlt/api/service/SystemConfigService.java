@@ -443,7 +443,7 @@ public class SystemConfigService {
 			.put("peerLivenessCheckInterval", p2PConfig.peerLivenessCheckInterval())
 			.put("pingTimeout", p2PConfig.pingTimeout())
 			.put("seedNodes", fromList(p2PConfig.seedNodes(), seedNode -> seedNode))
-			.put("nodeId", addressing.forNodes().of(self));
+			.put("nodeAddress", addressing.forNodes().of(self));
 	}
 
 	private JSONObject peerToJson(PeersView.PeerInfo peer) {
