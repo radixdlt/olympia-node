@@ -100,7 +100,9 @@ final class MockP2PNetwork {
 
 	void createChannel(int clientPeerIndex, RadixNodeUri serverPeerUri) {
 		final var clientPeer = nodes.get(clientPeerIndex);
-		final var serverPeer = nodes.stream().filter(p -> p.uri.equals(serverPeerUri)).findAny().get();
+		final var serverPeer = nodes.stream()
+			.filter(p -> p.uri.getHost().equals(serverPeerUri.getHost()) && p.uri.getPort() == serverPeerUri.getPort())
+			.findAny().get();
 
 		final var clientSocketChannel = mock(SocketChannel.class);
 		final var serverSocketChannel = mock(SocketChannel.class);

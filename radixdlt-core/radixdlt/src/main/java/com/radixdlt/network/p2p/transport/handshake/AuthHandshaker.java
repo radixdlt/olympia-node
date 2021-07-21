@@ -164,57 +164,64 @@ public final class AuthHandshaker {
 		);
 	}
 
-	public Pair<byte[], AuthHandshakeResult> handleInitialMessage(byte[] data)
-			throws IOException, InvalidCipherTextException, PublicKeyException {
-		final var sizeBytes = Arrays.copyOfRange(data, 0, 2);
-		final var encryptedPayload = Arrays.copyOfRange(data, 2, data.length);
-		final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
-		final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
-		final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
+	public Pair<byte[], AuthHandshakeResult> handleInitialMessage(byte[] data) throws IOException {
+		try {
+			final var sizeBytes = Arrays.copyOfRange(data, 0, 2);
+			final var encryptedPayload = Arrays.copyOfRange(data, 2, data.length);
+			final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
+			final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
+			final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
 
-		if (message.getNetworkId() != this.magic) {
-			return Pair.of(null, AuthHandshakeResult.error(
-				"Network ID mismatch",
-				Optional.of(NodeId.fromPublicKey(remotePubKey))
-			));
+			if (message.getNetworkId() != this.magic) {
+				return Pair.of(null, AuthHandshakeResult.error(
+					"Network ID mismatch",
+					Optional.of(NodeId.fromPublicKey(remotePubKey))
+				));
+			}
+
+			final var response = new AuthResponseMessage(
+				HashCode.fromBytes(ephemeralKey.getPublicKey().getBytes()),
+				HashCode.fromBytes(nonce)
+			);
+			final var encodedResponse = serialization.toDson(response, DsonOutput.Output.WIRE);
+
+			final var encryptedSize = encodedResponse.length + ECIESCoder.OVERHEAD_SIZE;
+			final var sizePrefix = ByteBuffer.allocate(2).putShort((short) encryptedSize).array();
+			final var encryptedResponsePayload =
+				ECIESCoder.encrypt(remotePubKey.getEcPoint(), encodedResponse, sizePrefix);
+			final var packet = new byte[sizePrefix.length + encryptedResponsePayload.length];
+			System.arraycopy(sizePrefix, 0, packet, 0, sizePrefix.length);
+			System.arraycopy(encryptedResponsePayload, 0, packet, sizePrefix.length, encryptedResponsePayload.length);
+
+			final var remoteEphemeralKey = extractEphemeralKey(
+				message.getSignature(),
+				message.getNonce(),
+				remotePubKey
+			);
+
+			this.initiatePacketOpt = Optional.of(data);
+			this.responsePacketOpt = Optional.of(packet);
+			this.remotePubKeyOpt = Optional.of(remotePubKey);
+
+			final var handshakeResult = finalizeHandshake(remoteEphemeralKey, message.getNonce());
+			return Pair.of(packet, handshakeResult);
+		} catch (PublicKeyException | InvalidCipherTextException ex) {
+			return Pair.of(null, AuthHandshakeResult.error("Handshake decryption failed", Optional.empty()));
 		}
-
-		final var response = new AuthResponseMessage(
-			HashCode.fromBytes(ephemeralKey.getPublicKey().getBytes()),
-			HashCode.fromBytes(nonce)
-		);
-		final var encodedResponse = serialization.toDson(response, DsonOutput.Output.WIRE);
-
-		final var encryptedSize = encodedResponse.length + ECIESCoder.OVERHEAD_SIZE;
-		final var sizePrefix = ByteBuffer.allocate(2).putShort((short) encryptedSize).array();
-		final var encryptedResponsePayload =
-			ECIESCoder.encrypt(remotePubKey.getEcPoint(), encodedResponse, sizePrefix);
-		final var packet = new byte[sizePrefix.length + encryptedResponsePayload.length];
-		System.arraycopy(sizePrefix, 0, packet, 0, sizePrefix.length);
-		System.arraycopy(encryptedResponsePayload, 0, packet, sizePrefix.length, encryptedResponsePayload.length);
-
-		final var remoteEphemeralKey = extractEphemeralKey(
-			message.getSignature(),
-			message.getNonce(),
-			remotePubKey
-		);
-
-		this.initiatePacketOpt = Optional.of(data);
-		this.responsePacketOpt = Optional.of(packet);
-		this.remotePubKeyOpt = Optional.of(remotePubKey);
-
-		final var handshakeResult = finalizeHandshake(remoteEphemeralKey, message.getNonce());
-		return Pair.of(packet, handshakeResult);
 	}
 
-	public AuthHandshakeResult handleResponseMessage(byte[] data) throws IOException, InvalidCipherTextException, PublicKeyException {
-		final var sizeBytes = Arrays.copyOfRange(data, 0, 2);
-		final var encryptedPayload = Arrays.copyOfRange(data, 2, data.length);
-		final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
-		final var message = serialization.fromDson(plaintext, AuthResponseMessage.class);
-		this.responsePacketOpt = Optional.of(data);
-		final var remoteEphemeralKey = ECPublicKey.fromBytes(message.getEphemeralPublicKey().asBytes());
-		return finalizeHandshake(remoteEphemeralKey, message.getNonce());
+	public AuthHandshakeResult handleResponseMessage(byte[] data) throws IOException {
+		try {
+			final var sizeBytes = Arrays.copyOfRange(data, 0, 2);
+			final var encryptedPayload = Arrays.copyOfRange(data, 2, data.length);
+			final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
+			final var message = serialization.fromDson(plaintext, AuthResponseMessage.class);
+			this.responsePacketOpt = Optional.of(data);
+			final var remoteEphemeralKey = ECPublicKey.fromBytes(message.getEphemeralPublicKey().asBytes());
+			return finalizeHandshake(remoteEphemeralKey, message.getNonce());
+		} catch (PublicKeyException | InvalidCipherTextException ex) {
+			return AuthHandshakeResult.error("Handshake decryption failed", Optional.empty());
+		}
 	}
 
 	private ECPublicKey extractEphemeralKey(ECDSASignature signature, HashCode nonce, ECPublicKey publicKey) {

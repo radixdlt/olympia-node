@@ -68,6 +68,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 import org.radix.serialization.SerializeMessageObject;
 
 import java.time.Instant;
@@ -91,7 +92,8 @@ public class AddressBookEntrySerializeTest extends SerializeMessageObject<Addres
 			"127.0.0.1",
 			30000
 		);
-		final var addressEntry = new AddressBookEntry.PeerAddressEntry(uri, Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong()))));
+		final var blacklisted = rnd.nextBoolean();
+		final var addressEntry = new PeerAddressEntry(uri, Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong()))), blacklisted);
 		return new AddressBookEntry(NodeId.fromPublicKey(keyPair.getPublicKey()), bannedUntil, ImmutableSet.of(addressEntry));
 	}
 }

@@ -73,6 +73,7 @@ import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -146,6 +147,7 @@ public final class AddressBook {
 				.stream()
 				.filter(not(AddressBookEntry::isBanned))
 				.flatMap(e -> e.getKnownAddresses().stream())
+				.filter(not(PeerAddressEntry::blacklisted))
 				.sorted(entryComparator)
 				.map(AddressBookEntry.PeerAddressEntry::getUri)
 				.findFirst();
@@ -172,6 +174,7 @@ public final class AddressBook {
 			.stream()
 			.filter(not(AddressBookEntry::isBanned))
 			.flatMap(e -> e.getKnownAddresses().stream())
+			.filter(not(PeerAddressEntry::blacklisted))
 			.sorted(entryComparator)
 			.map(AddressBookEntry.PeerAddressEntry::getUri);
 	}
@@ -207,5 +210,20 @@ public final class AddressBook {
 
 	public ImmutableMap<NodeId, AddressBookEntry> knownPeers() {
 		return ImmutableMap.copyOf(knownPeers);
+	}
+
+	public void blacklist(RadixNodeUri uri) {
+		synchronized (lock) {
+			final var maybeExistingEntry = this.knownPeers.get(uri.getNodeId());
+			if (maybeExistingEntry == null) {
+				final var newEntry = AddressBookEntry.createBlacklisted(uri);
+				this.knownPeers.put(uri.getNodeId(), newEntry);
+				persistEntry(newEntry);
+			} else {
+				final var updatedEntry = maybeExistingEntry.withBlacklistedUri(uri);
+				this.knownPeers.put(uri.getNodeId(), updatedEntry);
+				persistEntry(updatedEntry);
+			}
+		}
 	}
 }

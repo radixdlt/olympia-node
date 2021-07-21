@@ -64,179 +64,50 @@
 
 package com.radixdlt.network.p2p;
 
-import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.NodeAddressing;
+import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
+import com.radixdlt.networks.Network;
+import org.junit.After;
+import org.junit.Test;
 
-import java.util.Objects;
+import java.net.URI;
+import java.util.Set;
 
-public interface PeerEvent {
+import static org.junit.Assert.assertTrue;
 
-	final class PeerConnected implements PeerEvent {
+public final class FailedHandshakeTest extends DeterministicP2PNetworkTest {
 
-		private final PeerChannel channel;
-
-		public static PeerConnected create(PeerChannel channel) {
-			return new PeerConnected(channel);
-		}
-
-		private PeerConnected(PeerChannel channel) {
-			this.channel = channel;
-		}
-
-		public PeerChannel getChannel() {
-			return this.channel;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-			final var that = (PeerConnected) o;
-			return Objects.equals(channel, that.channel);
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(channel);
-		}
+	@After
+	public void cleanup() {
+		testNetworkRunner.cleanup();
 	}
 
-	final class PeerDisconnected implements PeerEvent {
+	@Test
+	public void test_failed_handshake() throws Exception {
+		setupTestRunner(2, defaultProperties());
 
-		private final PeerChannel channel;
+		final var correctUri = uriOfNode(1);
 
-		public static PeerDisconnected create(PeerChannel channel) {
-			return new PeerDisconnected(channel);
-		}
+		final var messedUpUri = RadixNodeUri.fromUri(new URI(
+			String.format(
+				"radix://%s@%s:%s",
+				NodeAddressing.of(Network.LOCALNET.getNodeHrp(), ECKeyPair.generateNew().getPublicKey()),
+				correctUri.getHost(),
+				correctUri.getPort()
+			)
+		));
 
-		private PeerDisconnected(PeerChannel channel) {
-			this.channel = channel;
-		}
+		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(messedUpUri));
 
-		public PeerChannel getChannel() {
-			return this.channel;
-		}
+		final var channel1Future = testNetworkRunner.peerManager(0)
+			.findOrCreateChannel(messedUpUri.getNodeId());
 
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-			final var that = (PeerDisconnected) o;
-			return Objects.equals(channel, that.channel);
-		}
+		processAll();
 
-		@Override
-		public int hashCode() {
-			return Objects.hash(channel);
-		}
-	}
+		assertTrue(channel1Future.isCompletedExceptionally());
 
-	final class PeerLostLiveness implements PeerEvent {
-
-		private final NodeId nodeId;
-
-		public static PeerLostLiveness create(NodeId nodeId) {
-			return new PeerLostLiveness(nodeId);
-		}
-
-		private PeerLostLiveness(NodeId nodeId) {
-			this.nodeId = nodeId;
-		}
-
-		public NodeId getNodeId() {
-			return this.nodeId;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-			final var that = (PeerLostLiveness) o;
-			return Objects.equals(nodeId, that.nodeId);
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(nodeId);
-		}
-	}
-
-	final class PeerBanned implements PeerEvent {
-
-		private final NodeId nodeId;
-
-		public static PeerBanned create(NodeId nodeId) {
-			return new PeerBanned(nodeId);
-		}
-
-		private PeerBanned(NodeId nodeId) {
-			this.nodeId = nodeId;
-		}
-
-		public NodeId getNodeId() {
-			return this.nodeId;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-			final var that = (PeerBanned) o;
-			return Objects.equals(nodeId, that.nodeId);
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(nodeId);
-		}
-	}
-
-	final class PeerConnectionFailed implements PeerEvent {
-
-		private final RadixNodeUri uri;
-
-		public static PeerConnectionFailed create(RadixNodeUri uri) {
-			return new PeerConnectionFailed(uri);
-		}
-
-		private PeerConnectionFailed(RadixNodeUri uri) {
-			this.uri = uri;
-		}
-
-		public RadixNodeUri getUri() {
-			return this.uri;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-			final var that = (PeerConnectionFailed) o;
-			return Objects.equals(uri, that.uri);
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(uri);
-		}
+		final var entry = testNetworkRunner.addressBook(0).findById(messedUpUri.getNodeId()).orElseThrow();
+		assertTrue(entry.getKnownAddresses().stream().findFirst().orElseThrow().blacklisted());
 	}
 }
