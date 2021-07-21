@@ -70,7 +70,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 
 import java.util.OptionalLong;
 
@@ -82,13 +82,16 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
 		long rakeIncreaseDebounceEpochLength,
 		int maxRakeIncrease
 	) {
+		if (rakeIncreaseDebounceEpochLength < 0 || maxRakeIncrease < 0) {
+			throw new IllegalArgumentException();
+		}
 		this.rakeIncreaseDebounceEpochLength = rakeIncreaseDebounceEpochLength;
 		this.maxRakeIncrease = maxRakeIncrease;
 	}
 
 	@Override
 	public void construct(UpdateValidatorFee action, TxBuilder builder) throws TxBuilderException {
-		builder.down(ValidatorRakeCopy.class, action.validatorKey());
+		builder.down(ValidatorFeeCopy.class, action.validatorKey());
 		var curRakePercentage = builder.read(ValidatorStakeData.class, action.validatorKey())
 			.getRakePercentage();
 
@@ -98,10 +101,10 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
 			throw new TxBuilderException("Max rake increase is " + maxRakeIncrease + " but trying to increase " + rakeIncrease);
 		}
 
-		var epochDiff = isIncrease ? rakeIncreaseDebounceEpochLength : 1;
+		var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
 		var curEpoch = builder.readSystem(EpochData.class);
 		var epoch = curEpoch.getEpoch() + epochDiff;
-		builder.up(new ValidatorRakeCopy(
+		builder.up(new ValidatorFeeCopy(
 			OptionalLong.of(epoch),
 			action.validatorKey(),
 			action.getFeePercentage()

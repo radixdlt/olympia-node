@@ -82,7 +82,7 @@ import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
@@ -289,11 +289,11 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		prepare(
 			txBuilder,
 			validatorsToUpdate,
-			ValidatorRakeCopy.class,
+			ValidatorFeeCopy.class,
 			SubstateTypeId.VALIDATOR_RAKE_COPY.id(),
 			closingEpoch.getEpoch() + 1,
 			(v, u) -> v.setRakePercentage(u.getRakePercentage()),
-			u -> new ValidatorRakeCopy(u.getValidatorKey(), u.getRakePercentage())
+			u -> new ValidatorFeeCopy(u.getValidatorKey(), u.getRakePercentage())
 		);
 
 		// Update owners

@@ -75,7 +75,7 @@ import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
@@ -141,9 +141,9 @@ public class AccountInfoService {
 		return (ValidatorRegisteredCopy) radixEngine.get(validatorDataKey).orElse(ValidatorRegisteredCopy.createVirtual(bftKey));
 	}
 
-	public ValidatorRakeCopy getMyNextValidatorFee() {
+	public ValidatorFeeCopy getMyNextValidatorFee() {
 		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_RAKE_COPY.id(), bftKey.getCompressedBytes());
-		return (ValidatorRakeCopy) radixEngine.get(validatorDataKey).orElse(ValidatorRakeCopy.createVirtual(bftKey));
+		return (ValidatorFeeCopy) radixEngine.get(validatorDataKey).orElse(ValidatorFeeCopy.createVirtual(bftKey));
 	}
 
 	public ValidatorOwnerCopy getMyNextEpochValidatorOwner() {

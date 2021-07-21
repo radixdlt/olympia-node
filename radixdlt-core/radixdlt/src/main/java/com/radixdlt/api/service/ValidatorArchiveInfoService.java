@@ -73,7 +73,7 @@ import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
@@ -137,7 +137,7 @@ public class ValidatorArchiveInfoService {
 			ValidatorOwnerCopy.class,
 			AllowDelegationFlag.class,
 			ValidatorMetaData.class,
-			ValidatorRakeCopy.class
+			ValidatorFeeCopy.class
 		);
 		var nextEpochValidators = NextEpochValidators.create();
 		for (var index : indices) {

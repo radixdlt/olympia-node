@@ -94,23 +94,17 @@ import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_PREPARE_TX;
 import static com.radixdlt.utils.functional.Result.allOf;
 
 public final class DeveloperHandler {
-	private final Addressing addressing;
-	private final ActionParserService actionParserService;
 	private final GenesisBuilder genesisBuilder;
 	private final REParser parser;
 	private final TxnIndex txnIndex;
 
 	@Inject
 	public DeveloperHandler(
-		ActionParserService actionParserService,
 		GenesisBuilder genesisBuilder,
-		Addressing addressing,
 		REParser parser,
 		TxnIndex txnIndex
 	) {
-		this.actionParserService = actionParserService;
 		this.genesisBuilder = genesisBuilder;
-		this.addressing = addressing;
 		this.parser = parser;
 		this.txnIndex = txnIndex;
 	}
@@ -135,18 +129,23 @@ public final class DeveloperHandler {
 	public JSONObject handleGenesisConstruction(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			List.of("actions"),
-			params ->
-				allOf(safeArray(params, "actions"))
-					.flatMap(actions -> actionParserService.parse(actions).flatMap(this::build)
-						.map(p -> {
-							var o = jsonObject();
-							var txns = jsonArray();
-							p.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
-							var proof = p.getProof().asJSON(addressing);
-							return o.put("txns", txns).put("proof", proof);
-						}))
-		);
+			List.of("networkId", "actions"),
+			params -> {
+				var addressing = Addressing.ofNetworkId(params.getInt("networkId"));
+				var actionParserService = new ActionParserService(addressing);
+
+				return allOf(safeArray(params, "actions"))
+					.flatMap(actions ->
+						actionParserService.parse(actions).flatMap(this::build)
+							.map(p -> {
+								var o = jsonObject();
+								var txns = jsonArray();
+								p.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
+								var proof = p.getProof().asJSON(addressing);
+								return o.put("txns", txns).put("proof", proof);
+							})
+					);
+			});
 	}
 
 	public JSONObject handleLookupTransaction(JSONObject request) {

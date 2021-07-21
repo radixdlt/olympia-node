@@ -81,7 +81,7 @@ import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
@@ -507,15 +507,15 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	}
 
 	private static final class ResetRakeUpdate implements ReducerState {
-		private final ValidatorRakeCopy update;
+		private final ValidatorFeeCopy update;
 		private final Supplier<ReducerState> next;
 
-		ResetRakeUpdate(ValidatorRakeCopy update, Supplier<ReducerState> next) {
+		ResetRakeUpdate(ValidatorFeeCopy update, Supplier<ReducerState> next) {
 			this.update = update;
 			this.next = next;
 		}
 
-		ReducerState reset(ValidatorRakeCopy rakeCopy) throws ProcedureException {
+		ReducerState reset(ValidatorFeeCopy rakeCopy) throws ProcedureException {
 			if (!rakeCopy.getValidatorKey().equals(update.getValidatorKey())) {
 				throw new ProcedureException("Validator keys must match.");
 			}
@@ -535,7 +535,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private final class PreparingRakeUpdate implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
 		private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-		private final TreeMap<ECPublicKey, ValidatorRakeCopy> preparingRakeUpdates = new TreeMap<>(KeyComparator.instance());
+		private final TreeMap<ECPublicKey, ValidatorFeeCopy> preparingRakeUpdates = new TreeMap<>(KeyComparator.instance());
 
 		PreparingRakeUpdate(
 			UpdatingEpoch updatingEpoch,
@@ -545,7 +545,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
-		ReducerState prepareRakeUpdates(IndexedSubstateIterator<ValidatorRakeCopy> indexedSubstateIterator) throws ProcedureException {
+		ReducerState prepareRakeUpdates(IndexedSubstateIterator<ValidatorFeeCopy> indexedSubstateIterator) throws ProcedureException {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
 			var expectedPrefix = new byte[2 + Long.BYTES];
 			expectedPrefix[0] = 0;
@@ -819,12 +819,12 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareStakes(d))
 		));
 		os.procedure(new ShutdownAllProcedure<>(
-			ValidatorRakeCopy.class, PreparingRakeUpdate.class,
+			ValidatorFeeCopy.class, PreparingRakeUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareRakeUpdates(d))
 		));
 		os.procedure(new UpProcedure<>(
-			ResetRakeUpdate.class, ValidatorRakeCopy.class,
+			ResetRakeUpdate.class, ValidatorFeeCopy.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));

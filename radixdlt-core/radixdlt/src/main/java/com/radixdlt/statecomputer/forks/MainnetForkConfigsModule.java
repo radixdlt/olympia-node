@@ -74,7 +74,7 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 
 import java.util.Map;
@@ -100,9 +100,9 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 					Map.of(
-						TokenResource.class, Amount.ofTokens(1000), // 1000XRD per resource
+						TokenResource.class, Amount.ofTokens(100), // 1000XRD per resource
 						ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
-						ValidatorRakeCopy.class, Amount.ofTokens(5), // 5XRD per register update
+						ValidatorFeeCopy.class, Amount.ofTokens(5), // 5XRD per register update
 						ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
 						ValidatorMetaData.class, Amount.ofTokens(5), // 5XRD per register update
 						AllowDelegationFlag.class, Amount.ofTokens(5), // 5XRD per register update
@@ -134,9 +134,9 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 					Map.of(
-						TokenResource.class, Amount.ofTokens(1000), // 1000XRD per resource
+						TokenResource.class, Amount.ofTokens(100), // 1000XRD per resource
 						ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
-						ValidatorRakeCopy.class, Amount.ofTokens(5), // 5XRD per register update
+						ValidatorFeeCopy.class, Amount.ofTokens(5), // 5XRD per register update
 						ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
 						ValidatorMetaData.class, Amount.ofTokens(5), // 5XRD per register update
 						AllowDelegationFlag.class, Amount.ofTokens(5), // 5XRD per register update

@@ -66,7 +66,7 @@ package com.radixdlt.application.validators.scrypt;
 
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.validators.state.ValidatorRakeCopy;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -109,7 +109,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 			this.stakeData = stakeData;
 		}
 
-		void update(ValidatorRakeCopy update) throws ProcedureException {
+		void update(ValidatorFeeCopy update) throws ProcedureException {
 			if (!Objects.equals(stakeData.getValidatorKey(), update.getValidatorKey())) {
 				throw new ProcedureException("Must update same key");
 			}
@@ -121,7 +121,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 
 			var epoch = update.getEpochUpdate().orElseThrow(() -> new ProcedureException("Must contain epoch update"));
 			if (rakeIncrease > 0) {
-				var expectedEpoch = epochData.getEpoch() + rakeIncreaseDebounceEpochLength;
+				var expectedEpoch = epochData.getEpoch() + 1 + rakeIncreaseDebounceEpochLength;
 				if (epoch != expectedEpoch) {
 					throw new ProcedureException("Increasing rake requires epoch delay to " + expectedEpoch + " but was " + epoch);
 				}
@@ -166,7 +166,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 	@Override
 	public void main(Loader os) {
 		os.substate(new SubstateDefinition<>(
-			ValidatorRakeCopy.class,
+			ValidatorFeeCopy.class,
 			SubstateTypeId.VALIDATOR_RAKE_COPY.id(),
 			buf -> {
 				REFieldSerialization.deserializeReservedByte(buf);
@@ -177,7 +177,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 					throw new DeserializeException("Invalid rake percentage " + curRakePercentage);
 				}
 
-				return new ValidatorRakeCopy(epochUpdate, key, curRakePercentage);
+				return new ValidatorFeeCopy(epochUpdate, key, curRakePercentage);
 			},
 			(s, buf) -> {
 				REFieldSerialization.serializeReservedByte(buf);
@@ -187,11 +187,11 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 			},
 			buf -> REFieldSerialization.deserializeKey(buf),
 			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-			k -> ValidatorRakeCopy.createVirtual((ECPublicKey) k)
+			k -> ValidatorFeeCopy.createVirtual((ECPublicKey) k)
 		));
 
 		os.procedure(new DownProcedure<>(
-			VoidReducerState.class, ValidatorRakeCopy.class,
+			VoidReducerState.class, ValidatorFeeCopy.class,
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
@@ -216,7 +216,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 		));
 
 		os.procedure(new UpProcedure<>(
-			UpdatingRakeReady.class, ValidatorRakeCopy.class,
+			UpdatingRakeReady.class, ValidatorFeeCopy.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				s.update(u);

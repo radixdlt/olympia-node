@@ -66,6 +66,8 @@ package com.radixdlt.statecomputer.forks;
 
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.Map;
 import java.util.OptionalInt;
@@ -108,6 +110,23 @@ public final class RERulesConfig {
 		this.rewardsPerProposal = rewardsPerProposal;
 		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
 		this.maxValidators = maxValidators;
+	}
+
+	public JSONObject asJson() {
+		var reserved = new JSONArray();
+		reservedSymbols.forEach(reserved::put);
+		return new JSONObject()
+			.put("feeTable", feeTable.asJson())
+			.put("reservedSymbols", reserved)
+			.put("maxTransactionSize", maxTxnSize)
+			.put("maxTransactionsPerRound", maxSigsPerRound.orElse(0))
+			.put("maxRoundsPerEpoch", maxRounds)
+			.put("validatorFeeIncreaseDebouncerEpochLength", rakeIncreaseDebouncerEpochLength)
+			.put("minimumStake", minimumStake.toSubunits())
+			.put("unstakingDelayEpochLength", unstakingEpochDelay)
+			.put("rewardsPerProposal", rewardsPerProposal.toSubunits())
+			.put("minimumCompletedProposalsPercentage", minimumCompletedProposalsPercentage)
+			.put("maxValidators", maxValidators);
 	}
 
 	public static RERulesConfig testingDefault() {
