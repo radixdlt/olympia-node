@@ -70,6 +70,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.store.ValidatorUptime;
 import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
@@ -83,6 +84,7 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.store.LastProof;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
@@ -350,7 +352,7 @@ public class StakingUnstakingValidatorsTest {
 
 	private static class NodeState {
 		private final String self;
-		private final EpochChange epochChange;
+		private final LedgerProof lastLedgerProof;
 		private final RadixEngine<LedgerAndBFTProof> radixEngine;
 		private final ClassToInstanceMap<Object> lastEvents;
 		private final BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore;
@@ -360,14 +362,14 @@ public class StakingUnstakingValidatorsTest {
 		private NodeState(
 			@Self String self,
 			ClassToInstanceMap<Object> lastEvents,
-			EpochChange epochChange,
+			@LastProof LedgerProof lastLedgerProof,
 			RadixEngine<LedgerAndBFTProof> radixEngine,
 			BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore,
 			Forks forks
 		) {
 			this.self = self;
 			this.lastEvents = lastEvents;
-			this.epochChange = epochChange;
+			this.lastLedgerProof = lastLedgerProof;
 			this.radixEngine = radixEngine;
 			this.uptimeArchiveStore = uptimeArchiveStore;
 			this.forks = forks;
@@ -386,14 +388,17 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public EpochView getEpochView() {
-			if (lastEvents.getInstance(LedgerUpdate.class) == null) {
-				return EpochView.of(epochChange.getEpoch(), View.genesis());
+			var lastLedgerUpdate = lastEvents.getInstance(LedgerUpdate.class);
+			if (lastLedgerUpdate == null) {
+				return lastLedgerProof.getNextValidatorSet().isPresent()
+					? EpochView.of(lastLedgerProof.getEpoch() + 1, View.genesis())
+					: EpochView.of(lastLedgerProof.getEpoch(), lastLedgerProof.getView());
 			}
-			var epochChange = lastEvents.getInstance(LedgerUpdate.class).getStateComputerOutput().getInstance(EpochChange.class);
+			var epochChange = lastLedgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
 			if (epochChange != null) {
 				return EpochView.of(epochChange.getEpoch(), View.genesis());
 			} else {
-				var tail = lastEvents.getInstance(LedgerUpdate.class).getTail();
+				var tail = lastLedgerUpdate.getTail();
 				return EpochView.of(tail.getEpoch(), tail.getView());
 			}
 		}
@@ -537,9 +542,9 @@ public class StakingUnstakingValidatorsTest {
 		logger.info("Difference {}", Amount.ofSubunits(diff));
 		assertThat(diff).isLessThanOrEqualTo(maxEmissions);
 		var totalUptime = nodeState.getUptime().values().stream().reduce(ValidatorUptime::merge).orElse(ValidatorUptime.empty());
+		logger.info("Total uptime {}", totalUptime);
 		assertThat(totalUptime.getProposalsCompleted() + totalUptime.getProposalsMissed())
 			.isEqualTo(totalRounds);
-		logger.info("Total uptime {}", totalUptime);
 
 		for (var e : nodeState.getValidators().entrySet()) {
 			logger.info("{} {}", e.getKey(), e.getValue());
