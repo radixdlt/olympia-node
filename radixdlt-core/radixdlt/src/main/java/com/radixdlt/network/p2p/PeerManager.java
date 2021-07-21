@@ -76,6 +76,7 @@ import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerLostLiveness;
+import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
 import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.utils.functional.Result;
@@ -211,6 +212,8 @@ public final class PeerManager {
 				this.handlePeerLostLiveness((PeerLostLiveness) peerEvent);
 			} else if (peerEvent instanceof PeerBanned) {
 				this.handlePeerBanned((PeerBanned) peerEvent);
+			} else if (peerEvent instanceof PeerHandshakeFailed) {
+				this.handlePeerHandshakeFailed((PeerHandshakeFailed) peerEvent);
 			}
 		};
 	}
@@ -322,5 +325,9 @@ public final class PeerManager {
 				log.info("Closing channel to peer {} because peer has been banned", pc.getRemoteNodeId());
 				pc.disconnect();
 			});
+	}
+
+	private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
+		this.addressBook.get().blacklist(peerHandshakeFailed.getUri());
 	}
 }

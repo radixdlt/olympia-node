@@ -62,53 +62,52 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p.transport.handshake;
+package com.radixdlt.network.p2p;
 
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
-import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeError;
+import com.radixdlt.identifiers.NodeAddressing;
+import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
+import com.radixdlt.networks.Network;
+import org.junit.After;
 import org.junit.Test;
-import java.security.SecureRandom;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNull;
+import java.net.URI;
+import java.util.Set;
+
 import static org.junit.Assert.assertTrue;
 
-public final class AuthHandshakerTest {
-	private final Serialization serialization = DefaultSerialization.getInstance();
-	private final SecureRandom secureRandom = new SecureRandom();
+public final class FailedHandshakeTest extends DeterministicP2PNetworkTest {
 
-	@Test
-	public void test_auth_handshake() throws Exception {
-		final var nodeKey1 = ECKeyPair.generateNew();
-		final var nodeKey2 = ECKeyPair.generateNew();
-		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01);
-		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01);
-
-		final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
-		final var handshaker2ResultPair = handshaker2.handleInitialMessage(initMessage);
-		final var handshaker2Result = (AuthHandshakeSuccess) handshaker2ResultPair.getSecond();
-		final var responseMessage = handshaker2ResultPair.getFirst();
-		final var handshaker1Result = (AuthHandshakeSuccess) handshaker1.handleResponseMessage(responseMessage);
-
-		assertArrayEquals(handshaker1Result.getSecrets().aes, handshaker2Result.getSecrets().aes);
-		assertArrayEquals(handshaker1Result.getSecrets().mac, handshaker2Result.getSecrets().mac);
-		assertArrayEquals(handshaker1Result.getSecrets().token, handshaker2Result.getSecrets().token);
+	@After
+	public void cleanup() {
+		testNetworkRunner.cleanup();
 	}
 
 	@Test
-	public void test_auth_handshake_fail_on_network_id_mismatch() {
-		final var nodeKey1 = ECKeyPair.generateNew();
-		final var nodeKey2 = ECKeyPair.generateNew();
-		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01);
-		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x02);
+	public void test_failed_handshake() throws Exception {
+		setupTestRunner(2, defaultProperties());
 
-		final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
-		final var handshaker2ResultPair = handshaker2.handleInitialMessage(initMessage);
-		assertTrue(handshaker2ResultPair.getSecond() instanceof AuthHandshakeError);
-		assertNull(handshaker2ResultPair.getFirst());
+		final var correctUri = uriOfNode(1);
+
+		final var messedUpUri = RadixNodeUri.fromUri(new URI(
+			String.format(
+				"radix://%s@%s:%s",
+				NodeAddressing.of(Network.LOCALNET.getNodeHrp(), ECKeyPair.generateNew().getPublicKey()),
+				correctUri.getHost(),
+				correctUri.getPort()
+			)
+		));
+
+		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(messedUpUri));
+
+		final var channel1Future = testNetworkRunner.peerManager(0)
+			.findOrCreateChannel(messedUpUri.getNodeId());
+
+		processAll();
+
+		assertTrue(channel1Future.isCompletedExceptionally());
+
+		final var entry = testNetworkRunner.addressBook(0).findById(messedUpUri.getNodeId()).orElseThrow();
+		assertTrue(entry.getKnownAddresses().stream().findFirst().orElseThrow().blacklisted());
 	}
 }

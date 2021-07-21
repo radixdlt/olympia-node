@@ -73,6 +73,7 @@ import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -126,7 +127,9 @@ public final class AddressBook {
 						this.knownPeers.put(uri.getNodeId(), newEntry);
 						persistEntry(newEntry);
 					} else {
-						final var updatedEntry = maybeExistingEntry.addUriIfNotExists(uri);
+						final var updatedEntry = maybeExistingEntry
+							.cleanupExpiredBlacklsitedUris()
+							.addUriIfNotExists(uri);
 						if (!updatedEntry.equals(maybeExistingEntry)) {
 							this.knownPeers.put(uri.getNodeId(), updatedEntry);
 							persistEntry(updatedEntry);
@@ -146,6 +149,7 @@ public final class AddressBook {
 				.stream()
 				.filter(not(AddressBookEntry::isBanned))
 				.flatMap(e -> e.getKnownAddresses().stream())
+				.filter(not(PeerAddressEntry::blacklisted))
 				.sorted(entryComparator)
 				.map(AddressBookEntry.PeerAddressEntry::getUri)
 				.findFirst();
@@ -160,7 +164,9 @@ public final class AddressBook {
 				this.knownPeers.put(radixNodeUri.getNodeId(), newEntry);
 				persistEntry(newEntry);
 			} else {
-				final var updatedEntry = maybeExistingEntry.withLastSuccessfulConnectionFor(radixNodeUri, Instant.now());
+				final var updatedEntry = maybeExistingEntry
+					.cleanupExpiredBlacklsitedUris()
+					.withLastSuccessfulConnectionFor(radixNodeUri, Instant.now());
 				this.knownPeers.put(radixNodeUri.getNodeId(), updatedEntry);
 				persistEntry(updatedEntry);
 			}
@@ -172,6 +178,7 @@ public final class AddressBook {
 			.stream()
 			.filter(not(AddressBookEntry::isBanned))
 			.flatMap(e -> e.getKnownAddresses().stream())
+			.filter(not(PeerAddressEntry::blacklisted))
 			.sorted(entryComparator)
 			.map(AddressBookEntry.PeerAddressEntry::getUri);
 	}
@@ -190,7 +197,9 @@ public final class AddressBook {
 				final var alreadyBanned = existingEntry.bannedUntil()
 					.filter(bu -> bu.isAfter(banUntil)).isPresent();
 				if (!alreadyBanned) {
-					final var updatedEntry = existingEntry.withBanUntil(banUntil);
+					final var updatedEntry = existingEntry
+						.cleanupExpiredBlacklsitedUris()
+						.withBanUntil(banUntil);
 					this.knownPeers.put(nodeId, updatedEntry);
 					this.persistEntry(updatedEntry);
 					this.peerEventDispatcher.dispatch(PeerBanned.create(nodeId));
@@ -207,5 +216,23 @@ public final class AddressBook {
 
 	public ImmutableMap<NodeId, AddressBookEntry> knownPeers() {
 		return ImmutableMap.copyOf(knownPeers);
+	}
+
+	public void blacklist(RadixNodeUri uri) {
+		synchronized (lock) {
+			final var blacklistUntil = Instant.now().plus(Duration.ofHours(2));
+			final var maybeExistingEntry = this.knownPeers.get(uri.getNodeId());
+			if (maybeExistingEntry == null) {
+				final var newEntry = AddressBookEntry.createBlacklisted(uri, blacklistUntil);
+				this.knownPeers.put(uri.getNodeId(), newEntry);
+				persistEntry(newEntry);
+			} else {
+				final var updatedEntry = maybeExistingEntry
+					.cleanupExpiredBlacklsitedUris()
+					.withBlacklistedUri(uri, blacklistUntil);
+				this.knownPeers.put(uri.getNodeId(), updatedEntry);
+				persistEntry(updatedEntry);
+			}
+		}
 	}
 }

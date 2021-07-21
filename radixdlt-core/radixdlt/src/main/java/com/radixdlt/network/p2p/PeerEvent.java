@@ -205,4 +205,38 @@ public interface PeerEvent {
 			return Objects.hash(nodeId);
 		}
 	}
+
+	final class PeerHandshakeFailed implements PeerEvent {
+
+		private final RadixNodeUri uri;
+
+		public static PeerHandshakeFailed create(RadixNodeUri uri) {
+			return new PeerHandshakeFailed(uri);
+		}
+
+		private PeerHandshakeFailed(RadixNodeUri uri) {
+			this.uri = uri;
+		}
+
+		public RadixNodeUri getUri() {
+			return this.uri;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			final var that = (PeerHandshakeFailed) o;
+			return Objects.equals(uri, that.uri);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(uri);
+		}
+	}
 }

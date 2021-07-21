@@ -129,8 +129,6 @@ public final class PeerServerBootstrap {
 			.channel(NioServerSocketChannel.class)
 			.option(ChannelOption.SO_BACKLOG, BACKLOG_SIZE)
 			.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.peerConnectionTimeout())
-			.option(ChannelOption.TCP_NODELAY, true)
-			.option(ChannelOption.SO_KEEPALIVE, true)
 			.childHandler(new PeerChannelInitializer(
 				config,
 				addressing,
