@@ -127,7 +127,9 @@ public final class AddressBook {
 						this.knownPeers.put(uri.getNodeId(), newEntry);
 						persistEntry(newEntry);
 					} else {
-						final var updatedEntry = maybeExistingEntry.addUriIfNotExists(uri);
+						final var updatedEntry = maybeExistingEntry
+							.cleanupExpiredBlacklsitedUris()
+							.addUriIfNotExists(uri);
 						if (!updatedEntry.equals(maybeExistingEntry)) {
 							this.knownPeers.put(uri.getNodeId(), updatedEntry);
 							persistEntry(updatedEntry);
@@ -162,7 +164,9 @@ public final class AddressBook {
 				this.knownPeers.put(radixNodeUri.getNodeId(), newEntry);
 				persistEntry(newEntry);
 			} else {
-				final var updatedEntry = maybeExistingEntry.withLastSuccessfulConnectionFor(radixNodeUri, Instant.now());
+				final var updatedEntry = maybeExistingEntry
+					.cleanupExpiredBlacklsitedUris()
+					.withLastSuccessfulConnectionFor(radixNodeUri, Instant.now());
 				this.knownPeers.put(radixNodeUri.getNodeId(), updatedEntry);
 				persistEntry(updatedEntry);
 			}
@@ -193,7 +197,9 @@ public final class AddressBook {
 				final var alreadyBanned = existingEntry.bannedUntil()
 					.filter(bu -> bu.isAfter(banUntil)).isPresent();
 				if (!alreadyBanned) {
-					final var updatedEntry = existingEntry.withBanUntil(banUntil);
+					final var updatedEntry = existingEntry
+						.cleanupExpiredBlacklsitedUris()
+						.withBanUntil(banUntil);
 					this.knownPeers.put(nodeId, updatedEntry);
 					this.persistEntry(updatedEntry);
 					this.peerEventDispatcher.dispatch(PeerBanned.create(nodeId));
@@ -221,7 +227,9 @@ public final class AddressBook {
 				this.knownPeers.put(uri.getNodeId(), newEntry);
 				persistEntry(newEntry);
 			} else {
-				final var updatedEntry = maybeExistingEntry.withBlacklistedUri(uri, blacklistUntil);
+				final var updatedEntry = maybeExistingEntry
+					.cleanupExpiredBlacklsitedUris()
+					.withBlacklistedUri(uri, blacklistUntil);
 				this.knownPeers.put(uri.getNodeId(), updatedEntry);
 				persistEntry(updatedEntry);
 			}

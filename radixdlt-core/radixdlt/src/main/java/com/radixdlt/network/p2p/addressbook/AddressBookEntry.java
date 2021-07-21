@@ -245,6 +245,13 @@ public final class AddressBookEntry {
 		}
 	}
 
+	public AddressBookEntry cleanupExpiredBlacklsitedUris() {
+		final var newKnownAddresses = knownAddresses.stream()
+			.filter(not(PeerAddressEntry::blacklistExpired))
+			.collect(ImmutableSet.toImmutableSet());
+		return new AddressBookEntry(nodeId, bannedUntil, newKnownAddresses);
+	}
+
 	@Override
 	public String toString() {
 		return String.format(
@@ -314,6 +321,10 @@ public final class AddressBookEntry {
 
 		public boolean blacklisted() {
 			return blacklistedUntil.filter(v -> v.isAfter(Instant.now())).isPresent();
+		}
+
+		public boolean blacklistExpired() {
+			return blacklistedUntil.isPresent() && !blacklisted();
 		}
 
 		@JsonProperty("lastSuccessfulConnection")
