@@ -64,34 +64,78 @@
 
 package com.radixdlt.atom;
 
+import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.system.state.RoundData;
+import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.system.state.UnclaimedREAddr;
+import com.radixdlt.application.system.state.ValidatorBFTData;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.system.state.VirtualParent;
+import com.radixdlt.application.tokens.state.ExittingStake;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
+import com.radixdlt.constraintmachine.Particle;
+
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 public enum SubstateTypeId {
-	VIRTUAL_PARENT((byte) 0x0),
-	UNCLAIMED_READDR((byte) 0x1),
-	ROUND_DATA((byte) 0x2),
-	EPOCH_DATA((byte) 0x3),
-	TOKEN_RESOURCE((byte) 0x4),
-	TOKEN_RESOURCE_METADATA((byte) 0x5),
-	TOKENS((byte) 0x6),
-	PREPARED_STAKE((byte) 0x7),
-	STAKE_OWNERSHIP((byte) 0x8),
-	PREPARED_UNSTAKE((byte) 0x9),
-	EXITTING_STAKE((byte) 0xa),
-	VALIDATOR_META_DATA((byte) 0xb),
-	VALIDATOR_STAKE_DATA((byte) 0xc),
-	VALIDATOR_BFT_DATA((byte) 0xd),
-	VALIDATOR_ALLOW_DELEGATION_FLAG((byte) 0xe),
-	VALIDATOR_REGISTERED_FLAG_COPY((byte) 0xf),
-	VALIDATOR_RAKE_COPY((byte) 0x10),
-	VALIDATOR_OWNER_COPY((byte) 0x11),
-	VALIDATOR_SYSTEM_META_DATA((byte) 0x12);
+	VIRTUAL_PARENT((byte) 0x0, VirtualParent.class),
+	UNCLAIMED_READDR((byte) 0x1, UnclaimedREAddr.class),
+	ROUND_DATA((byte) 0x2, RoundData.class),
+	EPOCH_DATA((byte) 0x3, EpochData.class),
+	TOKEN_RESOURCE((byte) 0x4, TokenResource.class),
+	TOKEN_RESOURCE_METADATA((byte) 0x5, TokenResourceMetadata.class),
+	TOKENS((byte) 0x6, TokensInAccount.class),
+	PREPARED_STAKE((byte) 0x7, PreparedStake.class),
+	STAKE_OWNERSHIP((byte) 0x8, StakeOwnership.class),
+	PREPARED_UNSTAKE((byte) 0x9, PreparedUnstakeOwnership.class),
+	EXITTING_STAKE((byte) 0xa, ExittingStake.class),
+	VALIDATOR_META_DATA((byte) 0xb, ValidatorMetaData.class),
+	VALIDATOR_STAKE_DATA((byte) 0xc, ValidatorStakeData.class),
+	VALIDATOR_BFT_DATA((byte) 0xd, ValidatorBFTData.class),
+	VALIDATOR_ALLOW_DELEGATION_FLAG((byte) 0xe, AllowDelegationFlag.class),
+	VALIDATOR_REGISTERED_FLAG_COPY((byte) 0xf, ValidatorRegisteredCopy.class),
+	VALIDATOR_RAKE_COPY((byte) 0x10, ValidatorFeeCopy.class),
+	VALIDATOR_OWNER_COPY((byte) 0x11, ValidatorOwnerCopy.class),
+	VALIDATOR_SYSTEM_META_DATA((byte) 0x12, ValidatorSystemMetadata.class);
 
 	private final byte id;
+	private final Class<? extends Particle> substateClass;
 
-	SubstateTypeId(byte id) {
+	private static final Map<Byte, SubstateTypeId> substateTypes;
+	static {
+		substateTypes = Arrays.stream(SubstateTypeId.values()).collect(Collectors.toMap(e -> e.id, e -> e));
+	}
+
+	SubstateTypeId(byte id, Class<? extends Particle> substateClass) {
 		this.id = id;
+		this.substateClass = substateClass;
+	}
+
+	public static SubstateTypeId valueOf(byte typeId) {
+		var substateType = substateTypes.get(typeId);
+		if (substateType == null) {
+			throw new IllegalArgumentException("Unknown typeId " + typeId);
+		}
+		return substateType;
 	}
 
 	public byte id() {
 		return id;
+	}
+
+	public Class<? extends Particle> getSubstateClass() {
+		return substateClass;
 	}
 }

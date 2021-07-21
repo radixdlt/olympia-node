@@ -100,6 +100,14 @@ public class DeveloperEndpointModule extends AbstractModule {
 
 	@DeveloperEndpoint
 	@ProvidesIntoMap
+	@StringMapKey("developer.query_resource_state")
+	public JsonRpcHandler developerQueryResourceState(DeveloperHandler developerHandler) {
+		return developerHandler::handleQueryResourceState;
+	}
+
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
 	@StringMapKey("developer.build_genesis")
 	public JsonRpcHandler developerBuildGenesis(DeveloperHandler developerHandler) {
 		return developerHandler::handleGenesisConstruction;
