@@ -206,15 +206,15 @@ public interface PeerEvent {
 		}
 	}
 
-	final class PeerConnectionFailed implements PeerEvent {
+	final class PeerHandshakeFailed implements PeerEvent {
 
 		private final RadixNodeUri uri;
 
-		public static PeerConnectionFailed create(RadixNodeUri uri) {
-			return new PeerConnectionFailed(uri);
+		public static PeerHandshakeFailed create(RadixNodeUri uri) {
+			return new PeerHandshakeFailed(uri);
 		}
 
-		private PeerConnectionFailed(RadixNodeUri uri) {
+		private PeerHandshakeFailed(RadixNodeUri uri) {
 			this.uri = uri;
 		}
 
@@ -230,7 +230,7 @@ public interface PeerEvent {
 			if (o == null || getClass() != o.getClass()) {
 				return false;
 			}
-			final var that = (PeerConnectionFailed) o;
+			final var that = (PeerHandshakeFailed) o;
 			return Objects.equals(uri, that.uri);
 		}
 

@@ -115,8 +115,8 @@ public final class PendingOutboundChannelsManager {
 		return peerEvent -> {
 			if (peerEvent instanceof PeerEvent.PeerConnected) {
 				this.handlePeerConnected((PeerEvent.PeerConnected) peerEvent);
-			} else if (peerEvent instanceof PeerEvent.PeerConnectionFailed) {
-				this.handlePeerConnectionFailed((PeerEvent.PeerConnectionFailed) peerEvent);
+			} else if (peerEvent instanceof PeerEvent.PeerHandshakeFailed) {
+				this.handlePeerHandshakeFailed((PeerEvent.PeerHandshakeFailed) peerEvent);
 			}
 		};
 	}
@@ -131,9 +131,9 @@ public final class PendingOutboundChannelsManager {
 		}
 	}
 
-	private void handlePeerConnectionFailed(PeerEvent.PeerConnectionFailed peerConnectionFailed) {
+	private void handlePeerHandshakeFailed(PeerEvent.PeerHandshakeFailed peerHandshakeFailed) {
 		synchronized (lock) {
-			final var maybeFuture = this.pendingChannels.remove(peerConnectionFailed.getUri().getNodeId());
+			final var maybeFuture = this.pendingChannels.remove(peerHandshakeFailed.getUri().getNodeId());
 			if (maybeFuture != null) {
 				maybeFuture.completeExceptionally(new IOException("Peer connection failed"));
 			}

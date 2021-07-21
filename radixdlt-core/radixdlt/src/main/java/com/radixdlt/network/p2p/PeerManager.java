@@ -76,7 +76,7 @@ import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerLostLiveness;
-import com.radixdlt.network.p2p.PeerEvent.PeerConnectionFailed;
+import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
 import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.utils.functional.Result;
@@ -212,8 +212,8 @@ public final class PeerManager {
 				this.handlePeerLostLiveness((PeerLostLiveness) peerEvent);
 			} else if (peerEvent instanceof PeerBanned) {
 				this.handlePeerBanned((PeerBanned) peerEvent);
-			} else if (peerEvent instanceof PeerConnectionFailed) {
-				this.handlePeerConnectionFailed((PeerConnectionFailed) peerEvent);
+			} else if (peerEvent instanceof PeerHandshakeFailed) {
+				this.handlePeerHandshakeFailed((PeerHandshakeFailed) peerEvent);
 			}
 		};
 	}
@@ -327,7 +327,7 @@ public final class PeerManager {
 			});
 	}
 
-	private void handlePeerConnectionFailed(PeerConnectionFailed peerConnectionFailed) {
-		this.addressBook.get().blacklist(peerConnectionFailed.getUri());
+	private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
+		this.addressBook.get().blacklist(peerHandshakeFailed.getUri());
 	}
 }

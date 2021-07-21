@@ -80,7 +80,7 @@ import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHand
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
-import com.radixdlt.network.p2p.PeerEvent.PeerConnectionFailed;
+import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
@@ -199,7 +199,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 				this.finalizeHandshake(handshakeResult);
 			} else {
 				log.info("Failed to connect to {} (invalid handshake)", uri.orElseThrow());
-				peerEventDispatcher.dispatch(PeerConnectionFailed.create(uri.orElseThrow()));
+				peerEventDispatcher.dispatch(PeerHandshakeFailed.create(uri.orElseThrow()));
 				this.disconnect();
 			}
 		} else {
