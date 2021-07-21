@@ -463,7 +463,9 @@ public class SystemConfigService {
 		final var knownAddressesArray = jsonArray();
 
 		e.getKnownAddresses().forEach(addr -> {
-			final var addrObj = jsonObject().put("uri", addr.getUri());
+			final var addrObj = jsonObject()
+				.put("uri", addr.getUri())
+				.put("blacklisted", addr.blacklisted());
 			addr.getLastSuccessfulConnection().ifPresent(ts -> addrObj.put("lastSuccessfulConnection", ts));
 			knownAddressesArray.put(addrObj);
 		});
