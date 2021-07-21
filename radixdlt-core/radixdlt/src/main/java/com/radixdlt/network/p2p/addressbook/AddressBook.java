@@ -214,13 +214,14 @@ public final class AddressBook {
 
 	public void blacklist(RadixNodeUri uri) {
 		synchronized (lock) {
+			final var blacklistUntil = Instant.now().plus(Duration.ofHours(2));
 			final var maybeExistingEntry = this.knownPeers.get(uri.getNodeId());
 			if (maybeExistingEntry == null) {
-				final var newEntry = AddressBookEntry.createBlacklisted(uri);
+				final var newEntry = AddressBookEntry.createBlacklisted(uri, blacklistUntil);
 				this.knownPeers.put(uri.getNodeId(), newEntry);
 				persistEntry(newEntry);
 			} else {
-				final var updatedEntry = maybeExistingEntry.withBlacklistedUri(uri);
+				final var updatedEntry = maybeExistingEntry.withBlacklistedUri(uri, blacklistUntil);
 				this.knownPeers.put(uri.getNodeId(), updatedEntry);
 				persistEntry(updatedEntry);
 			}

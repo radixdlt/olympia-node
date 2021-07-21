@@ -164,7 +164,7 @@ public final class AuthHandshaker {
 		);
 	}
 
-	public Pair<byte[], AuthHandshakeResult> handleInitialMessage(byte[] data) throws IOException {
+	public Pair<byte[], AuthHandshakeResult> handleInitialMessage(byte[] data) {
 		try {
 			final var sizeBytes = Arrays.copyOfRange(data, 0, 2);
 			final var encryptedPayload = Arrays.copyOfRange(data, 2, data.length);
@@ -205,7 +205,7 @@ public final class AuthHandshaker {
 
 			final var handshakeResult = finalizeHandshake(remoteEphemeralKey, message.getNonce());
 			return Pair.of(packet, handshakeResult);
-		} catch (PublicKeyException | InvalidCipherTextException ex) {
+		} catch (PublicKeyException | InvalidCipherTextException | IOException ex) {
 			return Pair.of(null, AuthHandshakeResult.error("Handshake decryption failed", Optional.empty()));
 		}
 	}

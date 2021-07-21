@@ -92,8 +92,10 @@ public class AddressBookEntrySerializeTest extends SerializeMessageObject<Addres
 			"127.0.0.1",
 			30000
 		);
-		final var blacklisted = rnd.nextBoolean();
-		final var addressEntry = new PeerAddressEntry(uri, Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong()))), blacklisted);
+		final var blacklistedUntil = rnd.nextBoolean()
+			? Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong())))
+			: Optional.<Instant>empty();
+		final var addressEntry = new PeerAddressEntry(uri, Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong()))), blacklistedUntil);
 		return new AddressBookEntry(NodeId.fromPublicKey(keyPair.getPublicKey()), bannedUntil, ImmutableSet.of(addressEntry));
 	}
 }

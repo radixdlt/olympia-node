@@ -100,7 +100,7 @@ public final class AuthHandshakerTest {
 	}
 
 	@Test
-	public void test_auth_handshake_fail_on_network_id_mismatch() throws Exception {
+	public void test_auth_handshake_fail_on_network_id_mismatch() {
 		final var nodeKey1 = ECKeyPair.generateNew();
 		final var nodeKey2 = ECKeyPair.generateNew();
 		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01);
