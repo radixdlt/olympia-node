@@ -65,6 +65,7 @@
 package com.radixdlt.store.berkeley;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Streams;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.state.ResourceData;
@@ -79,6 +80,7 @@ import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownExcep
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.store.ResourceStore;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import com.sleepycat.je.Transaction;
 import org.apache.logging.log4j.LogManager;
@@ -123,18 +125,24 @@ import com.sleepycat.je.SecondaryDatabase;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.utils.Longs.fromByteArray;
@@ -313,6 +321,31 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			dbTxn.abort();
 			throw e;
 		}
+	}
+
+	public Stream<RawSubstateBytes> scanner() {
+		var cursor = substatesDatabase.openCursor(null, null);
+		var iterator = new Iterator<RawSubstateBytes>() {
+			DatabaseEntry key = new DatabaseEntry();
+			DatabaseEntry data = new DatabaseEntry();
+			OperationStatus status;
+			{
+				status = cursor.getFirst(key, data, null);
+			}
+
+			@Override
+			public boolean hasNext() {
+				return status == SUCCESS;
+			}
+
+			@Override
+			public RawSubstateBytes next() {
+				var next = new RawSubstateBytes(key.getData(), data.getData());
+				status = cursor.getNext(key, data, null);
+				return next;
+			}
+		};
+		return Streams.stream(iterator).onClose(cursor::close);
 	}
 
 	@Override

@@ -88,6 +88,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.store.TxnIndex;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -100,8 +101,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.api.JsonRpcUtil.*;
@@ -111,6 +114,7 @@ import static com.radixdlt.utils.functional.Result.allOf;
 public final class DeveloperHandler {
 	private final GenesisBuilder genesisBuilder;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final BerkeleyLedgerEntryStore engineStore;
 	private final Addressing addressing;
 	private final TxnIndex txnIndex;
 
@@ -118,12 +122,14 @@ public final class DeveloperHandler {
 	public DeveloperHandler(
 		GenesisBuilder genesisBuilder,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
+		BerkeleyLedgerEntryStore engineStore,
 		Addressing addressing,
 		TxnIndex txnIndex
 	) {
 		this.genesisBuilder = genesisBuilder;
 		this.radixEngine = radixEngine;
 		this.addressing = addressing;
+		this.engineStore = engineStore;
 		this.txnIndex = txnIndex;
 	}
 
@@ -183,9 +189,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("prefix"),
 			params -> {
-				var hex = params.getString("prefix");
 				var keyMapper = getKeyMapper(params.has("groupBy") ? params.getString("groupBy") : "resource");
-
 				final Predicate<Bucket> bucketPredicate;
 				if (params.has("query")) {
 					var query = params.getJSONObject("query");
@@ -196,6 +200,7 @@ public final class DeveloperHandler {
 					bucketPredicate = b -> true;
 				}
 
+				var hex = params.getString("prefix");
 				var prefix = Bytes.fromHexString(hex);
 				var index = SubstateIndex.create(prefix);
 				if (!ResourceInBucket.class.isAssignableFrom(index.getSubstateClass())) {
@@ -223,6 +228,41 @@ public final class DeveloperHandler {
 					.put("entryCount", map.size())
 					.put("totalSubstateCount", totalSubstateCount)
 					.put("totalAmount", totalAmount)
+				);
+			}
+		);
+	}
+
+	public JSONObject handleScanSubstates(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("keyHexRegex", "valueHexRegex"),
+			params -> {
+				var keyHexRegex = params.getString("keyHexRegex");
+				var keyPattern = Pattern.compile(keyHexRegex).asMatchPredicate();
+				var valueHexRegex = params.getString("valueHexRegex");
+				var limit = params.has("loadLimit") ? params.getLong("loadLimit") : 8;
+				var valuePattern = Pattern.compile(valueHexRegex).asMatchPredicate();
+				var found = jsonArray();
+				var idSize = new AtomicLong();
+				var dataSize = new AtomicLong();
+				var count = engineStore.scanner()
+					.map(r -> Pair.of(Bytes.toHexString(r.getId()), Bytes.toHexString(r.getData())))
+					.filter(p -> keyPattern.test(p.getFirst()) && valuePattern.test(p.getSecond()))
+					.peek(p -> {
+						if (found.length() < limit) {
+							found.put(p.getFirst() + ":" + p.getSecond());
+						}
+						idSize.getAndAdd(p.getFirst().length() / 2);
+						dataSize.getAndAdd(p.getSecond().length() / 2);
+					})
+					.count();
+				return Result.ok(jsonObject()
+					.put("loaded", found)
+					.put("idSize", idSize.get())
+					.put("dataSize", dataSize.get())
+					.put("totalSize", idSize.get() + dataSize.get())
+					.put("totalCount", count)
 				);
 			}
 		);

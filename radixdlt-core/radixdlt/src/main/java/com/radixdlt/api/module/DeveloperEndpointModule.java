@@ -105,6 +105,12 @@ public class DeveloperEndpointModule extends AbstractModule {
 		return developerHandler::handleQueryResourceState;
 	}
 
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.scan_substates")
+	public JsonRpcHandler developerScanSubstates(DeveloperHandler developerHandler) {
+		return developerHandler::handleScanSubstates;
+	}
 
 	@DeveloperEndpoint
 	@ProvidesIntoMap
