@@ -128,7 +128,7 @@ public final class ValidationHandler {
 		var updates = jsonObject();
 		var validatorRakeCopy = accountService.getMyNextValidatorFee();
 		if (validatorRakeCopy.getRakePercentage() != validatorData.getRakePercentage()) {
-			updates.put("validatorFee", (double) validatorData.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "");
+			updates.put("validatorFee", (double) validatorRakeCopy.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "");
 		}
 		var nextEpochRegisteredFlag = accountService.getMyNextEpochRegisteredFlag().isRegistered();
 		if (nextEpochRegisteredFlag != validatorData.isRegistered()) {
