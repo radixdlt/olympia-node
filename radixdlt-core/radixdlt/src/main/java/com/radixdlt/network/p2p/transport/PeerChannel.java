@@ -200,6 +200,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 			} else {
 				log.info("Failed to connect to {} (invalid handshake)", uri.orElseThrow());
 				peerEventDispatcher.dispatch(PeerConnectionFailed.create(uri.orElseThrow()));
+				this.disconnect();
 			}
 		} else {
 			log.trace("Handling auth initiate message from {} [{}]", remoteNodeId, this.nettyChannel.remoteAddress());
