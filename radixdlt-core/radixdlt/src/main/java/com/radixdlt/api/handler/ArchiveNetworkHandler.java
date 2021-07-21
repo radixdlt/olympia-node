@@ -78,7 +78,7 @@ import static com.radixdlt.api.JsonRpcUtil.response;
 public class ArchiveNetworkHandler {
 	private final NetworkInfoService networkInfoService;
 
-	private final int magic;
+	private final int networkId;
 
 	@Inject
 	public ArchiveNetworkHandler(
@@ -87,11 +87,11 @@ public class ArchiveNetworkHandler {
 	) {
 		this.networkInfoService = networkInfoService;
 
-		this.magic = networkId;
+		this.networkId = networkId;
 	}
 
 	public JSONObject handleNetworkGetId(JSONObject request) {
-		return response(request, jsonObject().put("networkId", magic));
+		return response(request, jsonObject().put("networkId", networkId));
 	}
 
 	public JSONObject handleNetworkGetThroughput(JSONObject request) {

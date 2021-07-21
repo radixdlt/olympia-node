@@ -110,7 +110,7 @@ public final class AuthHandshaker {
 	private final ECKeyOps ecKeyOps;
 	private final byte[] nonce;
 	private final ECKeyPair ephemeralKey;
-	private final int magic;
+	private final int networkId;
 	private boolean isInitiator = false;
 	private Optional<byte[]> initiatePacketOpt = Optional.empty();
 	private Optional<byte[]> responsePacketOpt = Optional.empty();
@@ -120,14 +120,14 @@ public final class AuthHandshaker {
 		Serialization serialization,
 		SecureRandom secureRandom,
 		ECKeyOps ecKeyOps,
-		int magic
+		int networkId
 	) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
 		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
 		this.nonce = randomBytes(NONCE_SIZE);
 		this.ephemeralKey = ECKeyPair.generateNew();
-		this.magic = magic;
+		this.networkId = networkId;
 	}
 
 	public byte[] initiate(ECPublicKey remotePubKey) {
@@ -160,7 +160,7 @@ public final class AuthHandshaker {
 			signature,
 			HashCode.fromBytes(ecKeyOps.nodePubKey().getBytes()),
 			HashCode.fromBytes(nonce),
-			magic
+			networkId
 		);
 	}
 
@@ -172,9 +172,9 @@ public final class AuthHandshaker {
 			final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
 			final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
 
-			if (message.getNetworkId() != this.magic) {
+			if (message.getNetworkId() != this.networkId) {
 				return Pair.of(null, AuthHandshakeResult.error(
-					"Network ID mismatch",
+					String.format("Network ID mismatch (expected %s, got %s)", this.networkId, message.getNetworkId()),
 					Optional.of(NodeId.fromPublicKey(remotePubKey))
 				));
 			}
