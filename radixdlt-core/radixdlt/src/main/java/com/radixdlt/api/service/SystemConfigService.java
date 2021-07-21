@@ -64,6 +64,8 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import org.json.JSONArray;
@@ -212,6 +214,7 @@ public class SystemConfigService {
 
 	@Inject
 	public SystemConfigService(
+		@Self ECPublicKey self,
 		@Endpoints List<EndpointStatus> endpointStatuses,
 		@PacemakerTimeout long pacemakerTimeout,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
@@ -240,7 +243,7 @@ public class SystemConfigService {
 		bftConfiguration = prepareBftConfiguration(pacemakerTimeout, bftSyncPatienceMillis);
 		syncConfiguration = syncConfig.asJson();
 		checkpointsConfiguration = prepareCheckpointsConfiguration(genesis);
-		networkingConfiguration = prepareNetworkingConfiguration(p2PConfig);
+		networkingConfiguration = prepareNetworkingConfiguration(p2PConfig, self);
 	}
 
 	public JSONObject getApiConfiguration() {
@@ -426,7 +429,7 @@ public class SystemConfigService {
 			.put("proof", genesis.getProof().asJSON(addressing));
 	}
 
-	private JSONObject prepareNetworkingConfiguration(P2PConfig p2PConfig) {
+	private JSONObject prepareNetworkingConfiguration(P2PConfig p2PConfig, ECPublicKey self) {
 		return jsonObject()
 			.put("defaultPort", p2PConfig.defaultPort())
 			.put("discoveryInterval", p2PConfig.discoveryInterval())
@@ -439,7 +442,8 @@ public class SystemConfigService {
 			.put("channelBufferSize", p2PConfig.channelBufferSize())
 			.put("peerLivenessCheckInterval", p2PConfig.peerLivenessCheckInterval())
 			.put("pingTimeout", p2PConfig.pingTimeout())
-			.put("seedNodes", fromList(p2PConfig.seedNodes(), seedNode -> seedNode));
+			.put("seedNodes", fromList(p2PConfig.seedNodes(), seedNode -> seedNode))
+			.put("nodeId", addressing.forNodes().of(self));
 	}
 
 	private JSONObject peerToJson(PeersView.PeerInfo peer) {
