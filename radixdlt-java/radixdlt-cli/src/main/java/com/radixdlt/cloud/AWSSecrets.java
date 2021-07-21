@@ -1,6 +1,9 @@
 package com.radixdlt.cloud;
 
+import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.NodeAddressing;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.ValidatorAddressing;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -185,12 +188,14 @@ public class AWSSecrets {
 				var keyFileAwsSecret = new HashMap<String, Object>();
 				var publicKeyFileAwsSecret = new HashMap<String, Object>();
 				final NodeAddressing nodeAddressing = NodeAddressing.bech32(network.getNodeHrp());
+				final ValidatorAddressing validatorAddressing = ValidatorAddressing.bech32(network.getValidatorHrp());
 				try {
 					var data = Files.readAllBytes(keyFilePath);
 					keyFileAwsSecret.put("key", data);
 					var pubKey = returnPublicKey(keystoreFile, password);
 					publicKeyFileAwsSecret.put("bech32", nodeAddressing.of(pubKey));
 					publicKeyFileAwsSecret.put("hex", pubKey.toHex());
+					publicKeyFileAwsSecret.put("validator_address", validatorAddressing.of(pubKey));
 					System.out.println(nodeAddressing.of(pubKey));
 					System.out.println(pubKey.toHex());
 				} catch (IOException e) {
