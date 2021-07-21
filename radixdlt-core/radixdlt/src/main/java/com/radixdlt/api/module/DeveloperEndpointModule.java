@@ -126,4 +126,12 @@ public class DeveloperEndpointModule extends AbstractModule {
 	public JsonRpcHandler developerCreateAddress(DeveloperHandler developerHandler) {
 		return developerHandler::handleCreateAddress;
 	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.lookup_transaction")
+	public JsonRpcHandler developerLookupTransaction(DeveloperHandler developerHandler) {
+		return developerHandler::handleLookupTransaction;
+	}
+
 }
