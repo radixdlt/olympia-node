@@ -149,7 +149,7 @@ public class AWSSecrets {
 			var keyStoreName = String.format("%s.ks", nodeName);
 			var keyStoreSecretName = String.format("%s.ks", nodeName);
 			var passwordName = "password";
-			var network = findNetwork(networkName);
+			var network = findNetwork(networkName.toUpperCase());
 			var publicKeyFileSecretName = String.format("%s/%s/public_key", networkName, nodeName);
 
 			if (namePrefix.equals(CORE_NODE_PREFIX)) {
