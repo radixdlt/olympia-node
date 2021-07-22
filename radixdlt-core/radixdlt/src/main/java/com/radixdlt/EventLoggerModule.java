@@ -112,28 +112,21 @@ public final class EventLoggerModule extends AbstractModule {
 		final RateLimiter logLimiter = RateLimiter.create(1.0);
 		return new EventProcessorOnDispatch<>(
 			InvalidProposedTxn.class,
-			i -> {
-				Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-				logger.log(logLevel, "eng_badprp{proposer={}}", nodeString.apply(i.getProposer()));
-			}
+			i -> logger.warn("eng_badprp{proposer={}}", nodeString.apply(i.getProposer()))
 		);
 	}
 
 	@ProvidesIntoSet
 	EventProcessorOnDispatch<?> logTimeouts(Function<BFTNode, String> nodeString) {
-		final RateLimiter logLimiter = RateLimiter.create(1.0);
 		return new EventProcessorOnDispatch<>(
 			EpochLocalTimeoutOccurrence.class,
-			t -> {
-				Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-				logger.log(logLevel, "bft_timout{epoch={} round={} leader={} nextLeader={} count={}}",
-					t.getEpochView().getEpoch(),
-					t.getEpochView().getView().number(),
-					nodeString.apply(t.getLeader()),
-					nodeString.apply(t.getNextLeader()),
-					t.getBase().timeout().count()
-				);
-			}
+			t -> logger.warn("bft_timout{epoch={} round={} leader={} nextLeader={} count={}}",
+				t.getEpochView().getEpoch(),
+				t.getEpochView().getView().number(),
+				nodeString.apply(t.getLeader()),
+				nodeString.apply(t.getNextLeader()),
+				t.getBase().timeout().count()
+			)
 		);
 	}
 
