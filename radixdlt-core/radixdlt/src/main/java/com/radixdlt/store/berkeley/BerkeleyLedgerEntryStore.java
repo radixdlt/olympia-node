@@ -126,6 +126,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -321,12 +322,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	public Stream<RawSubstateBytes> scanner() {
 		var cursor = substatesDatabase.openCursor(null, null);
 		var iterator = new Iterator<RawSubstateBytes>() {
-			DatabaseEntry key = new DatabaseEntry();
-			DatabaseEntry data = new DatabaseEntry();
-			OperationStatus status;
-			{
-				status = cursor.getFirst(key, data, null);
-			}
+			final DatabaseEntry key = new DatabaseEntry();
+			final DatabaseEntry data = new DatabaseEntry();
+			OperationStatus status = cursor.getFirst(key, data, null);
 
 			@Override
 			public boolean hasNext() {
@@ -335,6 +333,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 			@Override
 			public RawSubstateBytes next() {
+				if (status != SUCCESS) {
+					throw new NoSuchElementException();
+				}
 				var next = new RawSubstateBytes(key.getData(), data.getData());
 				status = cursor.getNext(key, data, null);
 				return next;
