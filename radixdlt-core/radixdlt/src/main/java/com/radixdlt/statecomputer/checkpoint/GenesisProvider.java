@@ -69,8 +69,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -128,6 +130,14 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			.collect(ImmutableMap.toImmutableMap(TokenIssuance::receiver, TokenIssuance::amount, UInt256::add));
 
 		var actions = new ArrayList<TxAction>();
+		actions.add(new CreateMutableToken(
+			null,
+			"xrd",
+			"Rads",
+			"Radix Tokens",
+			"",
+			""
+		));
 		var rri = REAddr.ofNativeToken();
 		try {
 			for (var e : issuances.entrySet()) {

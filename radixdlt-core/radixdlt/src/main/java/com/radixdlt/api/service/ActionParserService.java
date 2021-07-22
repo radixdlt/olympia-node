@@ -217,7 +217,7 @@ public final class ActionParserService {
 
 			case CREATE_MUTABLE:
 				return allOf(
-					pubKey(element),
+					pubKeyOrSystem(element),
 					symbol(element),
 					name(element),
 					optionalDescription(element),
@@ -225,6 +225,11 @@ public final class ActionParserService {
 					optionalTokenUrl(element)
 				).map(TransactionAction::createMutable);
 		}
+	}
+
+	private static Result<ECPublicKey> pubKeyOrSystem(JSONObject element) {
+		return param(element, "publicKeyOfSigner")
+			.flatMap(k -> k.equals("system") ? Result.ok(null) : ECPublicKey.fromHexString(k));
 	}
 
 	private Result<ECPublicKey> pubKey(JSONObject element) {
