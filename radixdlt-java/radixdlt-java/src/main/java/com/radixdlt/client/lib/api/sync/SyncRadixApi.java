@@ -77,6 +77,7 @@ import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.NodeAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.dto.AddressBookEntry;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
 import com.radixdlt.client.lib.dto.BuiltTransaction;
@@ -167,6 +168,7 @@ import static com.radixdlt.client.lib.api.rpc.RpcMethod.LEDGER_EPOCH_PROOF;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.LEDGER_PROOF;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.MEMPOOL_CONFIGURATION;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.MEMPOOL_DATA;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_ADDRESS_BOOK;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_CONFIG;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_DATA;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_DEMAND;
@@ -242,6 +244,11 @@ public class SyncRadixApi implements RadixApi {
 		@Override
 		public Result<List<NetworkPeer>> peers() {
 			return call(request(NETWORK_PEERS), new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<List<AddressBookEntry>> addressBook() {
+			return call(request(NETWORK_ADDRESS_BOOK), new TypeReference<>() {});
 		}
 	};
 
@@ -363,11 +370,6 @@ public class SyncRadixApi implements RadixApi {
 		@Override
 		public Result<EpochData> currentEpoch() {
 			return call(request(VALIDATION_CURRENT_EPOCH), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<EpochData> nextEpoch() {
-			return call(request(VALIDATION_NEXT_EPOCH), new TypeReference<>() {});
 		}
 	};
 

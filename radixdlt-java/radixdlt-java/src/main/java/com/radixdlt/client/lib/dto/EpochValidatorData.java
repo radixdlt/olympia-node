@@ -61,75 +61,99 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
-package com.radixdlt.client.lib.api.async;
 
-import org.junit.Test;
+package com.radixdlt.client.lib.dto;
 
-import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.util.concurrent.CompletableFuture;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.utils.UInt256;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import java.util.Objects;
 
-public class AsyncRadixApiRadixEngineTest {
-	private static final String BASE_URL = "http://localhost/";
+public final class EpochValidatorData {
+	private final UInt256 totalDelegatedStake;
+	private final double uptimePercentage;
+	private final long proposalsMissed;
+	private final long proposalsCompleted;
+	private final ValidatorAddress address;
 
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String CONFIGURATION = "{\"result\":[{\"name\":\"olympia-first-epoch\",\"epoch\":0,\"version\":"
-		+ "\"olympia_v1\",\"config\":{\"maxValidators\":100,\"maxTransactionsPerRound\":50,\"maxRoundsPerEpoch\":10000,"
-		+ "\"minimumCompletedProposalsPercentage\":9800,\"unstakingDelayEpochLength\":1,\"feeTable\":{\"perUpSubstateFee"
-		+ "\":{\"PreparedStake\":\"500000000000000000\",\"ValidatorRegisteredCopy\":\"5000000000000000000\","
-		+ "\"TokenResource\":\"100000000000000000000\",\"PreparedUnstakeOwnership\":\"500000000000000000\","
-		+ "\"ValidatorOwnerCopy\":\"5000000000000000000\",\"ValidatorMetaData\":\"5000000000000000000\","
-		+ "\"AllowDelegationFlag\":\"5000000000000000000\",\"ValidatorFeeCopy\":\"5000000000000000000\"},"
-		+ "\"perByteFee\":\"200000000000000\"},\"validatorFeeIncreaseDebouncerEpochLength\":1,\"minimumStake\":"
-		+ "\"100000000000000000000\",\"reservedSymbols\":[\"rads\",\"exrds\",\"xrds\",\"xrd\",\"rdxs\",\"rdx\","
-		+ "\"exrd\",\"radix\",\"rad\"],\"maxTransactionSize\":1048576,\"rewardsPerProposal\":"
-		+ "\"10000000000000000000\"}}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"systemTransactions\":37884,\"invalidProposedCommands\":1,"
-		+ "\"userTransactions\":2016},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
-
-	private final HttpClient client = mock(HttpClient.class);
-
-	@Test
-	public void testConfiguration() throws IOException {
-		prepareClient(CONFIGURATION)
-			.map(RadixApi::withTrace)
-			.join()
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.radixEngine().configuration().join()
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configuration -> assertEquals(1, configuration.size()))
-				.onSuccess(configuration -> assertEquals("olympia-first-epoch", configuration.get(0).getName())));
+	private EpochValidatorData(
+		UInt256 totalDelegatedStake,
+		double uptimePercentage,
+		long proposalsMissed,
+		long proposalsCompleted,
+		ValidatorAddress address
+	) {
+		this.totalDelegatedStake = totalDelegatedStake;
+		this.uptimePercentage = uptimePercentage;
+		this.proposalsMissed = proposalsMissed;
+		this.proposalsCompleted = proposalsCompleted;
+		this.address = address;
 	}
 
-	@Test
-	public void testData() throws IOException {
-		prepareClient(DATA)
-			.map(RadixApi::withTrace)
-			.join()
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.radixEngine().data().join()
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(data -> assertEquals(37884L, data.getSystemTransactions()))
-				.onSuccess(data -> assertEquals(2016L, data.getUserTransactions()))
-				.onSuccess(data -> assertEquals(1L, data.getInvalidProposedCommands())));
+	@JsonCreator
+	public static EpochValidatorData create(
+		@JsonProperty(value = "totalDelegatedStake", required = true) UInt256 totalDelegatedStake,
+		@JsonProperty(value = "uptimePercentage", required = true) double uptimePercentage,
+		@JsonProperty(value = "proposalsMissed", required = true) long proposalsMissed,
+		@JsonProperty(value = "proposalsCompleted", required = true) long proposalsCompleted,
+		@JsonProperty(value = "address", required = true) ValidatorAddress address
+	) {
+		return new EpochValidatorData(totalDelegatedStake, uptimePercentage, proposalsMissed, proposalsCompleted, address);
 	}
 
-	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
-		var completableFuture = new CompletableFuture<HttpResponse<String>>();
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
 
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
+		if (!(o instanceof EpochValidatorData)) {
+			return false;
+		}
 
-		completableFuture.completeAsync(() -> response);
-		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
+		var that = (EpochValidatorData) o;
+		return Double.compare(that.uptimePercentage, uptimePercentage) == 0
+			&& proposalsMissed == that.proposalsMissed
+			&& proposalsCompleted == that.proposalsCompleted
+			&& totalDelegatedStake.equals(that.totalDelegatedStake)
+			&& address.equals(that.address);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(totalDelegatedStake, uptimePercentage, proposalsMissed, proposalsCompleted, address);
+	}
+
+	@Override
+	public String toString() {
+		return "{"
+			+ "totalDelegatedStake=" + totalDelegatedStake
+			+ ", uptimePercentage=" + uptimePercentage
+			+ ", proposalsMissed=" + proposalsMissed
+			+ ", proposalsCompleted=" + proposalsCompleted
+			+ ", address=" + address
+			+ '}';
+	}
+
+	public UInt256 getTotalDelegatedStake() {
+		return totalDelegatedStake;
+	}
+
+	public double getUptimePercentage() {
+		return uptimePercentage;
+	}
+
+	public long getProposalsMissed() {
+		return proposalsMissed;
+	}
+
+	public long getProposalsCompleted() {
+		return proposalsCompleted;
+	}
+
+	public ValidatorAddress getAddress() {
+		return address;
 	}
 }

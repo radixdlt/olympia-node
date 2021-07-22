@@ -81,6 +81,11 @@ public class DtoTest {
 	}
 
 	@Test
+	public void testAddressBookEntry() {
+		EqualsVerifier.forClass(AddressBookEntry.class).suppress(Warning.NULL_FIELDS).verify();
+	}
+
+	@Test
 	public void testApiConfiguration() {
 		EqualsVerifier.forClass(ApiConfiguration.class).suppress(Warning.NULL_FIELDS).verify();
 	}
@@ -156,6 +161,11 @@ public class DtoTest {
 	}
 
 	@Test
+	public void testCurrentEpochInfo() {
+		EqualsVerifier.forClass(CurrentEpochInfo.class).suppress(Warning.NULL_FIELDS).verify();
+	}
+
+	@Test
 	public void testDelegatedStake() {
 		EqualsVerifier.forClass(DelegatedStake.class).suppress(Warning.NULL_FIELDS).verify();
 	}
@@ -166,6 +176,21 @@ public class DtoTest {
 	}
 
 	@Test
+	public void testEpochInfo() {
+		EqualsVerifier.forClass(EpochInfo.class).suppress(Warning.NULL_FIELDS).verify();
+	}
+
+	@Test
+	public void testEpochValidatorData() {
+		EqualsVerifier.forClass(EpochValidatorData.class).suppress(Warning.NULL_FIELDS).verify();
+	}
+
+	@Test
+	public void testFeeTable() {
+		EqualsVerifier.forClass(FeeTable.class).suppress(Warning.NULL_FIELDS).verify();
+	}
+
+	@Test
 	public void testFinalizedTransaction() {
 		EqualsVerifier.forClass(FinalizedTransaction.class).suppress(Warning.NULL_FIELDS).verify();
 	}
@@ -173,6 +198,11 @@ public class DtoTest {
 	@Test
 	public void testForkDetails() {
 		EqualsVerifier.forClass(ForkDetails.class).suppress(Warning.NULL_FIELDS).verify();
+	}
+
+	@Test
+	public void testForkDetailsConfiguration() {
+		EqualsVerifier.forClass(ForkDetailsConfiguration.class).suppress(Warning.NULL_FIELDS).verify();
 	}
 
 	@Test
@@ -258,6 +288,11 @@ public class DtoTest {
 	@Test
 	public void testNetworkStats() {
 		EqualsVerifier.forClass(NetworkStats.class).suppress(Warning.NULL_FIELDS).verify();
+	}
+
+	@Test
+	public void testPerUpSubstateFee() {
+		EqualsVerifier.forClass(PerUpSubstateFee.class).suppress(Warning.NULL_FIELDS).verify();
 	}
 
 	@Test
@@ -363,6 +398,11 @@ public class DtoTest {
 	@Test
 	public void testUnstakePositions() {
 		EqualsVerifier.forClass(UnstakePositions.class).suppress(Warning.NULL_FIELDS).verify();
+	}
+
+	@Test
+	public void testUpdates() {
+		EqualsVerifier.forClass(Updates.class).suppress(Warning.NULL_FIELDS).verify();
 	}
 
 	@Test

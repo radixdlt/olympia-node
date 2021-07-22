@@ -71,31 +71,25 @@ import java.util.Objects;
 
 public final class ForkDetails {
 	private final String name;
-	private final String version;
 	private final long epoch;
-	private final long maxRounds;
-	private final long maxSigsPerRound;
-	private final long maxValidators;
+	private final String version;
+	private final ForkDetailsConfiguration config;
 
-	private ForkDetails(String name, String version, long epoch, long maxRounds, long maxSigsPerRound, long maxValidators) {
+	private ForkDetails(String name, long epoch, String version, ForkDetailsConfiguration config) {
 		this.name = name;
 		this.version = version;
 		this.epoch = epoch;
-		this.maxRounds = maxRounds;
-		this.maxSigsPerRound = maxSigsPerRound;
-		this.maxValidators = maxValidators;
+		this.config = config;
 	}
 
 	@JsonCreator
 	public static ForkDetails create(
 		@JsonProperty(value = "name", required = true) String name,
-		@JsonProperty(value = "version", required = true) String version,
 		@JsonProperty(value = "epoch", required = true) long epoch,
-		@JsonProperty(value = "maxRounds", required = true) long maxRounds,
-		@JsonProperty(value = "maxSigsPerRound", required = true) long maxSigsPerRound,
-		@JsonProperty(value = "maxValidators", required = true) long maxValidators
+		@JsonProperty(value = "version", required = true) String version,
+		@JsonProperty(value = "config", required = true) ForkDetailsConfiguration config
 	) {
-		return new ForkDetails(name, version, epoch, maxRounds, maxSigsPerRound, maxValidators);
+		return new ForkDetails(name, epoch, version, config);
 	}
 
 	@Override
@@ -110,26 +104,24 @@ public final class ForkDetails {
 
 		var that = (ForkDetails) o;
 		return epoch == that.epoch
-			&& maxRounds == that.maxRounds
-			&& maxSigsPerRound == that.maxSigsPerRound
-			&& maxValidators == that.maxValidators
 			&& name.equals(that.name)
-			&& version.equals(that.version);
+			&& version.equals(that.version)
+			&& config.equals(that.config);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(name, version, epoch, maxRounds, maxSigsPerRound, maxValidators);
+		return Objects.hash(name, epoch, version, config);
 	}
 
 	@Override
 	public String toString() {
-		return "{name:'" + name + '\''
-			+ ", version:'" + version + '\''
-			+ ", epoch:" + epoch
-			+ ", maxRounds:" + maxRounds
-			+ ", maxSigsPerRound:" + maxSigsPerRound
-			+ ", maxValidators:" + maxValidators + '}';
+		return "{"
+			+ "name='" + name + '\''
+			+ ", epoch=" + epoch
+			+ ", version='" + version + '\''
+			+ ", config=" + config
+			+ '}';
 	}
 
 	public String getName() {
@@ -144,15 +136,7 @@ public final class ForkDetails {
 		return epoch;
 	}
 
-	public long getMaxRounds() {
-		return maxRounds;
-	}
-
-	public long getMaxSigsPerRound() {
-		return maxSigsPerRound;
-	}
-
-	public long getMaxValidators() {
-		return maxValidators;
+	public ForkDetailsConfiguration getConfig() {
+		return config;
 	}
 }

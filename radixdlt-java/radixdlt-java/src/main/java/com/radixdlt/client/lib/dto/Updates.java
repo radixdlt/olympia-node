@@ -61,75 +61,106 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
-package com.radixdlt.client.lib.api.async;
 
-import org.junit.Test;
+package com.radixdlt.client.lib.dto;
 
-import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.util.concurrent.CompletableFuture;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.lib.api.AccountAddress;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
-public class AsyncRadixApiRadixEngineTest {
-	private static final String BASE_URL = "http://localhost/";
+public final class Updates {
+	private final Optional<Double> validatorFee;
+	private final Optional<Boolean> registered;
+	private final Optional<AccountAddress> owner;
+	private final List<DelegatedStake> stakes;
+	private final List<DelegatedStake> unstakes;
 
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String CONFIGURATION = "{\"result\":[{\"name\":\"olympia-first-epoch\",\"epoch\":0,\"version\":"
-		+ "\"olympia_v1\",\"config\":{\"maxValidators\":100,\"maxTransactionsPerRound\":50,\"maxRoundsPerEpoch\":10000,"
-		+ "\"minimumCompletedProposalsPercentage\":9800,\"unstakingDelayEpochLength\":1,\"feeTable\":{\"perUpSubstateFee"
-		+ "\":{\"PreparedStake\":\"500000000000000000\",\"ValidatorRegisteredCopy\":\"5000000000000000000\","
-		+ "\"TokenResource\":\"100000000000000000000\",\"PreparedUnstakeOwnership\":\"500000000000000000\","
-		+ "\"ValidatorOwnerCopy\":\"5000000000000000000\",\"ValidatorMetaData\":\"5000000000000000000\","
-		+ "\"AllowDelegationFlag\":\"5000000000000000000\",\"ValidatorFeeCopy\":\"5000000000000000000\"},"
-		+ "\"perByteFee\":\"200000000000000\"},\"validatorFeeIncreaseDebouncerEpochLength\":1,\"minimumStake\":"
-		+ "\"100000000000000000000\",\"reservedSymbols\":[\"rads\",\"exrds\",\"xrds\",\"xrd\",\"rdxs\",\"rdx\","
-		+ "\"exrd\",\"radix\",\"rad\"],\"maxTransactionSize\":1048576,\"rewardsPerProposal\":"
-		+ "\"10000000000000000000\"}}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"systemTransactions\":37884,\"invalidProposedCommands\":1,"
-		+ "\"userTransactions\":2016},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
-
-	private final HttpClient client = mock(HttpClient.class);
-
-	@Test
-	public void testConfiguration() throws IOException {
-		prepareClient(CONFIGURATION)
-			.map(RadixApi::withTrace)
-			.join()
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.radixEngine().configuration().join()
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configuration -> assertEquals(1, configuration.size()))
-				.onSuccess(configuration -> assertEquals("olympia-first-epoch", configuration.get(0).getName())));
+	private Updates(
+		Optional<Double> validatorFee,
+		Optional<Boolean> registered,
+		Optional<AccountAddress> owner,
+		List<DelegatedStake> stakes,
+		List<DelegatedStake> unstakes
+	) {
+		this.validatorFee = validatorFee;
+		this.registered = registered;
+		this.owner = owner;
+		this.stakes = stakes;
+		this.unstakes = unstakes;
 	}
 
-	@Test
-	public void testData() throws IOException {
-		prepareClient(DATA)
-			.map(RadixApi::withTrace)
-			.join()
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.radixEngine().data().join()
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(data -> assertEquals(37884L, data.getSystemTransactions()))
-				.onSuccess(data -> assertEquals(2016L, data.getUserTransactions()))
-				.onSuccess(data -> assertEquals(1L, data.getInvalidProposedCommands())));
+	@JsonCreator
+	public static Updates create(
+		@JsonProperty("validatorFee") Double validatorFee,
+		@JsonProperty("registered") Boolean registered,
+		@JsonProperty("owner") AccountAddress owner,
+		@JsonProperty("stakes") List<DelegatedStake> stakes,
+		@JsonProperty("unstakes") List<DelegatedStake> unstakes
+	) {
+		return new Updates(
+			Optional.ofNullable(validatorFee),
+			Optional.ofNullable(registered),
+			Optional.ofNullable(owner),
+			stakes == null ? List.of() : stakes,
+			unstakes == null ? List.of() : unstakes
+		);
 	}
 
-	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
-		var completableFuture = new CompletableFuture<HttpResponse<String>>();
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
 
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
+		if (!(o instanceof Updates)) {
+			return false;
+		}
 
-		completableFuture.completeAsync(() -> response);
-		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
+		var updates = (Updates) o;
+		return validatorFee.equals(updates.validatorFee)
+			&& registered.equals(updates.registered)
+			&& owner.equals(updates.owner)
+			&& stakes.equals(updates.stakes)
+			&& unstakes.equals(updates.unstakes);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(validatorFee, registered, owner, stakes, unstakes);
+	}
+
+	@Override
+	public String toString() {
+		return "{"
+			+ "validatorFee=" + validatorFee
+			+ ", registered=" + registered
+			+ ", owner=" + owner
+			+ ", stakes=" + stakes
+			+ ", unstakes=" + unstakes
+			+ '}';
+	}
+
+	public Optional<Double> getValidatorFee() {
+		return validatorFee;
+	}
+
+	public Optional<Boolean> getRegistered() {
+		return registered;
+	}
+
+	public Optional<AccountAddress> getOwner() {
+		return owner;
+	}
+
+	public List<DelegatedStake> getStakes() {
+		return stakes;
+	}
+
+	public List<DelegatedStake> getUnstakes() {
+		return unstakes;
 	}
 }

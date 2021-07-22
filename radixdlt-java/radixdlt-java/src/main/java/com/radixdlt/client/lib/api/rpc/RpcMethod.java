@@ -25,6 +25,7 @@ public enum RpcMethod {
 	NETWORK_CONFIG("networking.get_configuration", SYSTEM),
 	NETWORK_PEERS("networking.get_peers", SYSTEM),
 	NETWORK_DATA("networking.get_data", SYSTEM),
+	NETWORK_ADDRESS_BOOK("networking.get_address_book", SYSTEM),
 
 	VALIDATORS_LIST("validators.get_next_epoch_set", ARCHIVE),
 	VALIDATORS_LOOKUP("validators.lookup_validator", ARCHIVE),

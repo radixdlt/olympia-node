@@ -66,59 +66,36 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.ValidatorAddress;
-import com.radixdlt.utils.UInt256;
 
-import java.util.List;
 import java.util.Objects;
 
 public final class LocalValidatorInfo {
 	private final ValidatorAddress address;
-	private final UInt256 totalStake;
 	private final String name;
 	private final String url;
-	private final boolean registered;
-	private final List<DelegatedStake> stakes;
-	private final AccountAddress owner;
-	private final double validatorFee;
 	private final boolean allowDelegation;
+	private final EpochInfo epochInfo;
 
-	public LocalValidatorInfo(
-		ValidatorAddress address,
-		UInt256 totalStake,
-		String name,
-		String url,
-		boolean registered,
-		List<DelegatedStake> stakes,
-		AccountAddress owner,
-		double validatorFee,
-		boolean allowDelegation
+	private LocalValidatorInfo(
+		ValidatorAddress address, String name, String url, boolean allowDelegation, EpochInfo epochInfo
 	) {
 		this.address = address;
-		this.totalStake = totalStake;
 		this.name = name;
 		this.url = url;
-		this.registered = registered;
-		this.stakes = stakes;
-		this.owner = owner;
-		this.validatorFee = validatorFee;
 		this.allowDelegation = allowDelegation;
+		this.epochInfo = epochInfo;
 	}
 
 	@JsonCreator
 	public static LocalValidatorInfo create(
 		@JsonProperty(value = "address", required = true) ValidatorAddress address,
-		@JsonProperty(value = "totalStake", required = true) UInt256 totalStake,
 		@JsonProperty(value = "name", required = true) String name,
 		@JsonProperty(value = "url", required = true) String url,
-		@JsonProperty(value = "registered", required = true) boolean registered,
-		@JsonProperty(value = "stakes", required = true) List<DelegatedStake> stakes,
-		@JsonProperty(value = "owner", required = true) AccountAddress owner,
-		@JsonProperty(value = "validatorFee", required = true) double validatorFee,
-		@JsonProperty(value = "allowDelegation", required = true) boolean allowDelegation
+		@JsonProperty(value = "allowDelegation", required = true) boolean allowDelegation,
+		@JsonProperty(value = "epochInfo", required = true) EpochInfo epochInfo
 	) {
-		return new LocalValidatorInfo(address, totalStake, name, url, registered, stakes, owner, validatorFee, allowDelegation);
+		return new LocalValidatorInfo(address, name, url, allowDelegation, epochInfo);
 	}
 
 	@Override
@@ -132,43 +109,31 @@ public final class LocalValidatorInfo {
 		}
 
 		var that = (LocalValidatorInfo) o;
-		return registered == that.registered
-			&& Double.compare(that.validatorFee, validatorFee) == 0
-			&& allowDelegation == that.allowDelegation
+		return allowDelegation == that.allowDelegation
 			&& address.equals(that.address)
-			&& totalStake.equals(that.totalStake)
 			&& name.equals(that.name)
 			&& url.equals(that.url)
-			&& stakes.equals(that.stakes)
-			&& owner.equals(that.owner);
+			&& epochInfo.equals(that.epochInfo);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, totalStake, name, url, registered, stakes, owner, validatorFee, allowDelegation);
+		return Objects.hash(address, name, url, allowDelegation, epochInfo);
 	}
 
 	@Override
 	public String toString() {
 		return "{"
 			+ "address=" + address
-			+ ", totalStake=" + totalStake
 			+ ", name='" + name + '\''
 			+ ", url='" + url + '\''
-			+ ", registered=" + registered
-			+ ", stakes=" + stakes
-			+ ", owner=" + owner
-			+ ", validatorFee=" + validatorFee
 			+ ", allowDelegation=" + allowDelegation
+			+ ", epochInfo=" + epochInfo
 			+ '}';
 	}
 
 	public ValidatorAddress getAddress() {
 		return address;
-	}
-
-	public UInt256 getTotalStake() {
-		return totalStake;
 	}
 
 	public String getName() {
@@ -179,23 +144,11 @@ public final class LocalValidatorInfo {
 		return url;
 	}
 
-	public boolean isRegistered() {
-		return registered;
-	}
-
-	public List<DelegatedStake> getStakes() {
-		return stakes;
-	}
-
-	public AccountAddress getOwner() {
-		return owner;
-	}
-
-	public double getValidatorFee() {
-		return validatorFee;
-	}
-
 	public boolean isAllowDelegation() {
 		return allowDelegation;
+	}
+
+	public EpochInfo getEpochInfo() {
+		return epochInfo;
 	}
 }

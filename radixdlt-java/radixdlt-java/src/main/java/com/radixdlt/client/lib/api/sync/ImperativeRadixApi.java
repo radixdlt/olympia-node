@@ -313,11 +313,6 @@ public interface ImperativeRadixApi {
 		 * Get information about current epoch validator set.
 		 */
 		EpochData currentEpoch();
-
-		/**
-		 * Get information about next epoch validator set.
-		 */
-		EpochData nextEpoch();
 	}
 
 	Local local();
@@ -616,11 +611,6 @@ public interface ImperativeRadixApi {
 					@Override
 					public EpochData currentEpoch() {
 						return unwrap(api.local().currentEpoch());
-					}
-
-					@Override
-					public EpochData nextEpoch() {
-						return unwrap(api.local().nextEpoch());
 					}
 				};
 			}

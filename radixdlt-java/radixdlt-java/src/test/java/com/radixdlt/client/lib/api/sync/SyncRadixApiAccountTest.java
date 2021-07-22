@@ -94,9 +94,7 @@ import static com.radixdlt.client.lib.api.token.Amount.amount;
 public class SyncRadixApiAccountTest {
 	private static final String BASE_URL = "http://localhost/";
 	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
-	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
 	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
-	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
 	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String TOKEN_BALANCES = "{\"result\":{\"owner\":\"ddx1qsp8n0nx0muaewav2ksx99wwsu9swq5mlndjmn3gm"
