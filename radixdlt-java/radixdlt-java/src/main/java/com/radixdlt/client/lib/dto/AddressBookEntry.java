@@ -84,15 +84,15 @@ public final class AddressBookEntry {
 
 	@JsonCreator
 	public static AddressBookEntry create(
-		@JsonProperty("address") NodeAddress address,
-		@JsonProperty("banned") boolean banned,
-		@JsonProperty("knownAddresses") List<KnownAddress> knownAddresses
+		@JsonProperty(value = "address", required = true) NodeAddress address,
+		@JsonProperty(value = "banned", required = true) boolean banned,
+		@JsonProperty(value = "knownAddresses", required = true) List<KnownAddress> knownAddresses
 	) {
 		return new AddressBookEntry(address, banned, knownAddresses);
 	}
 
 	@Override
-	public final boolean equals(Object o) {
+	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
 		}

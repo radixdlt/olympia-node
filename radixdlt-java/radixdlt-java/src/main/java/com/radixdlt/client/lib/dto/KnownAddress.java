@@ -84,7 +84,7 @@ public class KnownAddress {
 	@JsonCreator
 	public static KnownAddress create(
 		@JsonProperty(value = "uri", required = true) String uri,
-		@JsonProperty("blacklisted") Boolean blacklisted,
+		@JsonProperty(value = "blacklisted", required = true) Boolean blacklisted,
 		@JsonProperty(value = "lastSuccessfulConnection", required = true) String lastSuccessfulConnection
 	) {
 		return new KnownAddress(
