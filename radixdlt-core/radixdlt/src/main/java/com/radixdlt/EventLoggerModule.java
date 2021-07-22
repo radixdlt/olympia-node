@@ -94,13 +94,17 @@ public final class EventLoggerModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();
 
 	@Provides
-	Function<BFTNode, String> stringForNodes1(Addressing addressing) {
-		return n -> addressing.forValidators().of(n.getKey()).substring(0, 11);
+	Function<BFTNode, String> stringForValidators1(Function<ECPublicKey, String> stringForValidators) {
+		return n -> stringForValidators.apply(n.getKey());
 	}
 
 	@Provides
-	Function<ECPublicKey, String> stringForNodes2(Addressing addressing) {
-		return n -> addressing.forValidators().of(n).substring(0, 11);
+	Function<ECPublicKey, String> stringForValidators2(Addressing addressing) {
+		return k -> {
+			var addr = addressing.forValidators().of(k);
+			var len = addr.length();
+			return addr.substring(0, 2) + "..." + addr.substring(len - 9);
+		};
 	}
 
 	@ProvidesIntoSet
@@ -159,6 +163,16 @@ public final class EventLoggerModule extends AbstractModule {
 			u -> {
 				var output = u.getStateComputerOutput().getInstance(REOutput.class);
 				var epochChange = u.getStateComputerOutput().getInstance(EpochChange.class);
+				long userTxns = output != null ? output.getProcessedTxns().stream().filter(t -> !t.isSystemOnly()).count() : 0;
+				var logLevel = (epochChange != null || logLimiter.tryAcquire()) ? Level.INFO : Level.TRACE;
+				logger.log(logLevel, "lgr_commit{epoch={} round={} version={} hash={} user_txns={}}",
+					u.getTail().getEpoch(),
+					u.getTail().getView().number(),
+					u.getTail().getStateVersion(),
+					Bytes.toHexString(u.getTail().getAccumulatorState().getAccumulatorHash().asBytes()).substring(0, 16),
+					userTxns
+				);
+
 				if (epochChange != null) {
 					var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
 					logger.info("lgr_nepoch{epoch={} included={} num_validators={} total_stake={}}",
@@ -166,17 +180,6 @@ public final class EventLoggerModule extends AbstractModule {
 						validatorSet.containsNode(self),
 						validatorSet.getValidators().size(),
 						Amount.ofSubunits(validatorSet.getTotalPower())
-					);
-
-				} else {
-					long userTxns = output != null ? output.getProcessedTxns().stream().filter(t -> !t.isSystemOnly()).count() : 0;
-					Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-					logger.log(logLevel, "lgr_commit{epoch={} round={} version={} hash={} user_txns={}}",
-						u.getTail().getEpoch(),
-						u.getTail().getView().number(),
-						u.getTail().getStateVersion(),
-						Bytes.toHexString(u.getTail().getAccumulatorState().getAccumulatorHash().asBytes()).substring(0, 16),
-						userTxns
 					);
 				}
 
@@ -188,8 +191,8 @@ public final class EventLoggerModule extends AbstractModule {
 					.forEach(e -> {
 						if (e instanceof ValidatorBFTDataEvent) {
 							var event = (ValidatorBFTDataEvent) e;
-							Level logLevel = event.getMissedProposals() > 0 ? Level.WARN : Level.INFO;
-							logger.log(logLevel, "vdr_epochr{validator={} completed_proposals={} missed_proposals={}}",
+							Level level = event.getMissedProposals() > 0 ? Level.WARN : Level.INFO;
+							logger.log(level, "vdr_epochr{validator={} completed_proposals={} missed_proposals={}}",
 								nodeString.apply(event.getValidatorKey()),
 								event.getCompletedProposals(),
 								event.getMissedProposals()
@@ -197,8 +200,8 @@ public final class EventLoggerModule extends AbstractModule {
 						} else if (e instanceof ValidatorMissedProposalsEvent) {
 							var event = (ValidatorMissedProposalsEvent) e;
 							var you = event.getValidatorKey().equals(self.getKey());
-							Level logLevel = you ? Level.ERROR : Level.WARN;
-							logger.log(logLevel, "{}_failed{validator={} missed_proposals={}}",
+							Level level = you ? Level.ERROR : Level.WARN;
+							logger.log(level, "{}_failed{validator={} missed_proposals={}}",
 								you ? "you" : "vdr",
 								nodeString.apply(event.getValidatorKey()),
 								event.getMissedProposals()

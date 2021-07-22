@@ -72,15 +72,15 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.networks.Addressing;
 
 import java.math.BigInteger;
+import java.util.function.Function;
 
 public final class MockedKeyModule extends AbstractModule {
 	@Provides
 	@Self
-	private String name(Addressing addressing, @Self BFTNode self) {
-		return addressing.forValidators().of(self.getKey()).substring(0, 11);
+	String name(Function<BFTNode, String> nodeToString, @Self BFTNode self) {
+		return nodeToString.apply(self);
 	}
 
 	@Provides

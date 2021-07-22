@@ -71,6 +71,7 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.DispatcherModule;
+import com.radixdlt.EventLoggerModule;
 import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedKeyModule;
 import com.radixdlt.ModuleRunner;
@@ -139,6 +140,7 @@ public final class MempoolRunnerTest {
 				install(new RxEnvironmentModule());
 				install(new DispatcherModule());
 				install(new MempoolReceiverModule());
+				install(new EventLoggerModule());
 			}
 		};
 	}
