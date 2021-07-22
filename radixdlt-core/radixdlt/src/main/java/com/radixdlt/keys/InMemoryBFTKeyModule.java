@@ -71,8 +71,9 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.qualifier.LocalSigner;
+
+import java.util.function.Function;
 
 /**
  * In memory Hash signing and identity handling
@@ -102,7 +103,7 @@ public final class InMemoryBFTKeyModule extends AbstractModule {
 
 	@Provides
 	@Self
-	String name(Addressing addressing, @Self ECPublicKey key) {
-		return addressing.forValidators().of(key).substring(0, 11);
+	String name(Function<ECPublicKey, String> nodeToString, @Self ECPublicKey key) {
+		return nodeToString.apply(key);
 	}
 }

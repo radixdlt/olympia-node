@@ -74,9 +74,10 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.qualifier.LocalSigner;
+
+import java.util.function.Function;
 
 /**
  * Configures the key to be used for signing things as a BFT validator.
@@ -114,8 +115,8 @@ public final class PersistedBFTKeyModule extends AbstractModule {
 
 	@Provides
 	@Self
-	String name(Addressing addressing, @Self ECPublicKey key) {
-		return addressing.forValidators().of(key).substring(0, 11);
+	String name(Function<ECPublicKey, String> nodeToString, @Self ECPublicKey key) {
+		return nodeToString.apply(key);
 	}
 
 	@Provides
