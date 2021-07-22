@@ -67,7 +67,6 @@ import org.junit.Test;
 
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.utils.UInt256;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -82,23 +81,44 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static com.radixdlt.client.lib.api.token.Amount.amount;
+
 public class AsyncRadixApiValidatorTest {
 	private static final String BASE_URL = "http://localhost/";
 
 	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String LIST = "{\"result\":{\"cursor\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\""
-		+ ",\"validators\":[{\"totalDelegatedStake\":\"100000000000000000000\",\"validatorFee\":0,\"address\":\"dv1qfwtmurydewmf"
-		+ "64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumc3jtmxl\",\"infoURL\":\"\",\"ownerDelegation\":\"100000000000000000000\",\"name\""
-		+ ":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qsp9e00sv3h9md825wv0xe0jafaqu02pndlqxv8rnn5jhh0detz0n0qtp2phh\",\"isExt"
-		+ "ernalStakeAccepted\":true},{\"totalDelegatedStake\":\"100000000000000000000\",\"validatorFee\":0,\"address\":\"dv1q0ll"
-		+ "j774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\",\"infoURL\":\"\",\"ownerDelegation\":\"100000000000000000000\""
-		+ ",\"name\":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sfvvdfj\""
-		+ ",\"isExternalStakeAccepted\":true}]},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String LIST = "{\"result\":{\"cursor\":\"dv1qfwtmurydewmf64rnrektuh20g8r6svm0cpnpcuuay"
+		+ "4ammw2cnumc3jtmxl\",\"validators\":[{\"totalDelegatedStake\":\"80130000000000000000000\",\"uptimePer"
+		+ "centage\":\"100.00\",\"proposalsMissed\":0,\"address\":\"dv1qghsre0ptn9r28d07wzrldc08shs5x7aqhj6lzy2"
+		+ "vauyaulppg4qztrktyj\",\"infoURL\":\"\",\"ownerDelegation\":\"80130000000000000000000\",\"name\":\"\""
+		+ ",\"validatorFee\":\"0.0\",\"registered\":true,\"ownerAddress\":\"ddx1qspz7q09u9wv5dga4lecg0ahpu7z7zs"
+		+ "mm5z7ttug3fnhsnhnuy9z5qgpe3507\",\"isExternalStakeAccepted\":true,\"proposalsCompleted\":9871},{\"to"
+		+ "talDelegatedStake\":\"80100000000000000000000\",\"uptimePercentage\":\"100.00\",\"proposalsMissed\":"
+		+ "0,\"address\":\"dv1qwkdfp8z7rrlv5cf45tc4864n277p9ukjax90ec5cd03zr0uylxtu7s9762\",\"infoURL\":\"\",\""
+		+ "ownerDelegation\":\"80100000000000000000000\",\"name\":\"\",\"validatorFee\":\"0.0\",\"registered\":"
+		+ "true,\"ownerAddress\":\"ddx1qsp6e4yyutcv0ajnpxk30z5l2kdtmcyhj6t5c4l8znp47ygdlsnue0sc37dv8\",\"isExte"
+		+ "rnalStakeAccepted\":true,\"proposalsCompleted\":9867},{\"totalDelegatedStake\":\"8010000000000000000"
+		+ "0000\",\"uptimePercentage\":\"100.00\",\"proposalsMissed\":0,\"address\":\"dv1q0llj774w40wafpqg5apgd"
+		+ "2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\",\"infoURL\":\"\",\"ownerDelegation\":\"801000000000000000000"
+		+ "00\",\"name\":\"\",\"validatorFee\":\"0.0\",\"registered\":true,\"ownerAddress\":\"ddx1qspll7tm6464a"
+		+ "m4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sfvvdfj\",\"isExternalStakeAccepted\":true,\"proposalsCompl"
+		+ "eted\":9867},{\"totalDelegatedStake\":\"80100000000000000000000\",\"uptimePercentage\":\"100.00\",\""
+		+ "proposalsMissed\":0,\"address\":\"dv1qwsyxnv7gleusc34ga78kxhx4ewngsk5nvv58s4h22ngu2j8ufruwzer947\","
+		+ "\"infoURL\":\"\",\"ownerDelegation\":\"80100000000000000000000\",\"name\":\"\",\"validatorFee\":\""
+		+ "0.0\",\"registered\":true,\"ownerAddress\":\"ddx1qsp6qs6dnerl8jrzx4rhc7c6u6h96dzz6jd3js7zkaf2dr32gl3"
+		+ "y03cxu5t3n\",\"isExternalStakeAccepted\":true,\"proposalsCompleted\":9868},{\"totalDelegatedStake\":"
+		+ "\"80060000000000000000000\",\"uptimePercentage\":\"99.98\",\"proposalsMissed\":1,\"address\":\"dv1qf"
+		+ "wtmurydewmf64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumc3jtmxl\",\"infoURL\":\"\",\"ownerDelegation\":\"8"
+		+ "0060000000000000000000\",\"name\":\"\",\"validatorFee\":\"0.0\",\"registered\":true,\"ownerAddress\""
+		+ ":\"ddx1qsp9e00sv3h9md825wv0xe0jafaqu02pndlqxv8rnn5jhh0detz0n0qtp2phh\",\"isExternalStakeAccepted\":t"
+		+ "rue,\"proposalsCompleted\":9862}]},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private static final String LOOKUP = "{\"result\":{\"totalDelegatedStake\":\"4754240000000000000000000\",\"validatorFee\":0,\""
-		+ "address\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\",\"infoURL\":\"\",\"ownerDelegation\":\"10000"
-		+ "0000000000000000\",\"name\":\"\",\"registered\":true,\"ownerAddress\":\"ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs2"
-		+ "7s5vq5h24sfvvdfj\",\"isExternalStakeAccepted\":true},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String LOOKUP = "{\"result\":{\"totalDelegatedStake\":\"140100000000000000000000\",\"up"
+		+ "timePercentage\":\"100.00\",\"proposalsMissed\":0,\"address\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897"
+		+ "zk3gvt9uzh59rq9964vjryzf9\",\"infoURL\":\"\",\"ownerDelegation\":\"140100000000000000000000\",\"name\""
+		+ ":\"\",\"validatorFee\":\"0.0\",\"registered\":true,\"ownerAddress\":\"ddx1qspll7tm6464am4yypzn59p42g6a"
+		+ "8qhkguhc269p3vhs27s5vq5h24sfvvdfj\",\"isExternalStakeAccepted\":true,\"proposalsCompleted\":14968},\"i"
+		+ "d\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);
 
@@ -112,14 +132,13 @@ public class AsyncRadixApiValidatorTest {
 				.join()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(validatorsResponse -> assertTrue(validatorsResponse.getCursor().isPresent()))
-				.onSuccess(validatorsResponse -> assertEquals(2, validatorsResponse.getValidators().size())));
+				.onSuccess(validatorsResponse -> assertEquals(5, validatorsResponse.getValidators().size())));
 	}
 
 	@Test
 	public void testLookup() throws IOException {
-		var stake = UInt256.from("4754240000000000000000000");
 		var address = ValidatorAddress.of(Addressing.ofNetworkId(99).forValidators()
-			.parse("dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9"));
+											  .parse("dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9"));
 
 		prepareClient(LOOKUP)
 			.map(RadixApi::withTrace)
@@ -129,7 +148,7 @@ public class AsyncRadixApiValidatorTest {
 				.join()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(validatorDTO -> assertTrue(validatorDTO.isExternalStakeAccepted()))
-				.onSuccess(validatorDTO -> assertEquals(stake, validatorDTO.getTotalDelegatedStake())));
+				.onSuccess(validatorDTO -> assertEquals(amount(140100).tokens(), validatorDTO.getTotalDelegatedStake())));
 	}
 
 	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
