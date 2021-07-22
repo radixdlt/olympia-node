@@ -65,6 +65,7 @@
 package com.radixdlt.store.berkeley;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Streams;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.state.ResourceData;
@@ -126,6 +127,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -135,6 +137,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.utils.Longs.fromByteArray;
@@ -313,6 +316,31 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			dbTxn.abort();
 			throw e;
 		}
+	}
+
+	public Stream<RawSubstateBytes> scanner() {
+		var cursor = substatesDatabase.openCursor(null, null);
+		var iterator = new Iterator<RawSubstateBytes>() {
+			final DatabaseEntry key = new DatabaseEntry();
+			final DatabaseEntry data = new DatabaseEntry();
+			OperationStatus status = cursor.getFirst(key, data, null);
+
+			@Override
+			public boolean hasNext() {
+				return status == SUCCESS;
+			}
+
+			@Override
+			public RawSubstateBytes next() {
+				if (status != SUCCESS) {
+					throw new NoSuchElementException();
+				}
+				var next = new RawSubstateBytes(key.getData(), data.getData());
+				status = cursor.getNext(key, data, null);
+				return next;
+			}
+		};
+		return Streams.stream(iterator).onClose(cursor::close);
 	}
 
 	@Override
@@ -753,7 +781,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	private void downVirtualSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
 		var particleKey = substateId.asBytes();
-		substatesDatabase.put(txn, entry(particleKey), downEntry());
+		substatesDatabase.putNoOverwrite(txn, entry(particleKey), downEntry());
 	}
 
 	private void downSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
@@ -893,7 +921,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			failIfNotSuccess(txnDatabase.putNoOverwrite(dbTxn, pKey, atomPosData), "Atom write for", aid);
 			addBytesWrite(atomPosData, pKey);
 			var idKey = entry(aid);
-			failIfNotSuccess(txnIdDatabase.put(dbTxn, idKey, atomPosData), "Atom Id write for", aid);
+			failIfNotSuccess(txnIdDatabase.putNoOverwrite(dbTxn, idKey, atomPosData), "Atom Id write for", aid);
 			addBytesWrite(atomPosData, idKey);
 			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
 

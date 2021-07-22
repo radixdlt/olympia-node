@@ -152,7 +152,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 				.forEach(actions::add);
 
 			additionalActions.ifPresent(actions::addAll);
-			var genesis = genesisBuilder.build(timestamp, actions);
+			var genesis = genesisBuilder.build("hello", timestamp, actions);
 
 			logger.info("gen_create{tx_id={}}", genesis.getId());
 

@@ -67,9 +67,16 @@ package com.radixdlt.api.handler;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.api.service.ActionParserService;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.NodeAddressing;
@@ -78,15 +85,26 @@ import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.store.TxnIndex;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 import org.json.JSONObject;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.api.JsonRpcUtil.*;
@@ -95,27 +113,33 @@ import static com.radixdlt.utils.functional.Result.allOf;
 
 public final class DeveloperHandler {
 	private final GenesisBuilder genesisBuilder;
-	private final REParser parser;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final BerkeleyLedgerEntryStore engineStore;
+	private final Addressing addressing;
 	private final TxnIndex txnIndex;
 
 	@Inject
 	public DeveloperHandler(
 		GenesisBuilder genesisBuilder,
-		REParser parser,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
+		BerkeleyLedgerEntryStore engineStore,
+		Addressing addressing,
 		TxnIndex txnIndex
 	) {
 		this.genesisBuilder = genesisBuilder;
-		this.parser = parser;
+		this.radixEngine = radixEngine;
+		this.addressing = addressing;
+		this.engineStore = engineStore;
 		this.txnIndex = txnIndex;
 	}
 
-	private Result<VerifiedTxnsAndProof> build(List<TransactionAction> steps) {
+	private Result<VerifiedTxnsAndProof> build(String message, List<TransactionAction> steps) {
 		var actions = steps.stream().flatMap(TransactionAction::toAction).collect(Collectors.toList());
 		return Result.wrap(
 			UNABLE_TO_PREPARE_TX,
 			() -> {
 				try {
-					var txn = genesisBuilder.build(System.currentTimeMillis(), actions);
+					var txn = genesisBuilder.build(message, System.currentTimeMillis(), actions);
 					var proof = genesisBuilder.generateGenesisProof(txn);
 					return VerifiedTxnsAndProof.create(List.of(txn), proof);
 				} catch (Exception e) {
@@ -129,14 +153,15 @@ public final class DeveloperHandler {
 	public JSONObject handleGenesisConstruction(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			List.of("networkId", "actions"),
+			List.of("networkId", "actions", "message"),
 			params -> {
+				var message = params.getString("message");
 				var addressing = Addressing.ofNetworkId(params.getInt("networkId"));
 				var actionParserService = new ActionParserService(addressing);
 
 				return allOf(safeArray(params, "actions"))
 					.flatMap(actions ->
-						actionParserService.parse(actions).flatMap(this::build)
+						actionParserService.parse(actions).flatMap(steps -> this.build(message, steps))
 							.map(p -> {
 								var o = jsonObject();
 								var txns = jsonArray();
@@ -146,6 +171,124 @@ public final class DeveloperHandler {
 							})
 					);
 			});
+	}
+
+	private Function<Bucket, String> getKeyMapper(String groupBy) {
+		switch (groupBy) {
+			case "resource":
+				return b -> {
+					if (b.resourceAddr() == null) {
+						return "stake-ownership";
+					}
+
+					var key = SystemMapKey.ofResourceData(b.resourceAddr(), SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+					var meta = (TokenResourceMetadata) radixEngine.get(key).orElseThrow();
+					return addressing.forResources().of(meta.getSymbol(), b.resourceAddr());
+				};
+			case "owner":
+				return b -> b.getOwner() == null ? "null" : addressing.forAccounts().of(b.getOwner());
+			case "validator":
+				return b -> b.getValidatorKey() == null ? "null" : addressing.forValidators().of(b.getValidatorKey());
+			default:
+				throw new IllegalArgumentException("Invalid groupBy: " + groupBy);
+		}
+	}
+
+	private Predicate<Bucket> getBucketPredicate(String type, byte[] value) {
+		switch (type) {
+			case "resource":
+				return b -> Arrays.equals(b.resourceAddr().getBytes(), value);
+			case "owner":
+				return b -> Arrays.equals(b.getOwner().getBytes(), value);
+			case "validator":
+				return b -> Arrays.equals(b.getValidatorKey().getCompressedBytes(), value);
+			default:
+				throw new IllegalArgumentException("Invalid value type: " + type);
+		}
+	}
+
+	public JSONObject handleQueryResourceState(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("prefix"),
+			params -> {
+				var keyMapper = getKeyMapper(params.has("groupBy") ? params.getString("groupBy") : "resource");
+				final Predicate<Bucket> bucketPredicate;
+				if (params.has("query")) {
+					var query = params.getJSONObject("query");
+					var type = query.getString("type");
+					var value = Bytes.fromHexString(query.getString("value"));
+					bucketPredicate = getBucketPredicate(type, value);
+				} else {
+					bucketPredicate = b -> true;
+				}
+
+				var hex = params.getString("prefix");
+				var prefix = Bytes.fromHexString(hex);
+				var index = SubstateIndex.create(prefix);
+				if (!ResourceInBucket.class.isAssignableFrom(index.getSubstateClass())) {
+					throw new IllegalArgumentException("Invalid resource index " + index.getSubstateClass());
+				}
+				var resultJson = jsonArray();
+				var map = radixEngine.reduceResourcesWithSubstateCount(
+					(SubstateIndex<ResourceInBucket>) index,
+					r -> keyMapper.apply(r.bucket()),
+					r -> bucketPredicate.test(r.bucket())
+				);
+				map.entrySet().stream()
+					.sorted(Comparator.<Map.Entry<String, Pair<UInt384, Long>>, UInt384>comparing(e -> e.getValue().getFirst()).reversed())
+					.forEach(e ->
+						resultJson.put(jsonObject()
+							.put("key", e.getKey())
+							.put("amount", e.getValue().getFirst())
+							.put("substateCount", e.getValue().getSecond())
+						)
+					);
+				var totalSubstateCount = map.values().stream().mapToLong(Pair::getSecond).sum();
+				var totalAmount = map.values().stream().map(Pair::getFirst).reduce(UInt384::add).orElse(UInt384.ZERO);
+				return Result.ok(jsonObject()
+					.put("entries", resultJson)
+					.put("entryCount", map.size())
+					.put("totalSubstateCount", totalSubstateCount)
+					.put("totalAmount", totalAmount)
+				);
+			}
+		);
+	}
+
+	public JSONObject handleScanSubstates(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("keyHexRegex", "valueHexRegex"),
+			params -> {
+				var keyHexRegex = params.getString("keyHexRegex");
+				var keyPattern = Pattern.compile(keyHexRegex).asMatchPredicate();
+				var valueHexRegex = params.getString("valueHexRegex");
+				var limit = params.has("loadLimit") ? params.getLong("loadLimit") : 8;
+				var valuePattern = Pattern.compile(valueHexRegex).asMatchPredicate();
+				var found = jsonArray();
+				var idSize = new AtomicLong();
+				var dataSize = new AtomicLong();
+				var count = engineStore.scanner()
+					.map(r -> Pair.of(Bytes.toHexString(r.getId()), Bytes.toHexString(r.getData())))
+					.filter(p -> keyPattern.test(p.getFirst()) && valuePattern.test(p.getSecond()))
+					.peek(p -> {
+						if (found.length() < limit) {
+							found.put(p.getFirst() + ":" + p.getSecond());
+						}
+						idSize.getAndAdd(p.getFirst().length() / 2);
+						dataSize.getAndAdd(p.getSecond().length() / 2);
+					})
+					.count();
+				return Result.ok(jsonObject()
+					.put("loaded", found)
+					.put("idSize", idSize.get())
+					.put("dataSize", dataSize.get())
+					.put("totalSize", idSize.get() + dataSize.get())
+					.put("totalCount", count)
+				);
+			}
+		);
 	}
 
 	public JSONObject handleLookupTransaction(JSONObject request) {
@@ -175,6 +318,7 @@ public final class DeveloperHandler {
 			params -> Result.wrap(
 				e -> Failure.failure(-1, e.getMessage()),
 				() -> {
+					var parser = radixEngine.getParser();
 					var txnHex = params.getString("txn");
 					var txn = Txn.create(Bytes.fromHexString(txnHex));
 					var result = parser.parse(txn);
@@ -197,6 +341,24 @@ public final class DeveloperHandler {
 			)
 		);
 	}
+
+	public JSONObject handleParseSubstate(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("data"),
+			params -> Result.wrap(
+				e -> Failure.failure(-1, e.getMessage()),
+				() -> {
+					var data = Bytes.fromHexString(params.getString("data"));
+					var deserialization = radixEngine.getSubstateDeserialization();
+					var substate = deserialization.deserialize(data);
+					return jsonObject()
+						.put("parsed", substate.toString());
+				}
+			)
+		);
+	}
+
 
 	private static Pair<String, ECPublicKey> parseAddress(String type, String address) throws DeserializeException {
 		switch (type) {
@@ -226,6 +388,22 @@ public final class DeveloperHandler {
 					return jsonObject()
 						.put("hrp", hrp)
 						.put("public_key", Bytes.toHexString(pubKey.getCompressedBytes()));
+				}
+			)
+		);
+	}
+
+	public JSONObject handleParseAmount(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("amount"),
+			params -> Result.wrap(
+				e -> Failure.failure(-1, e.getMessage()),
+				() -> {
+					var amountString = params.getString("amount");
+					var amount = UInt256.from(amountString);
+					return jsonObject()
+						.put("parsed", Amount.ofSubunits(amount).toString());
 				}
 			)
 		);

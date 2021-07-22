@@ -85,6 +85,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
@@ -96,6 +97,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.TransientEngineStore;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
@@ -453,6 +455,19 @@ public final class RadixEngine<M> {
 		throw new TxBuilderException("Not enough fees: unable to construct with fees after " + maxTries + " tries.");
 	}
 
+	public REParser getParser() {
+		synchronized (stateUpdateEngineLock) {
+			return parser;
+		}
+	}
+
+	public SubstateDeserialization getSubstateDeserialization() {
+		synchronized (stateUpdateEngineLock) {
+			var deserialization = constraintMachine.getDeserialization();
+			return deserialization;
+		}
+	}
+
 	public Optional<Particle> get(SystemMapKey mapKey) {
 		synchronized (stateUpdateEngineLock) {
 			var deserialization = constraintMachine.getDeserialization();
@@ -510,6 +525,25 @@ public final class RadixEngine<M> {
 			(m, t) -> {
 				if (predicate.test(t)) {
 					m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+				}
+				return m;
+			}
+		);
+	}
+
+	public <K, T extends ResourceInBucket> Map<K, Pair<UInt384, Long>> reduceResourcesWithSubstateCount(
+		SubstateIndex<T> index,
+		Function<T, K> keyMapper,
+		Predicate<T> predicate
+	) {
+		return reduce(index, new HashMap<>(),
+			(m, t) -> {
+				if (predicate.test(t)) {
+					m.merge(
+						keyMapper.apply(t),
+						Pair.of(UInt384.from(t.getAmount()), 1L),
+						(p0, p1) -> Pair.of(p0.getFirst().add(p1.getFirst()), p0.getSecond() + p1.getSecond())
+					);
 				}
 				return m;
 			}

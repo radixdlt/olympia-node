@@ -100,6 +100,20 @@ public class DeveloperEndpointModule extends AbstractModule {
 
 	@DeveloperEndpoint
 	@ProvidesIntoMap
+	@StringMapKey("developer.query_resource_state")
+	public JsonRpcHandler developerQueryResourceState(DeveloperHandler developerHandler) {
+		return developerHandler::handleQueryResourceState;
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.scan_substates")
+	public JsonRpcHandler developerScanSubstates(DeveloperHandler developerHandler) {
+		return developerHandler::handleScanSubstates;
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
 	@StringMapKey("developer.build_genesis")
 	public JsonRpcHandler developerBuildGenesis(DeveloperHandler developerHandler) {
 		return developerHandler::handleGenesisConstruction;
@@ -110,6 +124,13 @@ public class DeveloperEndpointModule extends AbstractModule {
 	@StringMapKey("developer.parse_transaction")
 	public JsonRpcHandler developerParseTransaction(DeveloperHandler developerHandler) {
 		return developerHandler::handleParseTxn;
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.parse_substate")
+	public JsonRpcHandler developerParseSubstate(DeveloperHandler developerHandler) {
+		return developerHandler::handleParseSubstate;
 	}
 
 	@DeveloperEndpoint
@@ -125,6 +146,13 @@ public class DeveloperEndpointModule extends AbstractModule {
 	@StringMapKey("developer.create_address")
 	public JsonRpcHandler developerCreateAddress(DeveloperHandler developerHandler) {
 		return developerHandler::handleCreateAddress;
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.parse_amount")
+	public JsonRpcHandler developerParseAmount(DeveloperHandler developerHandler) {
+		return developerHandler::handleParseAmount;
 	}
 
 	@DeveloperEndpoint

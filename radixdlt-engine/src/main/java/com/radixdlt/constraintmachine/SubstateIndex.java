@@ -64,6 +64,7 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.utils.Bytes;
 
 import java.nio.ByteBuffer;
@@ -77,6 +78,10 @@ public final class SubstateIndex<T extends Particle> {
 	private SubstateIndex(byte[] index, Class<T> substateClass) {
 		this.index = index;
 		this.substateClass = substateClass;
+	}
+
+	public static SubstateIndex<?> create(byte[] prefix) {
+		return new SubstateIndex<>(prefix, SubstateTypeId.valueOf(prefix[0]).getSubstateClass());
 	}
 
 	public static <T extends Particle> SubstateIndex<T> create(byte[] prefix, Class<T> substateClass) {
@@ -125,7 +130,7 @@ public final class SubstateIndex<T extends Particle> {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(index, substateClass);
+		return Objects.hash(Arrays.hashCode(index), substateClass);
 	}
 
 	@Override
@@ -135,7 +140,7 @@ public final class SubstateIndex<T extends Particle> {
 		}
 
 		var other = (SubstateIndex) o;
-		return this.index == other.index
+		return Arrays.equals(this.index, other.index)
 			&& Objects.equals(this.substateClass, other.substateClass);
 	}
 
