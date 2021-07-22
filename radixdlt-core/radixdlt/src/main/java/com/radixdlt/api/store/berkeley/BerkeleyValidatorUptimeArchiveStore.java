@@ -118,6 +118,31 @@ public final class BerkeleyValidatorUptimeArchiveStore implements BerkeleyAdditi
 		validatorUptime.put(dbTxn, key, value);
 	}
 
+	public ValidatorUptime getUptimeTwoWeeks(ECPublicKey validatorKey) {
+		var lastEpoch = curEpoch.get();
+		long epochStart = Math.max(curEpoch.get() - EPOCH_WINDOW_LENGTH, 0);
+
+		var uptime = ValidatorUptime.empty();
+		for (var epoch = epochStart; epoch <= lastEpoch; epoch++) {
+			var buf = ByteBuffer.allocate(Long.BYTES + ECPublicKey.COMPRESSED_BYTES);
+			buf.putLong(epoch);
+			buf.put(validatorKey.getCompressedBytes());
+			var key = new DatabaseEntry(buf.array());
+			var value = new DatabaseEntry();
+
+			var status = validatorUptime.get(null, key, value, null);
+			if (status == OperationStatus.SUCCESS) {
+				var valueBuf = ByteBuffer.wrap(value.getData());
+				var proposalsCompleted = valueBuf.getLong();
+				var proposalsMissed = valueBuf.getLong();
+				var nextUptime = ValidatorUptime.create(proposalsCompleted, proposalsMissed);
+				uptime = uptime.merge(nextUptime);
+			}
+		}
+
+		return uptime;
+	}
+
 	public Map<ECPublicKey, ValidatorUptime> getUptimeTwoWeeks() {
 		var map = new HashMap<ECPublicKey, ValidatorUptime>();
 		long epochStart = Math.max(curEpoch.get() - EPOCH_WINDOW_LENGTH, 0);

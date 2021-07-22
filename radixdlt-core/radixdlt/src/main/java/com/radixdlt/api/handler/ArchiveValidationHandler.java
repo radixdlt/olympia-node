@@ -118,7 +118,7 @@ public class ArchiveValidationHandler {
 			request,
 			"validatorAddress",
 			address -> addressing.forValidators().fromString(address)
-				.flatMap(validatorInfoService::getValidator)
+				.map(validatorInfoService::getNextEpochValidator)
 				.map(d -> d.asJson(addressing))
 		);
 	}

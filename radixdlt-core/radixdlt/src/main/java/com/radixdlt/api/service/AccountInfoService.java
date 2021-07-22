@@ -64,26 +64,16 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.api.store.ValidatorUptime;
 import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorMetaData;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorFeeCopy;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.utils.Pair;
 import org.bouncycastle.util.Arrays;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -92,7 +82,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
 import java.util.HashMap;
@@ -123,89 +112,7 @@ public class AccountInfoService {
 			.put("balance", getOwnBalance());
 	}
 
-	public ValidatorUptime getMyValidatorUptime() {
-		var validatorUptimeKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_BFT_DATA.id(), bftKey.getCompressedBytes());
-		return radixEngine.get(validatorUptimeKey)
-			.map(ValidatorBFTData.class::cast)
-			.map(d -> ValidatorUptime.create(d.proposalsCompleted(), d.proposalsMissed()))
-			.orElse(ValidatorUptime.empty());
-	}
-
-	public AllowDelegationFlag getMyValidatorDelegationFlag() {
-		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id(), bftKey.getCompressedBytes());
-		return (AllowDelegationFlag) radixEngine.get(validatorDataKey).orElse(AllowDelegationFlag.createVirtual(bftKey));
-	}
-
-	public ValidatorRegisteredCopy getMyNextEpochRegisteredFlag() {
-		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(), bftKey.getCompressedBytes());
-		return (ValidatorRegisteredCopy) radixEngine.get(validatorDataKey).orElse(ValidatorRegisteredCopy.createVirtual(bftKey));
-	}
-
-	public ValidatorFeeCopy getMyNextValidatorFee() {
-		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_RAKE_COPY.id(), bftKey.getCompressedBytes());
-		return (ValidatorFeeCopy) radixEngine.get(validatorDataKey).orElse(ValidatorFeeCopy.createVirtual(bftKey));
-	}
-
-	public ValidatorOwnerCopy getMyNextEpochValidatorOwner() {
-		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_OWNER_COPY.id(), bftKey.getCompressedBytes());
-		return (ValidatorOwnerCopy) radixEngine.get(validatorDataKey).orElse(ValidatorOwnerCopy.createVirtual(bftKey));
-	}
-
-	public ValidatorMetaData getMyValidatorMetadata() {
-		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_META_DATA.id(), bftKey.getCompressedBytes());
-		return (ValidatorMetaData) radixEngine.get(validatorDataKey).orElse(ValidatorMetaData.createVirtual(bftKey));
-	}
-
-	public UInt256 getTotalStake() {
-		return getMyValidator().getTotalStake();
-	}
-
-	public ValidatorStakeData getMyValidator() {
-		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), bftKey.getCompressedBytes());
-		return (ValidatorStakeData) radixEngine.get(validatorDataKey).orElse(ValidatorStakeData.createVirtual(bftKey));
-	}
-
-	public Map<REAddr, UInt384> getPreparedStakesToMyValidator() {
-		var index = SubstateIndex.create(
-			Arrays.concatenate(new byte[] {SubstateTypeId.PREPARED_STAKE.id(), 0}, bftKey.getCompressedBytes()),
-			PreparedStake.class
-		);
-		return radixEngine.reduceResources(index, PreparedStake::getOwner);
-	}
-
-	public Map<REAddr, UInt384> getPreparedUnstakesFromMyValidator() {
-		var index = SubstateIndex.create(
-			Arrays.concatenate(new byte[] {SubstateTypeId.PREPARED_UNSTAKE.id(), 0}, bftKey.getCompressedBytes()),
-			PreparedUnstakeOwnership.class
-		);
-		return radixEngine.reduceResources(index, PreparedUnstakeOwnership::getOwner);
-	}
-
-	public Pair<ValidatorStakeData, JSONArray> getStakeData() {
-		var myValidator = getMyValidator();
-		var index = SubstateIndex.create(
-			Arrays.concatenate(new byte[] {SubstateTypeId.STAKE_OWNERSHIP.id(), 0}, bftKey.getCompressedBytes()),
-			StakeOwnership.class
-		);
-		var stakeReceived = radixEngine.reduceResources(index, StakeOwnership::getOwner);
-		var unstakingOwnership = SubstateIndex.create(
-			Arrays.concatenate(new byte[] {SubstateTypeId.PREPARED_UNSTAKE.id(), 0}, bftKey.getCompressedBytes()),
-			PreparedUnstakeOwnership.class
-		);
-		radixEngine.reduceResources(unstakingOwnership, PreparedUnstakeOwnership::getOwner, stakeReceived);
-
-		var stakeFrom = jsonArray();
-		stakeReceived.forEach((address, amt) -> {
-			stakeFrom.put(
-				jsonObject()
-					.put("delegator", addressing.forAccounts().of(address))
-					.put("amount", amt.multiply(myValidator.getTotalStake()).divide(myValidator.getTotalOwnership()))
-			);
-		});
-		return Pair.of(myValidator, stakeFrom);
-	}
-
-	public String getOwnAddress() {
+	private String getOwnAddress() {
 		return addressing.forAccounts().of(REAddr.ofPubKeyAccount(bftKey));
 	}
 

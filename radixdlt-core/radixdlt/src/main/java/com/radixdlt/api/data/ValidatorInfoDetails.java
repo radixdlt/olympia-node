@@ -70,7 +70,6 @@ import org.json.JSONObject;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.ValidatorDetails;
 import com.radixdlt.utils.UInt256;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
@@ -134,21 +133,6 @@ public class ValidatorInfoDetails {
 
 		return new ValidatorInfoDetails(
 			validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed, registered, percentage, uptime
-		);
-	}
-
-	public static ValidatorInfoDetails create(ValidatorDetails details) {
-		return create(
-			details.getKey(),
-			details.getOwner(),
-			details.getName(),
-			details.getUrl(),
-			details.getStake(),
-			details.getOwnerStake(),
-			details.allowsDelegation(),
-			details.registered(),
-			details.getPercentage(),
-			details.getUptime()
 		);
 	}
 

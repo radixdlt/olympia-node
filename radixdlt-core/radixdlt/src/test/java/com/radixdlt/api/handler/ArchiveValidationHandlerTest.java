@@ -181,46 +181,6 @@ public class ArchiveValidationHandlerTest {
 		assertEquals("v3", list.getJSONObject(2).get("name"));
 	}
 
-	@Test
-	public void testLookupValidatorPositional() {
-		when(validatorInfoService.getValidator(eq(V1)))
-			.thenReturn(Result.ok(createValidator(V1, "v1", UInt256.FIVE)));
-
-		var params = jsonArray().put(addressing.forValidators().of(V1));
-		var response = handler.handleValidatorsLookupValidator(requestWith(params));
-
-		assertNotNull(response);
-		assertTrue(response.has("result"));
-
-		var result = response.getJSONObject("result");
-
-		assertNotNull(result);
-
-		assertEquals(UInt256.FIVE, result.get("totalDelegatedStake"));
-		assertEquals("http://v1.com", result.get("infoURL"));
-		assertEquals("v1", result.get("name"));
-	}
-
-	@Test
-	public void testLookupValidatorNamed() {
-		when(validatorInfoService.getValidator(eq(V1)))
-			.thenReturn(Result.ok(createValidator(V1, "v1", UInt256.FIVE)));
-
-		var params = jsonObject().put("validatorAddress", addressing.forValidators().of(V1));
-		var response = handler.handleValidatorsLookupValidator(requestWith(params));
-
-		assertNotNull(response);
-		assertTrue(response.has("result"));
-
-		var result = response.getJSONObject("result");
-
-		assertNotNull(result);
-
-		assertEquals(UInt256.FIVE, result.get("totalDelegatedStake"));
-		assertEquals("http://v1.com", result.get("infoURL"));
-		assertEquals("v1", result.get("name"));
-	}
-
 	private ValidatorInfoDetails createValidator(ECPublicKey v1, String name, UInt256 stake) {
 		return ValidatorInfoDetails.create(
 			v1, REAddr.ofPubKeyAccount(v1),

@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.api.service.ValidatorInfoService;
 import com.radixdlt.api.store.ValidatorUptime;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
@@ -77,36 +78,40 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.service.AccountInfoService;
 
 import static com.radixdlt.api.JsonRpcUtil.*;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
 
 public final class ValidationHandler {
-	private final AccountInfoService accountService;
+	private final ValidatorInfoService validatorInfoService;
 	private final Addressing addressing;
 	private final ECPublicKey self;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	@Inject
 	public ValidationHandler(
-		AccountInfoService accountService,
+		ValidatorInfoService validatorInfoService,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		@Self ECPublicKey self,
 		Addressing addressing
 	) {
-		this.accountService = accountService;
+		this.validatorInfoService = validatorInfoService;
 		this.radixEngine = radixEngine;
 		this.self = self;
 		this.addressing = addressing;
 	}
 
 	private JSONObject getValidatorInfo() {
-		var metadata = accountService.getMyValidatorMetadata();
-		var stakeData = accountService.getStakeData();
-		var validatorData = stakeData.getFirst();
-		var allowDelegationFlag = accountService.getMyValidatorDelegationFlag();
-		var uptime = accountService.getMyValidatorUptime();
+		var metadata = validatorInfoService.getMetadata(self);
+		var validatorData = validatorInfoService.getValidatorStakeData(self);
+		var individualStakes = validatorInfoService.getEstimatedIndividualStakes(validatorData);
+		var stakesJson = jsonArray();
+		individualStakes.forEach((addr, amt) -> stakesJson.put(jsonObject()
+			.put("delegator", addressing.forAccounts().of(addr))
+			.put("amount", amt)
+		));
+		var allowDelegationFlag = validatorInfoService.getAllowDelegationFlag(self);
+		var uptime = validatorInfoService.getUptime(self);
 		var validatorAddress = addressing.forValidators().of(self);
 
 		var data = jsonObject()
@@ -119,26 +124,26 @@ public final class ValidationHandler {
 			.put("registered", validatorData.isRegistered())
 			.put("owner", addressing.forAccounts().of(validatorData.getOwnerAddr()))
 			.put("validatorFee", (double) validatorData.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "")
-			.put("stakes", stakeData.getSecond())
+			.put("stakes", stakesJson)
 			.put("totalStake", validatorData.getTotalStake())
 			.put("proposalsCompleted", uptime.getProposalsCompleted())
 			.put("proposalsMissed", uptime.getProposalsMissed())
 			.put("uptimePercentage", uptime.toPercentageString());
 
 		var updates = jsonObject();
-		var validatorRakeCopy = accountService.getMyNextValidatorFee();
+		var validatorRakeCopy = validatorInfoService.getNextValidatorFee(self);
 		if (validatorRakeCopy.getRakePercentage() != validatorData.getRakePercentage()) {
 			updates.put("validatorFee", (double) validatorRakeCopy.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "");
 		}
-		var nextEpochRegisteredFlag = accountService.getMyNextEpochRegisteredFlag().isRegistered();
+		var nextEpochRegisteredFlag = validatorInfoService.getNextEpochRegisteredFlag(self).isRegistered();
 		if (nextEpochRegisteredFlag != validatorData.isRegistered()) {
 			updates.put("registered", nextEpochRegisteredFlag);
 		}
-		var nextEpochOwner = accountService.getMyNextEpochValidatorOwner().getOwner();
+		var nextEpochOwner = validatorInfoService.getNextEpochValidatorOwner(self).getOwner();
 		if (!nextEpochOwner.equals(validatorData.getOwnerAddr())) {
 			updates.put("owner", addressing.forAccounts().of(nextEpochOwner));
 		}
-		var preparedStakes = accountService.getPreparedStakesToMyValidator();
+		var preparedStakes = validatorInfoService.getPreparedStakes(self);
 		if (!preparedStakes.isEmpty()) {
 			var preparedStakesJson = jsonArray();
 			preparedStakes.forEach((addr, amount) -> preparedStakesJson.put(
@@ -148,20 +153,14 @@ public final class ValidationHandler {
 			));
 			updates.put("stakes", preparedStakesJson);
 		}
-		var preparedUnstakes = accountService.getPreparedUnstakesFromMyValidator();
+		var preparedUnstakes = validatorInfoService.getEstimatedPreparedUnstakes(validatorData);
 		if (!preparedUnstakes.isEmpty()) {
-			var curStake = validatorData.getTotalStake();
-			var curOwnership = validatorData.getTotalOwnership();
 			var preparedUnstakesJson = jsonArray();
-			for (var e : preparedUnstakes.entrySet()) {
-				var unstakeValueEstimate = e.getValue().multiply(curStake).divide(curOwnership).getLow();
-				preparedUnstakesJson.put(jsonObject()
-					.put("amount", unstakeValueEstimate)
-					.put("delegator", addressing.forAccounts().of(e.getKey()))
-				);
-				curOwnership = curOwnership.subtract(e.getValue().getLow());
-				curStake = curStake.subtract(unstakeValueEstimate);
-			}
+			preparedUnstakes.forEach((addr, amount) -> preparedUnstakesJson.put(
+				jsonObject()
+					.put("amount", amount)
+					.put("delegator", addressing.forAccounts().of(addr))
+			));
 			updates.put("unstakes", preparedUnstakesJson);
 		}
 

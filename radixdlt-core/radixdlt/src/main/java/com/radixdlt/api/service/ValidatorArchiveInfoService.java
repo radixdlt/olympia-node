@@ -66,33 +66,30 @@ package com.radixdlt.api.service;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.data.ValidatorInfoDetails;
-import com.radixdlt.api.service.reducer.NextEpochValidators;
 import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorMetaData;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorFeeCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.FunctionalUtils;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Result.Mapper2;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_VALIDATOR;
 import static com.radixdlt.utils.functional.FunctionalUtils.skipUntil;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ValidatorArchiveInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final ValidatorInfoService validatorInfoService;
 	private final BerkeleyValidatorUptimeArchiveStore uptimeStore;
 	private final Addressing addressing;
 
@@ -100,10 +97,12 @@ public class ValidatorArchiveInfoService {
 	public ValidatorArchiveInfoService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		BerkeleyValidatorUptimeArchiveStore uptimeStore,
+		ValidatorInfoService validatorInfoService,
 		Addressing addressing
 	) {
 		this.radixEngine = radixEngine;
 		this.uptimeStore = uptimeStore;
+		this.validatorInfoService = validatorInfoService;
 		this.addressing = addressing;
 	}
 
@@ -119,39 +118,49 @@ public class ValidatorArchiveInfoService {
 		return () -> Result.ok(tuple(newCursor, list));
 	}
 
-	// TODO: Don't retrieve all validators
-	public Result<ValidatorInfoDetails> getValidator(ECPublicKey validatorPublicKey) {
-		return getAllValidators()
-			.stream()
-			.filter(validatorInfoDetails -> validatorInfoDetails.getValidatorKey().equals(validatorPublicKey))
-			.findFirst()
-			.map(Result::ok)
-			.orElseGet(() -> UNKNOWN_VALIDATOR.with(addressing.forValidators().of(validatorPublicKey)).result());
+	public ValidatorInfoDetails getNextEpochValidator(ECPublicKey k) {
+		var metadata = validatorInfoService.getMetadata(k);
+		var curData = validatorInfoService.getValidatorStakeData(k);
+		var owner = validatorInfoService.getNextEpochValidatorOwner(k).getOwner();
+		var individualStakes = validatorInfoService.getEstimatedIndividualStakes(curData);
+		var preparedStakes = validatorInfoService.getPreparedStakes(k);
+		var totalPreparedStakes = preparedStakes.values().stream().reduce(UInt384::add).orElse(UInt384.ZERO).getLow();
+		var preparedUnstakes = validatorInfoService.getEstimatedPreparedUnstakes(curData);
+		var totalPreparedUnstakes = preparedUnstakes.values().stream().reduce(UInt256::add).orElse(UInt256.ZERO);
+		var totalStake = curData.getTotalStake().add(totalPreparedStakes).subtract(totalPreparedUnstakes);
+		var ownerStake = individualStakes.getOrDefault(owner, UInt256.ZERO)
+			.add(preparedStakes.getOrDefault(owner, UInt384.ZERO).getLow())
+			.subtract(preparedUnstakes.getOrDefault(owner, UInt256.ZERO));
+		var allowsDelegation = validatorInfoService.getAllowDelegationFlag(k).allowsDelegation();
+		var isRegistered = validatorInfoService.getNextEpochRegisteredFlag(k).isRegistered();
+		var percentage = validatorInfoService.getNextValidatorFee(k).getRakePercentage();
+		var uptime = uptimeStore.getUptimeTwoWeeks(k);
+		return ValidatorInfoDetails.create(
+			k,
+			owner,
+			metadata.getName(),
+			metadata.getUrl(),
+			totalStake,
+			ownerStake,
+			allowsDelegation,
+			isRegistered,
+			percentage,
+			uptime
+		);
 	}
 
 	public List<ValidatorInfoDetails> getAllValidators() {
+		var registered = radixEngine.reduce(ValidatorRegisteredCopy.class, new HashSet<ECPublicKey>(), (u, t) -> {
+			if (t.isRegistered()) {
+				u.add(t.getValidatorKey());
+			}
+			return u;
+		});
+
 		// TODO: Use NextEpoch action to compute all of this
-		var indices = List.of(
-			ValidatorStakeData.class,
-			PreparedStake.class,
-			ValidatorOwnerCopy.class,
-			AllowDelegationFlag.class,
-			ValidatorMetaData.class,
-			ValidatorFeeCopy.class
-		);
-		var nextEpochValidators = NextEpochValidators.create();
-		for (var index : indices) {
-			radixEngine.reduce(index, nextEpochValidators, (u, t) -> {
-				u.process(t);
-				return u;
-			});
-		}
-
-		var uptime = uptimeStore.getUptimeTwoWeeks();
-		nextEpochValidators.process(uptime);
-
-		var result = nextEpochValidators.map(ValidatorInfoDetails::create);
-		result.sort(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed());
-		return result;
+		return registered.stream()
+			.map(this::getNextEpochValidator)
+			.sorted(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed())
+			.collect(Collectors.toList());
 	}
 }
