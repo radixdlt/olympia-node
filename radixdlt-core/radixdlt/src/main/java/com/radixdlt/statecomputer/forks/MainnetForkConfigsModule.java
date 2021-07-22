@@ -112,7 +112,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				),
 				(long) 1024 * 1024, // 1MB max user transaction size
 				OptionalInt.of(50), // 50 Txns per round
-				1_500_000, // Two weeks worth of rounds
+				10_000, // Rounds per epoch - not extended to 2 weeks for testing
 				150, // Two weeks worth of epochs for rake debounce
 				Amount.ofTokens(100), // Minimum stake
 				150, // Two weeks worth of epochs for unstaking delay
