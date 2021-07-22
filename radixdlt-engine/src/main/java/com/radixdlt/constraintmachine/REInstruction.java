@@ -69,6 +69,7 @@ import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.engine.parser.exceptions.REInstructionDataDeserializeException;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Bytes;
 
 import java.nio.ByteBuffer;
 
@@ -339,8 +340,16 @@ public final class REInstruction {
 		}
 	}
 
+	private static Object dataString(Object data) {
+		if (data instanceof byte[]) {
+			return Bytes.toHexString((byte[]) data);
+		} else {
+			return data;
+		}
+	}
+
 	@Override
 	public String toString() {
-		return String.format("%s %s", microOp, data);
+		return String.format("%s %s", microOp, dataString(data));
 	}
 }

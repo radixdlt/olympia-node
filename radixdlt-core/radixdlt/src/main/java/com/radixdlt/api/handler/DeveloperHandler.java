@@ -133,13 +133,13 @@ public final class DeveloperHandler {
 		this.txnIndex = txnIndex;
 	}
 
-	private Result<VerifiedTxnsAndProof> build(List<TransactionAction> steps) {
+	private Result<VerifiedTxnsAndProof> build(String message, List<TransactionAction> steps) {
 		var actions = steps.stream().flatMap(TransactionAction::toAction).collect(Collectors.toList());
 		return Result.wrap(
 			UNABLE_TO_PREPARE_TX,
 			() -> {
 				try {
-					var txn = genesisBuilder.build(System.currentTimeMillis(), actions);
+					var txn = genesisBuilder.build(message, System.currentTimeMillis(), actions);
 					var proof = genesisBuilder.generateGenesisProof(txn);
 					return VerifiedTxnsAndProof.create(List.of(txn), proof);
 				} catch (Exception e) {
@@ -148,6 +148,29 @@ public final class DeveloperHandler {
 				}
 			}
 		);
+	}
+
+	public JSONObject handleGenesisConstruction(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("networkId", "actions", "message"),
+			params -> {
+				var message = params.getString("message");
+				var addressing = Addressing.ofNetworkId(params.getInt("networkId"));
+				var actionParserService = new ActionParserService(addressing);
+
+				return allOf(safeArray(params, "actions"))
+					.flatMap(actions ->
+						actionParserService.parse(actions).flatMap(steps -> this.build(message, steps))
+							.map(p -> {
+								var o = jsonObject();
+								var txns = jsonArray();
+								p.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
+								var proof = p.getProof().asJSON(addressing);
+								return o.put("txns", txns).put("proof", proof);
+							})
+					);
+			});
 	}
 
 	private Function<Bucket, String> getKeyMapper(String groupBy) {
@@ -266,28 +289,6 @@ public final class DeveloperHandler {
 				);
 			}
 		);
-	}
-
-	public JSONObject handleGenesisConstruction(JSONObject request) {
-		return withRequiredParameters(
-			request,
-			List.of("networkId", "actions"),
-			params -> {
-				var addressing = Addressing.ofNetworkId(params.getInt("networkId"));
-				var actionParserService = new ActionParserService(addressing);
-
-				return allOf(safeArray(params, "actions"))
-					.flatMap(actions ->
-						actionParserService.parse(actions).flatMap(this::build)
-							.map(p -> {
-								var o = jsonObject();
-								var txns = jsonArray();
-								p.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
-								var proof = p.getProof().asJSON(addressing);
-								return o.put("txns", txns).put("proof", proof);
-							})
-					);
-			});
 	}
 
 	public JSONObject handleLookupTransaction(JSONObject request) {

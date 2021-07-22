@@ -88,6 +88,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.store.InMemoryEngineStore;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public final class GenesisBuilder {
@@ -120,8 +121,9 @@ public final class GenesisBuilder {
 		);
 	}
 
-	public Txn build(long timestamp, List<TxAction> actions) throws TxBuilderException, RadixEngineException {
+	public Txn build(String message, long timestamp, List<TxAction> actions) throws TxBuilderException, RadixEngineException {
 		var txnConstructionRequest = TxnConstructionRequest.create();
+		txnConstructionRequest.msg(message.getBytes(StandardCharsets.UTF_8));
 		txnConstructionRequest.action(new CreateSystem(timestamp));
 
 		var tokenDef = new MutableTokenDefinition(
