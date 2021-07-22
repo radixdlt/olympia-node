@@ -80,7 +80,6 @@ import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownExcep
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.store.ResourceStore;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import com.sleepycat.je.Transaction;
 import org.apache.logging.log4j.LogManager;
@@ -125,7 +124,6 @@ import com.sleepycat.je.SecondaryDatabase;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -136,13 +134,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
-import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.utils.Longs.fromByteArray;
