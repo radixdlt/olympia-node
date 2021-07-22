@@ -133,10 +133,12 @@ public final class PendingOutboundChannelsManager {
 
 	private void handlePeerHandshakeFailed(PeerEvent.PeerHandshakeFailed peerHandshakeFailed) {
 		synchronized (lock) {
-			final var maybeFuture = this.pendingChannels.remove(peerHandshakeFailed.getUri().getNodeId());
-			if (maybeFuture != null) {
-				maybeFuture.completeExceptionally(new IOException("Peer connection failed"));
-			}
+			peerHandshakeFailed.getChannel().getUri().ifPresent(uri -> {
+				final var maybeFuture = this.pendingChannels.remove(uri.getNodeId());
+				if (maybeFuture != null) {
+					maybeFuture.completeExceptionally(new IOException("Peer connection failed"));
+				}
+			});
 		}
 	}
 

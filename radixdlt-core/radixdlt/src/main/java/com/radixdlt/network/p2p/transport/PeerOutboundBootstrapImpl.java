@@ -65,12 +65,10 @@
 package com.radixdlt.network.p2p.transport;
 
 import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig;
-import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.networks.Addressing;
@@ -94,7 +92,6 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 	private final SecureRandom secureRandom;
 	private final ECKeyOps ecKeyOps;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
-	private Provider<PeerControl> peerControl;
 
 	private final NioEventLoopGroup clientWorkerGroup;
 
@@ -107,8 +104,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 		Serialization serialization,
 		SecureRandom secureRandom,
 		ECKeyOps ecKeyOps,
-		EventDispatcher<PeerEvent> peerEventDispatcher,
-		Provider<PeerControl> peerControl
+		EventDispatcher<PeerEvent> peerEventDispatcher
 	) {
 		this.config = Objects.requireNonNull(config);
 		this.addressing = Objects.requireNonNull(addressing);
@@ -118,7 +114,6 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 		this.secureRandom = Objects.requireNonNull(secureRandom);
 		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-		this.peerControl = Objects.requireNonNull(peerControl);
 
 		this.clientWorkerGroup = new NioEventLoopGroup();
 	}
@@ -139,7 +134,6 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 				secureRandom,
 				ecKeyOps,
 				peerEventDispatcher,
-				peerControl.get(),
 				Optional.of(uri)
 			))
 			.connect(uri.getHost(), uri.getPort());

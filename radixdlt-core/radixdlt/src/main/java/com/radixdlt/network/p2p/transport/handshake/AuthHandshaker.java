@@ -206,7 +206,10 @@ public final class AuthHandshaker {
 			final var handshakeResult = finalizeHandshake(remoteEphemeralKey, message.getNonce());
 			return Pair.of(packet, handshakeResult);
 		} catch (PublicKeyException | InvalidCipherTextException | IOException ex) {
-			return Pair.of(null, AuthHandshakeResult.error("Handshake decryption failed", Optional.empty()));
+			return Pair.of(null, AuthHandshakeResult.error(
+				String.format("Handshake decryption failed (%s)", ex.getMessage()),
+				Optional.empty())
+			);
 		}
 	}
 
@@ -220,7 +223,10 @@ public final class AuthHandshaker {
 			final var remoteEphemeralKey = ECPublicKey.fromBytes(message.getEphemeralPublicKey().asBytes());
 			return finalizeHandshake(remoteEphemeralKey, message.getNonce());
 		} catch (PublicKeyException | InvalidCipherTextException ex) {
-			return AuthHandshakeResult.error("Handshake decryption failed", Optional.empty());
+			return AuthHandshakeResult.error(
+				String.format("Handshake decryption failed (%s)", ex.getMessage()),
+				Optional.empty()
+			);
 		}
 	}
 
