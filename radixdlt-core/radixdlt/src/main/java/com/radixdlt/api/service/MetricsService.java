@@ -206,6 +206,7 @@ public class MetricsService {
 	private final InfoSupplier infoSupplier;
 	private final SystemConfigService systemConfigService;
 	private final AccountInfoService accountInfoService;
+	private final ValidatorInfoService validatorInfoService;
 	private final NetworkInfoService networkInfoService;
 	private final Addressing addressing;
 	private final InMemorySystemInfo inMemorySystemInfo;
@@ -217,6 +218,7 @@ public class MetricsService {
 		InfoSupplier infoSupplier,
 		SystemConfigService systemConfigService,
 		AccountInfoService accountInfoService,
+		ValidatorInfoService validatorInfoService,
 		NetworkInfoService networkInfoService,
 		InMemorySystemInfo inMemorySystemInfo,
 		@Self BFTNode self,
@@ -226,6 +228,7 @@ public class MetricsService {
 		this.infoSupplier = infoSupplier;
 		this.systemConfigService = systemConfigService;
 		this.accountInfoService = accountInfoService;
+		this.validatorInfoService = validatorInfoService;
 		this.networkInfoService = networkInfoService;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.self = self;
@@ -266,7 +269,8 @@ public class MetricsService {
 	}
 
 	private UInt384 getTotalStake() {
-		return UInt384.from(accountInfoService.getTotalStake());
+		var stakeData = validatorInfoService.getValidatorStakeData(self.getKey());
+		return UInt384.from(stakeData.getTotalStake());
 	}
 
 	private UInt384 getXrdBalance() {
@@ -294,7 +298,7 @@ public class MetricsService {
 
 		addEndpontStatuses(builder);
 		appendField(builder, "owner_address", addressing.forAccounts().of(REAddr.ofPubKeyAccount(self.getKey())));
-		appendField(builder, "validator_registered", accountInfoService.getMyNextEpochRegisteredFlag());
+		appendField(builder, "validator_registered", validatorInfoService.getNextEpochRegisteredFlag(self.getKey()));
 		addBranchAndCommit(builder);
 		addValidatorAddress(builder);
 		addAccumulatorState(builder);
@@ -338,7 +342,7 @@ public class MetricsService {
 	private void exportCounters(StringBuilder builder) {
 		EXPORT_LIST.forEach(counterType -> generateCounterEntry(counterType, builder));
 
-		var uptime = accountInfoService.getMyValidatorUptime();
+		var uptime = validatorInfoService.getUptime(self.getKey());
 		appendCounter(builder, COUNTER_PREFIX + "radix_engine_cur_epoch_completed_proposals", uptime.getProposalsCompleted());
 		appendCounter(builder, COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals", uptime.getProposalsMissed());
 	}
