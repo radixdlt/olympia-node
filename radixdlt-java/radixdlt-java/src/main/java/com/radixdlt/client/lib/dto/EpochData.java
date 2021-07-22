@@ -71,14 +71,14 @@ import java.util.List;
 import java.util.Objects;
 
 public final class EpochData {
-	private final List<ValidatorDTO> validators;
+	private final List<EpochValidatorData> validators;
 
-	private EpochData(List<ValidatorDTO> validators) {
+	private EpochData(List<EpochValidatorData> validators) {
 		this.validators = validators;
 	}
 
 	@JsonCreator
-	public static EpochData create(@JsonProperty("validators") List<ValidatorDTO> validators) {
+	public static EpochData create(@JsonProperty("validators") List<EpochValidatorData> validators) {
 		return new EpochData(validators);
 	}
 
@@ -106,7 +106,7 @@ public final class EpochData {
 		return "{validators:" + validators + '}';
 	}
 
-	public List<ValidatorDTO> getValidators() {
+	public List<EpochValidatorData> getValidators() {
 		return validators;
 	}
 }

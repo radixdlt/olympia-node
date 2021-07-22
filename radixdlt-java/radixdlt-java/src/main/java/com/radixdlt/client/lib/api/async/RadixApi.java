@@ -68,6 +68,7 @@ import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.dto.AddressBookEntry;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
 import com.radixdlt.client.lib.dto.BuiltTransaction;
@@ -210,6 +211,11 @@ public interface RadixApi {
 		 * Get network peers.
 		 */
 		Promise<List<NetworkPeer>> peers();
+
+		/**
+		 * Get current address book.
+		 */
+		Promise<List<AddressBookEntry>> addressBook();
 	}
 
 	Network network();
@@ -313,11 +319,6 @@ public interface RadixApi {
 		 * Get information about current epoch validator set.
 		 */
 		Promise<EpochData> currentEpoch();
-
-		/**
-		 * Get information about next epoch validator set.
-		 */
-		Promise<EpochData> nextEpoch();
 	}
 
 	Local local();

@@ -108,6 +108,11 @@ public class AccountAddress {
 		return Objects.hash(address);
 	}
 
+	@Override
+	public String toString() {
+		return "{" + address + '}';
+	}
+
 	public String toString(int networkId) {
 		return Addressing.ofNetworkId(networkId).forAccounts().of(address);
 	}

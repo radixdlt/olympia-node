@@ -77,6 +77,11 @@ import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.NodeAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.api.rpc.JsonRpcRequest;
+import com.radixdlt.client.lib.api.rpc.JsonRpcResponse;
+import com.radixdlt.client.lib.api.rpc.PortSelector;
+import com.radixdlt.client.lib.api.rpc.RpcMethod;
+import com.radixdlt.client.lib.dto.AddressBookEntry;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
 import com.radixdlt.client.lib.dto.BuiltTransaction;
@@ -86,8 +91,6 @@ import com.radixdlt.client.lib.dto.ConsensusData;
 import com.radixdlt.client.lib.dto.EpochData;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
 import com.radixdlt.client.lib.dto.ForkDetails;
-import com.radixdlt.client.lib.api.rpc.JsonRpcRequest;
-import com.radixdlt.client.lib.api.rpc.JsonRpcResponse;
 import com.radixdlt.client.lib.dto.LocalAccount;
 import com.radixdlt.client.lib.dto.LocalValidatorInfo;
 import com.radixdlt.client.lib.dto.MempoolConfiguration;
@@ -97,10 +100,8 @@ import com.radixdlt.client.lib.dto.NetworkData;
 import com.radixdlt.client.lib.dto.NetworkId;
 import com.radixdlt.client.lib.dto.NetworkPeer;
 import com.radixdlt.client.lib.dto.NetworkStats;
-import com.radixdlt.client.lib.api.rpc.PortSelector;
 import com.radixdlt.client.lib.dto.Proof;
 import com.radixdlt.client.lib.dto.RadixEngineData;
-import com.radixdlt.client.lib.api.rpc.RpcMethod;
 import com.radixdlt.client.lib.dto.StakePositions;
 import com.radixdlt.client.lib.dto.SyncConfiguration;
 import com.radixdlt.client.lib.dto.SyncData;
@@ -167,6 +168,7 @@ import static com.radixdlt.client.lib.api.rpc.RpcMethod.LEDGER_EPOCH_PROOF;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.LEDGER_PROOF;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.MEMPOOL_CONFIGURATION;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.MEMPOOL_DATA;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_ADDRESS_BOOK;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_CONFIG;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_DATA;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_DEMAND;
@@ -182,7 +184,6 @@ import static com.radixdlt.client.lib.api.rpc.RpcMethod.TOKEN_NATIVE;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.TRANSACTION_LOOKUP;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.TRANSACTION_STATUS;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_CURRENT_EPOCH;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_NEXT_EPOCH;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_NODE_INFO;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LIST;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
@@ -242,6 +243,11 @@ public class SyncRadixApi implements RadixApi {
 		@Override
 		public Result<List<NetworkPeer>> peers() {
 			return call(request(NETWORK_PEERS), new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<List<AddressBookEntry>> addressBook() {
+			return call(request(NETWORK_ADDRESS_BOOK), new TypeReference<>() {});
 		}
 	};
 
@@ -363,11 +369,6 @@ public class SyncRadixApi implements RadixApi {
 		@Override
 		public Result<EpochData> currentEpoch() {
 			return call(request(VALIDATION_CURRENT_EPOCH), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<EpochData> nextEpoch() {
-			return call(request(VALIDATION_NEXT_EPOCH), new TypeReference<>() {});
 		}
 	};
 

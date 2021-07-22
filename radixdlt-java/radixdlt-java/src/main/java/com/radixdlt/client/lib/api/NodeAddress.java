@@ -103,6 +103,11 @@ public class NodeAddress {
 		return Objects.hash(address);
 	}
 
+	@Override
+	public String toString() {
+		return "{" + address.toHex() + '}';
+	}
+
 	public String toString(int networkId) {
 		return Addressing.ofNetworkId(networkId).forNodes().of(address);
 	}

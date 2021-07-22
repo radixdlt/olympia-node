@@ -66,28 +66,55 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.utils.UInt256;
 
-import java.util.List;
 import java.util.Objects;
 
-public final class AccountBalance {
-	private final List<BalanceStakes> stakes;
-	private final List<Balance> tokens;
-	private final List<BalanceStakes> preparedStakes;
+public final class PerUpSubstateFee {
+	private final UInt256 preparedStake;
+	private final UInt256 validatorRegisteredCopy;
+	private final UInt256 preparedUnstakeOwnership;
+	private final UInt256 tokenResource;
+	private final UInt256 validatorOwnerCopy;
+	private final UInt256 validatorMetaData;
+	private final UInt256 allowDelegationFlag;
+	private final UInt256 validatorFeeCopy;
 
-	private AccountBalance(List<BalanceStakes> stakes, List<Balance> tokens, List<BalanceStakes> preparedStakes) {
-		this.stakes = stakes;
-		this.tokens = tokens;
-		this.preparedStakes = preparedStakes;
+	private PerUpSubstateFee(
+		UInt256 preparedStake,
+		UInt256 validatorRegisteredCopy,
+		UInt256 preparedUnstakeOwnership,
+		UInt256 tokenResource,
+		UInt256 validatorOwnerCopy,
+		UInt256 validatorMetaData,
+		UInt256 allowDelegationFlag,
+		UInt256 validatorFeeCopy
+	) {
+		this.preparedStake = preparedStake;
+		this.validatorRegisteredCopy = validatorRegisteredCopy;
+		this.preparedUnstakeOwnership = preparedUnstakeOwnership;
+		this.tokenResource = tokenResource;
+		this.validatorOwnerCopy = validatorOwnerCopy;
+		this.validatorMetaData = validatorMetaData;
+		this.allowDelegationFlag = allowDelegationFlag;
+		this.validatorFeeCopy = validatorFeeCopy;
 	}
 
 	@JsonCreator
-	public static AccountBalance create(
-		@JsonProperty(value = "stakes", required = true) List<BalanceStakes> stakes,
-		@JsonProperty(value = "preparedStakes", required = true) List<BalanceStakes> preparedStakes,
-		@JsonProperty(value = "tokens", required = true) List<Balance> tokens
+	public static PerUpSubstateFee create(
+		@JsonProperty(value = "PreparedStake", required = true) UInt256 preparedStake,
+		@JsonProperty(value = "ValidatorRegisteredCopy", required = true) UInt256 validatorRegisteredCopy,
+		@JsonProperty(value = "PreparedUnstakeOwnership", required = true) UInt256 preparedUnstakeOwnership,
+		@JsonProperty(value = "TokenResource", required = true) UInt256 tokenResource,
+		@JsonProperty(value = "ValidatorOwnerCopy", required = true) UInt256 validatorOwnerCopy,
+		@JsonProperty(value = "ValidatorMetaData", required = true) UInt256 validatorMetaData,
+		@JsonProperty(value = "AllowDelegationFlag", required = true) UInt256 allowDelegationFlag,
+		@JsonProperty(value = "ValidatorFeeCopy", required = true) UInt256 validatorFeeCopy
 	) {
-		return new AccountBalance(stakes, tokens, preparedStakes);
+		return new PerUpSubstateFee(
+			preparedStake, validatorRegisteredCopy, preparedUnstakeOwnership, tokenResource,
+			validatorOwnerCopy, validatorMetaData, allowDelegationFlag, validatorFeeCopy
+		);
 	}
 
 	@Override
@@ -96,28 +123,78 @@ public final class AccountBalance {
 			return true;
 		}
 
-		if (!(o instanceof AccountBalance)) {
+		if (!(o instanceof PerUpSubstateFee)) {
 			return false;
 		}
 
-		var that = (AccountBalance) o;
-		return stakes.equals(that.stakes) && tokens.equals(that.tokens) && preparedStakes.equals(that.preparedStakes);
+		var that = (PerUpSubstateFee) o;
+		return preparedStake.equals(that.preparedStake)
+			&& validatorRegisteredCopy.equals(that.validatorRegisteredCopy)
+			&& preparedUnstakeOwnership.equals(that.preparedUnstakeOwnership)
+			&& tokenResource.equals(that.tokenResource)
+			&& validatorOwnerCopy.equals(that.validatorOwnerCopy)
+			&& validatorMetaData.equals(that.validatorMetaData)
+			&& allowDelegationFlag.equals(that.allowDelegationFlag)
+			&& validatorFeeCopy.equals(that.validatorFeeCopy);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(stakes, tokens, preparedStakes);
+		return Objects.hash(
+			preparedStake,
+			validatorRegisteredCopy,
+			preparedUnstakeOwnership,
+			tokenResource,
+			validatorOwnerCopy,
+			validatorMetaData,
+			allowDelegationFlag,
+			validatorFeeCopy
+		);
 	}
 
-	public List<BalanceStakes> getStakes() {
-		return stakes;
+	@Override
+	public String toString() {
+		return "{"
+			+ "preparedStake=" + preparedStake
+			+ ", validatorRegisteredCopy=" + validatorRegisteredCopy
+			+ ", preparedUnstakeOwnership=" + preparedUnstakeOwnership
+			+ ", tokenResource=" + tokenResource
+			+ ", validatorOwnerCopy=" + validatorOwnerCopy
+			+ ", validatorMetaData=" + validatorMetaData
+			+ ", allowDelegationFlag=" + allowDelegationFlag
+			+ ", validatorFeeCopy=" + validatorFeeCopy
+			+ '}';
 	}
 
-	public List<BalanceStakes> getPreparedStakes() {
-		return preparedStakes;
+	public UInt256 getPreparedStake() {
+		return preparedStake;
 	}
 
-	public List<Balance> getTokens() {
-		return tokens;
+	public UInt256 getValidatorRegisteredCopy() {
+		return validatorRegisteredCopy;
+	}
+
+	public UInt256 getPreparedUnstakeOwnership() {
+		return preparedUnstakeOwnership;
+	}
+
+	public UInt256 getTokenResource() {
+		return tokenResource;
+	}
+
+	public UInt256 getValidatorOwnerCopy() {
+		return validatorOwnerCopy;
+	}
+
+	public UInt256 getValidatorMetaData() {
+		return validatorMetaData;
+	}
+
+	public UInt256 getAllowDelegationFlag() {
+		return allowDelegationFlag;
+	}
+
+	public UInt256 getValidatorFeeCopy() {
+		return validatorFeeCopy;
 	}
 }
