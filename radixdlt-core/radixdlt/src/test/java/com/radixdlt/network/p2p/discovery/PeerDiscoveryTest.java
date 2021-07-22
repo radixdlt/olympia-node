@@ -64,14 +64,20 @@
 
 package com.radixdlt.network.p2p.discovery;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Key;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
 import org.junit.Test;
 
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 
@@ -96,4 +102,20 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 		assertEquals(3L, testNetworkRunner.peerManager(0).activeChannels().size());
 	}
 
+	@Test
+	public void when_unexpected_response_then_ban_peer() throws Exception {
+		setupTestRunner(1, defaultProperties());
+
+		final var unexpectedSender = BFTNode.random();
+		final var peersResponse = PeersResponse.create(
+			ImmutableSet.of(RadixNodeUri.fromPubKeyAndAddress(0, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 1234))
+		);
+
+		testNetworkRunner.getInstance(0, PeerDiscovery.class).peersResponseRemoteEventProcessor()
+			.process(unexpectedSender, peersResponse);
+
+		processAll();
+
+		assertTrue(testNetworkRunner.addressBook(0).findById(NodeId.fromPublicKey(unexpectedSender.getKey())).get().isBanned());
+	}
 }
