@@ -328,6 +328,6 @@ public final class PeerManager {
 	}
 
 	private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
-		this.addressBook.get().blacklist(peerHandshakeFailed.getUri());
+		peerHandshakeFailed.getChannel().getUri().ifPresent(this.addressBook.get()::blacklist);
 	}
 }

@@ -66,8 +66,6 @@ package com.radixdlt.network.p2p;
 
 import com.radixdlt.network.p2p.transport.PeerChannel;
 
-import java.util.Objects;
-
 public interface PeerEvent {
 
 	final class PeerConnected implements PeerEvent {
@@ -84,23 +82,6 @@ public interface PeerEvent {
 
 		public PeerChannel getChannel() {
 			return this.channel;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-			final var that = (PeerConnected) o;
-			return Objects.equals(channel, that.channel);
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(channel);
 		}
 	}
 
@@ -119,23 +100,6 @@ public interface PeerEvent {
 		public PeerChannel getChannel() {
 			return this.channel;
 		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-			final var that = (PeerDisconnected) o;
-			return Objects.equals(channel, that.channel);
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(channel);
-		}
 	}
 
 	final class PeerLostLiveness implements PeerEvent {
@@ -152,23 +116,6 @@ public interface PeerEvent {
 
 		public NodeId getNodeId() {
 			return this.nodeId;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-			final var that = (PeerLostLiveness) o;
-			return Objects.equals(nodeId, that.nodeId);
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(nodeId);
 		}
 	}
 
@@ -187,56 +134,22 @@ public interface PeerEvent {
 		public NodeId getNodeId() {
 			return this.nodeId;
 		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-			final var that = (PeerBanned) o;
-			return Objects.equals(nodeId, that.nodeId);
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(nodeId);
-		}
 	}
 
 	final class PeerHandshakeFailed implements PeerEvent {
 
-		private final RadixNodeUri uri;
+		private final PeerChannel channel;
 
-		public static PeerHandshakeFailed create(RadixNodeUri uri) {
-			return new PeerHandshakeFailed(uri);
+		public static PeerHandshakeFailed create(PeerChannel channel) {
+			return new PeerHandshakeFailed(channel);
 		}
 
-		private PeerHandshakeFailed(RadixNodeUri uri) {
-			this.uri = uri;
+		private PeerHandshakeFailed(PeerChannel channel) {
+			this.channel = channel;
 		}
 
-		public RadixNodeUri getUri() {
-			return this.uri;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-			final var that = (PeerHandshakeFailed) o;
-			return Objects.equals(uri, that.uri);
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(uri);
+		public PeerChannel getChannel() {
+			return this.channel;
 		}
 	}
 }

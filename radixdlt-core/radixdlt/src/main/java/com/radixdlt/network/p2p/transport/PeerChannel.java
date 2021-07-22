@@ -71,7 +71,6 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult;
@@ -116,9 +115,6 @@ import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
 public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	private static final Logger log = LogManager.getLogger();
 
-	private static final byte AUTH_RESPONSE_OK_STATUS = 0x01;
-	private static final byte AUTH_RESPONSE_ERROR_STATUS = 0x02;
-
 	enum ChannelState {
 		INACTIVE, AUTH_HANDSHAKE, ACTIVE
 	}
@@ -131,7 +127,6 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	private final SystemCounters counters;
 	private final Addressing addressing;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
-	private final PeerControl peerControl;
 	private final Optional<RadixNodeUri> uri;
 	private final AuthHandshaker authHandshaker;
 	private final boolean isInitiator;
@@ -152,14 +147,12 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		SecureRandom secureRandom,
 		ECKeyOps ecKeyOps,
 		EventDispatcher<PeerEvent> peerEventDispatcher,
-		PeerControl peerControl,
 		Optional<RadixNodeUri> uri,
 		SocketChannel nettyChannel
 	) {
 		this.counters = Objects.requireNonNull(counters);
 		this.addressing = Objects.requireNonNull(addressing);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-		this.peerControl = Objects.requireNonNull(peerControl);
 		this.uri = Objects.requireNonNull(uri);
 		uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
 		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId);
@@ -173,14 +166,14 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 				() -> {
 					this.counters.increment(SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
 					final var logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
-					log.log(logLevel, "TCP msg buffer overflow, dropping msg");
+					log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this.toString());
 				},
 				BackpressureOverflowStrategy.DROP_LATEST);
 	}
 
 	private void initHandshake(NodeId remoteNodeId) {
 		final var initiatePacket = authHandshaker.initiate(remoteNodeId.getPublicKey());
-		log.trace("Sending auth initiate message to {} [{}]", remoteNodeId, this.nettyChannel.remoteAddress());
+		log.trace("Sending auth initiate to {}", this.toString());
 		this.write(initiatePacket);
 	}
 
@@ -190,28 +183,14 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	private void handleHandshakeData(byte[] data) throws IOException {
 		if (this.isInitiator) {
-			log.trace("Handling auth response message from {} [{}]", remoteNodeId, this.nettyChannel.remoteAddress());
-			final var status = data[0];
-			if (status == AUTH_RESPONSE_OK_STATUS) {
-				final var responsePacket = new byte[data.length - 1];
-				System.arraycopy(data, 1, responsePacket, 0, data.length - 1);
-				final var handshakeResult = this.authHandshaker.handleResponseMessage(responsePacket);
-				this.finalizeHandshake(handshakeResult);
-			} else {
-				log.info("Failed to connect to {} (invalid handshake)", uri.orElseThrow());
-				peerEventDispatcher.dispatch(PeerHandshakeFailed.create(uri.orElseThrow()));
-				this.disconnect();
-			}
+			log.trace("Auth response from {}", this.toString());
+			final var handshakeResult = this.authHandshaker.handleResponseMessage(data);
+			this.finalizeHandshake(handshakeResult);
 		} else {
-			log.trace("Handling auth initiate message from {} [{}]", remoteNodeId, this.nettyChannel.remoteAddress());
+			log.trace("Auth initiate from {}", this.toString());
 			final var result = this.authHandshaker.handleInitialMessage(data);
-			if (result.getSecond() instanceof AuthHandshakeSuccess) {
-				final var packet = new byte[result.getFirst().length + 1];
-				packet[0] = AUTH_RESPONSE_OK_STATUS;
-				System.arraycopy(result.getFirst(), 0, packet, 1, result.getFirst().length);
-				this.write(packet);
-			} else {
-				this.write(new byte[] {AUTH_RESPONSE_ERROR_STATUS});
+			if (result.getFirst() != null) {
+				this.write(result.getFirst());
 			}
 			this.finalizeHandshake(result.getSecond());
 		}
@@ -223,15 +202,11 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 			this.remoteNodeId = successResult.getRemoteNodeId();
 			this.frameCodec = new FrameCodec(successResult.getSecrets());
 			this.state = ChannelState.ACTIVE;
-			log.trace("Finalizing successful auth handshake with {} [{}]",
-				remoteNodeId, this.nettyChannel.remoteAddress());
+			log.trace("Successful auth handshake: {}", this.toString());
 			peerEventDispatcher.dispatch(PeerConnected.create(this));
 		} else {
 			final var errorResult = (AuthHandshakeError) handshakeResult;
-			log.warn("Auth handshake failed with {} [{}] because of: {}. Disconnecting and banning peer.",
-				remoteNodeId, this.nettyChannel.remoteAddress(), errorResult.getMsg());
-			errorResult.getMaybeNodeId().ifPresent(remoteNodeId ->
-				this.peerControl.banPeer(remoteNodeId, Duration.ofHours(1), "Auth handshake failed"));
+			log.warn("Auth handshake failed on {}: {}", this.toString(), errorResult.getMsg());
 			this.disconnect();
 		}
 	}
@@ -241,7 +216,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 			final var maybeFrame = this.frameCodec.tryReadSingleFrame(buf);
 			maybeFrame.ifPresentOrElse(
 				frame -> inboundMessageSink.onNext(InboundMessage.of(remoteNodeId, frame)),
-				() -> log.error("Failed to read a complete frame from {}", nettyChannel.remoteAddress())
+				() -> log.error("Failed to read a complete frame: {}", this.toString())
 			);
 		}
 	}
@@ -250,7 +225,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	public void channelActive(ChannelHandlerContext ctx) throws PublicKeyException {
 		this.state = ChannelState.AUTH_HANDSHAKE;
 
-		log.trace("Peer channel active to {}, isInitiator ?= {}", this.nettyChannel.remoteAddress(), isInitiator);
+		log.trace("Active: {}", this.toString());
 
 		if (this.isInitiator) {
 			this.initHandshake(this.remoteNodeId);
@@ -273,18 +248,16 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) {
-		log.info("Channel closed {} at state {} [initiator ?= {}, remoteNodeId = {}, nodeAddress = {}, uri = {}]",
-			ctx.channel().remoteAddress(),
-			this.state,
-			this.isInitiator,
-			this.remoteNodeId != null ? this.remoteNodeId : "unknown",
-		 	this.remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "unknown",
-			this.uri
-		);
+		log.info("Closed: {}", this.toString());
 
 		final var prevState = this.state;
 		this.state = ChannelState.INACTIVE;
 		this.inboundMessageSink.onComplete();
+
+		if (prevState == ChannelState.AUTH_HANDSHAKE) {
+			uri.ifPresent(u -> peerEventDispatcher.dispatch(PeerHandshakeFailed.create(this)));
+		}
+
 		if (prevState == ChannelState.ACTIVE) {
 			// only send out event if peer was previously active
 			this.peerEventDispatcher.dispatch(PeerDisconnected.create(this));
@@ -293,16 +266,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-		log.warn("Exception on channel {} at state {} [initiator ?= {}, remoteNodeId = {}, nodeAddress = {}, uri = {}]: {}",
-			ctx.channel().remoteAddress(),
-			this.state,
-			this.isInitiator,
-			this.remoteNodeId != null ? this.remoteNodeId : "unknown",
-			this.remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "unknown",
-			this.uri,
-			cause.getMessage()
-		);
-
+		log.warn("Exception on {}: {}", this.toString(), cause.getMessage());
 		ctx.close();
 	}
 
@@ -356,5 +320,23 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	public InetSocketAddress getRemoteSocketAddress() {
 		return (InetSocketAddress) this.nettyChannel.remoteAddress();
+	}
+
+	@Override
+	public String toString() {
+		final var hostString = nettyChannel.remoteAddress() instanceof InetSocketAddress
+			? ((InetSocketAddress) nettyChannel.remoteAddress()).getHostString()
+			: "?";
+		final var port = nettyChannel.remoteAddress() instanceof InetSocketAddress
+			? ((InetSocketAddress) nettyChannel.remoteAddress()).getPort()
+			: 0;
+		return String.format(
+			"{%s %s@%s:%s | %s}",
+			isInitiator ? "<-" : "->",
+			remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "?",
+			hostString,
+			port,
+			state
+		);
 	}
 }

@@ -67,7 +67,6 @@ package com.radixdlt.network.p2p.transport;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.P2PConfig;
@@ -103,7 +102,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 	private final SecureRandom secureRandom;
 	private final ECKeyOps ecKeyOps;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
-	private final PeerControl peerControl;
 	private final Optional<RadixNodeUri> uri;
 
 	public PeerChannelInitializer(
@@ -115,7 +113,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		SecureRandom secureRandom,
 		ECKeyOps ecKeyOps,
 		EventDispatcher<PeerEvent> peerEventDispatcher,
-		PeerControl peerControl,
 		Optional<RadixNodeUri> uri
 	) {
 		this.config = Objects.requireNonNull(config);
@@ -126,7 +123,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		this.secureRandom = Objects.requireNonNull(secureRandom);
 		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-		this.peerControl = Objects.requireNonNull(peerControl);
 		this.uri = Objects.requireNonNull(uri);
 	}
 
@@ -141,7 +137,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 			secureRandom,
 			ecKeyOps,
 			peerEventDispatcher,
-			peerControl,
 			uri,
 			socketChannel
 		);

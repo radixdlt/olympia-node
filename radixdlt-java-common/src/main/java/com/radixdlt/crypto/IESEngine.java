@@ -378,7 +378,7 @@ public class IESEngine {
         mac.doFinal(t2, 0);
 
         if (!Arrays.constantTimeAreEqual(t1, t2)) {
-            throw new InvalidCipherTextException("Invalid MAC.");
+            throw new InvalidCipherTextException("Invalid MAC");
         }
 
         // Output the message.
