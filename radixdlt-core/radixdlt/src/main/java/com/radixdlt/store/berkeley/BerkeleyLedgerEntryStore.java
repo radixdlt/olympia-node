@@ -782,7 +782,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 
 	private void downVirtualSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
 		var particleKey = substateId.asBytes();
-		substatesDatabase.put(txn, entry(particleKey), downEntry());
+		substatesDatabase.putNoOverwrite(txn, entry(particleKey), downEntry());
 	}
 
 	private void downSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
@@ -922,7 +922,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			failIfNotSuccess(txnDatabase.putNoOverwrite(dbTxn, pKey, atomPosData), "Atom write for", aid);
 			addBytesWrite(atomPosData, pKey);
 			var idKey = entry(aid);
-			failIfNotSuccess(txnIdDatabase.put(dbTxn, idKey, atomPosData), "Atom Id write for", aid);
+			failIfNotSuccess(txnIdDatabase.putNoOverwrite(dbTxn, idKey, atomPosData), "Atom Id write for", aid);
 			addBytesWrite(atomPosData, idKey);
 			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
 
