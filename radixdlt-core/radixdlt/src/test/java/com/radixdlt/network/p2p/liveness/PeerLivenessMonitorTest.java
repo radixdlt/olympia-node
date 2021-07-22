@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -64,7 +65,10 @@ public class PeerLivenessMonitorTest {
 
 		this.sut.pingTimeoutEventProcessor().process(PeerPingTimeout.create(NodeId.fromPublicKey(peer1.getKey())));
 
-		verify(peerEventDispatcher, times(1)).dispatch(PeerLostLiveness.create(NodeId.fromPublicKey(peer1.getKey())));
+		verify(peerEventDispatcher, times(1)).dispatch(argThat(arg ->
+			arg instanceof PeerLostLiveness
+				&& ((PeerLostLiveness) arg).getNodeId().equals(NodeId.fromPublicKey(peer1.getKey()))
+		));
 	}
 
 	@Test
