@@ -1,6 +1,7 @@
 package com.radix.test.account;
 
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.identifiers.AID;
 
@@ -12,7 +13,7 @@ public interface RadixAccount {
 
     AID transfer(Account destination, Amount amount, Optional<String> message);
 
-    AID stake(String validatorAddress, Amount amount);
+    AID stake(ValidatorAddress validatorAddress, Amount amount);
 
     AID fixedSupplyToken(String symbol, String name, String description, String iconUrl, String tokenUrl, Amount supply);
 

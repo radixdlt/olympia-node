@@ -67,7 +67,6 @@ import org.junit.Test;
 
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.utils.UInt256;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
