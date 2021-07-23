@@ -78,6 +78,7 @@ import com.radixdlt.utils.functional.Result;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -214,7 +215,7 @@ public class SyncRadixApiLocalTest {
 		when(response.body()).thenReturn(NETWORK_ID, responseBodies);
 		when(client.<String>send(any(), any())).thenReturn(response);
 
-		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
+		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 
 	private static ECKeyPair keyPairOf(int pk) {

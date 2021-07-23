@@ -70,6 +70,7 @@ import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.crypto.ECKeyPair;
@@ -77,6 +78,7 @@ import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Failure;
 
 import java.util.List;
 import java.util.Optional;
@@ -99,7 +101,7 @@ public class SyncRadixApiTest {
 	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
 	@Test
-	@Ignore //Useful testbed for experiments
+	@Ignore("Online test")
 	public void testBuildTransactionWithMessage() {
 		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.transfer(
@@ -113,29 +115,29 @@ public class SyncRadixApiTest {
 
 		connect(BASE_URL)
 			.map(RadixApi::withTrace)
-			.onFailure(failure -> fail(failure.toString()))
+			.onFailure(SyncRadixApiTest::reportFailure)
 			.onSuccess(client -> client.transaction().build(request)
-				.onFailure(failure -> fail(failure.toString()))
+				.onFailure(SyncRadixApiTest::reportFailure)
 				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
 				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false)
 					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
 					.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
-						.onFailure(failure -> fail(failure.toString()))
+						.onFailure(SyncRadixApiTest::reportFailure)
 						.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId())))));
 	}
 
 	@Test
-	@Ignore    //Useful testbed for experiments
+	@Ignore("Online test")
 	public void testTransactionHistoryInPages() {
 		connect(BASE_URL)
-			.onFailure(failure -> fail(failure.toString()))
+			.onFailure(SyncRadixApiTest::reportFailure)
 			.onSuccess(
 				client -> {
 					var cursorHolder = new AtomicReference<NavigationCursor>();
 					do {
 						client.account().history(ACCOUNT_ADDRESS1, 5, Optional.ofNullable(cursorHolder.get()))
-							.onFailure(failure -> fail(failure.toString()))
+							.onFailure(SyncRadixApiTest::reportFailure)
 							.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
 							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
 							.map(TransactionHistory::getTransactions)
@@ -147,11 +149,11 @@ public class SyncRadixApiTest {
 	}
 
 	@Test
-	@Ignore //Useful testbed for experiments
+	@Ignore("Online test")
 	public void addManyTransactions() {
 		connect(BASE_URL)
 			.map(RadixApi::withTrace)
-			.onFailure(failure -> fail(failure.toString()))
+			.onFailure(SyncRadixApiTest::reportFailure)
 			.onSuccess(client -> {
 				for (int i = 0; i < 20; i++) {
 					addTransaction(client, UInt256.from(i + 10));
@@ -165,50 +167,65 @@ public class SyncRadixApiTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void listStakes() {
 		connect(BASE_URL)
-			.onFailure(failure -> fail(failure.toString()))
+			.onFailure(SyncRadixApiTest::reportFailure)
 			.onSuccess(client -> client.account().stakes(ACCOUNT_ADDRESS1)
-				.onFailure(failure -> fail(failure.toString()))
+				.onFailure(SyncRadixApiTest::reportFailure)
 				.onSuccess(stakePositionsDTOS -> System.out.println("Stake positions: " + stakePositionsDTOS.toString())));
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void listUnStakes() {
 		connect(BASE_URL)
-			.onFailure(failure -> fail(failure.toString()))
+			.onFailure(SyncRadixApiTest::reportFailure)
 			.onSuccess(client -> client.account().unstakes(ACCOUNT_ADDRESS1)
-				.onFailure(failure -> fail(failure.toString()))
+				.onFailure(SyncRadixApiTest::reportFailure)
 				.onSuccess(unstakePositionsDTOS -> System.out.println("UnStake positions: " + unstakePositionsDTOS.toString())));
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void makeStake() {
 		connect(BASE_URL)
 			.map(RadixApi::withTrace)
-			.onFailure(failure -> fail(failure.toString()))
+			.onFailure(SyncRadixApiTest::reportFailure)
 			.onSuccess(client -> makeStake(client, amount(200).tokens()));
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void makeUnStake() {
 		connect(BASE_URL)
 			.map(RadixApi::withTrace)
-			.onFailure(failure -> fail(failure.toString()))
+			.onFailure(SyncRadixApiTest::reportFailure)
 			.onSuccess(client -> makeUnStake(client, amount(100).tokens()));
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void transferUnStake() {
 		connect(BASE_URL)
 			.map(RadixApi::withTrace)
-			.onFailure(failure -> fail(failure.toString()))
+			.onFailure(SyncRadixApiTest::reportFailure)
 			.onSuccess(client -> transferUnStake(client, amount(100).tokens()));
+	}
+
+	@Test
+	@Ignore("Online test")
+	public void tryBasicAuthentication() {
+		connect("https://rcnet.radixdlt.com", 443, 443, BasicAuth.with("admin", "86RVCjoogDJioMZZVYYlaSAk"))
+			.map(RadixApi::withTrace)
+			.onFailure(SyncRadixApiTest::reportFailure)
+			.onSuccess(client -> client.network().addressBook()
+				.onFailure(SyncRadixApiTest::reportFailure)
+				.onSuccess(System.out::println));
+	}
+
+	private static void reportFailure(Failure failure) {
+		fail(failure.toString());
 	}
 
 	private void transferUnStake(RadixApi client, UInt256 amount) {
@@ -223,11 +240,11 @@ public class SyncRadixApiTest {
 			.build();
 
 		client.transaction().build(request)
-			.onFailure(failure -> fail(failure.toString()))
+			.onFailure(SyncRadixApiTest::reportFailure)
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR2))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false)
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
-					.onFailure(failure -> fail(failure.toString()))
+					.onFailure(SyncRadixApiTest::reportFailure)
 					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 
@@ -250,7 +267,7 @@ public class SyncRadixApiTest {
 				.stake(ACCOUNT_ADDRESS1, account.getAddress(), amount)
 				.build())
 			.onSuccess(request -> client.transaction().build(request)
-				.onFailure(failure -> fail(failure.toString()))
+				.onFailure(SyncRadixApiTest::reportFailure)
 				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 				.flatMap(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true))
 				.onSuccess(System.out::println));
@@ -262,11 +279,11 @@ public class SyncRadixApiTest {
 			.build();
 
 		client.transaction().build(request)
-			.onFailure(failure -> fail(failure.toString()))
+			.onFailure(SyncRadixApiTest::reportFailure)
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false)
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
-					.onFailure(failure -> fail(failure.toString()))
+					.onFailure(SyncRadixApiTest::reportFailure)
 					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 
@@ -277,13 +294,13 @@ public class SyncRadixApiTest {
 			.build();
 
 		client.transaction().build(request)
-			.onFailure(failure -> fail(failure.toString()))
+			.onFailure(SyncRadixApiTest::reportFailure)
 			.onSuccess(builtTransactionDTO -> assertEquals(amount(73800L).micros(), builtTransactionDTO.getFee()))
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false)
 				.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
-					.onFailure(failure -> fail(failure.toString()))
+					.onFailure(SyncRadixApiTest::reportFailure)
 					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
 	}
 

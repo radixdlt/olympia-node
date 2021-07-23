@@ -188,7 +188,7 @@ public class AsyncRadixApiAccountTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void makeStake() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
@@ -198,7 +198,7 @@ public class AsyncRadixApiAccountTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void makeUnStake() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
@@ -208,7 +208,7 @@ public class AsyncRadixApiAccountTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void transferUnStake() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
@@ -260,7 +260,7 @@ public class AsyncRadixApiAccountTest {
 		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
 		completableFuture.completeAsync(() -> response);
-		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
+		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 
 	private static ECKeyPair keyPairOf(int pk) {

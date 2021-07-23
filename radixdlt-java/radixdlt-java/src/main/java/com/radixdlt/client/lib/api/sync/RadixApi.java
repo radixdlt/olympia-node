@@ -68,6 +68,7 @@ import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.dto.AddressBookEntry;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
@@ -117,7 +118,7 @@ import java.util.Optional;
  * dedicated embedded HTTP server hence full configuration of the client requires base URL and two ports.
  * <p>
  * Each endpoint can be individually enabled or disabled, so even if client is successfully connected, it does not
- * mean that all API's are available. This should be kept in mind while using client with particular hode.
+ * mean that all API's are available. This should be kept in mind while using client with particular node.
  * <p>
  * <h3>Client API structure</h3>
  * API is split into following groups:
@@ -157,14 +158,42 @@ public interface RadixApi {
 	}
 
 	/**
+	 * Create client and connect to specified node.
+	 *
+	 * @param baseUrl base URL to connect. Note that it should not include path part of the URL.
+	 * @param authentication Login/password for basic authentication
+	 *
+	 * @return {@link Result} which will contain built client or error info.
+	 */
+	static Result<RadixApi> connect(String baseUrl, BasicAuth authentication) {
+		return connect(baseUrl, DEFAULT_PRIMARY_PORT, DEFAULT_SECONDARY_PORT, authentication);
+	}
+
+	/**
 	 * Create client and connect to specified node at specified primary and secondary ports.
 	 *
 	 * @param baseUrl base URL to connect. Note that it should not include path part of the URL.
+	 * @param primaryPort primary API port
+	 * @param secondaryPort secondary API port
 	 *
 	 * @return {@link Result} which will contain built client or error info.
 	 */
 	static Result<RadixApi> connect(String baseUrl, int primaryPort, int secondaryPort) {
-		return SyncRadixApi.connect(baseUrl, primaryPort, secondaryPort);
+		return SyncRadixApi.connect(baseUrl, primaryPort, secondaryPort, Optional.empty());
+	}
+
+	/**
+	 * Create client and connect to specified node at specified primary and secondary ports.
+	 *
+	 * @param baseUrl base URL to connect. Note that it should not include path part of the URL.
+	 * @param primaryPort primary API port
+	 * @param secondaryPort secondary API port
+	 * @param authentication Login/password for basic authentication
+	 *
+	 * @return {@link Result} which will contain built client or error info.
+	 */
+	static Result<RadixApi> connect(String baseUrl, int primaryPort, int secondaryPort, BasicAuth authentication) {
+		return SyncRadixApi.connect(baseUrl, primaryPort, secondaryPort, Optional.of(authentication));
 	}
 
 	/**

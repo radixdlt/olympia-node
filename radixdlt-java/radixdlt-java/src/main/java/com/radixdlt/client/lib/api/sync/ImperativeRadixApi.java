@@ -68,6 +68,7 @@ import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
 import com.radixdlt.client.lib.dto.BuiltTransaction;
@@ -150,19 +151,48 @@ public interface ImperativeRadixApi {
 	 *
 	 * @return created client
 	 */
+
 	static ImperativeRadixApi connect(String baseUrl) {
 		return toImperative(unwrap(RadixApi.connect(baseUrl)));
+	}
+
+	/**
+	 * Create client and connect to specified node.
+	 *
+	 * @param baseUrl base URL to connect. Note that it should not include path part of the URL.
+	 * @param authentication Login/password for basic authentication
+	 *
+	 * @return created client
+	 */
+	static ImperativeRadixApi connect(String baseUrl, BasicAuth authentication) {
+		return toImperative(unwrap(RadixApi.connect(baseUrl, authentication)));
 	}
 
 	/**
 	 * Create client and connect to specified node at specified primary and secondary ports.
 	 *
 	 * @param baseUrl base URL to connect. Note that it should not include path part of the URL.
+	 * @param primaryPort primary API port
+	 * @param secondaryPort secondary API port
 	 *
 	 * @return created client
 	 */
 	static ImperativeRadixApi connect(String baseUrl, int primaryPort, int secondaryPort) {
 		return toImperative(unwrap(RadixApi.connect(baseUrl, primaryPort, secondaryPort)));
+	}
+
+	/**
+	 * Create client and connect to specified node at specified primary and secondary ports.
+	 *
+	 * @param baseUrl base URL to connect. Note that it should not include path part of the URL.
+	 * @param primaryPort primary API port
+	 * @param secondaryPort secondary API port
+	 * @param authentication Login/password for basic authentication
+	 *
+	 * @return created client
+	 */
+	static ImperativeRadixApi connect(String baseUrl, int primaryPort, int secondaryPort, BasicAuth authentication) {
+		return toImperative(unwrap(RadixApi.connect(baseUrl, primaryPort, secondaryPort, authentication)));
 	}
 
 	/**

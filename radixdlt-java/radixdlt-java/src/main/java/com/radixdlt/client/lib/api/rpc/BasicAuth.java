@@ -61,64 +61,47 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
-package com.radixdlt.client.lib.api.async;
 
-import org.junit.Test;
+package com.radixdlt.client.lib.api.rpc;
 
-import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Objects;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+public final class BasicAuth {
+	private final String login;
+	private final String password;
 
-public class AsyncRadixApiTokenTest {
-	private static final String BASE_URL = "http://localhost/";
-
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String NATIVE_TOKEN = "{\"result\":{\"tokenInfoURL\":\"https://assets.radixdlt.com/ico"
-		+ "ns/icon-xrd-32x32.png\",\"symbol\":\"xrd\",\"isSupplyMutable\":true,\"granularity\":\"1\",\"name\":\""
-		+ "Rads\",\"rri\":\"xrd_dr1qyrs8qwl\",\"description\":\"Radix Tokens\",\"currentSupply\":\"8000000000000"
-		+ "000000000000000\",\"iconURL\":\"https://tokens.radixdlt.com/\"},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
-
-	private final HttpClient client = mock(HttpClient.class);
-
-	@Test
-	public void testNativeToken() throws IOException {
-		prepareClient(NATIVE_TOKEN)
-			.map(RadixApi::withTrace)
-			.join()
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.token().describeNative().join()
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(tokenInfoDTO -> assertEquals("Rads", tokenInfoDTO.getName())));
+	private BasicAuth(String login, String password) {
+		this.login = login;
+		this.password = password;
 	}
 
-	@Test
-	public void testTokenInfo() throws IOException {
-		prepareClient(NATIVE_TOKEN)
-			.map(RadixApi::withTrace)
-			.join()
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.token().describe("xrd_dr1qyrs8qwl").join()
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(tokenInfoDTO -> assertEquals("Rads", tokenInfoDTO.getName())));
+	public static BasicAuth with(String login, String password) {
+		return new BasicAuth(login, password);
 	}
 
-	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
-		var completableFuture = new CompletableFuture<HttpResponse<String>>();
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
 
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
+		if (!(o instanceof BasicAuth)) {
+			return false;
+		}
 
-		completableFuture.completeAsync(() -> response);
-		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
+		var authData = (BasicAuth) o;
+		return login.equals(authData.login) && password.equals(authData.password);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(login, password);
+	}
+
+	public String asHeader() {
+		var auth = (login + ':' + password).getBytes(StandardCharsets.ISO_8859_1);
+		return "Basic " + new String(Base64.getEncoder().encode(auth));
 	}
 }
