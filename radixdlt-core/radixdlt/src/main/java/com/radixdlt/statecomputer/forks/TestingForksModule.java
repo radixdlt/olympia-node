@@ -20,28 +20,11 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorMetaData;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorRakeCopy;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.crypto.HashUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.OptionalInt;
-import java.util.Set;
 
 public final class TestingForksModule extends AbstractModule {
-	private static final Set<String> RESERVED_SYMBOLS = Set.of(
-		"xrd", "xrds", "exrd", "exrds", "rad", "rads", "rdx", "rdxs", "radix"
-	);
-
 	@ProvidesIntoSet
 	ForkBuilder fork1() {
 		return new ForkBuilder(
@@ -49,30 +32,7 @@ public final class TestingForksModule extends AbstractModule {
 			HashUtils.sha256("testing-fork-genesis".getBytes(StandardCharsets.UTF_8)),
 			0L,
 			RERulesVersion.OLYMPIA_V1,
-			new RERulesConfig(
-				RESERVED_SYMBOLS,
-				FeeTable.create(
-					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
-					Map.of(
-						TokenResource.class, Amount.ofTokens(1000), // 1000XRD per resource
-						ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
-						ValidatorRakeCopy.class, Amount.ofTokens(5), // 5XRD per register update
-						ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
-						ValidatorMetaData.class, Amount.ofTokens(5), // 5XRD per register update
-						AllowDelegationFlag.class, Amount.ofTokens(5), // 5XRD per register update
-						PreparedStake.class, Amount.ofMilliTokens(500), // 0.5XRD per stake
-						PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
-					)
-				),
-				OptionalInt.of(50), // 50 Txns per round
-				400,
-				150, // Two weeks worth of epochs
-				Amount.ofTokens(100), // Minimum stake
-				150, // Two weeks worth of epochs
-				Amount.ofTokens(10), // Rewards per proposal
-				9800, // 98.00% threshold for completed proposals to get any rewards
-				100 // 100 max validators
-			)
+			RERulesConfig.testingDefault()
 		);
 	}
 
@@ -83,30 +43,7 @@ public final class TestingForksModule extends AbstractModule {
 			HashUtils.sha256("testing-fork-v2".getBytes(StandardCharsets.UTF_8)),
 			2L,
 			RERulesVersion.OLYMPIA_V1,
-			new RERulesConfig(
-				RESERVED_SYMBOLS,
-				FeeTable.create(
-					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
-					Map.of(
-						TokenResource.class, Amount.ofTokens(1000), // 1000XRD per resource
-						ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
-						ValidatorRakeCopy.class, Amount.ofTokens(5), // 5XRD per register update
-						ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
-						ValidatorMetaData.class, Amount.ofTokens(5), // 5XRD per register update
-						AllowDelegationFlag.class, Amount.ofTokens(5), // 5XRD per register update
-						PreparedStake.class, Amount.ofMilliTokens(500), // 0.5XRD per stake
-						PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
-					)
-				),
-				OptionalInt.of(50), // 50 Txns per round
-				400,
-				150, // Two weeks worth of epochs
-				Amount.ofTokens(100), // Minimum stake
-				150, // Two weeks worth of epochs
-				Amount.ofTokens(10), // Rewards per proposal
-				9800, // 98.00% threshold for completed proposals to get any rewards
-				100 // 100 max validators
-			)
+			RERulesConfig.testingDefault()
 		);
 	}
 
@@ -118,30 +55,7 @@ public final class TestingForksModule extends AbstractModule {
 			5L,
 			5500, // 55%
 			RERulesVersion.OLYMPIA_V1,
-			new RERulesConfig(
-				RESERVED_SYMBOLS,
-				FeeTable.create(
-					Amount.ofMicroTokens(300), // 0.0002XRD per byte fee
-					Map.of(
-						TokenResource.class, Amount.ofTokens(1000), // 1000XRD per resource
-						ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
-						ValidatorRakeCopy.class, Amount.ofTokens(5), // 5XRD per register update
-						ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
-						ValidatorMetaData.class, Amount.ofTokens(5), // 5XRD per register update
-						AllowDelegationFlag.class, Amount.ofTokens(5), // 5XRD per register update
-						PreparedStake.class, Amount.ofMilliTokens(500), // 0.5XRD per stake
-						PreparedUnstakeOwnership.class, Amount.ofMilliTokens(500) // 0.5XRD per unstake
-					)
-				),
-				OptionalInt.of(40), // 50 Txns per round
-				400,
-				1000, // Two weeks worth of epochs
-				Amount.ofTokens(100), // Minimum stake
-				150, // Two weeks worth of epochs
-				Amount.ofTokens(10), // Rewards per proposal
-				9800, // 98.00% threshold for completed proposals to get any rewards
-				100 // 100 max validators
-			)
+			RERulesConfig.testingDefault()
 		);
 	}
 }

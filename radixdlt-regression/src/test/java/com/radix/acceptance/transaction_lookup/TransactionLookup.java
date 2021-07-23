@@ -67,7 +67,7 @@ public class TransactionLookup extends AcceptanceTest {
         var history = new AtomicReference<TransactionHistory>();
         await().until(() -> {
             var historyBuffer = account1.account().history(account1.getAddress(), 100, NavigationCursor.create(""));
-            if (historyBuffer.getTransactions().size() >= 5) {
+            if (historyBuffer.getTransactions().size() >= 6) {
                 history.set(historyBuffer);
                 return true;
             }

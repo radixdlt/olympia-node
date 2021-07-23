@@ -6,13 +6,13 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.RERulesVersion;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 
@@ -20,22 +20,23 @@ public final class MockedForksModule extends AbstractModule {
 
 	private final ForkBuilder baseForkBuilder;
 
-	public MockedForksModule(View epochCeilingView) {
+	public MockedForksModule(long maxRounds) {
 		this.baseForkBuilder = new ForkBuilder(
 			"",
 			HashCode.fromInt(0),
 			0L,
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
-				Set.of(),
-				FeeTable.noFees(),
-				OptionalInt.empty(),
-				epochCeilingView.number(),
-				0L,
-				Amount.zero(),
-				0L,
-				Amount.zero(),
-				0,
+				Set.of("xrd"),
+				FeeTable.create(Amount.zero(), Map.of()),
+				(long) 1024 * 1024,
+				OptionalInt.of(2),
+				maxRounds,
+				1,
+				Amount.ofTokens(0),
+				1,
+				Amount.ofTokens(0),
+				9800,
 				10
 			)
 		);

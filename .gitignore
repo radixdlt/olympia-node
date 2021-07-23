@@ -50,3 +50,5 @@ package-lock.json
 # auto-generated doc
 **/resources/documentation/*.html
 **/resources/markdown
+
+configs/

@@ -25,6 +25,7 @@ public enum RpcMethod {
 	NETWORK_CONFIG("networking.get_configuration", SYSTEM),
 	NETWORK_PEERS("networking.get_peers", SYSTEM),
 	NETWORK_DATA("networking.get_data", SYSTEM),
+	NETWORK_ADDRESS_BOOK("networking.get_address_book", SYSTEM),
 
 	VALIDATORS_LIST("validators.get_next_epoch_set", ARCHIVE),
 	VALIDATORS_LOOKUP("validators.lookup_validator", ARCHIVE),
@@ -54,7 +55,6 @@ public enum RpcMethod {
 
 	VALIDATION_NODE_INFO("validation.get_node_info", VALIDATION),
 	VALIDATION_CURRENT_EPOCH("validation.get_current_epoch_data", VALIDATION),
-	VALIDATION_NEXT_EPOCH("validation.get_next_epoch_data", VALIDATION),
 
 	ACCOUNT_INFO("account.get_info", ACCOUNT),
 	ACCOUNT_SUBMIT_SINGLE_STEP("account.submit_transaction_single_step", ACCOUNT);

@@ -20,7 +20,6 @@ package com.radixdlt.integration.distributed.simulation.tests.full_function_fork
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -64,7 +63,7 @@ public final class CoordinatedForkSanityTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
-				new MockedForksModule(View.of(2)),
+				new MockedForksModule(2),
 				new ForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))
