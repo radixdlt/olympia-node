@@ -130,11 +130,11 @@ public interface TransactionAction {
 	}
 
 	static TransactionAction createMutable(
-		ECPublicKey signer, String symbol, String name,
+		Optional<ECPublicKey> signer, String symbol, String name,
 		Optional<String> description, Optional<String> iconUrl, Optional<String> tokenUrl
 	) {
 		return new CreateMutableTokenAction(
-			signer, name, symbol,
+			signer.orElse(null), name, symbol,
 			iconUrl.orElse(null), tokenUrl.orElse(null), description.orElse(null)
 		);
 	}

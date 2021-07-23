@@ -69,7 +69,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateMutableToken;

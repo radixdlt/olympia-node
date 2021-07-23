@@ -227,9 +227,9 @@ public final class ActionParserService {
 		}
 	}
 
-	private static Result<ECPublicKey> pubKeyOrSystem(JSONObject element) {
+	private static Result<Optional<ECPublicKey>> pubKeyOrSystem(JSONObject element) {
 		return param(element, "publicKeyOfSigner")
-			.flatMap(k -> k.equals("system") ? Result.ok(null) : ECPublicKey.fromHexString(k));
+			.flatMap(k -> k.equals("system") ? Result.ok(Optional.empty()) : ECPublicKey.fromHexString(k).map(Optional::of));
 	}
 
 	private Result<ECPublicKey> pubKey(JSONObject element) {
