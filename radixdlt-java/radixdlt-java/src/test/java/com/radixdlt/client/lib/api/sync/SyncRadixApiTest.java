@@ -214,7 +214,7 @@ public class SyncRadixApiTest {
 	}
 
 	@Test
-//	@Ignore
+	@Ignore
 	public void tryBasicAuthentication() {
 		connect("https://rcnet.radixdlt.com", 443, 443, BasicAuth.with("admin", "86RVCjoogDJioMZZVYYlaSAk"))
 			.map(RadixApi::withTrace)
