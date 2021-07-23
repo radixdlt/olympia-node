@@ -70,6 +70,7 @@ import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.crypto.ECKeyPair;
@@ -224,6 +225,18 @@ public class AsyncRadixApiTest {
 			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> transferUnStake(client, amount(100).tokens()));
+	}
+
+	@Test
+	@Ignore
+	public void tryBasicAuthentication() {
+		connect("https://rcnet.radixdlt.com", 443, 443, BasicAuth.with("admin", "86RVCjoogDJioMZZVYYlaSAk"))
+			.map(RadixApi::withTrace)
+			.join()
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.network().addressBook().join()
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(System.out::println));
 	}
 
 	private void transferUnStake(RadixApi client, UInt256 amount) {

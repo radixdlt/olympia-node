@@ -79,6 +79,7 @@ import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.api.rpc.JsonRpcRequest;
 import com.radixdlt.client.lib.api.rpc.JsonRpcResponse;
+import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.api.rpc.PortSelector;
 import com.radixdlt.client.lib.api.rpc.RpcMethod;
 import com.radixdlt.client.lib.dto.AddressBookEntry;
@@ -194,6 +195,7 @@ import static java.util.Optional.ofNullable;
 
 public class AsyncRadixApi implements RadixApi {
 	private static final Logger log = LogManager.getLogger();
+	private static final String AUTH_HEADER = "Authorization";
 	private static final String CONTENT_TYPE = "Content-Type";
 	private static final String APPLICATION_JSON = "application/json";
 	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
@@ -205,6 +207,7 @@ public class AsyncRadixApi implements RadixApi {
 	private final int primaryPort;
 	private final int secondaryPort;
 	private final HttpClient client;
+	private final Optional<String> authHeader;
 
 	private Duration timeout = DEFAULT_TIMEOUT;
 	private boolean doTrace = false;
@@ -446,11 +449,18 @@ public class AsyncRadixApi implements RadixApi {
 		}
 	};
 
-	private AsyncRadixApi(String baseUrl, int primaryPort, int secondaryPort, HttpClient client) {
+	private AsyncRadixApi(
+		String baseUrl,
+		int primaryPort,
+		int secondaryPort,
+		HttpClient client,
+		Optional<BasicAuth> authentication
+	) {
 		this.baseUrl = sanitize(baseUrl);
 		this.primaryPort = primaryPort;
 		this.secondaryPort = secondaryPort;
 		this.client = client;
+		this.authHeader = authentication.map(BasicAuth::asHeader);
 	}
 
 	private static String sanitize(String baseUrl) {
@@ -459,13 +469,24 @@ public class AsyncRadixApi implements RadixApi {
 			   : baseUrl;
 	}
 
-	static Promise<RadixApi> connect(String url, int primaryPort, int secondaryPort) {
-		return buildHttpClient().fold(Promise::failure, client -> connect(url, primaryPort, secondaryPort, client));
+	static Promise<RadixApi> connect(
+		String url,
+		int primaryPort,
+		int secondaryPort,
+		Optional<BasicAuth> authentication
+	) {
+		return buildHttpClient().fold(Promise::failure, client -> connect(url, primaryPort, secondaryPort, client, authentication));
 	}
 
-	static Promise<RadixApi> connect(String url, int primaryPort, int secondaryPort, HttpClient client) {
+	static Promise<RadixApi> connect(
+		String url,
+		int primaryPort,
+		int secondaryPort,
+		HttpClient client,
+		Optional<BasicAuth> authentication
+	) {
 		return ofNullable(url)
-			.map(baseUrl -> Result.ok(new AsyncRadixApi(baseUrl, primaryPort, secondaryPort, client)))
+			.map(baseUrl -> Result.ok(new AsyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
 			.orElseGet(BASE_URL_IS_MANDATORY::result)
 			.flatMap(asyncRadixApi -> asyncRadixApi.network().id().join()
 				.onSuccess(networkId -> asyncRadixApi.configureSerialization(networkId.getNetworkId()))
@@ -570,10 +591,14 @@ public class AsyncRadixApi implements RadixApi {
 	}
 
 	private HttpRequest buildRequest(JsonRpcRequest request, String value) {
-		return HttpRequest.newBuilder()
+		var requestBuilder = HttpRequest.newBuilder()
 			.uri(buildUrl(request.rpcDetails()))
 			.timeout(timeout)
-			.header(CONTENT_TYPE, APPLICATION_JSON)
+			.header(CONTENT_TYPE, APPLICATION_JSON);
+
+		authHeader.ifPresent(header -> requestBuilder.header(AUTH_HEADER, header));
+
+		return requestBuilder
 			.POST(BodyPublishers.ofString(value))
 			.build();
 	}

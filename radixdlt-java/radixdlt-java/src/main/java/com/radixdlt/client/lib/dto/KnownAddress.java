@@ -69,13 +69,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 
 public class KnownAddress {
 	private final String uri;
 	private final boolean blacklisted;
-	private final Instant lastSuccessfulConnection;
+	private final Optional<Instant> lastSuccessfulConnection;
 
-	private KnownAddress(String uri, boolean blacklisted, Instant lastSuccessfulConnection) {
+	private KnownAddress(String uri, boolean blacklisted, Optional<Instant> lastSuccessfulConnection) {
 		this.uri = uri;
 		this.blacklisted = blacklisted;
 		this.lastSuccessfulConnection = lastSuccessfulConnection;
@@ -85,12 +86,12 @@ public class KnownAddress {
 	public static KnownAddress create(
 		@JsonProperty(value = "uri", required = true) String uri,
 		@JsonProperty(value = "blacklisted", required = true) Boolean blacklisted,
-		@JsonProperty(value = "lastSuccessfulConnection", required = true) String lastSuccessfulConnection
+		@JsonProperty("lastSuccessfulConnection") String lastSuccessfulConnection
 	) {
 		return new KnownAddress(
 			uri,
 			blacklisted != null && blacklisted,
-			Instant.parse(lastSuccessfulConnection)
+			Optional.ofNullable(lastSuccessfulConnection).map(Instant::parse)
 		);
 	}
 
@@ -120,7 +121,7 @@ public class KnownAddress {
 		return "{"
 			+ "uri='" + uri + '\''
 			+ ", blacklisted=" + blacklisted
-			+ ", lastSuccessfulConnection=" + lastSuccessfulConnection
+			+ ", lastSuccessfulConnection=" + lastSuccessfulConnection.map(Instant::toString).orElse("(unknown)")
 			+ '}';
 	}
 
@@ -132,7 +133,7 @@ public class KnownAddress {
 		return blacklisted;
 	}
 
-	public Instant getLastSuccessfulConnection() {
+	public Optional<Instant> getLastSuccessfulConnection() {
 		return lastSuccessfulConnection;
 	}
 }

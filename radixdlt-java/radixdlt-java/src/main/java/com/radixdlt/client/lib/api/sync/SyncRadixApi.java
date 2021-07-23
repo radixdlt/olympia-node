@@ -79,6 +79,7 @@ import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.api.rpc.JsonRpcRequest;
 import com.radixdlt.client.lib.api.rpc.JsonRpcResponse;
+import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.api.rpc.PortSelector;
 import com.radixdlt.client.lib.api.rpc.RpcMethod;
 import com.radixdlt.client.lib.dto.AddressBookEntry;
@@ -132,6 +133,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.security.KeyException;
 import java.security.NoSuchAlgorithmException;
@@ -197,6 +199,7 @@ import static java.util.Optional.ofNullable;
 
 public class SyncRadixApi implements RadixApi {
 	private static final Logger log = LogManager.getLogger();
+	private static final String AUTH_HEADER = "Authorization";
 	private static final String CONTENT_TYPE = "Content-Type";
 	private static final String APPLICATION_JSON = "application/json";
 	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
@@ -208,6 +211,7 @@ public class SyncRadixApi implements RadixApi {
 	private final int primaryPort;
 	private final int secondaryPort;
 	private final HttpClient client;
+	private final Optional<String> authHeader;
 
 	private Duration timeout = DEFAULT_TIMEOUT;
 	private boolean doTrace = false;
@@ -449,11 +453,18 @@ public class SyncRadixApi implements RadixApi {
 		}
 	};
 
-	private SyncRadixApi(String baseUrl, int primaryPort, int secondaryPort, HttpClient client) {
+	private SyncRadixApi(
+		String baseUrl,
+		int primaryPort,
+		int secondaryPort,
+		HttpClient client,
+		Optional<BasicAuth> authentication
+	) {
 		this.baseUrl = sanitize(baseUrl);
 		this.primaryPort = primaryPort;
 		this.secondaryPort = secondaryPort;
 		this.client = client;
+		this.authHeader = authentication.map(BasicAuth::asHeader);
 	}
 
 	private static String sanitize(String baseUrl) {
@@ -462,17 +473,28 @@ public class SyncRadixApi implements RadixApi {
 			   : baseUrl;
 	}
 
-	static Result<RadixApi> connect(String url, int primaryPort, int secondaryPort) {
-		return buildHttpClient().flatMap(client -> connect(url, primaryPort, secondaryPort, client));
+	static Result<RadixApi> connect(
+		String url,
+		int primaryPort,
+		int secondaryPort,
+		Optional<BasicAuth> authentication
+	) {
+		return buildHttpClient().flatMap(client -> connect(url, primaryPort, secondaryPort, client, authentication));
 	}
 
-	static Result<RadixApi> connect(String url, int primaryPort, int secondaryPort, HttpClient client) {
+	static Result<RadixApi> connect(
+		String url,
+		int primaryPort,
+		int secondaryPort,
+		HttpClient client,
+		Optional<BasicAuth> authentication
+	) {
 		return ofNullable(url)
-			.map(baseUrl -> Result.ok(new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client)))
+			.map(baseUrl -> Result.ok(new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
 			.orElseGet(BASE_URL_IS_MANDATORY::result)
-			.flatMap(asyncRadixApi -> asyncRadixApi.network().id()
-				.onSuccess(networkId -> asyncRadixApi.configureSerialization(networkId.getNetworkId()))
-				.map(__ -> asyncRadixApi));
+			.flatMap(syncRadixApi -> syncRadixApi.network().id()
+				.onSuccess(networkId -> syncRadixApi.configureSerialization(networkId.getNetworkId()))
+				.map(__ -> syncRadixApi));
 	}
 
 	@Override
@@ -571,7 +593,10 @@ public class SyncRadixApi implements RadixApi {
 		return UNKNOWN_ERROR.with(throwable.getClass().getName(), throwable.getMessage());
 	}
 
-	private <T> Result<T> bodyHandler(HttpResponse<String> body, TypeReference<JsonRpcResponse<T>> reference) {
+	private <T> Result<T> bodyHandler(
+		HttpResponse<String> body,
+		TypeReference<JsonRpcResponse<T>> reference
+	) {
 		return deserialize(trace(body.body()), reference)
 			.flatMap(response -> response.rawError() == null
 								 ? Result.ok(response.rawResult())
@@ -579,11 +604,15 @@ public class SyncRadixApi implements RadixApi {
 	}
 
 	private HttpRequest buildRequest(JsonRpcRequest request, String value) {
-		return HttpRequest.newBuilder()
+		var requestBuilder = HttpRequest.newBuilder()
 			.uri(buildUrl(request.rpcDetails()))
 			.timeout(timeout)
-			.header(CONTENT_TYPE, APPLICATION_JSON)
-			.POST(HttpRequest.BodyPublishers.ofString(value))
+			.header(CONTENT_TYPE, APPLICATION_JSON);
+
+		authHeader.ifPresent(header -> requestBuilder.header(AUTH_HEADER, header));
+
+		return requestBuilder
+			.POST(BodyPublishers.ofString(value))
 			.build();
 	}
 

@@ -69,6 +69,7 @@ import com.radixdlt.utils.functional.Result;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -120,6 +121,6 @@ public class SyncRadixApiConsensusTest {
 		when(response.body()).thenReturn(NETWORK_ID, responseBody);
 		when(client.<String>send(any(), any())).thenReturn(response);
 
-		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
+		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 }
