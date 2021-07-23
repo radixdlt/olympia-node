@@ -326,6 +326,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 					.toOptional()
 					.filter(entry -> entry.getType().equals(type))
 					.filter(entry -> entry.getOwner().equals(addr))
+					.filter(entry -> type != BalanceType.SPENDABLE || !entry.getAmount().isZero())
 					.map(entry -> entry.rri().equals("stake-ownership") ? computeStakeEntry(entry) : entry)
 					.ifPresent(list::add);
 
