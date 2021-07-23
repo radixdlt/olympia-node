@@ -64,25 +64,17 @@
 
 package com.radixdlt.client.lib.api.sync;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
-import com.radixdlt.client.lib.api.NodeAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.api.rpc.JsonRpcRequest;
 import com.radixdlt.client.lib.api.rpc.JsonRpcResponse;
-import com.radixdlt.client.lib.api.rpc.BasicAuth;
-import com.radixdlt.client.lib.api.rpc.PortSelector;
 import com.radixdlt.client.lib.api.rpc.RadixApiBase;
-import com.radixdlt.client.lib.api.rpc.RpcMethod;
 import com.radixdlt.client.lib.dto.AddressBookEntry;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
@@ -117,37 +109,16 @@ import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
-import com.radixdlt.client.lib.dto.serializer.AccountAddressDeserializer;
-import com.radixdlt.client.lib.dto.serializer.AccountAddressSerializer;
-import com.radixdlt.client.lib.dto.serializer.ECPublicKeyDeserializer;
-import com.radixdlt.client.lib.dto.serializer.ECPublicKeySerializer;
-import com.radixdlt.client.lib.dto.serializer.NodeAddressDeserializer;
-import com.radixdlt.client.lib.dto.serializer.NodeAddressSerializer;
-import com.radixdlt.client.lib.dto.serializer.ValidatorAddressDeserializer;
-import com.radixdlt.client.lib.dto.serializer.ValidatorAddressSerializer;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
-import java.security.KeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.NETWORK_IO_ERROR;
@@ -190,11 +161,6 @@ import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_CURRENT_EPOCH
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_NODE_INFO;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LIST;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
-import static com.radixdlt.identifiers.CommonErrors.SSL_ALGORITHM_ERROR;
-import static com.radixdlt.identifiers.CommonErrors.SSL_GENERAL_ERROR;
-import static com.radixdlt.identifiers.CommonErrors.SSL_KEY_ERROR;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DESERIALIZE;
-import static com.radixdlt.networks.Network.LOCALNET;
 
 import static java.util.Optional.ofNullable;
 

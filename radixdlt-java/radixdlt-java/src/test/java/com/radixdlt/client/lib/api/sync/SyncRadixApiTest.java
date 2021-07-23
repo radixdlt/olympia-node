@@ -101,7 +101,7 @@ public class SyncRadixApiTest {
 	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
 	@Test
-	@Ignore //Useful testbed for experiments
+	@Ignore("Online test")
 	public void testBuildTransactionWithMessage() {
 		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.transfer(
@@ -128,7 +128,7 @@ public class SyncRadixApiTest {
 	}
 
 	@Test
-	@Ignore    //Useful testbed for experiments
+	@Ignore("Online test")
 	public void testTransactionHistoryInPages() {
 		connect(BASE_URL)
 			.onFailure(SyncRadixApiTest::reportFailure)
@@ -149,7 +149,7 @@ public class SyncRadixApiTest {
 	}
 
 	@Test
-	@Ignore //Useful testbed for experiments
+	@Ignore("Online test")
 	public void addManyTransactions() {
 		connect(BASE_URL)
 			.map(RadixApi::withTrace)
@@ -167,7 +167,7 @@ public class SyncRadixApiTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void listStakes() {
 		connect(BASE_URL)
 			.onFailure(SyncRadixApiTest::reportFailure)
@@ -177,7 +177,7 @@ public class SyncRadixApiTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void listUnStakes() {
 		connect(BASE_URL)
 			.onFailure(SyncRadixApiTest::reportFailure)
@@ -187,7 +187,7 @@ public class SyncRadixApiTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void makeStake() {
 		connect(BASE_URL)
 			.map(RadixApi::withTrace)
@@ -196,7 +196,7 @@ public class SyncRadixApiTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void makeUnStake() {
 		connect(BASE_URL)
 			.map(RadixApi::withTrace)
@@ -205,7 +205,7 @@ public class SyncRadixApiTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void transferUnStake() {
 		connect(BASE_URL)
 			.map(RadixApi::withTrace)
@@ -214,7 +214,7 @@ public class SyncRadixApiTest {
 	}
 
 	@Test
-	@Ignore
+//	@Ignore("Online test")
 	public void tryBasicAuthentication() {
 		connect("https://rcnet.radixdlt.com", 443, 443, BasicAuth.with("admin", "86RVCjoogDJioMZZVYYlaSAk"))
 			.map(RadixApi::withTrace)

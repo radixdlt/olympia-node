@@ -187,7 +187,7 @@ public class SyncRadixApiCreationTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void testBuildAndSubmitTransactionWithMessage() {
 		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.transfer(ACCOUNT_ADDRESS1, ACCOUNT_ADDRESS2, UInt256.NINE, "xrd_dr1qyrs8qwl")
@@ -206,7 +206,7 @@ public class SyncRadixApiCreationTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void testCreateFixedSupplyToken() {
 		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.createFixed(ACCOUNT_ADDRESS1, KEY_PAIR1.getPublicKey(),
@@ -227,7 +227,7 @@ public class SyncRadixApiCreationTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	//TODO: for some reason operation succeeds only if transaction contains only one action
 	public void testRegisterValidator() {
 		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS3)
