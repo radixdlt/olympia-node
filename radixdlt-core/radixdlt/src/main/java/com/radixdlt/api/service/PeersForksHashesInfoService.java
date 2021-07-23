@@ -20,6 +20,7 @@ package com.radixdlt.api.service;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.crypto.ECPublicKey;
@@ -73,18 +74,17 @@ public final class PeersForksHashesInfoService {
 
 	public EventProcessor<PeerEvent> peerEventProcessor() {
 		return peerEvent -> {
-			/* TODO(luk): fixme
 			if (peerEvent instanceof PeerEvent.PeerConnected) {
 				final var peerChannel = ((PeerEvent.PeerConnected) peerEvent).getChannel();
-				final var peerPubKey = peerChannel.getRemoteNodeId().getPublicKey();
-				final var peerLatestKnownForkHash = peerChannel.getRemoteLatestKnownForkHash();
-				final var isPeerForkHashKnown = forks.getByHash(peerLatestKnownForkHash).isPresent();
-				final var peerIsInValidatorSet = currentValidatorSet.containsNode(BFTNode.create(peerPubKey));
-				if (peerIsInValidatorSet && !isPeerForkHashKnown) {
-					addUnknownReportedForkHash(peerPubKey, peerLatestKnownForkHash);
-				}
+				peerChannel.getRemoteLatestKnownForkHash().ifPresent(peerLatestKnownForkHash -> {
+					final var peerPubKey = peerChannel.getRemoteNodeId().getPublicKey();
+					final var isPeerForkHashKnown = forks.getByHash(peerLatestKnownForkHash).isPresent();
+					final var peerIsInValidatorSet = currentValidatorSet.containsNode(BFTNode.create(peerPubKey));
+					if (peerIsInValidatorSet && !isPeerForkHashKnown) {
+						addUnknownReportedForkHash(peerPubKey, peerLatestKnownForkHash);
+					}
+				});
 			}
-			 */
 		};
 	}
 

@@ -86,6 +86,7 @@ import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
@@ -95,6 +96,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -169,7 +171,7 @@ public class RegisterValidatorTest {
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
 				.action(new RegisterValidator(key.getPublicKey()))
-				.action(new UpdateValidatorMetadata(key.getPublicKey(), "some_name", "http://test.com"))
+				.action(new UpdateValidatorMetadata(key.getPublicKey(), "some_name", "http://test.com", Optional.of(HashUtils.random(32))))
 				.action(new UpdateValidatorFee(key.getPublicKey(), 2000))
 			)
 			.signAndBuild(key::sign);

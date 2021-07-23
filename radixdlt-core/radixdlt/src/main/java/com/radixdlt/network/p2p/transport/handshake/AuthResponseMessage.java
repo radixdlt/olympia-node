@@ -73,6 +73,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
+import java.util.Optional;
 
 @SerializerId2("message.handshake.auth_response")
 public final class AuthResponseMessage {
@@ -89,17 +90,24 @@ public final class AuthResponseMessage {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final HashCode nonce;
 
+	private final Optional<HashCode> latestKnownForkHash;
+
 	@JsonCreator
 	public static AuthResponseMessage deserialize(
 		@JsonProperty("ephemeralPublicKey") HashCode ephemeralPublicKey,
-		@JsonProperty("nonce") HashCode nonce
+		@JsonProperty("nonce") HashCode nonce,
+		@JsonProperty("latestKnownForkHash") HashCode rawLatestKnownForkHash
 	) {
-		return new AuthResponseMessage(ephemeralPublicKey, nonce);
+		final var latestKnownForkHash = rawLatestKnownForkHash == null
+			? Optional.<HashCode>empty()
+			: Optional.of(rawLatestKnownForkHash);
+		return new AuthResponseMessage(ephemeralPublicKey, nonce, latestKnownForkHash);
 	}
 
-	public AuthResponseMessage(HashCode ephemeralPublicKey, HashCode nonce) {
+	public AuthResponseMessage(HashCode ephemeralPublicKey, HashCode nonce, Optional<HashCode> latestKnownForkHash) {
 		this.ephemeralPublicKey = ephemeralPublicKey;
 		this.nonce = nonce;
+		this.latestKnownForkHash = latestKnownForkHash;
 	}
 
 	public HashCode getEphemeralPublicKey() {
@@ -108,6 +116,16 @@ public final class AuthResponseMessage {
 
 	public HashCode getNonce() {
 		return nonce;
+	}
+
+	public Optional<HashCode> getLatestKnownForkHash() {
+		return latestKnownForkHash;
+	}
+
+	@JsonProperty("latestKnownForkHash")
+	@DsonOutput(DsonOutput.Output.ALL)
+	public HashCode rawLatestKnownForkHash() {
+		return this.latestKnownForkHash.orElse(null);
 	}
 
 	@Override
@@ -120,11 +138,12 @@ public final class AuthResponseMessage {
 		}
 		final var that = (AuthResponseMessage) o;
 		return Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey)
-			&& Objects.equals(nonce, that.nonce);
+			&& Objects.equals(nonce, that.nonce)
+			&& Objects.equals(latestKnownForkHash, that.latestKnownForkHash);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(ephemeralPublicKey, nonce);
+		return Objects.hash(ephemeralPublicKey, nonce, latestKnownForkHash);
 	}
 }

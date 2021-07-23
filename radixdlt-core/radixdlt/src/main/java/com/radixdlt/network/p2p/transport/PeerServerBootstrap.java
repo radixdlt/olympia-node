@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.p2p.transport;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
@@ -73,6 +74,8 @@ import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.LatestKnownForkConfig;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -88,6 +91,7 @@ public final class PeerServerBootstrap {
 	private final P2PConfig config;
 	private final Addressing addressing;
 	private final int networkId;
+	private final HashCode latestKnownForkHash;
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
@@ -99,6 +103,7 @@ public final class PeerServerBootstrap {
 		P2PConfig config,
 		Addressing addressing,
 		@NetworkId int networkId,
+		@LatestKnownForkConfig ForkConfig latestKnownFork,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -108,6 +113,7 @@ public final class PeerServerBootstrap {
 		this.config = Objects.requireNonNull(config);
 		this.addressing = Objects.requireNonNull(addressing);
 		this.networkId = networkId;
+		this.latestKnownForkHash = Objects.requireNonNull(latestKnownFork).hash();
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -128,6 +134,7 @@ public final class PeerServerBootstrap {
 				config,
 				addressing,
 				networkId,
+				latestKnownForkHash,
 				counters,
 				serialization,
 				secureRandom,

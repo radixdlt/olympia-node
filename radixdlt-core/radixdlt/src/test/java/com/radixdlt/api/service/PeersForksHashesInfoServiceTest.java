@@ -41,6 +41,7 @@ import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -73,15 +74,13 @@ public final class PeersForksHashesInfoServiceTest {
 
 		final var peer1 = mock(PeerChannel.class);
 		when(peer1.getRemoteNodeId()).thenReturn(NodeId.fromPublicKey(initialValidator.getKey()));
-		/* TODO(luk): fixme */
-//		when(peer1.getRemoteLatestKnownForkHash()).thenReturn(HashCode.fromInt(2)); // this hash is known
+		when(peer1.getRemoteLatestKnownForkHash()).thenReturn(Optional.of(HashCode.fromInt(2))); // this hash is known
 		peersForksHashesInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer1));
 
 		// hash was known, so still empty
 		assertTrue(peersForksHashesInfoService.getUnknownReportedForksHashes().isEmpty());
 
-		/* TODO(luk): fixme */
-//		when(peer1.getRemoteLatestKnownForkHash()).thenReturn(HashCode.fromBytes(new byte[] {0x5}));
+		when(peer1.getRemoteLatestKnownForkHash()).thenReturn(Optional.of(HashCode.fromBytes(new byte[] {0x5})));
 		peersForksHashesInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer1));
 
 		// got an unknown hash from a validator
@@ -93,8 +92,7 @@ public final class PeersForksHashesInfoServiceTest {
 
 		final var peer2 = mock(PeerChannel.class);
 		when(peer2.getRemoteNodeId()).thenReturn(NodeId.fromPublicKey(nextValidator.getKey()));
-		/* TODO(luk): fixme */
-//		when(peer2.getRemoteLatestKnownForkHash()).thenReturn(HashCode.fromBytes(new byte[] {0x6}));
+		when(peer2.getRemoteLatestKnownForkHash()).thenReturn(Optional.of(HashCode.fromBytes(new byte[] {0x6})));
 		peersForksHashesInfoService.peerEventProcessor().process(PeerEvent.PeerConnected.create(peer2));
 
 		// got unknown hash from non-validator, so no change

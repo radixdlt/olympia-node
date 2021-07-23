@@ -74,6 +74,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
+import java.util.Optional;
 
 @SerializerId2("message.handshake.auth_initiate")
 public final class AuthInitiateMessage {
@@ -98,21 +99,28 @@ public final class AuthInitiateMessage {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final int networkId;
 
+	private final Optional<HashCode> latestKnownForkHash;
+
 	@JsonCreator
 	public static AuthInitiateMessage deserialize(
 		@JsonProperty("signature") ECDSASignature signature,
 		@JsonProperty("publicKey") HashCode publicKey,
 		@JsonProperty("nonce") HashCode nonce,
-		@JsonProperty("networkId") int networkId
+		@JsonProperty("networkId") int networkId,
+		@JsonProperty("latestKnownForkHash") HashCode rawLatestKnownForkHash
 	) {
-		return new AuthInitiateMessage(signature, publicKey, nonce, networkId);
+		final var latestKnownForkHash = rawLatestKnownForkHash == null
+			? Optional.<HashCode>empty()
+			: Optional.of(rawLatestKnownForkHash);
+		return new AuthInitiateMessage(signature, publicKey, nonce, networkId, latestKnownForkHash);
 	}
 
-	public AuthInitiateMessage(ECDSASignature signature, HashCode publicKey, HashCode nonce, int networkId) {
+	public AuthInitiateMessage(ECDSASignature signature, HashCode publicKey, HashCode nonce, int networkId, Optional<HashCode> latestKnownForkHash) {
 		this.signature = signature;
 		this.publicKey = publicKey;
 		this.nonce = nonce;
 		this.networkId = networkId;
+		this.latestKnownForkHash = latestKnownForkHash;
 	}
 
 	public ECDSASignature getSignature() {
@@ -131,6 +139,16 @@ public final class AuthInitiateMessage {
 		return networkId;
 	}
 
+	public Optional<HashCode> getLatestKnownForkHash() {
+		return latestKnownForkHash;
+	}
+
+	@JsonProperty("latestKnownForkHash")
+	@DsonOutput(DsonOutput.Output.ALL)
+	public HashCode rawLatestKnownForkHash() {
+		return this.latestKnownForkHash.orElse(null);
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -143,11 +161,12 @@ public final class AuthInitiateMessage {
 		return Objects.equals(signature, that.signature)
 			&& Objects.equals(publicKey, that.publicKey)
 			&& Objects.equals(nonce, that.nonce)
-			&& networkId == that.networkId;
+			&& networkId == that.networkId
+			&& Objects.equals(latestKnownForkHash, that.latestKnownForkHash);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(signature, publicKey, nonce, networkId);
+		return Objects.hash(signature, publicKey, nonce, networkId, latestKnownForkHash);
 	}
 }
