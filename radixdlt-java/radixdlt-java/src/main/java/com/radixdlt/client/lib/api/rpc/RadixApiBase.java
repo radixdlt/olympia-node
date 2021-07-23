@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.client.lib.api.sync;
+package com.radixdlt.client.lib.api.rpc;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,12 +77,7 @@ import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.NodeAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
-import com.radixdlt.client.lib.api.rpc.JsonRpcRequest;
-import com.radixdlt.client.lib.api.rpc.JsonRpcResponse;
-import com.radixdlt.client.lib.api.rpc.BasicAuth;
-import com.radixdlt.client.lib.api.rpc.PortSelector;
-import com.radixdlt.client.lib.api.rpc.RadixApiBase;
-import com.radixdlt.client.lib.api.rpc.RpcMethod;
+import com.radixdlt.client.lib.api.sync.RadixApi;
 import com.radixdlt.client.lib.dto.AddressBookEntry;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
@@ -196,397 +191,164 @@ import static com.radixdlt.identifiers.CommonErrors.SSL_KEY_ERROR;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DESERIALIZE;
 import static com.radixdlt.networks.Network.LOCALNET;
 
-import static java.util.Optional.ofNullable;
+public abstract class RadixApiBase {
+	private static final Logger log = LogManager.getLogger();
 
-public class SyncRadixApi extends RadixApiBase implements RadixApi {
-//	private static final Logger log = LogManager.getLogger();
-//	private static final String AUTH_HEADER = "Authorization";
-//	private static final String CONTENT_TYPE = "Content-Type";
-//	private static final String APPLICATION_JSON = "application/json";
-//	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
-//	private static final ObjectMapper DEFAULT_OBJECT_MAPPER = createDefaultMapper();
-//
-//	private final AtomicLong idCounter = new AtomicLong();
-//
-//	private final String baseUrl;
-//	private final int primaryPort;
-//	private final int secondaryPort;
-//	private final HttpClient client;
-//	private final Optional<String> authHeader;
-//
-//	private Duration timeout = DEFAULT_TIMEOUT;
-//	private boolean doTrace = false;
-//	private ObjectMapper objectMapper;
-//	private int networkId = LOCALNET.getId();
+	private static final String AUTH_HEADER = "Authorization";
+	private static final String CONTENT_TYPE = "Content-Type";
+	private static final String APPLICATION_JSON = "application/json";
+	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+	private static final ObjectMapper DEFAULT_OBJECT_MAPPER = createDefaultMapper();
 
-	private final Network network = new Network() {
-		@Override
-		public Result<NetworkId> id() {
-			return call(request(NETWORK_ID), new TypeReference<>() {});
-		}
+	private final AtomicLong idCounter = new AtomicLong();
+	private final String baseUrl;
+	private final int primaryPort;
+	private final int secondaryPort;
+	private final HttpClient client;
+	private final Optional<String> authHeader;
 
-		@Override
-		public Result<NetworkStats> throughput() {
-			return call(request(NETWORK_THROUGHPUT), new TypeReference<>() {});
-		}
+	private Duration timeout = DEFAULT_TIMEOUT;
+	private boolean doTrace = false;
+	private ObjectMapper objectMapper;
+	private int networkId = LOCALNET.getId();
 
-		@Override
-		public Result<NetworkStats> demand() {
-			return call(request(NETWORK_DEMAND), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<NetworkConfiguration> configuration() {
-			return call(request(NETWORK_CONFIG), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<NetworkData> data() {
-			return call(request(NETWORK_DATA), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<List<NetworkPeer>> peers() {
-			return call(request(NETWORK_PEERS), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<List<AddressBookEntry>> addressBook() {
-			return call(request(NETWORK_ADDRESS_BOOK), new TypeReference<>() {});
-		}
-	};
-
-	private final Token token = new Token() {
-		@Override
-		public Result<TokenInfo> describeNative() {
-			return call(request(TOKEN_NATIVE), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<TokenInfo> describe(String rri) {
-			return call(request(TOKEN_INFO, rri), new TypeReference<>() {});
-		}
-	};
-
-	private final Transaction transaction = new Transaction() {
-		@Override
-		public Result<BuiltTransaction> build(TransactionRequest request) {
-			return call(
-				request(
-					CONSTRUCTION_BUILD, request.getActions(), request.getFeePayer(),
-					request.getMessage(), request.disableResourceAllocationAndDestroy()
-				),
-				new TypeReference<>() {}
-			);
-		}
-
-		@Override
-		public Result<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit) {
-			return call(
-				request(
-					CONSTRUCTION_FINALIZE,
-					Hex.toHexString(request.getRawBlob()), request.getSignature(), request.getPublicKey(), Boolean.toString(immediateSubmit)
-				),
-				new TypeReference<>() {}
-			);
-		}
-
-		@Override
-		public Result<TxDTO> submit(TxBlobDTO request) {
-			return call(
-				request(CONSTRUCTION_SUBMIT, Hex.toHexString(request.getBlob()), request.getTxId()),
-				new TypeReference<>() {}
-			);
-		}
-
-		@Override
-		public Result<TransactionDTO> lookup(AID txId) {
-			return call(request(TRANSACTION_LOOKUP, txId.toString()), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<TransactionStatusDTO> status(AID txId) {
-			return call(request(TRANSACTION_STATUS, txId.toString()), new TypeReference<>() {});
-		}
-	};
-
-	private final SingleAccount account = new SingleAccount() {
-		@Override
-		public Result<TokenBalances> balances(AccountAddress address) {
-			return call(request(ACCOUNT_BALANCES, address.toString(networkId())), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<TransactionHistory> history(
-			AccountAddress address, int size, Optional<NavigationCursor> cursor
-		) {
-			var request = request(ACCOUNT_HISTORY, address.toString(networkId()), size);
-			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
-
-			return call(request, new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<List<StakePositions>> stakes(AccountAddress address) {
-			return call(request(ACCOUNT_STAKES, address.toString(networkId())), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<List<UnstakePositions>> unstakes(AccountAddress address) {
-			return call(request(ACCOUNT_UNSTAKES, address.toString(networkId())), new TypeReference<>() {});
-		}
-	};
-
-	private final Validator validator = new Validator() {
-		@Override
-		public Result<ValidatorsResponse> list(int size, Optional<NavigationCursor> cursor) {
-			var request = request(VALIDATORS_LIST, size);
-			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
-
-			return call(request, new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<ValidatorDTO> lookup(ValidatorAddress validatorAddress) {
-			return call(request(VALIDATORS_LOOKUP, validatorAddress.toString(networkId())), new TypeReference<>() {});
-		}
-	};
-
-	private final Local local = new Local() {
-		@Override
-		public Result<LocalAccount> accountInfo() {
-			return call(request(ACCOUNT_INFO), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<TxDTO> submitTxSingleStep(TransactionRequest request) {
-			return call(
-				request(ACCOUNT_SUBMIT_SINGLE_STEP, request.getActions(), request.getMessage()),
-				new TypeReference<>() {}
-			);
-		}
-
-		@Override
-		public Result<LocalValidatorInfo> validatorInfo() {
-			return call(request(VALIDATION_NODE_INFO), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<EpochData> currentEpoch() {
-			return call(request(VALIDATION_CURRENT_EPOCH), new TypeReference<>() {});
-		}
-	};
-
-	private final Api api = new Api() {
-		@Override
-		public Result<ApiConfiguration> configuration() {
-			return call(request(API_CONFIGURATION), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<ApiData> data() {
-			return call(request(API_DATA), new TypeReference<>() {});
-		}
-	};
-
-	private final Consensus consensus = new Consensus() {
-		@Override
-		public Result<ConsensusConfiguration> configuration() {
-			return call(request(BFT_CONFIGURATION), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<ConsensusData> data() {
-			return call(request(BFT_DATA), new TypeReference<>() {});
-		}
-	};
-
-	private final Mempool mempool = new Mempool() {
-		@Override
-		public Result<MempoolConfiguration> configuration() {
-			return call(request(MEMPOOL_CONFIGURATION), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<MempoolData> data() {
-			return call(request(MEMPOOL_DATA), new TypeReference<>() {});
-		}
-	};
-
-	private final RadixEngine radixEngine = new RadixEngine() {
-		@Override
-		public Result<List<ForkDetails>> configuration() {
-			return call(request(RADIX_ENGINE_CONFIGURATION), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<RadixEngineData> data() {
-			return call(request(RADIX_ENGINE_DATA), new TypeReference<>() {});
-		}
-	};
-
-	private final Sync sync = new Sync() {
-		@Override
-		public Result<SyncConfiguration> configuration() {
-			return call(request(SYNC_CONFIGURATION), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<SyncData> data() {
-			return call(request(SYNC_DATA), new TypeReference<>() {});
-		}
-	};
-
-	private final Ledger ledger = new Ledger() {
-		@Override
-		public Result<Proof> latest() {
-			return call(request(LEDGER_PROOF), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<Proof> epoch() {
-			return call(request(LEDGER_EPOCH_PROOF), new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<Checkpoint> checkpoints() {
-			return call(request(LEDGER_CHECKPOINTS), new TypeReference<>() {});
-		}
-	};
-
-	@Override
-	public Network network() {
-		return network;
-	}
-
-	@Override
-	public Transaction transaction() {
-		return transaction;
-	}
-
-	@Override
-	public Token token() {
-		return token;
-	}
-
-	@Override
-	public Local local() {
-		return local;
-	}
-
-	@Override
-	public SingleAccount account() {
-		return account;
-	}
-
-	@Override
-	public Validator validator() {
-		return validator;
-	}
-
-	@Override
-	public Api api() {
-		return api;
-	}
-
-	@Override
-	public Consensus consensus() {
-		return consensus;
-	}
-
-	@Override
-	public Mempool mempool() {
-		return mempool;
-	}
-
-	@Override
-	public RadixEngine radixEngine() {
-		return radixEngine;
-	}
-
-	@Override
-	public Sync sync() {
-		return sync;
-	}
-
-	@Override
-	public Ledger ledger() {
-		return ledger;
-	}
-
-	@Override
-	public SyncRadixApi withTrace() {
-		enableTrace();
-		return this;
-	}
-
-	@Override
-	public SyncRadixApi withTimeout(Duration timeout) {
-		setTimeout(timeout);
-		return this;
-	}
-
-	private SyncRadixApi(
+	protected RadixApiBase(
 		String baseUrl,
 		int primaryPort,
 		int secondaryPort,
 		HttpClient client,
 		Optional<BasicAuth> authentication
 	) {
-		super(baseUrl, primaryPort, secondaryPort, client, authentication);
+		this.baseUrl = sanitize(baseUrl);
+		this.primaryPort = primaryPort;
+		this.secondaryPort = secondaryPort;
+		this.client = client;
+		this.authHeader = authentication.map(BasicAuth::asHeader);
 	}
 
-	static Result<RadixApi> connect(
-		String url,
-		int primaryPort,
-		int secondaryPort,
-		Optional<BasicAuth> authentication
-	) {
-		return buildHttpClient().flatMap(client -> connect(url, primaryPort, secondaryPort, client, authentication));
+	private static String sanitize(String baseUrl) {
+		return baseUrl.endsWith("/")
+			   ? baseUrl.substring(0, baseUrl.length() - 1)
+			   : baseUrl;
 	}
 
-	static Result<RadixApi> connect(
-		String url,
-		int primaryPort,
-		int secondaryPort,
-		HttpClient client,
-		Optional<BasicAuth> authentication
-	) {
-		return ofNullable(url)
-			.map(baseUrl -> Result.ok(new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
-			.orElseGet(BASE_URL_IS_MANDATORY::result)
-			.flatMap(syncRadixApi -> syncRadixApi.network().id()
-				.onSuccess(networkId -> syncRadixApi.configureSerialization(networkId.getNetworkId()))
-				.map(__ -> syncRadixApi));
+	protected void enableTrace() {
+		doTrace = true;
 	}
 
-	private <T> Result<T> call(JsonRpcRequest request, TypeReference<JsonRpcResponse<T>> typeReference) {
-		return serialize(request)
-			.onSuccess(this::trace)
-			.map(value -> buildRequest(request, value))
-			.flatMap(httpRequest -> Result.wrap(this::errorMapper, () -> client().send(httpRequest, HttpResponse.BodyHandlers.ofString())))
-			.flatMap(body -> bodyHandler(body, typeReference));
+	protected void setTimeout(Duration timeout) {
+		this.timeout = timeout;
 	}
 
-	private Failure errorMapper(Throwable throwable) {
-		if (throwable instanceof IOException) {
-			return NETWORK_IO_ERROR.with(throwable.getMessage());
+	protected JsonRpcRequest request(RpcMethod rpcMethod, Object... parameters) {
+		return JsonRpcRequest.create(rpcMethod, idCounter.incrementAndGet(), parameters);
+	}
+
+	protected HttpRequest buildRequest(JsonRpcRequest request, String value) {
+		var requestBuilder = HttpRequest.newBuilder()
+			.uri(buildUrl(request.rpcDetails()))
+			.timeout(timeout)
+			.header(CONTENT_TYPE, APPLICATION_JSON);
+
+		authHeader.ifPresent(header -> requestBuilder.header(AUTH_HEADER, header));
+
+		return requestBuilder
+			.POST(BodyPublishers.ofString(value))
+			.build();
+	}
+
+	protected  <T> T trace(T value) {
+		if (doTrace) {
+			log.debug(value.toString());
 		}
 
-		if (throwable instanceof InterruptedException) {
-			return OPERATION_INTERRUPTED.with(throwable.getMessage());
-		}
-
-		return UNKNOWN_ERROR.with(throwable.getClass().getName(), throwable.getMessage());
+		return value;
 	}
 
-	private <T> Result<T> bodyHandler(
-		HttpResponse<String> body,
-		TypeReference<JsonRpcResponse<T>> reference
-	) {
-		return deserialize(trace(body.body()), reference)
-			.flatMap(response -> response.rawError() == null
-								 ? Result.ok(response.rawResult())
-								 : Result.fail(response.rawError().toFailure()));
+	protected int networkId() {
+		return networkId;
+	}
+
+	protected HttpClient client() {
+		return client;
+	}
+
+	protected Result<String> serialize(JsonRpcRequest request) {
+		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper().writeValueAsString(request));
+	}
+
+	protected <T> Result<JsonRpcResponse<T>> deserialize(String body, TypeReference<JsonRpcResponse<T>> typeReference) {
+		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper().readValue(body, typeReference));
+	}
+
+	protected static Result<HttpClient> buildHttpClient() {
+		var props = System.getProperties();
+		props.setProperty("jdk.internal.httpclient.disableHostnameVerification", "true");
+
+		var trustAllCerts = new TrustManager[]{
+			new X509TrustManager() {
+				public X509Certificate[] getAcceptedIssuers() {
+					return null;
+				}
+
+				public void checkClientTrusted(X509Certificate[] certs, String authType) { }
+
+				public void checkServerTrusted(X509Certificate[] certs, String authType) { }
+			}
+		};
+
+		return Result.wrap(
+			RadixApiBase::decodeSslExceptions,
+			() -> {
+				var sc = SSLContext.getInstance("SSL");
+				sc.init(null, trustAllCerts, new SecureRandom());
+				return sc;
+			}
+		).map(sc -> HttpClient.newBuilder()
+			.connectTimeout(DEFAULT_TIMEOUT)
+			.sslContext(sc)
+			.build());
+	}
+
+	protected void configureSerialization(int networkId) {
+		var module = new SimpleModule()
+			.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkId))
+			.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkId))
+			.addSerializer(NodeAddress.class, new NodeAddressSerializer(networkId))
+			.addSerializer(ECPublicKey.class, new ECPublicKeySerializer())
+			.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkId))
+			.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(networkId))
+			.addDeserializer(NodeAddress.class, new NodeAddressDeserializer(networkId))
+			.addDeserializer(ECPublicKey.class, new ECPublicKeyDeserializer());
+		objectMapper = createDefaultMapper().registerModule(module);
+	}
+
+	private URI buildUrl(RpcMethod rpcMethod) {
+		var endPoint = rpcMethod.endPoint();
+		var port = endPoint.portSelector() == PortSelector.PRIMARY
+				   ? primaryPort
+				   : secondaryPort;
+
+		return URI.create(baseUrl + ":" + port + endPoint.path());
+	}
+
+	private static Failure decodeSslExceptions(Throwable throwable) {
+		if (throwable instanceof NoSuchAlgorithmException) {
+			return SSL_KEY_ERROR.with(throwable.getMessage());
+		}
+
+		if (throwable instanceof KeyException) {
+			return SSL_ALGORITHM_ERROR.with(throwable.getMessage());
+		}
+
+		return SSL_GENERAL_ERROR.with(throwable.getMessage());
+	}
+
+	private ObjectMapper objectMapper() {
+		return objectMapper == null ? DEFAULT_OBJECT_MAPPER : objectMapper;
+	}
+
+	private static ObjectMapper createDefaultMapper() {
+		return new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
 	}
 }
