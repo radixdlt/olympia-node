@@ -1,4 +1,4 @@
-package com.radix.test;
+package com.radix.test.utils;
 
 import com.radix.test.account.Account;
 import com.radixdlt.application.tokens.Amount;

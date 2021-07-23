@@ -1,6 +1,6 @@
 package com.radix.test.network;
 
-import com.radix.test.Utils;
+import com.radix.test.utils.TestingUtils;
 import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
 
 import java.net.MalformedURLException;
@@ -37,12 +37,12 @@ public final class RadixNetworkConfiguration {
 
     public static RadixNetworkConfiguration fromEnv() {
         try {
-            var jsonRpcRootUrlString = Utils.getEnvWithDefault("RADIXDLT_JSON_RPC_API_ROOT_URL", "http://localhost");
+            var jsonRpcRootUrlString = TestingUtils.getEnvWithDefault("RADIXDLT_JSON_RPC_API_ROOT_URL", "http://localhost");
             var jsonRpcRootUrl = new URL(jsonRpcRootUrlString);
             var primaryPort = (jsonRpcRootUrl.getProtocol().equalsIgnoreCase("https")) ? 443
-                : Integer.parseInt(Utils.getEnvWithDefault("RADIXDLT_JSON_RPC_API_PRIMARY_PORT", "8080"));
+                : Integer.parseInt(TestingUtils.getEnvWithDefault("RADIXDLT_JSON_RPC_API_PRIMARY_PORT", "8080"));
             var secondaryPort = (jsonRpcRootUrl.getProtocol().equalsIgnoreCase("https")) ? 443
-                : Integer.parseInt(Utils.getEnvWithDefault("RADIXDLT_JSON_RPC_API_SECONDARY_PORT", "3333"));
+                : Integer.parseInt(TestingUtils.getEnvWithDefault("RADIXDLT_JSON_RPC_API_SECONDARY_PORT", "3333"));
             var basicAuth = System.getenv("RADIXDLT_BASIC_AUTH");
             var type = determineType(jsonRpcRootUrlString);
             var dockerConfiguration = DockerConfiguration.fromEnv();

@@ -1,6 +1,6 @@
 package com.radix.test.account;
 
-import com.radix.test.Utils;
+import com.radix.test.utils.TestingUtils;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.sync.RadixApi;
 import com.radixdlt.client.lib.dto.Balance;
@@ -138,13 +138,13 @@ public final class AsyncAccount implements RadixApi {
                 return zeroNativeTokenBalance;
             }
             var balances = tokenBalancesDTO.getTokenBalances().stream().filter(balance ->
-                    balance.getRri().equals(nativeToken.getRri())).collect(Collectors.toList());
+                balance.getRri().equals(nativeToken.getRri())).collect(Collectors.toList());
             return balances.isEmpty() ? zeroNativeTokenBalance : balances.get(0);
         });
     }
 
     public Balance getOwnNativeTokenBalance() {
-        return ownNativeTokenBalance().fold(Utils::toTestFailureException, balance -> balance);
+        return ownNativeTokenBalance().fold(TestingUtils::toTestFailureException, balance -> balance);
     }
 
     public Result<TokenBalances> getOwnTokenBalances() {

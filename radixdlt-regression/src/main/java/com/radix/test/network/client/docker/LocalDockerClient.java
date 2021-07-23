@@ -1,4 +1,4 @@
-package com.radix.test.docker;
+package com.radix.test.network.client.docker;
 
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;

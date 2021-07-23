@@ -1,4 +1,4 @@
-package com.radix.test;
+package com.radix.test.utils;
 
 import com.radix.test.account.Account;
 import com.radixdlt.application.tokens.TokenUtils;
@@ -14,11 +14,11 @@ import static org.awaitility.Awaitility.await;
 /**
  * Various testing utilities
  */
-public final class Utils {
+public final class TestingUtils {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private Utils() {
+    private TestingUtils() {
 
     }
 

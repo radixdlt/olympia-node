@@ -1,7 +1,7 @@
 package com.radix.acceptance.fees;
 
 import com.radix.acceptance.AcceptanceTest;
-import com.radix.test.Utils;
+import com.radix.test.utils.TestingUtils;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.utils.UInt256;
@@ -39,7 +39,7 @@ public class Fees extends AcceptanceTest {
     public void i_can_observe_that_i_have_paid_fees_proportional_to_the_message_bytes() {
         TransactionDTO transaction = account1.lookup(txBuffer);
         UInt256 feesMinor = transaction.getFee();
-        String feesMajor = Utils.fromMinorToMajorString(feesMinor);
+        String feesMajor = TestingUtils.fromMinorToMajorString(feesMinor);
         String message = transaction.getMessage().get();
         logger.debug("Paid {}({})XRD in fees for token transfer with message '{}'", feesMinor, feesMajor, message);
 

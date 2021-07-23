@@ -1,9 +1,6 @@
 package com.radix.test.account;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.radix.test.TransactionUtils;
+import com.radix.test.utils.TransactionUtils;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.ValidatorAddress;
@@ -15,6 +12,8 @@ import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.UInt256;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Duration;
 import java.util.Optional;

@@ -78,6 +78,7 @@ sourceSets {
             compileClasspath += main.output + test.output
             runtimeClasspath += main.output + test.output
             srcDir file('src/test/java')
+            srcDir file('src/main/java')
         }
         resources.srcDir file('src/test/resources')
     }
@@ -124,19 +125,17 @@ dependencies {
 
     implementation 'io.reactivex.rxjava2:rxjava'
     implementation 'com.google.guava:guava'
-
+    implementation 'org.awaitility:awaitility:4.0.3'
     implementation 'com.squareup.okhttp3:okhttp'
     implementation 'com.squareup.okhttp3:logging-interceptor'
-
     implementation 'org.slf4j:slf4j-simple:2.0.0-alpha2'
+    implementation 'com.github.docker-java:docker-java:3.2.8'
+    implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.8'
+    implementation 'com.konghq:unirest-java:3.11.09:standalone'
 
     testImplementation 'junit:junit'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'io.cucumber:cucumber-java:6.10.3'
     testImplementation 'io.cucumber:cucumber-junit:6.10.3'
-    testImplementation 'org.awaitility:awaitility:4.0.3'
-    testImplementation 'com.github.docker-java:docker-java:3.2.8'
-    testImplementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.8'
-    testImplementation 'com.konghq:unirest-java:3.11.09:standalone'
 
 }

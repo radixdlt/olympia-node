@@ -1,4 +1,4 @@
-package com.radix.test;
+package com.radix.test.utils;
 
 /**
  * A runtime exception which is thrown when a cucumber/acceptance test is supposed to fail

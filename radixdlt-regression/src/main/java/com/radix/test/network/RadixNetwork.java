@@ -1,9 +1,9 @@
 package com.radix.test.network;
 
 import com.radix.test.account.Account;
-import com.radix.test.docker.DockerClient;
-import com.radix.test.docker.LocalDockerClient;
 import com.radix.test.network.client.RadixHttpClient;
+import com.radix.test.network.client.docker.DockerClient;
+import com.radix.test.network.client.docker.LocalDockerClient;
 import com.radixdlt.client.lib.api.AccountAddress;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

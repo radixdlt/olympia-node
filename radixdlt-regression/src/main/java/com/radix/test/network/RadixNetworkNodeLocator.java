@@ -1,7 +1,8 @@
 package com.radix.test.network;
 
-import com.radix.test.docker.DockerClient;
+import com.google.common.collect.Sets;
 import com.radix.test.network.client.RadixHttpClient;
+import com.radix.test.network.client.docker.DockerClient;
 import com.radixdlt.application.system.construction.FeeReserveNotEnoughBalanceException;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
@@ -10,7 +11,6 @@ import com.radixdlt.client.lib.api.sync.RadixApiException;
 import com.radixdlt.crypto.ECKeyPair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.assertj.core.util.Sets;
 
 import java.util.List;
 import java.util.Set;

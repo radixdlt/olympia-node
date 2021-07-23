@@ -64,15 +64,30 @@
 
 package com.radixdlt.test.chaos;
 
-import com.radixdlt.test.chaos.actions.NetworkAction;
-import com.radixdlt.test.chaos.actions.RestartAction;
-import com.radixdlt.test.chaos.actions.ShutdownAction;
-import com.radixdlt.test.chaos.actions.Action;
-import com.radixdlt.test.chaos.actions.ValidatorUnregistrationAction;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
+import com.radixdlt.client.lib.dto.FinalizedTransaction;
+import com.radixdlt.client.lib.dto.TxBlobDTO;
+import com.radixdlt.client.lib.dto.TxDTO;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.AccountAddressing;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.test.chaos.actions.*;
 import com.radixdlt.test.chaos.ansible.AnsibleImageWrapper;
 import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
+import com.radixdlt.utils.Ints;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Test;
 
 import java.util.Set;
 
@@ -100,6 +115,83 @@ public class ChaosExperiments {
         });
 
         //ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
+    }
+
+
+    //@Test
+    public void stake() throws DeserializeException {
+        ECKeyPair richKeyPair = keyPairOf(1);
+        AccountAddress richAccount = AccountAddress.create(richKeyPair.getPublicKey());
+
+//        REAddr stakerREAddr = Addressing.ofNetwork(Network.LOCALNET).forAccounts()
+//            .parse("ddx1qspj7xtr6av9e2pqcqv4nnenz24g759r7yr3qcxrzftjeneyxkvlktchakswt");
+//        AccountAddress staker = AccountAddress.create(stakerREAddr);
+        ECKeyPair stakerKeyPair = ECKeyPair.generateNew();
+        AccountAddress stakerAddress = AccountAddress.create(stakerKeyPair.getPublicKey());
+        System.out.println(stakerAddress);
+
+        ImperativeRadixApi client = ImperativeRadixApi
+            .connect("http://localhost", 8080, 3333);
+
+        Amount amount = Amount.ofTokens(1000000);
+        FinalizedTransaction finalized = client.transaction().build(TransactionRequest
+            .createBuilder(richAccount)
+            .transfer(richAccount, stakerAddress, amount.toSubunits(), "xrd_dr1qyrs8qwl")
+            .build())
+            .toFinalized(richKeyPair);
+        TxBlobDTO postFinal = client.transaction().finalize(finalized, false);
+        TxDTO response = client.transaction().submit(postFinal);
+        System.out.println(response);
+
+        ECPublicKey validatorKey = Addressing.ofNetwork(Network.LOCALNET).forValidators()
+            .parse("dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9");
+        ValidatorAddress validatorAddress = ValidatorAddress.of(validatorKey);
+        Amount amount2 = Amount.ofTokens(10000);
+        FinalizedTransaction finalized2 = client.transaction().build(TransactionRequest
+            .createBuilder(stakerAddress)
+            .stake(stakerAddress, validatorAddress, amount2.toSubunits())
+            .build())
+            .toFinalized(stakerKeyPair);
+        TxBlobDTO postFinal2 = client.transaction().finalize(finalized2, false);
+        TxDTO response2 = client.transaction().submit(postFinal2);
+        System.out.println(response2);
+
+    }
+
+    @Test
+    public void a() throws PrivateKeyException, PublicKeyException, DeserializeException {
+        ECKeyPair richKeyPair = keyPairOf(1);
+        AccountAddress richAccount = AccountAddress.create(richKeyPair.getPublicKey());
+
+//        REAddr destination = Addressing.ofNetwork(Network.STOKENET).forAccounts()
+//            .parse("tdx1qspvkcqggqjftcfjk0te92gvfp42k7qe9myakkeck2hwqt8cv94z9rsy53zh0");
+        REAddr destination = Addressing.ofNetwork(Network.STOKENET).forAccounts()
+            .parse("tdx1qspllnrh4sx8wxtyl58m872jf2sj2389sywqsxs7cvu8skjprde9r0c63e69n");
+        AccountAddress faucetAccount = AccountAddress.create(destination);
+
+        Amount amount = Amount.ofTokens(10000);
+        ImperativeRadixApi client = ImperativeRadixApi
+            .connect("https://stokenet.radixdlt.com", 443, 443);
+        FinalizedTransaction finalized = client.transaction().build(TransactionRequest
+            .createBuilder(richAccount)
+            .transfer(richAccount, faucetAccount, amount.toSubunits(), "xrd_tr1qyf0x76s")
+            .build())
+            .toFinalized(richKeyPair);
+        TxBlobDTO postFinal = client.transaction().finalize(finalized, false);
+        TxDTO response = client.transaction().submit(postFinal);
+
+        System.out.println(response);
+    }
+
+    private static ECKeyPair keyPairOf(int pk) {
+        var privateKey = new byte[ECKeyPair.BYTES];
+        Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
+
+        try {
+            return ECKeyPair.fromPrivateKey(privateKey);
+        } catch (PrivateKeyException | PublicKeyException e) {
+            throw new IllegalArgumentException("Error while generating public key", e);
+        }
     }
 
 }

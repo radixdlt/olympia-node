@@ -1,9 +1,9 @@
 package com.radix.acceptance.transaction_lookup;
 
 import com.radix.acceptance.AcceptanceTest;
-import com.radix.test.Assertions;
-import com.radix.test.TestFailureException;
-import com.radix.test.TransactionUtils;
+import com.radix.assertions.Assertions;
+import com.radix.test.utils.TestFailureException;
+import com.radix.test.utils.TransactionUtils;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.dto.TransactionHistory;

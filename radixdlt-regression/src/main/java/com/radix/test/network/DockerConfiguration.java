@@ -1,6 +1,7 @@
 package com.radix.test.network;
 
-import com.radix.test.Utils;
+
+import com.radix.test.utils.TestingUtils;
 
 /**
  * Configuration properties for using docker in the context of a radix (test) network
@@ -16,8 +17,8 @@ public class DockerConfiguration {
     }
 
     public static DockerConfiguration fromEnv() {
-        var socketUrl = Utils.getEnvWithDefault("RADIXDLT_DOCKER_SOCKET_URL", "unix:///var/run/docker.sock");
-        var containerName = Utils.getEnvWithDefault("RADIXDLT_DOCKER_CONTAINER_NAME", "docker_core%d_1");
+        var socketUrl = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_SOCKET_URL", "unix:///var/run/docker.sock");
+        var containerName = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_CONTAINER_NAME", "docker_core%d_1");
         if (!containerName.contains("%d")) {
             throw new RuntimeException("Docker container name needs to contain a '%d' wildcard e.g. docker_core%d_1");
         }

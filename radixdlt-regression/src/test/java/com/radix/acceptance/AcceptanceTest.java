@@ -1,8 +1,8 @@
 package com.radix.acceptance;
 
-import com.radix.test.TransactionUtils;
 import com.radix.test.account.Account;
 import com.radix.test.network.RadixNetwork;
+import com.radix.test.utils.TransactionUtils;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.dto.Balance;
