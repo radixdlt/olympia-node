@@ -216,6 +216,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				throw new IllegalStateException("Inconsistent data, there should only be a single substate per validator");
 			}
 			var bftData = validatorBFTData.remove(k);
+			context.emitEvent(ValidatorBFTDataEvent.create(k, bftData.proposalsCompleted(), bftData.proposalsMissed()));
 			if (bftData.proposalsCompleted() + bftData.proposalsMissed() == 0) {
 				return next(context);
 			}
@@ -249,7 +250,6 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					rakedEmissions = nodeRewards;
 				}
 				validatorStakeData.addEmission(rakedEmissions);
-				context.emitEvent(ValidatorBFTDataEvent.create(k, bftData.proposalsCompleted(), bftData.proposalsMissed()));
 				updatingValidators.put(k, validatorStakeData);
 				return next(context);
 			});
