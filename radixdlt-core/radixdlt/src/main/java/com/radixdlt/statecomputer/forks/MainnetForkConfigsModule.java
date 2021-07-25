@@ -116,7 +116,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				OptionalInt.of(50), // 50 Txns per round
 				10_000, // Rounds per epoch - not extended to 2 weeks for testing
 				150, // Two weeks worth of epochs for rake debounce
-				Amount.ofTokens(100), // Minimum stake
+				Amount.ofTokens(90), // Minimum stake
 				150, // Two weeks worth of epochs for unstaking delay
 				Amount.ofTokens(0),   // No rewards in first epoch
 				9800, // 98.00% threshold for completed proposals to get any rewards,
@@ -151,7 +151,7 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				OptionalInt.of(50), // 50 Txns per round
 				10_000, // Rounds per epoch
 				150, // Two weeks worth of epochs
-				Amount.ofTokens(100), // Minimum stake
+				Amount.ofTokens(90), // Minimum stake
 				150, // Two weeks worth of epochs
 				Amount.ofTokens(10), // Rewards per proposal
 				9800, // 98.00% threshold for completed proposals to get any rewards
