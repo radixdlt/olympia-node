@@ -140,4 +140,17 @@ public final class TokenResourceMetadata implements ResourceData {
 			&& Objects.equals(this.iconUrl, other.iconUrl)
 			&& Objects.equals(this.url, other.url);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{addr=%s symbol=%s name=%s desc=%s iconUrl=%s url=%s}",
+			this.getClass().getSimpleName(),
+			this.addr,
+			this.symbol,
+			this.name,
+			this.description,
+			this.iconUrl,
+			this.url
+		);
+	}
 }
