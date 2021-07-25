@@ -256,6 +256,21 @@ public final class DeveloperHandler {
 		);
 	}
 
+	public JSONObject handleLookupMappedSubstate(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("key"),
+			params -> {
+				var key = Bytes.fromHexString(params.getString("key"));
+				var systemMapKey = SystemMapKey.create(key);
+				var bytes = engineStore.get(systemMapKey).orElseThrow();
+				return Result.ok(jsonObject()
+					.put("id", Bytes.toHexString(bytes.getId()))
+					.put("data", Bytes.toHexString(bytes.getData()))
+				);
+			});
+	}
+
 	public JSONObject handleScanSubstates(JSONObject request) {
 		return withRequiredParameters(
 			request,
@@ -267,25 +282,35 @@ public final class DeveloperHandler {
 				var limit = params.has("loadLimit") ? params.getLong("loadLimit") : 8;
 				var valuePattern = Pattern.compile(valueHexRegex).asMatchPredicate();
 				var found = jsonArray();
-				var idSize = new AtomicLong();
-				var dataSize = new AtomicLong();
-				var count = engineStore.scanner()
+				var totalKeySize = new AtomicLong();
+				var totalValueSize = new AtomicLong();
+				var countByGroup = engineStore.scanner()
 					.map(r -> Pair.of(Bytes.toHexString(r.getId()), Bytes.toHexString(r.getData())))
 					.filter(p -> keyPattern.test(p.getFirst()) && valuePattern.test(p.getSecond()))
 					.peek(p -> {
 						if (found.length() < limit) {
 							found.put(p.getFirst() + ":" + p.getSecond());
 						}
-						idSize.getAndAdd(p.getFirst().length() / 2);
-						dataSize.getAndAdd(p.getSecond().length() / 2);
+						totalKeySize.getAndAdd(p.getFirst().length() / 2);
+						totalValueSize.getAndAdd(p.getSecond().length() / 2);
 					})
-					.count();
+					.collect(
+						Collectors.groupingBy(
+							p -> p.getSecond().length() > 0 ? p.getSecond().substring(0, 2) : "virtual-down",
+							Collectors.counting()
+						)
+					);
+
+				var countByGroupJson = jsonObject();
+				countByGroup.forEach(countByGroupJson::put);
+
 				return Result.ok(jsonObject()
 					.put("loaded", found)
-					.put("idSize", idSize.get())
-					.put("dataSize", dataSize.get())
-					.put("totalSize", idSize.get() + dataSize.get())
-					.put("totalCount", count)
+					.put("countBySubstateType", countByGroupJson)
+					.put("totalIdSize", totalKeySize.get())
+					.put("totalDataSize", totalValueSize.get())
+					.put("totalSize", totalKeySize.get() + totalValueSize.get())
+					.put("totalCount", countByGroup.values().stream().mapToLong(l -> l).sum())
 				);
 			}
 		);

@@ -91,6 +91,10 @@ public final class SystemMapKey {
 		return new SystemMapKey(buf.array());
 	}
 
+	public static SystemMapKey create(byte[] key) {
+		return new SystemMapKey(key);
+	}
+
 	public static SystemMapKey ofSystem(byte key) {
 		return of(REAddr.ofSystem(), key);
 	}
