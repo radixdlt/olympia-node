@@ -137,6 +137,7 @@ public enum RERulesVersion {
 			var perByteFee = config.getFeeTable().getPerByteFee();
 			var perUpSubstateFee = config.getFeeTable().getPerUpSubstateFee();
 			var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
+			var tokenSymbolPattern = config.getTokenSymbolPattern();
 
 			final CMAtomOS v4 = new CMAtomOS();
 			v4.load(new ValidatorConstraintScryptV2());
@@ -144,7 +145,7 @@ public enum RERulesVersion {
 			v4.load(new ValidatorRegisterConstraintScrypt());
 			v4.load(new ValidatorUpdateOwnerConstraintScrypt());
 			v4.load(new SystemConstraintScrypt());
-			v4.load(new TokensConstraintScryptV3(config.getReservedSymbols()));
+			v4.load(new TokensConstraintScryptV3(config.getReservedSymbols(), tokenSymbolPattern));
 			v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));
 			v4.load(new MutexConstraintScrypt());
 			v4.load(new RoundUpdateConstraintScrypt(maxRounds));

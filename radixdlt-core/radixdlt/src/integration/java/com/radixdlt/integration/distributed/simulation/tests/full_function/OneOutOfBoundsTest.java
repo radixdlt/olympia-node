@@ -92,6 +92,7 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -120,6 +121,7 @@ public class OneOutOfBoundsTest {
 				new RadixEngineForksLatestOnlyModule(
 					new RERulesConfig(
 						Set.of("xrd"),
+						Pattern.compile("[a-z0-9]+"),
 						FeeTable.create(
 							Amount.ofSubunits(perByteFee),
 							Map.of()

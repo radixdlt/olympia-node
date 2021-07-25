@@ -116,6 +116,7 @@ import org.junit.runners.Parameterized;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -135,7 +136,7 @@ public class UnstakeTokensV2Test {
 						10, Amount.ofTokens(10).toSubunits(), 9800,
 						1, 10
 					),
-					new TokensConstraintScryptV3(Set.of()),
+					new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(),
 					new ValidatorRegisterConstraintScrypt(),
@@ -154,7 +155,7 @@ public class UnstakeTokensV2Test {
 						10, Amount.ofTokens(10).toSubunits(), 9800,
 						1, 10
 					),
-					new TokensConstraintScryptV3(Set.of()),
+					new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(),
 					new ValidatorRegisterConstraintScrypt(),
@@ -173,7 +174,7 @@ public class UnstakeTokensV2Test {
 						10, Amount.ofTokens(10).toSubunits(), 9800,
 						1, 10
 					),
-					new TokensConstraintScryptV3(Set.of()),
+					new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(),
 					new ValidatorRegisterConstraintScrypt(),
@@ -192,7 +193,7 @@ public class UnstakeTokensV2Test {
 						10, Amount.ofTokens(10).toSubunits(), 9800,
 						1, 10
 					),
-					new TokensConstraintScryptV3(Set.of()),
+					new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
 					new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()),
 					new ValidatorConstraintScryptV2(),
 					new ValidatorRegisterConstraintScrypt(),

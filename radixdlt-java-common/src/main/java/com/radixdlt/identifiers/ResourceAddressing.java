@@ -109,9 +109,6 @@ public final class ResourceAddressing {
 			throw new IllegalArgumentException("Address hrp suffix must be " + hrpSuffix + "(" + rri + ")");
 		}
 		var symbol = data.hrp.substring(0, data.hrp.length() - hrpSuffix.length());
-		if (!Naming.NAME_PATTERN.matcher(symbol).matches()) {
-			throw new IllegalArgumentException("Invalid symbol in address (" + rri + ")");
-		}
 		var addrBytes = fromBech32Data(data.data);
 		return tuple(symbol, REAddr.of(addrBytes));
 	}

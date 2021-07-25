@@ -124,6 +124,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -212,6 +213,7 @@ public class RecoveryLivenessTest {
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					Set.of("xrd"),
+					Pattern.compile("[a-z0-9]+"),
 					FeeTable.noFees(),
 					1024 * 1024,
 					OptionalInt.of(50),

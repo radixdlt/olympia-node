@@ -305,7 +305,7 @@ public final class TxLowLevelBuilder {
 	}
 
 	public TxLowLevelBuilder syscall(Syscall syscall, byte[] bytes) throws TxBuilderException {
-		if (bytes.length < 1 || bytes.length > 32) {
+		if (bytes.length < 0 || bytes.length > 32) {
 			throw new TxBuilderException("Length must be >= 1 and <= 32 but was " + bytes.length);
 		}
 		var data = new byte[Short.BYTES + 1 + bytes.length];
