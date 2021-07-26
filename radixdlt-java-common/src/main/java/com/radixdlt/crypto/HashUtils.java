@@ -80,9 +80,7 @@ import java.util.Comparator;
  */
 @SecurityCritical(SecurityKind.HASHING)
 public final class HashUtils {
-
-	private static final Comparator<HashCode> hashComparator = new Comparator<HashCode>() {
-
+	private static final Comparator<HashCode> hashComparator = new Comparator<>() {
 		private final Comparator<byte[]> bytesComparator = UnsignedBytes.lexicographicalComparator();
 
 		@Override

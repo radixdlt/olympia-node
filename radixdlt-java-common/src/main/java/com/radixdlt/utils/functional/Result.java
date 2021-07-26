@@ -255,8 +255,8 @@ public interface Result<T> {
 	 * Convert instance into {@link Result}
 	 *
 	 * @param failure failure to use when input is empty instance.
-	 *
 	 * @param source input instance of {@link Optional}
+	 *
 	 * @return created instance
 	 */
 	static <T> Result<T> fromOptional(Failure failure, Optional<T> source) {

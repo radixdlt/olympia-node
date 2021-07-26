@@ -77,7 +77,6 @@ compileTestJava {
 dependencies {
     implementation project(':radixdlt-java-common')
 
-    implementation 'com.google.code.gson:gson'
     implementation 'commons-cli:commons-cli'
     implementation 'info.picocli:picocli'
 

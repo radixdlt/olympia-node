@@ -234,7 +234,6 @@ subprojects {
                 exclude 'com.google.guava:guava'
             }
 
-            dependency 'com.google.code.gson:gson:2.8.2'
             dependency 'org.bouncycastle:bcprov-jdk15on:1.68'
             dependency 'org.bouncycastle:bcpkix-jdk15on:1.68'
 
@@ -281,11 +280,6 @@ subprojects {
             dependency 'org.openjdk.jmh:jmh-core:1.25'
             dependency 'org.openjdk.jmh:jmh-generator-annprocess:1.25'
 
-            dependency 'com.squareup.okhttp3:okhttp:3.14.9'
-            dependency 'com.squareup.okhttp3:logging-interceptor:3.14.9'
-            dependency 'io.reactivex.rxjava2:rxjava:2.1.14'
-
-            dependency 'com.google.code.gson:gson:2.8.2'
             dependency 'commons-cli:commons-cli:1.4'
             dependency 'info.picocli:picocli:4.4.0'
             dependency 'info.picocli:picocli-codegen:4.4.0'

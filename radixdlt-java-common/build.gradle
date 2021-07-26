@@ -80,7 +80,6 @@ dependencies {
     api 'org.apache.logging.log4j:log4j-api'
     api 'org.apache.logging.log4j:log4j-core'
     api 'org.reflections:reflections'
-    api 'com.google.code.gson:gson'
     api 'org.bouncycastle:bcprov-jdk15on'
     api 'org.bouncycastle:bcpkix-jdk15on'
     api 'org.json:json'

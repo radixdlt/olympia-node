@@ -77,7 +77,6 @@ sourceSets {
 dependencies {
     implementation project(':radixdlt-java')
 
-    implementation 'io.reactivex.rxjava2:rxjava'
     implementation 'org.json:json'
 
     testImplementation 'com.github.mwiede:jsch:0.1.61'

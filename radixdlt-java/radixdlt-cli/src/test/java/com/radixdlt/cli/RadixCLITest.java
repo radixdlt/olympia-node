@@ -25,7 +25,6 @@ public class RadixCLITest {
 
 			var output = capture.stop().trim();
 			// Make sure existing commands are listed
-			assertTrue(output.contains("generate-key"));
 			assertTrue(output.contains("generate-validator-key"));
 		}
 	}

@@ -109,6 +109,7 @@ import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
+import com.radixdlt.client.lib.network.HttpClientUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -165,26 +166,6 @@ import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
 import static java.util.Optional.ofNullable;
 
 public class SyncRadixApi extends RadixApiBase implements RadixApi {
-//	private static final Logger log = LogManager.getLogger();
-//	private static final String AUTH_HEADER = "Authorization";
-//	private static final String CONTENT_TYPE = "Content-Type";
-//	private static final String APPLICATION_JSON = "application/json";
-//	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
-//	private static final ObjectMapper DEFAULT_OBJECT_MAPPER = createDefaultMapper();
-//
-//	private final AtomicLong idCounter = new AtomicLong();
-//
-//	private final String baseUrl;
-//	private final int primaryPort;
-//	private final int secondaryPort;
-//	private final HttpClient client;
-//	private final Optional<String> authHeader;
-//
-//	private Duration timeout = DEFAULT_TIMEOUT;
-//	private boolean doTrace = false;
-//	private ObjectMapper objectMapper;
-//	private int networkId = LOCALNET.getId();
-
 	private final Network network = new Network() {
 		@Override
 		public Result<NetworkId> id() {
@@ -508,7 +489,8 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 		int secondaryPort,
 		Optional<BasicAuth> authentication
 	) {
-		return buildHttpClient().flatMap(client -> connect(url, primaryPort, secondaryPort, client, authentication));
+		return HttpClientUtils.buildHttpClient(DEFAULT_TIMEOUT)
+			.flatMap(client -> connect(url, primaryPort, secondaryPort, client, authentication));
 	}
 
 	static Result<RadixApi> connect(

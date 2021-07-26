@@ -62,33 +62,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.client.lib.network;
 
-public final class DefaultSignatures {
+import com.radixdlt.utils.functional.Failure;
+import com.radixdlt.utils.functional.Result;
 
-    private DefaultSignatures() {
-        throw new IllegalStateException("Can't construct.");
-    }
+import java.net.http.HttpClient;
+import java.security.KeyException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.time.Duration;
+import java.util.function.Function;
 
-    private static final Signatures DEFAULT = new ECDSASignatures();
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
-    /**
-     * Returns an empty collection of {@link Signature}s, with the default {@link SignatureScheme} used.
-     * @return an empty collection of {@link Signature}s, with the default {@link SignatureScheme} used.
-     */
-    public static Signatures emptySignatures() {
-        return DEFAULT;
-    }
+import static com.radixdlt.identifiers.CommonErrors.SSL_ALGORITHM_ERROR;
+import static com.radixdlt.identifiers.CommonErrors.SSL_GENERAL_ERROR;
+import static com.radixdlt.identifiers.CommonErrors.SSL_KEY_ERROR;
 
-    /**
-     * Returns a collection of {@link Signature}s, with the default {@link SignatureScheme} used, containing the {@code signature},
-     * produced by the signing key corresponding to the {@code publicKey}.
-     * @param publicKey the {@link ECPublicKey} corresponding to the {@link Signing} key which was used to produce the {@code signature}.
-     * @param signature the {@link Signature} produced by the {@link Signing} key corresponding to the {@code publicKey}.
-     * @return an instance of the default {@link SignatureScheme} used, containing the {@code signature},
-     * produced by the signing key corresponding to the {@code publicKey}.
-     */
-    public static Signatures single(ECPublicKey publicKey, Signature signature) {
-        return emptySignatures().concatenate(publicKey, signature);
-    }
+public final class HttpClientUtils {
+	private static final TrustManager[] trustAllCerts = new TrustManager[]{
+		new X509TrustManager() {
+			public X509Certificate[] getAcceptedIssuers() {
+				return null;
+			}
+
+			public void checkClientTrusted(X509Certificate[] certs, String authType) { }
+
+			public void checkServerTrusted(X509Certificate[] certs, String authType) { }
+		}
+	};
+
+	private HttpClientUtils() { }
+
+	static {
+		System.getProperties().setProperty("jdk.internal.httpclient.disableHostnameVerification", "true");
+	}
+
+	public static Result<HttpClient> buildHttpClient(Duration defaultTimeout) {
+		return Result.wrap(HttpClientUtils::decodeSslExceptions, HttpClientUtils::initContext)
+			.map(sc -> HttpClient.newBuilder()
+				.connectTimeout(defaultTimeout)
+				.sslContext(sc)
+				.build());
+	}
+
+	public static HttpClient unsafeBuildHttpClient(Duration defaultTimeout) {
+		return buildHttpClient(defaultTimeout).fold(failure -> {
+			throw new HttpClientInstantiationException(failure.message());
+		}, Function.identity());
+	}
+
+	private static SSLContext initContext() throws NoSuchAlgorithmException, KeyManagementException {
+		var sc = SSLContext.getInstance("SSL");
+		sc.init(null, trustAllCerts, new SecureRandom());
+		return sc;
+	}
+
+	private static Failure decodeSslExceptions(Throwable throwable) {
+		if (throwable instanceof NoSuchAlgorithmException) {
+			return SSL_KEY_ERROR.with(throwable.getMessage());
+		}
+
+		if (throwable instanceof KeyException) {
+			return SSL_ALGORITHM_ERROR.with(throwable.getMessage());
+		}
+
+		return SSL_GENERAL_ERROR.with(throwable.getMessage());
+	}
 }

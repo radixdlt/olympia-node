@@ -73,7 +73,6 @@ import java.security.Security;
 		version = "1.0",
 		mixinStandardHelpOptions = true,
 		subcommands = {
-			KeyGenerator.class,
 			ValidatorKeyGenerator.class
 		})
 public class RadixCLI implements Runnable {
