@@ -142,10 +142,6 @@ public class SystemHandler {
 		return response(request, networkingService.getAddressBook());
 	}
 
-	public JSONObject networkingClearAddressBook(JSONObject request) {
-		return response(request, networkingService.clearAddressBook());
-	}
-
 	public JSONObject networkingGetData(JSONObject request) {
 		return response(request, networkingService.getData());
 	}

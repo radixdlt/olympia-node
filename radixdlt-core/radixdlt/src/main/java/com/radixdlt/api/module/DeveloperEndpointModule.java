@@ -170,4 +170,10 @@ public class DeveloperEndpointModule extends AbstractModule {
 		return developerHandler::handleLookupTransaction;
 	}
 
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.clear_address_book")
+	public JsonRpcHandler networkingClearAddressBook(DeveloperHandler developerHandler) {
+		return developerHandler::clearAddressBook;
+	}
 }
