@@ -79,7 +79,6 @@ import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHand
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
-import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
@@ -253,10 +252,6 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		final var prevState = this.state;
 		this.state = ChannelState.INACTIVE;
 		this.inboundMessageSink.onComplete();
-
-		if (prevState == ChannelState.AUTH_HANDSHAKE) {
-			uri.ifPresent(u -> peerEventDispatcher.dispatch(PeerHandshakeFailed.create(this)));
-		}
 
 		if (prevState == ChannelState.ACTIVE) {
 			// only send out event if peer was previously active
