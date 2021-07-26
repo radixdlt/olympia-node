@@ -220,7 +220,7 @@ public final class AddressBook {
 
 	public void blacklist(RadixNodeUri uri) {
 		synchronized (lock) {
-			final var blacklistUntil = Instant.now().plus(Duration.ofHours(2));
+			final var blacklistUntil = Instant.now().plus(Duration.ofMinutes(30));
 			final var maybeExistingEntry = this.knownPeers.get(uri.getNodeId());
 			if (maybeExistingEntry == null) {
 				final var newEntry = AddressBookEntry.createBlacklisted(uri, blacklistUntil);

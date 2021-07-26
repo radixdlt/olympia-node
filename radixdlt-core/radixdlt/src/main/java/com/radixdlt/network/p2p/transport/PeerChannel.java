@@ -189,9 +189,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		} else {
 			log.trace("Auth initiate from {}", this.toString());
 			final var result = this.authHandshaker.handleInitialMessage(data);
-			if (result.getFirst() != null) {
-				this.write(result.getFirst());
-			}
+			this.write(result.getFirst());
 			this.finalizeHandshake(result.getSecond());
 		}
 	}
@@ -207,6 +205,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		} else {
 			final var errorResult = (AuthHandshakeError) handshakeResult;
 			log.warn("Auth handshake failed on {}: {}", this.toString(), errorResult.getMsg());
+			peerEventDispatcher.dispatch(PeerHandshakeFailed.create(this));
 			this.disconnect();
 		}
 	}
@@ -253,10 +252,6 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		final var prevState = this.state;
 		this.state = ChannelState.INACTIVE;
 		this.inboundMessageSink.onComplete();
-
-		if (prevState == ChannelState.AUTH_HANDSHAKE) {
-			uri.ifPresent(u -> peerEventDispatcher.dispatch(PeerHandshakeFailed.create(this)));
-		}
 
 		if (prevState == ChannelState.ACTIVE) {
 			// only send out event if peer was previously active
