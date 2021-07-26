@@ -153,12 +153,6 @@ public final class NetworkingService {
 		return entriesArray;
 	}
 
-	public JSONObject clearAddressBook() {
-		this.addressBook.clear();
-		this.discoverPeersEventDispatcher.dispatch(DiscoverPeers.create());
-		return jsonObject();
-	}
-
 	public JSONObject getData() {
 		return CountersJsonFormatter.countersToJson(systemCounters, NETWORKING_COUNTERS, false);
 	}
