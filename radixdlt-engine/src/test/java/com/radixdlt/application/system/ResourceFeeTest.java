@@ -100,6 +100,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -112,7 +113,7 @@ public final class ResourceFeeTest {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new TokensConstraintScryptV3(Set.of("xrd")));
+		cmAtomOS.load(new TokensConstraintScryptV3(Set.of("xrd"), Pattern.compile("[a-z0-9]+")));
 		cmAtomOS.load(new SystemConstraintScrypt());
 		var feeTable = FeeTable.create(
 			Amount.zero(),

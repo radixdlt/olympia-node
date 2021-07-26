@@ -80,6 +80,7 @@ import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public final class StokenetForkConfigsModule extends AbstractModule {
 	private static final Set<String> RESERVED_SYMBOLS = Set.of(
@@ -94,6 +95,7 @@ public final class StokenetForkConfigsModule extends AbstractModule {
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				RESERVED_SYMBOLS,
+				Pattern.compile("[a-z0-9]+"),
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 					Map.of(

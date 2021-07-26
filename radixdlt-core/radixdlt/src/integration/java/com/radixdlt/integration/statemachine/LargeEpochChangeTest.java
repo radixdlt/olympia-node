@@ -125,6 +125,7 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 public class LargeEpochChangeTest {
@@ -148,6 +149,7 @@ public class LargeEpochChangeTest {
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					Set.of("xrd"),
+					Pattern.compile("[a-z0-9]+"),
 					FeeTable.create(
 						Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 						Map.of(

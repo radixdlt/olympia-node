@@ -110,6 +110,7 @@ import org.junit.runners.Parameterized;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -145,7 +146,7 @@ public class NextViewV2Test {
 		cmAtomOS.load(new SystemConstraintScrypt());
 		scrypts.forEach(cmAtomOS::load);
 		cmAtomOS.load(new StakingConstraintScryptV4(Amount.ofTokens(10).toSubunits()));
-		cmAtomOS.load(new TokensConstraintScryptV3(Set.of()));
+		cmAtomOS.load(new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")));
 		cmAtomOS.load(new ValidatorConstraintScryptV2());
 		cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
 		cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));

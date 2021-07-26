@@ -117,6 +117,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -146,7 +147,7 @@ public class TxnSizeFeeTest {
 	@Before
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new TokensConstraintScryptV3(Set.of()));
+		cmAtomOS.load(new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")));
 		cmAtomOS.load(new SystemConstraintScrypt());
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),

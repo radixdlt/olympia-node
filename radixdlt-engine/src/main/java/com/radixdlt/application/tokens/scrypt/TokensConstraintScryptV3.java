@@ -90,14 +90,15 @@ import com.radixdlt.utils.UInt256;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
-
-import static com.radixdlt.identifiers.Naming.NAME_PATTERN;
+import java.util.regex.Pattern;
 
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	private final Set<String> reservedSymbols;
+	private final Pattern tokenSymbolPattern;
 
-	public TokensConstraintScryptV3(Set<String> reservedSymbols) {
+	public TokensConstraintScryptV3(Set<String> reservedSymbols, Pattern tokenSymbolPattern) {
 		this.reservedSymbols = reservedSymbols;
+		this.tokenSymbolPattern = tokenSymbolPattern;
 	}
 
 	@Override
@@ -223,8 +224,8 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				if (reservedSymbols.contains(str) && c.permissionLevel() != PermissionLevel.SYSTEM) {
 					throw new ReservedSymbolException(str);
 				}
-				if (!NAME_PATTERN.matcher(str).matches()) {
-					throw new ProcedureException("invalid rri name: " + str);
+				if (!tokenSymbolPattern.matcher(str).matches()) {
+					throw new ProcedureException("invalid token symbol: " + str);
 				}
 
 				if (u.isMutable()) {

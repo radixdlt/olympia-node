@@ -97,6 +97,7 @@ import org.junit.runners.Parameterized;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -105,7 +106,10 @@ public class NativeTokensTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> parameters() {
 		return List.of(new Object[][] {
-			{new TokensConstraintScryptV3(Set.of()), new TransferTokensConstructorV2()},
+			{
+				new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")),
+				new TransferTokensConstructorV2()
+			},
 		});
 	}
 

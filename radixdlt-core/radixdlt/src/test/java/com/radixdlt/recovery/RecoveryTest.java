@@ -124,6 +124,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -195,6 +196,7 @@ public class RecoveryTest {
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					Set.of("xrd"),
+					Pattern.compile("[a-z0-9]+"),
 					FeeTable.noFees(),
 					1024 * 1024,
 					OptionalInt.of(50),
