@@ -374,6 +374,7 @@ public final class BFTSync implements BFTSyncer {
 
 		var syncIds = syncRequestState.syncIds.stream()
 			.filter(syncing::containsKey)
+			.distinct()
 			.collect(Collectors.toList());
 
 		//noinspection UnstableApiUsage
