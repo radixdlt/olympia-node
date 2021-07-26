@@ -298,7 +298,7 @@ public class MetricsService {
 
 		addEndpontStatuses(builder);
 		appendField(builder, "owner_address", addressing.forAccounts().of(REAddr.ofPubKeyAccount(self.getKey())));
-		appendField(builder, "validator_registered", validatorInfoService.getNextEpochRegisteredFlag(self.getKey()));
+		appendField(builder, "validator_registered", validatorInfoService.getNextEpochRegisteredFlag(self.getKey()).isRegistered());
 		addBranchAndCommit(builder);
 		addValidatorAddress(builder);
 		addAccumulatorState(builder);

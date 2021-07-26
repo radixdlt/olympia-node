@@ -114,11 +114,11 @@ public final class TokensInAccount implements ResourceInBucket {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s]",
+		return String.format("%s{resourceAddr=%s holder=%s amount=%s}",
 			getClass().getSimpleName(),
 			resourceAddr,
-			amount,
-			holdingAddress
+			holdingAddress,
+			amount
 		);
 	}
 
