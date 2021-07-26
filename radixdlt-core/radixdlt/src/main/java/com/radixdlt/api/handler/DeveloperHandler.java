@@ -81,9 +81,11 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.ResourceAddressing;
 import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
@@ -434,14 +436,14 @@ public final class DeveloperHandler {
 		);
 	}
 
-	private static String createAddress(String type, String hrp, ECPublicKey key) {
+	private static String createAddress(String type, Network network, ECPublicKey key) {
 		switch (type) {
 			case "account":
-				return AccountAddressing.bech32(hrp).of(REAddr.ofPubKeyAccount(key));
+				return AccountAddressing.bech32(network.getAccountHrp()).of(REAddr.ofPubKeyAccount(key));
 			case "node":
-				return NodeAddressing.bech32(hrp).of(key);
+				return NodeAddressing.bech32(network.getNodeHrp()).of(key);
 			case "validator":
-				return ValidatorAddressing.bech32(hrp).of(key);
+				return ValidatorAddressing.bech32(network.getValidatorHrp()).of(key);
 			default:
 				throw new IllegalArgumentException("type must be: [account|node|validator]");
 		}
@@ -450,15 +452,25 @@ public final class DeveloperHandler {
 	public JSONObject handleCreateAddress(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			List.of("public_key", "hrp", "type"),
+			List.of("networkId", "type"),
 			params -> Result.wrap(
 				e -> Failure.failure(-1, e.getMessage()),
 				() -> {
+					var networkId = params.getInt("networkId");
+					var network = Network.ofId(networkId).orElseThrow();
 					var type = params.getString("type");
-					var publicKeyHex = params.getString("public_key");
-					var publicKey = ECPublicKey.fromHex(publicKeyHex);
-					var hrp = params.getString("hrp");
-					var address = createAddress(type, hrp, publicKey);
+					final String address;
+					if (type.equals("resource")) {
+						var addrBytes = Bytes.fromHexString(params.getString("address"));
+						var reAddr = REAddr.of(addrBytes);
+						var symbol = params.getString("symbol");
+						var suffix = network.getResourceHrpSuffix();
+						address = ResourceAddressing.bech32(suffix).of(symbol, reAddr);
+					} else {
+						var publicKeyHex = params.getString("public_key");
+						var publicKey = ECPublicKey.fromHex(publicKeyHex);
+						address = createAddress(type, network, publicKey);
+					}
 					return jsonObject()
 						.put("address", address);
 				}
