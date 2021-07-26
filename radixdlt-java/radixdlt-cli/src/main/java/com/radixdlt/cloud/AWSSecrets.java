@@ -172,6 +172,7 @@ public class AWSSecrets {
 				var cmdArgs = new String[]{"generate-validator-key", "-k=" + keyStoreName, "-p=" + password};
 				System.out.println(Arrays.toString(cmdArgs));
 				Security.insertProviderAt(new BouncyCastleProvider(), 1);
+				//TODO: replace to call to com.radixdlt.keygen.KeyGenerator.main() or direct generation of keystore
 				RadixCLI.execute(cmdArgs);
 
 				final var output = capture.stop();
