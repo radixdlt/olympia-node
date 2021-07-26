@@ -79,6 +79,7 @@ import com.radixdlt.network.p2p.PeerEvent.PeerLostLiveness;
 import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
 import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -107,6 +108,7 @@ public final class PeerManager {
 
 	private final NodeId self;
 	private final P2PConfig config;
+	private final Addressing addressing;
 	private final Provider<AddressBook> addressBook;
 	private final Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager;
 
@@ -118,11 +120,13 @@ public final class PeerManager {
 	public PeerManager(
 		@Self BFTNode self,
 		P2PConfig config,
+		Addressing addressing,
 		Provider<AddressBook> addressBook,
 		Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager
 	) {
 		this.self = Objects.requireNonNull(NodeId.fromPublicKey(self.getKey()));
 		this.config = Objects.requireNonNull(config);
+		this.addressing = addressing;
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.pendingOutboundChannelsManager = Objects.requireNonNull(pendingOutboundChannelsManager);
 	}
@@ -150,7 +154,8 @@ public final class PeerManager {
 			if (maybeAddress.isPresent()) {
 				return connect(maybeAddress.get());
 			} else {
-				return CompletableFuture.failedFuture(new RuntimeException("Unknown peer " + nodeId));
+				return CompletableFuture.failedFuture(new RuntimeException("Unknown peer "
+					+ addressing.forNodes().of(nodeId.getPublicKey())));
 			}
 		}
 	}
@@ -266,12 +271,18 @@ public final class PeerManager {
 			.orElse(false);
 
 		if (isBanned) {
-			log.info("Dropping inbound connection from peer {}: peer is banned", nodeId);
+			log.info(
+				"Dropping inbound connection from peer {}: peer is banned",
+				addressing.forNodes().of(nodeId.getPublicKey())
+			);
 		}
 
 		final var limitReached = this.activeChannels.size() > config.maxInboundChannels();
 		if (limitReached) {
-			log.info("Dropping inbound connection from peer {}: no more inbound channels allowed", nodeId);
+			log.info(
+				"Dropping inbound connection from peer {}: no more inbound channels allowed",
+				addressing.forNodes().of(nodeId.getPublicKey())
+			);
 		}
 
 		return !isBanned && !limitReached;
@@ -292,7 +303,10 @@ public final class PeerManager {
 
 	private void handlePeerLostLiveness(PeerLostLiveness peerLostLiveness) {
 		synchronized (lock) {
-			log.info("Peer {} lost liveness (ping timeout)", peerLostLiveness.getNodeId());
+			log.info(
+				"Peer {} lost liveness (ping timeout)",
+				addressing.forNodes().of(peerLostLiveness.getNodeId().getPublicKey())
+			);
 			channelFor(peerLostLiveness.getNodeId())
 				.ifPresent(PeerChannel::disconnect);
 			// TODO(luk): also update address book, reduce "score" or set some flag
@@ -322,7 +336,10 @@ public final class PeerManager {
 		this.activeChannels().stream()
 			.filter(p -> p.getRemoteNodeId().equals(event.getNodeId()))
 			.forEach(pc -> {
-				log.info("Closing channel to peer {} because peer has been banned", pc.getRemoteNodeId());
+				log.info(
+					"Closing channel to peer {} because peer has been banned",
+					addressing.forNodes().of(pc.getRemoteNodeId().getPublicKey())
+				);
 				pc.disconnect();
 			});
 	}

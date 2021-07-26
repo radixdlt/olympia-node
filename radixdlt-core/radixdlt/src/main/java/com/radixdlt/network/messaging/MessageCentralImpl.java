@@ -71,6 +71,7 @@ import com.google.inject.Provider;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
+import com.radixdlt.networks.Addressing;
 import io.reactivex.rxjava3.core.Observable;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -115,7 +116,8 @@ final class MessageCentralImpl implements MessageCentral {
 		TimeSupplier timeSource,
 		EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
 		SystemCounters counters,
-		Provider<PeerControl> peerControl
+		Provider<PeerControl> peerControl,
+		Addressing addressing
 	) {
 		this.counters = Objects.requireNonNull(counters);
 		this.outboundQueue = outboundEventQueueFactory.createEventQueue(
@@ -131,7 +133,8 @@ final class MessageCentralImpl implements MessageCentral {
 			config,
 			serialization,
 			timeSource,
-			peerManager
+			peerManager,
+			addressing
 		);
 
 		this.messagePreprocessor = new MessagePreprocessor(
@@ -139,7 +142,8 @@ final class MessageCentralImpl implements MessageCentral {
 			config,
 			timeSource,
 			serialization,
-			peerControl
+			peerControl,
+			addressing
 		);
 
 		// Start outbound processing thread
