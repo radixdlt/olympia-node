@@ -79,6 +79,7 @@ import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHand
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
+import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
@@ -188,9 +189,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		} else {
 			log.trace("Auth initiate from {}", this.toString());
 			final var result = this.authHandshaker.handleInitialMessage(data);
-			if (result.getFirst() != null) {
-				this.write(result.getFirst());
-			}
+			this.write(result.getFirst());
 			this.finalizeHandshake(result.getSecond());
 		}
 	}
@@ -206,6 +205,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		} else {
 			final var errorResult = (AuthHandshakeError) handshakeResult;
 			log.warn("Auth handshake failed on {}: {}", this.toString(), errorResult.getMsg());
+			peerEventDispatcher.dispatch(PeerHandshakeFailed.create(this));
 			this.disconnect();
 		}
 	}
