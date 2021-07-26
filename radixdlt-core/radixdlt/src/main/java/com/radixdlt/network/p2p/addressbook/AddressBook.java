@@ -235,4 +235,13 @@ public final class AddressBook {
 			}
 		}
 	}
+
+	public void clear() {
+		synchronized (lock) {
+			this.persistence.close();
+			this.persistence.reset();
+			this.persistence.open();
+			this.knownPeers.clear();
+		}
+	}
 }

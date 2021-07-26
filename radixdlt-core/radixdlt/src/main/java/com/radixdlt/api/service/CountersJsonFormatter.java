@@ -64,80 +64,68 @@
 
 package com.radixdlt.api.service;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.radixdlt.counters.SystemCounters;
 import org.json.JSONObject;
-import org.junit.Test;
-
-import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.counters.SystemCountersImpl;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
-import static com.radixdlt.api.service.CountersJsonFormatter.toCamelCase;
+public final class CountersJsonFormatter {
 
-public class SystemConfigServiceTest {
-	@Test
-	public void testApiConversionToJson() {
-		assertConversionIsFull("apiData", SystemConfigService.API_COUNTERS);
+	private CountersJsonFormatter() {
 	}
 
-	@Test
-	public void testBftConversionToJson() {
-		assertConversionIsFull("bftData", SystemConfigService.BFT_COUNTERS);
+	@VisibleForTesting
+	static JSONObject countersToJson(SystemCounters counters, List<SystemCounters.CounterType> types, boolean skipTopLevel) {
+		var result = jsonObject();
+		types.forEach(counterType -> counterToJson(result, counters, counterType, skipTopLevel));
+		return result;
 	}
 
-	@Test
-	public void testMempoolConversionToJson() {
-		assertConversionIsFull("mempoolData", SystemConfigService.MEMPOOL_COUNTERS);
-	}
+	@VisibleForTesting
+	static void counterToJson(JSONObject obj, SystemCounters systemCounters, SystemCounters.CounterType type, boolean skipTopLevel) {
+		var ptr = obj;
+		var iterator = List.of(type.jsonPath().split("\\.")).listIterator();
 
-	@Test
-	public void testRadixEngineConversionToJson() {
-		assertConversionIsFull("radixEngineData", SystemConfigService.RADIX_ENGINE_COUNTERS);
-	}
-
-	@Test
-	public void testSyncConversionToJson() {
-		assertConversionIsFull("syncData", SystemConfigService.SYNC_COUNTERS);
-	}
-
-	@Test
-	public void testNetworkingConversionToJson() {
-		assertConversionIsFull("networkingData", SystemConfigService.NETWORKING_COUNTERS);
-	}
-
-	@Test
-	public void testCamelCaseConversion() {
-		assertEquals("Ss", toCamelCase("_ss_"));
-		assertEquals("SSA", toCamelCase("_s_s_a"));
-		assertEquals("requestTimeout", toCamelCase("request_timeout"));
-	}
-
-	private static void assertConversionIsFull(String name, List<CounterType> counterTypes) {
-		var systemCounters = new SystemCountersImpl();
-		var result = CountersJsonFormatter.countersToJson(systemCounters, counterTypes, false);
-
-		counterTypes.forEach(counterType -> assertPathExists(result, counterType.jsonPath()));
-	}
-
-	private static void assertPathExists(JSONObject object, String path) {
-		var iterator = List.of(path.split("\\.")).listIterator();
-		var ptr = object;
+		if (skipTopLevel && iterator.hasNext()) {
+			iterator.next();
+		}
 
 		while (iterator.hasNext()) {
 			var element = toCamelCase(iterator.next());
 
 			if (ptr.has(element)) {
-				ptr = ptr.optJSONObject(element);
-
-				if (ptr == null && iterator.hasNext()) {
-					fail("Intermediate element " + element + " is missing");
-				}
+				ptr = ptr.getJSONObject(element);
 			} else {
-				fail("Element " + element + " is missing");
+				if (iterator.hasNext()) {
+					var newObj = jsonObject();
+					ptr.put(element, newObj);
+					ptr = newObj;
+				} else {
+					ptr.put(element, systemCounters.get(type));
+				}
 			}
 		}
+	}
+
+	@VisibleForTesting
+	static String toCamelCase(String input) {
+		var output = new StringBuilder();
+
+		boolean upCaseNext = false;
+
+		for (var chr : input.toCharArray()) {
+			if (chr == '_') {
+				upCaseNext = true;
+				continue;
+			}
+
+			output.append(upCaseNext ? Character.toUpperCase(chr) : chr);
+			upCaseNext = false;
+		}
+
+		return output.toString();
 	}
 }
