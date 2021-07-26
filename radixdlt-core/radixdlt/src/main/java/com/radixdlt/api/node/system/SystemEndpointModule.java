@@ -202,6 +202,13 @@ public class SystemEndpointModule extends AbstractModule {
 
 	@SystemEndpoint
 	@ProvidesIntoMap
+	@StringMapKey("networking.clear_address_book")
+	public JsonRpcHandler networkingClearAddressBook(SystemHandler systemHandler) {
+		return systemHandler::networkingClearAddressBook;
+	}
+
+	@SystemEndpoint
+	@ProvidesIntoMap
 	@StringMapKey("networking.get_data")
 	public JsonRpcHandler networkingGetData(SystemHandler systemHandler) {
 		return systemHandler::networkingGetData;
