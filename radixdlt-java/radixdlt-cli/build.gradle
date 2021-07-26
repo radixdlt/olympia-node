@@ -78,9 +78,6 @@ dependencies {
     implementation project(':radixdlt-java-common')
 
     implementation 'commons-cli:commons-cli'
-    implementation 'info.picocli:picocli'
-
-    annotationProcessor 'info.picocli:picocli-codegen'
 
     testImplementation 'junit:junit'
     testImplementation 'org.mockito:mockito-core'

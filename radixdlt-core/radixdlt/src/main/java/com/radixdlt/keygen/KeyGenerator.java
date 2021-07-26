@@ -141,7 +141,7 @@ public class KeyGenerator {
 
 		System.out.printf("Writing keypair '%s' [public key: %s]%ninto %s keystore %s%n", keypairName, publicKey, isNew, keystore);
 
-		return Result.wrap(Failure.failure(0, "Error: {0}"), () -> {
+		return Result.wrap(Failure.irrelevant(), () -> {
 			RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), newFile)
 				.writeKeyPair(keypairName, keyPair);
 			return null;
