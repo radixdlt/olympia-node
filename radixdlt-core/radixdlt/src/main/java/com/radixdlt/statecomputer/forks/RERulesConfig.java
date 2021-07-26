@@ -145,7 +145,7 @@ public final class RERulesConfig {
 			1,
 			Amount.ofTokens(10),
 			1,
-			Amount.ofTokens(10),
+			Amount.ofMicroTokens(2307700), // Rewards per proposal
 			9800,
 			10
 		);

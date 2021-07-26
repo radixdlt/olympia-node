@@ -175,7 +175,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(Parameterized.class)
 public class StakingUnstakingValidatorsTest {
 	private static final Logger logger = LogManager.getLogger();
-	private static final Amount REWARDS_PER_PROPOSAL = Amount.ofTokens(10);
+	private static final Amount REWARDS_PER_PROPOSAL = Amount.ofMicroTokens(2307700);
 	private static final RERulesConfig config = RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
 	private static final Amount PER_BYTE_FEE = Amount.ofMicroTokens(2);
 
