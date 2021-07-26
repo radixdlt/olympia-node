@@ -98,11 +98,11 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				RESERVED_SYMBOLS,
-				Pattern.compile("[a-z0-9]+"),
+				Pattern.compile("[a-z0-9]+"), // Token symbol pattern
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 					Map.of(
-						TokenResource.class, Amount.ofTokens(100), // 1000XRD per resource
+						TokenResource.class, Amount.ofTokens(100), // 100XRD per resource
 						ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
 						ValidatorFeeCopy.class, Amount.ofTokens(5), // 5XRD per register update
 						ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
@@ -133,11 +133,11 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				RESERVED_SYMBOLS,
-				Pattern.compile("[a-z0-9]+"),
+				Pattern.compile("[a-z0-9]+"), // Token symbol pattern
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 					Map.of(
-						TokenResource.class, Amount.ofTokens(100), // 1000XRD per resource
+						TokenResource.class, Amount.ofTokens(100), // 100XRD per resource
 						ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
 						ValidatorFeeCopy.class, Amount.ofTokens(5), // 5XRD per register update
 						ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update

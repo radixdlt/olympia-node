@@ -91,7 +91,7 @@ public final class StokenetForkConfigsModule extends AbstractModule {
 	ForkConfig stokenet() {
 		return new ForkConfig(
 			0L,
-			"olympia-first-epoch",
+			"stokenet",
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				RESERVED_SYMBOLS,
