@@ -114,10 +114,10 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				),
 				(long) 1024 * 1024, // 1MB max user transaction size
 				OptionalInt.of(50), // 50 Txns per round
-				10_000, // Rounds per epoch - not extended to 2 weeks for testing
-				150, // Two weeks worth of epochs for rake debounce
+				8_000_000, // Rounds per epoch - approximately two weeks of epochs
+				500, // Two weeks worth of epochs for rake debounce
 				Amount.ofTokens(90), // Minimum stake
-				150, // Two weeks worth of epochs for unstaking delay
+				500, // Two weeks worth of epochs for unstaking delay
 				Amount.ofTokens(0),   // No rewards in first epoch
 				9800, // 98.00% threshold for completed proposals to get any rewards,
 				100 // 100 max validators
@@ -150,9 +150,9 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				(long) 1024 * 1024, // 1MB max user transaction size
 				OptionalInt.of(50), // 50 Txns per round
 				10_000, // Rounds per epoch
-				150, // Two weeks worth of epochs
+				500, // Two weeks worth of epochs
 				Amount.ofTokens(90), // Minimum stake
-				150, // Two weeks worth of epochs
+				500, // Two weeks worth of epochs
 				Amount.ofTokens(10), // Rewards per proposal
 				9800, // 98.00% threshold for completed proposals to get any rewards
 				100 // 100 max validators
