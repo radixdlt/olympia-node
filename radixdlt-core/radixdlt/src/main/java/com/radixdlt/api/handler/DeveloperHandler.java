@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -81,9 +81,11 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.ResourceAddressing;
 import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
@@ -260,6 +262,21 @@ public final class DeveloperHandler {
 		);
 	}
 
+	public JSONObject handleLookupMappedSubstate(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("key"),
+			params -> {
+				var key = Bytes.fromHexString(params.getString("key"));
+				var systemMapKey = SystemMapKey.create(key);
+				var bytes = engineStore.get(systemMapKey).orElseThrow();
+				return Result.ok(jsonObject()
+					.put("id", Bytes.toHexString(bytes.getId()))
+					.put("data", Bytes.toHexString(bytes.getData()))
+				);
+			});
+	}
+
 	public JSONObject handleScanSubstates(JSONObject request) {
 		return withRequiredParameters(
 			request,
@@ -271,25 +288,35 @@ public final class DeveloperHandler {
 				var limit = params.has("loadLimit") ? params.getLong("loadLimit") : 8;
 				var valuePattern = Pattern.compile(valueHexRegex).asMatchPredicate();
 				var found = jsonArray();
-				var idSize = new AtomicLong();
-				var dataSize = new AtomicLong();
-				var count = engineStore.scanner()
+				var totalKeySize = new AtomicLong();
+				var totalValueSize = new AtomicLong();
+				var countByGroup = engineStore.scanner()
 					.map(r -> Pair.of(Bytes.toHexString(r.getId()), Bytes.toHexString(r.getData())))
 					.filter(p -> keyPattern.test(p.getFirst()) && valuePattern.test(p.getSecond()))
 					.peek(p -> {
 						if (found.length() < limit) {
 							found.put(p.getFirst() + ":" + p.getSecond());
 						}
-						idSize.getAndAdd(p.getFirst().length() / 2);
-						dataSize.getAndAdd(p.getSecond().length() / 2);
+						totalKeySize.getAndAdd(p.getFirst().length() / 2);
+						totalValueSize.getAndAdd(p.getSecond().length() / 2);
 					})
-					.count();
+					.collect(
+						Collectors.groupingBy(
+							p -> p.getSecond().length() > 0 ? p.getSecond().substring(0, 2) : "virtual-down",
+							Collectors.counting()
+						)
+					);
+
+				var countByGroupJson = jsonObject();
+				countByGroup.forEach(countByGroupJson::put);
+
 				return Result.ok(jsonObject()
 					.put("loaded", found)
-					.put("idSize", idSize.get())
-					.put("dataSize", dataSize.get())
-					.put("totalSize", idSize.get() + dataSize.get())
-					.put("totalCount", count)
+					.put("countBySubstateType", countByGroupJson)
+					.put("totalIdSize", totalKeySize.get())
+					.put("totalDataSize", totalValueSize.get())
+					.put("totalSize", totalKeySize.get() + totalValueSize.get())
+					.put("totalCount", countByGroup.values().stream().mapToLong(l -> l).sum())
 				);
 			}
 		);
@@ -413,14 +440,14 @@ public final class DeveloperHandler {
 		);
 	}
 
-	private static String createAddress(String type, String hrp, ECPublicKey key) {
+	private static String createAddress(String type, Network network, ECPublicKey key) {
 		switch (type) {
 			case "account":
-				return AccountAddressing.bech32(hrp).of(REAddr.ofPubKeyAccount(key));
+				return AccountAddressing.bech32(network.getAccountHrp()).of(REAddr.ofPubKeyAccount(key));
 			case "node":
-				return NodeAddressing.bech32(hrp).of(key);
+				return NodeAddressing.bech32(network.getNodeHrp()).of(key);
 			case "validator":
-				return ValidatorAddressing.bech32(hrp).of(key);
+				return ValidatorAddressing.bech32(network.getValidatorHrp()).of(key);
 			default:
 				throw new IllegalArgumentException("type must be: [account|node|validator]");
 		}
@@ -429,15 +456,25 @@ public final class DeveloperHandler {
 	public JSONObject handleCreateAddress(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			List.of("public_key", "hrp", "type"),
+			List.of("networkId", "type"),
 			params -> Result.wrap(
 				e -> Failure.failure(-1, e.getMessage()),
 				() -> {
+					var networkId = params.getInt("networkId");
+					var network = Network.ofId(networkId).orElseThrow();
 					var type = params.getString("type");
-					var publicKeyHex = params.getString("public_key");
-					var publicKey = ECPublicKey.fromHex(publicKeyHex);
-					var hrp = params.getString("hrp");
-					var address = createAddress(type, hrp, publicKey);
+					final String address;
+					if (type.equals("resource")) {
+						var addrBytes = Bytes.fromHexString(params.getString("address"));
+						var reAddr = REAddr.of(addrBytes);
+						var symbol = params.getString("symbol");
+						var suffix = network.getResourceHrpSuffix();
+						address = ResourceAddressing.bech32(suffix).of(symbol, reAddr);
+					} else {
+						var publicKeyHex = params.getString("public_key");
+						var publicKey = ECPublicKey.fromHex(publicKeyHex);
+						address = createAddress(type, network, publicKey);
+					}
 					return jsonObject()
 						.put("address", address);
 				}

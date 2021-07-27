@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,13 +62,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.identifiers;
+package com.radixdlt.client.lib.api.rpc;
 
-import java.util.regex.Pattern;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Objects;
 
-public final class Naming {
-	private Naming() { }
+public final class BasicAuth {
+	private final String login;
+	private final String password;
 
-	public static final String NAME_REGEX = "[a-z0-9]+";
-	public static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
+	private BasicAuth(String login, String password) {
+		this.login = login;
+		this.password = password;
+	}
+
+	public static BasicAuth with(String login, String password) {
+		return new BasicAuth(login, password);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof BasicAuth)) {
+			return false;
+		}
+
+		var authData = (BasicAuth) o;
+		return login.equals(authData.login) && password.equals(authData.password);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(login, password);
+	}
+
+	public String asHeader() {
+		var auth = (login + ':' + password).getBytes(StandardCharsets.ISO_8859_1);
+		return "Basic " + new String(Base64.getEncoder().encode(auth));
+	}
 }

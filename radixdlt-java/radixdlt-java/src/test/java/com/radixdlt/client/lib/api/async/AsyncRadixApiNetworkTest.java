@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -68,6 +68,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
@@ -87,11 +88,16 @@ public class AsyncRadixApiNetworkTest {
 		+ "\"pending\":0,\"sent\":399029}},\"networking\":{\"udp\":{\"droppedMessages\":0},"
 		+ "\"tcp\":{\"outOpened\":0,\"droppedMessages\":0,\"closed\":0,\"inOpened\":0},"
 		+ "\"receivedBytes\":484341853,\"sentBytes\":484444306}},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String CONFIGURATION = "{\"result\":{\"defaultPort\":30000,\"maxInboundChannels\":1024,"
+	private static final String CONFIGURATION = "{\"result\":{\"discoveryInterval\":30000,\"seedNodes\":["
+		+ "\"radix://dn1qfwtmurydewmf64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumcfppt2p@core1\","
+		+ "\"radix://dn1qghsre0ptn9r28d07wzrldc08shs5x7aqhj6lzy2vauyaulppg4qznsumgv@core2\","
+		+ "\"radix://dn1qwkdfp8z7rrlv5cf45tc4864n277p9ukjax90ec5cd03zr0uylxtuxr0wk5@core3\","
+		+ "\"radix://dn1qwsyxnv7gleusc34ga78kxhx4ewngsk5nvv58s4h22ngu2j8ufruw62f4eq@core4\"],"
+		+ "\"nodeAddress\":\"dn1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964v2swj9m\","
+		+ "\"peerLivenessCheckInterval\":10000,\"defaultPort\":30000,\"maxInboundChannels\":1024,"
 		+ "\"broadcastPort\":30000,\"listenAddress\":\"0.0.0.0\",\"channelBufferSize\":255,"
-		+ "\"peerConnectionTimeout\":5000,\"pingTimeout\":5000,\"listenPort\":30000,\"discoveryInterval\":30000,"
-		+ "\"seedNodes\":[\"radix://dn1qfwtmurydewmf64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumcfppt2p@core1\"],"
-		+ "\"maxOutboundChannels\":1024,\"peerLivenessCheckInterval\":10000},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+		+ "\"peerConnectionTimeout\":5000,\"pingTimeout\":5000,\"listenPort\":30000,"
+		+ "\"maxOutboundChannels\":1024},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 	private static final String PEERS = "{\"result\":[{\"address\":\"dn1qghsre0ptn9r28d07wzrldc08shs5x7aqhj6lzy2vauyaulppg4qznsumgv\","
 		+ "\"channels\":[{\"localPort\":52434,\"ip\":\"172.20.0.5\",\"type\":\"in\"}]},"
 		+ "{\"address\":\"dn1qwsyxnv7gleusc34ga78kxhx4ewngsk5nvv58s4h22ngu2j8ufruw62f4eq\","
@@ -198,6 +204,6 @@ public class AsyncRadixApiNetworkTest {
 		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
 		completableFuture.completeAsync(() -> response);
-		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
+		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 }

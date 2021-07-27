@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -187,7 +187,7 @@ public class SyncRadixApiCreationTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void testBuildAndSubmitTransactionWithMessage() {
 		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.transfer(ACCOUNT_ADDRESS1, ACCOUNT_ADDRESS2, UInt256.NINE, "xrd_dr1qyrs8qwl")
@@ -206,7 +206,7 @@ public class SyncRadixApiCreationTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void testCreateFixedSupplyToken() {
 		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
 			.createFixed(ACCOUNT_ADDRESS1, KEY_PAIR1.getPublicKey(),
@@ -227,7 +227,7 @@ public class SyncRadixApiCreationTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	//TODO: for some reason operation succeeds only if transaction contains only one action
 	public void testRegisterValidator() {
 		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS3)
@@ -278,6 +278,6 @@ public class SyncRadixApiCreationTest {
 		when(response.body()).thenReturn(NETWORK_ID, responseBody);
 		when(client.<String>send(any(), any())).thenReturn(response);
 
-		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
+		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 }

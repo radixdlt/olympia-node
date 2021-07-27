@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public final class MockedForksModule extends AbstractModule {
 
@@ -28,14 +29,15 @@ public final class MockedForksModule extends AbstractModule {
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				Set.of("xrd"),
+				Pattern.compile("[a-z0-9]+"),
 				FeeTable.create(Amount.zero(), Map.of()),
 				(long) 1024 * 1024,
 				OptionalInt.of(2),
 				maxRounds,
+				0,
+				Amount.ofTokens(10),
 				1,
-				Amount.ofTokens(0),
-				1,
-				Amount.ofTokens(0),
+				Amount.zero(),
 				9800,
 				10
 			)

@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -64,23 +64,17 @@
 
 package com.radixdlt.client.lib.api.sync;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
-import com.radixdlt.client.lib.api.NodeAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.api.rpc.JsonRpcRequest;
 import com.radixdlt.client.lib.api.rpc.JsonRpcResponse;
-import com.radixdlt.client.lib.api.rpc.PortSelector;
-import com.radixdlt.client.lib.api.rpc.RpcMethod;
+import com.radixdlt.client.lib.api.rpc.RadixApiBase;
 import com.radixdlt.client.lib.dto.AddressBookEntry;
 import com.radixdlt.client.lib.dto.ApiConfiguration;
 import com.radixdlt.client.lib.dto.ApiData;
@@ -115,36 +109,16 @@ import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
-import com.radixdlt.client.lib.dto.serializer.AccountAddressDeserializer;
-import com.radixdlt.client.lib.dto.serializer.AccountAddressSerializer;
-import com.radixdlt.client.lib.dto.serializer.ECPublicKeyDeserializer;
-import com.radixdlt.client.lib.dto.serializer.ECPublicKeySerializer;
-import com.radixdlt.client.lib.dto.serializer.NodeAddressDeserializer;
-import com.radixdlt.client.lib.dto.serializer.NodeAddressSerializer;
-import com.radixdlt.client.lib.dto.serializer.ValidatorAddressDeserializer;
-import com.radixdlt.client.lib.dto.serializer.ValidatorAddressSerializer;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.security.KeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.NETWORK_IO_ERROR;
@@ -187,32 +161,29 @@ import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_CURRENT_EPOCH
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_NODE_INFO;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LIST;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
-import static com.radixdlt.identifiers.CommonErrors.SSL_ALGORITHM_ERROR;
-import static com.radixdlt.identifiers.CommonErrors.SSL_GENERAL_ERROR;
-import static com.radixdlt.identifiers.CommonErrors.SSL_KEY_ERROR;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DESERIALIZE;
-import static com.radixdlt.networks.Network.LOCALNET;
 
 import static java.util.Optional.ofNullable;
 
-public class SyncRadixApi implements RadixApi {
-	private static final Logger log = LogManager.getLogger();
-	private static final String CONTENT_TYPE = "Content-Type";
-	private static final String APPLICATION_JSON = "application/json";
-	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
-	private static final ObjectMapper DEFAULT_OBJECT_MAPPER = createDefaultMapper();
-
-	private final AtomicLong idCounter = new AtomicLong();
-
-	private final String baseUrl;
-	private final int primaryPort;
-	private final int secondaryPort;
-	private final HttpClient client;
-
-	private Duration timeout = DEFAULT_TIMEOUT;
-	private boolean doTrace = false;
-	private ObjectMapper objectMapper;
-	private int networkId = LOCALNET.getId();
+public class SyncRadixApi extends RadixApiBase implements RadixApi {
+//	private static final Logger log = LogManager.getLogger();
+//	private static final String AUTH_HEADER = "Authorization";
+//	private static final String CONTENT_TYPE = "Content-Type";
+//	private static final String APPLICATION_JSON = "application/json";
+//	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+//	private static final ObjectMapper DEFAULT_OBJECT_MAPPER = createDefaultMapper();
+//
+//	private final AtomicLong idCounter = new AtomicLong();
+//
+//	private final String baseUrl;
+//	private final int primaryPort;
+//	private final int secondaryPort;
+//	private final HttpClient client;
+//	private final Optional<String> authHeader;
+//
+//	private Duration timeout = DEFAULT_TIMEOUT;
+//	private boolean doTrace = false;
+//	private ObjectMapper objectMapper;
+//	private int networkId = LOCALNET.getId();
 
 	private final Network network = new Network() {
 		@Override
@@ -308,14 +279,14 @@ public class SyncRadixApi implements RadixApi {
 	private final SingleAccount account = new SingleAccount() {
 		@Override
 		public Result<TokenBalances> balances(AccountAddress address) {
-			return call(request(ACCOUNT_BALANCES, address.toString(networkId)), new TypeReference<>() {});
+			return call(request(ACCOUNT_BALANCES, address.toString(networkId())), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<TransactionHistory> history(
 			AccountAddress address, int size, Optional<NavigationCursor> cursor
 		) {
-			var request = request(ACCOUNT_HISTORY, address.toString(networkId), size);
+			var request = request(ACCOUNT_HISTORY, address.toString(networkId()), size);
 			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
 
 			return call(request, new TypeReference<>() {});
@@ -323,12 +294,12 @@ public class SyncRadixApi implements RadixApi {
 
 		@Override
 		public Result<List<StakePositions>> stakes(AccountAddress address) {
-			return call(request(ACCOUNT_STAKES, address.toString(networkId)), new TypeReference<>() {});
+			return call(request(ACCOUNT_STAKES, address.toString(networkId())), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<List<UnstakePositions>> unstakes(AccountAddress address) {
-			return call(request(ACCOUNT_UNSTAKES, address.toString(networkId)), new TypeReference<>() {});
+			return call(request(ACCOUNT_UNSTAKES, address.toString(networkId())), new TypeReference<>() {});
 		}
 	};
 
@@ -343,7 +314,7 @@ public class SyncRadixApi implements RadixApi {
 
 		@Override
 		public Result<ValidatorDTO> lookup(ValidatorAddress validatorAddress) {
-			return call(request(VALIDATORS_LOOKUP, validatorAddress.toString(networkId)), new TypeReference<>() {});
+			return call(request(VALIDATORS_LOOKUP, validatorAddress.toString(networkId())), new TypeReference<>() {});
 		}
 	};
 
@@ -449,32 +420,6 @@ public class SyncRadixApi implements RadixApi {
 		}
 	};
 
-	private SyncRadixApi(String baseUrl, int primaryPort, int secondaryPort, HttpClient client) {
-		this.baseUrl = sanitize(baseUrl);
-		this.primaryPort = primaryPort;
-		this.secondaryPort = secondaryPort;
-		this.client = client;
-	}
-
-	private static String sanitize(String baseUrl) {
-		return baseUrl.endsWith("/")
-			   ? baseUrl.substring(0, baseUrl.length() - 1)
-			   : baseUrl;
-	}
-
-	static Result<RadixApi> connect(String url, int primaryPort, int secondaryPort) {
-		return buildHttpClient().flatMap(client -> connect(url, primaryPort, secondaryPort, client));
-	}
-
-	static Result<RadixApi> connect(String url, int primaryPort, int secondaryPort, HttpClient client) {
-		return ofNullable(url)
-			.map(baseUrl -> Result.ok(new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client)))
-			.orElseGet(BASE_URL_IS_MANDATORY::result)
-			.flatMap(asyncRadixApi -> asyncRadixApi.network().id()
-				.onSuccess(networkId -> asyncRadixApi.configureSerialization(networkId.getNetworkId()))
-				.map(__ -> asyncRadixApi));
-	}
-
 	@Override
 	public Network network() {
 		return network;
@@ -537,25 +482,55 @@ public class SyncRadixApi implements RadixApi {
 
 	@Override
 	public SyncRadixApi withTrace() {
-		doTrace = true;
+		enableTrace();
 		return this;
 	}
 
 	@Override
 	public SyncRadixApi withTimeout(Duration timeout) {
-		this.timeout = timeout;
+		setTimeout(timeout);
 		return this;
 	}
 
-	private JsonRpcRequest request(RpcMethod rpcMethod, Object... parameters) {
-		return JsonRpcRequest.create(rpcMethod, idCounter.incrementAndGet(), parameters);
+	private SyncRadixApi(
+		String baseUrl,
+		int primaryPort,
+		int secondaryPort,
+		HttpClient client,
+		Optional<BasicAuth> authentication
+	) {
+		super(baseUrl, primaryPort, secondaryPort, client, authentication);
+	}
+
+	static Result<RadixApi> connect(
+		String url,
+		int primaryPort,
+		int secondaryPort,
+		Optional<BasicAuth> authentication
+	) {
+		return buildHttpClient().flatMap(client -> connect(url, primaryPort, secondaryPort, client, authentication));
+	}
+
+	static Result<RadixApi> connect(
+		String url,
+		int primaryPort,
+		int secondaryPort,
+		HttpClient client,
+		Optional<BasicAuth> authentication
+	) {
+		return ofNullable(url)
+			.map(baseUrl -> Result.ok(new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
+			.orElseGet(BASE_URL_IS_MANDATORY::result)
+			.flatMap(syncRadixApi -> syncRadixApi.network().id()
+				.onSuccess(networkId -> syncRadixApi.configureSerialization(networkId.getNetworkId()))
+				.map(__ -> syncRadixApi));
 	}
 
 	private <T> Result<T> call(JsonRpcRequest request, TypeReference<JsonRpcResponse<T>> typeReference) {
 		return serialize(request)
 			.onSuccess(this::trace)
 			.map(value -> buildRequest(request, value))
-			.flatMap(httpRequest -> Result.wrap(this::errorMapper, () -> client.send(httpRequest, HttpResponse.BodyHandlers.ofString())))
+			.flatMap(httpRequest -> Result.wrap(this::errorMapper, () -> client().send(httpRequest, HttpResponse.BodyHandlers.ofString())))
 			.flatMap(body -> bodyHandler(body, typeReference));
 	}
 
@@ -571,106 +546,13 @@ public class SyncRadixApi implements RadixApi {
 		return UNKNOWN_ERROR.with(throwable.getClass().getName(), throwable.getMessage());
 	}
 
-	private <T> Result<T> bodyHandler(HttpResponse<String> body, TypeReference<JsonRpcResponse<T>> reference) {
+	private <T> Result<T> bodyHandler(
+		HttpResponse<String> body,
+		TypeReference<JsonRpcResponse<T>> reference
+	) {
 		return deserialize(trace(body.body()), reference)
 			.flatMap(response -> response.rawError() == null
 								 ? Result.ok(response.rawResult())
 								 : Result.fail(response.rawError().toFailure()));
-	}
-
-	private HttpRequest buildRequest(JsonRpcRequest request, String value) {
-		return HttpRequest.newBuilder()
-			.uri(buildUrl(request.rpcDetails()))
-			.timeout(timeout)
-			.header(CONTENT_TYPE, APPLICATION_JSON)
-			.POST(HttpRequest.BodyPublishers.ofString(value))
-			.build();
-	}
-
-	private <T> T trace(T value) {
-		if (doTrace) {
-			log.debug(value.toString());
-		}
-
-		return value;
-	}
-
-	private Result<String> serialize(JsonRpcRequest request) {
-		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper().writeValueAsString(request));
-	}
-
-	private <T> Result<JsonRpcResponse<T>> deserialize(String body, TypeReference<JsonRpcResponse<T>> typeReference) {
-		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper().readValue(body, typeReference));
-	}
-
-	private URI buildUrl(RpcMethod rpcMethod) {
-		var endPoint = rpcMethod.endPoint();
-		var port = endPoint.portSelector() == PortSelector.PRIMARY
-				   ? primaryPort
-				   : secondaryPort;
-
-		return URI.create(baseUrl + ":" + port + endPoint.path());
-	}
-
-	private static Result<HttpClient> buildHttpClient() {
-		var props = System.getProperties();
-		props.setProperty("jdk.internal.httpclient.disableHostnameVerification", "true");
-
-		var trustAllCerts = new TrustManager[]{
-			new X509TrustManager() {
-				public X509Certificate[] getAcceptedIssuers() {
-					return null;
-				}
-
-				public void checkClientTrusted(X509Certificate[] certs, String authType) { }
-
-				public void checkServerTrusted(X509Certificate[] certs, String authType) { }
-			}
-		};
-
-		return Result.wrap(
-			SyncRadixApi::decodeSslExceptions,
-			() -> {
-				var sc = SSLContext.getInstance("SSL");
-				sc.init(null, trustAllCerts, new SecureRandom());
-				return sc;
-			}
-		).map(sc -> HttpClient.newBuilder()
-			.connectTimeout(DEFAULT_TIMEOUT)
-			.sslContext(sc)
-			.build());
-	}
-
-	public static Failure decodeSslExceptions(Throwable throwable) {
-		if (throwable instanceof NoSuchAlgorithmException) {
-			return SSL_KEY_ERROR.with(throwable.getMessage());
-		}
-
-		if (throwable instanceof KeyException) {
-			return SSL_ALGORITHM_ERROR.with(throwable.getMessage());
-		}
-
-		return SSL_GENERAL_ERROR.with(throwable.getMessage());
-	}
-
-	private void configureSerialization(int networkId) {
-		var module = new SimpleModule()
-			.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkId))
-			.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkId))
-			.addSerializer(NodeAddress.class, new NodeAddressSerializer(networkId))
-			.addSerializer(ECPublicKey.class, new ECPublicKeySerializer())
-			.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkId))
-			.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(networkId))
-			.addDeserializer(NodeAddress.class, new NodeAddressDeserializer(networkId))
-			.addDeserializer(ECPublicKey.class, new ECPublicKeyDeserializer());
-		objectMapper = createDefaultMapper().registerModule(module);
-	}
-
-	private ObjectMapper objectMapper() {
-		return objectMapper == null ? DEFAULT_OBJECT_MAPPER : objectMapper;
-	}
-
-	private static ObjectMapper createDefaultMapper() {
-		return new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
 	}
 }

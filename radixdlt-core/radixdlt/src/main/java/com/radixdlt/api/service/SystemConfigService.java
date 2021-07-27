@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -413,11 +413,9 @@ public class SystemConfigService {
 		final var json = new JSONObject()
 			.put("name", forkConfig.name())
 			.put("hash", forkConfig.hash().toString())
-			.put("version", forkConfig.engineRules().getVersion().name().toLowerCase())
 			.put("isCandidate", forkConfig instanceof CandidateForkConfig)
-			.put("maxRounds", forkConfig.engineRules().getMaxRounds().number())
-			.put("maxValidators", forkConfig.engineRules().getMaxValidators())
-			.put("maxSigsPerRound", forkConfig.engineRules().getMaxSigsPerRound().orElse(-1));
+			.put("version", forkConfig.engineRules().getVersion().name().toLowerCase())
+			.put("rulesConfig", forkConfig.engineRules().getConfig().asJson());
 
 		if (forkConfig instanceof FixedEpochForkConfig) {
 			json.put("epoch", ((FixedEpochForkConfig) forkConfig).epoch());

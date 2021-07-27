@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -99,6 +99,9 @@ import static com.radixdlt.utils.Bytes.xor;
  * Handles the auth handshake to create an encrypted communication channel between peers.
  */
 public final class AuthHandshaker {
+	private static final byte STATUS_OK = 0x01;
+	private static final byte STATUS_ERROR = 0x02;
+
 	private static final int NONCE_SIZE = 32;
 	private static final int MIN_PADDING = 100;
 	private static final int MAX_PADDING = 300;
@@ -177,7 +180,7 @@ public final class AuthHandshaker {
 			final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
 
 			if (message.getNetworkId() != this.networkId) {
-				return Pair.of(null, AuthHandshakeResult.error(
+				return Pair.of(new byte[] {STATUS_ERROR}, AuthHandshakeResult.error(
 					String.format("Network ID mismatch (expected %s, got %s)", this.networkId, message.getNetworkId()),
 					Optional.of(NodeId.fromPublicKey(remotePubKey))
 				));
@@ -194,9 +197,11 @@ public final class AuthHandshaker {
 			final var sizePrefix = ByteBuffer.allocate(2).putShort((short) encryptedSize).array();
 			final var encryptedResponsePayload =
 				ECIESCoder.encrypt(remotePubKey.getEcPoint(), encodedResponse, sizePrefix);
-			final var packet = new byte[sizePrefix.length + encryptedResponsePayload.length];
-			System.arraycopy(sizePrefix, 0, packet, 0, sizePrefix.length);
-			System.arraycopy(encryptedResponsePayload, 0, packet, sizePrefix.length, encryptedResponsePayload.length);
+
+			final var packet = new byte[1 + sizePrefix.length + encryptedResponsePayload.length];
+			packet[0] = STATUS_OK;
+			System.arraycopy(sizePrefix, 0, packet, 1, sizePrefix.length);
+			System.arraycopy(encryptedResponsePayload, 0, packet, 1 + sizePrefix.length, encryptedResponsePayload.length);
 
 			final var remoteEphemeralKey = extractEphemeralKey(
 				message.getSignature(),
@@ -212,7 +217,7 @@ public final class AuthHandshaker {
 				finalizeHandshake(remoteEphemeralKey, message.getNonce(), message.getLatestKnownForkHash());
 			return Pair.of(packet, handshakeResult);
 		} catch (PublicKeyException | InvalidCipherTextException | IOException ex) {
-			return Pair.of(null, AuthHandshakeResult.error(
+			return Pair.of(new byte[] {STATUS_ERROR}, AuthHandshakeResult.error(
 				String.format("Handshake decryption failed (%s)", ex.getMessage()),
 				Optional.empty())
 			);
@@ -221,8 +226,13 @@ public final class AuthHandshaker {
 
 	public AuthHandshakeResult handleResponseMessage(byte[] data) throws IOException {
 		try {
-			final var sizeBytes = Arrays.copyOfRange(data, 0, 2);
-			final var encryptedPayload = Arrays.copyOfRange(data, 2, data.length);
+			final var statusByte = data[0];
+			if (statusByte != STATUS_OK) {
+				return AuthHandshakeResult.error("Received error response", Optional.empty());
+			}
+
+			final var sizeBytes = Arrays.copyOfRange(data, 1, 3);
+			final var encryptedPayload = Arrays.copyOfRange(data, 3, data.length);
 			final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
 			final var message = serialization.fromDson(plaintext, AuthResponseMessage.class);
 			this.responsePacketOpt = Optional.of(data);

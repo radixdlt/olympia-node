@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -92,9 +92,9 @@ import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.atom.actions.UpdateValidatorOwner;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
-import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.construction.NextEpochConstructorV3;
 import com.radixdlt.application.system.construction.NextViewConstructorV3;
+import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
@@ -128,8 +128,8 @@ import com.radixdlt.constraintmachine.meter.SigsPerRoundMeter;
 import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.statecomputer.ValidatorsSystemMetadataPostProcessor;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
+import com.radixdlt.statecomputer.ValidatorsSystemMetadataPostProcessor;
 
 public enum RERulesVersion {
 	OLYMPIA_V1 {
@@ -139,6 +139,7 @@ public enum RERulesVersion {
 			final var perByteFee = config.getFeeTable().getPerByteFee();
 			final var perUpSubstateFee = config.getFeeTable().getPerUpSubstateFee();
 			final var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
+			final var tokenSymbolPattern = config.getTokenSymbolPattern();
 
 			final CMAtomOS v4 = new CMAtomOS();
 			v4.load(new ValidatorConstraintScryptV2());
@@ -146,7 +147,7 @@ public enum RERulesVersion {
 			v4.load(new ValidatorRegisterConstraintScrypt());
 			v4.load(new ValidatorUpdateOwnerConstraintScrypt());
 			v4.load(new SystemConstraintScrypt());
-			v4.load(new TokensConstraintScryptV3(config.getReservedSymbols()));
+			v4.load(new TokensConstraintScryptV3(config.getReservedSymbols(), tokenSymbolPattern));
 			v4.load(new StakingConstraintScryptV4(config.getMinimumStake().toSubunits()));
 			v4.load(new MutexConstraintScrypt());
 			v4.load(new RoundUpdateConstraintScrypt(maxRounds));

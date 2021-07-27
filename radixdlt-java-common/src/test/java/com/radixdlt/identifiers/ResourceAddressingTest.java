@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -92,8 +92,7 @@ public class ResourceAddressingTest {
 		"xrd_rb1avu205I", "invalid address type (0)",
 		"usdc_rb1qg8vs72e", "invalid address type (2)",
 		"usdc_rb1qqqsqs6ztc", "invalid length for address type 1",
-		"usdc_rb1qvgxjc9r", "invalid length for address type 3",
-		"xrd_2_rb1qvpsxqcrqvpsxqcrqvpsxqcrqvpsxqcrqvpsxqcrqvpszyaqyw", "invalid characters in hrp"
+		"usdc_rb1qvgxjc9r", "invalid length for address type 3"
 	);
 
 	private final BiMap<Pair<Integer, String>, String> privateKeyAndNameToRri = HashBiMap.create(

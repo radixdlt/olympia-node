@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -66,7 +66,6 @@ package com.radixdlt.statecomputer.checkpoint;
 
 import com.google.inject.Inject;
 import com.radixdlt.application.system.NextValidatorSetEvent;
-import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
@@ -92,9 +91,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public final class GenesisBuilder {
-	private static final String RADIX_ICON_URL  = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
-	private static final String RADIX_TOKEN_URL = "https://tokens.radixdlt.com/";
-
 	private final LedgerAccumulator ledgerAccumulator;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
@@ -126,25 +122,16 @@ public final class GenesisBuilder {
 		var txnConstructionRequest = TxnConstructionRequest.create();
 		txnConstructionRequest.msg(message.getBytes(StandardCharsets.UTF_8));
 		txnConstructionRequest.action(new CreateSystem(timestamp));
-
-		var tokenDef = new MutableTokenDefinition(
-			null,
-			"xrd",
-			"Rads",
-			"Radix Tokens",
-			RADIX_ICON_URL,
-			RADIX_TOKEN_URL
-		);
-		txnConstructionRequest.createMutableToken(tokenDef);
 		actions.forEach(txnConstructionRequest::action);
-		var tempTxn = Txn.create(radixEngine.construct(txnConstructionRequest).buildForExternalSign().blob());
-		var branch = radixEngine.transientBranch();
-
-		branch.execute(List.of(tempTxn), PermissionLevel.SYSTEM);
 		txnConstructionRequest.action(new NextEpoch(timestamp));
+		var txn = radixEngine.construct(txnConstructionRequest).buildWithoutSignature();
 
+		// Verify that it executes okay
+		var branch = radixEngine.transientBranch();
+		branch.execute(List.of(txn), PermissionLevel.SYSTEM);
 		radixEngine.deleteBranches();
-		return radixEngine.construct(txnConstructionRequest).buildWithoutSignature();
+
+		return txn;
 	}
 
 	public LedgerProof generateGenesisProof(Txn txn) throws RadixEngineException {

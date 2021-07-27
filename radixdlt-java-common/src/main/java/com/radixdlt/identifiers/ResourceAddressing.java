@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -109,9 +109,6 @@ public final class ResourceAddressing {
 			throw new IllegalArgumentException("Address hrp suffix must be " + hrpSuffix + "(" + rri + ")");
 		}
 		var symbol = data.hrp.substring(0, data.hrp.length() - hrpSuffix.length());
-		if (!Naming.NAME_PATTERN.matcher(symbol).matches()) {
-			throw new IllegalArgumentException("Invalid symbol in address (" + rri + ")");
-		}
 		var addrBytes = fromBech32Data(data.data);
 		return tuple(symbol, REAddr.of(addrBytes));
 	}

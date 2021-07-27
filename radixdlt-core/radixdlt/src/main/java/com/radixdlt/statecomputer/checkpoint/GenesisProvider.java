@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -71,6 +71,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
@@ -128,6 +129,14 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 			.collect(ImmutableMap.toImmutableMap(TokenIssuance::receiver, TokenIssuance::amount, UInt256::add));
 
 		var actions = new ArrayList<TxAction>();
+		actions.add(new CreateMutableToken(
+			null,
+			"xrd",
+			"Rads",
+			"Radix Tokens",
+			"",
+			""
+		));
 		var rri = REAddr.ofNativeToken();
 		try {
 			for (var e : issuances.entrySet()) {

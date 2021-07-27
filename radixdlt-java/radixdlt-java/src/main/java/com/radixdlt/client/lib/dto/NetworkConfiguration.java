@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -66,6 +66,7 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.lib.api.NodeAddress;
 
 import java.util.List;
 import java.util.Objects;
@@ -82,6 +83,7 @@ public final class NetworkConfiguration {
 	private final long discoveryInterval;
 	private final long maxOutboundChannels;
 	private final long peerLivenessCheckInterval;
+	private final NodeAddress nodeAddress;
 	private final List<String> seedNodes;
 
 	private NetworkConfiguration(
@@ -96,6 +98,7 @@ public final class NetworkConfiguration {
 		long discoveryInterval,
 		long maxOutboundChannels,
 		long peerLivenessCheckInterval,
+		NodeAddress nodeAddress,
 		List<String> seedNodes
 	) {
 		this.defaultPort = defaultPort;
@@ -109,6 +112,7 @@ public final class NetworkConfiguration {
 		this.discoveryInterval = discoveryInterval;
 		this.maxOutboundChannels = maxOutboundChannels;
 		this.peerLivenessCheckInterval = peerLivenessCheckInterval;
+		this.nodeAddress = nodeAddress;
 		this.seedNodes = seedNodes;
 	}
 
@@ -125,11 +129,14 @@ public final class NetworkConfiguration {
 		@JsonProperty(value = "discoveryInterval", required = true) long discoveryInterval,
 		@JsonProperty(value = "maxOutboundChannels", required = true) long maxOutboundChannels,
 		@JsonProperty(value = "peerLivenessCheckInterval", required = true) long peerLivenessCheckInterval,
+		@JsonProperty(value = "nodeAddress", required = true) NodeAddress nodeAddress,
 		@JsonProperty(value = "seedNodes", required = true) List<String> seedNodes
 	) {
 		return new NetworkConfiguration(
-			defaultPort, maxInboundChannels, broadcastPort, listenAddress, channelBufferSize, peerConnectionTimeout,
-			pingTimeout, listenPort, discoveryInterval, maxOutboundChannels, peerLivenessCheckInterval, seedNodes
+			defaultPort, maxInboundChannels, broadcastPort, listenAddress,
+			channelBufferSize, peerConnectionTimeout, pingTimeout, listenPort,
+			discoveryInterval, maxOutboundChannels, peerLivenessCheckInterval,
+			nodeAddress, seedNodes
 		);
 	}
 
@@ -155,6 +162,7 @@ public final class NetworkConfiguration {
 			&& maxOutboundChannels == that.maxOutboundChannels
 			&& peerLivenessCheckInterval == that.peerLivenessCheckInterval
 			&& listenAddress.equals(that.listenAddress)
+			&& nodeAddress.equals(that.nodeAddress)
 			&& seedNodes.equals(that.seedNodes);
 	}
 
@@ -172,6 +180,7 @@ public final class NetworkConfiguration {
 			discoveryInterval,
 			maxOutboundChannels,
 			peerLivenessCheckInterval,
+			nodeAddress,
 			seedNodes
 		);
 	}
@@ -190,6 +199,7 @@ public final class NetworkConfiguration {
 			+ ", discoveryInterval=" + discoveryInterval
 			+ ", maxOutboundChannels=" + maxOutboundChannels
 			+ ", peerLivenessCheckInterval=" + peerLivenessCheckInterval
+			+ ", nodeAddress=" + nodeAddress
 			+ ", seedNodes=" + seedNodes
 			+ '}';
 	}
@@ -237,6 +247,10 @@ public final class NetworkConfiguration {
 
 	public long getPeerLivenessCheckInterval() {
 		return peerLivenessCheckInterval;
+	}
+
+	public NodeAddress getNodeAddress() {
+		return nodeAddress;
 	}
 
 	public List<String> getSeedNodes() {

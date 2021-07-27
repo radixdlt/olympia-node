@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -82,6 +82,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public final class StokenetForksModule extends AbstractModule {
 	private static final Set<String> RESERVED_SYMBOLS = Set.of(
@@ -97,6 +98,7 @@ public final class StokenetForksModule extends AbstractModule {
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				RESERVED_SYMBOLS,
+				Pattern.compile("[a-z0-9]+"),
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 					Map.of(
@@ -112,11 +114,11 @@ public final class StokenetForksModule extends AbstractModule {
 				),
 				(long) 1024 * 1024, // 1MB max user transaction size
 				OptionalInt.of(50), // 50 Txns per round
-				10_000,
-				1, // Atleast 1 full epoch delay for validator fee increase
-				Amount.ofTokens(100), // Minimum stake
-				1, // Atleast 1 full epoch delay for unstaking
-				Amount.ofTokens(10),   // Rewards per proposal
+				10_000, // Rounds per epoch
+				500, // Two weeks worth of epochs
+				Amount.ofTokens(90), // Minimum stake
+				500, // Two weeks worth of epochs
+				Amount.ofMicroTokens(2307700), // Rewards per proposal
 				9800, // 98.00% threshold for completed proposals to get any rewards,
 				100 // 100 max validators
 			)
