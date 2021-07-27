@@ -1,5 +1,13 @@
 package com.radixdlt.test.system;
 
-public abstract class SystemTest {
+import com.radix.test.AcceptanceTest;
+
+public class SystemTest {
+
+    private AcceptanceTest test;
+
+    public SystemTest() {
+
+    }
 
 }

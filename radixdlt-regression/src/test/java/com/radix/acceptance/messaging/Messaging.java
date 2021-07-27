@@ -1,6 +1,6 @@
 package com.radix.acceptance.messaging;
 
-import com.radix.acceptance.AcceptanceTest;
+import com.radix.test.AcceptanceTest;
 import com.radix.test.utils.TestFailureException;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.sync.RadixApiException;

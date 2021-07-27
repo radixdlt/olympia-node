@@ -1,6 +1,6 @@
 package com.radix.acceptance.fees;
 
-import com.radix.acceptance.AcceptanceTest;
+import com.radix.test.AcceptanceTest;
 import com.radix.test.utils.TestingUtils;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.dto.TransactionDTO;

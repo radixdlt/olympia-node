@@ -1,6 +1,6 @@
 package com.radix.acceptance.token_transfer;
 
-import com.radix.acceptance.AcceptanceTest;
+import com.radix.test.AcceptanceTest;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.utils.UInt256;
 import io.cucumber.java.en.And;

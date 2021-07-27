@@ -76,9 +76,7 @@ sourceSets {
 
 dependencies {
     implementation project(':radixdlt-java')
-
-    implementation 'io.reactivex.rxjava2:rxjava'
-    implementation 'org.json:json'
+    implementation project(':radixdlt-regression')
 
     testImplementation 'com.github.mwiede:jsch:0.1.61'
     testImplementation 'commons-io:commons-io:2.8.0'
@@ -86,10 +84,6 @@ dependencies {
     testImplementation 'org.codehaus.groovy:groovy-all:2.4.12'
     testImplementation 'me.alexpanov:free-port-finder:1.1.1'
     testImplementation 'junit:junit'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'io.cucumber:cucumber-java:6.8.1'
-    testImplementation 'io.cucumber:cucumber-junit:6.8.1'
-    testImplementation 'org.awaitility:awaitility:4.0.3'
 }
 
 test {

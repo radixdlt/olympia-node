@@ -1,6 +1,6 @@
 package com.radix.acceptance.fixed_supply_tokens;
 
-import com.radix.acceptance.AcceptanceTest;
+import com.radix.test.AcceptanceTest;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import io.cucumber.java.en.Given;

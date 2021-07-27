@@ -1,5 +1,6 @@
-package com.radix.acceptance;
+package com.radix.test;
 
+import com.google.common.collect.Lists;
 import com.radix.test.account.Account;
 import com.radix.test.network.RadixNetwork;
 import com.radix.test.utils.TransactionUtils;
@@ -9,7 +10,6 @@ import com.radixdlt.client.lib.dto.Balance;
 import com.radixdlt.identifiers.AID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.assertj.core.util.Lists;
 
 import java.util.List;
 import java.util.stream.IntStream;

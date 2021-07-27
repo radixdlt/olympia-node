@@ -1,6 +1,6 @@
 package com.radix.acceptance.transaction_lookup;
 
-import com.radix.acceptance.AcceptanceTest;
+import com.radix.test.AcceptanceTest;
 import com.radix.assertions.Assertions;
 import com.radix.test.utils.TestFailureException;
 import com.radix.test.utils.TransactionUtils;
