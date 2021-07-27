@@ -129,8 +129,13 @@ public class ValidatorArchiveInfoService {
 		var totalPreparedUnstakes = preparedUnstakes.values().stream().reduce(UInt256::add).orElse(UInt256.ZERO);
 		var totalStake = curData.getTotalStake().add(totalPreparedStakes).subtract(totalPreparedUnstakes);
 		var ownerStake = individualStakes.getOrDefault(owner, UInt256.ZERO)
-			.add(preparedStakes.getOrDefault(owner, UInt384.ZERO).getLow())
-			.subtract(preparedUnstakes.getOrDefault(owner, UInt256.ZERO));
+			.add(preparedStakes.getOrDefault(owner, UInt384.ZERO).getLow());
+		var ownerPreparedUnstake = preparedUnstakes.getOrDefault(owner, UInt256.ZERO);
+		if (ownerPreparedUnstake.compareTo(ownerStake) > 0) {
+			ownerStake = UInt256.ZERO;
+		} else {
+			ownerStake = ownerStake.subtract(ownerPreparedUnstake);
+		}
 		var allowsDelegation = validatorInfoService.getAllowDelegationFlag(k).allowsDelegation();
 		var isRegistered = validatorInfoService.getNextEpochRegisteredFlag(k).isRegistered();
 		var percentage = validatorInfoService.getNextValidatorFee(k).getRakePercentage();
