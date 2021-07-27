@@ -118,7 +118,7 @@ public final class HttpClientUtils {
 	}
 
 	private static SSLContext initContext() throws NoSuchAlgorithmException, KeyManagementException {
-		var sc = SSLContext.getInstance("SSL");
+		var sc = SSLContext.getInstance("TLSv1.2");
 		sc.init(null, trustAllCerts, new SecureRandom());
 		return sc;
 	}

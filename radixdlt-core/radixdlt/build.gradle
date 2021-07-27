@@ -69,7 +69,7 @@ apply plugin: 'project-report'
 apply plugin: 'nebula.ospackage'
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'com.moowork.node'
-apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: 'me.champeau.jmh'
 apply plugin: 'org.sonarqube'
 apply plugin: 'net.nemerosa.versioning'
 apply plugin: 'com.palantir.git-version'
@@ -104,7 +104,6 @@ sourceSets {
         resources.srcDir file('src/integration/resources')
     }
 }
-
 
 configurations {
     integrationTestImplementation.extendsFrom testImplementation
@@ -192,12 +191,8 @@ dependencies {
 
     testImplementation 'org.awaitility:awaitility'
     testImplementation 'org.objenesis:objenesis'
-    testImplementation 'org.javassist:javassist'
     testImplementation 'org.mockito:mockito-core'
-    testImplementation 'net.bytebuddy:byte-buddy'
-    testImplementation 'net.bytebuddy:byte-buddy-agent'
-    testImplementation 'org.powermock:powermock-module-junit4'
-    testImplementation 'org.powermock:powermock-api-mockito2'
+    testImplementation 'junit:junit'
     testImplementation 'nl.jqno.equalsverifier:equalsverifier'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'com.flipkart.zjsonpatch:zjsonpatch'
@@ -209,7 +204,6 @@ dependencies {
 
 
 jmh {
-    duplicateClassesStrategy = 'include'
     fork = 2
     iterations = 3
     warmupIterations = 1

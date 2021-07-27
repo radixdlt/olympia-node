@@ -64,7 +64,6 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.NodeApplicationModule;
@@ -91,6 +90,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.TokenIssuance;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -121,7 +121,7 @@ public class MempoolFillTest {
 			}
 
 			@ProvidesIntoSet
-			private TokenIssuance mempoolFillerIssuance(@Genesis ImmutableList<ECPublicKey> validators) {
+			private TokenIssuance mempoolFillerIssuance(@Genesis List<ECPublicKey> validators) {
 				return TokenIssuance.of(validators.get(0), Amount.ofTokens(10000000000L).toSubunits());
 			}
 		})

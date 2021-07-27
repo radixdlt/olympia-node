@@ -196,6 +196,11 @@ public final class  RadixKeyStore implements Closeable {
 		this.storePassword = Objects.requireNonNull(storePassword);
 	}
 
+	@VisibleForTesting
+	char[] storePassword() {
+		return storePassword;
+	}
+
 	/**
 	 * Reads a key pair with the specified name from the key store.
 	 *

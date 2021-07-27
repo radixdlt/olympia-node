@@ -137,7 +137,7 @@ public final class LogCMStore implements CMStore {
 	}
 
 	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
+	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
 		throw new UnsupportedOperationException();
 	}
 }

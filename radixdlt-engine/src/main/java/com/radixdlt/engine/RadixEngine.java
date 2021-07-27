@@ -557,6 +557,7 @@ public final class RadixEngine<M> {
 		return reduce(i, identity, accumulator, Long.MAX_VALUE);
 	}
 
+	@SuppressWarnings("unchecked")
 	public <U, T extends Particle> U reduce(SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator, long limit) {
 		synchronized (stateUpdateEngineLock) {
 			var deserialization = constraintMachine.getDeserialization();
