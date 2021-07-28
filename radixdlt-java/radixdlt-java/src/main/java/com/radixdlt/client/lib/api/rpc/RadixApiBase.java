@@ -231,6 +231,11 @@ public abstract class RadixApiBase {
 			.build());
 	}
 
+	protected void configure(int networkId) {
+		configureSerialization(networkId);
+		setNetworkId(networkId);
+	}
+
 	protected void configureSerialization(int networkId) {
 		var module = new SimpleModule()
 			.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkId))
@@ -272,4 +277,5 @@ public abstract class RadixApiBase {
 	private static ObjectMapper createDefaultMapper() {
 		return new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
 	}
+
 }
