@@ -186,7 +186,7 @@ public abstract class RadixApiBase {
 		return networkId;
 	}
 
-	public void setNetworkId(int networkId) {
+	protected void setNetworkId(int networkId) {
 		this.networkId = networkId;
 	}
 
