@@ -38,10 +38,9 @@ import java.util.List;
  * to replace {@code ImmutableList<ChildNumber>} with {@code List<ChildNumber>} where necessary in your code. Although
  * it is recommended to use the {@code HDPath} type for clarity and for access to {@code HDPath}-specific functionality.
  * <p>
- * Take note of the overloaded factory methods {@link HDPath#M()} and {@link HDPath#m()}. These can be used to very
+ * Take note of the overloaded factory methods {@link HDPath#m()}. These can be used to very
  * concisely create HDPath objects (especially when statically imported.)
  */
-//CHECKSTYLE:OFF
 public class HDPath extends AbstractList<ChildNumber> {
     private static final char PREFIX_PRIVATE = 'm';
     private static final char PREFIX_PUBLIC = 'M';
@@ -78,40 +77,6 @@ public class HDPath extends AbstractList<ChildNumber> {
      */
     private static HDPath of(boolean hasPrivateKey, List<ChildNumber> list) {
         return new HDPath(hasPrivateKey, list);
-    }
-
-    /**
-     * Returns a path for a public key.
-     *
-     * @param list List of children in the path
-     */
-    public static HDPath M(List<ChildNumber> list) {
-        return HDPath.of(false, list);
-    }
-
-    /**
-     * Returns an empty path for a public key.
-     */
-    public static HDPath M() {
-        return HDPath.M(Collections.<ChildNumber>emptyList());
-    }
-
-    /**
-     * Returns a path for a public key.
-     *
-     * @param childNumber Single child in path
-     */
-    public static HDPath M(ChildNumber childNumber) {
-        return HDPath.M(Collections.singletonList(childNumber));
-    }
-
-    /**
-     * Returns a path for a public key.
-     *
-     * @param children Children in the path
-     */
-    public static HDPath M(ChildNumber... children) {
-        return HDPath.M(Arrays.asList(children));
     }
 
     /**
@@ -160,17 +125,23 @@ public class HDPath extends AbstractList<ChildNumber> {
         boolean hasPrivateKey = false;
         if (!parsedNodes.isEmpty()) {
             final String firstNode = parsedNodes.get(0);
-            if (firstNode.equals(Character.toString(PREFIX_PRIVATE)))
+            if (firstNode.equals(Character.toString(PREFIX_PRIVATE))) {
                 hasPrivateKey = true;
-            if (hasPrivateKey || firstNode.equals(Character.toString(PREFIX_PUBLIC)))
+            }
+            if (hasPrivateKey || firstNode.equals(Character.toString(PREFIX_PUBLIC))) {
                 parsedNodes.remove(0);
+            }
         }
         List<ChildNumber> nodes = new ArrayList<>(parsedNodes.size());
 
         for (String n : parsedNodes) {
-            if (n.isEmpty()) continue;
+            if (n.isEmpty()) {
+                continue;
+            }
             boolean isHard = n.endsWith("H");
-            if (isHard) n = n.substring(0, n.length() - 1).trim();
+            if (isHard) {
+                n = n.substring(0, n.length() - 1).trim();
+            }
             int nodeNumber = Integer.parseInt(n);
             nodes.add(new ChildNumber(nodeNumber, isHard));
         }
@@ -211,16 +182,6 @@ public class HDPath extends AbstractList<ChildNumber> {
         List<ChildNumber> mutable = new ArrayList<>(this.unmodifiableList); // Mutable copy
         mutable.addAll(path2);
         return new HDPath(this.hasPrivateKey, mutable);
-    }
-
-    /**
-     * Extend the path by appending a relative path.
-     *
-     * @param path2 the relative path to append
-     * @return A new immutable path
-     */
-    public HDPath extend(List<ChildNumber> path2) {
-        return this.extend(HDPath.M(path2));
     }
 
     @Override
