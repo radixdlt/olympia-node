@@ -64,6 +64,7 @@
 
 package com.radixdlt.identifiers;
 
+import com.radixdlt.utils.Pair;
 import org.bitcoinj.core.Bech32;
 
 import com.radixdlt.utils.Bits;
@@ -101,6 +102,12 @@ public final class ResourceAddressing {
 
 	private static byte[] fromBech32Data(byte[] bytes) {
 		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
+	}
+
+	public static Pair<String, REAddr> parseUnknownHrp(String rri) {
+		var data = Bech32.decode(rri);
+		var addrBytes = fromBech32Data(data.data);
+		return Pair.of(data.hrp, REAddr.of(addrBytes));
 	}
 
 	public Tuple2<String, REAddr> parse(String rri) {
