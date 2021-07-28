@@ -186,6 +186,10 @@ public abstract class RadixApiBase {
 		return networkId;
 	}
 
+	public void setNetworkId(int networkId) {
+		this.networkId = networkId;
+	}
+
 	protected HttpClient client() {
 		return client;
 	}

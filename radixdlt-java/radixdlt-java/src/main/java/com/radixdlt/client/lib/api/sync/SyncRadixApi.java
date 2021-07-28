@@ -523,6 +523,7 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 			.orElseGet(BASE_URL_IS_MANDATORY::result)
 			.flatMap(syncRadixApi -> syncRadixApi.network().id()
 				.onSuccess(networkId -> syncRadixApi.configureSerialization(networkId.getNetworkId()))
+				.onSuccess(networkId -> syncRadixApi.setNetworkId(networkId.getNetworkId()))
 				.map(__ -> syncRadixApi));
 	}
 
