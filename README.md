@@ -6,6 +6,7 @@ Distributed Ledger.
 It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/1803.05069) BFT-style consensus.
 
 ## Subdirectories
+
 Here we have:
 
 - [radixdlt-core](radixdlt-core/README.md): The core consensus and networking modules
