@@ -252,11 +252,7 @@ public class TokenDefinitionRecord {
 	}
 
 	public TokenDefinitionRecord withSupply(UInt384 supply) {
-		if (!mutable) {
-			return this;
-		}
-
-		return create(symbol, name, addr, description, supply, iconUrl, url, true);
+		return create(symbol, name, addr, description, supply, iconUrl, url, mutable);
 	}
 
 	public String toString() {

@@ -286,7 +286,7 @@ public final class DeveloperHandler {
 				var found = jsonArray();
 				var totalKeySize = new AtomicLong();
 				var totalValueSize = new AtomicLong();
-				var countByGroup = engineStore.scanner()
+				var stream = engineStore.scanner()
 					.map(r -> Pair.of(Bytes.toHexString(r.getId()), Bytes.toHexString(r.getData())))
 					.filter(p -> keyPattern.test(p.getFirst()) && valuePattern.test(p.getSecond()))
 					.peek(p -> {
@@ -295,13 +295,15 @@ public final class DeveloperHandler {
 						}
 						totalKeySize.getAndAdd(p.getFirst().length() / 2);
 						totalValueSize.getAndAdd(p.getSecond().length() / 2);
-					})
+					});
+				var countByGroup = stream
 					.collect(
 						Collectors.groupingBy(
 							p -> p.getSecond().length() > 0 ? p.getSecond().substring(0, 2) : "virtual-down",
 							Collectors.counting()
 						)
 					);
+				stream.close();
 
 				var countByGroupJson = jsonObject();
 				countByGroup.forEach(countByGroupJson::put);
@@ -408,13 +410,21 @@ public final class DeveloperHandler {
 				e -> Failure.failure(-1, e.getMessage()),
 				() -> {
 					var type = params.getString("type");
-					var address = params.getString("address");
-					var pair = parseAddress(type, address);
-					var hrp = pair.getFirst();
-					var pubKey = pair.getSecond();
-					return jsonObject()
-						.put("hrp", hrp)
-						.put("public_key", Bytes.toHexString(pubKey.getCompressedBytes()));
+					if (type.equals("resource")) {
+						var rri = params.getString("rri");
+						var pair = ResourceAddressing.parseUnknownHrp(rri);
+						return jsonObject()
+							.put("hrp", pair.getFirst())
+							.put("address", pair.getSecond().toString());
+					} else {
+						var address = params.getString("address");
+						var pair = parseAddress(type, address);
+						var hrp = pair.getFirst();
+						var pubKey = pair.getSecond();
+						return jsonObject()
+							.put("hrp", hrp)
+							.put("public_key", Bytes.toHexString(pubKey.getCompressedBytes()));
+					}
 				}
 			)
 		);
