@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -326,6 +326,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 					.toOptional()
 					.filter(entry -> entry.getType().equals(type))
 					.filter(entry -> entry.getOwner().equals(addr))
+					.filter(entry -> type != BalanceType.SPENDABLE || !entry.getAmount().isZero())
 					.map(entry -> entry.rri().equals("stake-ownership") ? computeStakeEntry(entry) : entry)
 					.ifPresent(list::add);
 

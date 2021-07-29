@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -70,7 +70,6 @@ import org.json.JSONObject;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.ValidatorDetails;
 import com.radixdlt.utils.UInt256;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
@@ -134,21 +133,6 @@ public class ValidatorInfoDetails {
 
 		return new ValidatorInfoDetails(
 			validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed, registered, percentage, uptime
-		);
-	}
-
-	public static ValidatorInfoDetails create(ValidatorDetails details) {
-		return create(
-			details.getKey(),
-			details.getOwner(),
-			details.getName(),
-			details.getUrl(),
-			details.getStake(),
-			details.getOwnerStake(),
-			details.allowsDelegation(),
-			details.registered(),
-			details.getPercentage(),
-			details.getUptime()
 		);
 	}
 

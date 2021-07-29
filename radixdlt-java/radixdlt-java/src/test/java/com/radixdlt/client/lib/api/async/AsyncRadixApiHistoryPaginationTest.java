@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -95,7 +95,7 @@ public class AsyncRadixApiHistoryPaginationTest {
 	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void testAddManyTransactions() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
@@ -114,7 +114,7 @@ public class AsyncRadixApiHistoryPaginationTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void testTransactionHistoryInPages() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)

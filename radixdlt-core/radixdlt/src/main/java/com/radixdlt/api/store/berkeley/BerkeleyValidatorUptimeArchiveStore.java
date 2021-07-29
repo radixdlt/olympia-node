@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -116,6 +116,31 @@ public final class BerkeleyValidatorUptimeArchiveStore implements BerkeleyAdditi
 		var key = new DatabaseEntry(buf.array());
 		var value = new DatabaseEntry(valueBuf.array());
 		validatorUptime.put(dbTxn, key, value);
+	}
+
+	public ValidatorUptime getUptimeTwoWeeks(ECPublicKey validatorKey) {
+		var lastEpoch = curEpoch.get();
+		long epochStart = Math.max(curEpoch.get() - EPOCH_WINDOW_LENGTH, 0);
+
+		var uptime = ValidatorUptime.empty();
+		for (var epoch = epochStart; epoch <= lastEpoch; epoch++) {
+			var buf = ByteBuffer.allocate(Long.BYTES + ECPublicKey.COMPRESSED_BYTES);
+			buf.putLong(epoch);
+			buf.put(validatorKey.getCompressedBytes());
+			var key = new DatabaseEntry(buf.array());
+			var value = new DatabaseEntry();
+
+			var status = validatorUptime.get(null, key, value, null);
+			if (status == OperationStatus.SUCCESS) {
+				var valueBuf = ByteBuffer.wrap(value.getData());
+				var proposalsCompleted = valueBuf.getLong();
+				var proposalsMissed = valueBuf.getLong();
+				var nextUptime = ValidatorUptime.create(proposalsCompleted, proposalsMissed);
+				uptime = uptime.merge(nextUptime);
+			}
+		}
+
+		return uptime;
 	}
 
 	public Map<ECPublicKey, ValidatorUptime> getUptimeTwoWeeks() {

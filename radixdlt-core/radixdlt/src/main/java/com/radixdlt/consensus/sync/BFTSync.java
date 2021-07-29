@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -373,7 +373,9 @@ public final class BFTSync implements BFTSyncer {
 		}
 
 		var syncIds = syncRequestState.syncIds.stream()
-			.filter(syncing::containsKey).collect(Collectors.toList());
+			.filter(syncing::containsKey)
+			.distinct()
+			.collect(Collectors.toList());
 
 		//noinspection UnstableApiUsage
 		for (var syncId : syncIds) {
@@ -383,14 +385,22 @@ public final class BFTSync implements BFTSyncer {
 				// TODO: remove once we figure this out
 				final var msg = new StringBuilder();
 				msg
-					.append("Got a null value from \"syncing\" map on thread")
+					.append("Got a null value from \"syncing\" map. SyncId=")
+					.append(syncId)
+					.append(" SyncIds=")
+					.append(syncIds)
+					.append(" Map=")
+					.append(syncing)
+					.append(" Contains=")
+					.append(syncing.containsKey(syncId))
+					.append(" Thread=")
 					.append(Thread.currentThread().getName())
-					.append(". Other threads run: [");
-				this.runOnThreads.stream().forEach(name -> msg.append(name + ", "));
-				msg.append("]");
+					.append(" OtherThreads=")
+					.append(String.join(",", runOnThreads));
 				log.error(msg.toString());
-				throw new IllegalStateException("Inconsistent sync state, please contact Radix team member on Discord. ("
-					+ msg + ")");
+				throw new IllegalStateException(
+					"Inconsistent sync state, please contact Radix team member on Discord. (" + msg + ")"
+				);
 			} else {
 				syncToQC(syncState.highQC, randomFrom(syncRequestState.authors));
 			}

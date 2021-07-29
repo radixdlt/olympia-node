@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -179,46 +179,6 @@ public class ArchiveValidationHandlerTest {
 
 		assertEquals(UInt256.SEVEN, list.getJSONObject(2).get("totalDelegatedStake"));
 		assertEquals("v3", list.getJSONObject(2).get("name"));
-	}
-
-	@Test
-	public void testLookupValidatorPositional() {
-		when(validatorInfoService.getValidator(eq(V1)))
-			.thenReturn(Result.ok(createValidator(V1, "v1", UInt256.FIVE)));
-
-		var params = jsonArray().put(addressing.forValidators().of(V1));
-		var response = handler.handleValidatorsLookupValidator(requestWith(params));
-
-		assertNotNull(response);
-		assertTrue(response.has("result"));
-
-		var result = response.getJSONObject("result");
-
-		assertNotNull(result);
-
-		assertEquals(UInt256.FIVE, result.get("totalDelegatedStake"));
-		assertEquals("http://v1.com", result.get("infoURL"));
-		assertEquals("v1", result.get("name"));
-	}
-
-	@Test
-	public void testLookupValidatorNamed() {
-		when(validatorInfoService.getValidator(eq(V1)))
-			.thenReturn(Result.ok(createValidator(V1, "v1", UInt256.FIVE)));
-
-		var params = jsonObject().put("validatorAddress", addressing.forValidators().of(V1));
-		var response = handler.handleValidatorsLookupValidator(requestWith(params));
-
-		assertNotNull(response);
-		assertTrue(response.has("result"));
-
-		var result = response.getJSONObject("result");
-
-		assertNotNull(result);
-
-		assertEquals(UInt256.FIVE, result.get("totalDelegatedStake"));
-		assertEquals("http://v1.com", result.get("infoURL"));
-		assertEquals("v1", result.get("name"));
 	}
 
 	private ValidatorInfoDetails createValidator(ECPublicKey v1, String name, UInt256 stake) {

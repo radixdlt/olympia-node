@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -80,6 +80,7 @@ import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * The forks for betanet and the epochs at which they will occur.
@@ -97,10 +98,11 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				RESERVED_SYMBOLS,
+				Pattern.compile("[a-z0-9]+"), // Token symbol pattern
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 					Map.of(
-						TokenResource.class, Amount.ofTokens(100), // 1000XRD per resource
+						TokenResource.class, Amount.ofTokens(100), // 100XRD per resource
 						ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
 						ValidatorFeeCopy.class, Amount.ofTokens(5), // 5XRD per register update
 						ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
@@ -112,10 +114,10 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				),
 				(long) 1024 * 1024, // 1MB max user transaction size
 				OptionalInt.of(50), // 50 Txns per round
-				10_000, // Rounds per epoch - not extended to 2 weeks for testing
-				150, // Two weeks worth of epochs for rake debounce
-				Amount.ofTokens(100), // Minimum stake
-				150, // Two weeks worth of epochs for unstaking delay
+				8_000_000, // Rounds per epoch - approximately two weeks of epochs
+				500, // Two weeks worth of epochs for rake debounce
+				Amount.ofTokens(90), // Minimum stake
+				500, // Two weeks worth of epochs for unstaking delay
 				Amount.ofTokens(0),   // No rewards in first epoch
 				9800, // 98.00% threshold for completed proposals to get any rewards,
 				100 // 100 max validators
@@ -131,10 +133,11 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(
 				RESERVED_SYMBOLS,
+				Pattern.compile("[a-z0-9]+"), // Token symbol pattern
 				FeeTable.create(
 					Amount.ofMicroTokens(200), // 0.0002XRD per byte fee
 					Map.of(
-						TokenResource.class, Amount.ofTokens(100), // 1000XRD per resource
+						TokenResource.class, Amount.ofTokens(100), // 100XRD per resource
 						ValidatorRegisteredCopy.class, Amount.ofTokens(5), // 5XRD per validator update
 						ValidatorFeeCopy.class, Amount.ofTokens(5), // 5XRD per register update
 						ValidatorOwnerCopy.class, Amount.ofTokens(5), // 5XRD per register update
@@ -147,10 +150,10 @@ public final class MainnetForkConfigsModule extends AbstractModule {
 				(long) 1024 * 1024, // 1MB max user transaction size
 				OptionalInt.of(50), // 50 Txns per round
 				10_000, // Rounds per epoch
-				150, // Two weeks worth of epochs
-				Amount.ofTokens(100), // Minimum stake
-				150, // Two weeks worth of epochs
-				Amount.ofTokens(10), // Rewards per proposal
+				500, // Two weeks worth of epochs
+				Amount.ofTokens(90), // Minimum stake
+				500, // Two weeks worth of epochs
+				Amount.ofMicroTokens(2307700), // 2.3077XRD Rewards per proposal
 				9800, // 98.00% threshold for completed proposals to get any rewards
 				100 // 100 max validators
 			)

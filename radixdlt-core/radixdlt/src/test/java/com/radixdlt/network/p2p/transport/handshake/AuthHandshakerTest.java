@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -74,7 +74,6 @@ import org.junit.Test;
 import java.security.SecureRandom;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public final class AuthHandshakerTest {
@@ -109,6 +108,6 @@ public final class AuthHandshakerTest {
 		final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
 		final var handshaker2ResultPair = handshaker2.handleInitialMessage(initMessage);
 		assertTrue(handshaker2ResultPair.getSecond() instanceof AuthHandshakeError);
-		assertNull(handshaker2ResultPair.getFirst());
+		assertArrayEquals(new byte[] {0x02}, handshaker2ResultPair.getFirst());
 	}
 }

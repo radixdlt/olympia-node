@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -102,6 +102,7 @@ import org.junit.Test;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -116,7 +117,7 @@ public class TokenResourceTest {
 	public void setup() throws Exception {
 		var cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(new SystemConstraintScrypt());
-		cmAtomOS.load(new TokensConstraintScryptV3(Set.of("xrd")));
+		cmAtomOS.load(new TokensConstraintScryptV3(Set.of("xrd"), Pattern.compile("[a-z0-9]+")));
 		var cm = new ConstraintMachine(
 			cmAtomOS.getProcedures(),
 			cmAtomOS.buildSubstateDeserialization(),

@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -90,14 +90,15 @@ import com.radixdlt.utils.UInt256;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
-
-import static com.radixdlt.identifiers.Naming.NAME_PATTERN;
+import java.util.regex.Pattern;
 
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	private final Set<String> reservedSymbols;
+	private final Pattern tokenSymbolPattern;
 
-	public TokensConstraintScryptV3(Set<String> reservedSymbols) {
+	public TokensConstraintScryptV3(Set<String> reservedSymbols, Pattern tokenSymbolPattern) {
 		this.reservedSymbols = reservedSymbols;
+		this.tokenSymbolPattern = tokenSymbolPattern;
 	}
 
 	@Override
@@ -223,8 +224,8 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				if (reservedSymbols.contains(str) && c.permissionLevel() != PermissionLevel.SYSTEM) {
 					throw new ReservedSymbolException(str);
 				}
-				if (!NAME_PATTERN.matcher(str).matches()) {
-					throw new ProcedureException("invalid rri name: " + str);
+				if (!tokenSymbolPattern.matcher(str).matches()) {
+					throw new ProcedureException("invalid token symbol: " + str);
 				}
 
 				if (u.isMutable()) {

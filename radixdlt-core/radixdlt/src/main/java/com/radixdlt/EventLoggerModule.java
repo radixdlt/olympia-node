@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -112,28 +112,21 @@ public final class EventLoggerModule extends AbstractModule {
 		final RateLimiter logLimiter = RateLimiter.create(1.0);
 		return new EventProcessorOnDispatch<>(
 			InvalidProposedTxn.class,
-			i -> {
-				Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-				logger.log(logLevel, "eng_badprp{proposer={}}", nodeString.apply(i.getProposer()));
-			}
+			i -> logger.warn("eng_badprp{proposer={}}", nodeString.apply(i.getProposer()))
 		);
 	}
 
 	@ProvidesIntoSet
 	EventProcessorOnDispatch<?> logTimeouts(Function<BFTNode, String> nodeString) {
-		final RateLimiter logLimiter = RateLimiter.create(1.0);
 		return new EventProcessorOnDispatch<>(
 			EpochLocalTimeoutOccurrence.class,
-			t -> {
-				Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-				logger.log(logLevel, "bft_timout{epoch={} round={} leader={} nextLeader={} count={}}",
-					t.getEpochView().getEpoch(),
-					t.getEpochView().getView().number(),
-					nodeString.apply(t.getLeader()),
-					nodeString.apply(t.getNextLeader()),
-					t.getBase().timeout().count()
-				);
-			}
+			t -> logger.warn("bft_timout{epoch={} round={} leader={} nextLeader={} count={}}",
+				t.getEpochView().getEpoch(),
+				t.getEpochView().getView().number(),
+				nodeString.apply(t.getLeader()),
+				nodeString.apply(t.getNextLeader()),
+				t.getBase().timeout().count()
+			)
 		);
 	}
 

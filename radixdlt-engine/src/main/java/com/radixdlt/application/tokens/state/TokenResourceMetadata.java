@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -139,5 +139,18 @@ public final class TokenResourceMetadata implements ResourceData {
 			&& Objects.equals(this.description, other.description)
 			&& Objects.equals(this.iconUrl, other.iconUrl)
 			&& Objects.equals(this.url, other.url);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{addr=%s symbol=%s name=%s desc=%s iconUrl=%s url=%s}",
+			this.getClass().getSimpleName(),
+			this.addr,
+			this.symbol,
+			this.name,
+			this.description,
+			this.iconUrl,
+			this.url
+		);
 	}
 }

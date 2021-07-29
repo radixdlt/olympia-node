@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -80,6 +80,7 @@ final class BitcoinJBIP32Path implements HDPath {
 
 	private static final String BIP32_HARDENED_MARKER_BITCOINJ = "H";
 
+	// TODO: HDPath has been removed from bitcoinj, consider refactoring
 	private final org.bitcoinj.crypto.HDPath path;
 
 	private BitcoinJBIP32Path(org.bitcoinj.crypto.HDPath path) {

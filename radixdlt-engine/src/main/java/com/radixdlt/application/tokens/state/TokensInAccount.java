@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -114,11 +114,11 @@ public final class TokensInAccount implements ResourceInBucket {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s]",
+		return String.format("%s{resourceAddr=%s holder=%s amount=%s}",
 			getClass().getSimpleName(),
 			resourceAddr,
-			amount,
-			holdingAddress
+			holdingAddress,
+			amount
 		);
 	}
 

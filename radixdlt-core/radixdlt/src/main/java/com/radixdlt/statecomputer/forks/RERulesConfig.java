@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -72,9 +72,11 @@ import org.json.JSONObject;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public final class RERulesConfig {
 	private final Set<String> reservedSymbols;
+	private final Pattern tokenSymbolPattern;
 	private final FeeTable feeTable;
 	private final long maxTxnSize;
 	private final long maxRounds;
@@ -88,6 +90,7 @@ public final class RERulesConfig {
 
 	public RERulesConfig(
 		Set<String> reservedSymbols,
+		Pattern tokenSymbolPattern,
 		FeeTable feeTable,
 		long maxTxnSize,
 		OptionalInt maxSigsPerRound,
@@ -100,6 +103,7 @@ public final class RERulesConfig {
 		int maxValidators
 	) {
 		this.reservedSymbols = reservedSymbols;
+		this.tokenSymbolPattern = tokenSymbolPattern;
 		this.feeTable = feeTable;
 		this.maxTxnSize = maxTxnSize;
 		this.maxSigsPerRound = maxSigsPerRound;
@@ -118,6 +122,7 @@ public final class RERulesConfig {
 		return new JSONObject()
 			.put("feeTable", feeTable.asJson())
 			.put("reservedSymbols", reserved)
+			.put("tokenSymbolPattern", tokenSymbolPattern.pattern())
 			.put("maxTransactionSize", maxTxnSize)
 			.put("maxTransactionsPerRound", maxSigsPerRound.orElse(0))
 			.put("maxRoundsPerEpoch", maxRounds)
@@ -132,6 +137,7 @@ public final class RERulesConfig {
 	public static RERulesConfig testingDefault() {
 		return new RERulesConfig(
 			Set.of("xrd"),
+			Pattern.compile("[a-z0-9]+"),
 			FeeTable.create(Amount.zero(), Map.of()),
 			(long) 1024 * 1024,
 			OptionalInt.of(2),
@@ -139,10 +145,14 @@ public final class RERulesConfig {
 			1,
 			Amount.ofTokens(10),
 			1,
-			Amount.ofTokens(10),
+			Amount.ofMicroTokens(2307700), // Rewards per proposal
 			9800,
 			10
 		);
+	}
+
+	public Pattern getTokenSymbolPattern() {
+		return tokenSymbolPattern;
 	}
 
 	public Set<String> getReservedSymbols() {
@@ -192,6 +202,7 @@ public final class RERulesConfig {
 	public RERulesConfig overrideMaxSigsPerRound(int maxSigsPerRound) {
 		return new RERulesConfig(
 			this.reservedSymbols,
+			this.tokenSymbolPattern,
 			this.feeTable,
 			this.maxTxnSize,
 			OptionalInt.of(maxSigsPerRound),
@@ -208,6 +219,7 @@ public final class RERulesConfig {
 	public RERulesConfig removeSigsPerRoundLimit() {
 		return new RERulesConfig(
 			this.reservedSymbols,
+			this.tokenSymbolPattern,
 			this.feeTable,
 			this.maxTxnSize,
 			OptionalInt.empty(),
@@ -224,6 +236,7 @@ public final class RERulesConfig {
 	public RERulesConfig overrideFeeTable(FeeTable feeTable) {
 		return new RERulesConfig(
 			this.reservedSymbols,
+			this.tokenSymbolPattern,
 			feeTable,
 			this.maxTxnSize,
 			this.maxSigsPerRound,
@@ -240,6 +253,7 @@ public final class RERulesConfig {
 	public RERulesConfig overrideMaxRounds(long maxRounds) {
 		return new RERulesConfig(
 			this.reservedSymbols,
+			this.tokenSymbolPattern,
 			this.feeTable,
 			this.maxTxnSize,
 			this.maxSigsPerRound,
