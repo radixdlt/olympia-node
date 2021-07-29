@@ -256,7 +256,7 @@ subprojects {
             // need at least this commit (or later): https://github.com/bitcoinj/bitcoinj/commit/7629677103dbdd80f14c63b066ed27e1fad47014
             // in order to work with BouncyCastle 1.64 or later
             // see issue: https://github.com/bitcoinj/bitcoinj/issues/1951
-            dependency('com.github.bitcoinj:bitcoinj:7c31dcb') {
+            dependency('org.bitcoinj:bitcoinj-core:0.15.10') {
                 exclude 'com.google.guava:guava'
             }
 
