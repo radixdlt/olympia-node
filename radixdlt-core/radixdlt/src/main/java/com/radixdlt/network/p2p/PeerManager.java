@@ -65,6 +65,7 @@
 package com.radixdlt.network.p2p;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -87,7 +88,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -223,7 +223,7 @@ public final class PeerManager {
 			final var channel = peerConnected.getChannel();
 			final var channels = this.activeChannels.computeIfAbsent(
 				channel.getRemoteNodeId(),
-				unused -> new HashSet<>()
+				unused -> Sets.newConcurrentHashSet()
 			);
 			channels.add(channel);
 			channel.getUri().ifPresent(u -> this.addressBook.get().addOrUpdateSuccessfullyConnectedPeer(u));
