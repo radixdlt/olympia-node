@@ -261,7 +261,7 @@ public class TransactionParserTest {
 		list.stream()
 			.map(txn -> {
 				var actions = txn.getGroupedStateUpdates().stream()
-					.map(REResourceAccounting::compute)
+					.map(l -> REResourceAccounting.compute(l.stream()))
 					.map(REResourceAccounting::bucketAccounting)
 					.map(TwoActorEntry::parse)
 					.collect(Collectors.toList());

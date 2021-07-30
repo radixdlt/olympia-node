@@ -840,7 +840,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 
 		var rules = forks.get(curEpoch);
 
-		var accounting = REResourceAccounting.compute(updates);
+		var accounting = REResourceAccounting.compute(updates.stream());
 		var bucketAccounting = accounting.bucketAccounting();
 		var bucketEntries = bucketAccounting.entrySet().stream()
 			.map(e -> {

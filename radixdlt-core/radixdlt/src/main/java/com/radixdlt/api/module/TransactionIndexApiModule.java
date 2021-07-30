@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,20 +62,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store.berkeley;
+package com.radixdlt.api.module;
 
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.store.DatabaseEnvironment;
-import com.sleepycat.je.Transaction;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.JsonRpcHandler;
+import com.radixdlt.api.qualifier.DeveloperEndpoint;
+import com.radixdlt.api.store.berkeley.BerkeleyTransactionIndexArchiveStore;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.functional.Failure;
+import com.radixdlt.utils.functional.Result;
+import org.json.JSONArray;
 
-/**
- * Simple way to add an additional store
- * TODO: perhaps needs to be integrated at a higher level with RadixEngine
- * TODO: Make more generic rather than just attachment to BerkeleyLedgerEntryStore
- * TODO: Implement all other additional databases with this interface
- */
-public interface BerkeleyAdditionalStore {
-	void open(DatabaseEnvironment dbEnv);
-	void close();
-	void process(Transaction dbTxn, REProcessedTxn txn, long stateVersion);
+import java.util.List;
+
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
+
+public final class TransactionIndexApiModule extends AbstractModule {
+	@Override
+	public void configure() {
+		bind(BerkeleyTransactionIndexArchiveStore.class).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+			.addBinding().to(BerkeleyTransactionIndexArchiveStore.class);
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("index.get_transactions")
+	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexArchiveStore store) {
+		return request -> withRequiredParameters(
+			request,
+			List.of("offset", "limit"),
+			params -> Result.wrap(
+				e -> Failure.failure(-1, e.getMessage()),
+				() -> {
+					var offset = params.getLong("offset");
+					var limit = params.getLong("limit");
+					var transactions = new JSONArray();
+					store.get(offset)
+						.limit(limit)
+						.forEach(transactions::put);
+					var nextOffset = offset + transactions.length();
+					return jsonObject()
+						.put("transactions", transactions)
+						.put("count", transactions.length())
+						.put("nextOffset", nextOffset);
+				}
+			)
+		);
+	}
 }

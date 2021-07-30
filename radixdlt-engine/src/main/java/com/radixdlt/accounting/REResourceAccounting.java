@@ -73,9 +73,9 @@ import com.radixdlt.utils.UInt256;
 
 import java.math.BigInteger;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class REResourceAccounting {
 	private final Map<Bucket, BigInteger> bucketAccounting;
@@ -109,10 +109,9 @@ public class REResourceAccounting {
 		return sum.equals(BigInteger.ZERO) ? null : sum;
 	}
 
-	public static REResourceAccounting compute(List<REStateUpdate> updates) {
+	public static REResourceAccounting compute(Stream<REStateUpdate> updates) {
 		Map<Bucket, BigInteger> bucketAccounting = new HashMap<>();
-
-		for (var update : updates) {
+		updates.forEach(update -> {
 			var substate = update.getParsed();
 			if (substate instanceof ResourceInBucket) {
 				var resourceInBucket = (ResourceInBucket) substate;
@@ -122,7 +121,7 @@ public class REResourceAccounting {
 					REResourceAccounting::sumIfZeroThenNull
 				);
 			}
-		}
+		});
 
 		var stakeOwnershipAccounting = bucketAccounting.entrySet().stream()
 			.filter(e -> e.getKey().resourceAddr() == null)

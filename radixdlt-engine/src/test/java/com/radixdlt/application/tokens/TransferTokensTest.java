@@ -205,7 +205,9 @@ public class TransferTokensTest {
 		var result = this.engine.execute(List.of(transfer));
 
 		// Assert
-		var accounting = REResourceAccounting.compute(result.getProcessedTxn().getGroupedStateUpdates().get(0));
+		var accounting = REResourceAccounting.compute(
+			result.getProcessedTxn().getGroupedStateUpdates().get(0).stream()
+		);
 		assertThat(accounting.bucketAccounting())
 			.hasSize(2)
 			.containsEntry(

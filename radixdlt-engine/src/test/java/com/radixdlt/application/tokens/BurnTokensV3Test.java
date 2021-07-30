@@ -152,7 +152,9 @@ public class BurnTokensV3Test {
 		var processed = this.engine.execute(List.of(burnTxn));
 
 		// Assert
-		var accounting = REResourceAccounting.compute(processed.getProcessedTxn().getGroupedStateUpdates().get(0));
+		var accounting = REResourceAccounting.compute(
+			processed.getProcessedTxn().getGroupedStateUpdates().get(0).stream()
+		);
 		assertThat(accounting.resourceAccounting())
 			.hasSize(1)
 			.containsEntry(tokenAddr, BigInteger.valueOf(-10));
@@ -181,7 +183,9 @@ public class BurnTokensV3Test {
 		var processed = this.engine.execute(List.of(burnTxn));
 
 		// Assert
-		var accounting = REResourceAccounting.compute(processed.getProcessedTxn().getGroupedStateUpdates().get(0));
+		var accounting = REResourceAccounting.compute(
+			processed.getProcessedTxn().getGroupedStateUpdates().get(0).stream()
+		);
 		assertThat(accounting.resourceAccounting())
 			.hasSize(1)
 			.containsEntry(tokenAddr, BigInteger.valueOf(-10));
