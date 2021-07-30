@@ -67,14 +67,11 @@ package com.radixdlt.api.module;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.EndpointConfig;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.server.ArchiveHttpServer;
@@ -89,26 +86,10 @@ import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.REOutput;
 
-import java.util.List;
-
 public class ArchiveApiModule extends AbstractModule {
-	private static final Logger log = LogManager.getLogger();
-
-	private final List<EndpointConfig> endpoints;
-
-	public ArchiveApiModule(List<EndpointConfig> endpoints) {
-		this.endpoints = endpoints;
-	}
-
 	@Override
 	public void configure() {
 		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
-
-		endpoints.forEach(ep -> {
-			log.info("Enabling /{} endpoint", ep.name());
-			install(ep.module().get());
-		});
-
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
 			.addBinding(Runners.ARCHIVE_API)
 			.to(ArchiveHttpServer.class);
