@@ -62,80 +62,82 @@
  * permissions under this License.
  */
 
-import org.apache.tools.ant.taskdefs.condition.Os
+package com.radixdlt.acceptance.staking;
 
-apply plugin: 'java'
-apply plugin: 'application'
-apply plugin: 'com.adarshr.test-logger'
-apply plugin: 'java-library'
+import com.radixdlt.test.RadixNetworkTest;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.client.lib.dto.ValidatorDTO;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.assertj.core.util.Lists;
+import org.junit.Assert;
 
-configurations {
-    acceptanceTestImplementation.extendsFrom testImplementation
-}
+import java.util.List;
+import java.util.Optional;
 
-test {
-    enabled false
-    jacoco {
-        // Don't attempt to include these in code coverage.
-        enabled false
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+public class Staking extends RadixNetworkTest {
+
+    private static final Logger logger = LogManager.getLogger();
+
+    private List<ValidatorDTO> validatorsBuffer = Lists.newArrayList();
+
+    @Given("I have an account with funds at a suitable Radix network")
+    public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
+        faucet(account1, Amount.ofTokens(120));
     }
-}
 
-sourceSets {
-    acceptanceTest {
-        java {
-            compileClasspath += main.output + test.output
-            runtimeClasspath += main.output + test.output
-            srcDir file('src/test/java')
-            srcDir file('src/main/java')
+    @When("I request validator information")
+    public void i_request_validator_information() {
+        updateValidatorInformation();
+        logger.info("Found {} validators", validatorsBuffer.size());
+    }
+
+    @Then("I observe that validators have stakes delegated to them")
+    public void i_observe_that_validators_have_stakes_delegated_to_them() {
+        var totalDelegatedStakeAcrossNetwork = validatorsBuffer.stream()
+            .mapToDouble(value -> Double.parseDouble(value.getTotalDelegatedStake().toString())).sum();
+        assertTrue("No stake was found in any validator, something is wrong with the test network",
+            totalDelegatedStakeAcrossNetwork > 0);
+    }
+
+    @When("I stake {int}XRD to a validator")
+    public void i_stake_xrd_to_a_validator(int stake) {
+        updateValidatorInformation();
+        // this test is hardcoded to use the 1st validator
+        account1.stake(validatorsBuffer.get(0).getAddress(), Amount.ofTokens(stake));
+    }
+
+    @Then("I observe that the validator has {int}XRD more stake")
+    public void i_observe_that_validator_having_xrd_more_stake(int stake) {
+        Amount expectedStake = Amount.ofTokens(5);
+        var previousStake = validatorsBuffer.get(0).getTotalDelegatedStake();
+        updateValidatorInformation();
+        var difference = validatorsBuffer.get(0).getTotalDelegatedStake().subtract(previousStake);
+        assertEquals(difference, expectedStake.toSubunits());
+    }
+
+    @When("I unstake {int}XRD from the same validator")
+    public void i_unstake_xrd_from_the_same_validator(Integer unstake) {
+        throw new io.cucumber.java.PendingException();
+    }
+
+    @Then("I observe that my stake is unstaked and I got my tokens back")
+    public void i_observe_that_my_stake_is_unstaked_and_i_got_my_tokens_back() {
+        throw new io.cucumber.java.PendingException();
+    }
+
+    private void updateValidatorInformation() {
+        validatorsBuffer.clear();
+        validatorsBuffer = account1.validator().list(1000, Optional.empty()).getValidators();
+        if (validatorsBuffer.isEmpty()) {
+            Assert.fail("No validators were found in the network, test cannot proceed.");
         }
-        resources.srcDir file('src/test/resources')
     }
-}
 
-task acceptanceTest(type: Test) {
-    testClassesDirs = sourceSets.acceptanceTest.output.classesDirs
-    classpath = sourceSets.acceptanceTest.runtimeClasspath
-}
-
-acceptanceTest {
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
-        outputs.upToDateWhen { false }
-        showStandardStreams true
-    }
-    if (Os.isFamily(Os.FAMILY_UNIX)) { // there's no reason to set these properties on windows
-        systemProperty 'java.security.egd', 'file:/dev/urandom'
-        systemProperty 'javax.net.ssl.trustStore', '/etc/ssl/certs/java/cacerts'
-        systemProperty 'javax.net.ssl.trustStoreType', 'jks'
-    }
-    systemProperties System.getProperties()
-    jacoco {
-        // Jacoco plugin fails with an exception if run on these tests.
-        enabled false
-    }
-}
-
-checkstyleAcceptanceTest {
-    configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
-}
-
-dependencies {
-    api project(':radixdlt-java')
-
-    implementation 'io.reactivex.rxjava2:rxjava'
-    implementation 'com.google.guava:guava'
-    implementation 'org.awaitility:awaitility:4.0.3'
-    implementation 'com.squareup.okhttp3:okhttp'
-    implementation 'com.squareup.okhttp3:logging-interceptor'
-    implementation 'org.slf4j:slf4j-simple:2.0.0-alpha2'
-    implementation 'com.github.docker-java:docker-java:3.2.8'
-    implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.8'
-    implementation 'com.konghq:unirest-java:3.11.09:standalone'
-
-    testImplementation 'junit:junit'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'io.cucumber:cucumber-java:6.10.3'
-    testImplementation 'io.cucumber:cucumber-junit:6.10.3'
 }

@@ -1,6 +1,6 @@
 package com.radixdlt.test.chaos.actions;
 
-import com.radixdlt.test.chaos.HttpClient;
+
 import com.radixdlt.test.chaos.ansible.AnsibleImageWrapper;
 import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
 import org.apache.logging.log4j.LogManager;
@@ -10,11 +10,8 @@ public class ValidatorUnregistrationAction extends ActionWithLikelihood {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private final HttpClient httpClient;
-
     public ValidatorUnregistrationAction(AnsibleImageWrapper ansible, double likelihood) {
         super(ansible, likelihood);
-        httpClient = new HttpClient();
     }
 
     @Override
@@ -22,7 +19,7 @@ public class ValidatorUnregistrationAction extends ActionWithLikelihood {
         String host = getAnsible().getRandomNodeHost();
 
         try {
-            httpClient.unregisterValidator(host);
+            //httpClient.unregisterValidator(host);
             logger.info("Unregistered node {} as a validator", host);
             ChaosExperimentUtils.annotateGrafana("Unregistered " + host);
         } catch (Exception e) {
@@ -36,7 +33,7 @@ public class ValidatorUnregistrationAction extends ActionWithLikelihood {
     public void teardown() {
         logger.info("Registering all nodes as validators");
         try {
-            getAnsible().getNodeAddressList().forEach(httpClient::registerValidator);
+            //getAnsible().getNodeAddressList().forEach(httpClient::registerValidator);
         } catch (Exception e) {
             // TODO ignore failures here too
             e.printStackTrace();

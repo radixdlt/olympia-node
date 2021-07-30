@@ -62,80 +62,15 @@
  * permissions under this License.
  */
 
-import org.apache.tools.ant.taskdefs.condition.Os
+package com.radixdlt.acceptance.token_transfer;
 
-apply plugin: 'java'
-apply plugin: 'application'
-apply plugin: 'com.adarshr.test-logger'
-apply plugin: 'java-library'
+import io.cucumber.junit.Cucumber;
+import io.cucumber.junit.CucumberOptions;
+import io.cucumber.junit.CucumberOptions.SnippetType;
+import org.junit.runner.RunWith;
 
-configurations {
-    acceptanceTestImplementation.extendsFrom testImplementation
-}
-
-test {
-    enabled false
-    jacoco {
-        // Don't attempt to include these in code coverage.
-        enabled false
-    }
-}
-
-sourceSets {
-    acceptanceTest {
-        java {
-            compileClasspath += main.output + test.output
-            runtimeClasspath += main.output + test.output
-            srcDir file('src/test/java')
-            srcDir file('src/main/java')
-        }
-        resources.srcDir file('src/test/resources')
-    }
-}
-
-task acceptanceTest(type: Test) {
-    testClassesDirs = sourceSets.acceptanceTest.output.classesDirs
-    classpath = sourceSets.acceptanceTest.runtimeClasspath
-}
-
-acceptanceTest {
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
-        outputs.upToDateWhen { false }
-        showStandardStreams true
-    }
-    if (Os.isFamily(Os.FAMILY_UNIX)) { // there's no reason to set these properties on windows
-        systemProperty 'java.security.egd', 'file:/dev/urandom'
-        systemProperty 'javax.net.ssl.trustStore', '/etc/ssl/certs/java/cacerts'
-        systemProperty 'javax.net.ssl.trustStoreType', 'jks'
-    }
-    systemProperties System.getProperties()
-    jacoco {
-        // Jacoco plugin fails with an exception if run on these tests.
-        enabled false
-    }
-}
-
-checkstyleAcceptanceTest {
-    configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
-}
-
-dependencies {
-    api project(':radixdlt-java')
-
-    implementation 'io.reactivex.rxjava2:rxjava'
-    implementation 'com.google.guava:guava'
-    implementation 'org.awaitility:awaitility:4.0.3'
-    implementation 'com.squareup.okhttp3:okhttp'
-    implementation 'com.squareup.okhttp3:logging-interceptor'
-    implementation 'org.slf4j:slf4j-simple:2.0.0-alpha2'
-    implementation 'com.github.docker-java:docker-java:3.2.8'
-    implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.8'
-    implementation 'com.konghq:unirest-java:3.11.09:standalone'
-
-    testImplementation 'junit:junit'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'io.cucumber:cucumber-java:6.10.3'
-    testImplementation 'io.cucumber:cucumber-junit:6.10.3'
+@RunWith(Cucumber.class)
+@CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
+public class RunTokenTransfer {
+	// Stub for running cucumber tests
 }

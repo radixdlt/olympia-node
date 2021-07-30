@@ -62,55 +62,41 @@
  * permissions under this License.
  */
 
-apply plugin: 'java-library'
 apply plugin: 'java'
-apply plugin: 'groovy'
 apply plugin: 'idea'
 
-sourceSets {
-    test {
-        java { srcDirs = [] }    // no source dirs for the java compiler
-        groovy { srcDirs = ["src/test/java", "src/test/groovy"] }  // compile   everything in src/ with groovy
-    }
-}
-
 dependencies {
-    implementation project(':radixdlt-java')
     implementation project(':radixdlt-regression')
 
+    testImplementation 'com.google.guava:guava:29.0-jre'
+    testImplementation 'org.awaitility:awaitility:4.0.3'
     testImplementation 'com.github.mwiede:jsch:0.1.61'
     testImplementation 'commons-io:commons-io:2.8.0'
-    testImplementation 'org.junit.vintage:junit-vintage-engine:5.6.1'
-    testImplementation 'org.codehaus.groovy:groovy-all:2.4.12'
-    testImplementation 'me.alexpanov:free-port-finder:1.1.1'
-    testImplementation 'junit:junit'
+    testImplementation 'org.apache.logging.log4j:log4j-api:2.13.1'
+    testImplementation 'org.apache.logging.log4j:log4j-core:2.13.1'
+
+    //testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.13.3'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
 }
 
 test {
     enabled false
     jacoco {
-        // Don't attempt to include these in code coverage.
-        enabled false
+        enabled false // Don't attempt to include these in code coverage.
     }
 }
 
-task copyCLIJar {
-    doLast {
-        delete "${projectDir}/target/cli"
-        copy {
-            from "${rootDir}/../radixdlt-java/radixdlt-cli/build/libs"
-            into "${projectDir}/target/cli"
-        }
+task systemTests(type: Test) {
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching "com.radixdlt.test.system.*"
     }
-}
-
-task bddTest(type: Test) {
-    dependsOn clean,copyCLIJar
     testLogging.showStandardStreams = true
     systemProperties System.getProperties()
-    include "Runner.class"
     jacoco {
-        // Not included in code coverage
+        // We don't want these tests included in code coverage.
         enabled false
     }
 }

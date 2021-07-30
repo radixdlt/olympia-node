@@ -76,18 +76,21 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.test.chaos.actions.*;
+import com.radixdlt.test.chaos.actions.RestartAction;
+import com.radixdlt.test.chaos.actions.NetworkAction;
+import com.radixdlt.test.chaos.actions.ShutdownAction;
+import com.radixdlt.test.chaos.actions.ValidatorUnregistrationAction;
+import com.radixdlt.test.chaos.actions.Action;
 import com.radixdlt.test.chaos.ansible.AnsibleImageWrapper;
 import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
 import com.radixdlt.utils.Ints;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
@@ -97,6 +100,7 @@ public class ChaosExperiments {
 
     private final AnsibleImageWrapper ansible = AnsibleImageWrapper.createWithDefaultImage();
 
+    @Test
     public void pre_release_experiment() {
         //ChaosExperimentUtils.livenessCheckIgnoringOffline(ansible.toNetwork());
 
@@ -158,7 +162,7 @@ public class ChaosExperiments {
 
     }
 
-    @Test
+    //@Test
     public void a() throws PrivateKeyException, PublicKeyException, DeserializeException {
         ECKeyPair richKeyPair = keyPairOf(1);
         AccountAddress richAccount = AccountAddress.create(richKeyPair.getPublicKey());

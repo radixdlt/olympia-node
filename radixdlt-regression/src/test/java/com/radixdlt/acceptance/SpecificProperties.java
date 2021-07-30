@@ -62,80 +62,104 @@
  * permissions under this License.
  */
 
-import org.apache.tools.ant.taskdefs.condition.Os
+package com.radixdlt.acceptance;
 
-apply plugin: 'java'
-apply plugin: 'application'
-apply plugin: 'com.adarshr.test-logger'
-apply plugin: 'java-library'
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
-configurations {
-    acceptanceTestImplementation.extendsFrom testImplementation
-}
+import com.google.common.collect.ImmutableMap;
 
-test {
-    enabled false
-    jacoco {
-        // Don't attempt to include these in code coverage.
-        enabled false
-    }
-}
+/**
+ * Class for maintaining a map of string names to string values,
+ * where allowable names and default values can be specified.
+ */
+public class SpecificProperties {
+	private final ImmutableMap<String, String> defaultValues;
+	private final Map<String, String> propertyValues = new HashMap<>();
 
-sourceSets {
-    acceptanceTest {
-        java {
-            compileClasspath += main.output + test.output
-            runtimeClasspath += main.output + test.output
-            srcDir file('src/test/java')
-            srcDir file('src/main/java')
-        }
-        resources.srcDir file('src/test/resources')
-    }
-}
+	SpecificProperties(String... propertyNamesAndValues) {
+		ImmutableMap.Builder<String, String> defaults = ImmutableMap.builder();
+		for (int i = 0; i < propertyNamesAndValues.length; i += 2) {
+			defaults.put(propertyNamesAndValues[i], propertyNamesAndValues[i + 1]);
+		}
+		this.defaultValues = defaults.build();
+		this.propertyValues.putAll(this.defaultValues);
+	}
 
-task acceptanceTest(type: Test) {
-    testClassesDirs = sourceSets.acceptanceTest.output.classesDirs
-    classpath = sourceSets.acceptanceTest.runtimeClasspath
-}
+	/**
+	 * Retrieves a value for a given property name.
+	 * @param name The property name to retrieve the value for.
+	 * @return The property value
+	 * @throws IllegalArgumentException if the given property does not have a value
+	 */
+	public String get(String name) {
+		Objects.requireNonNull(name);
+		if (!this.propertyValues.containsKey(name)) {
+			throw new IllegalArgumentException("No such property: " + name);
+		}
+		return this.propertyValues.get(name);
+	}
 
-acceptanceTest {
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
-        outputs.upToDateWhen { false }
-        showStandardStreams true
-    }
-    if (Os.isFamily(Os.FAMILY_UNIX)) { // there's no reason to set these properties on windows
-        systemProperty 'java.security.egd', 'file:/dev/urandom'
-        systemProperty 'javax.net.ssl.trustStore', '/etc/ssl/certs/java/cacerts'
-        systemProperty 'javax.net.ssl.trustStoreType', 'jks'
-    }
-    systemProperties System.getProperties()
-    jacoco {
-        // Jacoco plugin fails with an exception if run on these tests.
-        enabled false
-    }
-}
+	/**
+	 * Associates a value with a given property name.
+	 * @param name The property name
+	 * @param value The property value
+	 * @throws IllegalArgumentException if the specified property name is not known
+	 */
+	public void put(String name, String value) {
+		Objects.requireNonNull(name);
+		Objects.requireNonNull(value);
+		if (!this.defaultValues.containsKey(name)) {
+			throw new IllegalArgumentException("Invalid property name: " + name);
+		}
+		this.propertyValues.put(name, value);
+	}
 
-checkstyleAcceptanceTest {
-    configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
-}
+	/**
+	 * Resets this property map to default values.
+	 */
+	public void clear() {
+		this.propertyValues.clear();
+		this.propertyValues.putAll(this.defaultValues);
+	}
 
-dependencies {
-    api project(':radixdlt-java')
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.defaultValues, this.propertyValues);
+	}
 
-    implementation 'io.reactivex.rxjava2:rxjava'
-    implementation 'com.google.guava:guava'
-    implementation 'org.awaitility:awaitility:4.0.3'
-    implementation 'com.squareup.okhttp3:okhttp'
-    implementation 'com.squareup.okhttp3:logging-interceptor'
-    implementation 'org.slf4j:slf4j-simple:2.0.0-alpha2'
-    implementation 'com.github.docker-java:docker-java:3.2.8'
-    implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.8'
-    implementation 'com.konghq:unirest-java:3.11.09:standalone'
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj instanceof SpecificProperties) {
+			SpecificProperties other = (SpecificProperties) obj;
+			return Objects.equals(this.defaultValues, other.defaultValues)
+				&& Objects.equals(this.propertyValues, other.propertyValues);
+		}
+		return false;
+	}
 
-    testImplementation 'junit:junit'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'io.cucumber:cucumber-java:6.10.3'
-    testImplementation 'io.cucumber:cucumber-junit:6.10.3'
+	@Override
+	public String toString() {
+		return String.format("%s[defaults=%s, values=%s]",
+				getClass().getSimpleName(), defaultValues, propertyValues);
+	}
+
+	/**
+	 * Constructs a properties map of names to default values.
+	 * @param propertyNamesAndValues A sequence of alternating property names and
+	 * 		default values.  A default value of {@code null} may be used to indicate
+	 * 		no default value.  There must therefore be an even number of elements
+	 * 		in this sequence.
+	 * @return The corresponding properties map.
+	 */
+	public static SpecificProperties of(String... propertyNamesAndValues) {
+		if ((propertyNamesAndValues.length % 2) != 0) {
+			throw new IllegalArgumentException("Must specify names and values");
+		}
+		return new SpecificProperties(propertyNamesAndValues);
+	}
 }
