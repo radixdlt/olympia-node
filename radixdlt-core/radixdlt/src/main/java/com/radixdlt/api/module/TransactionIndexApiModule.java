@@ -92,6 +92,24 @@ public final class TransactionIndexApiModule extends AbstractModule {
 
 	@DeveloperEndpoint
 	@ProvidesIntoMap
+	@StringMapKey("index.get_transaction_count")
+	public JsonRpcHandler indexGetTransactionCount(BerkeleyTransactionIndexArchiveStore store) {
+		return request -> withRequiredParameters(
+			request,
+			List.of(),
+			params -> Result.wrap(
+				e -> Failure.failure(-1, e.getMessage()),
+				() -> {
+					var totalCount = store.getCount();
+					return jsonObject()
+						.put("totalCount", totalCount);
+				}
+			)
+		);
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
 	@StringMapKey("index.get_transactions")
 	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexArchiveStore store) {
 		return request -> withRequiredParameters(
@@ -106,10 +124,12 @@ public final class TransactionIndexApiModule extends AbstractModule {
 					store.get(offset)
 						.limit(limit)
 						.forEach(transactions::put);
+					var totalCount = store.getCount();
 					var nextOffset = offset + transactions.length();
 					return jsonObject()
 						.put("transactions", transactions)
 						.put("count", transactions.length())
+						.put("totalCount", totalCount)
 						.put("nextOffset", nextOffset);
 				}
 			)

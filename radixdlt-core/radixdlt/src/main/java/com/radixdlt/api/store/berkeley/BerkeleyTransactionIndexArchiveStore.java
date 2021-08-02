@@ -157,6 +157,14 @@ public final class BerkeleyTransactionIndexArchiveStore implements BerkeleyAddit
 		return addressing.forResources().of(symbol, addr);
 	}
 
+	public long getCount() {
+		try (var cursor = transactions.openCursor(null, null)) {
+			final DatabaseEntry key = new DatabaseEntry();
+			var result = cursor.getLast(key, null, null);
+			return result == SUCCESS ? Longs.fromByteArray(key.getData()) : 0;
+		}
+	}
+
 	public Stream<JSONObject> get(long stateVersion) {
 		var cursor = transactions.openCursor(null, null);
 		var iterator = new Iterator<byte[]>() {
