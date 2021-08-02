@@ -158,7 +158,7 @@ public class ApiModule extends AbstractModule {
 		}
 		endpointStatus.put("version", versionEnable);
 
-		var transactionIndex = properties.get("api.developer.transaction_index.enable", true);
+		var transactionIndex = properties.get("api.developer.transaction_index.enable", false);
 		if (transactionIndex) {
 			install(new TransactionIndexApiModule());
 		}
