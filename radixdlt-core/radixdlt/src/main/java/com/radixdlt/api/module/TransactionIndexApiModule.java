@@ -121,9 +121,9 @@ public final class TransactionIndexApiModule extends AbstractModule {
 					var offset = params.getLong("offset");
 					var limit = params.getLong("limit");
 					var transactions = new JSONArray();
-					store.get(offset)
-						.limit(limit)
-						.forEach(transactions::put);
+					try (var stream = store.get(offset)) {
+						stream.limit(limit).forEach(transactions::put);
+					}
 					var totalCount = store.getCount();
 					var nextOffset = offset + transactions.length();
 					return jsonObject()
