@@ -67,6 +67,8 @@ package com.radixdlt.statecomputer.forks;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.engine.PostProcessor;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
 
 /**
@@ -76,7 +78,7 @@ public interface ForkConfig {
 	String name();
 	HashCode hash();
 	RERules engineRules();
-	ForkConfig withForksPostProcessor(ForkConfig nextFork);
+	ForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor);
 
 	static HashCode voteHash(ECPublicKey publicKey, ForkConfig forkConfig) {
 		return voteHash(publicKey, forkConfig.hash());

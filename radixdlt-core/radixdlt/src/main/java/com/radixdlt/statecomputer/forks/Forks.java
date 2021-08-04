@@ -74,6 +74,8 @@ import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.NextCandidateForkPostProcessor;
+import com.radixdlt.statecomputer.NextFixedEpochForkPostProcessor;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
@@ -172,9 +174,17 @@ public final class Forks {
 			.mapToObj(idx -> {
 				final var forkConfig = fixedEpochForks.get(idx);
 				if (idx < fixedEpochForks.size() - 1) {
-					return forkConfig.withForksPostProcessor(fixedEpochForks.get(idx + 1));
+					final var nextForkPostProcessor = new NextFixedEpochForkPostProcessor(
+						forkConfig.engineRules().getParser(),
+						fixedEpochForks.get(idx + 1)
+					);
+					return forkConfig.addPostProcessor(nextForkPostProcessor);
 				} else if (candidateFork.isPresent()) {
-					return forkConfig.withForksPostProcessor(candidateFork.get());
+					final var nextForkPostProcessor = new NextCandidateForkPostProcessor(
+						forkConfig.engineRules().getParser(),
+						candidateFork.get()
+					);
+					return forkConfig.addPostProcessor(nextForkPostProcessor);
 				} else {
 					return forkConfig;
 				}

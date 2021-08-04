@@ -23,22 +23,20 @@ import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.PostProcessorException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
-import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
-import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
 
 import java.util.List;
 
 /**
- * Checks whether the engine should switch to the next fork.
+ * Checks whether the engine should switch to the next candidate fork.
  * If so, adds nextForkHash to result metadata.
  */
-public final class ForksPostProcessor implements PostProcessor<LedgerAndBFTProof> {
+public final class NextCandidateForkPostProcessor implements PostProcessor<LedgerAndBFTProof> {
 	private final REParser reParser;
-	private final ForkConfig nextFork;
+	private final CandidateForkConfig nextFork;
 
-	public ForksPostProcessor(REParser reParser, ForkConfig nextFork) {
+	public NextCandidateForkPostProcessor(REParser reParser, CandidateForkConfig nextFork) {
 		this.reParser = reParser;
 		this.nextFork = nextFork;
 	}
@@ -49,22 +47,11 @@ public final class ForksPostProcessor implements PostProcessor<LedgerAndBFTProof
 		EngineStore<LedgerAndBFTProof> engineStore,
 		List<REProcessedTxn> txns
 	) throws PostProcessorException {
-		if (metadata.getProof().getNextValidatorSet().isPresent() && shouldSwitchToNextFork(metadata)) {
+		if (metadata.getProof().getNextValidatorSet().isPresent()
+				&& Forks.testCandidate(nextFork, reParser, metadata)) {
 			return metadata.withNextForkHash(nextFork.hash());
 		} else {
 			return metadata;
-		}
-	}
-
-	private boolean shouldSwitchToNextFork(LedgerAndBFTProof ledgerAndBFTProof) {
-		if (nextFork instanceof FixedEpochForkConfig) {
-			final var forkEpoch = ((FixedEpochForkConfig) nextFork).epoch();
-			final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
-			return forkEpoch == nextEpoch;
-		} else if (nextFork instanceof CandidateForkConfig) {
-			return Forks.testCandidate((CandidateForkConfig) nextFork, reParser, ledgerAndBFTProof);
-		} else {
-			throw new IllegalStateException();
 		}
 	}
 }

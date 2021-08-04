@@ -70,7 +70,6 @@ import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.statecomputer.ForksPostProcessor;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.util.OptionalInt;
@@ -142,14 +141,14 @@ public final class RERules {
 		return config;
 	}
 
-	public RERules withForksPostProcessor(REParser reParser, ForkConfig nextFork) {
+	public RERules addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
 		return new RERules(
 			version,
 			parser,
 			serialization,
 			constraintMachineConfig,
 			actionConstructors,
-			PostProcessor.combine(postProcessor, new ForksPostProcessor(reParser, nextFork)),
+			PostProcessor.combine(postProcessor, newPostProcessor),
 			config
 		);
 	}

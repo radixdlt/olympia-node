@@ -19,6 +19,8 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.engine.PostProcessor;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 public final class FixedEpochForkConfig implements ForkConfig {
 	private final String name;
@@ -58,11 +60,11 @@ public final class FixedEpochForkConfig implements ForkConfig {
 	}
 
 	@Override
-	public FixedEpochForkConfig withForksPostProcessor(ForkConfig nextFork) {
+	public FixedEpochForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
 		return new FixedEpochForkConfig(
 			name,
 			hash,
-			reRules.withForksPostProcessor(reRules.getParser(), nextFork),
+			reRules.addPostProcessor(newPostProcessor),
 			epoch
 		);
 	}

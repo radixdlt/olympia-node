@@ -19,6 +19,8 @@
 package com.radixdlt.statecomputer.forks;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.engine.PostProcessor;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 public final class CandidateForkConfig implements ForkConfig {
 	private final String name;
@@ -65,11 +67,11 @@ public final class CandidateForkConfig implements ForkConfig {
 	}
 
 	@Override
-	public CandidateForkConfig withForksPostProcessor(ForkConfig nextFork) {
+	public CandidateForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
 		return new CandidateForkConfig(
 			name,
 			hash,
-			reRules.withForksPostProcessor(reRules.getParser(), nextFork),
+			reRules.addPostProcessor(newPostProcessor),
 			requiredStake,
 			minEpoch
 		);
