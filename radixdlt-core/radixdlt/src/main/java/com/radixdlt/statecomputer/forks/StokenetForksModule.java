@@ -92,8 +92,8 @@ public final class StokenetForksModule extends AbstractModule {
 	@ProvidesIntoSet
 	ForkBuilder stokenet() {
 		return new ForkBuilder(
-			"stokenet-genesis",
-			HashUtils.sha256("stokenet-genesis".getBytes(StandardCharsets.UTF_8)),
+			"stokenet",
+			HashUtils.sha256("stokenet".getBytes(StandardCharsets.UTF_8)),
 			0L,
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(

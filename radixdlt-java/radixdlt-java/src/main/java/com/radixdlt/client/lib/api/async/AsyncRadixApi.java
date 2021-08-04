@@ -497,7 +497,7 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 			.map(baseUrl -> Result.ok(new AsyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
 			.orElseGet(BASE_URL_IS_MANDATORY::result)
 			.flatMap(asyncRadixApi -> asyncRadixApi.network().id().join()
-				.onSuccess(networkId -> asyncRadixApi.configureSerialization(networkId.getNetworkId()))
+				.onSuccess(networkId -> asyncRadixApi.configure(networkId.getNetworkId()))
 				.map(__ -> asyncRadixApi))
 			.fold(Promise::failure, Promise::ok);
 	}

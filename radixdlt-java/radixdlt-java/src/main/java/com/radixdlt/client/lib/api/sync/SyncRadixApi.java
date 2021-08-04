@@ -522,7 +522,7 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 			.map(baseUrl -> Result.ok(new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
 			.orElseGet(BASE_URL_IS_MANDATORY::result)
 			.flatMap(syncRadixApi -> syncRadixApi.network().id()
-				.onSuccess(networkId -> syncRadixApi.configureSerialization(networkId.getNetworkId()))
+				.onSuccess(networkId -> syncRadixApi.configure(networkId.getNetworkId()))
 				.map(__ -> syncRadixApi));
 	}
 

@@ -80,6 +80,7 @@ final class BitcoinJBIP32Path implements HDPath {
 
 	private static final String BIP32_HARDENED_MARKER_BITCOINJ = "H";
 
+	// TODO: HDPath has been removed from bitcoinj, consider refactoring
 	private final org.bitcoinj.crypto.HDPath path;
 
 	private BitcoinJBIP32Path(org.bitcoinj.crypto.HDPath path) {

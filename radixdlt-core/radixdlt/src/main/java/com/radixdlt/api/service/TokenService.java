@@ -95,8 +95,6 @@ public class TokenService {
 	}
 
 	private Result<TokenDefinitionRecord> withSupply(String rri, TokenDefinitionRecord definition) {
-		return definition.isMutable()
-			   ? clientApiStore.getTokenSupply(rri).map(definition::withSupply)
-			   : Result.ok(definition);
+		return clientApiStore.getTokenSupply(rri).map(definition::withSupply);
 	}
 }

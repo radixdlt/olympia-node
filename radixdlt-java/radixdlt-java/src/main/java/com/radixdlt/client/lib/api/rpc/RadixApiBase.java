@@ -186,6 +186,10 @@ public abstract class RadixApiBase {
 		return networkId;
 	}
 
+	protected void setNetworkId(int networkId) {
+		this.networkId = networkId;
+	}
+
 	protected HttpClient client() {
 		return client;
 	}
@@ -225,6 +229,11 @@ public abstract class RadixApiBase {
 			.connectTimeout(DEFAULT_TIMEOUT)
 			.sslContext(sc)
 			.build());
+	}
+
+	protected void configure(int networkId) {
+		configureSerialization(networkId);
+		setNetworkId(networkId);
 	}
 
 	protected void configureSerialization(int networkId) {
@@ -268,4 +277,5 @@ public abstract class RadixApiBase {
 	private static ObjectMapper createDefaultMapper() {
 		return new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
 	}
+
 }
