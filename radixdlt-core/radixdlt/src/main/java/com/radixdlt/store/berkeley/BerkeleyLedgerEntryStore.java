@@ -310,11 +310,15 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 					return BerkeleyLedgerEntryStore.this.loadAddr(dbTxn, addr);
 				}
 			});
+			txnLog.flush();
 			dbTxn.commit();
 			return result;
-		} catch (Exception e) {
+		} catch (RadixEngineException e) {
 			dbTxn.abort();
 			throw e;
+		} catch (IOException e) {
+			dbTxn.abort();
+			throw new RadixEngineException(e);
 		}
 	}
 
@@ -915,7 +919,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			var aid = txn.getTxn().getId();
 			// Write atom data as soon as possible
 			var storedSize = txnLog.write(txn.getTxn().getPayload(), expectedOffset);
-			txnLog.flush();
 			// Store atom indices
 			var pKey = toPKey(stateVersion);
 			var atomPosData = txnEntry(expectedOffset, storedSize, aid);
