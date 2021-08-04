@@ -915,6 +915,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			var aid = txn.getTxn().getId();
 			// Write atom data as soon as possible
 			var storedSize = txnLog.write(txn.getTxn().getPayload(), expectedOffset);
+			txnLog.flush();
 			// Store atom indices
 			var pKey = toPKey(stateVersion);
 			var atomPosData = txnEntry(expectedOffset, storedSize, aid);
