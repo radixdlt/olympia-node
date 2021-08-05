@@ -313,12 +313,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			txnLog.flush();
 			dbTxn.commit();
 			return result;
-		} catch (RadixEngineException e) {
-			dbTxn.abort();
-			throw e;
 		} catch (IOException e) {
 			dbTxn.abort();
-			throw new RadixEngineException(e);
+			throw new RuntimeException(e);
+		} catch (Exception e) {
+			dbTxn.abort();
+			throw e;
 		}
 	}
 
