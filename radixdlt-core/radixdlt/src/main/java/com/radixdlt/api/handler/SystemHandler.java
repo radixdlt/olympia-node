@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.api.service.NetworkingService;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -73,10 +74,12 @@ import static com.radixdlt.api.JsonRpcUtil.response;
 
 public class SystemHandler {
 	private final SystemConfigService systemConfigService;
+	private final NetworkingService networkingService;
 
 	@Inject
-	public SystemHandler(SystemConfigService systemConfigService) {
+	public SystemHandler(SystemConfigService systemConfigService, NetworkingService networkingService) {
 		this.systemConfigService = systemConfigService;
+		this.networkingService = networkingService;
 	}
 
 	public JSONObject apiGetConfiguration(JSONObject request) {
@@ -128,19 +131,19 @@ public class SystemHandler {
 	}
 
 	public JSONObject networkingGetConfiguration(JSONObject request) {
-		return response(request, systemConfigService.getNetworkingConfiguration());
+		return response(request, networkingService.getConfiguration());
 	}
 
 	public JSONObject networkingGetPeers(JSONObject request) {
-		return response(request, systemConfigService.getNetworkingPeers());
+		return response(request, networkingService.getPeers());
 	}
 
 	public JSONObject networkingGetAddressBook(JSONObject request) {
-		return response(request, systemConfigService.getNetworkingAddressBook());
+		return response(request, networkingService.getAddressBook());
 	}
 
 	public JSONObject networkingGetData(JSONObject request) {
-		return response(request, systemConfigService.getNetworkingData());
+		return response(request, networkingService.getData());
 	}
 
 	public JSONObject checkpointsGetCheckpoints(JSONObject request) {

@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,118 +62,70 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.module;
+package com.radixdlt.api.service;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.Controller;
-import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.controller.JsonRpcController;
-import com.radixdlt.api.handler.DeveloperHandler;
-import com.radixdlt.api.qualifier.DeveloperEndpoint;
-import com.radixdlt.api.qualifier.NodeServer;
-import com.radixdlt.api.server.JsonRpcServer;
+import com.google.common.annotations.VisibleForTesting;
+import com.radixdlt.counters.SystemCounters;
+import org.json.JSONObject;
 
-import java.util.Map;
+import java.util.List;
 
-public class DeveloperEndpointModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		bind(DeveloperHandler.class).in(Scopes.SINGLETON);
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+
+public final class CountersJsonFormatter {
+
+	private CountersJsonFormatter() {
 	}
 
-	@NodeServer
-	@ProvidesIntoMap
-	@StringMapKey("/developer")
-	public Controller devControllerController(@DeveloperEndpoint JsonRpcServer jsonRpcServer) {
-		return new JsonRpcController(jsonRpcServer);
+	@VisibleForTesting
+	static JSONObject countersToJson(SystemCounters counters, List<SystemCounters.CounterType> types, boolean skipTopLevel) {
+		var result = jsonObject();
+		types.forEach(counterType -> counterToJson(result, counters, counterType, skipTopLevel));
+		return result;
 	}
 
-	@DeveloperEndpoint
-	@Provides
-	public JsonRpcServer rpcServer(@DeveloperEndpoint Map<String, JsonRpcHandler> additionalHandlers) {
-		return new JsonRpcServer(additionalHandlers);
+	@VisibleForTesting
+	static void counterToJson(JSONObject obj, SystemCounters systemCounters, SystemCounters.CounterType type, boolean skipTopLevel) {
+		var ptr = obj;
+		var iterator = List.of(type.jsonPath().split("\\.")).listIterator();
+
+		if (skipTopLevel && iterator.hasNext()) {
+			iterator.next();
+		}
+
+		while (iterator.hasNext()) {
+			var element = toCamelCase(iterator.next());
+
+			if (ptr.has(element)) {
+				ptr = ptr.getJSONObject(element);
+			} else {
+				if (iterator.hasNext()) {
+					var newObj = jsonObject();
+					ptr.put(element, newObj);
+					ptr = newObj;
+				} else {
+					ptr.put(element, systemCounters.get(type));
+				}
+			}
+		}
 	}
 
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.query_resource_state")
-	public JsonRpcHandler developerQueryResourceState(DeveloperHandler developerHandler) {
-		return developerHandler::handleQueryResourceState;
-	}
+	@VisibleForTesting
+	static String toCamelCase(String input) {
+		var output = new StringBuilder();
 
+		boolean upCaseNext = false;
 
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.lookup_mapped_substate")
-	public JsonRpcHandler developerLookupMappedSubstate(DeveloperHandler developerHandler) {
-		return developerHandler::handleLookupMappedSubstate;
-	}
+		for (var chr : input.toCharArray()) {
+			if (chr == '_') {
+				upCaseNext = true;
+				continue;
+			}
 
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.scan_substates")
-	public JsonRpcHandler developerScanSubstates(DeveloperHandler developerHandler) {
-		return developerHandler::handleScanSubstates;
-	}
+			output.append(upCaseNext ? Character.toUpperCase(chr) : chr);
+			upCaseNext = false;
+		}
 
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.build_genesis")
-	public JsonRpcHandler developerBuildGenesis(DeveloperHandler developerHandler) {
-		return developerHandler::handleGenesisConstruction;
-	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.parse_transaction")
-	public JsonRpcHandler developerParseTransaction(DeveloperHandler developerHandler) {
-		return developerHandler::handleParseTxn;
-	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.parse_substate")
-	public JsonRpcHandler developerParseSubstate(DeveloperHandler developerHandler) {
-		return developerHandler::handleParseSubstate;
-	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.parse_address")
-	public JsonRpcHandler developerParseAddress(DeveloperHandler developerHandler) {
-		return developerHandler::handleParseAddress;
-	}
-
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.create_address")
-	public JsonRpcHandler developerCreateAddress(DeveloperHandler developerHandler) {
-		return developerHandler::handleCreateAddress;
-	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.parse_amount")
-	public JsonRpcHandler developerParseAmount(DeveloperHandler developerHandler) {
-		return developerHandler::handleParseAmount;
-	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.lookup_transaction")
-	public JsonRpcHandler developerLookupTransaction(DeveloperHandler developerHandler) {
-		return developerHandler::handleLookupTransaction;
-	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.clear_address_book")
-	public JsonRpcHandler networkingClearAddressBook(DeveloperHandler developerHandler) {
-		return developerHandler::clearAddressBook;
+		return output.toString();
 	}
 }

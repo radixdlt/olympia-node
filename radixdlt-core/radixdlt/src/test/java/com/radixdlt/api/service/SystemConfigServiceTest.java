@@ -75,7 +75,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import static com.radixdlt.api.service.SystemConfigService.toCamelCase;
+import static com.radixdlt.api.service.CountersJsonFormatter.toCamelCase;
 
 public class SystemConfigServiceTest {
 	@Test
@@ -117,7 +117,7 @@ public class SystemConfigServiceTest {
 
 	private static void assertConversionIsFull(String name, List<CounterType> counterTypes) {
 		var systemCounters = new SystemCountersImpl();
-		var result = SystemConfigService.countersToJson(systemCounters, counterTypes, false);
+		var result = CountersJsonFormatter.countersToJson(systemCounters, counterTypes, false);
 
 		counterTypes.forEach(counterType -> assertPathExists(result, counterType.jsonPath()));
 	}

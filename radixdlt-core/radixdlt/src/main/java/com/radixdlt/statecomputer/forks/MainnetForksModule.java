@@ -93,7 +93,7 @@ public final class MainnetForksModule extends AbstractModule {
 	ForkBuilder olympiaFirstEpoch() {
 		return new ForkBuilder(
 			"olympia-first-epoch",
-			HashUtils.sha256("hello world".getBytes(StandardCharsets.UTF_8)),
+			HashUtils.sha256("olympia-first-epoch".getBytes(StandardCharsets.UTF_8)),
 			0L,
 			RERulesVersion.OLYMPIA_V1,
 			new RERulesConfig(

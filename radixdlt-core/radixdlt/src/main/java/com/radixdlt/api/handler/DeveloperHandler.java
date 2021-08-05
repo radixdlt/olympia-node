@@ -77,6 +77,7 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.NodeAddressing;
@@ -84,6 +85,8 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ResourceAddressing;
 import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.discovery.DiscoverPeers;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DeserializeException;
@@ -120,6 +123,8 @@ public final class DeveloperHandler {
 	private final BerkeleyLedgerEntryStore engineStore;
 	private final Addressing addressing;
 	private final TxnIndex txnIndex;
+	private final AddressBook addressBook;
+	private final EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher;
 	private final Forks forks;
 
 	@Inject
@@ -129,6 +134,8 @@ public final class DeveloperHandler {
 		BerkeleyLedgerEntryStore engineStore,
 		Addressing addressing,
 		TxnIndex txnIndex,
+		AddressBook addressBook,
+		EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher,
 		Forks forks
 	) {
 		this.genesisBuilder = genesisBuilder;
@@ -136,6 +143,8 @@ public final class DeveloperHandler {
 		this.addressing = addressing;
 		this.engineStore = engineStore;
 		this.txnIndex = txnIndex;
+		this.addressBook = addressBook;
+		this.discoverPeersEventDispatcher = discoverPeersEventDispatcher;
 		this.forks = forks;
 	}
 
@@ -490,5 +499,11 @@ public final class DeveloperHandler {
 				}
 			)
 		);
+	}
+
+	public JSONObject clearAddressBook(JSONObject request) {
+		this.addressBook.clear();
+		this.discoverPeersEventDispatcher.dispatch(DiscoverPeers.create());
+		return jsonObject();
 	}
 }

@@ -248,6 +248,7 @@ public class MetricsService {
 	private final SystemCounters systemCounters;
 	private final InfoSupplier infoSupplier;
 	private final SystemConfigService systemConfigService;
+	private final NetworkingService networkingService;
 	private final AccountInfoService accountInfoService;
 	private final ValidatorInfoService validatorInfoService;
 	private final NetworkInfoService networkInfoService;
@@ -260,6 +261,7 @@ public class MetricsService {
 		SystemCounters systemCounters,
 		InfoSupplier infoSupplier,
 		SystemConfigService systemConfigService,
+		NetworkingService networkingService,
 		AccountInfoService accountInfoService,
 		ValidatorInfoService validatorInfoService,
 		NetworkInfoService networkInfoService,
@@ -270,6 +272,7 @@ public class MetricsService {
 		this.systemCounters = systemCounters;
 		this.infoSupplier = infoSupplier;
 		this.systemConfigService = systemConfigService;
+		this.networkingService = networkingService;
 		this.accountInfoService = accountInfoService;
 		this.validatorInfoService = validatorInfoService;
 		this.networkInfoService = networkInfoService;
@@ -293,7 +296,7 @@ public class MetricsService {
 		appendCounter(builder, "info_configuration_pacemakermaxexponent", pacemakerMaxExponent(snapshot));
 		appendCounter(builder, "info_epochmanager_currentview_view", currentView(snapshot));
 		appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpoch(snapshot));
-		appendCounter(builder, "total_peers", systemConfigService.getNetworkingPeersCount());
+		appendCounter(builder, "total_peers", networkingService.getPeersCount());
 		var totalValidators = inMemorySystemInfo.getEpochProof().getNextValidatorSet().orElseThrow().getValidators().size();
 		appendCounter(builder, "total_validators", totalValidators);
 
