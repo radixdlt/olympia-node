@@ -74,8 +74,8 @@ import com.radixdlt.ledger.LedgerUpdate;
 public class MockedCommittedReaderModule extends AbstractModule {
 	@Override
 	public void configure() {
+		bind(InMemoryCommittedReader.Store.class).toInstance(new InMemoryCommittedReader.Store());
 		bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
-		bind(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
 	}
 
 	@Singleton
