@@ -62,160 +62,26 @@
  * permissions under this License.
  */
 
-package com.radixdlt.atom;
+package com.radixdlt.api.data.action;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.actions.BurnToken;
-import com.radixdlt.atom.actions.CreateMutableToken;
-import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.FeeReservePut;
-import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.SplitToken;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UpdateValidatorMetadata;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.UpdateValidatorSystemMetadata;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.UInt256;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.stream.Stream;
 
-public class TxnConstructionRequest {
-	private boolean disableResourceAllocAndDestroy = false;
-	private final List<TxAction> actions = new ArrayList<>();
-	private byte[] msg = null;
-	private Set<SubstateId> toAvoid;
-	private REAddr feePayer;
+class UpdateValidatorSystemMetadataAction implements TransactionAction {
+	private final ECPublicKey validatorKey;
+	private final HashCode bytes;
 
-	private TxnConstructionRequest() {
-	}
-
-	public static TxnConstructionRequest create() {
-		return new TxnConstructionRequest();
-	}
-
-	public TxnConstructionRequest feePayer(REAddr feePayer) {
-		this.feePayer = feePayer;
-		return this;
-	}
-
-	public Optional<REAddr> getFeePayer() {
-		return Optional.ofNullable(feePayer);
-	}
-
-	public Optional<byte[]> getMsg() {
-		return Optional.ofNullable(msg);
-	}
-
-	public TxnConstructionRequest msg(byte[] msg) {
-		this.msg = msg;
-		return this;
-	}
-
-	public boolean isDisableResourceAllocAndDestroy() {
-		return disableResourceAllocAndDestroy;
-	}
-
-	public TxnConstructionRequest disableResourceAllocAndDestroy() {
-		this.disableResourceAllocAndDestroy = true;
-		return this;
-	}
-
-	public TxnConstructionRequest action(TxAction txAction) {
-		actions.add(txAction);
-		return this;
-	}
-
-	public TxnConstructionRequest actions(List<TxAction> actions) {
-		this.actions.addAll(actions);
-		return this;
-	}
-
-	public TxnConstructionRequest createMutableToken(MutableTokenDefinition def) {
-		actions.add(new CreateMutableToken(def));
-		return this;
-	}
-
-	public TxnConstructionRequest registerAsValidator(ECPublicKey validatorKey) {
-		var action = new RegisterValidator(validatorKey);
-		actions.add(action);
-		return this;
-	}
-
-	public TxnConstructionRequest updateValidatorMetadata(
-		ECPublicKey validatorKey,
-		String name,
-		String uri
-	) {
-		var action = new UpdateValidatorMetadata(validatorKey, name, uri);
-		actions.add(action);
-		return this;
-	}
-
-	public TxnConstructionRequest updateValidatorSystemMetadata(
-		ECPublicKey validatorKey,
-		HashCode bytes
-	) {
-		final var action = new UpdateValidatorSystemMetadata(validatorKey, bytes.asBytes());
-		actions.add(action);
-		return this;
-	}
-
-	public TxnConstructionRequest unregisterAsValidator(ECPublicKey validatorKey) {
-		var action = new UnregisterValidator(validatorKey);
-		actions.add(action);
-		return this;
-	}
-
-	public TxnConstructionRequest splitNative(REAddr rri, REAddr userAcct, UInt256 minSize) {
-		var action = new SplitToken(rri, userAcct, minSize);
-		actions.add(action);
-		return this;
-	}
-
-	public TxnConstructionRequest transfer(REAddr rri, REAddr from, REAddr to, UInt256 amount) {
-		var action = new TransferToken(rri, from, to, amount);
-		actions.add(action);
-		return this;
-	}
-
-	public TxnConstructionRequest mint(REAddr rri, REAddr to, UInt256 amount) {
-		var action = new MintToken(rri, to, amount);
-		actions.add(action);
-		return this;
-	}
-
-	public TxnConstructionRequest payFee(REAddr from, UInt256 amount) {
-		var action = new FeeReservePut(from, amount);
-		actions.add(action);
-		return this;
-	}
-
-	public TxnConstructionRequest burn(REAddr rri, REAddr from, UInt256 amount) {
-		var action = new BurnToken(rri, from, amount);
-		actions.add(action);
-		return this;
-	}
-
-	public TxnConstructionRequest avoidSubstates(Set<SubstateId> toAvoid) {
-		this.toAvoid = toAvoid;
-		return this;
-	}
-
-	public Set<SubstateId> getSubstatesToAvoid() {
-		return this.toAvoid == null ? Set.of() : this.toAvoid;
-	}
-
-	public List<TxAction> getActions() {
-		return actions;
+	UpdateValidatorSystemMetadataAction(ECPublicKey validatorKey, HashCode bytes) {
+		this.validatorKey = validatorKey;
+		this.bytes = bytes;
 	}
 
 	@Override
-	public String toString() {
-		return String.format("%s{actions=%s}", this.getClass().getSimpleName(), actions);
+	public Stream<TxAction> toAction() {
+		return Stream.of(new UpdateValidatorSystemMetadata(validatorKey, bytes.asBytes()));
 	}
 }

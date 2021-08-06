@@ -128,6 +128,7 @@ public class HealthControllerTest {
 		when(forksEpochStore.getEpochsForkHashes()).thenReturn(ImmutableMap.of());
 
 		controller.handleHealthRequest(exchange);
+
 		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\","
 			+ "\"executed_forks\":[],\"network_status\":\"BOOTING\","
 			+ "\"current_fork\":{\"name\":\"fork1\"}}");

@@ -70,6 +70,7 @@ import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.validators.construction.UpdateRakeConstructor;
 import com.radixdlt.application.validators.construction.UpdateValidatorMetadataConstructor;
+import com.radixdlt.application.validators.construction.UpdateValidatorSystemMetadataConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.TxnConstructionRequest;
@@ -80,6 +81,7 @@ import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
+import com.radixdlt.atom.actions.UpdateValidatorSystemMetadata;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
@@ -96,7 +98,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -129,6 +130,7 @@ public class RegisterValidatorTest {
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(UpdateValidatorMetadata.class, new UpdateValidatorMetadataConstructor())
+				.put(UpdateValidatorSystemMetadata.class, new UpdateValidatorSystemMetadataConstructor())
 				.put(UpdateValidatorFee.class, new UpdateRakeConstructor(2, 2000))
 				.build(),
 			cm,
@@ -171,7 +173,8 @@ public class RegisterValidatorTest {
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
 				.action(new RegisterValidator(key.getPublicKey()))
-				.action(new UpdateValidatorMetadata(key.getPublicKey(), "some_name", "http://test.com", Optional.of(HashUtils.random(32))))
+				.action(new UpdateValidatorMetadata(key.getPublicKey(), "some_name", "http://test.com"))
+				.action(new UpdateValidatorSystemMetadata(key.getPublicKey(), HashUtils.random(32).asBytes()))
 				.action(new UpdateValidatorFee(key.getPublicKey(), 2000))
 			)
 			.signAndBuild(key::sign);

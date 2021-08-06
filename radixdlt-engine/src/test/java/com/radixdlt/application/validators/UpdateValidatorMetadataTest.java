@@ -87,7 +87,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Optional;
 
 public class UpdateValidatorMetadataTest {
 	private RadixEngine<Void> engine;
@@ -129,7 +128,7 @@ public class UpdateValidatorMetadataTest {
 		var key = ECKeyPair.generateNew();
 
 		// Act and Assert
-		var registerTxn = this.engine.construct(new UpdateValidatorMetadata(key.getPublicKey(), "name", "http://test.com", Optional.empty()))
+		var registerTxn = this.engine.construct(new UpdateValidatorMetadata(key.getPublicKey(), "name", "http://test.com"))
 			.signAndBuild(key::sign);
 		this.engine.execute(List.of(registerTxn));
 	}

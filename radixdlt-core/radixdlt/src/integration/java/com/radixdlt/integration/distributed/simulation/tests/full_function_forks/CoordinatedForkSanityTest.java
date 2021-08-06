@@ -68,6 +68,7 @@ import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -210,7 +211,7 @@ public final class CoordinatedForkSanityTest {
 		final var maybeForkVoteHash =
 			forks.getCandidateFork().map(f -> ForkConfig.voteHash(node.getKey(), f));
 		final var txRequest = TxnConstructionRequest.create()
-			.updateValidatorMetadata(node.getKey(), node.getSimpleName(), "", maybeForkVoteHash);
+			.updateValidatorSystemMetadata(node.getKey(), maybeForkVoteHash.orElseGet(HashUtils::zero256));
 		network.getDispatcher(NodeApplicationRequest.class, node)
 			.dispatch(NodeApplicationRequest.create(txRequest));
 	}

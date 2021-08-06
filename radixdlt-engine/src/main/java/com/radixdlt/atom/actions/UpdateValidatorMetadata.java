@@ -64,29 +64,24 @@
 
 package com.radixdlt.atom.actions;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.atom.TxValidatorAction;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Objects;
-import java.util.Optional;
 
 public class UpdateValidatorMetadata implements TxValidatorAction {
 	private final ECPublicKey validatorKey;
 	private final String name;
 	private final String url;
-	private final Optional<HashCode> forkVoteHash;
 
 	public UpdateValidatorMetadata(
 		ECPublicKey validatorKey,
 		String name,
-		String url,
-		Optional<HashCode> forkVoteHash
+		String url
 	) {
 		this.validatorKey = Objects.requireNonNull(validatorKey);
 		this.name = name;
 		this.url = url;
-		this.forkVoteHash = Objects.requireNonNull(forkVoteHash);
 	}
 
 	@Override
@@ -100,9 +95,5 @@ public class UpdateValidatorMetadata implements TxValidatorAction {
 
 	public String url() {
 		return url;
-	}
-
-	public Optional<HashCode> forkVoteHash() {
-		return forkVoteHash;
 	}
 }

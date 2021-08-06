@@ -64,7 +64,6 @@
 
 package com.radixdlt.application.validators.construction;
 
-import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -81,11 +80,5 @@ public final class UpdateValidatorMetadataConstructor implements ActionConstruct
 			action.name() == null ? substateDown.getUrl() : action.url()
 		));
 		txBuilder.end();
-		var forkVoteHash = action.forkVoteHash();
-		if (forkVoteHash.isPresent()) {
-			txBuilder.down(ValidatorSystemMetadata.class, action.validatorKey());
-			txBuilder.up(new ValidatorSystemMetadata(action.validatorKey(), forkVoteHash.get().asBytes()));
-			txBuilder.end();
-		}
 	}
 }

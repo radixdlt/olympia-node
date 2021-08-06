@@ -104,8 +104,12 @@ public interface TransactionAction {
 		return new UnregisterValidatorAction(validatorKey);
 	}
 
-	static TransactionAction updateMetadata(ECPublicKey validatorKey, Optional<String> name, Optional<String> url, Optional<HashCode> forkVoteHash) {
-		return new UpdateValidatorMetadataAction(validatorKey, name.orElse(null), url.orElse(null), forkVoteHash);
+	static TransactionAction updateValidatorMetadata(ECPublicKey validatorKey, Optional<String> name, Optional<String> url) {
+		return new UpdateValidatorMetadataAction(validatorKey, name.orElse(null), url.orElse(null));
+	}
+
+	static TransactionAction updateValidatorSystemMetadata(ECPublicKey validatorKey, HashCode bytes) {
+		return new UpdateValidatorSystemMetadataAction(validatorKey, bytes);
 	}
 
 	static TransactionAction updateValidatorFee(ECPublicKey validatorKey, int percentage) {
