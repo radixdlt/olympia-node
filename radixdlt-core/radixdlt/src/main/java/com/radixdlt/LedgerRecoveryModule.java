@@ -85,7 +85,6 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LastStoredProof;
@@ -105,8 +104,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 		RadixEngine<LedgerAndBFTProof> radixEngine, // TODO: Remove
 		CommittedReader committedReader,
 		@Genesis VerifiedTxnsAndProof genesis,
-		EventDispatcher<REOutput> committedDispatcher, // FIXME: this is hack so client can get genesis
-		Forks forks
+		EventDispatcher<REOutput> committedDispatcher // FIXME: this is hack so client can get genesis
 	) {
 		return committedReader.getLastProof().orElseGet(() -> {
 			var txns = genesis.getTxns();
