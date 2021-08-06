@@ -72,8 +72,8 @@ import java.util.Optional;
 
 public interface AuthHandshakeResult {
 
-	static AuthHandshakeSuccess success(ECPublicKey remotePubKey, Secrets secrets, Optional<HashCode> latestKnownForkHash) {
-		return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets, latestKnownForkHash);
+	static AuthHandshakeSuccess success(ECPublicKey remotePubKey, Secrets secrets, Optional<HashCode> latestForkHash) {
+		return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets, latestForkHash);
 	}
 
 	static AuthHandshakeError error(String msg, Optional<NodeId> maybeNodeId) {
@@ -83,12 +83,12 @@ public interface AuthHandshakeResult {
 	final class AuthHandshakeSuccess implements AuthHandshakeResult {
 		private final NodeId remoteNodeId;
 		private final Secrets secrets;
-		private final Optional<HashCode> latestKnownForkHash;
+		private final Optional<HashCode> latestForkHash;
 
-		private AuthHandshakeSuccess(NodeId remoteNodeId, Secrets secrets, Optional<HashCode> latestKnownForkHash) {
+		private AuthHandshakeSuccess(NodeId remoteNodeId, Secrets secrets, Optional<HashCode> latestForkHash) {
 			this.remoteNodeId = remoteNodeId;
 			this.secrets = secrets;
-			this.latestKnownForkHash = latestKnownForkHash;
+			this.latestForkHash = latestForkHash;
 		}
 
 		public NodeId getRemoteNodeId() {
@@ -99,8 +99,8 @@ public interface AuthHandshakeResult {
 			return secrets;
 		}
 
-		public Optional<HashCode> getLatestKnownForkHash() {
-			return latestKnownForkHash;
+		public Optional<HashCode> getLatestForkHash() {
+			return latestForkHash;
 		}
 	}
 

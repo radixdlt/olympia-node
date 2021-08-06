@@ -75,7 +75,7 @@ import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.InitialForkConfig;
-import com.radixdlt.statecomputer.forks.LatestKnownForkConfig;
+import com.radixdlt.statecomputer.forks.LatestForkConfig;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
 import java.util.OptionalInt;
@@ -98,9 +98,9 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	@LatestKnownForkConfig
-	private ForkConfig latestKnownForkConfig(Forks forks) {
-		return forks.latestKnownFork();
+	@LatestForkConfig
+	private ForkConfig latestForkConfig(Forks forks) {
+		return forks.latestFork();
 	}
 
 	// TODO: Remove

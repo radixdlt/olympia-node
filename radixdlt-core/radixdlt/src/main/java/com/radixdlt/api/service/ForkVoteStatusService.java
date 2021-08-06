@@ -112,15 +112,17 @@ public class ForkVoteStatusService {
 	}
 
 	public ForkVoteStatus forkVoteStatus() {
+		final var currentFork = currentForkConfig;
+
 		if (forks.getCandidateFork().isEmpty()
-			|| forks.getCandidateFork().get().hash().equals(currentForkConfig.hash())) {
+			|| forks.getCandidateFork().get().hash().equals(currentFork.hash())) {
 			return ForkVoteStatus.NO_ACTION_NEEDED;
 		}
 
 		final var expectedCandidateForkVoteHash =
 			ForkConfig.voteHash(self.getKey(), forks.getCandidateFork().get());
 
-		final var substateDeserialization = currentForkConfig.engineRules().getParser().getSubstateDeserialization();
+		final var substateDeserialization = currentFork.engineRules().getParser().getSubstateDeserialization();
 
 		// TODO: this could be optimized
 		try (var validatorMetadataCursor = engineStore.openIndexedCursor(

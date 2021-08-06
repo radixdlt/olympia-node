@@ -78,7 +78,7 @@ import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.InitialForkConfig;
-import com.radixdlt.statecomputer.forks.LatestKnownForkConfig;
+import com.radixdlt.statecomputer.forks.LatestForkConfig;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.utils.PrivateKeys;
 import org.apache.commons.cli.CommandLine;
@@ -198,8 +198,8 @@ public final class GenerateUniverses {
 
 					@Provides
 					@Singleton
-					@LatestKnownForkConfig
-					private ForkConfig latestKnownForkConfig(Set<ForkBuilder> forkBuilders) {
+					@LatestForkConfig
+					private ForkConfig latestForkConfig(Set<ForkBuilder> forkBuilders) {
 						return forkBuilders.stream()
 							.max((a, b) -> (int) (a.epoch() - b.epoch()))
 							.get()

@@ -99,7 +99,7 @@ public final class AuthInitiateMessage {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final int networkId;
 
-	private final Optional<HashCode> latestKnownForkHash;
+	private final Optional<HashCode> latestForkHash;
 
 	@JsonCreator
 	public static AuthInitiateMessage deserialize(
@@ -107,20 +107,20 @@ public final class AuthInitiateMessage {
 		@JsonProperty("publicKey") HashCode publicKey,
 		@JsonProperty("nonce") HashCode nonce,
 		@JsonProperty("networkId") int networkId,
-		@JsonProperty("latestKnownForkHash") HashCode rawLatestKnownForkHash
+		@JsonProperty("latestForkHash") HashCode rawLatestForkHash
 	) {
-		final var latestKnownForkHash = rawLatestKnownForkHash == null
+		final var latestForkHash = rawLatestForkHash == null
 			? Optional.<HashCode>empty()
-			: Optional.of(rawLatestKnownForkHash);
-		return new AuthInitiateMessage(signature, publicKey, nonce, networkId, latestKnownForkHash);
+			: Optional.of(rawLatestForkHash);
+		return new AuthInitiateMessage(signature, publicKey, nonce, networkId, latestForkHash);
 	}
 
-	public AuthInitiateMessage(ECDSASignature signature, HashCode publicKey, HashCode nonce, int networkId, Optional<HashCode> latestKnownForkHash) {
+	public AuthInitiateMessage(ECDSASignature signature, HashCode publicKey, HashCode nonce, int networkId, Optional<HashCode> latestForkHash) {
 		this.signature = signature;
 		this.publicKey = publicKey;
 		this.nonce = nonce;
 		this.networkId = networkId;
-		this.latestKnownForkHash = latestKnownForkHash;
+		this.latestForkHash = latestForkHash;
 	}
 
 	public ECDSASignature getSignature() {
@@ -139,14 +139,14 @@ public final class AuthInitiateMessage {
 		return networkId;
 	}
 
-	public Optional<HashCode> getLatestKnownForkHash() {
-		return latestKnownForkHash;
+	public Optional<HashCode> getLatestForkHash() {
+		return latestForkHash;
 	}
 
-	@JsonProperty("latestKnownForkHash")
+	@JsonProperty("latestForkHash")
 	@DsonOutput(DsonOutput.Output.ALL)
-	public HashCode rawLatestKnownForkHash() {
-		return this.latestKnownForkHash.orElse(null);
+	public HashCode rawLatestForkHash() {
+		return this.latestForkHash.orElse(null);
 	}
 
 	@Override
@@ -162,11 +162,11 @@ public final class AuthInitiateMessage {
 			&& Objects.equals(publicKey, that.publicKey)
 			&& Objects.equals(nonce, that.nonce)
 			&& networkId == that.networkId
-			&& Objects.equals(latestKnownForkHash, that.latestKnownForkHash);
+			&& Objects.equals(latestForkHash, that.latestForkHash);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(signature, publicKey, nonce, networkId, latestKnownForkHash);
+		return Objects.hash(signature, publicKey, nonce, networkId, latestForkHash);
 	}
 }

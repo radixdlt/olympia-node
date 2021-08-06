@@ -89,7 +89,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * Manages forks and their transitions. There are two kinds of forks:
+ * A container for forks.
+ * There are two kinds of forks:
  * - a list forks executed at fixed epochs
  * - an optional candidate fork that is switched on based on a predicate (in most cases stake voting)
  *
@@ -175,7 +176,6 @@ public final class Forks {
 				final var forkConfig = fixedEpochForks.get(idx);
 				if (idx < fixedEpochForks.size() - 1) {
 					final var nextForkPostProcessor = new NextFixedEpochForkPostProcessor(
-						forkConfig.engineRules().getParser(),
 						fixedEpochForks.get(idx + 1)
 					);
 					return forkConfig.addPostProcessor(nextForkPostProcessor);
@@ -224,7 +224,7 @@ public final class Forks {
 		return this.fixedEpochForks.get(0);
 	}
 
-	public ForkConfig latestKnownFork() {
+	public ForkConfig latestFork() {
 		if (candidateFork.isPresent()) {
 			return candidateFork.get();
 		} else {

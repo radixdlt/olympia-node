@@ -123,12 +123,12 @@ public final class PeersForksHashesInfoService {
 		return peerEvent -> {
 			if (peerEvent instanceof PeerEvent.PeerConnected) {
 				final var peerChannel = ((PeerEvent.PeerConnected) peerEvent).getChannel();
-				peerChannel.getRemoteLatestKnownForkHash().ifPresent(peerLatestKnownForkHash -> {
+				peerChannel.getRemoteLatestForkHash().ifPresent(peerLatestForkHash -> {
 					final var peerPubKey = peerChannel.getRemoteNodeId().getPublicKey();
-					final var isPeerForkHashKnown = forks.getByHash(peerLatestKnownForkHash).isPresent();
+					final var isPeerForkHashKnown = forks.getByHash(peerLatestForkHash).isPresent();
 					final var peerIsInValidatorSet = currentValidatorSet.containsNode(BFTNode.create(peerPubKey));
 					if (peerIsInValidatorSet && !isPeerForkHashKnown) {
-						addUnknownReportedForkHash(peerPubKey, peerLatestKnownForkHash);
+						addUnknownReportedForkHash(peerPubKey, peerLatestForkHash);
 					}
 				});
 			}

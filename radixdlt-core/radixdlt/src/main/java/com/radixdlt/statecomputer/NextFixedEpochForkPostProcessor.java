@@ -67,7 +67,6 @@ package com.radixdlt.statecomputer;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.PostProcessorException;
-import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
 import com.radixdlt.store.EngineStore;
 
@@ -78,11 +77,9 @@ import java.util.List;
  * If so, adds nextForkHash to result metadata.
  */
 public final class NextFixedEpochForkPostProcessor implements PostProcessor<LedgerAndBFTProof> {
-	private final REParser reParser;
 	private final FixedEpochForkConfig nextFork;
 
-	public NextFixedEpochForkPostProcessor(REParser reParser, FixedEpochForkConfig nextFork) {
-		this.reParser = reParser;
+	public NextFixedEpochForkPostProcessor(FixedEpochForkConfig nextFork) {
 		this.nextFork = nextFork;
 	}
 
