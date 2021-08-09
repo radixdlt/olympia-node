@@ -89,6 +89,7 @@ public final class SeedNodesConfigParser {
 	private final Set<RadixNodeUri> resolvedSeedNodes = new HashSet<>();
 	private final Addressing addressing;
 	private final int networkId;
+
 	@Inject
 	public SeedNodesConfigParser(P2PConfig config, @NetworkId int networkId, Addressing addressing) {
 		this.networkId = networkId;

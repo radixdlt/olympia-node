@@ -62,51 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package com.radixdlt.network.p2p.addressbook;
 
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
-import org.junit.After;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.network.p2p.RadixNodeUri;
 import org.junit.Test;
 
-import java.net.URI;
 import java.util.Set;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertTrue;
 
-public final class FailedHandshakeTest extends DeterministicP2PNetworkTest {
-
-	@After
-	public void cleanup() {
-		testNetworkRunner.cleanup();
-	}
+public final class AddressBookTest {
 
 	@Test
-	public void test_failed_handshake() throws Exception {
-		setupTestRunner(2, defaultProperties());
+	public void address_book_should_filter_out_peers_with_different_network_hrp() {
+		final var self =
+			RadixNodeUri.fromPubKeyAndAddress(1, ECKeyPair.generateNew().getPublicKey(), "1.1.1.1", 30000);
+		final var invalidPeer =
+			RadixNodeUri.fromPubKeyAndAddress(2, ECKeyPair.generateNew().getPublicKey(), "2.2.2.2", 30000);
 
-		final var correctUri = uriOfNode(1);
+		final var persistence = new InMemoryAddressBookPersistence();
+		persistence.saveEntry(AddressBookEntry.create(invalidPeer)); // insert directly into storage
 
-		final var messedUpUri = RadixNodeUri.fromUri(new URI(
-			String.format(
-				"radix://%s@%s:%s",
-				NodeAddressing.of(correctUri.getNetworkNodeHrp(), ECKeyPair.generateNew().getPublicKey()),
-				correctUri.getHost(),
-				correctUri.getPort()
-			)
-		));
+		final var sut = new AddressBook(self, rmock(EventDispatcher.class), persistence);
+		assertTrue(sut.knownPeers().isEmpty()); // invalid peer should be filtered out at init
+		assertTrue(sut.findById(invalidPeer.getNodeId()).isEmpty());
 
-		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(messedUpUri));
-
-		final var channel1Future = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(messedUpUri.getNodeId());
-
-		processAll();
-
-		assertTrue(channel1Future.isCompletedExceptionally());
-
-		final var entry = testNetworkRunner.addressBook(0).findById(messedUpUri.getNodeId()).orElseThrow();
-		assertTrue(entry.getKnownAddresses().stream().findFirst().orElseThrow().blacklisted());
+		sut.addUncheckedPeers(Set.of(invalidPeer)); // add after initial cleanup
+		assertTrue(sut.knownPeers().isEmpty()); // should also be filtered out
 	}
 }

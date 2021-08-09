@@ -62,51 +62,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package com.radixdlt.network.p2p.addressbook;
 
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
-import org.junit.After;
-import org.junit.Test;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.network.p2p.NodeId;
 
-import java.net.URI;
-import java.util.Set;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import static org.junit.Assert.assertTrue;
+public final class InMemoryAddressBookPersistence implements AddressBookPersistence {
+	private final Map<NodeId, AddressBookEntry> entries = new ConcurrentHashMap<>();
 
-public final class FailedHandshakeTest extends DeterministicP2PNetworkTest {
-
-	@After
-	public void cleanup() {
-		testNetworkRunner.cleanup();
+	@Override
+	public void open() {
+		// no-op
 	}
 
-	@Test
-	public void test_failed_handshake() throws Exception {
-		setupTestRunner(2, defaultProperties());
+	@Override
+	public void reset() {
+		entries.clear();
+	}
 
-		final var correctUri = uriOfNode(1);
+	@Override
+	public void close() {
+		// no-op
+	}
 
-		final var messedUpUri = RadixNodeUri.fromUri(new URI(
-			String.format(
-				"radix://%s@%s:%s",
-				NodeAddressing.of(correctUri.getNetworkNodeHrp(), ECKeyPair.generateNew().getPublicKey()),
-				correctUri.getHost(),
-				correctUri.getPort()
-			)
-		));
+	@Override
+	public boolean saveEntry(AddressBookEntry entry) {
+		entries.put(entry.getNodeId(), entry);
+		return true;
+	}
 
-		testNetworkRunner.addressBook(0).addUncheckedPeers(Set.of(messedUpUri));
+	@Override
+	public boolean removeEntry(NodeId nodeId) {
+		entries.remove(nodeId);
+		return true;
+	}
 
-		final var channel1Future = testNetworkRunner.peerManager(0)
-			.findOrCreateChannel(messedUpUri.getNodeId());
-
-		processAll();
-
-		assertTrue(channel1Future.isCompletedExceptionally());
-
-		final var entry = testNetworkRunner.addressBook(0).findById(messedUpUri.getNodeId()).orElseThrow();
-		assertTrue(entry.getKnownAddresses().stream().findFirst().orElseThrow().blacklisted());
+	@Override
+	public ImmutableList<AddressBookEntry> getAllEntries() {
+		return ImmutableList.copyOf(entries.values());
 	}
 }
