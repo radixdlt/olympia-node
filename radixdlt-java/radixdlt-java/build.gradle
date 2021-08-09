@@ -74,7 +74,6 @@ dependencies {
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'nl.jqno.equalsverifier:equalsverifier'
-    testImplementation 'com.flipkart.zjsonpatch:zjsonpatch'
 }
 
 jar {

@@ -67,12 +67,10 @@ apply plugin: 'java-library'
 dependencies {
     api project(':radixdlt-java-common')
 
-    testImplementation 'org.objenesis:objenesis'
     testImplementation 'junit:junit'
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'nl.jqno.equalsverifier:equalsverifier'
     testImplementation 'org.assertj:assertj-core'
-    testImplementation 'com.flipkart.zjsonpatch:zjsonpatch'
 }
 
 jacocoTestReport {

@@ -191,35 +191,6 @@ public abstract class RadixApiBase {
 		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper().readValue(body, typeReference));
 	}
 
-	protected static Result<HttpClient> buildHttpClient() {
-		var props = System.getProperties();
-		props.setProperty("jdk.internal.httpclient.disableHostnameVerification", "true");
-
-		var trustAllCerts = new TrustManager[]{
-			new X509TrustManager() {
-				public X509Certificate[] getAcceptedIssuers() {
-					return null;
-				}
-
-				public void checkClientTrusted(X509Certificate[] certs, String authType) { }
-
-				public void checkServerTrusted(X509Certificate[] certs, String authType) { }
-			}
-		};
-
-		return Result.wrap(
-			RadixApiBase::decodeSslExceptions,
-			() -> {
-				var sc = SSLContext.getInstance("SSL");
-				sc.init(null, trustAllCerts, new SecureRandom());
-				return sc;
-			}
-		).map(sc -> HttpClient.newBuilder()
-			.connectTimeout(DEFAULT_TIMEOUT)
-			.sslContext(sc)
-			.build());
-	}
-
 	protected void configure(int networkId) {
 		configureSerialization(networkId);
 		setNetworkId(networkId);
@@ -245,18 +216,6 @@ public abstract class RadixApiBase {
 				   : secondaryPort;
 
 		return URI.create(baseUrl + ":" + port + endPoint.path());
-	}
-
-	private static Failure decodeSslExceptions(Throwable throwable) {
-		if (throwable instanceof NoSuchAlgorithmException) {
-			return SSL_KEY_ERROR.with(throwable.getMessage());
-		}
-
-		if (throwable instanceof KeyException) {
-			return SSL_ALGORITHM_ERROR.with(throwable.getMessage());
-		}
-
-		return SSL_GENERAL_ERROR.with(throwable.getMessage());
 	}
 
 	private ObjectMapper objectMapper() {

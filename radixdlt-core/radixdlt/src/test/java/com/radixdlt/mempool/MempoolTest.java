@@ -355,6 +355,7 @@ public class MempoolTest {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
 	@Ignore("Added hack which requires genesis to be sent as message. Reenable when fixed.")
 	public void mempool_should_relay_commands_respecting_delay_config_params() throws Exception {
 		// Arrange

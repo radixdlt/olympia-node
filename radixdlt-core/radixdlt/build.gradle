@@ -185,19 +185,15 @@ dependencies {
     implementation 'com.google.inject.extensions:guice-grapher'
 
     implementation 'io.undertow:undertow-core'
-    implementation 'io.undertow:undertow-servlet'
     implementation 'com.stijndewitt.undertow.cors:undertow-cors-filter'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
 
     testImplementation 'org.awaitility:awaitility'
-    testImplementation 'org.objenesis:objenesis'
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'junit:junit'
     testImplementation 'nl.jqno.equalsverifier:equalsverifier'
     testImplementation 'org.assertj:assertj-core'
-    testImplementation 'com.flipkart.zjsonpatch:zjsonpatch'
     testImplementation 'org.reflections:reflections'
-
     testImplementation 'org.openjdk.jmh:jmh-core'
     testImplementation 'org.openjdk.jmh:jmh-generator-annprocess'
 }

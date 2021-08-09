@@ -64,34 +64,34 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_radixengine;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Test;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
+import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
-import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import org.apache.commons.collections4.MapUtils;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Test;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 public class RandomVoteAndViewTimeoutDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
@@ -137,8 +137,16 @@ public class RandomVoteAndViewTimeoutDropperTest {
 					.mapToLong(s -> s.get(counterType)).summaryStatistics())
 			);
 
-		MapUtils.debugPrint(System.out, "statistics", statistics);
+		System.out.println("statistics:\n" + print(statistics.entrySet()));
 
 		assertThat(checkResults).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+	}
+
+	private String print(Set<Map.Entry<CounterType, LongSummaryStatistics>> entrySet) {
+		var builder = new StringBuilder();
+
+		entrySet.forEach(e -> builder.append(e.getKey()).append(" = ").append(e.getValue().toString()).append('\n'));
+
+		return builder.toString();
 	}
 }

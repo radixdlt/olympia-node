@@ -211,15 +211,15 @@ subprojects {
 
         dependencies {
             dependency "com.github.akarnokd:rxjava3-extensions:3.0.1"
-            dependency 'io.reactivex.rxjava3:rxjava:3.0.9'
+            dependency 'io.reactivex.rxjava3:rxjava:3.0.13'
             dependency 'com.sleepycat:je:18.3.12'
 
             // LMAX Disruptor for async logging
-            dependency 'com.lmax:disruptor:3.4.2'
+            dependency 'com.lmax:disruptor:3.4.4'
 
             dependency 'commons-cli:commons-cli:1.4'
             dependency 'org.xerial.snappy:snappy-java:1.1.8.4'
-            dependency 'io.netty:netty-all:4.1.51.Final'
+            dependency 'io.netty:netty-all:4.1.66.Final'
             dependency('com.google.inject:guice:5.0.1') {
                 exclude 'com.google.guava:guava'
             }
@@ -228,15 +228,14 @@ subprojects {
                 exclude 'com.google.guava:guava'
             }
 
-            dependency 'io.undertow:undertow-core:2.0.32.Final'
-            dependency 'io.undertow:undertow-servlet:2.0.32.Final'
+            dependency 'io.undertow:undertow-core:2.2.9.Final'
             dependency 'com.stijndewitt.undertow.cors:undertow-cors-filter:0.4.0'
 
-            dependency 'org.apache.logging.log4j:log4j-api:2.13.1'
-            dependency 'org.apache.logging.log4j:log4j-core:2.13.1'
-            dependency 'org.apache.logging.log4j:log4j-slf4j-impl:2.13.3'
+            dependency 'org.apache.logging.log4j:log4j-api:2.14.1'
+            dependency 'org.apache.logging.log4j:log4j-core:2.14.1'
+            dependency 'org.apache.logging.log4j:log4j-slf4j-impl:2.14.1'
 
-            dependency('org.reflections:reflections:0.9.11') {
+            dependency('org.reflections:reflections:0.9.12') {
                 exclude 'com.google.guava:guava'
             }
 
@@ -245,18 +244,18 @@ subprojects {
 
             dependency 'org.json:json:20180813'
 
-            dependency 'com.fasterxml.jackson.core:jackson-databind:2.12.3'
-            dependency 'com.fasterxml.jackson.core:jackson-core:2.12.3'
-            dependency 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.3'
-            dependency 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.3'
-            dependency('com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.12.3') {
+            dependency 'com.fasterxml.jackson.core:jackson-databind:2.12.4'
+            dependency 'com.fasterxml.jackson.core:jackson-core:2.12.4'
+            dependency 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.4'
+            dependency 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.4'
+            dependency('com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.12.4') {
                 exclude 'org.json:json'
             }
-            dependency('com.fasterxml.jackson.datatype:jackson-datatype-guava:2.12.3') {
+            dependency('com.fasterxml.jackson.datatype:jackson-datatype-guava:2.12.4') {
                 exclude 'com.google.guava:guava'
             }
 
-            dependency 'com.google.guava:guava:29.0-jre'
+            dependency 'com.google.guava:guava:30.1.1-jre'
 
             // need at least this commit (or later): https://github.com/bitcoinj/bitcoinj/commit/7629677103dbdd80f14c63b066ed27e1fad47014
             // in order to work with BouncyCastle 1.64 or later
@@ -265,19 +264,11 @@ subprojects {
                 exclude 'com.google.guava:guava'
             }
 
-            dependency 'org.awaitility:awaitility:4.0.3'
-            dependency 'org.objenesis:objenesis:3.1'
-            dependency 'org.mockito:mockito-core:3.5.10'
-            dependency 'nl.jqno.equalsverifier:equalsverifier:3.4.2'
-            dependency 'org.assertj:assertj-core:3.11.1'
-            dependency 'junit:junit:4.13.1'
-
-            dependency('com.flipkart.zjsonpatch:zjsonpatch:0.4.5') {
-                exclude 'com.fasterxml.jackson.core:jackson-core'
-                exclude 'com.fasterxml.jackson.core:jackson-databind'
-            }
-
-            dependency 'org.reflections:reflections:0.9.11'
+            dependency 'org.awaitility:awaitility:4.1.0'
+            dependency 'org.mockito:mockito-core:3.11.2'
+            dependency 'nl.jqno.equalsverifier:equalsverifier:3.6.1'
+            dependency 'org.assertj:assertj-core:3.20.2'
+            dependency 'junit:junit:4.13.2'
             dependency 'commons-cli:commons-cli:1.4'
             dependency 'org.openjdk.jmh:jmh-core:1.32'
             dependency 'org.openjdk.jmh:jmh-generator-annprocess:1.32'

@@ -95,12 +95,10 @@ dependencies {
             {
                 exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
             }
-    testImplementation 'org.objenesis:objenesis'
     testImplementation 'junit:junit'
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'nl.jqno.equalsverifier:equalsverifier'
     testImplementation 'org.assertj:assertj-core'
-    testImplementation 'com.flipkart.zjsonpatch:zjsonpatch'
     testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
 }
 
