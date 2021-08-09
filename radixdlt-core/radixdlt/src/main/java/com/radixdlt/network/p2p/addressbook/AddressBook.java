@@ -116,6 +116,7 @@ public final class AddressBook {
 		cleanup();
 	}
 
+	// filters out the addresses with a different network ID that have been persisted before the filtering was added
 	private void cleanup() {
 		final var cleanedUpEntries = new ImmutableMap.Builder<NodeId, AddressBookEntry>();
 		this.knownPeers.values().forEach(entry -> {
