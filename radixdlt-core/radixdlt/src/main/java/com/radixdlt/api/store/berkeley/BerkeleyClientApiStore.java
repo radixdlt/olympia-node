@@ -84,28 +84,31 @@ import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.ClientApiStoreException;
 import com.radixdlt.api.store.TokenDefinitionRecord;
 import com.radixdlt.api.store.TransactionParser;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.Bucket;
-import com.radixdlt.application.tokens.ResourceCreatedEvent;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.application.tokens.ResourceCreatedEvent;
+import com.radixdlt.constraintmachine.REEvent;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.REOutput;
-import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt384;
@@ -212,6 +215,8 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	private Database addressBalances;
 	private Database supplyBalances;
 
+	private ForkConfig currentForkConfig;
+
 	private final Cache<REAddr, String> rriCache = CacheBuilder.newBuilder()
 		.maximumSize(1024)
 		.build();
@@ -227,7 +232,8 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		TransactionParser transactionParser,
 		boolean isTest,
 		Addressing addressing,
-		Forks forks
+		Forks forks,
+		ForkConfig initialForkConfig
 	) {
 		this.dbEnv = dbEnv;
 		this.parser = parser;
@@ -239,6 +245,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		this.transactionParser = transactionParser;
 		this.addressing = addressing;
 		this.forks = forks;
+		this.currentForkConfig = initialForkConfig;
 
 		open(isTest);
 	}
@@ -254,10 +261,11 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		TransactionParser transactionParser,
 		Addressing addressing,
-		Forks forks
+		Forks forks,
+		@InitialForkConfig ForkConfig initialForkConfig
 	) {
 		this(dbEnv, parser, txnParser, store, serialization, systemCounters,
-			 scheduledFlushEventDispatcher, transactionParser, false, addressing, forks
+			 scheduledFlushEventDispatcher, transactionParser, false, addressing, forks, initialForkConfig
 		);
 	}
 
@@ -711,6 +719,12 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 			if (output != null) {
 				newBatch(output);
 			}
+
+			final var ledgerAndBftProof = (LedgerAndBFTProof) u.getStateComputerOutput().get(LedgerAndBFTProof.class);
+			if  (ledgerAndBftProof != null) {
+				ledgerAndBftProof.getNextForkHash()
+					.ifPresent(nextForkHash -> this.currentForkConfig = this.forks.getByHash(nextForkHash).orElseThrow());
+			}
 		};
 	}
 
@@ -838,7 +852,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 			}
 		}
 
-		var rules = forks.get(curEpoch);
+		var rules = this.currentForkConfig.engineRules();
 
 		var accounting = REResourceAccounting.compute(updates);
 		var bucketAccounting = accounting.bucketAccounting();

@@ -73,10 +73,11 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.networks.Network;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.utils.PrivateKeys;
 import org.junit.Before;
@@ -185,9 +186,9 @@ public class BerkeleyClientApiStoreTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 0),
-			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule(),
+			new MainnetForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
 			new MockedGenesisModule(
 				Set.of(VALIDATOR_KEY.getPublicKey()),
@@ -398,7 +399,7 @@ public class BerkeleyClientApiStoreTest {
 		);
 		var tx1 = engine.construct(new NextRound(1, true, 2, i -> self))
 			.buildWithoutSignature();
-		var transactions = engine.execute(List.of(tx1, tx), LedgerAndBFTProof.create(ledgerProof), PermissionLevel.SUPER_USER)
+		var transactions = engine.execute(List.of(tx1, tx), LedgerAndBFTProof.create(ledgerProof, null), PermissionLevel.SUPER_USER)
 			.getProcessedTxns()
 			.stream()
 			.map(REProcessedTxn::getTxn)
@@ -426,7 +427,8 @@ public class BerkeleyClientApiStoreTest {
 			new TransactionParser(addressing),
 			true,
 			addressing,
-			mock(Forks.class)
+			mock(Forks.class),
+			mock(ForkConfig.class)
 		);
 	}
 

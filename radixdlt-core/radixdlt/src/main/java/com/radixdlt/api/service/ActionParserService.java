@@ -64,6 +64,9 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -97,10 +100,12 @@ import static java.util.Optional.ofNullable;
 
 public final class ActionParserService {
 	private final Addressing addressing;
+	private final Forks forks;
 
 	@Inject
-	public ActionParserService(Addressing addressing) {
+	public ActionParserService(Addressing addressing, Forks forks) {
 		this.addressing = addressing;
+		this.forks = forks;
 	}
 
 	public Result<List<TransactionAction>> parse(JSONArray actions) {
@@ -183,7 +188,15 @@ public final class ActionParserService {
 					validator(element),
 					optionalName(element),
 					optionalUrl(element)
-				).map(TransactionAction::updateMetadata);
+				).map(TransactionAction::updateValidatorMetadata);
+
+			case UPDATE_VALIDATOR_SYSTEM_METADATA:
+				return allOf(validator(element)).map(validatorKey -> {
+					final var forkVoteHash = forks.getCandidateFork()
+						.map(f -> ForkConfig.voteHash(validatorKey, f))
+						.orElseGet(HashUtils::zero256);
+					return TransactionAction.updateValidatorSystemMetadata(validatorKey, forkVoteHash);
+				});
 
 			case UPDATE_VALIDATOR_FEE:
 				return allOf(
@@ -258,12 +271,12 @@ public final class ActionParserService {
 	private Result<Boolean> allowDelegation(JSONObject element) {
 		return param(element, "allowDelegation")
 			.flatMap(parameter ->
-						 Stream.of("true", "false")
-							 .filter(parameter::equals)
-							 .findAny()
-							 .map(Boolean::parseBoolean)
-							 .map(Result::ok)
-							 .orElseGet(() -> UNABLE_TO_DECODE.with(parameter).result())
+				 Stream.of("true", "false")
+					 .filter(parameter::equals)
+					 .findAny()
+					 .map(Boolean::parseBoolean)
+					 .map(Result::ok)
+					 .orElseGet(() -> UNABLE_TO_DECODE.with(parameter).result())
 			);
 	}
 

@@ -92,6 +92,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
@@ -124,7 +125,7 @@ public final class DeveloperHandler {
 	private final TxnIndex txnIndex;
 	private final AddressBook addressBook;
 	private final EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher;
-
+	private final Forks forks;
 
 	@Inject
 	public DeveloperHandler(
@@ -134,7 +135,8 @@ public final class DeveloperHandler {
 		Addressing addressing,
 		TxnIndex txnIndex,
 		AddressBook addressBook,
-		EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher
+		EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher,
+		Forks forks
 	) {
 		this.genesisBuilder = genesisBuilder;
 		this.radixEngine = radixEngine;
@@ -143,6 +145,7 @@ public final class DeveloperHandler {
 		this.txnIndex = txnIndex;
 		this.addressBook = addressBook;
 		this.discoverPeersEventDispatcher = discoverPeersEventDispatcher;
+		this.forks = forks;
 	}
 
 	private Result<VerifiedTxnsAndProof> build(String message, List<TransactionAction> steps) {
@@ -169,7 +172,7 @@ public final class DeveloperHandler {
 			params -> {
 				var message = params.getString("message");
 				var addressing = Addressing.ofNetworkId(params.getInt("networkId"));
-				var actionParserService = new ActionParserService(addressing);
+				var actionParserService = new ActionParserService(addressing, forks);
 
 				return allOf(safeArray(params, "actions"))
 					.flatMap(actions ->

@@ -65,11 +65,14 @@
 package com.radixdlt.api.service;
 
 import com.radixdlt.atom.actions.UpdateValidatorFee;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.RERules;
 import org.json.JSONArray;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.atom.actions.BurnToken;
@@ -87,15 +90,27 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 
+import java.util.Optional;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ActionParserServiceTest {
 	private final REAddr from = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 	private final REAddr to = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 	private final REAddr rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "ckee");
 	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
-	private final ActionParserService actionParserService = new ActionParserService(addressing);
+	private final Forks forks = mock(Forks.class);
+	private final ActionParserService actionParserService = new ActionParserService(addressing, forks);
+
+	@Before
+	public void setup() {
+		final var reRules = mock(RERules.class);
+		when(reRules.getMaxRounds()).thenReturn(View.of(10L));
+		when(forks.getCandidateFork()).thenReturn(Optional.empty());
+	}
 
 	@Test
 	public void transferActionIsParsedCorrectly() {

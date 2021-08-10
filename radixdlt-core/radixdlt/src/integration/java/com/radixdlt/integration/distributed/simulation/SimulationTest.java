@@ -104,6 +104,8 @@ import com.radixdlt.MockedCryptoModule;
 import com.radixdlt.MockedPersistenceStoreModule;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.integration.distributed.MockedPeersViewModule;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import com.radixdlt.statecomputer.forks.MockedForksEpochStoreModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.store.MockedRadixEngineStoreModule;
@@ -288,7 +290,7 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder numNodes(int numNodes, int numInitialValidators, Iterable<UInt256> initialStakes) {
+		public Builder numNodes(int numNodes, Iterable<UInt256> initialStakes) {
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
 				.collect(ImmutableList.toImmutableList());
@@ -326,12 +328,8 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder numNodes(int numNodes, int numInitialValidators) {
-			return numNodes(numNodes, numInitialValidators, ImmutableList.of(UInt256.ONE));
-		}
-
 		public Builder numNodes(int numNodes) {
-			return numNodes(numNodes, numNodes);
+			return numNodes(numNodes, ImmutableList.of(UInt256.ONE));
 		}
 
 		public Builder ledgerAndEpochs(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
@@ -444,6 +442,7 @@ public class SimulationTest {
 					};
 				}
 			});
+			this.modules.add(new MockedForksEpochStoreModule());
 
 			return this;
 		}
@@ -556,6 +555,7 @@ public class SimulationTest {
 						bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() { }).toInstance(new InMemoryEngineStore<>());
 						bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 						bind(CommittedReader.class).toInstance(CommittedReader.mocked());
+						bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
 					}
 
 					@Genesis
@@ -599,6 +599,7 @@ public class SimulationTest {
 			modules.add(new RxEnvironmentModule());
 			if (ledgerType.hasLedger && ledgerType.hasSync) {
 				modules.add(new MockedCommittedReaderModule());
+				modules.add(new MockedForksEpochStoreModule());
 			}
 
 			return new SimulationTest(

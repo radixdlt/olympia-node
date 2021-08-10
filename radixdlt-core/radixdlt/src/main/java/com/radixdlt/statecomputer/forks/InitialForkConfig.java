@@ -62,23 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.engine;
+package com.radixdlt.statecomputer.forks;
 
-import com.radixdlt.constraintmachine.REProcessedTxn;
+import javax.inject.Qualifier;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-import java.util.List;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * Verifies that batched atoms executed on Radix Engine follow some
- * specified rules.
- *
- * @param <M> class of metadata
- */
-public interface BatchVerifier<M> {
-	default void testMetadata(M metadata, List<REProcessedTxn> txns) throws MetadataException {
-	}
-
-	static <M> BatchVerifier<M> empty() {
-		return new BatchVerifier<>() {};
-	}
+@Qualifier
+@Target({ FIELD, PARAMETER, METHOD })
+@Retention(RUNTIME)
+public @interface InitialForkConfig {
 }

@@ -86,7 +86,7 @@ import java.util.stream.Collectors;
 import com.radixdlt.integration.distributed.simulation.application.NodeValidatorRandomRegistrator;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import org.apache.commons.collections4.MapUtils;
@@ -95,16 +95,16 @@ import org.junit.Test;
 
 public class RandomVoteAndViewTimeoutDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(8, 4)
+		.numNodes(8)
 		.networkModules(
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed(),
 			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
 		)
 		.addRadixEngineConfigModules(
-			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
-			new ForksModule()
+			new ForksModule(),
+			new MainnetForksModule()
 		)
 		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(

@@ -72,6 +72,7 @@ import com.radixdlt.properties.RuntimeProperties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -79,36 +80,53 @@ import java.util.stream.Collectors;
 public class ForkOverwritesFromPropertiesModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();
 
-	private static class ForkOverwrite implements UnaryOperator<Set<ForkConfig>> {
+	private static class ForkOverwrite implements UnaryOperator<Set<ForkBuilder>> {
 		@Inject
 		private RuntimeProperties properties;
 
 		@Override
-		public Set<ForkConfig> apply(Set<ForkConfig> forkConfigs) {
-			return forkConfigs.stream()
+		public Set<ForkBuilder> apply(Set<ForkBuilder> forkBuilders) {
+			return forkBuilders.stream()
 				.map(c -> {
-					var epochOverwrite = properties.get("overwrite_forks." + c.getName() + ".epoch", "");
-					if (!epochOverwrite.isBlank()) {
-						var epoch = Long.parseLong(epochOverwrite);
-						logger.warn("Overwriting epoch of " + c.getName() + " from " + c.getEpoch() + " to " + epoch);
-						c = c.overrideEpoch(epoch);
+					final var forkDisabledOverwrite = properties.get("overwrite_forks." + c.getName() + ".disabled", "");
+					if (!forkDisabledOverwrite.isBlank()) {
+						return Optional.<ForkBuilder>empty();
 					}
 
-					var viewOverwrite = properties.get("overwrite_forks." + c.getName() + ".views", "");
-					if (!viewOverwrite.isBlank()) {
-						var view = Long.parseLong(viewOverwrite);
-						logger.warn("Overwriting views of " + c.getName() + " from " + c.getConfig().getMaxRounds() + " to " + view);
-						c = c.overrideConfig(c.getConfig().overrideMaxRounds(view));
+					final var requiredStakeVotesOverwrite = properties.get("overwrite_forks." + c.getName() + ".required_stake_votes", "");
+					final var epochOverwrite = properties.get("overwrite_forks." + c.getName() + ".epoch", "");
+
+					if (!requiredStakeVotesOverwrite.isBlank()) {
+						final var requiredStakeVotes = Integer.parseInt(requiredStakeVotesOverwrite);
+						final var minEpochOverwrite = properties.get("overwrite_forks." + c.getName() + ".min_epoch", "");
+						final var minEpoch = minEpochOverwrite.isBlank()
+							? c.epoch()
+							: Long.parseLong(minEpochOverwrite);
+						c = c.withStakeVoting(minEpoch, requiredStakeVotes);
+					} else if (!epochOverwrite.isBlank()) {
+						final var epoch = Long.parseLong(epochOverwrite);
+						logger.warn("Overwriting epoch of " + c.getName() + " to " + epoch);
+						c = c.atFixedEpoch(epoch);
 					}
-					return c;
+
+					final var viewOverwrite = properties.get("overwrite_forks." + c.getName() + ".views", "");
+					if (!viewOverwrite.isBlank()) {
+						final var view = Long.parseLong(viewOverwrite);
+						logger.warn("Overwriting views of " + c.getName() + " from " + c.getEngineRulesConfig().getMaxRounds() + " to " + view);
+						c = c.withEngineRulesConfig(c.getEngineRulesConfig().overrideMaxRounds(view));
+					}
+
+					return Optional.of(c);
 				})
+				.filter(Optional::isPresent)
+				.map(Optional::get)
 				.collect(Collectors.toSet());
 		}
 	}
 
 	@Override
 	protected void configure() {
-		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkConfig>>>() { })
+		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() { })
 			.setBinding()
 			.to(ForkOverwrite.class);
 	}

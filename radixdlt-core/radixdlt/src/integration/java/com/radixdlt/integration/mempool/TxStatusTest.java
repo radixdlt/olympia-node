@@ -66,8 +66,8 @@ package com.radixdlt.integration.mempool;
 
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.PrivateKeys;
 import org.junit.Rule;
@@ -160,9 +160,9 @@ public class TxStatusTest {
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForksModule(),
+			new MainnetForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
 			new MockedGenesisModule(
 				Set.of(TEST_KEY.getPublicKey()),

@@ -196,4 +196,28 @@ public interface CloseableCursor<T> extends Iterator<T>, Closeable {
 			}
 		};
 	}
+
+	static <T> CloseableCursor<T> of(T... items) {
+		return new CloseableCursor<>() {
+			private int pos = 0;
+
+			@Override
+			public void close() {
+				// no-op
+			}
+
+			@Override
+			public boolean hasNext() {
+				return pos < items.length;
+			}
+
+			@Override
+			public T next() {
+				if (pos == items.length) {
+					throw new NoSuchElementException();
+				}
+				return items[pos++];
+			}
+		};
+	}
 }

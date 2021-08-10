@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.p2p.transport.handshake;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
@@ -84,8 +85,8 @@ public final class AuthHandshakerTest {
 	public void test_auth_handshake() throws Exception {
 		final var nodeKey1 = ECKeyPair.generateNew();
 		final var nodeKey2 = ECKeyPair.generateNew();
-		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01);
-		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01);
+		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, HashCode.fromInt(1));
+		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01, HashCode.fromInt(1));
 
 		final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
 		final var handshaker2ResultPair = handshaker2.handleInitialMessage(initMessage);
@@ -102,8 +103,8 @@ public final class AuthHandshakerTest {
 	public void test_auth_handshake_fail_on_network_id_mismatch() {
 		final var nodeKey1 = ECKeyPair.generateNew();
 		final var nodeKey2 = ECKeyPair.generateNew();
-		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01);
-		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x02);
+		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, HashCode.fromInt(1));
+		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x02, HashCode.fromInt(1));
 
 		final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
 		final var handshaker2ResultPair = handshaker2.handleInitialMessage(initMessage);

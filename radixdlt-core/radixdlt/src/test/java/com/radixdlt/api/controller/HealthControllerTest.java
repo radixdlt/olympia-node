@@ -64,6 +64,14 @@
 
 package com.radixdlt.api.controller;
 
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.api.service.ForkVoteStatusService;
+import static com.radixdlt.api.service.ForkVoteStatusService.ForkVoteStatus.NO_ACTION_NEEDED;
+import static com.radixdlt.api.service.ForkVoteStatusService.ForkVoteStatus.VOTE_REQUIRED;
+
+import com.radixdlt.api.service.PeersForksHashesInfoService;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import org.json.JSONObject;
 import org.junit.Test;
 
 import com.radixdlt.api.service.NetworkInfoService;
@@ -86,7 +94,11 @@ import static com.radixdlt.api.data.NodeStatus.UP;
 
 public class HealthControllerTest {
 	private final NetworkInfoService networkInfoService = mock(NetworkInfoService.class);
-	private final HealthController controller = new HealthController(networkInfoService);
+	private final ForkVoteStatusService forkVoteStatusService = mock(ForkVoteStatusService.class);
+	private final PeersForksHashesInfoService peersForksHashesInfoService = mock(PeersForksHashesInfoService.class);
+	private final ForksEpochStore forksEpochStore = mock(ForksEpochStore.class);
+	private final HealthController controller = new HealthController(
+		networkInfoService, forkVoteStatusService, peersForksHashesInfoService, forksEpochStore);
 
 	@Test
 	public void routesAreConfigured() {
@@ -105,17 +117,35 @@ public class HealthControllerTest {
 		when(exchange.getResponseHeaders()).thenReturn(new HeaderMap());
 		when(exchange.getResponseSender()).thenReturn(sender);
 		when(networkInfoService.nodeStatus()).thenReturn(BOOTING, SYNCING, UP, STALLED);
+		when(forkVoteStatusService.forkVoteStatus()).thenReturn(VOTE_REQUIRED, NO_ACTION_NEEDED, VOTE_REQUIRED, NO_ACTION_NEEDED);
+		when(forkVoteStatusService.currentFork()).thenReturn(
+			new JSONObject().put("name", "fork1"),
+			new JSONObject().put("name", "fork2"),
+			new JSONObject().put("name", "fork3"),
+			new JSONObject().put("name", "fork4")
+		);
+		when(peersForksHashesInfoService.getUnknownReportedForksHashes()).thenReturn(new JSONObject());
+		when(forksEpochStore.getEpochsForkHashes()).thenReturn(ImmutableMap.of());
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"status\":\"BOOTING\"}");
+
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\","
+			+ "\"executed_forks\":[],\"network_status\":\"BOOTING\","
+			+ "\"current_fork\":{\"name\":\"fork1\"}}");
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"status\":\"SYNCING\"}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\","
+			+ "\"executed_forks\":[],\"network_status\":\"SYNCING\","
+			+ "\"current_fork\":{\"name\":\"fork2\"}}");
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"status\":\"UP\"}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"VOTE_REQUIRED\","
+			+ "\"executed_forks\":[],\"network_status\":\"UP\","
+			+ "\"current_fork\":{\"name\":\"fork3\"}}");
 
 		controller.handleHealthRequest(exchange);
-		verify(sender).send("{\"status\":\"STALLED\"}");
+		verify(sender).send("{\"unknown_reported_forks_hashes\":{},\"fork_vote_status\":\"NO_ACTION_NEEDED\","
+			+ "\"executed_forks\":[],\"network_status\":\"STALLED\","
+			+ "\"current_fork\":{\"name\":\"fork4\"}}");
 	}
 }
