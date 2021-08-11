@@ -72,9 +72,9 @@ public enum ApiErrors implements Failure {
 	SYMBOL_DOES_NOT_MATCH(2504, "Symbol {0} does not match"),
 	INVALID_PAGE_SIZE(2505, "Size {0} must be greater than zero"),
 	MISSING_PARAMS(2506, "The 'params' field must be present"),
-	INVALID_NETWORK_ID(2507, "Network ID is not an integer"),
-	UNKNOWN_VALIDATOR(2508, "Validator {0} not found"),
-	INVALID_BLOB(2511, "Invalid blob {0}"),
+//	INVALID_NETWORK_ID(2507, "Network ID is not an integer"),
+//	UNKNOWN_VALIDATOR(2508, "Validator {0} not found"),
+//	INVALID_BLOB(2511, "Invalid blob {0}"),
 	INVALID_SIGNATURE_DER(2512, "Invalid signature DER {0}"),
 	INVALID_TX_ID(2514, "Invalid TX ID {0}"),
 	UNABLE_TO_PREPARE_TX(2515, "Unable to prepare transaction {0}"),
@@ -85,8 +85,8 @@ public enum ApiErrors implements Failure {
 	UNKNOWN_RRI(2520, "Unknown RRI {0}"),
 	UNKNOWN_ACCOUNT_ADDRESS(2521, "Unknown account address {0}"),
 	UNABLE_TO_RESTORE_CREATOR(2522, "Unable to restore creator from transaction {0}"),
-	UNKNOWN_TX_ID(2523, "Transaction with id {0} not found");
-
+	UNKNOWN_TX_ID(2523, "Transaction with id {0} not found"),
+;
 	private final int code;
 	private final String message;
 
