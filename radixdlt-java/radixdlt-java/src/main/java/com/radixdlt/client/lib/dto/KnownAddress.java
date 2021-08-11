@@ -67,31 +67,29 @@ package com.radixdlt.client.lib.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.time.Instant;
 import java.util.Objects;
-import java.util.Optional;
 
 public class KnownAddress {
 	private final String uri;
 	private final boolean blacklisted;
-	private final Optional<Instant> lastSuccessfulConnection;
+	private final String latestConnectionStatus;
 
-	private KnownAddress(String uri, boolean blacklisted, Optional<Instant> lastSuccessfulConnection) {
+	private KnownAddress(String uri, boolean blacklisted, String latestConnectionStatus) {
 		this.uri = uri;
 		this.blacklisted = blacklisted;
-		this.lastSuccessfulConnection = lastSuccessfulConnection;
+		this.latestConnectionStatus = latestConnectionStatus;
 	}
 
 	@JsonCreator
 	public static KnownAddress create(
 		@JsonProperty(value = "uri", required = true) String uri,
 		@JsonProperty(value = "blacklisted", required = true) Boolean blacklisted,
-		@JsonProperty("lastSuccessfulConnection") String lastSuccessfulConnection
+		@JsonProperty("latestConnectionStatus") String latestConnectionStatus
 	) {
 		return new KnownAddress(
 			uri,
 			blacklisted != null && blacklisted,
-			Optional.ofNullable(lastSuccessfulConnection).map(Instant::parse)
+			latestConnectionStatus
 		);
 	}
 
@@ -108,12 +106,12 @@ public class KnownAddress {
 		var that = (KnownAddress) o;
 		return blacklisted == that.blacklisted
 			&& uri.equals(that.uri)
-			&& lastSuccessfulConnection.equals(that.lastSuccessfulConnection);
+			&& latestConnectionStatus.equals(that.latestConnectionStatus);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(uri, blacklisted, lastSuccessfulConnection);
+		return Objects.hash(uri, blacklisted, latestConnectionStatus);
 	}
 
 	@Override
@@ -121,7 +119,7 @@ public class KnownAddress {
 		return "{"
 			+ "uri='" + uri + '\''
 			+ ", blacklisted=" + blacklisted
-			+ ", lastSuccessfulConnection=" + lastSuccessfulConnection.map(Instant::toString).orElse("(unknown)")
+			+ ", latestConnectionStatus=" + latestConnectionStatus
 			+ '}';
 	}
 
@@ -133,7 +131,7 @@ public class KnownAddress {
 		return blacklisted;
 	}
 
-	public Optional<Instant> getLastSuccessfulConnection() {
-		return lastSuccessfulConnection;
+	public String getLastSuccessfulConnection() {
+		return latestConnectionStatus;
 	}
 }
