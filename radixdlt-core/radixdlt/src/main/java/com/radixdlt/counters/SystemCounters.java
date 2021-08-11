@@ -169,7 +169,6 @@ public interface SystemCounters {
 
 		ELAPSED_BDB_LEDGER_COMMIT("elapsed.bdb.ledger.commit"),
 		ELAPSED_BDB_LEDGER_CREATE_TX("elapsed.bdb.ledger.create_tx"),
-		ELAPSED_BDB_LEDGER_CONTAINS("elapsed.bdb.ledger.contains"),
 		ELAPSED_BDB_LEDGER_CONTAINS_TX("elapsed.bdb.ledger.contains_tx"),
 		ELAPSED_BDB_LEDGER_ENTRIES("elapsed.bdb.ledger.entries"),
 		ELAPSED_BDB_LEDGER_GET("elapsed.bdb.ledger.get"),

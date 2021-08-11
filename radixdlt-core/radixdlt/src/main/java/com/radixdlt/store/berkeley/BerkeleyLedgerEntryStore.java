@@ -222,14 +222,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	}
 
 	@Override
-	public boolean contains(AID aid) {
-		return withTime(() -> {
-			var key = entry(aid.getBytes());
-			return SUCCESS == txnIdDatabase.get(null, key, null, DEFAULT);
-		}, CounterType.ELAPSED_BDB_LEDGER_CONTAINS, CounterType.COUNT_BDB_LEDGER_CONTAINS);
-	}
-
-	@Override
 	public Optional<Txn> get(AID aid) {
 		return withTime(() -> {
 			try {

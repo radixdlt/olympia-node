@@ -70,6 +70,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.api.data.TransactionStatus;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.store.ClientApiStore;
+import com.radixdlt.api.store.berkeley.BerkeleyTransactionsByIdStore;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -77,7 +78,6 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.REOutput;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Duration;
@@ -103,13 +103,13 @@ public class TransactionStatusService {
 
 	private final CompositeDisposable disposable = new CompositeDisposable();
 	private final ConcurrentMap<AID, TxStatusEntry> txCache = new ConcurrentHashMap<>();
-	private final BerkeleyLedgerEntryStore store;
+	private final BerkeleyTransactionsByIdStore store;
 	private final ScheduledEventDispatcher<ScheduledCacheCleanup> scheduledCacheCleanup;
 	private final ClientApiStore clientApiStore;
 
 	@Inject
 	public TransactionStatusService(
-		BerkeleyLedgerEntryStore store,
+		BerkeleyTransactionsByIdStore store,
 		ScheduledEventDispatcher<ScheduledCacheCleanup> scheduledCacheCleanup,
 		ClientApiStore clientApiStore
 	) {

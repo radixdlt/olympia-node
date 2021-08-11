@@ -64,6 +64,7 @@
 package com.radixdlt.api.service;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.radixdlt.api.store.berkeley.BerkeleyTransactionsByIdStore;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import org.junit.Assert;
@@ -81,7 +82,6 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.REOutput;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
@@ -104,7 +104,7 @@ public class TransactionStatusServiceTest {
 
 	@Test
 	public void transactionStatusIsStoredOnCommit() {
-		var store = mock(BerkeleyLedgerEntryStore.class);
+		var store = mock(BerkeleyTransactionsByIdStore.class);
 
 		var scheduledCacheCleanup = mockEventDispatcher();
 
@@ -124,7 +124,7 @@ public class TransactionStatusServiceTest {
 
 	@Test
 	public void transactionStatusIsStoredOnReject() {
-		var store = mock(BerkeleyLedgerEntryStore.class);
+		var store = mock(BerkeleyTransactionsByIdStore.class);
 
 		var scheduledCacheCleanup = mockEventDispatcher();
 
@@ -140,7 +140,7 @@ public class TransactionStatusServiceTest {
 
 	@Test
 	public void transactionStatusIsStoredOnSucceed() {
-		var store = mock(BerkeleyLedgerEntryStore.class);
+		var store = mock(BerkeleyTransactionsByIdStore.class);
 
 		var scheduledCacheCleanup = mockEventDispatcher();
 
@@ -158,7 +158,7 @@ public class TransactionStatusServiceTest {
 
 	@Test
 	public void onTimeoutAllEntriesAreRemovedExceptPendingOnes() {
-		var store = mock(BerkeleyLedgerEntryStore.class);
+		var store = mock(BerkeleyTransactionsByIdStore.class);
 
 		var scheduledCacheCleanup = mockEventDispatcher();
 
@@ -203,7 +203,7 @@ public class TransactionStatusServiceTest {
 	@Test
 	public void testGetTransaction() {
 		var entry = createTxHistoryEntry(AID.ZERO);
-		var store = mock(BerkeleyLedgerEntryStore.class);
+		var store = mock(BerkeleyTransactionsByIdStore.class);
 
 		var scheduledCacheCleanup = mockEventDispatcher();
 
