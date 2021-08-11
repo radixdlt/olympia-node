@@ -65,8 +65,8 @@
 package com.radixdlt.network.p2p.addressbook;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.NodeId;
@@ -97,7 +97,7 @@ public final class AddressBook {
 		return -aLastSuccess.compareTo(bLastSuccess);
 	};
 
-	private final NodeId selfNodeId;
+	private final RadixNodeUri self;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
 	private final AddressBookPersistence persistence;
 	private final Object lock = new Object();
@@ -105,21 +105,47 @@ public final class AddressBook {
 
 	@Inject
 	public AddressBook(
-		@Self BFTNode selfNodeId,
+		@Self RadixNodeUri self,
 		EventDispatcher<PeerEvent> peerEventDispatcher,
 		AddressBookPersistence persistence
 	) {
-		this.selfNodeId = NodeId.fromPublicKey(Objects.requireNonNull(selfNodeId).getKey());
+		this.self = Objects.requireNonNull(self);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 		this.persistence = Objects.requireNonNull(persistence);
 		persistence.getAllEntries().forEach(e -> knownPeers.put(e.getNodeId(), e));
+		cleanup();
+	}
+
+	// filters out the addresses with a different network ID that have been persisted before the filtering was added
+	private void cleanup() {
+		final var cleanedUpEntries = new ImmutableMap.Builder<NodeId, AddressBookEntry>();
+		this.knownPeers.values().forEach(entry -> {
+			final var filteredKnownAddresses = entry.getKnownAddresses().stream()
+				.filter(addr -> sameNetworkHrp(addr.getUri()))
+				.collect(ImmutableSet.toImmutableSet());
+
+			if (filteredKnownAddresses.isEmpty() && !entry.isBanned()) {
+				// there are no known addresses and no ban info for peer so just remove it
+				this.persistence.removeEntry(entry.getNodeId());
+			} else if (filteredKnownAddresses.size() != entry.getKnownAddresses().size()) {
+				// some addresses got filtered out, need to persist a new entry
+				final var updatedEntry = new AddressBookEntry(entry.getNodeId(), entry.bannedUntil(), filteredKnownAddresses);
+				cleanedUpEntries.put(entry.getNodeId(), updatedEntry);
+				persistEntry(updatedEntry);
+			} else {
+				cleanedUpEntries.put(entry.getNodeId(), entry);
+			}
+		});
+		this.knownPeers.clear();
+		this.knownPeers.putAll(cleanedUpEntries.build());
 	}
 
 	public void addUncheckedPeers(Set<RadixNodeUri> peers) {
 		synchronized (lock) {
 			peers
 				.stream()
-				.filter(not(uri -> uri.getNodeId().equals(this.selfNodeId)))
+				.filter(not(uri -> uri.getNodeId().equals(this.self.getNodeId())))
+				.filter(this::sameNetworkHrp)
 				.forEach(uri -> {
 					final var maybeExistingEntry = this.knownPeers.get(uri.getNodeId());
 					if (maybeExistingEntry == null) {
@@ -137,6 +163,10 @@ public final class AddressBook {
 					}
 				});
 		}
+	}
+
+	private boolean sameNetworkHrp(RadixNodeUri uri) {
+		return uri.getNetworkNodeHrp().equals(this.self.getNetworkNodeHrp());
 	}
 
 	public Optional<AddressBookEntry> findById(NodeId nodeId) {
