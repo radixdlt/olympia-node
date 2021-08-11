@@ -136,7 +136,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 			config,
 			addressing,
 			networkId,
-				latestForkHash,
+			latestForkHash,
 			counters,
 			serialization,
 			secureRandom,

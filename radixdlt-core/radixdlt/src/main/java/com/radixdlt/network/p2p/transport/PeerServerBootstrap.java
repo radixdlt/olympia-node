@@ -134,7 +134,7 @@ public final class PeerServerBootstrap {
 				config,
 				addressing,
 				networkId,
-					latestForkHash,
+				latestForkHash,
 				counters,
 				serialization,
 				secureRandom,

@@ -135,7 +135,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 				config,
 				addressing,
 				networkId,
-					latestForkHash,
+				latestForkHash,
 				counters,
 				serialization,
 				secureRandom,
