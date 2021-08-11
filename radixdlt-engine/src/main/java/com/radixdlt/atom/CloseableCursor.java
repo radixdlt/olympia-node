@@ -197,6 +197,7 @@ public interface CloseableCursor<T> extends Iterator<T>, Closeable {
 		};
 	}
 
+	@SafeVarargs
 	static <T> CloseableCursor<T> of(T... items) {
 		return new CloseableCursor<>() {
 			private int pos = 0;

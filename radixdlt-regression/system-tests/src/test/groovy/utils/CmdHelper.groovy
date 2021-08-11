@@ -216,24 +216,6 @@ class CmdHelper {
                 }
     }
 
-    /**
-     * TODO rethink this
-     */
-    static void checkNGenerateKey() {
-//        def file = new File(Generic.keyStorePath()) // TODO fix this
-//        def file = new File()
-//        if (!file.exists()) {
-//            List options = ["generate-key", "--password=test123"]
-//            def key, error
-//            (key, error) = runCommand("java -jar ${Generic.pathToCLIJar()} ${listToDelimitedString(options, ' ')}", null, true, false)
-//            file.withWriter('UTF-8') { writer ->
-//                key.each {
-//                    writer.write(it)
-//                }
-//            }
-//        }
-    }
-
     static String runContainer(String dockerCommand, String[] dockerEnv) {
         def results = isRunningOnWindows() ?
                 runCommand(dockerCommand.tokenize(), dockerEnv, true) :

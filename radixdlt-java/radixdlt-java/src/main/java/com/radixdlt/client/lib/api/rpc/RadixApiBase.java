@@ -83,38 +83,27 @@ import com.radixdlt.client.lib.dto.serializer.NodeAddressSerializer;
 import com.radixdlt.client.lib.dto.serializer.ValidatorAddressDeserializer;
 import com.radixdlt.client.lib.dto.serializer.ValidatorAddressSerializer;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
-import java.security.KeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
-import static com.radixdlt.identifiers.CommonErrors.SSL_ALGORITHM_ERROR;
-import static com.radixdlt.identifiers.CommonErrors.SSL_GENERAL_ERROR;
-import static com.radixdlt.identifiers.CommonErrors.SSL_KEY_ERROR;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DESERIALIZE;
 import static com.radixdlt.networks.Network.LOCALNET;
 
 public abstract class RadixApiBase {
+	public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+
 	private static final Logger log = LogManager.getLogger();
 
 	private static final String AUTH_HEADER = "Authorization";
 	private static final String CONTENT_TYPE = "Content-Type";
 	private static final String APPLICATION_JSON = "application/json";
-	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
 	private static final ObjectMapper DEFAULT_OBJECT_MAPPER = createDefaultMapper();
 
 	private final AtomicLong idCounter = new AtomicLong();
@@ -202,35 +191,6 @@ public abstract class RadixApiBase {
 		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper().readValue(body, typeReference));
 	}
 
-	protected static Result<HttpClient> buildHttpClient() {
-		var props = System.getProperties();
-		props.setProperty("jdk.internal.httpclient.disableHostnameVerification", "true");
-
-		var trustAllCerts = new TrustManager[]{
-			new X509TrustManager() {
-				public X509Certificate[] getAcceptedIssuers() {
-					return null;
-				}
-
-				public void checkClientTrusted(X509Certificate[] certs, String authType) { }
-
-				public void checkServerTrusted(X509Certificate[] certs, String authType) { }
-			}
-		};
-
-		return Result.wrap(
-			RadixApiBase::decodeSslExceptions,
-			() -> {
-				var sc = SSLContext.getInstance("SSL");
-				sc.init(null, trustAllCerts, new SecureRandom());
-				return sc;
-			}
-		).map(sc -> HttpClient.newBuilder()
-			.connectTimeout(DEFAULT_TIMEOUT)
-			.sslContext(sc)
-			.build());
-	}
-
 	protected void configure(int networkId) {
 		configureSerialization(networkId);
 		setNetworkId(networkId);
@@ -258,18 +218,6 @@ public abstract class RadixApiBase {
 		return URI.create(baseUrl + ":" + port + endPoint.path());
 	}
 
-	private static Failure decodeSslExceptions(Throwable throwable) {
-		if (throwable instanceof NoSuchAlgorithmException) {
-			return SSL_KEY_ERROR.with(throwable.getMessage());
-		}
-
-		if (throwable instanceof KeyException) {
-			return SSL_ALGORITHM_ERROR.with(throwable.getMessage());
-		}
-
-		return SSL_GENERAL_ERROR.with(throwable.getMessage());
-	}
-
 	private ObjectMapper objectMapper() {
 		return objectMapper == null ? DEFAULT_OBJECT_MAPPER : objectMapper;
 	}
@@ -277,5 +225,4 @@ public abstract class RadixApiBase {
 	private static ObjectMapper createDefaultMapper() {
 		return new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
 	}
-
 }

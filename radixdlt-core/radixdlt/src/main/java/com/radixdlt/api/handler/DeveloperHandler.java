@@ -245,6 +245,7 @@ public final class DeveloperHandler {
 					throw new IllegalArgumentException("Invalid resource index " + index.getSubstateClass());
 				}
 				var resultJson = jsonArray();
+				@SuppressWarnings("unchecked")
 				var map = radixEngine.reduceResourcesWithSubstateCount(
 					(SubstateIndex<ResourceInBucket>) index,
 					r -> keyMapper.apply(r.bucket()),
@@ -338,7 +339,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("txn"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var txnHex = params.getString("txId");
 					var txId = AID.from(txnHex);
@@ -358,7 +359,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("txn"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var parser = radixEngine.getParser();
 					var txnHex = params.getString("txn");
@@ -389,7 +390,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("data"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var data = Bytes.fromHexString(params.getString("data"));
 					var deserialization = radixEngine.getSubstateDeserialization();
@@ -420,7 +421,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("address", "type"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var type = params.getString("type");
 					if (type.equals("resource")) {
@@ -448,7 +449,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("amount"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var amountString = params.getString("amount");
 					var amount = UInt256.from(amountString);
@@ -477,7 +478,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("networkId", "type"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var networkId = params.getInt("networkId");
 					var network = Network.ofId(networkId).orElseThrow();
@@ -505,5 +506,9 @@ public final class DeveloperHandler {
 		this.addressBook.clear();
 		this.discoverPeersEventDispatcher.dispatch(DiscoverPeers.create());
 		return jsonObject();
+	}
+
+	private static Failure toFailure(Throwable e) {
+		return Failure.failure(e.getMessage());
 	}
 }

@@ -126,7 +126,7 @@ public class AsyncRadixApiNetworkTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.network().id().join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(networkIdDTO -> assertEquals(99, networkIdDTO.getNetworkId())));
+				.onSuccess(networkId -> assertEquals(99, networkId.getNetworkId())));
 	}
 
 	@Test
@@ -137,7 +137,7 @@ public class AsyncRadixApiNetworkTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.network().demand().join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(networkStatsDTO -> assertEquals(5L, networkStatsDTO.getTps())));
+				.onSuccess(networkStats -> assertEquals(5L, networkStats.getTps())));
 	}
 
 	@Test
@@ -148,7 +148,7 @@ public class AsyncRadixApiNetworkTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.network().throughput().join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(networkStatsDTO -> assertEquals(283L, networkStatsDTO.getTps())));
+				.onSuccess(networkStats -> assertEquals(283L, networkStats.getTps())));
 	}
 
 	@Test

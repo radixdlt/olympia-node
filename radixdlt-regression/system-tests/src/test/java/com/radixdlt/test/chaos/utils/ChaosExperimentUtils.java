@@ -68,12 +68,9 @@ import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-import com.radixdlt.client.lib.network.HttpClients;
+import com.radixdlt.client.lib.network.HttpClientUtils;
 import com.radixdlt.test.chaos.ansible.AnsibleImageWrapper;
-import okhttp3.MediaType;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -84,7 +81,13 @@ import org.junit.platform.commons.util.StringUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -92,111 +95,109 @@ import java.util.concurrent.TimeUnit;
 import static org.awaitility.Awaitility.await;
 
 public class ChaosExperimentUtils {
+	private ChaosExperimentUtils() {
+	}
 
-    private ChaosExperimentUtils() {
+	private static final Logger logger = LogManager.getLogger();
 
-    }
+	/**
+	 * Will pseudo-randomly generate a number between 0 and 1 and will return true if its greater than the given threshold
+	 */
+	public static boolean isSmallerThanFractionOfOne(double threshold) {
+		return BigDecimal.valueOf(Math.random()).compareTo(BigDecimal.valueOf(threshold)) == -1;
+	}
 
-    private static final Logger logger = LogManager.getLogger();
+	public static void annotateGrafana(String text) {
+		var token = System.getenv("GRAFANA_TOKEN");
+		var dashboardId = System.getenv("GRAFANA_DASHBOARD_ID");
 
-    /**
-     * Will pseudo-randomly generate a number between 0 and 1 and will return true if its greater than the given threshold
-     */
-    public static boolean isSmallerThanFractionOfOne(double threshold) {
-        return BigDecimal.valueOf(Math.random()).compareTo(BigDecimal.valueOf(threshold)) == -1;
-    }
+		if (StringUtils.isBlank(token) || StringUtils.isBlank(dashboardId)) {
+			logger.warn("No GRAFANA_TOKEN or GRAFANA_DASHBOARD_ID provided, will not annotate");
+			return;
+		}
 
-    public static void annotateGrafana(String text) {
-        String token = System.getenv("GRAFANA_TOKEN");
-        String dashboardId = System.getenv("GRAFANA_DASHBOARD_ID");
-        if (StringUtils.isBlank(token) || StringUtils.isBlank(dashboardId)) {
-            logger.warn("No GRAFANA_TOKEN or GRAFANA_DASHBOARD_ID provided, will not annotate");
-        } else {
-            String payload = createJsonString(text, dashboardId);
-            Request annotationRequest = new Request.Builder()
-                    .addHeader("Authorization", "Bearer " + token)
-                    .addHeader("Content-Type", "application/json")
-                    .method("POST", RequestBody.create(MediaType.get("application/json"), payload))
-                    .url("https://radixdlt.grafana.net/api/annotations")
-                    .build();
-            Response response = null;
-            try {
-                response = HttpClients.getSslAllTrustingClient().newCall(annotationRequest).execute();
-            } catch (IOException e) {
-                logger.error(e);
-            } finally {
-                response.close();
-            }
-        }
-    }
+		var client = HttpClientUtils.unsafeBuildHttpClient(Duration.of(30, ChronoUnit.SECONDS));
+		var request = HttpRequest.newBuilder()
+			.header("Authorization", "Bearer " + token)
+			.header("Content-Type", "application/json")
+			.POST(BodyPublishers.ofString(createJsonString(text, dashboardId)))
+			.uri(URI.create("https://radixdlt.grafana.net/api/annotations"))
+			.build();
 
-    public static void waitSeconds(int seconds) {
-        long start = System.currentTimeMillis();
-        await().atMost(50, TimeUnit.MINUTES)
-                .until(() -> (System.currentTimeMillis() > start + (1000L * seconds)));
-    }
+		try {
+			client.send(request, HttpResponse.BodyHandlers.discarding());
+		} catch (IOException | InterruptedException e) {
+			logger.error(e);
+		}
+	}
 
-    public static String getSshIdentityLocation() {
-        return Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
-    }
+	public static void waitSeconds(int seconds) {
+		long start = System.currentTimeMillis();
+		await().atMost(50, TimeUnit.MINUTES)
+			.until(() -> (System.currentTimeMillis() > start + (1000L * seconds)));
+	}
 
-    public static String runCommandOverSsh(String host, String command) {
-        JSch jsch = new JSch();
-        Session session = null;
-        ChannelExec channelExec = null;
-        try {
-            jsch.addIdentity(getSshIdentityLocation());
-            session = jsch.getSession("radix", host, 22);
-            Properties config = new java.util.Properties();
-            config.put("StrictHostKeyChecking", "no");
-            session.setConfig(config);
-            session.connect();
+	public static String getSshIdentityLocation() {
+		return Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
+	}
 
-            channelExec = (ChannelExec) session.openChannel("exec");
-            channelExec.setCommand(command);
-            channelExec.setErrStream(System.err);
-            InputStream in = channelExec.getInputStream();
-            channelExec.connect(5000);
+	public static String runCommandOverSsh(String host, String command) {
+		JSch jsch = new JSch();
+		Session session = null;
+		ChannelExec channelExec = null;
+		try {
+			jsch.addIdentity(getSshIdentityLocation());
+			session = jsch.getSession("radix", host, 22);
+			Properties config = new java.util.Properties();
+			config.put("StrictHostKeyChecking", "no");
+			session.setConfig(config);
+			session.connect();
 
-            String commandOutput = IOUtils.toString(in, StandardCharsets.UTF_8);
-            if (channelExec.getExitStatus() == 1) {
-                throw new RuntimeException("Command " + command + " failed, see log.");
-            }
-            return commandOutput;
-        } catch (JSchException | IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            session.disconnect();
-            if (channelExec != null) {
-                channelExec.disconnect();
-            }
-        }
-    }
+			channelExec = (ChannelExec) session.openChannel("exec");
+			channelExec.setCommand(command);
+			channelExec.setErrStream(System.err);
+			InputStream in = channelExec.getInputStream();
+			channelExec.connect(5000);
 
-    private static String createJsonString(String text, String dashboardId) {
-        JSONObject requestJson = new JSONObject();
-        requestJson.put("dashboardId", Integer.parseInt(dashboardId));
-        requestJson.put("text", text);
-        JSONArray tagArray = new JSONArray();
-        tagArray.put("chaos");
-        requestJson.put("tags", tagArray);
-        return requestJson.toString();
-    }
+			String commandOutput = IOUtils.toString(in, StandardCharsets.UTF_8);
+			if (channelExec.getExitStatus() == 1) {
+				throw new RuntimeException("Command " + command + " failed, see log.");
+			}
+			return commandOutput;
+		} catch (JSchException | IOException e) {
+			throw new RuntimeException(e);
+		} finally {
+			session.disconnect();
+			if (channelExec != null) {
+				channelExec.disconnect();
+			}
+		}
+	}
 
-    public static void startMempoolFillers(AnsibleImageWrapper ansible, int numberOfFillersToStart) {
-        ansible.getNodeAddressList().stream().limit(numberOfFillersToStart).forEach(host -> {
-            String response = toggleMempoolfillerInContainer(host, true);
-            logger.info("Response from {}: {}", host, response);
-        });
-    }
+	private static String createJsonString(String text, String dashboardId) {
+		JSONObject requestJson = new JSONObject();
+		requestJson.put("dashboardId", Integer.parseInt(dashboardId));
+		requestJson.put("text", text);
+		JSONArray tagArray = new JSONArray();
+		tagArray.put("chaos");
+		requestJson.put("tags", tagArray);
+		return requestJson.toString();
+	}
 
-    public static void stopAllMempoolFillers(AnsibleImageWrapper ansible) {
-        ansible.getNodeAddressList().forEach(host -> toggleMempoolfillerInContainer(host, false));
-    }
+	public static void startMempoolFillers(AnsibleImageWrapper ansible, int numberOfFillersToStart) {
+		ansible.getNodeAddressList().stream().limit(numberOfFillersToStart).forEach(host -> {
+			String response = toggleMempoolfillerInContainer(host, true);
+			logger.info("Response from {}: {}", host, response);
+		});
+	}
 
-    private static String toggleMempoolfillerInContainer(String host, boolean enable) {
-        String command = " docker exec radixdlt_core_1 bash -c 'curl -s -X PUT localhost:3333/chaos/mempool-filler -d "
-            + "'{\"enabled\":" + enable + "}''";
-        return runCommandOverSsh(host, command);
-    }
+	public static void stopAllMempoolFillers(AnsibleImageWrapper ansible) {
+		ansible.getNodeAddressList().forEach(host -> toggleMempoolfillerInContainer(host, false));
+	}
+
+	private static String toggleMempoolfillerInContainer(String host, boolean enable) {
+		String command = " docker exec radixdlt_core_1 bash -c 'curl -s -X PUT localhost:3333/chaos/mempool-filler -d "
+			+ "'{\"enabled\":" + enable + "}''";
+		return runCommandOverSsh(host, command);
+	}
 }

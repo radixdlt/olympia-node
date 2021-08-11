@@ -122,11 +122,7 @@ checkstyleAcceptanceTest {
 dependencies {
     implementation project(':radixdlt-java')
 
-    implementation 'io.reactivex.rxjava2:rxjava'
     implementation 'com.google.guava:guava'
-
-    implementation 'com.squareup.okhttp3:okhttp'
-    implementation 'com.squareup.okhttp3:logging-interceptor'
 
     implementation 'org.slf4j:slf4j-simple:2.0.0-alpha2'
 

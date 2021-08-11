@@ -84,6 +84,7 @@ public interface PostProcessor<M> {
 		return metadata;
 	}
 
+	@SafeVarargs
 	static <M> PostProcessor<M> combine(PostProcessor<M>... postProcessors) {
 		return new PostProcessor<>() {
 			@Override

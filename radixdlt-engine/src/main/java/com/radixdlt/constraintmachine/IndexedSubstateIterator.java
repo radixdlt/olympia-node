@@ -70,10 +70,10 @@ import com.radixdlt.utils.Bytes;
 import java.util.Iterator;
 
 public final class IndexedSubstateIterator<D extends Particle> {
-	private SubstateIndex index;
+	private SubstateIndex<?> index;
 	private final Iterator<D> iterator;
 
-	public IndexedSubstateIterator(SubstateIndex index, Iterator<D> iterator) {
+	public IndexedSubstateIterator(SubstateIndex<?> index, Iterator<D> iterator) {
 		this.index = index;
 		this.iterator = iterator;
 	}

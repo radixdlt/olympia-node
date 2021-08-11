@@ -64,8 +64,8 @@
 
 package com.radixdlt.crypto;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.utils.Bytes;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -76,19 +76,17 @@ import org.junit.Test;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ECDSASignatureTest {
-
 	@BeforeClass
 	public static void startRadixTest() {
 		TestSetupUtils.installBouncyCastleProvider();
 	}
-
 
 	@Test
 	public void equalsContract() {
@@ -178,9 +176,8 @@ public class ECDSASignatureTest {
 				"]";
 		//CHECKSTYLE:ON
 
-		var type = new TypeToken<ArrayList<Map<String, String>>>() { }.getType();
-
-		ArrayList<Map<String, String>> vectors = new Gson().fromJson(rfc6979TestVectors, type);
+		var vectors = new ObjectMapper()
+			.readValue(rfc6979TestVectors, new TypeReference<List<Map<String, String>>>() {});
 
 		assertEquals(6, vectors.size());
 

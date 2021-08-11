@@ -61,43 +61,11 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
-package com.radixdlt.cli;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
+package com.radixdlt.client.lib.network;
 
-import java.security.Security;
-
-@Command(name = "radix",
-		version = "1.0",
-		mixinStandardHelpOptions = true,
-		subcommands = {
-			KeyGenerator.class,
-			ValidatorKeyGenerator.class
-		})
-public class RadixCLI implements Runnable {
-	static {
-		Security.insertProviderAt(new BouncyCastleProvider(), 1);
-	}
-
-	@Override
-	public void run() {
-		System.out.println("Radix Command Line Utility ");
-	}
-
-	public static void main(String[] args) {
-		execute(args);
-		System.exit(0);
-	}
-
-	public static void execute(String[] args) {
-		CommandLine cmd = new CommandLine(new RadixCLI());
-		cmd.execute(args);
-
-		if (args.length == 0) {
-			cmd.printVersionHelp(System.out);
-			cmd.usage(System.out);
-		}
+public class HttpClientInstantiationException extends RuntimeException {
+	public HttpClientInstantiationException(String message) {
+		super(message);
 	}
 }

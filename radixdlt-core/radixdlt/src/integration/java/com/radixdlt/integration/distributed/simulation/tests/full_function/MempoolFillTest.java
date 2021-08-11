@@ -64,12 +64,11 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.NodeApplicationModule;
-import com.radixdlt.application.TokenUnitConversions;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
@@ -91,6 +90,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.TokenIssuance;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -121,8 +121,8 @@ public class MempoolFillTest {
 			}
 
 			@ProvidesIntoSet
-			private TokenIssuance mempoolFillerIssuance(@Genesis ImmutableList<ECPublicKey> validators) {
-				return TokenIssuance.of(validators.get(0), TokenUnitConversions.unitsToSubunits(10000000000L));
+			private TokenIssuance mempoolFillerIssuance(@Genesis List<ECPublicKey> validators) {
+				return TokenIssuance.of(validators.get(0), Amount.ofTokens(10000000000L).toSubunits());
 			}
 		})
 		.addTestModules(

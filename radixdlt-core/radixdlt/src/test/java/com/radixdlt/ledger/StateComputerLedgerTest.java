@@ -108,8 +108,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class StateComputerLedgerTest {
-
-	private Mempool mempool;
+	private Mempool<?> mempool;
 	private StateComputer stateComputer;
 	private StateComputerLedger sut;
 	private LedgerProof currentLedgerHeader;
@@ -253,6 +252,7 @@ public class StateComputerLedgerTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void should_do_nothing_if_committing_lower_state_version() {
 		// Arrange
 		genesisIsEndOfEpoch(false);
