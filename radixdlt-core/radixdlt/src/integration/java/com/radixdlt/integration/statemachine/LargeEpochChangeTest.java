@@ -129,6 +129,7 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 public class LargeEpochChangeTest {
+	private static final int NUM_ROUNDS = 10000;
 	private static final Logger logger = LogManager.getLogger();
 	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 	@Rule
@@ -165,7 +166,7 @@ public class LargeEpochChangeTest {
 					),
 					1024 * 1024,
 					OptionalInt.of(50), // 50 Txns per round
-					10_000,
+					NUM_ROUNDS,
 					1,
 					Amount.ofTokens(100), // Minimum stake
 					150, // Two weeks worth of epochs
@@ -198,16 +199,15 @@ public class LargeEpochChangeTest {
 
 		int privKeyStart = 2;
 		int numTxnsPerRound = 10;
-		int numRounds = 10000;
 
 		createInjector().injectMembers(this);
 		// Arrange
 		var request = TxnConstructionRequest.create();
-		IntStream.range(privKeyStart, numRounds * numTxnsPerRound + privKeyStart)
+		IntStream.range(privKeyStart, NUM_ROUNDS * numTxnsPerRound + privKeyStart)
 			.forEach(i -> {
 				var k = PrivateKeys.ofNumeric(i);
 				var addr = REAddr.ofPubKeyAccount(k.getPublicKey());
-				request.action(new MintToken(REAddr.ofNativeToken(), addr, Amount.ofTokens(numRounds * 1000).toSubunits()));
+				request.action(new MintToken(REAddr.ofNativeToken(), addr, Amount.ofTokens(NUM_ROUNDS * 1000).toSubunits()));
 				request.action(new RegisterValidator(k.getPublicKey()));
 			});
 		var mint = sut.construct(request).buildWithoutSignature();
@@ -223,12 +223,12 @@ public class LargeEpochChangeTest {
 
 		var feesPaid = UInt256.ZERO;
 
-		for (int round = 1; round <= 10000; round++) {
-			if (round % 1000 == 0) {
+		for (int round = 1; round <= NUM_ROUNDS; round++) {
+			if (round % NUM_ROUNDS == 0) {
 				logger.info(
 					"Staking txn {}/{} sys_construct_time: {}s user_construct_time: {}s sig_time: {}s execute_time: {}s",
 					round * (numTxnsPerRound + 1),
-					numRounds * (numTxnsPerRound + 1),
+					NUM_ROUNDS * (numTxnsPerRound + 1),
 					systemConstruction.elapsed(TimeUnit.SECONDS),
 					construction.elapsed(TimeUnit.SECONDS),
 					signatures.elapsed(TimeUnit.SECONDS),
@@ -302,7 +302,7 @@ public class LargeEpochChangeTest {
 		construction.reset();
 		construction.start();
 		logger.info("executing epoch...");
-		var acc = new AccumulatorState(2 + 1 + numRounds * (1 + numTxnsPerRound), HashUtils.zero256());
+		var acc = new AccumulatorState(2 + 1 + NUM_ROUNDS * (1 + numTxnsPerRound), HashUtils.zero256());
 		var header = LedgerHeader.create(1, View.of(10), acc, 0, nextValidatorSet.orElseThrow());
 		var proof2 = new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
 		var executionResult = this.sut.execute(List.of(txn), LedgerAndBFTProof.create(proof2), PermissionLevel.SUPER_USER);
