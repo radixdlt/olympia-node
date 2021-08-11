@@ -106,6 +106,7 @@ public final class ForkVoteStatusServiceTest {
 	public void should_correctly_tell_if_fork_vote_is_needed() {
 		final var self = BFTNode.random();
 		final var otherNode = BFTNode.random();
+		@SuppressWarnings("unchecked")
 		final var engineStore = (EngineStore<LedgerAndBFTProof>) rmock(EngineStore.class);
 		final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
 		final var candidateFork = new CandidateForkConfig("fork2", HashCode.fromInt(2), reRules, 5100, 2L);
@@ -123,6 +124,7 @@ public final class ForkVoteStatusServiceTest {
 	@Test
 	public void should_not_require_a_vote_for_non_candidate_fork() {
 		final var self = BFTNode.random();
+		@SuppressWarnings("unchecked")
 		final var engineStore = (EngineStore<LedgerAndBFTProof>) rmock(EngineStore.class);
 		final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
 		final var nextFork = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), reRules, 2L);
@@ -137,6 +139,7 @@ public final class ForkVoteStatusServiceTest {
 	@Test
 	public void should_keep_track_of_current_fork_config() {
 		final var self = BFTNode.random();
+		@SuppressWarnings("unchecked")
 		final var engineStore = (EngineStore<LedgerAndBFTProof>) rmock(EngineStore.class);
 		final var initialFork = new FixedEpochForkConfig("fork1", HashCode.fromInt(1), reRules, 0L);
 		final var nextFork = new FixedEpochForkConfig("fork2", HashCode.fromInt(2), reRules, 2L);

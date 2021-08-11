@@ -113,7 +113,7 @@ public final class PeersForksHashesInfoService {
 		this.currentValidatorSet = initialEpoch.getBFTConfiguration().getValidatorSet();
 		this.unknownReportedForksHashes = new LinkedHashMap<>() {
 			@Override
-			protected boolean removeEldestEntry(final Map.Entry eldest) {
+			protected boolean removeEldestEntry(final Map.Entry<HashCode, ImmutableSet<ECPublicKey>> eldest) {
 				return size() > MAX_FORK_HASHES_KEYS;
 			}
 		};
@@ -149,7 +149,6 @@ public final class PeersForksHashesInfoService {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
 		return ledgerUpdate -> {
 			final var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
