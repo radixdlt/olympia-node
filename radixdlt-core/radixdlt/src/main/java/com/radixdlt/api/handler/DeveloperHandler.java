@@ -77,7 +77,6 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.identifiers.REAddr;
@@ -89,7 +88,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
-import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
@@ -118,21 +116,18 @@ public final class DeveloperHandler {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final BerkeleyLedgerEntryStore engineStore;
 	private final Addressing addressing;
-	private final TxnIndex txnIndex;
 
 	@Inject
 	public DeveloperHandler(
 		GenesisBuilder genesisBuilder,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		BerkeleyLedgerEntryStore engineStore,
-		Addressing addressing,
-		TxnIndex txnIndex
+		Addressing addressing
 	) {
 		this.genesisBuilder = genesisBuilder;
 		this.radixEngine = radixEngine;
 		this.addressing = addressing;
 		this.engineStore = engineStore;
-		this.txnIndex = txnIndex;
 	}
 
 	private Result<VerifiedTxnsAndProof> build(String message, List<TransactionAction> steps) {
@@ -315,26 +310,6 @@ public final class DeveloperHandler {
 					.put("totalCount", countByGroup.values().stream().mapToLong(l -> l).sum())
 				);
 			}
-		);
-	}
-
-	public JSONObject handleLookupTransaction(JSONObject request) {
-		return withRequiredParameters(
-			request,
-			List.of("txn"),
-			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
-				() -> {
-					var txnHex = params.getString("txId");
-					var txId = AID.from(txnHex);
-					return txnIndex.get(txId)
-						.map(txn -> jsonObject()
-							.put("result", "found")
-							.put("payload", Bytes.toHexString(txn.getPayload()))
-						)
-						.orElse(jsonObject().put("result", "notfound"));
-				}
-			)
 		);
 	}
 

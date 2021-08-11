@@ -66,6 +66,7 @@
 
 package com.radixdlt.api.store.berkeley;
 
+import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -74,6 +75,8 @@ import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Transaction;
+
+import java.util.Optional;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.sleepycat.je.LockMode.DEFAULT;
@@ -96,6 +99,18 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 	public boolean contains(AID aid) {
 		var key = new DatabaseEntry(aid.getBytes());
 		return SUCCESS == txnIdDatabase.get(null, key, null, DEFAULT);
+	}
+
+
+	public Optional<Txn> get(AID aid) {
+		var key = new DatabaseEntry(aid.getBytes());
+		var value = new DatabaseEntry();
+
+		if (txnIdDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
+			return Optional.of(Txn.create(value.getData()));
+		}
+
+		return Optional.empty();
 	}
 
 	@Override

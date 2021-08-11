@@ -146,7 +146,6 @@ public class MetricsService {
 		CounterType.COUNT_BDB_LEDGER_CREATE_TX,
 		CounterType.COUNT_BDB_LEDGER_DELETES,
 		CounterType.COUNT_BDB_LEDGER_ENTRIES,
-		CounterType.COUNT_BDB_LEDGER_GET,
 		CounterType.COUNT_BDB_LEDGER_GET_FIRST,
 		CounterType.COUNT_BDB_LEDGER_GET_LAST,
 		CounterType.COUNT_BDB_LEDGER_GET_NEXT,

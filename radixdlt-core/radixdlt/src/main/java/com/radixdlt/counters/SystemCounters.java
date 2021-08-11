@@ -103,7 +103,6 @@ public interface SystemCounters {
 		COUNT_BDB_LEDGER_CONTAINS("count.bdb.ledger.contains"),
 		COUNT_BDB_LEDGER_CONTAINS_TX("count.bdb.ledger.contains_tx"),
 		COUNT_BDB_LEDGER_ENTRIES("count.bdb.ledger.entries"),
-		COUNT_BDB_LEDGER_GET("count.bdb.ledger.get"),
 		COUNT_BDB_LEDGER_GET_FIRST("count.bdb.ledger.get_first"),
 		COUNT_BDB_LEDGER_GET_LAST("count.bdb.ledger.get_last"),
 		COUNT_BDB_LEDGER_GET_NEXT("count.bdb.ledger.get_next"),
