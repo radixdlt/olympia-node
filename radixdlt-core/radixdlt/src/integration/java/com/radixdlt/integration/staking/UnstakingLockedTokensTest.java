@@ -65,6 +65,7 @@
 package com.radixdlt.integration.staking;
 
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.integration.SingleNodeDeterministicRunner;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -137,7 +138,7 @@ public class UnstakingLockedTokensTest {
 	@LocalSigner
 	private HashSigner hashSigner;
 	@Inject @Self private ECPublicKey self;
-	@Inject private DeterministicRunner runner;
+	@Inject private SingleNodeDeterministicRunner runner;
 	@Inject private EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
 	@Inject private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	@Inject private RadixEngine<LedgerAndBFTProof> radixEngine;

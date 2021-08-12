@@ -83,7 +83,7 @@ import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalStore {
-	private static final String TXN_ID_DB_NAME = "radix.transactions_by_id";
+	private static final String TXN_ID_DB_NAME = "radix.transactions_by_id_db";
 	private Database txnIdDatabase; // Txns by AID; Append-only
 
 	@Override

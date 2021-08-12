@@ -80,6 +80,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.integration.FailOnEvent;
+import com.radixdlt.integration.MultiNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
@@ -89,7 +90,6 @@ import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.ThreadContext;
 import org.assertj.core.util.Throwables;
 import org.junit.After;
 import org.junit.Before;
@@ -134,8 +134,6 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -157,7 +155,6 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.UInt256;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -167,8 +164,6 @@ import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-
-import io.reactivex.rxjava3.schedulers.Timed;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -212,12 +207,11 @@ public class StakingUnstakingValidatorsTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 	private DeterministicNetwork network;
-	private List<Supplier<Injector>> nodeCreators;
-	private final List<Injector> nodes = new ArrayList<>();
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final Module radixEngineConfiguration;
 	private final Module byzantineModule;
 	private final long maxRounds;
+	private MultiNodeDeterministicRunner deterministicRunner;
 
 	public StakingUnstakingValidatorsTest(Module forkModule, long maxRounds, Module byzantineModule) {
 		this.nodeKeys = PrivateKeys.numeric(1)
@@ -242,13 +236,15 @@ public class StakingUnstakingValidatorsTest {
 
 		List<BFTNode> allNodes = nodeKeys.stream()
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
-		this.nodeCreators = Streams.mapWithIndex(nodeKeys.stream(), (k, i) ->
+		var nodeCreators = Streams.mapWithIndex(nodeKeys.stream(), (k, i) ->
 			(Supplier<Injector>) () -> createRunner(i == 1, k, allNodes)).collect(Collectors.toList());
 
-		for (Supplier<Injector> nodeCreator : nodeCreators) {
-			this.nodes.add(nodeCreator.get());
-		}
-		this.nodes.forEach(i -> i.getInstance(DeterministicProcessor.class).start());
+		deterministicRunner = new MultiNodeDeterministicRunner(
+			nodeCreators,
+			this::stopDatabase,
+			network
+		);
+		deterministicRunner.start();
 	}
 
 	private void stopDatabase(Injector injector) {
@@ -259,7 +255,7 @@ public class StakingUnstakingValidatorsTest {
 
 	@After
 	public void teardown() {
-		this.nodes.forEach(this::stopDatabase);
+		deterministicRunner.tearDown();
 	}
 
 	private Injector createRunner(boolean byzantine, ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
@@ -309,45 +305,6 @@ public class StakingUnstakingValidatorsTest {
 				}
 			}
 		);
-	}
-
-	private void restartNode(int index) {
-		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
-		Injector injector = nodeCreators.get(index).get();
-		stopDatabase(this.nodes.set(index, injector));
-		withThreadCtx(injector, () -> injector.getInstance(DeterministicProcessor.class).start());
-	}
-
-	private void withThreadCtx(Injector injector, Runnable r) {
-		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-		try {
-			r.run();
-		} finally {
-			ThreadContext.remove("self");
-		}
-	}
-
-	private Timed<ControlledMessage> processNext() {
-		Timed<ControlledMessage> msg = this.network.nextMessage();
-		logger.debug("Processing message {}", msg);
-
-		int nodeIndex = msg.value().channelId().receiverIndex();
-		Injector injector = this.nodes.get(nodeIndex);
-		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-		try {
-			injector.getInstance(DeterministicProcessor.class)
-				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
-		} finally {
-			ThreadContext.remove("self");
-		}
-
-		return msg;
-	}
-
-	private void processForCount(int messageCount) {
-		for (int i = 0; i < messageCount; i++) {
-			processNext();
-		}
 	}
 
 	private static class NodeState {
@@ -453,7 +410,7 @@ public class StakingUnstakingValidatorsTest {
 	}
 
 	private NodeState reloadNodeState() {
-		return this.nodes.get(0).getInstance(NodeState.class);
+		return deterministicRunner.getNode(0).getInstance(NodeState.class);
 	}
 
 	/**
@@ -467,10 +424,10 @@ public class StakingUnstakingValidatorsTest {
 		var random = new Random(12345);
 
 		for (int i = 0; i < 5000; i++) {
-			processForCount(100);
+			deterministicRunner.processForCount(100);
 
 			var nodeIndex = random.nextInt(nodeKeys.size());
-			var dispatcher = this.nodes.get(nodeIndex).getInstance(
+			var dispatcher = this.deterministicRunner.getNode(nodeIndex).getInstance(
 				Key.get(new TypeLiteral<EventDispatcher<NodeApplicationRequest>>() {})
 			);
 
@@ -504,7 +461,7 @@ public class StakingUnstakingValidatorsTest {
 					action = new UnregisterValidator(privKey.getPublicKey());
 					break;
 				case 5:
-					restartNode(nodeIndex);
+					deterministicRunner.restartNode(nodeIndex);
 					continue;
 				case 6:
 					action = new UpdateValidatorFee(privKey.getPublicKey(), random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
@@ -521,10 +478,8 @@ public class StakingUnstakingValidatorsTest {
 
 			var request = TxnConstructionRequest.create().action(action);
 			dispatcher.dispatch(NodeApplicationRequest.create(request));
-			this.nodes.forEach(n -> {
-				n.getInstance(new Key<EventDispatcher<MempoolRelayTrigger>>() {}).dispatch(MempoolRelayTrigger.create());
-				n.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() {}).dispatch(SyncCheckTrigger.create());
-			});
+			deterministicRunner.dispatchToAll(new Key<EventDispatcher<MempoolRelayTrigger>>() {}, MempoolRelayTrigger.create());
+			deterministicRunner.dispatchToAll(new Key<EventDispatcher<SyncCheckTrigger>>() {}, SyncCheckTrigger.create());
 		}
 
 		var nodeState = reloadNodeState();

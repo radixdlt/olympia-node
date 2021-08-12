@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking;
+package com.radixdlt.integration;
 
 import com.google.inject.Inject;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -70,14 +70,14 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 
 import java.util.function.Predicate;
 
-public final class DeterministicRunner {
+public final class SingleNodeDeterministicRunner {
 	private static final int MAX_EVENTS_DEFAULT = 10000;
 
 	private final DeterministicProcessor processor;
 	private final DeterministicNetwork network;
 
 	@Inject
-	public DeterministicRunner(
+	public SingleNodeDeterministicRunner(
 		DeterministicProcessor processor,
 		DeterministicNetwork network
 	) {

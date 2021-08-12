@@ -101,7 +101,6 @@ public class TransactionStatusService {
 	private static final long DEFAULT_CLEANUP_INTERVAL = 1000L;                        //every second
 	private static final Duration DEFAULT_TX_LIFE_TIME = Duration.ofMinutes(10);    //at most 10 minutes
 
-	private final CompositeDisposable disposable = new CompositeDisposable();
 	private final ConcurrentMap<AID, TxStatusEntry> txCache = new ConcurrentHashMap<>();
 	private final BerkeleyTransactionsByIdStore store;
 	private final ScheduledEventDispatcher<ScheduledCacheCleanup> scheduledCacheCleanup;
@@ -143,10 +142,6 @@ public class TransactionStatusService {
 
 	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
 		return this::onSuccess;
-	}
-
-	public void close() {
-		disposable.dispose();
 	}
 
 	public Result<TxHistoryEntry> getTransaction(AID txId) {

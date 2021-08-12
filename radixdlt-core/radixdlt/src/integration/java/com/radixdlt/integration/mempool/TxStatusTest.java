@@ -97,7 +97,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.integration.staking.DeterministicRunner;
+import com.radixdlt.integration.SingleNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
@@ -141,7 +141,7 @@ public class TxStatusTest {
 	@Self
 	private ECPublicKey self;
 	@Inject
-	private DeterministicRunner runner;
+	private SingleNodeDeterministicRunner runner;
 	@Inject
 	private EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
 	@Inject
