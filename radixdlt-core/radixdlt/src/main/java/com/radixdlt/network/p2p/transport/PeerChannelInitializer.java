@@ -75,16 +75,20 @@ import com.radixdlt.network.p2p.transport.logging.LogSink;
 import com.radixdlt.network.p2p.transport.logging.LoggingHandler;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
 import io.netty.handler.codec.bytes.ByteArrayEncoder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Optional;
@@ -132,7 +136,61 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 
 	@Override
 	protected void initChannel(SocketChannel socketChannel) {
-		final var channel = new PeerChannel(
+		final var socketChannelConfig = socketChannel.config();
+		socketChannelConfig.setReceiveBufferSize(MAX_PACKET_LENGTH);
+		socketChannelConfig.setSendBufferSize(MAX_PACKET_LENGTH);
+		socketChannelConfig.setOption(ChannelOption.SO_RCVBUF, 1024 * 1024);
+		socketChannelConfig.setOption(ChannelOption.SO_BACKLOG, 1024);
+
+		if (log.isDebugEnabled()) {
+			socketChannel.pipeline().addLast(new LoggingHandler(LogSink.using(log), false));
+		}
+
+		uri.ifPresent(u -> log.trace("Initializing peer channel to {}", u));
+
+		if (uri.isEmpty() && this.config.useProxyProtocol()) {
+			createProxyProtocolPipeline(socketChannel);
+		} else {
+			createPeerChannelPipeline(socketChannel, socketChannel.remoteAddress());
+		}
+	}
+
+	private void createProxyProtocolPipeline(SocketChannel socketChannel) {
+		socketChannel.pipeline()
+			.addLast("decode_proxy_header_line", new LineBasedFrameDecoder(255, true, true))
+			.addLast("decode_proxy_header_bytes", new ByteArrayDecoder())
+			.addLast("handle_proxy_header", new SimpleChannelInboundHandler<byte[]>() {
+				@Override
+				protected void channelRead0(ChannelHandlerContext ctx, byte[] msg) {
+					/* The proxy protocol line is a single line that ends with a carriage return
+					   and line feed ("\r\n"), and has the following form:
+					   PROXY_STRING + single space + INET_PROTOCOL + single space + CLIENT_IP + single space
+					   + PROXY_IP + single space + CLIENT_PORT + single space + PROXY_PORT + "\r\n" */
+					final var msgStr = new String(msg);
+					final var components = msgStr.split(" ");
+					if (!components[0].equals("PROXY") || !components[1].equals("TCP")) {
+						log.warn("Received invalid PROXY protocol header line: {}", msgStr);
+						ctx.close();
+						return;
+					}
+					final var clientAddress = InetSocketAddress.createUnresolved(
+						components[2],
+						Integer.parseInt(components[4])
+					);
+
+					// remove the proxy pipeline
+					ctx.pipeline().remove("decode_proxy_header_line");
+					ctx.pipeline().remove("decode_proxy_header_bytes");
+					ctx.pipeline().remove("handle_proxy_header");
+
+					// and create a regular peer channel pipeline
+					createPeerChannelPipeline(socketChannel, clientAddress);
+				}
+			});
+	}
+
+	private void createPeerChannelPipeline(SocketChannel socketChannel, InetSocketAddress remoteAddress) {
+		final var peerChannel = new PeerChannel(
 			config,
 			addressing,
 			networkId,
@@ -143,29 +201,18 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 			ecKeyOps,
 			peerEventDispatcher,
 			uri,
-			socketChannel
+			socketChannel,
+			remoteAddress
 		);
-		final var config = socketChannel.config();
-		config.setReceiveBufferSize(MAX_PACKET_LENGTH);
-		config.setSendBufferSize(MAX_PACKET_LENGTH);
-		config.setOption(ChannelOption.SO_RCVBUF, 1024 * 1024);
-		config.setOption(ChannelOption.SO_BACKLOG, 1024);
-
-		if (log.isDebugEnabled()) {
-			socketChannel.pipeline().addLast(new LoggingHandler(LogSink.using(log), false));
-		}
-
-		uri.ifPresent(u -> log.trace("Initializing peer channel to {}", u));
-
-		final int packetLength = MAX_PACKET_LENGTH + FRAME_HEADER_LENGTH;
-		final int headerLength = FRAME_HEADER_LENGTH;
 
 		// TODO(luk): get rid of length-based framing and extend FrameCodec with
 		// capability of reading partial frames and multiple frames from a single data read
+		final int packetLength = MAX_PACKET_LENGTH + FRAME_HEADER_LENGTH;
+		final int headerLength = FRAME_HEADER_LENGTH;
 		socketChannel.pipeline()
 			.addLast("unpack", new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
 			.addLast("bytesDecoder", new ByteArrayDecoder())
-			.addLast("handler", channel)
+			.addLast("handler", peerChannel)
 			.addLast("pack", new LengthFieldPrepender(headerLength))
 			.addLast("bytesEncoder", new ByteArrayEncoder());
 	}

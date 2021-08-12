@@ -132,6 +132,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	private final AuthHandshaker authHandshaker;
 	private final boolean isInitiator;
 	private final Channel nettyChannel;
+	private final String host;
+	private final int port;
 
 	private ChannelState state = ChannelState.INACTIVE;
 	private NodeId remoteNodeId;
@@ -151,7 +153,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		ECKeyOps ecKeyOps,
 		EventDispatcher<PeerEvent> peerEventDispatcher,
 		Optional<RadixNodeUri> uri,
-		SocketChannel nettyChannel
+		SocketChannel nettyChannel,
+		InetSocketAddress remoteAddress
 	) {
 		this.counters = Objects.requireNonNull(counters);
 		this.addressing = Objects.requireNonNull(addressing);
@@ -160,6 +163,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
 		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId, latestForkHash);
 		this.nettyChannel = Objects.requireNonNull(nettyChannel);
+		this.host = remoteAddress != null ? remoteAddress.getHostString() : "?";
+		this.port = remoteAddress != null ? remoteAddress.getPort() : 0;
 
 		this.isInitiator = uri.isPresent();
 
@@ -317,8 +322,12 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		return this.uri;
 	}
 
-	public InetSocketAddress getRemoteSocketAddress() {
-		return (InetSocketAddress) this.nettyChannel.remoteAddress();
+	public String getHost() {
+		return this.host;
+	}
+
+	public int getPort() {
+		return this.port;
 	}
 
 	public Optional<HashCode> getRemoteLatestForkHash() {
@@ -327,17 +336,11 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	@Override
 	public String toString() {
-		final var hostString = nettyChannel.remoteAddress() instanceof InetSocketAddress
-			? ((InetSocketAddress) nettyChannel.remoteAddress()).getHostString()
-			: "?";
-		final var port = nettyChannel.remoteAddress() instanceof InetSocketAddress
-			? ((InetSocketAddress) nettyChannel.remoteAddress()).getPort()
-			: 0;
 		return String.format(
 			"{%s %s@%s:%s | %s}",
 			isInitiator ? "<-" : "->",
 			remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "?",
-			hostString,
+			host,
 			port,
 			state
 		);

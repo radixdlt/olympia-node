@@ -99,6 +99,11 @@ public interface P2PConfig {
 	int listenPort();
 
 	/**
+	 * Specifies whether the server should process the PROXY header for inbound connections.
+	 */
+	boolean useProxyProtocol();
+
+	/**
 	 * Get node's port number to broadcast to other peers.
 	 */
 	int broadcastPort();
@@ -175,6 +180,11 @@ public interface P2PConfig {
 			@Override
 			public int listenPort() {
 				return properties.get("network.p2p.listen_port", 30000);
+			}
+
+			@Override
+			public boolean useProxyProtocol() {
+				return properties.get("network.p2p.use_proxy_protocol", false);
 			}
 
 			@Override
