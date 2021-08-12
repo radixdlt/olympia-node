@@ -65,18 +65,21 @@
 package com.radixdlt.utils.functional;
 
 public final class ErrorCode {
+	public static final int GENERAL = 0;	// Error code for unspecified/unknown/not yet defined errors
+
 	private ErrorCode() { }
 
-	public int of(Group group, Category category, int identifier) {
+	public static int of(Group group, Category category, int identifier) {
 		return group.code() + category.code() + identifier;
 	}
 
 	public enum Group {
-		NETWORK(1000),		// Network related errors
-		INPUT(2000),		// Input parameter parsing/validation errors
-		OUTPUT(3000),		// Request processing errors (for example, missing Tx)
-		INTERNAL(4000),	// Internal processing errors (potential data corruption, deserialization errors, etc.)
-		;
+		NETWORK(10000),		// Network related errors
+		INPUT(20000),		// Input parameter parsing/validation errors
+		OUTPUT(30000),		// Request processing errors (for example, missing Tx)
+		INTERNAL(40000),	// Internal processing errors (potential data corruption, deserialization errors, etc.)
+		ENGINE(50000),		// Radix Engine related errors
+		OTHER(90000);		// Errors which don't fall into other groups
 
 		private final int code;
 
@@ -90,12 +93,13 @@ public final class ErrorCode {
 	}
 
 	public enum Category {
-		GENERAL(100),			// Generic error for cases, when there is no specific subcategory
-		PARAMETER(200), 		// Input parameter errors
-		ACTION(300),			// Action processing errors
-		INTERNAL_STATE(400), 	// Errors caused by incompatibility with current internal state: message expired, operation interrupted, peer banned, etc.
-		EXTERNAL_STATE(500), 	// Errors caused by incompatibility with current external state: not enough funds, not enough funds for fee
-		;
+		DATA(1000),			// Data error - conversion/serialization/deserialization/formatting/etc.
+		PARAMETER(2000), 		// Input parameter errors
+		INTERNAL_STATE(3000), 	// Incompatibility with current internal state: message expired, operation interrupted, peer banned, etc.
+		EXTERNAL_STATE(4000), 	// Incompatibility with current external state: not enough funds, not enough funds for fee
+		PROCESSING(5000),		// Processing errors
+		OTHER(9000);			// Errors which don't fall into other categories
+
 		private final int code;
 
 		Category(int code) {

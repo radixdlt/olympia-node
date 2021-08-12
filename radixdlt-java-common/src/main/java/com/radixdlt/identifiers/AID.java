@@ -76,8 +76,7 @@ import java.util.Comparator;
 import java.util.Objects;
 
 import static com.radixdlt.identifiers.CommonErrors.AID_IS_NULL;
-import static com.radixdlt.identifiers.CommonErrors.INVALID_LENGTH;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
+import static com.radixdlt.identifiers.CommonErrors.INVALID_AID_LENGTH;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
 import static java.util.Optional.ofNullable;
@@ -214,21 +213,22 @@ public final class AID implements Comparable<AID> {
 	 */
 	public static Result<AID> fromString(String input) {
 		return fromOptional(AID_IS_NULL, ofNullable(input))
-			.filter(bytes -> bytes.length() == BYTES * 2, INVALID_LENGTH)
+			.filter(bytes -> bytes.length() == BYTES * 2, INVALID_AID_LENGTH)
 			.map(Bytes::fromHexString)
-			.filter(bytes -> bytes.length == HASH_BYTES, INVALID_LENGTH)
-			.map(AID::new);
+			.flatMap(AID::fromBytes);
 	}
 
 	/**
 	 * Create an AID from bytes. Unlike {@link #from(byte[])} this method does not throw an exception.
 	 *
-	 * @param bytes The bytes (must be of length AID.BYTES)
+	 * @param input The bytes (must be of length AID.BYTES)
 	 *
 	 * @return Success result in case of successful conversion and failure result in case of error.
 	 */
-	public static Result<AID> fromBytes(byte[] bytes) {
-		return Result.wrap(UNABLE_TO_DECODE, () -> from(bytes));
+	public static Result<AID> fromBytes(byte[] input) {
+		return fromOptional(AID_IS_NULL, ofNullable(input))
+			.filter(bytes -> bytes.length == HASH_BYTES, INVALID_AID_LENGTH)
+			.map(AID::new);
 	}
 
 	@Override

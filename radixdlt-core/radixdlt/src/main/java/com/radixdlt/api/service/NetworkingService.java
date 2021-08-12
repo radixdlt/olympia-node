@@ -81,8 +81,8 @@ import org.json.JSONObject;
 
 import java.util.List;
 
-import static com.radixdlt.api.JsonRpcUtil.fromList;
-import static com.radixdlt.api.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.JsonRpcUtil.fromCollection;
+import static com.radixdlt.api.JsonRpcUtil.fromStream;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public final class NetworkingService {
@@ -133,19 +133,11 @@ public final class NetworkingService {
 	}
 
 	public JSONArray getPeers() {
-		var peerArray = jsonArray();
-
-		peersView.peers()
-			.map(this::peerToJson)
-			.forEach(peerArray::put);
-
-		return peerArray;
+		return fromStream(peersView.peers(), this::peerToJson);
 	}
 
 	public JSONArray getAddressBook() {
-		final var entriesArray = jsonArray();
-		addressBook.knownPeers().values().forEach(v -> entriesArray.put(addressBookEntryToJson(v)));
-		return entriesArray;
+		return fromCollection(addressBook.knownPeers().values(), this::addressBookEntryToJson);
 	}
 
 	public JSONObject getData() {
@@ -169,39 +161,39 @@ public final class NetworkingService {
 			.put("channelBufferSize", p2PConfig.channelBufferSize())
 			.put("peerLivenessCheckInterval", p2PConfig.peerLivenessCheckInterval())
 			.put("pingTimeout", p2PConfig.pingTimeout())
-			.put("seedNodes", fromList(p2PConfig.seedNodes(), seedNode -> seedNode))
+			.put("seedNodes", fromCollection(p2PConfig.seedNodes(), seedNode -> seedNode))
 			.put("nodeAddress", addressing.forNodes().of(self));
 	}
 
 	private JSONObject peerToJson(PeersView.PeerInfo peer) {
-		var channelsJson = jsonArray();
-		var peerJson = jsonObject().put("address", addressing.forNodes().of(peer.getNodeId().getPublicKey()));
+		var peerJson = jsonObject()
+			.put("address", addressing.forNodes().of(peer.getNodeId().getPublicKey()));
 
-		peer.getChannels().forEach(channel -> {
+		var channelsJson = fromCollection(peer.getChannels(), channel -> {
 			var channelJson = jsonObject()
 				.put("type", channel.isOutbound() ? "out" : "in")
 				.put("localPort", channel.getSocketAddress().getPort())
 				.put("ip", channel.getSocketAddress().getAddress().getHostAddress());
 
 			channel.getUri().ifPresent(uri -> channelJson.put("uri", uri.toString()));
-			channelsJson.put(channelJson);
+			return channelJson;
 		});
+
 		peerJson.put("channels", channelsJson);
 		return peerJson;
 	}
 
 	private JSONObject addressBookEntryToJson(AddressBookEntry e) {
-		final var knownAddressesArray = jsonArray();
-
-		e.getKnownAddresses().forEach(addr -> {
+		final var knownAddressesArray = fromCollection(e.getKnownAddresses(), addr -> {
 			final var addrObj = jsonObject()
 				.put("uri", addr.getUri())
 				.put("blacklisted", addr.blacklisted())
 				.put(
 					"latestConnectionStatus",
-					addr.getLatestConnectionStatus().map(LatestConnectionStatus::toString).orElse("UNKNOWN")
+					addr.getLatestConnectionStatus()
+						.map(LatestConnectionStatus::toString)
+						.orElse("UNKNOWN")
 				);
-			knownAddressesArray.put(addrObj);
 		});
 
 		final var entryObj = jsonObject()

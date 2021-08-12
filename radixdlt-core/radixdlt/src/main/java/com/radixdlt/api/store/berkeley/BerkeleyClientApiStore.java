@@ -138,12 +138,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
-import static com.radixdlt.api.data.ApiErrors.SYMBOL_DOES_NOT_MATCH;
-import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_RESTORE_CREATOR;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_ACCOUNT_ADDRESS;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_RRI;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
+import static com.radixdlt.api.ApiErrors.INVALID_PAGE_SIZE;
+import static com.radixdlt.api.ApiErrors.SYMBOL_DOES_NOT_MATCH;
+import static com.radixdlt.api.ApiErrors.UNABLE_TO_RESTORE_CREATOR;
+import static com.radixdlt.api.ApiErrors.UNKNOWN_ACCOUNT_ADDRESS;
+import static com.radixdlt.api.ApiErrors.UNKNOWN_RRI;
+import static com.radixdlt.api.ApiErrors.UNKNOWN_TX_ID;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_READ;
@@ -272,12 +272,11 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	@Override
 	public Result<REAddr> parseRri(String rri) {
 		return addressing.forResources().parseFunctional(rri)
-			.flatMap(tuple -> tuple.map(
-				(symbol, address) -> getTokenDefinition(address)
-					.map(TokenDefinitionRecord::getSymbol)
-					.filter(symbol::equals, SYMBOL_DOES_NOT_MATCH)
-					.map(__ -> address)
-			));
+			.flatMap((symbol, address) -> getTokenDefinition(address)
+				.map(TokenDefinitionRecord::getSymbol)
+				.filter(symbol::equals, SYMBOL_DOES_NOT_MATCH)
+				.map(__ -> address)
+			);
 	}
 
 	private UInt384 computeStakeFromOwnership(ECPublicKey delegateKey, UInt384 ownership) {
@@ -381,6 +380,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 			);
 
 			if (status != OperationStatus.SUCCESS) {
+				//TODO: incorrect error is reported here
 				return UNKNOWN_ACCOUNT_ADDRESS.with(addr).result();
 			}
 
@@ -389,6 +389,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
+	//TODO: replace with functional solution
 	private String getRriOrFail(REAddr addr) {
 		try {
 			return rriCache.get(addr, () -> getTokenDefinition(addr).toOptional().orElseThrow().rri(addressing));
@@ -721,7 +722,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 			}
 
 			final var ledgerAndBftProof = (LedgerAndBFTProof) u.getStateComputerOutput().get(LedgerAndBFTProof.class);
-			if  (ledgerAndBftProof != null) {
+			if (ledgerAndBftProof != null) {
 				ledgerAndBftProof.getNextForkHash()
 					.ifPresent(nextForkHash -> this.currentForkConfig = this.forks.getByHash(nextForkHash).orElseThrow());
 			}
@@ -869,8 +870,8 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 					UInt384.from(i.abs().toByteArray()),
 					i.signum() == -1,
 					(epochUnlock != null && epochUnlock == 0)
-						? (Long) (curEpoch + 1 + rules.getConfig().getUnstakingEpochDelay())
-						: epochUnlock,
+					? (Long) (curEpoch + 1 + rules.getConfig().getUnstakingEpochDelay())
+					: epochUnlock,
 					txId
 				);
 				return entry;

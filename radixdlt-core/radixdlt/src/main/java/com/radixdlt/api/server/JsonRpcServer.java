@@ -77,8 +77,9 @@ import java.util.Map;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
-import static com.radixdlt.api.JsonRpcUtil.invalidParamsError;
-import static com.radixdlt.api.JsonRpcUtil.methodNotFound;
+import static com.radixdlt.api.ApiErrors.INVALID_REQUEST;
+import static com.radixdlt.api.ApiErrors.METHOD_NOT_FOUND;
+import static com.radixdlt.api.JsonRpcUtil.failureResponse;
 import static com.radixdlt.api.RestUtils.respond;
 import static com.radixdlt.api.RestUtils.withBody;
 
@@ -106,16 +107,18 @@ public final class JsonRpcServer implements HttpHandler {
 		log.debug("RPC: input {}", request);
 
 		if (!request.has("id")) {
-			return invalidParamsError(request, "The 'id' missing");
+			return failureResponse(request, INVALID_REQUEST.with("The 'id' field is missing"));
 		}
 
 		if (!request.has("method")) {
-			return invalidParamsError(request, "The method must be specified");
+			return failureResponse(request, INVALID_REQUEST.with("The 'method' field is missing"));
 		}
 
-		return ofNullable(handlers.get(logValue("method", request.getString("method"))))
+		var method = request.optString("method");
+
+		return ofNullable(handlers.get(logValue("method", method)))
 			.map(handler -> logValue("output", handler.execute(request)))
-			.orElseGet(() -> methodNotFound(request));
+			.orElseGet(() -> failureResponse(request, METHOD_NOT_FOUND.with(method)));
 	}
 
 	private void fillHandlers(Map<String, JsonRpcHandler> additionalHandlers) {

@@ -64,7 +64,6 @@
 
 package com.radixdlt.api.handler;
 
-import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -73,20 +72,21 @@ import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.service.ArchiveAccountService;
 import com.radixdlt.api.store.TokenBalance;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import static com.radixdlt.api.JsonRpcUtil.ARRAY;
-import static com.radixdlt.api.JsonRpcUtil.fromList;
+import static com.radixdlt.api.JsonRpcUtil.fromCollection;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.JsonRpcUtil.safeInteger;
 import static com.radixdlt.api.JsonRpcUtil.safeString;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
+import static com.radixdlt.api.JsonRpcUtil.wrapArray;
+import static com.radixdlt.api.ApiErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
@@ -151,36 +151,33 @@ public class ArchiveAccountHandler {
 	//-----------------------------------------------------------------------------------------------------
 
 	private JSONObject formatUnstakePositions(List<BalanceEntry> balances, long curEpoch) {
-		var array = fromList(balances, unstake ->
+		return wrapArray(fromCollection(balances, unstake ->
 			jsonObject()
 				.put("validator", addressing.forValidators().of(unstake.getDelegate()))
 				.put("amount", unstake.getAmount())
 				.put("epochsUntil", unstake.getEpochUnlocked() - curEpoch)
 				.put("withdrawTxID", unstake.getTxId())
-		);
-		return jsonObject().put(ARRAY, array);
+		));
 	}
 
 	private JSONObject formatTokenBalances(REAddr address, List<TokenBalance> balances) {
 		return jsonObject()
 			.put("owner", addressing.forAccounts().of(address))
-			.put("tokenBalances", fromList(balances, TokenBalance::asJson));
+			.put("tokenBalances", fromCollection(balances, TokenBalance::asJson));
 	}
 
 	private JSONObject formatStakePositions(List<BalanceEntry> balances) {
-		var array = fromList(balances, balance ->
+		return wrapArray(fromCollection(balances, balance ->
 			jsonObject()
 				.put("validator", addressing.forValidators().of(balance.getDelegate()))
 				.put("amount", balance.getAmount())
-		);
-
-		return jsonObject().put(ARRAY, array);
+		));
 	}
 
 	private static JSONObject formatHistoryResponse(Optional<Instant> cursor, List<TxHistoryEntry> transactions) {
 		return jsonObject()
 			.put("cursor", cursor.map(ArchiveAccountHandler::asCursor).orElse(""))
-			.put("transactions", fromList(transactions, TxHistoryEntry::asJson));
+			.put("transactions", fromCollection(transactions, TxHistoryEntry::asJson));
 	}
 
 	private static String asCursor(Instant instant) {

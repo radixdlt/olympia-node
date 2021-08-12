@@ -94,7 +94,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_PREPARE_TX;
+import static com.radixdlt.api.ApiErrors.UNABLE_TO_PREPARE_TX;
 import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
 import static com.radixdlt.atom.actions.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
 

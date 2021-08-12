@@ -68,7 +68,7 @@ import com.radixdlt.utils.functional.Failure;
 
 public enum ActionErrors implements Failure {
 	SUBMISSION_FAILURE(1500, "Transaction submission failed: {0}"),
-//
+	//
 //	MALFORMED_TRANSACTION(1300, "Transaction request is malformed"),
 //
 //	INSUFFICIENT_FUNDS(1301, "Insufficient balance"),
@@ -90,9 +90,8 @@ public enum ActionErrors implements Failure {
 //	INVALID_ADDRESS(1317, "Invalid address"),
 //	INVALID_VALIDATOR_ADDRESS(1318, "Invalid validator address"),
 //	INVALID_AMOUNT(1319, "Invalid amount"),
-	TRANSACTION_ADDRESS_DOES_NOT_MATCH(1320, "Provided txID does not match provided transaction"),
 //	EMPTY_TRANSACTIONS_NOT_SUPPORTED(1321, "Empty transactions are not supported"),
-	;
+	TRANSACTION_ADDRESS_DOES_NOT_MATCH(1320, "Provided txID does not match provided transaction");
 
 	private final int code;
 	private final String message;

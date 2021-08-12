@@ -82,7 +82,7 @@ public class TokenService {
 	}
 
 	public Result<TokenDefinitionRecord> getNativeTokenDescription() {
-		REAddr rri = REAddr.ofNativeToken();
+		var rri = REAddr.ofNativeToken();
 
 		return clientApiStore.getTokenDefinition(rri)
 			.flatMap(definition -> withSupply(addressing.forResources().of(definition.getSymbol(), rri), definition));

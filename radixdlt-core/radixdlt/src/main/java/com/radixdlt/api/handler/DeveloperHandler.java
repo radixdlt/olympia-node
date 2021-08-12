@@ -114,7 +114,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.api.JsonRpcUtil.*;
-import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_PREPARE_TX;
+import static com.radixdlt.api.ApiErrors.UNABLE_TO_PREPARE_TX;
 import static com.radixdlt.utils.functional.Result.allOf;
 
 public final class DeveloperHandler {
@@ -176,16 +176,13 @@ public final class DeveloperHandler {
 
 				return allOf(safeArray(params, "actions"))
 					.flatMap(actions ->
-						actionParserService.parse(actions).flatMap(steps -> this.build(message, steps))
-							.map(p -> {
-								var o = jsonObject();
-								var txns = jsonArray();
-								p.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
-								var proof = p.getProof().asJSON(addressing);
-								return o.put("txns", txns).put("proof", proof);
-							})
+								 actionParserService.parse(actions).flatMap(steps -> this.build(message, steps))
+									 .map(p -> jsonObject()
+										 .put("txns", fromCollection(p.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
+										 .put("proof", p.getProof().asJSON(addressing)))
 					);
-			});
+			}
+		);
 	}
 
 	private Function<Bucket, String> getKeyMapper(String groupBy) {
@@ -281,10 +278,11 @@ public final class DeveloperHandler {
 				var systemMapKey = SystemMapKey.create(key);
 				var bytes = engineStore.get(systemMapKey).orElseThrow();
 				return Result.ok(jsonObject()
-					.put("id", Bytes.toHexString(bytes.getId()))
-					.put("data", Bytes.toHexString(bytes.getData()))
+									 .put("id", Bytes.toHexString(bytes.getId()))
+									 .put("data", Bytes.toHexString(bytes.getData()))
 				);
-			});
+			}
+		);
 	}
 
 	public JSONObject handleScanSubstates(JSONObject request) {
@@ -323,12 +321,12 @@ public final class DeveloperHandler {
 				countByGroup.forEach(countByGroupJson::put);
 
 				return Result.ok(jsonObject()
-					.put("loaded", found)
-					.put("countBySubstateType", countByGroupJson)
-					.put("totalIdSize", totalKeySize.get())
-					.put("totalDataSize", totalValueSize.get())
-					.put("totalSize", totalKeySize.get() + totalValueSize.get())
-					.put("totalCount", countByGroup.values().stream().mapToLong(l -> l).sum())
+									 .put("loaded", found)
+									 .put("countBySubstateType", countByGroupJson)
+									 .put("totalIdSize", totalKeySize.get())
+									 .put("totalDataSize", totalValueSize.get())
+									 .put("totalSize", totalKeySize.get() + totalValueSize.get())
+									 .put("totalCount", countByGroup.values().stream().mapToLong(l -> l).sum())
 				);
 			}
 		);
@@ -365,21 +363,21 @@ public final class DeveloperHandler {
 					var txnHex = params.getString("txn");
 					var txn = Txn.create(Bytes.fromHexString(txnHex));
 					var result = parser.parse(txn);
-					var resultJson = jsonObject();
-					var instructionsJson = jsonArray();
-					resultJson.put("txId", txn.getId().toJson());
-					resultJson.put("size", txn.getPayload().length);
-					resultJson.put("instructions", instructionsJson);
-					result.instructions().forEach(i -> {
+
+					var instructions = fromCollection(result.instructions(), i -> {
 						var buf = i.getDataByteBuffer();
-						instructionsJson.put(jsonObject()
+
+						return jsonObject()
 							.put("op", i.getMicroOp().toString())
 							.put("data", i.getData() == null ? null : i.getData().toString())
 							.put("data_raw", Bytes.toHexString(buf.array(), buf.position(), i.getDataLength()))
-							.put("data_size", i.getDataLength())
-						);
+							.put("data_size", i.getDataLength());
 					});
-					return resultJson;
+
+					return jsonObject()
+						.put("txId", txn.getId().toJson())
+						.put("size", txn.getPayload().length)
+						.put("instructions", instructions);
 				}
 			)
 		);
@@ -402,7 +400,7 @@ public final class DeveloperHandler {
 		);
 	}
 
-
+	//TODO: rework to avoid exceptions (bad for proper error reporting)
 	private static Pair<String, ECPublicKey> parseAddress(String type, String address) throws DeserializeException {
 		switch (type) {
 			case "account":
@@ -508,6 +506,7 @@ public final class DeveloperHandler {
 		return jsonObject();
 	}
 
+	//FIXME: all errors are reported with same error code
 	private static Failure toFailure(Throwable e) {
 		return Failure.failure(e.getMessage());
 	}

@@ -75,7 +75,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_UINT;
 
 /**
  * A 256-bit unsigned integer, with comparison and some basic arithmetic
@@ -289,7 +289,7 @@ public final class UInt256 implements Comparable<UInt256> {
 	 * @return Success {@link Result} if value can be parsed and failure {@link Result} otherwise.
 	 */
 	public static Result<UInt256> fromString(String input) {
-		return Result.wrap(UNABLE_TO_DECODE, () -> from(input));
+		return Result.wrap(UNABLE_TO_PARSE_UINT, () -> from(input));
 	}
 
 	// Pad short (< BYTES length) array with appropriate lead bytes.

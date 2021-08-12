@@ -64,15 +64,14 @@
 
 package com.radixdlt.api.handler;
 
-import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.api.service.TokenService;
+import com.radixdlt.networks.Addressing;
 
-import static com.radixdlt.api.JsonRpcUtil.invalidParamsError;
-import static com.radixdlt.api.JsonRpcUtil.response;
+import static com.radixdlt.api.JsonRpcUtil.toResponse;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
 
 @Singleton
@@ -90,9 +89,7 @@ public class ArchiveTokenHandler {
 	}
 
 	public JSONObject handleTokensGetNativeToken(JSONObject request) {
-		return tokenService.getNativeTokenDescription()
-			.map(r -> r.asJson(addressing))
-			.fold(failure -> invalidParamsError(request, failure.message()), response -> response(request, response));
+		return toResponse(request, tokenService.getNativeTokenDescription().map(r -> r.asJson(addressing)));
 	}
 
 	public JSONObject handleTokensGetInfo(JSONObject request) {

@@ -179,7 +179,6 @@ public final class REParser {
 		}
 	}
 
-	@SuppressWarnings("rawtypes")
 	public ParsedTxn parse(Txn txn) throws TxnParseException {
 		UInt256 feePaid = null;
 		ECDSASignature sig = null;

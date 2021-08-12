@@ -83,9 +83,12 @@ import com.radixdlt.utils.functional.Tuple.Tuple7;
 import com.radixdlt.utils.functional.Tuple.Tuple8;
 import com.radixdlt.utils.functional.Tuple.Tuple9;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -110,6 +113,17 @@ public interface Result<T> {
 	 * @return transformed value.
 	 */
 	<R> R fold(Function<? super Failure, ? extends R> leftMapper, Function<? super T, ? extends R> rightMapper);
+
+	/**
+	 * Version of {@link #fold(Function, Function)} which uses one function to handle both cases.
+	 *
+	 * @param mapper Function to transform the error and success values.
+	 *
+	 * @return transformed value.
+	 */
+	default <R> R fold(BiFunction<Failure, T, R> mapper) {
+		return fold(f -> mapper.apply(f, null), v -> mapper.apply(null, v));
+	}
 
 	/**
 	 * Transform operation result value into value of other type and wrap new
@@ -433,6 +447,21 @@ public interface Result<T> {
 			action.run();
 			return this;
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> Result<List<T>> all(Iterable<Result<T>> results) {
+		var list = new ArrayList<T>();
+
+		for (var result : results) {
+			if (!result.isSuccess()) {
+				return (Result<List<T>>) result;
+			}
+
+			result.onSuccess(list::add);
+		}
+
+		return ok(list);
 	}
 
 	static <T1> Mapper1<T1> allOf(Result<T1> op1) {

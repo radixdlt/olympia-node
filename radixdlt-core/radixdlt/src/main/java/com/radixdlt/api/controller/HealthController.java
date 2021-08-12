@@ -64,18 +64,19 @@
 
 package com.radixdlt.api.controller;
 
+import org.json.JSONArray;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.service.ForkVoteStatusService;
 import com.radixdlt.api.service.NetworkInfoService;
-
 import com.radixdlt.api.service.PeersForksHashesInfoService;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
+
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
-import org.json.JSONArray;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.JsonRpcUtil.fromMap;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.RestUtils.respond;
 import static com.radixdlt.api.RestUtils.sanitizeBaseUrl;
@@ -115,13 +116,11 @@ public class HealthController implements Controller {
 	}
 
 	private JSONArray prepareExecutedForks() {
-		final var res = jsonArray();
-		forksEpochStore.getEpochsForkHashes().entrySet().forEach(e ->
-			res.put(jsonObject()
-				.put("epoch", e.getKey())
-				.put("fork_hash", e.getValue())
-			)
+		return fromMap(
+			forksEpochStore.getEpochsForkHashes(),
+			(key, value) -> jsonObject()
+				.put("epoch", key)
+				.put("fork_hash", value)
 		);
-		return res;
 	}
 }

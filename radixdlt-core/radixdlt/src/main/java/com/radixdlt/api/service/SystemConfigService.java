@@ -64,10 +64,6 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.forks.CandidateForkConfig;
-import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
-import com.radixdlt.statecomputer.forks.Forks;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -83,8 +79,12 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.forks.CandidateForkConfig;
+import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
@@ -93,8 +93,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.api.JsonRpcUtil.fromList;
-import static com.radixdlt.api.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.JsonRpcUtil.fromCollection;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public final class SystemConfigService {
@@ -302,15 +301,13 @@ public final class SystemConfigService {
 
 		return jsonObject().put(
 			"endpoints",
-			fromList(enabled, endpoint -> "/" + endpoint)
+			fromCollection(enabled, endpoint -> "/" + endpoint)
 		);
 	}
 
 	@VisibleForTesting
 	static JSONArray prepareRadixEngineConfiguration(Forks forks) {
-		final var forksJson = jsonArray();
-		forks.forkConfigs().forEach(forkConfig -> forksJson.put(forkConfigJson(forkConfig)));
-		return forksJson;
+		return fromCollection(forks.forkConfigs(), SystemConfigService::forkConfigJson);
 	}
 
 	static JSONObject forkConfigJson(ForkConfig forkConfig) {
@@ -347,7 +344,7 @@ public final class SystemConfigService {
 	@VisibleForTesting
 	JSONObject prepareCheckpointsConfiguration(VerifiedTxnsAndProof genesis) {
 		return jsonObject()
-			.put("txn", fromList(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
+			.put("txn", fromCollection(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
 			.put("proof", genesis.getProof().asJSON(addressing));
 	}
 }

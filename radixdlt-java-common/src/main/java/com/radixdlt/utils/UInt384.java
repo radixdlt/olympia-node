@@ -71,7 +71,7 @@ import com.radixdlt.utils.functional.Result;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_UINT;
 
 /**
  * A 384-bit unsigned integer, with comparison and some basic arithmetic
@@ -281,7 +281,7 @@ public final class UInt384 implements Comparable<UInt384> {
 	 * @return Success {@link Result} if value can be successfully parsed and failure {@link Result} otherwise.
 	 */
 	public static Result<UInt384> fromString(String input) {
-		return Result.wrap(UNABLE_TO_DECODE, () -> from(input));
+		return Result.wrap(UNABLE_TO_PARSE_UINT, () -> from(input));
 	}
 
 	// Pad short (< BYTES length) array with appropriate lead bytes.

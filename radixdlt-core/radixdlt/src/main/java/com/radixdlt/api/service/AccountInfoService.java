@@ -64,21 +64,21 @@
 
 package com.radixdlt.api.service;
 
+import org.bouncycastle.util.Arrays;
+import org.json.JSONObject;
+
+import com.google.inject.Inject;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.engine.RadixEngine;
-import org.bouncycastle.util.Arrays;
-import org.json.JSONObject;
-
-import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -87,7 +87,7 @@ import com.radixdlt.utils.UInt384;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.JsonRpcUtil.fromMap;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 public class AccountInfoService {
@@ -149,33 +149,25 @@ public class AccountInfoService {
 	}
 
 	private JSONObject getOwnBalance() {
-		var balances = getMyBalances();
-		var stakedBalance = getMyStakeBalances();
-		var preparedStakes = getMyPreparedStakes();
-
-		var preparedStakesArray = jsonArray();
-		preparedStakes.forEach((publicKey, amount) -> preparedStakesArray.put(constructStakeEntry(publicKey, amount)));
-
-		var stakesArray = jsonArray();
-		stakedBalance.forEach((publicKey, amount) -> stakesArray.put(constructStakeEntry(publicKey, amount)));
-
-		var balancesArray = jsonArray();
-		balances.forEach((rri, amount) -> balancesArray.put(constructBalanceEntry(rri, amount)));
-
 		return jsonObject()
-			.put("tokens", balancesArray)
-			.put("preparedStakes", preparedStakesArray)
-			.put("stakes", stakesArray);
+			.put("tokens", fromMap(getMyBalances(), this::constructBalanceEntry))
+			.put("preparedStakes", fromMap(getMyPreparedStakes(), this::constructStakeEntry))
+			.put("stakes", fromMap(getMyStakeBalances(), this::constructStakeEntry));
 	}
 
 	private JSONObject constructBalanceEntry(REAddr resourceAddress, UInt384 amount) {
 		var mapKey = SystemMapKey.ofResourceData(resourceAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
 		var metadata = (TokenResourceMetadata) radixEngine.get(mapKey).orElseThrow();
 		var rri = addressing.forResources().of(metadata.getSymbol(), resourceAddress);
-		return jsonObject().put("rri", rri).put("amount", amount);
+
+		return jsonObject()
+			.put("rri", rri)
+			.put("amount", amount);
 	}
 
 	private JSONObject constructStakeEntry(ECPublicKey publicKey, UInt384 amount) {
-		return jsonObject().put("delegate", addressing.forValidators().of(publicKey)).put("amount", amount);
+		return jsonObject()
+			.put("delegate", addressing.forValidators().of(publicKey))
+			.put("amount", amount);
 	}
 }

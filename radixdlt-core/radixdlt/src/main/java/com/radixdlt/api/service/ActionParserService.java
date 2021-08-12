@@ -64,9 +64,6 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.Forks;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -74,26 +71,33 @@ import com.google.inject.Inject;
 import com.radixdlt.api.data.ActionType;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
-import static com.radixdlt.api.data.ApiErrors.INVALID_ACTION_DATA;
-import static com.radixdlt.api.data.ApiErrors.MISSING_FIELD;
-import static com.radixdlt.api.data.ApiErrors.UNSUPPORTED_ACTION;
+import static com.radixdlt.api.ApiErrors.INVALID_PARAMETERS;
+import static com.radixdlt.api.ApiErrors.MISSING_ACTION_FIELD;
+import static com.radixdlt.api.ApiErrors.UNSUPPORTED_ACTION;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MIN;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_BOOLEAN;
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_FLOAT;
 import static com.radixdlt.identifiers.CommonErrors.VALUE_OUT_OF_RANGE;
+import static com.radixdlt.utils.functional.Result.all;
 import static com.radixdlt.utils.functional.Result.allOf;
+import static com.radixdlt.utils.functional.Result.ok;
 import static com.radixdlt.utils.functional.Result.wrap;
 
 import static java.util.Optional.ofNullable;
@@ -109,25 +113,23 @@ public final class ActionParserService {
 	}
 
 	public Result<List<TransactionAction>> parse(JSONArray actions) {
-		var list = new ArrayList<TransactionAction>();
+		return validateActions(actions)
+			.flatMap(elements -> all(elements.map(this::toAction).collect(Collectors.toList())));
+	}
 
+	private Result<TransactionAction> toAction(JSONObject element) {
+		return param(element, "type")
+			.flatMap(ActionType::fromString)
+			.flatMap(type -> parseByType(type, element));
+	}
+
+	private Result<Stream<JSONObject>> validateActions(JSONArray actions) {
 		for (var o : actions) {
 			if (!(o instanceof JSONObject)) {
-				return INVALID_ACTION_DATA.with(o).result();
-			}
-
-			var element = (JSONObject) o;
-
-			var result = param(element, "type")
-				.flatMap(ActionType::fromString)
-				.flatMap(type -> parseByType(type, element))
-				.onSuccess(list::add);
-
-			if (!result.isSuccess()) {
-				return result.map(List::of);
+				return INVALID_PARAMETERS.with("Invalid action", o.toString()).result();
 			}
 		}
-		return Result.ok(list);
+		return ok(StreamSupport.stream(actions.spliterator(), false).map(JSONObject.class::cast));
 	}
 
 	private Result<TransactionAction> parseByType(ActionType type, JSONObject element) {
@@ -191,7 +193,9 @@ public final class ActionParserService {
 				).map(TransactionAction::updateValidatorMetadata);
 
 			case UPDATE_VALIDATOR_SYSTEM_METADATA:
-				return allOf(validator(element)).map(validatorKey -> {
+				return allOf(
+					validator(element)
+				).map(validatorKey -> {
 					final var forkVoteHash = forks.getCandidateFork()
 						.map(f -> ForkConfig.voteHash(validatorKey, f))
 						.orElseGet(HashUtils::zero256);
@@ -253,7 +257,7 @@ public final class ActionParserService {
 	private Result<REAddr> rri(JSONObject element) {
 		// TODO: Need to verify symbol matches
 		return param(element, "rri")
-			.flatMap(p -> addressing.forResources().parseFunctional(p).map(t -> t.map((__, addr) -> addr)));
+			.flatMap(p -> addressing.forResources().parseToAddr(p));
 	}
 
 	private static final Failure FEE_BOUNDS_FAILURE = VALUE_OUT_OF_RANGE.with(
@@ -263,21 +267,19 @@ public final class ActionParserService {
 
 	private Result<Integer> fee(JSONObject element) {
 		return param(element, "validatorFee")
-			.flatMap(parameter -> wrap(UNABLE_TO_DECODE, () -> Double.parseDouble(parameter)))
+			.flatMap(parameter -> wrap(UNABLE_TO_PARSE_FLOAT, () -> Double.parseDouble(parameter)))
 			.map(doublePercentage -> (int) (doublePercentage * RAKE_PERCENTAGE_GRANULARITY))
 			.filter(percentage -> percentage >= RAKE_MIN && percentage <= RAKE_MAX, FEE_BOUNDS_FAILURE);
 	}
 
 	private Result<Boolean> allowDelegation(JSONObject element) {
 		return param(element, "allowDelegation")
-			.flatMap(parameter ->
-				 Stream.of("true", "false")
-					 .filter(parameter::equals)
-					 .findAny()
-					 .map(Boolean::parseBoolean)
-					 .map(Result::ok)
-					 .orElseGet(() -> UNABLE_TO_DECODE.with(parameter).result())
-			);
+			.flatMap(parameter -> Stream.of("true", "false")
+				.filter(parameter::equals)
+				.findAny()
+				.map(Boolean::parseBoolean)
+				.map(Result::ok)
+				.orElseGet(() -> UNABLE_TO_PARSE_BOOLEAN.with(parameter).result()));
 	}
 
 	private Result<REAddr> from(JSONObject element) {
@@ -364,6 +366,6 @@ public final class ActionParserService {
 		return ofNullable(params.opt(name))
 			.map(Object::toString)
 			.map(Result::ok)
-			.orElseGet(() -> MISSING_FIELD.with(name).result());
+			.orElseGet(() -> MISSING_ACTION_FIELD.with(name).result());
 	}
 }

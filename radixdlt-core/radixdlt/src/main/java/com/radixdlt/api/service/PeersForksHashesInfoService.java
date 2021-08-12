@@ -64,6 +64,8 @@
 
 package com.radixdlt.api.service;
 
+import org.json.JSONObject;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
@@ -76,12 +78,13 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.Forks;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import static com.radixdlt.api.JsonRpcUtil.fromCollection;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 /**
  * Collects other peers' latest known forks hashes (received during the handshake) and compares it against
@@ -159,12 +162,13 @@ public final class PeersForksHashesInfoService {
 	}
 
 	public JSONObject getUnknownReportedForksHashes() {
-		final var jsonObj = new JSONObject();
+		final var jsonObj = jsonObject();
 
 		this.unknownReportedForksHashes.forEach((forkHash, reportedBy) -> {
-			final var reportedByArray = new JSONArray();
-			reportedBy.forEach(pubKey -> reportedByArray.put(addressing.forValidators().of(pubKey)));
-			jsonObj.put(forkHash.toString(), reportedByArray);
+			jsonObj.put(
+				forkHash.toString(),
+				fromCollection(reportedBy, publicKey -> addressing.forValidators().of(publicKey))
+			);
 		});
 
 		return jsonObj;
