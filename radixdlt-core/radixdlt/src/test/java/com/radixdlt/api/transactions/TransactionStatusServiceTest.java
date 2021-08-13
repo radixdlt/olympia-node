@@ -75,7 +75,9 @@ import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.data.TransactionStatus;
 import com.radixdlt.api.store.berkeley.BerkeleyTransactionsByIdStore;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
@@ -109,12 +111,39 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@RunWith(Parameterized.class)
 public class TransactionStatusServiceTest {
+	@Parameterized.Parameters
+	public static Collection<Object[]> params() {
+		return List.of(
+			new Object[] {
+				(Function<REAddr, TxAction>) addr -> new TransferToken(
+					REAddr.ofNativeToken(),
+					addr,
+					REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey()),
+					UInt256.ONE
+				),
+			},
+			new Object[]{
+				(Function<REAddr, TxAction>) addr -> new StakeTokens(
+					addr,
+					addr.publicKey().orElseThrow(),
+					Amount.ofTokens(1).toSubunits()
+				)
+			}
+		);
+	}
+
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
@@ -135,13 +164,18 @@ public class TransactionStatusServiceTest {
 	private TransactionStatusService transactionStatusService;
 
 	private Injector injector;
+	private final Function<REAddr, TxAction> actionMapper;
+
+	public TransactionStatusServiceTest(Function<REAddr, TxAction> actionMapper) {
+		this.actionMapper = actionMapper;
+	}
 
 	@Before
 	public void setup() {
 		this.injector = Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMinimumStake(Amount.ofTokens(1))),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
 			new MockedGenesisModule(
@@ -184,7 +218,7 @@ public class TransactionStatusServiceTest {
 		);
 		var request = TxnConstructionRequest.create()
 			.feePayer(acct)
-			.action(action);
+			.action(actionMapper.apply(acct));
 		var txBuilder = radixEngine.construct(request);
 		var transfer = txBuilder.signAndBuild(hashSigner::sign);
 		mempoolDispatcher.dispatch(MempoolAdd.create(transfer));
