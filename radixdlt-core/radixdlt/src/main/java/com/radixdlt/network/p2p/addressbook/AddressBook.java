@@ -74,10 +74,12 @@ import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -91,17 +93,51 @@ import static java.util.function.Predicate.not;
  * Manages known peers network addresses and their metadata.
  */
 public final class AddressBook {
-	private static final Comparator<AddressBookEntry.PeerAddressEntry> entryComparator = (a, b) -> {
-		final var aLastSuccess = a.getLastSuccessfulConnection().orElse(Instant.MIN);
-		final var bLastSuccess = b.getLastSuccessfulConnection().orElse(Instant.MIN);
-		return -aLastSuccess.compareTo(bLastSuccess);
-	};
+
+	/**
+	 * A stateful comparator for known peer addresses that uses both their latest connection status (persistent)
+	 * and a number of failed connection attempts (volatile). Failure counts are used to cycle the addresses for retries.
+	 * The entries are sorted in the following manner:
+	 * successful -> unknown (no connection attempted yet) -> failed (by num of failures)
+	 */
+	private static final class PeerAddressEntryComparator implements Comparator<PeerAddressEntry> {
+		private final Map<RadixNodeUri, Integer> failureCounts = new HashMap<>();
+
+		private int toIntValue(PeerAddressEntry peerAddressEntry) {
+			return peerAddressEntry.getLatestConnectionStatus().map(latestConnectionStatus -> {
+				if (latestConnectionStatus == LatestConnectionStatus.SUCCESS) {
+					return 1;
+				} else {
+					return -(1 + failureCounts.getOrDefault(peerAddressEntry.getUri(), 0));
+				}
+			}).orElse(0);
+		}
+
+		@Override
+		public int compare(PeerAddressEntry a, PeerAddressEntry b) {
+			return Integer.compare(toIntValue(b), toIntValue(a));
+		}
+
+		void incFailures(RadixNodeUri uri) {
+			synchronized (this.failureCounts) {
+				final var curr = this.failureCounts.getOrDefault(uri, 0);
+				this.failureCounts.put(uri, curr + 1);
+			}
+		}
+
+		void resetFailures(RadixNodeUri uri) {
+			synchronized (this.failureCounts) {
+				this.failureCounts.remove(uri);
+			}
+		}
+	}
 
 	private final RadixNodeUri self;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
 	private final AddressBookPersistence persistence;
 	private final Object lock = new Object();
 	private final Map<NodeId, AddressBookEntry> knownPeers = new ConcurrentHashMap<>();
+	private final PeerAddressEntryComparator addressEntryComparator = new PeerAddressEntryComparator();
 
 	@Inject
 	public AddressBook(
@@ -180,23 +216,36 @@ public final class AddressBook {
 				.filter(not(AddressBookEntry::isBanned))
 				.flatMap(e -> e.getKnownAddresses().stream())
 				.filter(not(PeerAddressEntry::blacklisted))
-				.sorted(entryComparator)
+				.sorted(addressEntryComparator)
 				.map(AddressBookEntry.PeerAddressEntry::getUri)
 				.findFirst();
 		}
 	}
 
-	public void addOrUpdateSuccessfullyConnectedPeer(RadixNodeUri radixNodeUri) {
+	public void addOrUpdatePeerWithSuccessfulConnection(RadixNodeUri radixNodeUri) {
+		this.addOrUpdatePeerWithLatestConnectionStatus(radixNodeUri, LatestConnectionStatus.SUCCESS);
+		this.addressEntryComparator.resetFailures(radixNodeUri);
+	}
+
+	public void addOrUpdatePeerWithFailedConnection(RadixNodeUri radixNodeUri) {
+		this.addOrUpdatePeerWithLatestConnectionStatus(radixNodeUri, LatestConnectionStatus.FAILURE);
+		this.addressEntryComparator.incFailures(radixNodeUri);
+	}
+
+	private void addOrUpdatePeerWithLatestConnectionStatus(
+		RadixNodeUri radixNodeUri,
+		LatestConnectionStatus latestConnectionStatus
+	) {
 		synchronized (lock) {
 			final var maybeExistingEntry = this.knownPeers.get(radixNodeUri.getNodeId());
 			if (maybeExistingEntry == null) {
-				final var newEntry = AddressBookEntry.create(radixNodeUri, Instant.now());
+				final var newEntry = AddressBookEntry.createWithLatestConnectionStatus(radixNodeUri, latestConnectionStatus);
 				this.knownPeers.put(radixNodeUri.getNodeId(), newEntry);
 				persistEntry(newEntry);
 			} else {
 				final var updatedEntry = maybeExistingEntry
 					.cleanupExpiredBlacklsitedUris()
-					.withLastSuccessfulConnectionFor(radixNodeUri, Instant.now());
+					.withLatestConnectionStatusForUri(radixNodeUri, latestConnectionStatus);
 				this.knownPeers.put(radixNodeUri.getNodeId(), updatedEntry);
 				persistEntry(updatedEntry);
 			}
@@ -209,7 +258,7 @@ public final class AddressBook {
 			.filter(not(AddressBookEntry::isBanned))
 			.flatMap(e -> e.getKnownAddresses().stream())
 			.filter(not(PeerAddressEntry::blacklisted))
-			.sorted(entryComparator)
+			.sorted(addressEntryComparator)
 			.map(AddressBookEntry.PeerAddressEntry::getUri);
 	}
 

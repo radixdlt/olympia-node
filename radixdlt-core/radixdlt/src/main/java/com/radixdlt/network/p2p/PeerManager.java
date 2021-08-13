@@ -77,6 +77,7 @@ import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerLostLiveness;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnectionTimeout;
 import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
 import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.network.p2p.transport.PeerChannel;
@@ -198,7 +199,6 @@ public final class PeerManager {
 			.findAny();
 	}
 
-	// TODO(luk): update address book with the URIs that have been tried, but conn failed
 	private CompletableFuture<PeerChannel> connect(RadixNodeUri uri) {
 		synchronized (lock) {
 			return channelFor(uri.getNodeId())
@@ -217,6 +217,8 @@ public final class PeerManager {
 				this.handlePeerLostLiveness((PeerLostLiveness) peerEvent);
 			} else if (peerEvent instanceof PeerBanned) {
 				this.handlePeerBanned((PeerBanned) peerEvent);
+			} else if (peerEvent instanceof PeerConnectionTimeout) {
+				this.handlePeerConnectionTimeout((PeerConnectionTimeout) peerEvent);
 			} else if (peerEvent instanceof PeerHandshakeFailed) {
 				this.handlePeerHandshakeFailed((PeerHandshakeFailed) peerEvent);
 			}
@@ -231,7 +233,7 @@ public final class PeerManager {
 				unused -> Sets.newConcurrentHashSet()
 			);
 			channels.add(channel);
-			channel.getUri().ifPresent(u -> this.addressBook.get().addOrUpdateSuccessfullyConnectedPeer(u));
+			channel.getUri().ifPresent(this.addressBook.get()::addOrUpdatePeerWithSuccessfulConnection);
 			inboundMessagesFromChannels.onNext(channel.inboundMessages().toObservable());
 
 			if (channel.isInbound() && !this.shouldAcceptInboundPeer(channel.getRemoteNodeId())) {
@@ -307,9 +309,7 @@ public final class PeerManager {
 				"Peer {} lost liveness (ping timeout)",
 				addressing.forNodes().of(peerLostLiveness.getNodeId().getPublicKey())
 			);
-			channelFor(peerLostLiveness.getNodeId())
-				.ifPresent(PeerChannel::disconnect);
-			// TODO(luk): also update address book, reduce "score" or set some flag
+			channelFor(peerLostLiveness.getNodeId()).ifPresent(PeerChannel::disconnect);
 		}
 	}
 
@@ -342,6 +342,10 @@ public final class PeerManager {
 				);
 				pc.disconnect();
 			});
+	}
+
+	private void handlePeerConnectionTimeout(PeerConnectionTimeout peerConnectionTimeout) {
+		this.addressBook.get().addOrUpdatePeerWithFailedConnection(peerConnectionTimeout.getUri());
 	}
 
 	private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {

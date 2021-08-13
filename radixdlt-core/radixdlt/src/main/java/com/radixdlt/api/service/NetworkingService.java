@@ -70,12 +70,11 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
-import com.radixdlt.network.p2p.discovery.DiscoverPeers;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -111,7 +110,6 @@ public final class NetworkingService {
 	private final PeersView peersView;
 	private final AddressBook addressBook;
 	private final Addressing addressing;
-	private final EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher;
 
 	@Inject
 	public NetworkingService(
@@ -120,14 +118,12 @@ public final class NetworkingService {
 		PeersView peersView,
 		AddressBook addressBook,
 		P2PConfig p2PConfig,
-		Addressing addressing,
-		EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher
+		Addressing addressing
 	) {
 		this.systemCounters = systemCounters;
 		this.peersView = peersView;
 		this.addressBook = addressBook;
 		this.addressing = addressing;
-		this.discoverPeersEventDispatcher = discoverPeersEventDispatcher;
 
 		configuration = prepareConfiguration(p2PConfig, self);
 	}
@@ -200,8 +196,11 @@ public final class NetworkingService {
 		e.getKnownAddresses().forEach(addr -> {
 			final var addrObj = jsonObject()
 				.put("uri", addr.getUri())
-				.put("blacklisted", addr.blacklisted());
-			addr.getLastSuccessfulConnection().ifPresent(ts -> addrObj.put("lastSuccessfulConnection", ts));
+				.put("blacklisted", addr.blacklisted())
+				.put(
+					"latestConnectionStatus",
+					addr.getLatestConnectionStatus().map(LatestConnectionStatus::toString).orElse("UNKNOWN")
+				);
 			knownAddressesArray.put(addrObj);
 		});
 
