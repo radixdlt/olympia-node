@@ -97,7 +97,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.integration.SingleNodeDeterministicRunner;
+import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;

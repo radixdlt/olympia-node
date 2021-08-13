@@ -90,6 +90,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -259,7 +260,8 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 			.map(bytes -> new String(bytes, RadixConstants.STANDARD_CHARSET));
 		var jsonString = new JSONObject()
 			.put("txID", txn.getTxnId())
-			.put("sentAt", DateTimeFormatter.ISO_INSTANT.format(timestamp.get()))
+			.put("raw", Bytes.toHexString(txn.getTxn().getPayload()))
+			.put("timestamp", DateTimeFormatter.ISO_INSTANT.format(timestamp.get()))
 			.put("fee", fee)
 			.put("actions", actionsJson)
 			.putOpt("message", message).toString();

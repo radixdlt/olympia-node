@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.utils.functional.Result;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -72,6 +73,7 @@ import com.radixdlt.api.transactions.TransactionStatusService;
 import com.radixdlt.identifiers.AID;
 
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
+import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
 
 @Singleton
 public class ArchiveTransactionsHandler {
@@ -96,7 +98,13 @@ public class ArchiveTransactionsHandler {
 			request,
 			"txID",
 			idString -> AID.fromString(idString)
-				.flatMap(transactionStatusService::getTransaction)
+				.flatMap(txId -> {
+					var result = transactionStatusService.getTransaction(txId);
+					if (result.isEmpty()) {
+						return UNKNOWN_TX_ID.with(txId).result();
+					}
+					return Result.ok(result.get());
+				})
 		);
 	}
 }

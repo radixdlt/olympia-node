@@ -62,183 +62,150 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.services;
+package com.radixdlt.api.transactions;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.data.TransactionStatus;
-import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.berkeley.BerkeleyTransactionsByIdStore;
-import com.radixdlt.api.transactions.TransactionStatusService;
-import com.radixdlt.api.transactions.TransactionStatusServiceModule;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.integration.MultiNodeDeterministicRunner;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.REOutput;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.PersistedNodeForTestingModule;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import com.radixdlt.utils.UInt256;
-
-import java.util.List;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 public class TransactionStatusServiceTest {
-	private static final int NUM_NODES = 10;
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
-	private DeterministicNetwork network;
-	private final ImmutableList<ECKeyPair> nodeKeys;
-	private MultiNodeDeterministicRunner deterministicRunner;
+	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
-	public TransactionStatusServiceTest() {
-		this.nodeKeys = PrivateKeys.numeric(1)
-			.limit(NUM_NODES)
-			.collect(ImmutableList.toImmutableList());
-	}
+	@Inject
+	@LocalSigner
+	private HashSigner hashSigner;
+	@Inject
+	@Self
+	private ECPublicKey self;
+	@Inject
+	private SingleNodeDeterministicRunner runner;
+	@Inject
+	private RadixEngine<LedgerAndBFTProof> radixEngine;
+	@Inject
+	private EventDispatcher<MempoolAdd> mempoolDispatcher;
+	@Inject
+	private TransactionStatusService transactionStatusService;
+
+	private Injector injector;
 
 	@Before
 	public void setup() {
-		this.network = new DeterministicNetwork(
-			nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList()),
-			MessageSelector.firstSelector(),
-			MessageMutator.nothing()
+		this.injector = Guice.createInjector(
+			MempoolConfig.asModule(1000, 10),
+			new MainnetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
+			new ForksModule(),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new MockedGenesisModule(
+				Set.of(TEST_KEY.getPublicKey()),
+				Amount.ofTokens(110),
+				Amount.ofTokens(100)
+			),
+			new MempoolFillerModule(),
+			new AbstractModule() {
+				@Override
+				protected void configure() {
+					bindConstant().annotatedWith(NumPeers.class).to(0);
+					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
+					var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
+					bind(BerkeleyTransactionsByIdStore.class).in(Scopes.SINGLETON);
+					binder.addBinding().to(BerkeleyTransactionsByIdStore.class);
+				}
+			}
 		);
-
-		var allNodes = nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
-		var nodeCreators = Streams.mapWithIndex(nodeKeys.stream(), (k, i) ->
-			(Supplier<Injector>) () -> createRunner(k, allNodes)).collect(Collectors.toList());
-
-		deterministicRunner = new MultiNodeDeterministicRunner(
-			nodeCreators,
-			this::stopDatabase,
-			network
-		);
-		deterministicRunner.start();
+		this.injector.injectMembers(this);
 	}
 
 	@After
 	public void teardown() {
-		deterministicRunner.tearDown();
-	}
-
-	private void stopDatabase(Injector injector) {
 		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
 		injector.getInstance(PersistentSafetyStateStore.class).close();
 		injector.getInstance(DatabaseEnvironment.class).stop();
 	}
 
-	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
-		return Guice.createInjector(
-			new MockedGenesisModule(
-				nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
-				Amount.ofTokens(100000),
-				Amount.ofTokens(1000)
-			),
-			MempoolConfig.asModule(10, 10),
-			new MainnetForkConfigsModule(),
-			new ForksModule(),
-			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
-			new PersistedNodeForTestingModule(),
-			new TransactionStatusServiceModule(),
-			new AbstractModule() {
-				@Override
-				protected void configure() {
-					bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-					bind(Environment.class).toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
-					bindConstant().annotatedWith(DatabaseLocation.class)
-						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
-
-					var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-					bind(BerkeleyTransactionsByIdStore.class).in(Scopes.SINGLETON);
-					binder.addBinding().to(BerkeleyTransactionsByIdStore.class);
-					bind(ClientApiStore.class).toInstance(mock(ClientApiStore.class)); // TODO: Remove
-				}
-
-				@Provides
-				private PeersView peersView(@Self BFTNode self) {
-					return () -> allNodes.stream()
-						.filter(n -> !self.equals(n))
-						.map(PeersView.PeerInfo::fromBftNode);
-				}
-			}
-		);
-	}
-
 	@Test
-	public void transaction_status_should_not_change_once_committed() throws Exception {
-		var radixEngine = deterministicRunner.getNode(0)
-			.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() { }));
-		var acct = REAddr.ofPubKeyAccount(nodeKeys.get(0).getPublicKey());
+	public void mempool_add_should_not_change_status_of_transaction() throws Exception {
+		// Arrange
+		runner.start();
+		var acct = REAddr.ofPubKeyAccount(self);
 		var action = new TransferToken(
 			REAddr.ofNativeToken(),
 			acct,
-			REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(1).getPublicKey()),
+			REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey()),
 			UInt256.ONE
 		);
 		var request = TxnConstructionRequest.create()
 			.feePayer(acct)
 			.action(action);
 		var txBuilder = radixEngine.construct(request);
-		var txn = txBuilder.signAndBuild(nodeKeys.get(0)::sign);
-		var dispatcher = this.deterministicRunner.getNode(0)
-			.getInstance(Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() { }));
-		dispatcher.dispatch(MempoolAdd.create(txn));
-		TransactionStatus lastStatus = null;
-		for (int i = 0; i < 20; i++) {
-			for (int j = 0; j < 100; j++) {
-				deterministicRunner.processNext();
-				var service = deterministicRunner.getNode(0).getInstance(TransactionStatusService.class);
-				// Check that once confirmed, status does not change
-				var status = service.getTransactionStatus(txn.getId());
-				if (status != TransactionStatus.CONFIRMED) {
-					assertThat(lastStatus).isNotEqualTo(TransactionStatus.CONFIRMED);
-				}
-				lastStatus = status;
+		var transfer = txBuilder.signAndBuild(hashSigner::sign);
+		mempoolDispatcher.dispatch(MempoolAdd.create(transfer));
+		runner.runNextEventsThrough(
+			LedgerUpdate.class,
+			u -> {
+				var output = u.getStateComputerOutput().getInstance(REOutput.class);
+				return output.getProcessedTxns().stream().anyMatch(txn -> txn.getTxn().getId().equals(transfer.getId()));
 			}
-			// TODO: allow network to dispatch to itself rather than forcing it here
-			dispatcher.dispatch(MempoolAdd.create(txn));
+		);
+
+		// Act
+		mempoolDispatcher.dispatch(MempoolAdd.create(transfer));
+		for (int i = 0; i < 100; i++) {
+			runner.processNext();
 		}
+
+		// Assert
+		var status = transactionStatusService.getTransactionStatus(transfer.getId());
+		assertThat(status).isEqualTo(TransactionStatus.CONFIRMED);
+		var json = transactionStatusService.getTransaction(transfer.getId());
+		assertThat(json).isPresent();
 	}
 }

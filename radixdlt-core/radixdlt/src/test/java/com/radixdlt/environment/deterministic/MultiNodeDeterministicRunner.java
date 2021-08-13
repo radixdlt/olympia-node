@@ -62,47 +62,93 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration;
+package com.radixdlt.environment.deterministic;
 
 import com.google.inject.Inject;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import io.reactivex.rxjava3.schedulers.Timed;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 
-import java.util.function.Predicate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-public final class SingleNodeDeterministicRunner {
-	private static final int MAX_EVENTS_DEFAULT = 10000;
+public final class MultiNodeDeterministicRunner {
+	private static final Logger logger = LogManager.getLogger();
 
-	private final DeterministicProcessor processor;
+	private final List<Supplier<Injector>> nodeCreators;
 	private final DeterministicNetwork network;
+	private final List<Injector> nodes = new ArrayList<>();
+	private final Consumer<Injector> teardown;
 
 	@Inject
-	public SingleNodeDeterministicRunner(
-		DeterministicProcessor processor,
+	public MultiNodeDeterministicRunner(
+		List<Supplier<Injector>> nodeCreators,
+		Consumer<Injector> teardown,
 		DeterministicNetwork network
 	) {
-		this.processor = processor;
+		this.nodeCreators = nodeCreators;
+		this.teardown = teardown;
 		this.network = network;
 	}
 
+	public Injector getNode(int index) {
+		return nodes.get(index);
+	}
+
+	public <T> void dispatchToAll(Key<EventDispatcher<T>> dispatcherKey, T t) {
+		this.nodes.forEach(n -> n.getInstance(dispatcherKey).dispatch(t));
+	}
+
 	public void start() {
-		processor.start();
-	}
-
-	public <T> T runNextEventsThrough(Class<T> eventClass) {
-		return runNextEventsThrough(eventClass, t -> true);
-	}
-
-	@SuppressWarnings("unchecked")
-	public <T> T runNextEventsThrough(Class<T> eventClass, Predicate<T> eventPredicate) {
-		for (int i = 0; i < MAX_EVENTS_DEFAULT; i++) {
-			var msg = network.nextMessage().value();
-			processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-			if (eventClass.isInstance(msg.message()) && eventPredicate.test((T) msg.message())) {
-				return (T) msg.message();
-			}
+		for (Supplier<Injector> nodeCreator : nodeCreators) {
+			this.nodes.add(nodeCreator.get());
 		}
+		this.nodes.forEach(i -> i.getInstance(DeterministicProcessor.class).start());
+	}
 
-		throw new RuntimeException("Reached " + MAX_EVENTS_DEFAULT + " events without finding " + eventClass);
+	public void tearDown() {
+		this.nodes.forEach(teardown);
+	}
+
+	public void restartNode(int index) {
+		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
+		var injector = nodeCreators.get(index).get();
+		teardown.accept(this.nodes.set(index, injector));
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
+		try {
+			injector.getInstance(DeterministicProcessor.class).start();
+		} finally {
+			ThreadContext.remove("self");
+		}
+	}
+
+	public void processNext() {
+		Timed<ControlledMessage> msg = this.network.nextMessage();
+		logger.debug("Processing message {}", msg);
+
+		int nodeIndex = msg.value().channelId().receiverIndex();
+		Injector injector = this.nodes.get(nodeIndex);
+		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
+		try {
+			injector.getInstance(DeterministicProcessor.class)
+				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
+		} finally {
+			ThreadContext.remove("self");
+		}
+	}
+
+	public void processForCount(int messageCount) {
+		for (int i = 0; i < messageCount; i++) {
+			processNext();
+		}
 	}
 }

@@ -80,7 +80,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.integration.FailOnEvent;
-import com.radixdlt.integration.MultiNodeDeterministicRunner;
+import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;

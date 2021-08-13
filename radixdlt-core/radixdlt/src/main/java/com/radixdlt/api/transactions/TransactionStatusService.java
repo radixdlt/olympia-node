@@ -73,12 +73,11 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.utils.functional.Result;
 import org.json.JSONObject;
 
 import java.time.Duration;
+import java.util.Optional;
 
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
 import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
 import static com.radixdlt.api.data.TransactionStatus.FAILED;
 import static com.radixdlt.api.data.TransactionStatus.PENDING;
@@ -112,12 +111,8 @@ public class TransactionStatusService {
 		return this::onSuccess;
 	}
 
-	public Result<JSONObject> getTransaction(AID txId) {
-		var result = store.getTransactionJSON(txId);
-		if (result.isEmpty()) {
-			return UNKNOWN_TX_ID.with(txId).result();
-		}
-		return Result.ok(result.get());
+	public Optional<JSONObject> getTransaction(AID txId) {
+		return store.getTransactionJSON(txId);
 	}
 
 	public TransactionStatus getTransactionStatus(AID txId) {

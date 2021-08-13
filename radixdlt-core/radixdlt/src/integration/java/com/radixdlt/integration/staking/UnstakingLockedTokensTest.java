@@ -65,7 +65,7 @@
 package com.radixdlt.integration.staking;
 
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.integration.SingleNodeDeterministicRunner;
+import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
