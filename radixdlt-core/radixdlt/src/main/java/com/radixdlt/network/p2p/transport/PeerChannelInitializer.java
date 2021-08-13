@@ -168,7 +168,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 					   + PROXY_IP + single space + CLIENT_PORT + single space + PROXY_PORT + "\r\n" */
 					final var msgStr = new String(msg);
 					final var components = msgStr.split(" ");
-					if (!components[0].equals("PROXY") || !components[1].equals("TCP")) {
+					if (!components[0].equals("PROXY") || !components[1].startsWith("TCP")) {
 						log.warn("Received invalid PROXY protocol header line: {}", msgStr);
 						ctx.close();
 						return;
