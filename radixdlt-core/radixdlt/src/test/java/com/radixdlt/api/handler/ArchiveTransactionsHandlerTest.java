@@ -69,7 +69,7 @@ import org.junit.Test;
 import com.radixdlt.api.data.ActionEntry;
 import com.radixdlt.api.data.TransactionStatus;
 import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.api.service.TransactionStatusService;
+import com.radixdlt.api.transactions.TransactionStatusService;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.UInt256;

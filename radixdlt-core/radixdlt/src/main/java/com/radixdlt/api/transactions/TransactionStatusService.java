@@ -62,13 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.service;
+package com.radixdlt.api.transactions;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.api.data.TransactionStatus;
 import com.radixdlt.api.data.TxHistoryEntry;
+import com.radixdlt.api.service.ScheduledCacheCleanup;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.berkeley.BerkeleyTransactionsByIdStore;
 import com.radixdlt.environment.EventProcessor;
@@ -89,18 +89,14 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import io.reactivex.rxjava3.disposables.CompositeDisposable;
-
 import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
 import static com.radixdlt.api.data.TransactionStatus.FAILED;
 import static com.radixdlt.api.data.TransactionStatus.PENDING;
 import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
 
-@Singleton
 public class TransactionStatusService {
 	private static final long DEFAULT_CLEANUP_INTERVAL = 1000L;                        //every second
 	private static final Duration DEFAULT_TX_LIFE_TIME = Duration.ofMinutes(10);    //at most 10 minutes
-
 	private final ConcurrentMap<AID, TxStatusEntry> txCache = new ConcurrentHashMap<>();
 	private final BerkeleyTransactionsByIdStore store;
 	private final ScheduledEventDispatcher<ScheduledCacheCleanup> scheduledCacheCleanup;

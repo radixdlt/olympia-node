@@ -82,7 +82,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.api.service.TransactionStatusService;
+import com.radixdlt.api.transactions.TransactionStatusService;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
