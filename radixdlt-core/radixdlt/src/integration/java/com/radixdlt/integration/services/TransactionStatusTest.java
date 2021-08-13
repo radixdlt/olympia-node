@@ -120,7 +120,9 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 
 public class TransactionStatusTest {
 	private static final int NUM_NODES = 10;
@@ -219,14 +221,18 @@ public class TransactionStatusTest {
 			.action(action);
 		var txBuilder = radixEngine.construct(request);
 		var txn = txBuilder.signAndBuild(nodeKeys.get(0)::sign);
+		var service = deterministicRunner.getNode(0).getInstance(TransactionStatusService.class);
+		assertEquals(TRANSACTION_NOT_FOUND, service.getTransactionStatus(txn.getId()));
+
 		var dispatcher = this.deterministicRunner.getNode(0)
 			.getInstance(Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() { }));
+
+
 		dispatcher.dispatch(MempoolAdd.create(txn));
 		TransactionStatus lastStatus = null;
 		for (int i = 0; i < 20; i++) {
 			for (int j = 0; j < 100; j++) {
 				deterministicRunner.processNext();
-				var service = deterministicRunner.getNode(0).getInstance(TransactionStatusService.class);
 				// Check that once confirmed, status does not change
 				var status = service.getTransactionStatus(txn.getId());
 				if (status != TransactionStatus.CONFIRMED) {
