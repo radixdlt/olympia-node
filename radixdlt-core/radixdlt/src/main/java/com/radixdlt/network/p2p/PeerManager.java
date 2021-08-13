@@ -130,7 +130,7 @@ public final class PeerManager {
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.pendingOutboundChannelsManager = Objects.requireNonNull(pendingOutboundChannelsManager);
 
-		log.info("Node URI: " + self);
+		log.info("Node URI: {}",  self);
 	}
 
 	public Observable<InboundMessage> messages() {

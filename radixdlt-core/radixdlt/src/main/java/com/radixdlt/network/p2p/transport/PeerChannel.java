@@ -177,6 +177,10 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 					log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this.toString());
 				},
 				BackpressureOverflowStrategy.DROP_LATEST);
+
+		if (this.nettyChannel.isActive()) {
+			this.init();
+		}
 	}
 
 	private void initHandshake(NodeId remoteNodeId) {
@@ -231,10 +235,14 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws PublicKeyException {
+		if (this.state == ChannelState.INACTIVE) {
+			this.init();
+		}
+	}
+
+	private void init() {
+		log.trace("Init: {}", this.toString());
 		this.state = ChannelState.AUTH_HANDSHAKE;
-
-		log.trace("Active: {}", this.toString());
-
 		if (this.isInitiator) {
 			this.initHandshake(this.remoteNodeId);
 		}
