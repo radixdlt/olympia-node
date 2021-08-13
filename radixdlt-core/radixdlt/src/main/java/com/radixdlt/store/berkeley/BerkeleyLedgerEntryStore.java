@@ -951,7 +951,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				}
 			}
 
-			additionalStores.forEach(b -> b.process(dbTxn, txn));
+			additionalStores.forEach(b -> b.process(dbTxn, txn, stateVersion));
 
 		} catch (Exception e) {
 			if (dbTxn != null) {

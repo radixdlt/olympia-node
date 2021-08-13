@@ -77,5 +77,5 @@ import com.sleepycat.je.Transaction;
 public interface BerkeleyAdditionalStore {
 	void open(DatabaseEnvironment dbEnv);
 	void close();
-	void process(Transaction dbTxn, REProcessedTxn txn);
+	void process(Transaction dbTxn, REProcessedTxn txn, long stateVersion);
 }

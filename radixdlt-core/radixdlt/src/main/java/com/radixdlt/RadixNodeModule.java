@@ -64,6 +64,7 @@
 
 package com.radixdlt;
 
+import com.radixdlt.api.module.ApiModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.StokenetForkConfigsModule;
 import org.apache.logging.log4j.LogManager;
@@ -75,11 +76,6 @@ import org.radix.utils.IOUtils;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.module.ArchiveApiModule;
-import com.radixdlt.api.module.CommonApiModule;
-import com.radixdlt.api.module.NodeApiModule;
-import com.radixdlt.api.qualifier.Endpoints;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -118,10 +114,6 @@ import com.radixdlt.utils.Bytes;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
-
-import static com.radixdlt.EndpointConfig.enabledArchiveEndpoints;
-import static com.radixdlt.EndpointConfig.enabledNodeEndpoints;
-import static com.radixdlt.EndpointConfig.endpointStatuses;
 
 /**
  * Module which manages everything in a single node
@@ -291,30 +283,6 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new PeerLivenessMonitorModule());
 
 		// API
-		configureApi();
-	}
-
-	private void configureApi() {
-		var archiveEndpoints = enabledArchiveEndpoints(properties, networkId);
-		var nodeEndpoints = enabledNodeEndpoints(properties, networkId);
-		var statuses = endpointStatuses(properties, networkId);
-
-		bind(new TypeLiteral<List<EndpointStatus>>() {}).annotatedWith(Endpoints.class).toInstance(statuses);
-
-		if (hasActiveEndpoints(archiveEndpoints, nodeEndpoints)) {
-			install(new CommonApiModule());
-		}
-
-		if (!archiveEndpoints.isEmpty()) {
-			install(new ArchiveApiModule(archiveEndpoints));
-		}
-
-		if (!nodeEndpoints.isEmpty()) {
-			install(new NodeApiModule(nodeEndpoints));
-		}
-	}
-
-	private boolean hasActiveEndpoints(List<EndpointConfig> archiveEndpoints, List<EndpointConfig> nodeEndpoints) {
-		return !archiveEndpoints.isEmpty() || !nodeEndpoints.isEmpty();
+		install(new ApiModule(networkId, properties));
 	}
 }

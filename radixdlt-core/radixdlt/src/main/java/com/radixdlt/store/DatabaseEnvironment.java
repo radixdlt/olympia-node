@@ -64,6 +64,7 @@
 
 package com.radixdlt.store;
 
+import com.sleepycat.je.Durability;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -77,7 +78,6 @@ import java.io.File;
 import java.text.StringCharacterIterator;
 import java.util.concurrent.TimeUnit;
 
-import static com.sleepycat.je.Durability.COMMIT_NO_SYNC;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CHECKPOINTER;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CLEANER;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_EVICTOR;
@@ -104,7 +104,7 @@ public final class DatabaseEnvironment {
 		environmentConfig.setTransactional(true);
 		environmentConfig.setAllowCreate(true);
 		environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
-		environmentConfig.setDurability(COMMIT_NO_SYNC);
+		environmentConfig.setDurability(Durability.COMMIT_SYNC);
 		environmentConfig.setConfigParam(LOG_FILE_CACHE_SIZE, "256");
 		environmentConfig.setConfigParam(ENV_RUN_CHECKPOINTER, "true");
 		environmentConfig.setConfigParam(ENV_RUN_CLEANER, "true");

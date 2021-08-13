@@ -73,7 +73,6 @@ import org.json.JSONObject;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.EndpointStatus;
 import com.radixdlt.api.qualifier.Endpoints;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -93,8 +92,8 @@ import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
 
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.api.JsonRpcUtil.ARRAY;
@@ -207,7 +206,6 @@ public class SystemConfigService {
 
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final SystemCounters systemCounters;
-	private final List<EndpointStatus> endpointStatuses;
 	private final PeersView peersView;
 	private final AddressBook addressBook;
 	private final Addressing addressing;
@@ -215,7 +213,7 @@ public class SystemConfigService {
 	@Inject
 	public SystemConfigService(
 		@Self ECPublicKey self,
-		@Endpoints List<EndpointStatus> endpointStatuses,
+		@Endpoints Map<String, Boolean> endpointStatuses,
 		@PacemakerTimeout long pacemakerTimeout,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
 		@MempoolMaxSize int mempoolMaxSize,
@@ -232,7 +230,6 @@ public class SystemConfigService {
 	) {
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.systemCounters = systemCounters;
-		this.endpointStatuses = endpointStatuses;
 		this.peersView = peersView;
 		this.addressBook = addressBook;
 		this.addressing = addressing;
@@ -328,10 +325,6 @@ public class SystemConfigService {
 		return checkpointsConfiguration;
 	}
 
-	public void withEndpointStatuses(Consumer<? super EndpointStatus> consumer) {
-		endpointStatuses.forEach(consumer);
-	}
-
 	public AccumulatorState accumulatorState() {
 		return inMemorySystemInfo.getCurrentProof().getAccumulatorState();
 	}
@@ -389,10 +382,10 @@ public class SystemConfigService {
 	}
 
 	@VisibleForTesting
-	static JSONObject prepareApiConfiguration(List<EndpointStatus> statuses) {
-		var enabled = statuses.stream()
-			.filter(EndpointStatus::enabled)
-			.map(EndpointStatus::name)
+	static JSONObject prepareApiConfiguration(Map<String, Boolean> statuses) {
+		var enabled = statuses.entrySet().stream()
+			.filter(Map.Entry::getValue)
+			.map(Map.Entry::getKey)
 			.collect(Collectors.toList());
 
 		return jsonObject().put(

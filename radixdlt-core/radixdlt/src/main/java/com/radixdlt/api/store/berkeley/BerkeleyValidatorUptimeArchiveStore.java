@@ -198,7 +198,7 @@ public final class BerkeleyValidatorUptimeArchiveStore implements BerkeleyAdditi
 	}
 
 	@Override
-	public void process(Transaction dbTxn, REProcessedTxn txn) {
+	public void process(Transaction dbTxn, REProcessedTxn txn, long stateVersion) {
 		for (var groupedUpdates : txn.getGroupedStateUpdates()) {
 			for (var update : groupedUpdates) {
 				if (update.isShutDown() && update.getParsed() instanceof EpochData) {

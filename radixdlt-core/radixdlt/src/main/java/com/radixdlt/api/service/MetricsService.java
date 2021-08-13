@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.api.qualifier.Endpoints;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.REAddr;
@@ -254,9 +255,11 @@ public class MetricsService {
 	private final Addressing addressing;
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final BFTNode self;
+	private final Map<String, Boolean> endpointStatuses;
 
 	@Inject
 	public MetricsService(
+		@Endpoints Map<String, Boolean> endpointStatuses,
 		SystemCounters systemCounters,
 		InfoSupplier infoSupplier,
 		SystemConfigService systemConfigService,
@@ -267,6 +270,7 @@ public class MetricsService {
 		@Self BFTNode self,
 		Addressing addressing
 	) {
+		this.endpointStatuses = endpointStatuses;
 		this.systemCounters = systemCounters;
 		this.infoSupplier = infoSupplier;
 		this.systemConfigService = systemConfigService;
@@ -374,8 +378,7 @@ public class MetricsService {
 	}
 
 	private void addEndpontStatuses(StringBuilder builder) {
-		systemConfigService.withEndpointStatuses(status ->
-													 appendField(builder, status.name() + "_enabled", status.enabled()));
+		endpointStatuses.forEach((name, enabled) -> appendField(builder, name + "_enabled", enabled));
 	}
 
 	private void appendField(StringBuilder builder, String name, Object value) {

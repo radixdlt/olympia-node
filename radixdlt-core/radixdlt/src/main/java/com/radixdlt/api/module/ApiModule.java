@@ -62,26 +62,111 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.api.module;
 
-public class EndpointStatus {
-	private final String name;
-	private boolean enabled;
+import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.api.qualifier.Endpoints;
+import com.radixdlt.networks.Network;
+import com.radixdlt.properties.RuntimeProperties;
 
-	private EndpointStatus(String name, boolean enabled) {
-		this.name = name;
-		this.enabled = enabled;
+import java.util.HashMap;
+import java.util.Map;
+
+public class ApiModule extends AbstractModule {
+	private final RuntimeProperties properties;
+	private final int networkId;
+	public ApiModule(int networkId, RuntimeProperties properties) {
+		this.properties = properties;
+		this.networkId = networkId;
 	}
 
-	public static EndpointStatus create(String name, boolean enabled) {
-		return new EndpointStatus(name, enabled);
-	}
+	@Override
+	public void configure() {
+		install(new CommonApiModule());
 
-	public boolean enabled() {
-		return enabled;
-	}
+		var endpointStatus = new HashMap<String, Boolean>();
 
-	public String name() {
-		return name;
+		var archiveEnable = properties.get("api.archive.enable", false);
+		if (archiveEnable) {
+			install(new ArchiveEndpointModule());
+		}
+		endpointStatus.put("archive", archiveEnable);
+		var constructionEnable = properties.get("api.construction.enable", false);
+		if (constructionEnable) {
+			install(new ConstructEndpointModule());
+		}
+		endpointStatus.put("construction", constructionEnable);
+		if (archiveEnable || constructionEnable) {
+			install(new ArchiveApiModule());
+		}
+
+		var metricsEnable = properties.get("api.metrics.enable", false);
+		if (metricsEnable) {
+			install(new MetricsEndpointModule());
+		}
+		endpointStatus.put("metrics", metricsEnable);
+
+		var systemEnable = properties.get("api.system.enable", false);
+		if (systemEnable) {
+			install(new SystemEndpointModule());
+		}
+		endpointStatus.put("system", systemEnable);
+
+		var accountEnable = properties.get("api.account.enable", false);
+		if (accountEnable) {
+			install(new AccountEndpointModule());
+		}
+		endpointStatus.put("account", accountEnable);
+
+		var validationEnable = properties.get("api.validation.enable", false);
+		if (validationEnable) {
+			install(new ValidationEndpointModule());
+		}
+		endpointStatus.put("validation", validationEnable);
+
+		// TODO: Remove
+		var universeEnable = properties.get("api.universe.enable", false);
+		if (universeEnable) {
+			install(new UniverseEndpointModule());
+		}
+		endpointStatus.put("universe", universeEnable);
+
+		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
+		if (faucetEnable) {
+			install(new FaucetEndpointModule());
+		}
+		endpointStatus.put("faucet", faucetEnable);
+
+		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
+		if (chaosEnable) {
+			install(new ChaosEndpointModule());
+		}
+		endpointStatus.put("chaos", chaosEnable);
+
+		var healthEnable = properties.get("api.health.enable", true);
+		if (healthEnable) {
+			install(new HealthEndpointModule());
+		}
+		endpointStatus.put("health", healthEnable);
+
+		var versionEnable = properties.get("api.version.enable", true);
+		if (versionEnable) {
+			install(new VersionEndpointModule());
+		}
+		endpointStatus.put("version", versionEnable);
+
+		var transactionIndex = properties.get("api.developer.transaction_index.enable", false);
+		if (transactionIndex) {
+			install(new TransactionIndexApiModule());
+		}
+		var developerEnable = properties.get("api.developer.enable", true);
+		if (developerEnable) {
+			install(new DeveloperEndpointModule());
+		}
+		endpointStatus.put("developer", developerEnable);
+
+		install(new NodeApiModule());
+		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
 	}
 }

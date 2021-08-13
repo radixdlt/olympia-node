@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -66,23 +66,73 @@ package com.radixdlt.api.module;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.Controller;
-import com.radixdlt.api.qualifier.NodeServer;
-import com.radixdlt.api.server.NodeHttpServer;
-import com.radixdlt.environment.Runners;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.JsonRpcHandler;
+import com.radixdlt.api.qualifier.DeveloperEndpoint;
+import com.radixdlt.api.store.berkeley.BerkeleyTransactionIndexArchiveStore;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.functional.Failure;
+import com.radixdlt.utils.functional.Result;
+import org.json.JSONArray;
 
-/**
- * Configures the api including http server setup
- */
-public final class NodeApiModule extends AbstractModule {
+import java.util.List;
+
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
+
+public final class TransactionIndexApiModule extends AbstractModule {
 	@Override
 	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
-			.addBinding(Runners.NODE_API)
-			.to(NodeHttpServer.class);
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		bind(NodeHttpServer.class).in(Scopes.SINGLETON);
+		bind(BerkeleyTransactionIndexArchiveStore.class).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+			.addBinding().to(BerkeleyTransactionIndexArchiveStore.class);
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("index.get_transaction_count")
+	public JsonRpcHandler indexGetTransactionCount(BerkeleyTransactionIndexArchiveStore store) {
+		return request -> withRequiredParameters(
+			request,
+			List.of(),
+			params -> Result.wrap(
+				e -> Failure.failure(-1, e.getMessage()),
+				() -> {
+					var totalCount = store.getCount();
+					return jsonObject()
+						.put("totalCount", totalCount);
+				}
+			)
+		);
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("index.get_transactions")
+	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexArchiveStore store) {
+		return request -> withRequiredParameters(
+			request,
+			List.of("offset", "limit"),
+			params -> Result.wrap(
+				e -> Failure.failure(-1, e.getMessage()),
+				() -> {
+					var offset = params.getLong("offset");
+					var limit = params.getLong("limit");
+					var transactions = new JSONArray();
+					try (var stream = store.get(offset)) {
+						stream.limit(limit).forEach(transactions::put);
+					}
+					var totalCount = store.getCount();
+					var nextOffset = offset + transactions.length();
+					return jsonObject()
+						.put("transactions", transactions)
+						.put("count", transactions.length())
+						.put("totalCount", totalCount)
+						.put("nextOffset", nextOffset);
+				}
+			)
+		);
 	}
 }

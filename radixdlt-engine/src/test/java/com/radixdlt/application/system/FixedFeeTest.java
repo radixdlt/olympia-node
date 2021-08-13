@@ -162,14 +162,18 @@ public class FixedFeeTest {
 
 		// Act
 		var result = this.engine.execute(List.of(transfer));
-		var accounting0 = REResourceAccounting.compute(result.getProcessedTxn().getGroupedStateUpdates().get(0));
+		var accounting0 = REResourceAccounting.compute(
+			result.getProcessedTxn().getGroupedStateUpdates().get(0).stream()
+		);
 		assertThat(accounting0.bucketAccounting())
 			.hasSize(1)
 			.containsEntry(
 				new AccountBucket(REAddr.ofNativeToken(), accountAddr),
 				BigInteger.valueOf(-5)
 			);
-		var accounting1 = REResourceAccounting.compute(result.getProcessedTxn().getGroupedStateUpdates().get(1));
+		var accounting1 = REResourceAccounting.compute(
+			result.getProcessedTxn().getGroupedStateUpdates().get(1).stream()
+		);
 		assertThat(accounting1.bucketAccounting())
 			.hasSize(2)
 			.containsEntry(
@@ -229,14 +233,18 @@ public class FixedFeeTest {
 
 		// Act
 		var result = this.engine.execute(List.of(transfer));
-		var accounting0 = REResourceAccounting.compute(result.getProcessedTxn().getGroupedStateUpdates().get(0));
+		var accounting0 = REResourceAccounting.compute(
+			result.getProcessedTxn().getGroupedStateUpdates().get(0).stream()
+		);
 		assertThat(accounting0.bucketAccounting())
 			.hasSize(1)
 			.containsEntry(
 				new AccountBucket(REAddr.ofNativeToken(), accountAddr),
 				BigInteger.valueOf(-8)
 			);
-		var accounting1 = REResourceAccounting.compute(result.getProcessedTxn().getGroupedStateUpdates().get(1));
+		var accounting1 = REResourceAccounting.compute(
+			result.getProcessedTxn().getGroupedStateUpdates().get(1).stream()
+		);
 		assertThat(accounting1.bucketAccounting())
 			.hasSize(2)
 			.containsEntry(
@@ -247,7 +255,9 @@ public class FixedFeeTest {
 				new AccountBucket(REAddr.ofNativeToken(), to),
 				BigInteger.valueOf(2)
 			);
-		var accounting2 = REResourceAccounting.compute(result.getProcessedTxn().getGroupedStateUpdates().get(2));
+		var accounting2 = REResourceAccounting.compute(
+			result.getProcessedTxn().getGroupedStateUpdates().get(2).stream()
+		);
 		assertThat(accounting2.bucketAccounting())
 			.hasSize(1)
 			.containsEntry(
