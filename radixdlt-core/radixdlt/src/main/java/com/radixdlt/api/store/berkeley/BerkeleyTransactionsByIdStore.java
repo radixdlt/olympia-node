@@ -177,27 +177,31 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		var result = new JSONObject();
 		final ActionType type;
 		if (from.isEmpty()) {
-			result.put("to", to);
+			result.put("to", addressing.forAccounts().of(to.get().getOwner()));
 			type = ActionType.MINT;
 		} else if (to.isEmpty()) {
-			result.put("from", from);
+			result.put("from", addressing.forAccounts().of(from.get().getOwner()));
 			type = ActionType.BURN;
 		} else {
 			var fromBucket = from.get();
 			var toBucket = to.get();
 			if (fromBucket instanceof AccountBucket) {
 				if (toBucket instanceof AccountBucket) {
-					result.put("from", from).put("to", to);
+					result
+						.put("from", addressing.forAccounts().of(fromBucket.getOwner()))
+						.put("to", addressing.forAccounts().of(toBucket.getOwner()));
 					type = ActionType.TRANSFER;
 				} else {
-					result.put("from", from).put("validator", to);
+					result
+						.put("from", addressing.forAccounts().of(fromBucket.getOwner()))
+						.put("validator", addressing.forValidators().of(toBucket.getValidatorKey()));
 					type = ActionType.STAKE;
 				}
 			} else if (fromBucket instanceof StakeOwnershipBucket) {
 				amt = computeStakeFromOwnership.apply(fromBucket.getValidatorKey(), UInt384.from(amt)).getLow();
 				result
-					.put("from", to) // FIXME: badness in API spec
-					.put("validator", from);
+					.put("from", addressing.forAccounts().of(toBucket.getOwner())) // FIXME: badness in API spec
+					.put("validator", addressing.forValidators().of(fromBucket.getValidatorKey()));
 				type = ActionType.UNSTAKE;
 			} else {
 				return new JSONObject().put("type", "Other");
@@ -264,7 +268,8 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 			.put("timestamp", DateTimeFormatter.ISO_INSTANT.format(timestamp.get()))
 			.put("fee", fee)
 			.put("actions", actionsJson)
-			.putOpt("message", message).toString();
+			.putOpt("message", message.orElse(null))
+			.toString();
 		var value = new DatabaseEntry(jsonString.getBytes(StandardCharsets.UTF_8));
 
 		var result = txnIdDatabase.putNoOverwrite(dbTxn, key, value);
