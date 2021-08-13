@@ -314,18 +314,22 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return BerkeleyLedgerEntryStore.this.openIndexedCursor(null, index);
 	}
 
-	@Override
-	public Optional<RawSubstateBytes> get(SystemMapKey mapKey) {
+	private Optional<RawSubstateBytes> getInternal(Transaction dbTxn, SystemMapKey mapKey) {
 		var key = new DatabaseEntry(mapKey.array());
 		var substateId = new DatabaseEntry();
-		var result = mapDatabase.get(null, key, substateId, null);
+		var result = mapDatabase.get(dbTxn, key, substateId, null);
 		if (result != SUCCESS) {
 			return Optional.empty();
 		}
 
-		var substate = loadSubstate(null, SubstateId.fromBytes(substateId.getData())).orElseThrow();
+		var substate = loadSubstate(dbTxn, SubstateId.fromBytes(substateId.getData())).orElseThrow();
 		var substateBytes = new RawSubstateBytes(substateId.getData(), substate.array());
 		return Optional.of(substateBytes);
+	}
+
+	@Override
+	public Optional<RawSubstateBytes> get(SystemMapKey mapKey) {
+		return getInternal(null, mapKey);
 	}
 
 	private void storeTxn(Transaction dbTxn, REProcessedTxn txn) {
@@ -909,7 +913,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				}
 			}
 
-			additionalStores.forEach(b -> b.process(dbTxn, txn, stateVersion));
+			additionalStores.forEach(b -> b.process(dbTxn, txn, stateVersion, k -> getInternal(dbTxn, k)));
 
 		} catch (Exception e) {
 			if (dbTxn != null) {

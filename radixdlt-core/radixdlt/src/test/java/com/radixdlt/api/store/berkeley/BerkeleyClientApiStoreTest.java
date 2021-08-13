@@ -136,9 +136,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class BerkeleyClientApiStoreTest {
 	private static final ECKeyPair VALIDATOR_KEY = PrivateKeys.ofNumeric(1);
@@ -350,26 +348,6 @@ public class BerkeleyClientApiStoreTest {
 
 	@Ignore
 	@Test
-	public void singleTransactionIsLocatedAndReturned() throws Exception {
-		var tokenDef = prepareMutableTokenDef(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
-		var tx = engine.construct(
-			TxnConstructionRequest.create()
-				.createMutableToken(tokenDef)
-				.mint(TOKEN, TOKEN_ACCOUNT, UInt256.TEN)
-				.transfer(TOKEN, TOKEN_ACCOUNT, OWNER_ACCOUNT, UInt256.FOUR)
-				.burn(TOKEN, TOKEN_ACCOUNT, UInt256.ONE)
-		).signAndBuild(TOKEN_KEYPAIR::sign);
-
-		var txMap = new HashMap<AID, Txn>();
-		var clientApiStore = prepareApiStore(tx, txMap);
-
-		clientApiStore.getTransaction(tx.getId())
-			.onFailure(this::failWithMessage)
-			.onSuccess(entry -> assertEquals(tx.getId(), entry.getTxId()));
-	}
-
-	@Ignore
-	@Test
 	public void incorrectPageSizeIsRejected() throws TxBuilderException, RadixEngineException {
 		var tokenDef = prepareMutableTokenDef(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
 		var tx = engine.construct(
@@ -405,17 +383,6 @@ public class BerkeleyClientApiStoreTest {
 			.collect(Collectors.toList());
 
 		transactions.forEach(txn -> txMap.put(txn.getId(), txn));
-
-		when(transactionsByIdStore.get(any(AID.class)))
-			.thenAnswer(invocation -> Optional.ofNullable(txMap.get(invocation.getArgument(0, AID.class))));
-
-		//Insert necessary values on DB rebuild
-		/*
-		doAnswer(invocation -> {
-			transactions.forEach(invocation.<Consumer<Txn>>getArgument(0));
-			return null;
-		}).when(transactionsByIdStore).forEach(any(Consumer.class));
-		 */
 
 		return new BerkeleyClientApiStore(
 			environment,

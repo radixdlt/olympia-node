@@ -72,6 +72,8 @@ import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -89,6 +91,8 @@ import org.json.JSONObject;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
@@ -193,7 +197,12 @@ public final class BerkeleyTransactionIndexArchiveStore implements BerkeleyAddit
 	}
 
 	@Override
-	public void process(Transaction dbTxn, REProcessedTxn txn, long stateVersion) {
+	public void process(
+		Transaction dbTxn,
+		REProcessedTxn txn,
+		long stateVersion,
+		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
+	) {
 		final long expectedVersion;
 		try (var cursor = transactions.openCursor(dbTxn, null)) {
 			var key = new DatabaseEntry();

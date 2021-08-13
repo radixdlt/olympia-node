@@ -67,10 +67,8 @@ package com.radixdlt.api.transactions;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.api.service.ScheduledCacheCleanup;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 
@@ -78,24 +76,6 @@ public class TransactionStatusServiceModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> cacheCleanupEventProcessor(TransactionStatusService transactionStatusService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			ScheduledCacheCleanup.class,
-			transactionStatusService.cacheCleanupEventProcessor()
-		);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> ledgerUpdateToLedgerTransactionStatus(TransactionStatusService transactionStatusService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			LedgerUpdate.class,
-			transactionStatusService.ledgerUpdateProcessor()
-		);
 	}
 
 	@ProvidesIntoSet

@@ -65,7 +65,6 @@
 package com.radixdlt;
 
 import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.api.service.ScheduledCacheCleanup;
 import com.radixdlt.api.service.ScheduledStatsCollecting;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -210,8 +209,6 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledQueueFlush>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledQueueFlush.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledCacheCleanup>>() { })
-			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledCacheCleanup.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledStatsCollecting>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledStatsCollecting.class)).in(Scopes.SINGLETON);
 

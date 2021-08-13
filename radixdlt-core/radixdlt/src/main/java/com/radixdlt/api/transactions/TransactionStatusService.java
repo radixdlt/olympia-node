@@ -64,72 +64,44 @@
 
 package com.radixdlt.api.transactions;
 
-import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.TransactionStatus;
-import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.api.service.ScheduledCacheCleanup;
-import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.berkeley.BerkeleyTransactionsByIdStore;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.utils.functional.Result;
+import org.json.JSONObject;
 
 import java.time.Duration;
-import java.time.Instant;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
+import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
 import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
 import static com.radixdlt.api.data.TransactionStatus.FAILED;
 import static com.radixdlt.api.data.TransactionStatus.PENDING;
 import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
 
 public class TransactionStatusService {
-	private static final long DEFAULT_CLEANUP_INTERVAL = 1000L;                        //every second
-	private static final Duration DEFAULT_TX_LIFE_TIME = Duration.ofMinutes(10);    //at most 10 minutes
-	private final ConcurrentMap<AID, TxStatusEntry> txCache = new ConcurrentHashMap<>();
+	private final Cache<AID, TransactionStatus> cache = CacheBuilder.newBuilder()
+		.maximumSize(100000)
+		.expireAfterAccess(Duration.ofMinutes(10))
+		.build();
 	private final BerkeleyTransactionsByIdStore store;
-	private final ScheduledEventDispatcher<ScheduledCacheCleanup> scheduledCacheCleanup;
-	private final ClientApiStore clientApiStore;
 
 	@Inject
-	public TransactionStatusService(
-		BerkeleyTransactionsByIdStore store,
-		ScheduledEventDispatcher<ScheduledCacheCleanup> scheduledCacheCleanup,
-		ClientApiStore clientApiStore
-	) {
+	public TransactionStatusService(BerkeleyTransactionsByIdStore store) {
 		this.store = store;
-		this.scheduledCacheCleanup = scheduledCacheCleanup;
-		this.clientApiStore = clientApiStore;
-
-		scheduledCacheCleanup.dispatch(ScheduledCacheCleanup.create(), DEFAULT_CLEANUP_INTERVAL);
-	}
-
-	private void onCommit(LedgerUpdate ledgerUpdate) {
-		var output = ledgerUpdate.getStateComputerOutput().getInstance(REOutput.class);
-		output.getProcessedTxns().forEach(txn -> updateStatus(txn.getTxn().getId(), CONFIRMED));
 	}
 
 	private void onReject(MempoolAddFailure mempoolAddFailure) {
-		updateStatus(mempoolAddFailure.getTxn().getId(), FAILED);
+		cache.put(mempoolAddFailure.getTxn().getId(), FAILED);
 	}
 
 	private void onSuccess(MempoolAddSuccess mempoolAddSuccess) {
-		updateStatus(mempoolAddSuccess.getTxn().getId(), PENDING);
-	}
-
-	public EventProcessor<LedgerUpdate> ledgerUpdateProcessor() {
-		return this::onCommit;
+		cache.put(mempoolAddSuccess.getTxn().getId(), PENDING);
 	}
 
 	public EventProcessor<MempoolAddFailure> mempoolAddFailureEventProcessor() {
@@ -140,79 +112,19 @@ public class TransactionStatusService {
 		return this::onSuccess;
 	}
 
-	public Result<TxHistoryEntry> getTransaction(AID txId) {
-		return clientApiStore.getTransaction(txId);
+	public Result<JSONObject> getTransaction(AID txId) {
+		var result = store.getTransactionJSON(txId);
+		if (result.isEmpty()) {
+			return UNKNOWN_TX_ID.with(txId).result();
+		}
+		return Result.ok(result.get());
 	}
 
 	public TransactionStatus getTransactionStatus(AID txId) {
-		return Optional.ofNullable(txCache.get(txId))
-			.flatMap(TxStatusEntry::getStatus)
-			.orElseGet(() -> store.contains(txId) ? CONFIRMED : TRANSACTION_NOT_FOUND);
-	}
-
-	public EventProcessor<ScheduledCacheCleanup> cacheCleanupEventProcessor() {
-		return flush -> {
-			cleanupCache();
-			scheduledCacheCleanup.dispatch(ScheduledCacheCleanup.create(), DEFAULT_CLEANUP_INTERVAL);
-		};
-	}
-
-	private void updateStatus(AID id, TransactionStatus newStatus) {
-		txCache.compute(id, (key, value) ->
-			Optional.ofNullable(value).orElseGet(this::createEntry).update(newStatus));
-	}
-
-	private TxStatusEntry createEntry() {
-		return TxStatusEntry.create(this::clock);
-	}
-
-	@VisibleForTesting
-	Instant clock() {
-		return Instant.now();
-	}
-
-	private void cleanupCache() {
-		var expirationTime = clock().minus(DEFAULT_TX_LIFE_TIME);
-
-		var scheduledForRemoval = new HashSet<AID>();
-
-		txCache.forEach((key, value) -> {
-			var currentStatus = value.getStatus().orElse(PENDING);
-
-			if (currentStatus != PENDING && value.isBefore(expirationTime)) {
-				scheduledForRemoval.add(key);
-			}
-		});
-
-		scheduledForRemoval.forEach(txCache::remove);
-	}
-
-	private static class TxStatusEntry {
-		private final AtomicReference<Instant> timestamp = new AtomicReference<>();
-		private final AtomicReference<TransactionStatus> status = new AtomicReference<>();
-		private final Supplier<Instant> clock;
-
-		private TxStatusEntry(Supplier<Instant> clock) {
-			this.clock = clock;
-			this.timestamp.set(clock.get());
+		var status = cache.getIfPresent(txId);
+		if (status != CONFIRMED && store.contains(txId)) {
+			return CONFIRMED;
 		}
-
-		static TxStatusEntry create(Supplier<Instant> clock) {
-			return new TxStatusEntry(clock);
-		}
-
-		Optional<TransactionStatus> getStatus() {
-			return Optional.ofNullable(status.get());
-		}
-
-		boolean isBefore(Instant expirationTime) {
-			return timestamp.get().isBefore(expirationTime);
-		}
-
-		public TxStatusEntry update(TransactionStatus newStatus) {
-			timestamp.set(clock.get());
-			status.set(newStatus);
-			return this;
-		}
+		return status != null ? CONFIRMED : TRANSACTION_NOT_FOUND;
 	}
 }

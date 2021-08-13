@@ -68,7 +68,6 @@ import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.transactions.TransactionStatusService;
 import com.radixdlt.identifiers.AID;
 
@@ -97,7 +96,7 @@ public class ArchiveTransactionsHandler {
 			request,
 			"txID",
 			idString -> AID.fromString(idString)
-				.flatMap(txId -> transactionStatusService.getTransaction(txId).map(TxHistoryEntry::asJson))
+				.flatMap(transactionStatusService::getTransaction)
 		);
 	}
 }

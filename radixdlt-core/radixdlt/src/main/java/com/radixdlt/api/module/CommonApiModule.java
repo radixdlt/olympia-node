@@ -71,7 +71,6 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.service.NetworkInfoService;
-import com.radixdlt.api.service.ScheduledCacheCleanup;
 import com.radixdlt.api.service.ScheduledStatsCollecting;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
@@ -89,7 +88,6 @@ public class CommonApiModule extends AbstractModule {
 		eventBinder.addBinding().toInstance(AtomsRemovedFromMempool.class);
 		eventBinder.addBinding().toInstance(REOutput.class);
 		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
-		eventBinder.addBinding().toInstance(ScheduledCacheCleanup.class);
 		eventBinder.addBinding().toInstance(ScheduledQueueFlush.class);
 		eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
 

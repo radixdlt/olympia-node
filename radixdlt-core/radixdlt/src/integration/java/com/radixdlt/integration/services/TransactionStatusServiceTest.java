@@ -226,9 +226,9 @@ public class TransactionStatusServiceTest {
 			.getInstance(Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() { }));
 		dispatcher.dispatch(MempoolAdd.create(txn));
 		TransactionStatus lastStatus = null;
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < 20; i++) {
 			for (int j = 0; j < 100; j++) {
-				deterministicRunner.processForCount(1);
+				deterministicRunner.processNext();
 				var service = deterministicRunner.getNode(0).getInstance(TransactionStatusService.class);
 				// Check that once confirmed, status does not change
 				var status = service.getTransactionStatus(txn.getId());

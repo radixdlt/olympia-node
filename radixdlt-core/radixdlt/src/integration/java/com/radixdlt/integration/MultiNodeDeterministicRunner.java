@@ -132,7 +132,7 @@ public final class MultiNodeDeterministicRunner {
 		}
 	}
 
-	private Timed<ControlledMessage> processNext() {
+	public void processNext() {
 		Timed<ControlledMessage> msg = this.network.nextMessage();
 		logger.debug("Processing message {}", msg);
 
@@ -145,8 +145,6 @@ public final class MultiNodeDeterministicRunner {
 		} finally {
 			ThreadContext.remove("self");
 		}
-
-		return msg;
 	}
 
 	public void processForCount(int messageCount) {

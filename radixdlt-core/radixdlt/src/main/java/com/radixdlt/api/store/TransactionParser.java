@@ -80,7 +80,6 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
-import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
 import java.util.List;
@@ -150,7 +149,7 @@ public final class TransactionParser {
 		);
 	}
 
-	public Result<TxHistoryEntry> parse(
+	public TxHistoryEntry parse(
 		REProcessedTxn processedTxn,
 		List<Optional<TwoActorEntry>> actionEntries,
 		Instant txDate,
@@ -167,6 +166,6 @@ public final class TransactionParser {
 			.map(a -> mapToActionEntry(a, addrToRri, computeStakeFromOwnership))
 			.collect(Collectors.toList());
 
-		return Result.ok(TxHistoryEntry.create(txnId, txDate, fee, message.orElse(null), actions));
+		return TxHistoryEntry.create(txnId, txDate, fee, message.orElse(null), actions);
 	}
 }

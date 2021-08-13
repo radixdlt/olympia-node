@@ -66,17 +66,47 @@
 
 package com.radixdlt.api.store.berkeley;
 
-import com.radixdlt.atom.Txn;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.accounting.TwoActorEntry;
+import com.radixdlt.api.data.ActionType;
+import com.radixdlt.application.system.state.RoundData;
+import com.radixdlt.application.system.state.StakeOwnershipBucket;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.state.AccountBucket;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.RadixConstants;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Transaction;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.sleepycat.je.LockMode.DEFAULT;
@@ -85,6 +115,16 @@ import static com.sleepycat.je.OperationStatus.SUCCESS;
 public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalStore {
 	private static final String TXN_ID_DB_NAME = "radix.transactions_by_id_db";
 	private Database txnIdDatabase; // Txns by AID; Append-only
+	private final AtomicReference<Instant> timestamp = new AtomicReference<>();
+	private final Addressing addressing;
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+
+	@Inject
+	public BerkeleyTransactionsByIdStore(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider, Addressing addressing) {
+		// TODO: Fix this when we move AdditionalStore to be a RadixEngine construct rather than Berkeley construct
+		this.radixEngineProvider = radixEngineProvider;
+		this.addressing = addressing;
+	}
 
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
@@ -101,13 +141,12 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		return SUCCESS == txnIdDatabase.get(null, key, null, DEFAULT);
 	}
 
-
-	public Optional<Txn> get(AID aid) {
+	public Optional<JSONObject> getTransactionJSON(AID aid) {
 		var key = new DatabaseEntry(aid.getBytes());
 		var value = new DatabaseEntry();
 
 		if (txnIdDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
-			return Optional.of(Txn.create(value.getData()));
+			return Optional.of(new JSONObject(new String(value.getData(), StandardCharsets.UTF_8)));
 		}
 
 		return Optional.empty();
@@ -120,11 +159,112 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		}
 	}
 
+	private JSONObject mapToJSON(
+		Optional<TwoActorEntry> maybeEntry,
+		Function<REAddr, String> addrToRri,
+		BiFunction<ECPublicKey, UInt384, UInt384> computeStakeFromOwnership
+	) {
+		if (maybeEntry.isEmpty()) {
+			return new JSONObject().put("type", "Other");
+		}
+
+		var entry = maybeEntry.get();
+		var amtByteArray = entry.amount().toByteArray();
+		var amt = UInt256.from(amtByteArray);
+		var from = entry.from();
+		var to = entry.to();
+		var result = new JSONObject();
+		final ActionType type;
+		if (from.isEmpty()) {
+			result.put("to", to);
+			type = ActionType.MINT;
+		} else if (to.isEmpty()) {
+			result.put("from", from);
+			type = ActionType.BURN;
+		} else {
+			var fromBucket = from.get();
+			var toBucket = to.get();
+			if (fromBucket instanceof AccountBucket) {
+				if (toBucket instanceof AccountBucket) {
+					result.put("from", from).put("to", to);
+					type = ActionType.TRANSFER;
+				} else {
+					result.put("from", from).put("validator", to);
+					type = ActionType.STAKE;
+				}
+			} else if (fromBucket instanceof StakeOwnershipBucket) {
+				amt = computeStakeFromOwnership.apply(fromBucket.getValidatorKey(), UInt384.from(amt)).getLow();
+				result
+					.put("from", to) // FIXME: badness in API spec
+					.put("validator", from);
+				type = ActionType.UNSTAKE;
+			} else {
+				return new JSONObject().put("type", "Other");
+			}
+		}
+
+		return result
+			.put("type", type.toString())
+			.put("amount", amt)
+			.put("rri", addrToRri.apply(entry.resourceAddr().orElse(REAddr.ofNativeToken())));
+	}
+
+	private Particle deserialize(byte[] data) {
+		var deserialization = radixEngineProvider.get().getSubstateDeserialization();
+		try {
+			return deserialization.deserialize(data);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException();
+		}
+	}
+
 	@Override
-	public void process(Transaction dbTxn, REProcessedTxn txn, long stateVersion) {
+	public void process(Transaction dbTxn, REProcessedTxn txn, long stateVersion, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
+		txn.stateUpdates()
+			.filter(u -> u.getParsed() instanceof RoundData)
+			.map(u -> (RoundData) u.getParsed())
+			.filter(r -> r.getTimestamp() > 0)
+			.map(RoundData::asInstant)
+			.forEach(timestamp::set);
+
 		var txnId = txn.getTxnId();
 		var key = new DatabaseEntry(txnId.getBytes());
-		var value = new DatabaseEntry(txn.getTxn().getPayload());
+		var actionsJson = new JSONArray();
+		txn.getGroupedStateUpdates().stream()
+			.map(stateUpdates -> {
+				var accounting = REResourceAccounting.compute(stateUpdates.stream());
+				return TwoActorEntry.parse(accounting.bucketAccounting());
+			})
+			.filter(e -> e.map(a -> !a.isFee()).orElse(true))
+			.map(entry -> mapToJSON(
+				entry,
+				addr -> {
+					var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+					var data = mapper.apply(mapKey).orElseThrow().getData();
+					// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+					var metadata = (TokenResourceMetadata) deserialize(data);
+					return addressing.forResources().of(metadata.getSymbol(), addr);
+				},
+				(k, ownership) -> {
+					var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), k.getCompressedBytes());
+					var data = mapper.apply(validatorDataKey).orElseThrow().getData();
+					var stakeData = (ValidatorStakeData) deserialize(data);
+					return ownership.multiply(stakeData.getTotalStake()).divide(stakeData.getTotalOwnership());
+				}
+			))
+			.forEach(actionsJson::put);
+
+		var fee = txn.getFeePaid();
+		var message = txn.getMsg()
+			.map(bytes -> new String(bytes, RadixConstants.STANDARD_CHARSET));
+		var jsonString = new JSONObject()
+			.put("txID", txn.getTxnId())
+			.put("sentAt", DateTimeFormatter.ISO_INSTANT.format(timestamp.get()))
+			.put("fee", fee)
+			.put("actions", actionsJson)
+			.putOpt("message", message).toString();
+		var value = new DatabaseEntry(jsonString.getBytes(StandardCharsets.UTF_8));
+
 		var result = txnIdDatabase.putNoOverwrite(dbTxn, key, value);
 		if (result != SUCCESS) {
 			throw new IllegalStateException("Unexpected operation status " + result);

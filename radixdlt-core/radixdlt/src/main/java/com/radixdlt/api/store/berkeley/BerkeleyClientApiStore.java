@@ -135,10 +135,8 @@ import io.netty.buffer.Unpooled;
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.api.data.ApiErrors.SYMBOL_DOES_NOT_MATCH;
-import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_RESTORE_CREATOR;
 import static com.radixdlt.api.data.ApiErrors.UNKNOWN_ACCOUNT_ADDRESS;
 import static com.radixdlt.api.data.ApiErrors.UNKNOWN_RRI;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_READ;
@@ -384,16 +382,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	@Override
-	public Result<TxHistoryEntry> getTransaction(AID txId) {
-		return retrieveTx(txId)
-			.flatMap(txn -> extractCreator(txn)
-				.map(REAddr::ofPubKeyAccount)
-				.map(Result::ok)
-				.orElseGet(() -> UNABLE_TO_RESTORE_CREATOR.with(txn.getId()).result())
-				.flatMap(creator -> lookupTransactionInHistory(creator, txn)));
-	}
-
 	private void storeCollected() {
 		var count = withTime(
 			() -> txCollector.consumeCollected(this::storeTransactionBatch),
@@ -402,32 +390,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		);
 
 		systemCounters.add(COUNT_APIDB_QUEUE_SIZE, -count);
-	}
-
-	private Result<TxHistoryEntry> lookupTransactionInHistory(REAddr addr, Txn txn) {
-		var key = asTxnHistoryKey(addr, Instant.EPOCH);
-		var data = entry();
-
-		try (var cursor = transactionHistory.openCursor(null, null)) {
-			var status = readTxHistory(() -> cursor.getSearchKeyRange(key, data, null), data);
-
-			if (status != OperationStatus.SUCCESS) {
-				return UNKNOWN_TX_ID.with(txn.getId()).result();
-			}
-
-			do {
-				var result = restore(serialization, data.getData(), TxHistoryEntry.class)
-					.filter(txHistoryEntry -> sameTxId(txn, txHistoryEntry), IGNORED);
-
-				if (result.isSuccess()) {
-					return result;
-				}
-
-				status = readTxHistory(() -> cursor.getNext(key, data, null), data);
-			}
-			while (status == OperationStatus.SUCCESS);
-		}
-		return UNKNOWN_TX_ID.with(txn.getId()).result();
 	}
 
 	@Override
@@ -541,12 +503,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	private Result<REAddr> addrFromKey(DatabaseEntry key) {
 		var buf = Arrays.copyOf(key.getData(), ECPublicKey.COMPRESSED_BYTES + 1);
 		return wrap(INVALID_ACCOUNT_ADDRESS, () -> REAddr.of(buf));
-	}
-
-	private Result<Txn> retrieveTx(AID id) {
-		return store.get(id)
-			.map(Result::ok)
-			.orElseGet(() -> UNKNOWN_TX_ID.with(id).result());
 	}
 
 	private <T> T readBalance(Supplier<T> supplier, DatabaseEntry data) {
@@ -766,13 +722,14 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 			reTxn.getSignedBy().stream().map(REAddr::ofPubKeyAccount)
 		).collect(Collectors.toSet());
 
-		transactionParser.parse(
+		var entry = transactionParser.parse(
 			reTxn,
 			actions,
 			currentTimestamp.get(),
 			this::getRriOrFail,
 			this::computeStakeFromOwnership
-		).onSuccess(parsed -> addresses.forEach(address -> storeSingleTransaction(parsed, address)));
+		);
+		addresses.forEach(address -> storeSingleTransaction(entry, address));
 
 		log.debug("TRANSACTION_LOG: {}", () -> accountingJson(curEpoch, reTxn, accountingObjects));
 	}
