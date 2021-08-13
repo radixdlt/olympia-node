@@ -89,6 +89,12 @@ public final class SingleNodeDeterministicRunner {
 		processor.start();
 	}
 
+	public void processNext(int count) {
+		for (int i = 0; i < count; i++) {
+			processNext();
+		}
+	}
+
 	public ControlledMessage processNext() {
 		var msg = network.nextMessage().value();
 		processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());

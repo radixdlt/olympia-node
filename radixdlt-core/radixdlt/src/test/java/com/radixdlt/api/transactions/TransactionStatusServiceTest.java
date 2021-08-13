@@ -198,9 +198,7 @@ public class TransactionStatusServiceTest {
 
 		// Act
 		mempoolDispatcher.dispatch(MempoolAdd.create(transfer));
-		for (int i = 0; i < 100; i++) {
-			runner.processNext();
-		}
+		runner.processNext(100);
 
 		// Assert
 		var status = transactionStatusService.getTransactionStatus(transfer.getId());
