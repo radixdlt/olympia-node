@@ -176,7 +176,11 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		var result = new JSONObject();
 		final ActionType type;
 		if (from.isEmpty()) {
-			result.put("to", addressing.forAccounts().of(to.get().getOwner()));
+			var toBucket = to.get();
+			if (!(toBucket instanceof AccountBucket)) {
+				return new JSONObject().put("type", "Other");
+			}
+			result.put("to", addressing.forAccounts().of(toBucket.getOwner()));
 			type = ActionType.MINT;
 		} else if (to.isEmpty()) {
 			result.put("from", addressing.forAccounts().of(from.get().getOwner()));
