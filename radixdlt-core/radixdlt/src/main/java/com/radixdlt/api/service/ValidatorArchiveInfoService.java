@@ -125,16 +125,16 @@ public class ValidatorArchiveInfoService {
 		var individualStakes = validatorInfoService.getEstimatedIndividualStakes(curData);
 		var preparedStakes = validatorInfoService.getPreparedStakes(k);
 		var totalPreparedStakes = preparedStakes.values().stream().reduce(UInt384::add).orElse(UInt384.ZERO).getLow();
-		var preparedUnstakes = validatorInfoService.getEstimatedPreparedUnstakes(curData);
-		var totalPreparedUnstakes = preparedUnstakes.values().stream().reduce(UInt256::add).orElse(UInt256.ZERO);
-		var totalStake = curData.getTotalStake().add(totalPreparedStakes).subtract(totalPreparedUnstakes);
+		var estimatedUnstakes = validatorInfoService.getEstimatedPreparedUnstakes(curData);
+		var totalEstimatedUnstakes = estimatedUnstakes.values().stream().reduce(UInt256::add).orElse(UInt256.ZERO);
+		var estimatedTotalStake = curData.getTotalStake().add(totalPreparedStakes).subtract(totalEstimatedUnstakes);
 		var ownerStake = individualStakes.getOrDefault(owner, UInt256.ZERO)
 			.add(preparedStakes.getOrDefault(owner, UInt384.ZERO).getLow());
-		var ownerPreparedUnstake = preparedUnstakes.getOrDefault(owner, UInt256.ZERO);
-		if (ownerPreparedUnstake.compareTo(ownerStake) > 0) {
+		var ownerEstimatedUnstake = estimatedUnstakes.getOrDefault(owner, UInt256.ZERO);
+		if (ownerEstimatedUnstake.compareTo(ownerStake) > 0) {
 			ownerStake = UInt256.ZERO;
 		} else {
-			ownerStake = ownerStake.subtract(ownerPreparedUnstake);
+			ownerStake = ownerStake.subtract(ownerEstimatedUnstake);
 		}
 		var allowsDelegation = validatorInfoService.getAllowDelegationFlag(k).allowsDelegation();
 		var isRegistered = validatorInfoService.getNextEpochRegisteredFlag(k).isRegistered();
@@ -145,7 +145,7 @@ public class ValidatorArchiveInfoService {
 			owner,
 			metadata.getName(),
 			metadata.getUrl(),
-			totalStake,
+			estimatedTotalStake,
 			ownerStake,
 			allowsDelegation,
 			isRegistered,
