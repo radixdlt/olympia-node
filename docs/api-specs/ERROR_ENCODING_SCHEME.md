@@ -9,22 +9,22 @@ build error codes:
 
 `[sign][category][error id]`
 
-`[sign]` always `-` (consistent with JSON RPC errors)
-`[category]` consists of two digits, range 0 - 99
-`[error id]` consists of 3 digits, range 0 - 999 
+ `[sign]` always `-` (consistent with JSON RPC errors)
 
-_Note:_ Error codes are numeric values, so representation may omit leading zeros in the `Category` field. 
+ `[category]` consists of 1 or 2 digits, range 0 - 99
+ 
+ `[error id]` consists of 3 digits, range 0 - 999 
 
 ## Error Categories
 
 | Code   | Type | Description |
 |---|---|---|
-| 01 | CONVERSION | Errors related to data conversion, such as transformation/serialization/deserialization/formatting/etc.
-| 02 | PARAMETER | Input parameters errors encountered during parsing/validation 
-| 03 | INTERNAL_STATE | Errors caused by incompatibility with current internal state: message expired, operation interrupted, peer banned, etc.
-| 04 | EXTERNAL_STATE | Errors caused by incompatibility with current external state: not enough funds, not enough funds for fee
-| 05 | PROCESSING | Errors met during processing, for example, while dispatching events
-| 06&#8209;31 | reserved | These codes are reserved
+| 1 | CONVERSION | Errors related to data conversion, such as transformation/serialization/deserialization/formatting/etc.
+| 2 | PARAMETER | Input parameters errors encountered during parsing/validation 
+| 3 | INTERNAL_STATE | Errors caused by incompatibility with current internal state: message expired, operation interrupted, peer banned, etc.
+| 4 | EXTERNAL_STATE | Errors caused by incompatibility with current external state: not enough funds, not enough funds for fee
+| 5 | PROCESSING | Errors met during processing, for example, while dispatching events
+| 6&#8209;31 | reserved | These codes are reserved
 | 32 | PROTOCOL | Category reserved for error codes defined in JSON RPC specification
 | 33&#8209;98 | reserved | These codes are reserved
 | 99 | OTHER | Errors which don't fall into other categories
