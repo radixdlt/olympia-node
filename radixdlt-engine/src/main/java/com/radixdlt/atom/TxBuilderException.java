@@ -67,6 +67,7 @@ package com.radixdlt.atom;
 /**
  * Exception which occurs when trying to build a transaction
  */
+//TODO: add Failure parameter
 public class TxBuilderException extends Exception {
 	public TxBuilderException(Throwable cause) {
 		super(cause);

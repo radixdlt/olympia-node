@@ -69,7 +69,7 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.LocalSubstateNotFoundException;
@@ -337,6 +337,7 @@ public final class ConstraintMachine {
 			try {
 				authorization.authorizer().verify(immutableAddrs, context);
 			} catch (Exception e) {
+				//TODO: avoid double wrapping of authorization exception
 				throw new AuthorizationException(e);
 			}
 		}

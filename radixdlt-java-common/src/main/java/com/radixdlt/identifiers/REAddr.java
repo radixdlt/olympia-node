@@ -69,6 +69,7 @@ import org.bouncycastle.util.encoders.Hex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -231,28 +232,20 @@ public final class REAddr {
 		}
 	}
 
-	// FIXME: Should use AuthorizationException instead but packages a bit of a mess at the moment
-	// TODO: move AuthorizationException to radixdlt-java-common
-	public static class BucketWithdrawAuthorizationException extends Exception {
-		private BucketWithdrawAuthorizationException(String msg) {
-			super(msg);
-		}
-	}
-
-	public void verifyWithdrawAuthorization(Optional<ECPublicKey> publicKey) throws BucketWithdrawAuthorizationException {
+	public void verifyWithdrawAuthorization(Optional<ECPublicKey> publicKey) throws AuthorizationException {
 		if (getType() != REAddrType.PUB_KEY) {
-			throw new BucketWithdrawAuthorizationException(this + " is not an account address.");
+			throw new AuthorizationException(this + " is not an account address.");
 		}
 
 		if (publicKey.isEmpty()) {
-			throw new BucketWithdrawAuthorizationException("No key present.");
+			throw new AuthorizationException("No key present.");
 		}
 
 		if (!Arrays.equals(
 			addr, 1, 1 + ECPublicKey.COMPRESSED_BYTES,
 			publicKey.get().getCompressedBytes(), 0, ECPublicKey.COMPRESSED_BYTES
 		)) {
-			throw new BucketWithdrawAuthorizationException("Invalid key.");
+			throw new AuthorizationException("Invalid key.");
 		}
 	}
 

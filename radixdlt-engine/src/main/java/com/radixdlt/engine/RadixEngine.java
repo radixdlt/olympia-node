@@ -89,7 +89,7 @@ import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;

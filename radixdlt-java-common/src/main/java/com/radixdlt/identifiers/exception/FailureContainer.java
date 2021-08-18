@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,47 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.identifiers;
+package com.radixdlt.identifiers.exception;
 
 import com.radixdlt.utils.functional.Failure;
 
-public enum CommonErrors implements Failure {
-	INVALID_VALIDATOR_ADDRESS(2509, "Invalid validator address {0}"),
-	INVALID_ACCOUNT_ADDRESS(2510, "Invalid account address {0}"),
-	INVALID_RESOURCE_ADDRESS(2511, "Invalid resource address {0}"),
-	INVALID_PUBLIC_KEY(2513, "Invalid public key {0}"),
-
-	VALUE_OUT_OF_RANGE(1608, "Parameter must be between {0} and {1}"),
-
-	UNABLE_TO_PARSE_UINT(1603, "Unable to parse unsigned integer number: {0}"),
-	UNABLE_TO_PARSE_JSON(1603, "Unable to parse JSON: {0}"),
-	UNABLE_TO_PARSE_INT(1603, "Unable to parse integer number: {0}"),
-	UNABLE_TO_PARSE_FLOAT(1603, "Unable to parse float number: {0}"),
-	UNABLE_TO_PARSE_BOOLEAN(1603, "Unable to parse boolean value: {0}"),
-
-	AID_IS_NULL(1601, "AID string is 'null'"),
-	INVALID_AID_LENGTH(1602, "AID string has incorrect length {0}"),
-	UNABLE_TO_SERIALIZE(1604, "Unable to serialize: {0}"),
-	UNABLE_TO_DESERIALIZE(1604, "Unable to deserialize: {0}"),
-
-	ASYNC_PROCESSING_ERROR(2525, "Async processing error {0}"), 	//NETWORK, OTHER,
-	CANT_MAKE_RECOVERABLE(1701, "Unable to convert signature to recoverable {0}");	// INPUT, PARAMETER
-
-	private final int code;
-	private final String message;
-
-	CommonErrors(int code, String message) {
-		this.code = code;
-		this.message = message;
-	}
-
-	@Override
-	public String message() {
-		return message;
-	}
-
-	@Override
-	public int code() {
-		return code;
-	}
+/**
+ * Common interface for exceptions carrying {@link com.radixdlt.utils.functional.Failure} instance.
+ */
+public interface FailureContainer {
+	Failure failure();
 }

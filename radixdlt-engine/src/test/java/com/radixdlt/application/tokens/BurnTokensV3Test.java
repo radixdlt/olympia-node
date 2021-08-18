@@ -79,7 +79,7 @@ import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
 import com.radixdlt.crypto.ECKeyPair;

@@ -64,6 +64,7 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
+//TODO: add Failure parameter
 public class ProcedureException extends Exception {
 	public ProcedureException(Throwable cause) {
 		super(cause);

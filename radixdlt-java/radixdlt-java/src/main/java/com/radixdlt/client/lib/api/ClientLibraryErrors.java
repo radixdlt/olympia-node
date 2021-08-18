@@ -71,7 +71,10 @@ public enum ClientLibraryErrors implements Failure {
 	UNKNOWN_ACTION(1002, "Unknown action {0}"),
 	OPERATION_INTERRUPTED(1003, "Operation was interrupted {0}"),
 	NETWORK_IO_ERROR(1004, "Network I/O error {0}"),
-	UNKNOWN_ERROR(1005, "Unknown error of type {0} with message {1}");
+	UNKNOWN_ERROR(1005, "Unknown error of type {0} with message {1}"),
+	SSL_KEY_ERROR(1605, "SSL Key error: {0}"),						//NETWORK, INTERNAL_STATE
+	SSL_ALGORITHM_ERROR(1606, "SSL algorithm error: {0}"),			//NETWORK, INTERNAL_STATE
+	SSL_GENERAL_ERROR(1607, "SSL algorithm error: {0}");			//NETWORK, INTERNAL_STATE
 
 	private final int code;
 	private final String message;

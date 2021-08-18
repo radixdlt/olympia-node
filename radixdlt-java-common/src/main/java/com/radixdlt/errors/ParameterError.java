@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,19 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.constraintmachine.exceptions;
+package com.radixdlt.errors;
 
-public class AuthorizationException extends Exception {
+import com.radixdlt.utils.functional.Failure;
 
-	public AuthorizationException(Exception cause) {
-		super(cause);
+/**
+ * Input parameters errors encountered during parsing/validation
+ * <p>
+ * <b>WARNING:</b> New errors should be added to the end, no insertions or re-arrangements are allowed!
+ */
+public enum ParameterError implements Failure {
+	GENERAL("General error");
+
+	private final String message;
+
+	ParameterError(String message) {
+		this.message = message;
 	}
 
-	public AuthorizationException(String msg) {
-		super(msg);
+	@Override
+	public String message() {
+		return message;
 	}
 
-	public AuthorizationException(String msg, Exception cause) {
-		super(msg, cause);
+	@Override
+	public int code() {
+		return Category.PARAMETER.forId(ordinal());
 	}
 }

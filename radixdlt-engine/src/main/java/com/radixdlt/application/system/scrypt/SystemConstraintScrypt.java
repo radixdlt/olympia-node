@@ -66,6 +66,7 @@ package com.radixdlt.application.system.scrypt;
 
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
+import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
 import com.radixdlt.atom.REFieldSerialization;
@@ -73,18 +74,16 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
-import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.SystemCallProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.constraintmachine.ReducerResult;
-import com.radixdlt.constraintmachine.SystemCallProcedure;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Bytes;
 
@@ -142,7 +141,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			this.arg = arg;
 		}
 
-		public ReducerState claim(UnclaimedREAddr unclaimedREAddr, ExecutionContext ctx) throws ProcedureException, InvalidHashedKeyException {
+		public ReducerState claim(UnclaimedREAddr unclaimedREAddr, ExecutionContext ctx) throws ProcedureException {
 			if (ctx.permissionLevel() != PermissionLevel.SYSTEM) {
 				var key = ctx.key().orElseThrow(() -> new ProcedureException("Missing key"));
 				unclaimedREAddr.verifyHashedKey(key, arg);

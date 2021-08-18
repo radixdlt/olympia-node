@@ -64,5 +64,8 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-public class MultipleFeeReserveDepositException extends Exception {
+public class MultipleFeeReserveDepositException extends ProcedureException {
+	public MultipleFeeReserveDepositException() {
+		super("MultipleFeeReserveDeposit");
+	}
 }

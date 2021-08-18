@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.tokens.state;
 
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;

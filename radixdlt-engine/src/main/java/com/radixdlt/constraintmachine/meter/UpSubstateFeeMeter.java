@@ -68,7 +68,7 @@ import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ProcedureKey;
 import com.radixdlt.constraintmachine.REOp;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Map;

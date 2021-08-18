@@ -64,7 +64,8 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-public class InvalidHashedKeyException extends Exception {
+//TODO: add Failure parameter
+public class InvalidHashedKeyException extends ProcedureException {
 	public InvalidHashedKeyException(String message) {
 		super(message);
 	}

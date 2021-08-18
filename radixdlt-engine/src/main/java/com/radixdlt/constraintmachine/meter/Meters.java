@@ -66,7 +66,7 @@ package com.radixdlt.constraintmachine.meter;
 
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.ProcedureKey;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 
 public final class Meters {
 	private Meters() {

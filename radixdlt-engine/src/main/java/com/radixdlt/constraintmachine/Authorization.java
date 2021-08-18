@@ -64,12 +64,16 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.identifiers.exception.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
+
 /**
  * Validates whether a specific transition procedure is permissible
  */
 public final class Authorization {
 	public interface Authorizer {
-		void verify(Resources immutableAddrs, ExecutionContext context) throws Exception;
+		void verify(Resources immutableAddrs, ExecutionContext context)
+			throws AuthorizationException, NotAResourceException;
 	}
 	private final PermissionLevel permissionLevel;
 	private final Authorizer authorizer;

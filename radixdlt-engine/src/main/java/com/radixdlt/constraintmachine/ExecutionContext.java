@@ -67,7 +67,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.application.tokens.scrypt.Tokens;
 import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
 import com.radixdlt.constraintmachine.exceptions.ExecutionContextDestroyException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;

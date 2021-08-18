@@ -65,7 +65,6 @@
 package com.radixdlt.application.system.state;
 
 import com.radixdlt.application.tokens.Bucket;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
@@ -87,16 +86,7 @@ public final class StakeOwnershipBucket implements Bucket {
 
 	@Override
 	public Authorization withdrawAuthorization() {
-		return new Authorization(
-			PermissionLevel.USER,
-			(r, c) -> {
-				try {
-					owner.verifyWithdrawAuthorization(c.key());
-				} catch (REAddr.BucketWithdrawAuthorizationException e) {
-					throw new AuthorizationException(e.getMessage());
-				}
-			}
-		);
+		return new Authorization(PermissionLevel.USER, (r, c) -> owner.verifyWithdrawAuthorization(c.key()));
 	}
 
 	@Override

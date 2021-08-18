@@ -79,16 +79,14 @@ public final class CallData {
 	}
 
 	public byte get(int offset) throws CallDataAccessException {
-		if (offset < 0 || (offset + Byte.BYTES) > data.length) {
-			throw new CallDataAccessException(data.length, offset, Byte.BYTES);
-		}
+		int accessSize = Byte.BYTES;
+		validateBounds(offset, accessSize);
 		return data[offset];
 	}
 
 	public UInt256 getUInt256(int offset) throws CallDataAccessException, TrailingBytesException {
-		if (offset < 0 || (offset + UInt256.BYTES) > data.length) {
-			throw new CallDataAccessException(data.length, offset, UInt256.BYTES);
-		}
+		int accessSize = UInt256.BYTES;
+		validateBounds(offset, accessSize);
 
 		if (data.length > offset + UInt256.BYTES) {
 			throw new TrailingBytesException("Call data has " + data.length + " bytes.");
@@ -107,5 +105,11 @@ public final class CallData {
 	@Override
 	public String toString() {
 		return String.format("%s{data=%s}", this.getClass().getSimpleName(), Bytes.toHexString(data));
+	}
+
+	private void validateBounds(int offset, int accessSize) throws CallDataAccessException {
+		if (offset < 0 || (offset + accessSize) > data.length) {
+			throw new CallDataAccessException(data.length, offset, accessSize);
+		}
 	}
 }

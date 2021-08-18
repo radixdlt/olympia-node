@@ -64,6 +64,7 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
+import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.utils.UInt256;
 
 public class DepletedFeeReserveException extends AuthorizationException {

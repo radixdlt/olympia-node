@@ -65,7 +65,6 @@
 package com.radixdlt.application.tokens.state;
 
 import com.radixdlt.application.tokens.Bucket;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
@@ -84,16 +83,7 @@ public final class AccountBucket implements Bucket {
 
 	@Override
 	public Authorization withdrawAuthorization() {
-		return new Authorization(
-			PermissionLevel.USER,
-			(r, c) -> {
-				try {
-					holdingAddress.verifyWithdrawAuthorization(c.key());
-				} catch (REAddr.BucketWithdrawAuthorizationException e) {
-					throw new AuthorizationException(e.getMessage());
-				}
-			}
-		);
+		return new Authorization(PermissionLevel.USER, (r, c) -> holdingAddress.verifyWithdrawAuthorization(c.key()));
 	}
 
 	@Override

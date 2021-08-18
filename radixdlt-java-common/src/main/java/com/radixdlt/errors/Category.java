@@ -62,59 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.utils.functional;
+package com.radixdlt.errors;
 
-public final class ErrorCode {
-	public static final int GENERAL = 0;	// Error code for unspecified/unknown/not yet defined errors
+public enum Category {
+	CONVERSION(1),
+	PARAMETER(2),
+	INTERNAL_STATE(3),
+	EXTERNAL_STATE(4),
+	PROCESSING(5),
+	PROTOCOL(32),
+	OTHER(99);
 
-	private ErrorCode() { }
+	private final int code;
 
-	public static int of(Group group, Category category, int identifier) {
-		return group.code() + category.code() + identifier;
+	Category(int code) {
+		this.code = code;
 	}
 
-	public enum Group {
-		NETWORK(10000),		// Network related errors
-		INPUT(20000),		// Input parameter parsing/validation errors
-		OUTPUT(30000),		// Request processing errors (for example, missing Tx)
-		INTERNAL(40000),	// Internal processing errors (potential data corruption, deserialization errors, etc.)
-		ENGINE(50000),		// Radix Engine related errors
-		OTHER(90000);		// Errors which don't fall into other groups
-
-		private final int code;
-
-		Group(int code) {
-			this.code = code;
-		}
-
-		public int code() {
-			return code;
-		}
+	public int code() {
+		return code;
 	}
 
-	public enum Category {
-		DATA(1000),			// Data error - conversion/serialization/deserialization/formatting/etc.
-		PARAMETER(2000), 		// Input parameter errors
-		INTERNAL_STATE(3000), 	// Incompatibility with current internal state: message expired, operation interrupted, peer banned, etc.
-		EXTERNAL_STATE(4000), 	// Incompatibility with current external state: not enough funds, not enough funds for fee
-		PROCESSING(5000),		// Processing errors
-		OTHER(9000);			// Errors which don't fall into other categories
-
-		private final int code;
-
-		Category(int code) {
-			this.code = code;
-		}
-
-		public int code() {
-			return code;
-		}
+	public int forId(int id) {
+		return -(code * 1000 + id);
 	}
 
-//
-//
-//
-//
 //	ADDRESS_IS_MISSING(1303, "Address is missing"),
 //	AID_IS_NULL(1601, "AID string is 'null'"),
 //	ALREADY_A_VALIDATOR(1306, "Already a validator"),
