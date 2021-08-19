@@ -98,13 +98,7 @@ public class ArchiveTransactionsHandler {
 			request,
 			"txID",
 			idString -> AID.fromString(idString)
-				.flatMap(txId -> {
-					var result = transactionStatusService.getTransaction(txId);
-					if (result.isEmpty()) {
-						return UNKNOWN_TX_ID.with(txId).result();
-					}
-					return Result.ok(result.get());
-				})
+				.flatMap(txId -> Result.fromOptional(UNKNOWN_TX_ID.with(txId), transactionStatusService.getTransaction(txId)))
 		);
 	}
 }
