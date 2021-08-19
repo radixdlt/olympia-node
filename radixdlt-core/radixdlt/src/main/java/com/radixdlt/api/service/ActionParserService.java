@@ -89,12 +89,12 @@ import java.util.stream.StreamSupport;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MIN;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
+import static com.radixdlt.errors.ConversionError.UNABLE_TO_PARSE_BOOLEAN;
+import static com.radixdlt.errors.ConversionError.UNABLE_TO_PARSE_FLOAT;
 import static com.radixdlt.errors.ParameterError.MISSING_ACTION_FIELD;
 import static com.radixdlt.errors.ParameterError.UNSUPPORTED_ACTION;
+import static com.radixdlt.errors.ParameterError.VALUE_OUT_OF_RANGE;
 import static com.radixdlt.errors.ProtocolError.INVALID_PARAMETERS;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_BOOLEAN;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_FLOAT;
-import static com.radixdlt.identifiers.CommonErrors.VALUE_OUT_OF_RANGE;
 import static com.radixdlt.utils.functional.Result.all;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
@@ -261,13 +261,14 @@ public final class ActionParserService {
 	}
 
 	private static final Failure FEE_BOUNDS_FAILURE = VALUE_OUT_OF_RANGE.with(
+		"validatorFee",
 		(double) RAKE_MIN / (double) RAKE_PERCENTAGE_GRANULARITY + "",
 		(double) RAKE_MAX / (double) RAKE_PERCENTAGE_GRANULARITY + ""
 	);
 
 	private Result<Integer> fee(JSONObject element) {
 		return param(element, "validatorFee")
-			.flatMap(parameter -> wrap(UNABLE_TO_PARSE_FLOAT, () -> Double.parseDouble(parameter)))
+			.flatMap(parameter -> wrap(() -> UNABLE_TO_PARSE_FLOAT.with(parameter), () -> Double.parseDouble(parameter)))
 			.map(doublePercentage -> (int) (doublePercentage * RAKE_PERCENTAGE_GRANULARITY))
 			.filter(percentage -> percentage >= RAKE_MIN && percentage <= RAKE_MAX, FEE_BOUNDS_FAILURE);
 	}

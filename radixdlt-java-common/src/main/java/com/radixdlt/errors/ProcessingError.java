@@ -72,8 +72,21 @@ import com.radixdlt.utils.functional.Failure;
  * <b>WARNING:</b> New errors should be added to the end, no insertions or re-arrangements are allowed!
  */
 public enum ProcessingError implements Failure {
-	GENERAL("General error"),
-	SUBMISSION_FAILURE("Transaction submission failed: {0}");
+	SUBMISSION_FAILURE("Transaction submission failed: {0}"),
+	ASYNC_PROCESSING_ERROR("Async processing error {0}"),
+	UNABLE_TO_PREPARE_TX("Unable to prepare transaction {0}"),
+	UNABLE_TO_RESTORE_CREATOR("Unable to restore creator from transaction {0}"),
+	UNABLE_TO_RESTORE_ACCOUNT_ADDRESS("Unable to restore account address {0} from DB key: {1}"),
+	UNABLE_TO_PARSE_TRANSACTION("Unable to parse transaction: {0}"),
+	UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE("Unable to convert signature to recoverable {0}"),
+	MESSAGE_EXPIRED("Message expired"),
+	IO_ERROR("I/O Error: {0} {1}"),
+	SELF_CONNECTION_ATTEMPT("Attempt to connect to self"),
+	PEER_BANNED("Peer is banned"),
+	OPERATION_INTERRUPTED("Operation was interrupted {0}"),
+	UNKNOWN_ERROR("Unknown error of type {0} with message {1}"),
+	;
+
 
 	private final String message;
 

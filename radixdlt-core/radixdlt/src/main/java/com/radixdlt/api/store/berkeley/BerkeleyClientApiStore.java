@@ -84,31 +84,31 @@ import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.ClientApiStoreException;
 import com.radixdlt.api.store.TokenDefinitionRecord;
 import com.radixdlt.api.store.TransactionParser;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.application.tokens.ResourceCreatedEvent;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.application.tokens.ResourceCreatedEvent;
-import com.radixdlt.constraintmachine.REEvent;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.REOutput;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt384;
@@ -138,12 +138,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.radixdlt.api.ApiErrors.INVALID_PAGE_SIZE;
-import static com.radixdlt.api.ApiErrors.SYMBOL_DOES_NOT_MATCH;
-import static com.radixdlt.api.ApiErrors.UNABLE_TO_RESTORE_CREATOR;
-import static com.radixdlt.api.ApiErrors.UNKNOWN_ACCOUNT_ADDRESS;
-import static com.radixdlt.api.ApiErrors.UNKNOWN_RRI;
-import static com.radixdlt.api.ApiErrors.UNKNOWN_TX_ID;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_READ;
@@ -168,7 +162,13 @@ import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TOK
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TOKEN_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TRANSACTION_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TRANSACTION_WRITE;
-import static com.radixdlt.identifiers.CommonErrors.INVALID_ACCOUNT_ADDRESS;
+import static com.radixdlt.errors.ConversionError.SYMBOL_DOES_NOT_MATCH;
+import static com.radixdlt.errors.InternalStateError.UNKNOWN_RRI;
+import static com.radixdlt.errors.InternalStateError.UNKNOWN_TOKEN_DEFINITION;
+import static com.radixdlt.errors.InternalStateError.UNKNOWN_TX_ID;
+import static com.radixdlt.errors.ParameterError.INVALID_PAGE_SIZE;
+import static com.radixdlt.errors.ProcessingError.UNABLE_TO_RESTORE_ACCOUNT_ADDRESS;
+import static com.radixdlt.errors.ProcessingError.UNABLE_TO_RESTORE_CREATOR;
 import static com.radixdlt.serialization.DsonOutput.Output;
 import static com.radixdlt.serialization.SerializationUtils.restore;
 import static com.radixdlt.utils.functional.Result.wrap;
@@ -380,8 +380,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 			);
 
 			if (status != OperationStatus.SUCCESS) {
-				//TODO: incorrect error is reported here
-				return UNKNOWN_ACCOUNT_ADDRESS.with(addr).result();
+				return UNKNOWN_TOKEN_DEFINITION.with(addr).result();
 			}
 
 			return restore(serialization, data.getData(), TokenDefinitionRecord.class)
@@ -555,7 +554,11 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 
 	private Result<REAddr> addrFromKey(DatabaseEntry key) {
 		var buf = Arrays.copyOf(key.getData(), ECPublicKey.COMPRESSED_BYTES + 1);
-		return wrap(INVALID_ACCOUNT_ADDRESS, () -> REAddr.of(buf));
+
+		return wrap(
+			e -> UNABLE_TO_RESTORE_ACCOUNT_ADDRESS.with(Arrays.toString(buf), e.getMessage()),
+			() -> REAddr.of(buf)
+		);
 	}
 
 	private Result<Txn> retrieveTx(AID id) {

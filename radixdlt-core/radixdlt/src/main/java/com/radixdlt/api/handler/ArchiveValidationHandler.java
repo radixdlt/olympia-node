@@ -64,7 +64,6 @@
 
 package com.radixdlt.api.handler;
 
-import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -72,6 +71,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.api.service.ValidatorArchiveInfoService;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
@@ -83,7 +83,7 @@ import static com.radixdlt.api.JsonRpcUtil.safeInteger;
 import static com.radixdlt.api.JsonRpcUtil.safeString;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.ApiErrors.INVALID_PAGE_SIZE;
+import static com.radixdlt.errors.ParameterError.INVALID_PAGE_SIZE;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
 

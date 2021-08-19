@@ -80,6 +80,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Result.Mapper2;
+import com.radixdlt.utils.functional.Tuple.Tuple2;
 
 import java.util.List;
 import java.util.Optional;
@@ -92,9 +93,9 @@ import static com.radixdlt.api.JsonRpcUtil.safeArray;
 import static com.radixdlt.api.JsonRpcUtil.safeBlob;
 import static com.radixdlt.api.JsonRpcUtil.safeString;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
-import static com.radixdlt.api.ApiErrors.INVALID_SIGNATURE_DER;
-import static com.radixdlt.api.ApiErrors.INVALID_TX_ID;
-import static com.radixdlt.identifiers.CommonErrors.INVALID_PUBLIC_KEY;
+import static com.radixdlt.errors.ParameterError.INVALID_PUBLIC_KEY;
+import static com.radixdlt.errors.ParameterError.INVALID_SIGNATURE_DER;
+import static com.radixdlt.errors.ParameterError.INVALID_TX_ID;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 import static com.radixdlt.utils.functional.Result.wrap;
@@ -156,7 +157,7 @@ public class ConstructionHandler {
 			List.of("txID"),
 			params ->
 				safeBlob(params, "blob")
-					.flatMap(blob -> parseTxId(blob, params)
+					.flatMap(tuple -> parseTxId(tuple.last(), params)
 						.flatMap(submissionService::submitTx))
 					.map(Txn::getId)
 					.map(ConstructionHandler::formatTxId)
@@ -168,17 +169,27 @@ public class ConstructionHandler {
 	}
 
 	private static Result<byte[]> parseBlob(JSONObject params) {
-		return safeBlob(params, "blob");
+		return safeBlob(params, "blob").map(Tuple2::last);
 	}
 
 	private static Result<ECDSASignature> parseSignatureDer(JSONObject params) {
 		return safeBlob(params, "signatureDER")
-			.flatMap(param -> wrap(INVALID_SIGNATURE_DER, () -> ECDSASignature.decodeFromDER(param)));
+			.flatMap(
+				tuple -> wrap(
+					() -> INVALID_SIGNATURE_DER.with(tuple.first()),
+					() -> ECDSASignature.decodeFromDER(tuple.last())
+				)
+			);
 	}
 
 	private static Result<ECPublicKey> parsePublicKey(JSONObject params) {
 		return safeBlob(params, "publicKeyOfSigner")
-			.flatMap(param -> wrap(INVALID_PUBLIC_KEY, () -> ECPublicKey.fromBytes(param)));
+			.flatMap(
+				tuple -> wrap(
+					() -> INVALID_PUBLIC_KEY.with(tuple.first()),
+					() -> ECPublicKey.fromBytes(tuple.last())
+				)
+			);
 	}
 
 	private static Mapper2<byte[], Optional<AID>> parseTxId(byte[] blob, JSONObject params) {

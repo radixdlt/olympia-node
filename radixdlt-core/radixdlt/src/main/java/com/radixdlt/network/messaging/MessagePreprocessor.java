@@ -64,27 +64,27 @@
 
 package com.radixdlt.network.messaging;
 
-import com.google.inject.Provider;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.PeerControl;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 
+import com.google.inject.Provider;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.PeerControl;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
+import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.functional.Result;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 
-import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
-import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
+import static com.radixdlt.errors.ProcessingError.IO_ERROR;
+import static com.radixdlt.errors.ProcessingError.MESSAGE_EXPIRED;
 
 /**
  * Handles incoming messages. Deserializes raw messages and validates them.
@@ -143,15 +143,14 @@ final class MessagePreprocessor {
 			byte[] uncompressed = Compress.uncompress(in);
 			return Result.ok(serialization.fromDson(uncompressed, Message.class));
 		} catch (IOException e) {
-			log.error(
-				String.format(
-					"Failed to deserialize message from peer %s",
-					addressing.forNodes().of(inboundMessage.source().getPublicKey())
-				),
-				e
+			var msg = String.format(
+				"Failed to deserialize message from peer %s",
+				addressing.forNodes().of(inboundMessage.source().getPublicKey())
 			);
+
+			log.error(msg, e);
 			peerControl.get().banPeer(inboundMessage.source(), Duration.ofMinutes(5), "Failed to deserialize inbound message");
-			return IO_ERROR.result();
+			return IO_ERROR.with(msg, e.getMessage()).result();
 		}
 	}
 }

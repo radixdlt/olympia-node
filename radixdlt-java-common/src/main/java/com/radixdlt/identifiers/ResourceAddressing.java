@@ -72,7 +72,7 @@ import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Result.Mapper2;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
 
-import static com.radixdlt.identifiers.CommonErrors.INVALID_RESOURCE_ADDRESS;
+import static com.radixdlt.errors.ParameterError.INVALID_RESOURCE_ADDRESS;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 /**
@@ -122,11 +122,11 @@ public final class ResourceAddressing {
 	}
 
 	public Mapper2<String, REAddr> parseFunctional(String rri) {
-		return () -> Result.wrap(INVALID_RESOURCE_ADDRESS, () -> parse(rri));
+		return () -> Result.wrap(() -> INVALID_RESOURCE_ADDRESS.with(rri), () -> parse(rri));
 	}
 
 	public Result<REAddr> parseToAddr(String rri) {
-		return Result.wrap(INVALID_RESOURCE_ADDRESS, () -> parse(rri).map((__, addr) -> addr));
+		return Result.wrap(() -> INVALID_RESOURCE_ADDRESS.with(rri), () -> parse(rri).last());
 	}
 
 	public String of(String symbol, REAddr addr) {

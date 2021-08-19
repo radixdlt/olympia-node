@@ -80,9 +80,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.SSL_ALGORITHM_ERROR;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.SSL_GENERAL_ERROR;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.SSL_KEY_ERROR;
+import static com.radixdlt.errors.InternalStateError.SSL_ALGORITHM_ERROR;
+import static com.radixdlt.errors.InternalStateError.SSL_GENERAL_ERROR;
+import static com.radixdlt.errors.InternalStateError.SSL_KEY_ERROR;
 
 public final class HttpClientUtils {
 	private static final TrustManager[] trustAllCerts = new TrustManager[]{

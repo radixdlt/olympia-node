@@ -64,7 +64,6 @@
 
 package com.radixdlt.identifiers;
 
-import com.radixdlt.utils.Pair;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
@@ -72,11 +71,12 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
 
-import static com.radixdlt.identifiers.CommonErrors.INVALID_VALIDATOR_ADDRESS;
+import static com.radixdlt.errors.ParameterError.INVALID_VALIDATOR_ADDRESS;
 
 /**
  * Bech-32 encoding/decoding of validators. Validators are represented as 33-byte
@@ -146,6 +146,6 @@ public final class ValidatorAddressing {
 	}
 
 	public Result<ECPublicKey> fromString(String input) {
-		return Result.wrap(INVALID_VALIDATOR_ADDRESS, () -> parse(input));
+		return Result.wrap(() -> INVALID_VALIDATOR_ADDRESS.with(input), () -> parse(input));
 	}
 }

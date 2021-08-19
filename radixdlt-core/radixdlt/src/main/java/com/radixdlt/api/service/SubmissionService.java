@@ -94,9 +94,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static com.radixdlt.api.ApiErrors.UNABLE_TO_PREPARE_TX;
 import static com.radixdlt.errors.ExternalStateError.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
 import static com.radixdlt.errors.ProcessingError.SUBMISSION_FAILURE;
+import static com.radixdlt.errors.ProcessingError.UNABLE_TO_PREPARE_TX;
 
 public final class SubmissionService {
 	private final Logger logger = LogManager.getLogger();

@@ -64,29 +64,29 @@
 
 package com.radixdlt.network.messaging;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.radix.network.messaging.Message;
+
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.PeerManager;
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.Compress;
+import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.functional.Result;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.transport.PeerChannel;
-import com.radixdlt.network.p2p.PeerManager;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.utils.Compress;
-
-import com.radixdlt.utils.functional.Result;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.radix.network.messaging.Message;
-
-import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
-import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
+import static com.radixdlt.errors.ProcessingError.IO_ERROR;
+import static com.radixdlt.errors.ProcessingError.MESSAGE_EXPIRED;
 
 /*
  * This could be moved into MessageCentralImpl at some stage, but has been
@@ -154,7 +154,7 @@ class MessageDispatcher {
 			addressing.forNodes().of(receiver.getPublicKey())
 		);
 		log.warn("{}: {}", msg, cause.getMessage());
-		return IO_ERROR.result();
+		return IO_ERROR.with(msg, cause.getMessage()).result();
 	}
 
 	private Result<Object> updateStatistics(Result<Object> result) {

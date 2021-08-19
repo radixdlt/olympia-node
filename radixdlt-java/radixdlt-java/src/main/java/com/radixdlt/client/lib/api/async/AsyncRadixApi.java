@@ -119,7 +119,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_BALANCES;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_HISTORY;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_INFO;
@@ -157,6 +156,7 @@ import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_CURRENT_EPOCH
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_NODE_INFO;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LIST;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
+import static com.radixdlt.errors.ParameterError.BASE_URL_IS_MANDATORY;
 
 import static java.util.Optional.ofNullable;
 

@@ -81,7 +81,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.radixdlt.identifiers.CommonErrors.INVALID_PUBLIC_KEY;
+import static com.radixdlt.errors.ParameterError.INVALID_PUBLIC_KEY;
 
 /**
  * Asymmetric EC public key provider fixed to curve 'secp256k1'
@@ -129,7 +129,7 @@ public final class ECPublicKey {
 	}
 
 	public static Result<ECPublicKey> fromHexString(String hexadecimal) {
-		return Result.wrap(INVALID_PUBLIC_KEY, () -> fromHex(hexadecimal));
+		return Result.wrap(() -> INVALID_PUBLIC_KEY.with(hexadecimal), () -> fromHex(hexadecimal));
 	}
 
 	public EUID euid() {

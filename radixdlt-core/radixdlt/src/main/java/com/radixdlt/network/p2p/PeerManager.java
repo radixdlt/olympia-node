@@ -64,6 +64,9 @@
 
 package com.radixdlt.network.p2p;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
@@ -72,14 +75,15 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.network.messaging.InboundMessage;
-import com.radixdlt.network.p2p.addressbook.AddressBook;
-import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
+import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
 import com.radixdlt.network.p2p.PeerEvent.PeerLostLiveness;
 import com.radixdlt.network.p2p.PeerEvent.PeerConnectionTimeout;
 import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
-import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
+import com.radixdlt.network.p2p.PeerEvent.PeerLostLiveness;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
@@ -97,8 +101,12 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.radixdlt.network.messaging.MessagingErrors.PEER_BANNED;
-import static com.radixdlt.network.messaging.MessagingErrors.SELF_CONNECTION_ATTEMPT;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
+
+import static com.radixdlt.errors.ProcessingError.PEER_BANNED;
+import static com.radixdlt.errors.ProcessingError.SELF_CONNECTION_ATTEMPT;
+
 import static java.util.function.Predicate.not;
 
 /**

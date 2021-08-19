@@ -79,6 +79,8 @@ import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
 
+import static com.radixdlt.errors.ProcessingError.UNABLE_TO_PARSE_TRANSACTION;
+
 public final class TxnParser {
 	private final LogCMStore logCMStore;
 	private final RERules rules;
@@ -118,6 +120,6 @@ public final class TxnParser {
 	}
 
 	public Result<REProcessedTxn> parseTxn(Txn txn) {
-		return Result.wrap(TxnParserErrors.TRANSACTION_PARSING_ERROR, () -> parse(txn));
+		return Result.wrap(UNABLE_TO_PARSE_TRANSACTION, () -> parse(txn));
 	}
 }

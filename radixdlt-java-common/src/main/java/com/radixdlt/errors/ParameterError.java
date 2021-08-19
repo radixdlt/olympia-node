@@ -72,11 +72,21 @@ import com.radixdlt.utils.functional.Failure;
  * <b>WARNING:</b> New errors should be added to the end, no insertions or re-arrangements are allowed!
  */
 public enum ParameterError implements Failure {
-	GENERAL("General error"),
 	MISSING_PARAMETER("The parameter {0} is missing"),
 	UNKNOWN_ACTION("Unknown action {0}"),
 	UNSUPPORTED_ACTION("Action type {0} is not supported"),
-	MISSING_ACTION_FIELD("Required field {0} is not present in action definition");
+	MISSING_ACTION_FIELD("Required field {0} is not present in action definition"),
+	INVALID_PAGE_SIZE("Size {0} must be greater than zero"),
+	INVALID_SIGNATURE_DER("Invalid signature DER {0}"),
+	INVALID_TX_ID("Invalid TX ID {0}"),
+	INVALID_VALIDATOR_ADDRESS("Invalid validator address {0}"),
+	INVALID_ACCOUNT_ADDRESS("Invalid account address {0}"),
+	INVALID_RESOURCE_ADDRESS("Invalid resource address {0}"),
+	INVALID_PUBLIC_KEY("Invalid public key {0}"),
+	VALUE_OUT_OF_RANGE("Parameter {0} must be between {1} and {2}"),
+	AID_IS_NULL("AID string is 'null'"),
+	INVALID_AID_LENGTH("AID string has incorrect length {0}"),
+	BASE_URL_IS_MANDATORY("Base URL is mandatory");
 
 	private final String message;
 

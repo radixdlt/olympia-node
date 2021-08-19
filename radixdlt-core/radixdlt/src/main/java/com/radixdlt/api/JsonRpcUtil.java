@@ -70,6 +70,7 @@ import org.json.JSONObject;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Tuple.Tuple2;
 
 import java.util.Collection;
 import java.util.List;
@@ -79,16 +80,16 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static com.radixdlt.api.ApiErrors.INVALID_HEX_STRING;
-import static com.radixdlt.api.ApiErrors.MISSING_PARAMS;
+import static com.radixdlt.errors.ConversionError.UNABLE_TO_PARSE_HEX_STRING;
+import static com.radixdlt.errors.ConversionError.UNABLE_TO_PARSE_INT;
 import static com.radixdlt.errors.ParameterError.MISSING_PARAMETER;
 import static com.radixdlt.errors.ProtocolError.INVALID_REQUEST;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_INT;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_JSON;
+import static com.radixdlt.errors.ProtocolError.PARSE_ERROR;
 import static com.radixdlt.utils.functional.Result.fail;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 import static com.radixdlt.utils.functional.Result.ok;
 import static com.radixdlt.utils.functional.Result.wrap;
+import static com.radixdlt.utils.functional.Tuple.tuple;
 
 import static java.util.Optional.ofNullable;
 
@@ -102,9 +103,9 @@ public final class JsonRpcUtil {
 		throw new IllegalStateException("Can't construct");
 	}
 
-	public static Result<JSONObject> jsonObject(String data) {
-		return wrap(UNABLE_TO_PARSE_JSON, () -> new JSONObject(data));
-	}
+//	public static Result<JSONObject> jsonObject(String data) {
+//		return wrap(UNABLE_TO_PARSE_JSON, () -> new JSONObject(data));
+//	}
 
 	public static JSONObject jsonObject() {
 		return new JSONObject();
@@ -141,11 +142,11 @@ public final class JsonRpcUtil {
 	}
 
 	public static Result<JSONArray> safeArray(JSONObject params, String name) {
-		return fromOptional(MISSING_PARAMETER.with(name), ofNullable(params.optJSONArray(name)));
+		return fromOptional(() -> MISSING_PARAMETER.with(name), ofNullable(params.optJSONArray(name)));
 	}
 
 	public static Result<String> safeString(JSONObject params, String name) {
-		return fromOptional(MISSING_PARAMETER.with(name), optString(params, name));
+		return fromOptional(() -> MISSING_PARAMETER.with(name), optString(params, name));
 	}
 
 	public static Optional<String> optString(JSONObject params, String name) {
@@ -154,9 +155,14 @@ public final class JsonRpcUtil {
 			.map(String.class::cast);
 	}
 
-	public static Result<byte[]> safeBlob(JSONObject params, String name) {
+	public static Result<Tuple2<String, byte[]>> safeBlob(JSONObject params, String name) {
 		return safeString(params, name)
-			.flatMap(param -> wrap(INVALID_HEX_STRING, () -> Bytes.fromHexString(param)));
+			.flatMap(
+				param -> wrap(
+					() -> UNABLE_TO_PARSE_HEX_STRING.with(param),
+					() -> tuple(param, Bytes.fromHexString(param))
+				)
+			);
 	}
 
 	public static JSONObject toResponse(JSONObject request, Result<JSONObject> result) {
@@ -252,6 +258,6 @@ public final class JsonRpcUtil {
 	}
 
 	private static Result<Object> params(JSONObject request) {
-		return fromOptional(MISSING_PARAMS, ofNullable(request.opt("params")));
+		return fromOptional(PARSE_ERROR.with("The 'params' field is missing"), ofNullable(request.opt("params")));
 	}
 }

@@ -93,8 +93,8 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DESERIALIZE;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_SERIALIZE;
+import static com.radixdlt.errors.ConversionError.UNABLE_TO_DESERIALIZE;
+import static com.radixdlt.errors.ConversionError.UNABLE_TO_SERIALIZE;
 import static com.radixdlt.networks.Network.LOCALNET;
 
 public abstract class RadixApiBase {

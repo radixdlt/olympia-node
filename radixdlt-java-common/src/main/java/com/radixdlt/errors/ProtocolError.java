@@ -72,6 +72,7 @@ import com.radixdlt.utils.functional.Failure;
 public enum ProtocolError implements Failure {
 	INVALID_REQUEST(600, "Invalid request: {0}"),
 	INVALID_PARAMETERS(602, "Invalid parameters: {0} {1}"),
+	PARSE_ERROR(700, "Parse error: {0}"),
 	METHOD_NOT_FOUND(601, "Method {0} not found");
 
 	private final int code;

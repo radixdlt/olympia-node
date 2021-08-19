@@ -278,6 +278,18 @@ public interface Result<T> {
 	}
 
 	/**
+	 * Convert instance into {@link Result}
+	 *
+	 * @param failure supplier of failure which is used when input is empty instance.
+	 * @param source input instance of {@link Optional}
+	 *
+	 * @return created instance
+	 */
+	static <T> Result<T> fromOptional(Supplier<Failure> failure, Optional<T> source) {
+		return source.map(Result::ok).orElseGet(() -> failure.get().result());
+	}
+
+	/**
 	 * Wrap call to function which may throw an exception.
 	 *
 	 * @param failure the failure to represent the error which may happen during call
@@ -286,7 +298,19 @@ public interface Result<T> {
 	 * @return success instance if call was successful and failure instance if function threw an exception.
 	 */
 	static <T> Result<T> wrap(Failure failure, ThrowingSupplier<T> supplier) {
-		return wrap(failure::with, supplier);
+		return wrap(e -> failure.with(e.getMessage()), supplier);
+	}
+
+	/**
+	 * Wrap call to function which may throw an exception.
+	 *
+	 * @param failure the supplier of failure used to represent the error which may happen during call
+	 * @param supplier the function to call.
+	 *
+	 * @return success instance if call was successful and failure instance if function threw an exception.
+	 */
+	static <T> Result<T> wrap(Supplier<Failure> failure, ThrowingSupplier<T> supplier) {
+		return wrap(e -> failure.get().with(e.getMessage()), supplier);
 	}
 
 	/**

@@ -121,10 +121,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.NETWORK_IO_ERROR;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.OPERATION_INTERRUPTED;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.UNKNOWN_ERROR;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_BALANCES;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_HISTORY;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_INFO;
@@ -162,6 +158,10 @@ import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_CURRENT_EPOCH
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_NODE_INFO;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LIST;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
+import static com.radixdlt.errors.ParameterError.BASE_URL_IS_MANDATORY;
+import static com.radixdlt.errors.ProcessingError.IO_ERROR;
+import static com.radixdlt.errors.ProcessingError.OPERATION_INTERRUPTED;
+import static com.radixdlt.errors.ProcessingError.UNKNOWN_ERROR;
 
 import static java.util.Optional.ofNullable;
 
@@ -518,7 +518,7 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 
 	private Failure errorMapper(Throwable throwable) {
 		if (throwable instanceof IOException) {
-			return NETWORK_IO_ERROR.with(throwable.getMessage());
+			return IO_ERROR.with("", throwable.getMessage());
 		}
 
 		if (throwable instanceof InterruptedException) {

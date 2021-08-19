@@ -73,7 +73,15 @@ import com.radixdlt.utils.functional.Failure;
  * <b>WARNING:</b> New errors should be added to the end, no insertions or re-arrangements are allowed!
  */
 public enum ConversionError implements Failure {
-	GENERAL("General error");
+	SYMBOL_DOES_NOT_MATCH("Symbol {0} does not match"),
+	UNABLE_TO_SERIALIZE("Unable to serialize: {0}"),
+	UNABLE_TO_DESERIALIZE("Unable to deserialize: {0}"),
+	UNABLE_TO_PARSE_HEX_STRING("The value {0} is not a correct hexadecimal string"),
+	UNABLE_TO_PARSE_UINT("Unable to parse unsigned integer number: {0}"),
+	UNABLE_TO_PARSE_JSON("Unable to parse JSON: {0}"),
+	UNABLE_TO_PARSE_INT("Unable to parse integer number: {0}"),
+	UNABLE_TO_PARSE_FLOAT("Unable to parse float number: {0}"),
+	UNABLE_TO_PARSE_BOOLEAN("Unable to parse boolean value: {0}");
 
 	private final String message;
 
