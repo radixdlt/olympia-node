@@ -90,6 +90,7 @@ import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.qualifier.NumPeers;
@@ -205,17 +206,32 @@ public class TransactionStatusServiceTest {
 		injector.getInstance(DatabaseEnvironment.class).stop();
 	}
 
+
+	@Test
+	public void mempool_add_should_have_pending_status() throws Exception {
+		// Arrange
+		var acct = REAddr.ofPubKeyAccount(self);
+		var request = TxnConstructionRequest.create()
+			.feePayer(acct)
+			.action(actionMapper.apply(acct));
+		var txBuilder = radixEngine.construct(request);
+		var transfer = txBuilder.signAndBuild(hashSigner::sign);
+
+		transactionStatusService.mempoolAddSuccessEventProcessor()
+			.process(MempoolAddSuccess.create(transfer));
+
+		// Assert
+		var status = transactionStatusService.getTransactionStatus(transfer.getId());
+		assertThat(status).isEqualTo(TransactionStatus.PENDING);
+		var json = transactionStatusService.getTransaction(transfer.getId());
+		assertThat(json).isNotPresent();
+	}
+
 	@Test
 	public void mempool_add_should_not_change_status_of_transaction() throws Exception {
 		// Arrange
 		runner.start();
 		var acct = REAddr.ofPubKeyAccount(self);
-		var action = new TransferToken(
-			REAddr.ofNativeToken(),
-			acct,
-			REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey()),
-			UInt256.ONE
-		);
 		var request = TxnConstructionRequest.create()
 			.feePayer(acct)
 			.action(actionMapper.apply(acct));

@@ -117,9 +117,9 @@ public class TransactionStatusService {
 
 	public TransactionStatus getTransactionStatus(AID txId) {
 		var status = cache.getIfPresent(txId);
-		if (status != CONFIRMED && store.contains(txId)) {
+		if (store.contains(txId)) {
 			return CONFIRMED;
 		}
-		return status != null ? CONFIRMED : TRANSACTION_NOT_FOUND;
+		return status != null ? status : TRANSACTION_NOT_FOUND;
 	}
 }
