@@ -77,11 +77,11 @@ import java.util.Map;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
-import static com.radixdlt.api.ApiErrors.INVALID_REQUEST;
-import static com.radixdlt.api.ApiErrors.METHOD_NOT_FOUND;
 import static com.radixdlt.api.JsonRpcUtil.failureResponse;
 import static com.radixdlt.api.RestUtils.respond;
 import static com.radixdlt.api.RestUtils.withBody;
+import static com.radixdlt.errors.ProtocolError.INVALID_REQUEST;
+import static com.radixdlt.errors.ProtocolError.METHOD_NOT_FOUND;
 
 import static java.util.Optional.ofNullable;
 

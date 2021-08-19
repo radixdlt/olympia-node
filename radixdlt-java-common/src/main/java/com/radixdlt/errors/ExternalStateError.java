@@ -73,7 +73,8 @@ import com.radixdlt.utils.functional.Failure;
  * <b>WARNING:</b> New errors should be added to the end, no insertions or re-arrangements are allowed!
  */
 public enum ExternalStateError implements Failure {
-	GENERAL("General error");
+	GENERAL("General error"),
+	TRANSACTION_ADDRESS_DOES_NOT_MATCH("Provided txID does not match provided transaction");
 
 	private final String message;
 

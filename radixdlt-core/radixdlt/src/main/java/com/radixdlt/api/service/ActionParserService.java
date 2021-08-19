@@ -86,12 +86,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static com.radixdlt.api.ApiErrors.INVALID_PARAMETERS;
-import static com.radixdlt.api.ApiErrors.MISSING_ACTION_FIELD;
-import static com.radixdlt.api.ApiErrors.UNSUPPORTED_ACTION;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MIN;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
+import static com.radixdlt.errors.ParameterError.MISSING_ACTION_FIELD;
+import static com.radixdlt.errors.ParameterError.UNSUPPORTED_ACTION;
+import static com.radixdlt.errors.ProtocolError.INVALID_PARAMETERS;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_BOOLEAN;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_FLOAT;
 import static com.radixdlt.identifiers.CommonErrors.VALUE_OUT_OF_RANGE;

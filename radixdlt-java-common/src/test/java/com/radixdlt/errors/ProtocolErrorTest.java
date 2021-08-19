@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,29 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.errors;
 
-import com.radixdlt.utils.functional.Failure;
+import org.junit.Test;
 
-public enum ActionErrors implements Failure {
-	SUBMISSION_FAILURE(1500, "Transaction submission failed: {0}"),
-	TRANSACTION_ADDRESS_DOES_NOT_MATCH(1320, "Provided txID does not match provided transaction");
+import static org.junit.Assert.*;
 
-	private final int code;
-	private final String message;
+import static com.radixdlt.errors.ProtocolError.INVALID_PARAMETERS;
+import static com.radixdlt.errors.ProtocolError.INVALID_REQUEST;
+import static com.radixdlt.errors.ProtocolError.METHOD_NOT_FOUND;
 
-	ActionErrors(int code, String message) {
-		this.code = code;
-		this.message = message;
-	}
-
-	@Override
-	public String message() {
-		return message;
-	}
-
-	@Override
-	public int code() {
-		return code;
+public class ProtocolErrorTest {
+	@Test
+	public void errorCodesMatchTheSpec() {
+		assertEquals(-32600, INVALID_REQUEST.code());
+		assertEquals(-32602, INVALID_PARAMETERS.code());
+		assertEquals(-32601, METHOD_NOT_FOUND.code());
 	}
 }

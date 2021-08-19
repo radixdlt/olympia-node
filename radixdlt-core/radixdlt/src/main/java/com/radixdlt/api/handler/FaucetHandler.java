@@ -64,18 +64,18 @@
 
 package com.radixdlt.api.handler;
 
-import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.FaucetTokensTransfer;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.radixdlt.application.NodeApplicationRequest;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.FaucetTokensTransfer;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.concurrent.CompletableFuture;
@@ -83,8 +83,7 @@ import java.util.concurrent.ExecutionException;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-
-import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
+import static com.radixdlt.errors.ProcessingError.SUBMISSION_FAILURE;
 
 public class FaucetHandler {
 	private final REAddr account;

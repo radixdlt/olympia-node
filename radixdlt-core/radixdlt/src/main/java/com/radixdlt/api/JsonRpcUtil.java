@@ -80,12 +80,11 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.radixdlt.api.ApiErrors.INVALID_HEX_STRING;
-import static com.radixdlt.api.ApiErrors.INVALID_REQUEST;
-import static com.radixdlt.api.ApiErrors.MISSING_PARAMETER;
 import static com.radixdlt.api.ApiErrors.MISSING_PARAMS;
+import static com.radixdlt.errors.ParameterError.MISSING_PARAMETER;
+import static com.radixdlt.errors.ProtocolError.INVALID_REQUEST;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_INT;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_JSON;
-import static com.radixdlt.utils.functional.Failure.failure;
 import static com.radixdlt.utils.functional.Result.fail;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 import static com.radixdlt.utils.functional.Result.ok;
@@ -235,7 +234,7 @@ public final class JsonRpcUtil {
 			return ok(toNamed((JSONArray) params, required, optional));
 		}
 
-		return fail(failure(INVALID_REQUEST.code(), "Unable to parse request 'params' field"));
+		return fail(INVALID_REQUEST.with("Unable to parse request 'params' field"));
 	}
 
 	private static JSONObject toNamed(JSONArray params, List<String> required, List<String> optional) {

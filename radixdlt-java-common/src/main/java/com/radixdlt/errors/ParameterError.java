@@ -72,7 +72,11 @@ import com.radixdlt.utils.functional.Failure;
  * <b>WARNING:</b> New errors should be added to the end, no insertions or re-arrangements are allowed!
  */
 public enum ParameterError implements Failure {
-	GENERAL("General error");
+	GENERAL("General error"),
+	MISSING_PARAMETER("The parameter {0} is missing"),
+	UNKNOWN_ACTION("Unknown action {0}"),
+	UNSUPPORTED_ACTION("Action type {0} is not supported"),
+	MISSING_ACTION_FIELD("Required field {0} is not present in action definition");
 
 	private final String message;
 

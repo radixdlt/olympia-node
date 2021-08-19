@@ -72,7 +72,8 @@ import com.radixdlt.utils.functional.Failure;
  * <b>WARNING:</b> New errors should be added to the end, no insertions or re-arrangements are allowed!
  */
 public enum ProcessingError implements Failure {
-	GENERAL("General error");
+	GENERAL("General error"),
+	SUBMISSION_FAILURE("Transaction submission failed: {0}");
 
 	private final String message;
 

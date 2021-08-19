@@ -67,32 +67,23 @@ package com.radixdlt.api;
 import com.radixdlt.utils.functional.Failure;
 
 public enum ApiErrors implements Failure {
-	INVALID_REQUEST(-32600, "Invalid request: {0}"),
-	INVALID_PARAMETERS(-32602, "Invalid parameters: {0} {1}"),
-	METHOD_NOT_FOUND(-32601, "Method {0} not found"),
-	MISSING_PARAMETER(2503, "The parameter {0} is missing"),
-	UNKNOWN_ACTION(2516, "Unknown action {0}"),
-	UNSUPPORTED_ACTION(2517, "Action type {0} is not supported"),
-	MISSING_ACTION_FIELD(2000, "Required field {0} is not present in action definition"),
+	SYMBOL_DOES_NOT_MATCH(2504, "Symbol {0} does not match"), //conversion
 
-	INVALID_HEX_STRING(2502, "The value {0} is not a correct hexadecimal string"),
-	SYMBOL_DOES_NOT_MATCH(2504, "Symbol {0} does not match"),
-	INVALID_PAGE_SIZE(2505, "Size {0} must be greater than zero"),
-	MISSING_PARAMS(2506, "The 'params' field must be present"),
-	//	INVALID_NETWORK_ID(2507, "Network ID is not an integer"),
-	//	UNKNOWN_VALIDATOR(2508, "Validator {0} not found"),
-	//	INVALID_BLOB(2511, "Invalid blob {0}"),
-	INVALID_SIGNATURE_DER(2512, "Invalid signature DER {0}"),
-	INVALID_TX_ID(2514, "Invalid TX ID {0}"),
-	UNABLE_TO_PREPARE_TX(2515, "Unable to prepare transaction {0}"),
+	INVALID_PAGE_SIZE(2505, "Size {0} must be greater than zero"), //parameter
+	MISSING_PARAMS(2506, "The 'params' field must be present"), //protocol, parse error
 
-	INVALID_ACTION_DATA(2518, "Action data are invalid {0}"),
-	MISSING_FIELD(2519, "Field {0} is missing or invalid"),
-	UNKNOWN_RRI(2520, "Unknown RRI {0}"),
+	INVALID_SIGNATURE_DER(2512, "Invalid signature DER {0}"), 							//parameter
+	INVALID_TX_ID(2514, "Invalid TX ID {0}"),											//parameter
+	INVALID_HEX_STRING(2502, "The value {0} is not a correct hexadecimal string"),		//parameter
+	//INVALID_ACTION_DATA(2518, "Action data are invalid {0}"),
+	//MISSING_FIELD(2519, "Field {0} is missing or invalid"),
+	UNKNOWN_RRI(2520, "Unknown RRI {0}"),								//internal state
 	UNKNOWN_ACCOUNT_ADDRESS(2521, "Unknown account address {0}"),
-	UNABLE_TO_RESTORE_CREATOR(2522, "Unable to restore creator from transaction {0}"),
-	UNKNOWN_TX_ID(2523, "Transaction with id {0} not found");
+	UNKNOWN_TX_ID(2523, "Transaction with id {0} not found"),
 
+	UNABLE_TO_PREPARE_TX(2515, "Unable to prepare transaction {0}"), //processing
+	UNABLE_TO_RESTORE_CREATOR(2522, "Unable to restore creator from transaction {0}"), //processing
+;
 	private final int code;
 	private final String message;
 
