@@ -174,17 +174,17 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		var from = entry.from();
 		var to = entry.to();
 		var result = new JSONObject();
-		final ActionType type;
 		if (from.isEmpty()) {
 			var toBucket = to.orElseThrow();
 			if (!(toBucket instanceof AccountBucket)) {
-				return new JSONObject().put("type", "Other");
+				return new JSONObject()
+					.put("type", ActionType.UNKNOWN.toString());
 			}
 			result.put("to", addressing.forAccounts().of(toBucket.getOwner()));
-			type = ActionType.MINT;
+			result.put("type", ActionType.MINT.toString());
 		} else if (to.isEmpty()) {
 			result.put("from", addressing.forAccounts().of(from.get().getOwner()));
-			type = ActionType.BURN;
+			result.put("type", ActionType.BURN.toString());
 		} else {
 			var fromBucket = from.get();
 			var toBucket = to.get();
@@ -192,27 +192,27 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 				if (toBucket instanceof AccountBucket) {
 					result
 						.put("from", addressing.forAccounts().of(fromBucket.getOwner()))
-						.put("to", addressing.forAccounts().of(toBucket.getOwner()));
-					type = ActionType.TRANSFER;
+						.put("to", addressing.forAccounts().of(toBucket.getOwner()))
+						.put("type", ActionType.TRANSFER.toString());
 				} else {
 					result
 						.put("from", addressing.forAccounts().of(fromBucket.getOwner()))
-						.put("validator", addressing.forValidators().of(toBucket.getValidatorKey()));
-					type = ActionType.STAKE;
+						.put("validator", addressing.forValidators().of(toBucket.getValidatorKey()))
+						.put("type", ActionType.STAKE.toString());
 				}
 			} else if (fromBucket instanceof StakeOwnershipBucket) {
 				amt = computeStakeFromOwnership.apply(fromBucket.getValidatorKey(), UInt384.from(amt)).getLow();
 				result
 					.put("from", addressing.forAccounts().of(toBucket.getOwner())) // FIXME: badness in API spec
-					.put("validator", addressing.forValidators().of(fromBucket.getValidatorKey()));
-				type = ActionType.UNSTAKE;
+					.put("validator", addressing.forValidators().of(fromBucket.getValidatorKey()))
+					.put("type", ActionType.UNSTAKE.toString());
 			} else {
-				return new JSONObject().put("type", "Other");
+				return new JSONObject()
+					.put("type", ActionType.UNKNOWN.toString());
 			}
 		}
 
 		return result
-			.put("type", type.toString())
 			.put("amount", amt)
 			.put("rri", addrToRri.apply(entry.resourceAddr().orElse(REAddr.ofNativeToken())));
 	}
