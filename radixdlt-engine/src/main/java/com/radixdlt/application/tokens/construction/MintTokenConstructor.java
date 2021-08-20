@@ -69,12 +69,13 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.errors.ParameterError;
 
 public final class MintTokenConstructor implements ActionConstructor<MintToken> {
 	@Override
 	public void construct(MintToken action, TxBuilder txBuilder) throws TxBuilderException {
 		if (action.amount().isZero()) {
-			throw new TxBuilderException("Must mint > 0 tokens");
+			throw new TxBuilderException(ParameterError.INVALID_MINT_AMOUNT);
 		}
 		txBuilder.up(new TokensInAccount(action.to(), action.resourceAddr(), action.amount()));
 		txBuilder.end();

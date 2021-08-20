@@ -72,6 +72,7 @@ import com.radixdlt.utils.functional.Failure;
  * <b>WARNING:</b> New errors should be added to the end, no insertions or re-arrangements are allowed!
  */
 public enum ProcessingError implements Failure {
+	UNKNOWN_ERROR("Unknown error of type {0} with message {1}"),
 	SUBMISSION_FAILURE("Transaction submission failed: {0}"),
 	ASYNC_PROCESSING_ERROR("Async processing error {0}"),
 	UNABLE_TO_PREPARE_TX("Unable to prepare transaction {0}"),
@@ -84,9 +85,7 @@ public enum ProcessingError implements Failure {
 	SELF_CONNECTION_ATTEMPT("Attempt to connect to self"),
 	PEER_BANNED("Peer is banned"),
 	OPERATION_INTERRUPTED("Operation was interrupted {0}"),
-	UNKNOWN_ERROR("Unknown error of type {0} with message {1}"),
-	;
-
+	BUFFER_HAS_UNUSED_SPACE("Buffer has unused {0} bytes");
 
 	private final String message;
 

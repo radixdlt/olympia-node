@@ -80,7 +80,9 @@ public enum InternalStateError implements Failure {
 	SSL_KEY_ERROR("SSL Key error: {0}"),
 	SSL_ALGORITHM_ERROR("SSL algorithm error: {0}"),
 	SSL_GENERAL_ERROR("SSL algorithm error: {0}"),
-	;
+	NEXT_EPOCH_STAKE_FAILURE("Preparing stakes to next epoch failed: {0}"),
+	COULD_NOT_FIND_PARTICLE("Could not find large particle greater than {0}"),
+	NEXT_VIEW_IS_NOT_HIGHER_THAN_CURRENT("Next view: {0} is not higher than current view: {1}");
 
 	private final String message;
 

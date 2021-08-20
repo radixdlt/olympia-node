@@ -77,12 +77,16 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.nio.ByteBuffer;
 
+import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_BALANCE;
+import static com.radixdlt.errors.ParameterError.INVALID_UNSTAKE_AMOUNT;
+import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_UNUSED_SPACE;
+
 public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
 	@Override
 	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
 		var validatorStake = txBuilder.find(ValidatorStakeData.class, action.from());
 		if (action.amount().isZero()) {
-			throw new TxBuilderException("Unstake amount can't be zero.");
+			throw new TxBuilderException(INVALID_UNSTAKE_AMOUNT);
 		}
 
 		var ownershipAmt = action.amount()
@@ -96,8 +100,7 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 		buf.put(action.from().getCompressedBytes());
 		buf.put(action.accountAddr().getBytes());
 		if (buf.hasRemaining()) {
-			// Sanity
-			throw new IllegalStateException();
+			throw new TxBuilderException(BUFFER_HAS_UNUSED_SPACE.with(buf.remaining()));
 		}
 
 		var index = SubstateIndex.create(buf.array(), StakeOwnership.class);
@@ -105,7 +108,7 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 			index,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
 			ownershipAmt,
-			() -> new TxBuilderException("Not enough balance for transfer.")
+			() -> NOT_ENOUGH_BALANCE
 		);
 		if (!change.isZero()) {
 			txBuilder.up(new StakeOwnership(action.from(), action.accountAddr(), change));

@@ -64,23 +64,27 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UnstakeOwnership;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.nio.ByteBuffer;
 
+import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_BALANCE;
+import static com.radixdlt.errors.ParameterError.INVALID_TRANSFER_AMOUNT;
+import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_UNUSED_SPACE;
+
 public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwnership> {
 	@Override
 	public void construct(UnstakeOwnership action, TxBuilder txBuilder) throws TxBuilderException {
 		if (action.amount().isZero()) {
-			throw new TxBuilderException("Must transfer > 0.");
+			throw new TxBuilderException(INVALID_TRANSFER_AMOUNT.with(action.amount()));
 		}
 
 		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES));
@@ -89,8 +93,7 @@ public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwn
 		buf.put(action.from().getCompressedBytes());
 		buf.put(action.accountAddr().getBytes());
 		if (buf.hasRemaining()) {
-			// Sanity
-			throw new IllegalStateException();
+			throw new TxBuilderException(BUFFER_HAS_UNUSED_SPACE.with(buf.remaining()));
 		}
 
 		var index = SubstateIndex.create(buf.array(), StakeOwnership.class);
@@ -98,7 +101,7 @@ public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwn
 			index,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
 			action.amount(),
-			() -> new TxBuilderException("Not enough balance for transfer.")
+			() -> NOT_ENOUGH_BALANCE
 		);
 		if (!change.isZero()) {
 			txBuilder.up(new StakeOwnership(action.from(), action.accountAddr(), change));

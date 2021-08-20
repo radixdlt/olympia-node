@@ -83,9 +83,17 @@ public enum ParameterError implements Failure {
 	INVALID_ACCOUNT_ADDRESS("Invalid account address {0}"),
 	INVALID_RESOURCE_ADDRESS("Invalid resource address {0}"),
 	INVALID_PUBLIC_KEY("Invalid public key {0}"),
-	VALUE_OUT_OF_RANGE("Parameter {0} must be between {1} and {2}"),
-	AID_IS_NULL("AID string is 'null'"),
+	INVALID_SYSCALL_PARAMETER("Length must be >= 1 and <= 32 but was {0}"),
+	INVALID_VALIDATOR_FEE_INCREASE("Max rake increase is {0} but trying to increase {1}"),
+	INVALID_MINT_AMOUNT("Must mint > 0 tokens"),
+	INVALID_BURN_AMOUNT("Must burn > 0 tokens"),
+	INVALID_UNSTAKE_AMOUNT("Must unstake > 0 tokens"),
+	INVALID_TRANSFER_AMOUNT("Invalid transfer amount {0}. The amount must be > 0."),
+	INVALID_MINIMUM_STAKE("Minimum to stake is {0} but trying to stake {1}"),
 	INVALID_AID_LENGTH("AID string has incorrect length {0}"),
+	VALUE_OUT_OF_RANGE("Parameter {0} must be between {1} and {2}"),
+	STAKING_NOT_ALLOWED("Delegation flag is false and you are not the owner."),
+	AID_IS_NULL("AID string is 'null'"),
 	BASE_URL_IS_MANDATORY("Base URL is mandatory");
 
 	private final String message;

@@ -64,6 +64,9 @@
 
 package com.radixdlt.engine;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
 import com.radixdlt.application.tokens.ResourceInBucket;
@@ -89,19 +92,17 @@ import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.TransientEngineStore;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -115,6 +116,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_FEES;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -455,7 +458,7 @@ public final class RadixEngine<M> {
 			}
 		}
 
-		throw new TxBuilderException("Not enough fees: unable to construct with fees after " + maxTries + " tries.");
+		throw new TxBuilderException(NOT_ENOUGH_FEES.with(maxTries));
 	}
 
 	public REParser getParser() {
@@ -466,8 +469,7 @@ public final class RadixEngine<M> {
 
 	public SubstateDeserialization getSubstateDeserialization() {
 		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			return deserialization;
+			return constraintMachine.getDeserialization();
 		}
 	}
 

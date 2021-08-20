@@ -64,6 +64,9 @@
 
 package com.radixdlt.api.service;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.Self;
@@ -76,8 +79,6 @@ import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.networks.Addressing;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.util.List;
 
@@ -184,17 +185,13 @@ public final class NetworkingService {
 	}
 
 	private JSONObject addressBookEntryToJson(AddressBookEntry e) {
-		final var knownAddressesArray = fromCollection(e.getKnownAddresses(), addr -> {
-			final var addrObj = jsonObject()
+		final var knownAddressesArray = fromCollection(
+			e.getKnownAddresses(),
+			addr -> jsonObject()
 				.put("uri", addr.getUri())
 				.put("blacklisted", addr.blacklisted())
-				.put(
-					"latestConnectionStatus",
-					addr.getLatestConnectionStatus()
-						.map(LatestConnectionStatus::toString)
-						.orElse("UNKNOWN")
-				);
-		});
+				.put("latestConnectionStatus", addr.getLatestConnectionStatus().map(LatestConnectionStatus::toString).orElse("UNKNOWN"))
+		);
 
 		final var entryObj = jsonObject()
 			.put("address", addressing.forNodes().of(e.getNodeId().getPublicKey()))

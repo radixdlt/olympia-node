@@ -64,21 +64,26 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
+
+import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_BALANCE;
+import static com.radixdlt.errors.ParameterError.INVALID_MINIMUM_STAKE;
+import static com.radixdlt.errors.ParameterError.STAKING_NOT_ALLOWED;
+import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_UNUSED_SPACE;
 
 public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> {
 	private final UInt256 minimumStake;
@@ -90,7 +95,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 	@Override
 	public void construct(StakeTokens action, TxBuilder builder) throws TxBuilderException {
 		if (action.amount().compareTo(minimumStake) < 0) {
-			throw new TxBuilderException("Minimum to stake is " + minimumStake + " but trying to stake " + action.amount());
+			throw new TxBuilderException(INVALID_MINIMUM_STAKE.with(minimumStake, action.amount()));
 		}
 
 		// TODO: construct this based on substate definition
@@ -98,6 +103,9 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 		buf.put(SubstateTypeId.TOKENS.id());
 		buf.put((byte) 0);
 		buf.put(action.from().getBytes());
+		if (buf.hasRemaining()) {
+			throw new TxBuilderException(BUFFER_HAS_UNUSED_SPACE.with(buf.remaining()));
+		}
 
 		var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
 		var change = builder.downFungible(
@@ -105,7 +113,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 			p -> p.getResourceAddr().isNativeToken()
 				&& p.getHoldingAddr().equals(action.from()),
 			action.amount(),
-			() -> new TxBuilderException("Not enough balance for transfer.")
+			() -> NOT_ENOUGH_BALANCE
 		);
 		if (!change.isZero()) {
 			builder.up(new TokensInAccount(action.from(), REAddr.ofNativeToken(), change));
@@ -117,7 +125,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 			var validator = builder.read(ValidatorOwnerCopy.class, action.to());
 			var owner = validator.getOwner();
 			if (!action.from().equals(owner)) {
-				throw new TxBuilderException("Delegation flag is false and you are not the owner.");
+				throw new TxBuilderException(STAKING_NOT_ALLOWED);
 			}
 		}
 		builder.up(new PreparedStake(action.amount(), action.from(), action.to()));

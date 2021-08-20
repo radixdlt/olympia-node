@@ -278,7 +278,8 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 				try {
 					var stakeOwnership = curValidator.stake(addr, amt);
 					txBuilder.up(stakeOwnership);
-				} catch (ProcedureException ex) {
+				} catch (IllegalStateException | ProcedureException ex) {
+					//TODO: add Failure
 					throw new TxBuilderException(ex);
 				}
 			}

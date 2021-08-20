@@ -69,6 +69,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.SplitToken;
 import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.errors.InternalStateError;
 import com.radixdlt.utils.UInt256;
 
 public final class SplitTokenConstructor implements ActionConstructor<SplitToken> {
@@ -80,7 +81,7 @@ public final class SplitTokenConstructor implements ActionConstructor<SplitToken
 			p -> p.getResourceAddr().equals(action.rri())
 				&& p.getHoldingAddr().equals(userAccount)
 				&& p.getAmount().compareTo(action.minSize()) > 0,
-			"Could not find large particle greater than " + action.minSize()
+			() -> InternalStateError.COULD_NOT_FIND_PARTICLE.with(action.minSize())
 		);
 
 		var amt1 = tokens.getAmount().divide(UInt256.TWO);

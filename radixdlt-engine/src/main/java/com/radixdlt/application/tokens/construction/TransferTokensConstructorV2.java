@@ -64,28 +64,35 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.nio.ByteBuffer;
 
+import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_BALANCE;
+import static com.radixdlt.errors.ParameterError.INVALID_TRANSFER_AMOUNT;
+import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_UNUSED_SPACE;
+
 public class TransferTokensConstructorV2 implements ActionConstructor<TransferToken> {
 	@Override
 	public void construct(TransferToken action, TxBuilder txBuilder) throws TxBuilderException {
 		if (action.amount().isZero()) {
-			throw new TxBuilderException("Must transfer > 0.");
+			throw new TxBuilderException(INVALID_TRANSFER_AMOUNT.with(action.amount()));
 		}
 
 		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
 		buf.put(SubstateTypeId.TOKENS.id());
 		buf.put((byte) 0);
 		buf.put(action.from().getBytes());
+		if (buf.hasRemaining()) {
+			throw new TxBuilderException(BUFFER_HAS_UNUSED_SPACE.with(buf.remaining()));
+		}
 
 		var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
 		var change = txBuilder.downFungible(
@@ -93,7 +100,7 @@ public class TransferTokensConstructorV2 implements ActionConstructor<TransferTo
 			p -> p.getResourceAddr().equals(action.resourceAddr())
 				&& p.getHoldingAddr().equals(action.from()),
 			action.amount(),
-			() -> new TxBuilderException("Not enough balance for transfer.")
+			() -> NOT_ENOUGH_BALANCE
 		);
 		if (!change.isZero()) {
 			txBuilder.up(new TokensInAccount(action.from(), action.resourceAddr(), change));

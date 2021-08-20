@@ -64,6 +64,12 @@
 
 package com.radixdlt.application.system;
 
+import org.bouncycastle.util.Arrays;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
@@ -79,7 +85,6 @@ import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
@@ -101,15 +106,11 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.errors.InternalStateError;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
-import org.bouncycastle.util.Arrays;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -234,7 +235,7 @@ public class TxnSizeFeeTest {
 				index,
 				p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(accountAddr),
 				fee,
-				() -> new TxBuilderException("Oops")
+				() -> InternalStateError.GENERAL
 			);
 			txBuilder.toLowLevelBuilder().syscall(Syscall.FEE_RESERVE_PUT, fee.toByteArray());
 			if (!remainder.isZero()) {
@@ -265,7 +266,7 @@ public class TxnSizeFeeTest {
 				index,
 				p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(accountAddr),
 				fee,
-				() -> new TxBuilderException("Oops")
+				() -> InternalStateError.GENERAL
 			);
 
 			var data = new byte[Short.BYTES + 1 + UInt256.BYTES + 1];

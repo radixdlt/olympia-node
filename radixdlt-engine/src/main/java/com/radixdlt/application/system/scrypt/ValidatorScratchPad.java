@@ -129,6 +129,7 @@ public final class ValidatorScratchPad {
 		return verifyNoOverflow(i).getLow();
 	}
 
+	//TODO: there are no ProcedureExceptions thrown, but several IllegalStateException
 	public StakeOwnership stake(REAddr owner, UInt256 stake) throws ProcedureException {
 		if (totalStake.isZero()) {
 			this.totalStake = UInt384.from(stake);

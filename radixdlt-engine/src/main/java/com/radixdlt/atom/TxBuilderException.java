@@ -64,16 +64,29 @@
 
 package com.radixdlt.atom;
 
+import com.radixdlt.identifiers.exception.FailureContainer;
+import com.radixdlt.utils.functional.Failure;
+
+import static com.radixdlt.errors.InternalStateError.NEXT_EPOCH_STAKE_FAILURE;
+
 /**
  * Exception which occurs when trying to build a transaction
  */
-//TODO: add Failure parameter
-public class TxBuilderException extends Exception {
+public class TxBuilderException extends Exception implements FailureContainer {
+	private final Failure failure;
+
 	public TxBuilderException(Throwable cause) {
 		super(cause);
+		failure = NEXT_EPOCH_STAKE_FAILURE.with(cause.getMessage());
 	}
 
-	public TxBuilderException(String message) {
-		super(message);
+	public TxBuilderException(Failure failure) {
+		super(failure.message());
+		this.failure = failure;
+	}
+
+	@Override
+	public Failure failure() {
+		return failure;
 	}
 }

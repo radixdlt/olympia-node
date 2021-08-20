@@ -77,14 +77,6 @@ public class DepletedFeeReserveException extends AuthorizationException {
 		this.reserveAmount = cause.getAmount();
 	}
 
-	public UInt256 getCharge() {
-		return charge;
-	}
-
-	public UInt256 getReserveAmount() {
-		return reserveAmount;
-	}
-
 	public UInt256 getMissingAmount() {
 		return charge.subtract(reserveAmount);
 	}

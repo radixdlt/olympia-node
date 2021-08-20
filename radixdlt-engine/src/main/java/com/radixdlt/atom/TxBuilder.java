@@ -84,6 +84,8 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Failure;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -205,7 +207,7 @@ public final class TxBuilder {
 	public <T extends Particle> T downSubstate(
 		Class<T> particleClass,
 		Predicate<T> particlePredicate,
-		String errorMessage
+		Supplier<Failure> failureSupplier
 	) throws TxBuilderException {
 		var localSubstate = lowLevelBuilder.localUpSubstate().stream()
 			.filter(s -> particleClass.isInstance(s.getParticle()))
@@ -224,7 +226,7 @@ public final class TxBuilder {
 				.findFirst();
 
 			if (substateRead.isEmpty()) {
-				throw new TxBuilderException(errorMessage);
+				throw new TxBuilderException(failureSupplier.get());
 			}
 
 			down(substateRead.get().getId());
@@ -464,7 +466,7 @@ public final class TxBuilder {
 		SubstateIndex<T> index,
 		Predicate<T> particlePredicate,
 		UInt256 amount,
-		Supplier<TxBuilderException> exceptionSupplier
+		Supplier<Failure> failureSupplier
 	) throws TxBuilderException {
 		var spent = UInt256.ZERO;
 		for (var l : lowLevelBuilder.localUpSubstate()) {
@@ -502,7 +504,7 @@ public final class TxBuilder {
 			}
 		}
 
-		throw exceptionSupplier.get();
+		throw new TxBuilderException(failureSupplier.get());
 	}
 
 	public UInt256 getFeeReserve() {
@@ -512,7 +514,7 @@ public final class TxBuilder {
 	public <T extends ResourceInBucket> void putFeeReserve(
 		REAddr feePayer,
 		UInt256 amount,
-		Supplier<TxBuilderException> exceptionSupplier
+		Supplier<Failure> failureSupplier
 	) throws TxBuilderException {
 		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
 		buf.put(SubstateTypeId.TOKENS.id());
@@ -524,7 +526,7 @@ public final class TxBuilder {
 			index,
 			p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(feePayer),
 			amount,
-			exceptionSupplier
+			failureSupplier
 		);
 		lowLevelBuilder.syscall(Syscall.FEE_RESERVE_PUT, amount);
 		if (!remainder.isZero()) {

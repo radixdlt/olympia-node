@@ -18,6 +18,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_BALANCE_FOR_FEES;
+
 /**
  * Has utilities for scanning and locating nodes in radix networks
  */
@@ -77,8 +79,9 @@ public class RadixNetworkNodeLocator {
         try {
             api.transaction().build(TransactionRequest.createBuilder(randomAddress).build());
         } catch (RadixApiException e) {
+            //FIXME: error message changed and this check might not work properly.
             // this is expected since the random address has no funds. However, it tells us that /construction is available
-            if (!(e.getMessage().contains(FeeReserveNotEnoughBalanceException.class.getSimpleName()))) {
+            if (!(e.getMessage().contains(NOT_ENOUGH_BALANCE_FOR_FEES.message()))) {
                 throw e;
             }
         }

@@ -74,7 +74,11 @@ import com.radixdlt.utils.functional.Failure;
  */
 public enum ExternalStateError implements Failure {
 	GENERAL("General error"),
-	TRANSACTION_ADDRESS_DOES_NOT_MATCH("Provided txID does not match provided transaction");
+	TRANSACTION_ADDRESS_DOES_NOT_MATCH("Provided txID does not match provided transaction"),
+	NOT_ENOUGH_FEES("Not enough fees: unable to construct with fees after {0} tries."),
+	NOT_ENOUGH_FEES_PAID("Fee paid {0} is not enough to cover fees {1}"),
+	NOT_ENOUGH_BALANCE("Not enough balance for transfer."),
+	NOT_ENOUGH_BALANCE_FOR_FEES("Not enough balance to for fee burn.");
 
 	private final String message;
 
