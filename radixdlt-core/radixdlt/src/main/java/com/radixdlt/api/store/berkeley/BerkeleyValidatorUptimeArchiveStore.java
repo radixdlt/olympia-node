@@ -68,6 +68,8 @@ import com.radixdlt.api.store.ValidatorUptime;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -82,7 +84,9 @@ import com.sleepycat.je.Transaction;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 
@@ -198,7 +202,12 @@ public final class BerkeleyValidatorUptimeArchiveStore implements BerkeleyAdditi
 	}
 
 	@Override
-	public void process(Transaction dbTxn, REProcessedTxn txn, long stateVersion) {
+	public void process(
+		Transaction dbTxn,
+		REProcessedTxn txn,
+		long stateVersion,
+		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
+	) {
 		for (var groupedUpdates : txn.getGroupedStateUpdates()) {
 			for (var update : groupedUpdates) {
 				if (update.isShutDown() && update.getParsed() instanceof EpochData) {

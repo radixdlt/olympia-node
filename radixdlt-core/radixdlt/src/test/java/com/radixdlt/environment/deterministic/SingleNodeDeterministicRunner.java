@@ -62,82 +62,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.construction;
+package com.radixdlt.environment.deterministic;
 
 import com.google.inject.Inject;
-import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.REInstruction;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.UpSubstate;
-import com.radixdlt.engine.parser.exceptions.TxnParseException;
-import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.store.TxnIndex;
-import com.radixdlt.store.CMStore;
-import com.radixdlt.store.ResourceStore;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 
-import java.nio.ByteBuffer;
-import java.util.Optional;
+import java.util.function.Predicate;
 
-/**
- * CMStore which allows one to parse transactions given
- * the append log as the backend store.
- * TODO: Remove this class
- */
-public final class LogCMStore implements CMStore {
-	private final TxnIndex txnIndex;
-	private final ResourceStore readableAddrs;
-	private final REParser reParser;
+public final class SingleNodeDeterministicRunner {
+	private static final int MAX_EVENTS_DEFAULT = 10000;
+
+	private final DeterministicProcessor processor;
+	private final DeterministicNetwork network;
 
 	@Inject
-	public LogCMStore(
-		TxnIndex txnIndex,
-		ResourceStore readableAddrs,
-		REParser reParser
+	public SingleNodeDeterministicRunner(
+		DeterministicProcessor processor,
+		DeterministicNetwork network
 	) {
-		this.txnIndex = txnIndex;
-		this.readableAddrs = readableAddrs;
-		this.reParser = reParser;
+		this.processor = processor;
+		this.network = network;
 	}
 
-	@Override
-	public ByteBuffer verifyVirtualSubstate(SubstateId substateId) {
-		return substateId.getVirtualParent()
-			.flatMap(this::loadSubstate)
-			.orElseThrow();
+	public void start() {
+		processor.start();
 	}
 
-	@Override
-	public Optional<ByteBuffer> loadResource(REAddr rri) {
-		return readableAddrs.loadResource(rri);
+	public void processNext(int count) {
+		for (int i = 0; i < count; i++) {
+			processNext();
+		}
 	}
 
-	@Override
-	public Optional<ByteBuffer> loadSubstate(SubstateId substateId) {
-		var txnId = substateId.getTxnId();
-		return txnIndex.get(txnId)
-			.flatMap(txn -> {
-				var index = substateId.getIndex().orElseThrow();
-				try {
-					var instructions = reParser.parse(txn).instructions();
-					return instructions.stream()
-						.filter(i -> i.getMicroOp() == REInstruction.REMicroOp.UP)
-						.skip(index)
-						.findFirst()
-						.map(i -> {
-							UpSubstate upSubstate = i.getData();
-							return upSubstate.getSubstateBuffer();
-						});
-				} catch (TxnParseException e) {
-					throw new IllegalStateException("Cannot deserialize txn", e);
-				}
-			});
+	public ControlledMessage processNext() {
+		var msg = network.nextMessage().value();
+		processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+		return msg;
 	}
 
-	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex index) {
-		throw new UnsupportedOperationException();
+	public <T> T runNextEventsThrough(Class<T> eventClass) {
+		return runNextEventsThrough(eventClass, t -> true);
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T> T runNextEventsThrough(Class<T> eventClass, Predicate<T> eventPredicate) {
+		for (int i = 0; i < MAX_EVENTS_DEFAULT; i++) {
+			var msg = processNext();
+			if (eventClass.isInstance(msg.message()) && eventPredicate.test((T) msg.message())) {
+				return (T) msg.message();
+			}
+		}
+
+		throw new RuntimeException("Reached " + MAX_EVENTS_DEFAULT + " events without finding " + eventClass);
 	}
 }

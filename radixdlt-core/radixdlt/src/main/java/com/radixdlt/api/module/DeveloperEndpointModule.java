@@ -162,12 +162,4 @@ public class DeveloperEndpointModule extends AbstractModule {
 	public JsonRpcHandler developerParseAmount(DeveloperHandler developerHandler) {
 		return developerHandler::handleParseAmount;
 	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.lookup_transaction")
-	public JsonRpcHandler developerLookupTransaction(DeveloperHandler developerHandler) {
-		return developerHandler::handleLookupTransaction;
-	}
-
 }

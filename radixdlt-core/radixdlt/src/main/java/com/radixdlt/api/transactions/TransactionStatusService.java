@@ -62,47 +62,64 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking;
+package com.radixdlt.api.transactions;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.api.data.TransactionStatus;
+import com.radixdlt.api.store.berkeley.BerkeleyTransactionsByIdStore;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import org.json.JSONObject;
 
-import java.util.function.Predicate;
+import java.time.Duration;
+import java.util.Optional;
 
-public final class DeterministicRunner {
-	private static final int MAX_EVENTS_DEFAULT = 10000;
+import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
+import static com.radixdlt.api.data.TransactionStatus.FAILED;
+import static com.radixdlt.api.data.TransactionStatus.PENDING;
+import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
 
-	private final DeterministicProcessor processor;
-	private final DeterministicNetwork network;
+public class TransactionStatusService {
+	private final Cache<AID, TransactionStatus> cache = CacheBuilder.newBuilder()
+		.maximumSize(100000)
+		.expireAfterAccess(Duration.ofMinutes(10))
+		.build();
+	private final BerkeleyTransactionsByIdStore store;
 
 	@Inject
-	public DeterministicRunner(
-		DeterministicProcessor processor,
-		DeterministicNetwork network
-	) {
-		this.processor = processor;
-		this.network = network;
+	public TransactionStatusService(BerkeleyTransactionsByIdStore store) {
+		this.store = store;
 	}
 
-	public void start() {
-		processor.start();
+	private void onReject(MempoolAddFailure mempoolAddFailure) {
+		cache.put(mempoolAddFailure.getTxn().getId(), FAILED);
 	}
 
-	public <T> T runNextEventsThrough(Class<T> eventClass) {
-		return runNextEventsThrough(eventClass, t -> true);
+	private void onSuccess(MempoolAddSuccess mempoolAddSuccess) {
+		cache.put(mempoolAddSuccess.getTxn().getId(), PENDING);
 	}
 
-	@SuppressWarnings("unchecked")
-	public <T> T runNextEventsThrough(Class<T> eventClass, Predicate<T> eventPredicate) {
-		for (int i = 0; i < MAX_EVENTS_DEFAULT; i++) {
-			var msg = network.nextMessage().value();
-			processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-			if (eventClass.isInstance(msg.message()) && eventPredicate.test((T) msg.message())) {
-				return (T) msg.message();
-			}
+	public EventProcessor<MempoolAddFailure> mempoolAddFailureEventProcessor() {
+		return this::onReject;
+	}
+
+	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
+		return this::onSuccess;
+	}
+
+	public Optional<JSONObject> getTransaction(AID txId) {
+		return store.getTransactionJSON(txId);
+	}
+
+	public TransactionStatus getTransactionStatus(AID txId) {
+		var status = cache.getIfPresent(txId);
+		if (store.contains(txId)) {
+			return CONFIRMED;
 		}
-
-		throw new RuntimeException("Reached " + MAX_EVENTS_DEFAULT + " events without finding " + eventClass);
+		return status != null ? status : TRANSACTION_NOT_FOUND;
 	}
 }

@@ -68,7 +68,6 @@ import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.REOutput;
@@ -135,15 +134,6 @@ public interface ClientApiStore {
 	 * @return list of transaction history entries.
 	 */
 	Result<List<TxHistoryEntry>> getTransactionHistory(REAddr address, int size, Optional<Instant> cursor, boolean verbose);
-
-	/**
-	 * Retrieve single transaction history entry.
-	 *
-	 * @param txId transaction id
-	 *
-	 * @return transaction history entry.
-	 */
-	Result<TxHistoryEntry> getTransaction(AID txId);
 
 	Result<REAddr> parseRri(String rri);
 

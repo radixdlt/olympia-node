@@ -65,7 +65,9 @@
 package com.radixdlt.api.module;
 
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.store.berkeley.BerkeleyTransactionsByIdStore;
 import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
+import com.radixdlt.api.transactions.TransactionStatusServiceModule;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
 import com.google.inject.AbstractModule;
@@ -75,15 +77,11 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.server.ArchiveHttpServer;
-import com.radixdlt.api.service.ScheduledCacheCleanup;
-import com.radixdlt.api.service.TransactionStatusService;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.REOutput;
 
 public class ArchiveApiModule extends AbstractModule {
@@ -94,9 +92,13 @@ public class ArchiveApiModule extends AbstractModule {
 			.addBinding(Runners.ARCHIVE_API)
 			.to(ArchiveHttpServer.class);
 
+		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
 		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-			.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
+		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
+
+		install(new TransactionStatusServiceModule());
+		bind(BerkeleyTransactionsByIdStore.class).in(Scopes.SINGLETON);
+		binder.addBinding().to(BerkeleyTransactionsByIdStore.class);
 
 		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
 	}
@@ -116,42 +118,6 @@ public class ArchiveApiModule extends AbstractModule {
 			Runners.APPLICATION,
 			LedgerUpdate.class,
 			clientApiStore.ledgerUpdateProcessor()
-		);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> cacheCleanupEventProcessor(TransactionStatusService transactionStatusService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			ScheduledCacheCleanup.class,
-			transactionStatusService.cacheCleanupEventProcessor()
-		);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> ledgerUpdateToLedgerTransactionStatus(TransactionStatusService transactionStatusService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			LedgerUpdate.class,
-			transactionStatusService.ledgerUpdateProcessor()
-		);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			MempoolAddFailure.class,
-			transactionStatusService.mempoolAddFailureEventProcessor()
-		);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			MempoolAddSuccess.class,
-			transactionStatusService.mempoolAddSuccessEventProcessor()
 		);
 	}
 

@@ -62,42 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.mempool;
-
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.PrivateKeys;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+package com.radixdlt.api.transactions;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.api.service.TransactionStatusService;
-import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.application.NodeApplicationRequest;
+import com.radixdlt.api.data.TransactionStatus;
+import com.radixdlt.api.store.berkeley.BerkeleyTransactionsByIdStore;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.integration.staking.DeterministicRunner;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
@@ -106,33 +97,57 @@ import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
-import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
-import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(Parameterized.class)
-public class TxStatusTest {
-
+public class TransactionStatusServiceTest {
 	@Parameterized.Parameters
-	public static Collection<Object[]> parameters() {
-		return List.of(new Object[][]{
-			{true}
-		});
+	public static Collection<Object[]> params() {
+		return List.of(
+			new Object[] {
+				(Function<REAddr, TxAction>) addr -> new TransferToken(
+					REAddr.ofNativeToken(),
+					addr,
+					REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey()),
+					UInt256.ONE
+				),
+			},
+			new Object[]{
+				(Function<REAddr, TxAction>) addr -> new StakeTokens(
+					addr,
+					addr.publicKey().orElseThrow(),
+					Amount.ofTokens(1).toSubunits()
+				)
+			}
+		);
 	}
-
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
+	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
 	@Inject
 	@LocalSigner
@@ -141,33 +156,33 @@ public class TxStatusTest {
 	@Self
 	private ECPublicKey self;
 	@Inject
-	private DeterministicRunner runner;
-	@Inject
-	private EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
-	@Inject
-	private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
+	private SingleNodeDeterministicRunner runner;
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> radixEngine;
 	@Inject
+	private EventDispatcher<MempoolAdd> mempoolDispatcher;
+	@Inject
 	private TransactionStatusService transactionStatusService;
 
-	private final boolean shouldSucceed;
+	private Injector injector;
+	private final Function<REAddr, TxAction> actionMapper;
 
-	public TxStatusTest(boolean shouldSucceed) {
-		this.shouldSucceed = shouldSucceed;
+	public TransactionStatusServiceTest(Function<REAddr, TxAction> actionMapper) {
+		this.actionMapper = actionMapper;
 	}
 
-	private Injector createInjector() {
-		return Guice.createInjector(
+	@Before
+	public void setup() {
+		this.injector = Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
+			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMinimumStake(Amount.ofTokens(1))),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
 			new MockedGenesisModule(
 				Set.of(TEST_KEY.getPublicKey()),
-				Amount.ofTokens(1010),
-				Amount.ofTokens(1000)
+				Amount.ofTokens(110),
+				Amount.ofTokens(100)
 			),
 			new MempoolFillerModule(),
 			new AbstractModule() {
@@ -175,48 +190,70 @@ public class TxStatusTest {
 				protected void configure() {
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bind(ClientApiStore.class).toInstance(mock(ClientApiStore.class));
+					var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
+					bind(BerkeleyTransactionsByIdStore.class).in(Scopes.SINGLETON);
+					binder.addBinding().to(BerkeleyTransactionsByIdStore.class);
 				}
 			}
 		);
+		this.injector.injectMembers(this);
 	}
 
-	public REProcessedTxn waitForCommit() {
-		var mempoolAdd = runner.runNextEventsThrough(MempoolAddSuccess.class);
-		var committed = runner.runNextEventsThrough(
-			LedgerUpdate.class,
-			u -> {
-				var output = u.getStateComputerOutput().getInstance(REOutput.class);
-				return output.getProcessedTxns().stream().anyMatch(txn -> txn.getTxn().getId().equals(mempoolAdd.getTxn().getId()));
-			}
-		);
-
-		return committed.getStateComputerOutput().getInstance(REOutput.class).getProcessedTxns().stream()
-			.filter(t -> t.getTxn().getId().equals(mempoolAdd.getTxn().getId()))
-			.findFirst()
-			.orElseThrow();
+	@After
+	public void teardown() {
+		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
+		injector.getInstance(PersistentSafetyStateStore.class).close();
+		injector.getInstance(DatabaseEnvironment.class).stop();
 	}
 
-	public REProcessedTxn dispatchAndWaitForCommit(TxAction action) {
-		nodeApplicationRequestEventDispatcher.dispatch(NodeApplicationRequest.create(action));
-		return waitForCommit();
+
+	@Test
+	public void mempool_add_should_have_pending_status() throws Exception {
+		// Arrange
+		var acct = REAddr.ofPubKeyAccount(self);
+		var request = TxnConstructionRequest.create()
+			.feePayer(acct)
+			.action(actionMapper.apply(acct));
+		var txBuilder = radixEngine.construct(request);
+		var transfer = txBuilder.signAndBuild(hashSigner::sign);
+
+		transactionStatusService.mempoolAddSuccessEventProcessor()
+			.process(MempoolAddSuccess.create(transfer));
+
+		// Assert
+		var status = transactionStatusService.getTransactionStatus(transfer.getId());
+		assertThat(status).isEqualTo(TransactionStatus.PENDING);
+		var json = transactionStatusService.getTransaction(transfer.getId());
+		assertThat(json).isNotPresent();
 	}
 
 	@Test
-	public void singletx() throws Exception {
-		createInjector().injectMembers(this);
+	public void mempool_add_should_not_change_status_of_transaction() throws Exception {
+		// Arrange
 		runner.start();
+		var acct = REAddr.ofPubKeyAccount(self);
+		var request = TxnConstructionRequest.create()
+			.feePayer(acct)
+			.action(actionMapper.apply(acct));
+		var txBuilder = radixEngine.construct(request);
+		var transfer = txBuilder.signAndBuild(hashSigner::sign);
+		mempoolDispatcher.dispatch(MempoolAdd.create(transfer));
+		runner.runNextEventsThrough(
+			LedgerUpdate.class,
+			u -> {
+				var output = u.getStateComputerOutput().getInstance(REOutput.class);
+				return output.getProcessedTxns().stream().anyMatch(txn -> txn.getTxn().getId().equals(transfer.getId()));
+			}
+		);
 
-		var accountAddr = REAddr.ofPubKeyAccount(self);
-		var otherAddr = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
+		// Act
+		mempoolDispatcher.dispatch(MempoolAdd.create(transfer));
+		runner.processNext(100);
 
-		// Not existing transaction Id
-		var notExistingTxId = AID.from(HashUtils.random256().asBytes());
-		assertEquals(TRANSACTION_NOT_FOUND, transactionStatusService.getTransactionStatus(notExistingTxId));
-
-		// Correct transfer
-		var transferAction = new TransferToken(REAddr.ofNativeToken(), accountAddr, otherAddr, Amount.ofTokens(10).toSubunits());
-		var transferDispatched = dispatchAndWaitForCommit(transferAction);
-		assertEquals(CONFIRMED, transactionStatusService.getTransactionStatus(transferDispatched.getTxn().getId()));
+		// Assert
+		var status = transactionStatusService.getTransactionStatus(transfer.getId());
+		assertThat(status).isEqualTo(TransactionStatus.CONFIRMED);
+		var json = transactionStatusService.getTransaction(transfer.getId());
+		assertThat(json).isPresent();
 	}
 }

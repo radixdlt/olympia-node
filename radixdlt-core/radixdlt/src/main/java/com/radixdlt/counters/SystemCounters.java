@@ -103,7 +103,6 @@ public interface SystemCounters {
 		COUNT_BDB_LEDGER_CONTAINS("count.bdb.ledger.contains"),
 		COUNT_BDB_LEDGER_CONTAINS_TX("count.bdb.ledger.contains_tx"),
 		COUNT_BDB_LEDGER_ENTRIES("count.bdb.ledger.entries"),
-		COUNT_BDB_LEDGER_GET("count.bdb.ledger.get"),
 		COUNT_BDB_LEDGER_GET_FIRST("count.bdb.ledger.get_first"),
 		COUNT_BDB_LEDGER_GET_LAST("count.bdb.ledger.get_last"),
 		COUNT_BDB_LEDGER_GET_NEXT("count.bdb.ledger.get_next"),
@@ -169,7 +168,6 @@ public interface SystemCounters {
 
 		ELAPSED_BDB_LEDGER_COMMIT("elapsed.bdb.ledger.commit"),
 		ELAPSED_BDB_LEDGER_CREATE_TX("elapsed.bdb.ledger.create_tx"),
-		ELAPSED_BDB_LEDGER_CONTAINS("elapsed.bdb.ledger.contains"),
 		ELAPSED_BDB_LEDGER_CONTAINS_TX("elapsed.bdb.ledger.contains_tx"),
 		ELAPSED_BDB_LEDGER_ENTRIES("elapsed.bdb.ledger.entries"),
 		ELAPSED_BDB_LEDGER_GET("elapsed.bdb.ledger.get"),

@@ -62,28 +62,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.api.transactions;
 
-import com.radixdlt.atom.Txn;
-import com.radixdlt.identifiers.AID;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 
-import java.util.Optional;
+public class TransactionStatusServiceModule extends AbstractModule {
+	@Override
+	public void configure() {
+		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
+	}
 
-/**
- * Index of atoms
- */
-public interface TxnIndex {
-	/**
-	 * Checks whether the given aid is contained in this view
-	 * @param aid The aid
-	 * @return Whether the given aid is contained in this view
-	 */
-	boolean contains(AID aid);
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			MempoolAddFailure.class,
+			transactionStatusService.mempoolAddFailureEventProcessor()
+		);
+	}
 
-	/**
-	 * Gets the atom associated with a certain aid
-	 * @param aid The aid
-	 * @return The atom associated with the given aid (if any)
-	 */
-	Optional<Txn> get(AID aid);
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			MempoolAddSuccess.class,
+			transactionStatusService.mempoolAddSuccessEventProcessor()
+		);
+	}
 }
