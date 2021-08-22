@@ -87,7 +87,6 @@ import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceCreatedEvent;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
@@ -95,7 +94,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -474,10 +472,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 			   : Result.ok(entry.withActions(filteredActions));
 	}
 
-	private boolean validateHistoryEntry(TxHistoryEntry entry) {
-		return !entry.getActions().isEmpty();
-	}
-
 	@Override
 	public EventProcessor<ScheduledQueueFlush> queueFlushProcessor() {
 		return flush -> {
@@ -489,10 +483,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	public void close() {
 		storeCollected();
 		closeAll();
-	}
-
-	private boolean sameTxId(Txn txn, TxHistoryEntry txHistoryEntry) {
-		return txHistoryEntry.getTxId().equals(txn.getId());
 	}
 
 	private Instant instantFromKey(DatabaseEntry key) {
@@ -615,18 +605,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		if (database != null) {
 			database.close();
 		}
-	}
-
-	private void resetAll() {
-		var transaction = dbEnv.getEnvironment()
-			.beginTransaction(null, null);
-
-		for (var dbName : DB_NAMES) {
-			log.info("Dropping existing {}", dbName);
-			dbEnv.getEnvironment().truncateDatabase(transaction, dbName, false);
-		}
-
-		transaction.commit();
 	}
 
 	@Override
@@ -815,14 +793,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 			.forEach(this::storeBalanceEntry);
 
 		return accounting;
-	}
-
-	private Optional<ECPublicKey> extractCreator(Txn tx) {
-		try {
-			return parser.parse(tx).getSignedBy();
-		} catch (TxnParseException e) {
-			throw new IllegalStateException("Creator extraction failure", e);
-		}
 	}
 
 	private void storeSingleTransaction(TxHistoryEntry txn, REAddr address) {

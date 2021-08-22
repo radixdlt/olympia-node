@@ -99,7 +99,7 @@ import static com.google.common.primitives.UnsignedBytes.lexicographicalComparat
 import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
-public final class BerkeleyTransactionIndexArchiveStore implements BerkeleyAdditionalStore {
+public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalStore {
 	private static final String TRANSACTIONS_DB = "radix.transactions";
 	private static final String RESOURCE_SYMBOLS_DB = "radix.resource_symbols";
 	private Database resources;
@@ -107,7 +107,7 @@ public final class BerkeleyTransactionIndexArchiveStore implements BerkeleyAddit
 	private final Addressing addressing;
 
 	@Inject
-	BerkeleyTransactionIndexArchiveStore(Addressing addressing) {
+	BerkeleyTransactionIndexStore(Addressing addressing) {
 		this.addressing = addressing;
 	}
 

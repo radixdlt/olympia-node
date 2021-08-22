@@ -71,7 +71,7 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.qualifier.DeveloperEndpoint;
-import com.radixdlt.api.store.berkeley.BerkeleyTransactionIndexArchiveStore;
+import com.radixdlt.api.store.berkeley.BerkeleyTransactionIndexStore;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -85,15 +85,15 @@ import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 public final class TransactionIndexApiModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(BerkeleyTransactionIndexArchiveStore.class).in(Scopes.SINGLETON);
+		bind(BerkeleyTransactionIndexStore.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-			.addBinding().to(BerkeleyTransactionIndexArchiveStore.class);
+			.addBinding().to(BerkeleyTransactionIndexStore.class);
 	}
 
 	@DeveloperEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("index.get_transaction_count")
-	public JsonRpcHandler indexGetTransactionCount(BerkeleyTransactionIndexArchiveStore store) {
+	public JsonRpcHandler indexGetTransactionCount(BerkeleyTransactionIndexStore store) {
 		return request -> withRequiredParameters(
 			request,
 			List.of(),
@@ -111,7 +111,7 @@ public final class TransactionIndexApiModule extends AbstractModule {
 	@DeveloperEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("index.get_transactions")
-	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexArchiveStore store) {
+	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexStore store) {
 		return request -> withRequiredParameters(
 			request,
 			List.of("offset", "limit"),
