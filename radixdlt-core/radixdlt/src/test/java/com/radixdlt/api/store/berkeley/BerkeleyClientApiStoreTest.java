@@ -108,7 +108,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
@@ -151,7 +150,6 @@ public class BerkeleyClientApiStoreTest {
 	private static final REAddr TOKEN = REAddr.ofHashedKey(TOKEN_KEYPAIR.getPublicKey(), SYMBOL);
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
-	private final BerkeleyTransactionsByIdStore transactionsByIdStore = mock(BerkeleyTransactionsByIdStore.class);
 
 	private DatabaseEnvironment environment;
 
@@ -160,9 +158,6 @@ public class BerkeleyClientApiStoreTest {
 
 	@Inject
 	private RadixEngine<LedgerAndBFTProof> engine;
-
-	@Inject
-	private REParser parser;
 
 	@Inject
 	@Self
@@ -386,8 +381,6 @@ public class BerkeleyClientApiStoreTest {
 
 		return new BerkeleyClientApiStore(
 			environment,
-			parser,
-			transactionsByIdStore,
 			serialization,
 			mock(SystemCounters.class),
 			mock(ScheduledEventDispatcher.class),

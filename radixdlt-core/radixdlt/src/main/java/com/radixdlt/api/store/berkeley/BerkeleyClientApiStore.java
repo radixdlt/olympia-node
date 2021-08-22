@@ -93,7 +93,6 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -172,14 +171,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	private static final String SUPPLY_BALANCE_DB = "radix.supply.balance_db";
 	private static final String TOKEN_DEFINITION_DB = "radix.token_definition_db";
 
-	//Make sure this array contains all listed above DB names
-	private static final String[] DB_NAMES = {
-		EXECUTED_TRANSACTIONS_DB,
-		ADDRESS_BALANCE_DB,
-		SUPPLY_BALANCE_DB,
-		TOKEN_DEFINITION_DB
-	};
-
 	private static final long DEFAULT_FLUSH_INTERVAL = 250L;
 	private static final int KEY_BUFFER_INITIAL_CAPACITY = 1024;
 	private static final int TIMESTAMP_SIZE = Long.BYTES + Integer.BYTES;
@@ -187,7 +178,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	private static final Failure IGNORED = Failure.failure(0, "Ignored");
 
 	private final DatabaseEnvironment dbEnv;
-	private final BerkeleyTransactionsByIdStore store;
 	private final Serialization serialization;
 	private final SystemCounters systemCounters;
 	private final ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher;
@@ -196,7 +186,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	private final AtomicLong currentEpoch = new AtomicLong(0);
 	private final AtomicLong currentRound = new AtomicLong(0);
 	private final TransactionParser transactionParser;
-	private final REParser parser;
 	private final Addressing addressing;
 	private final Forks forks;
 
@@ -211,8 +200,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
-		REParser parser,
-		BerkeleyTransactionsByIdStore store,
 		Serialization serialization,
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
@@ -222,8 +209,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		Forks forks
 	) {
 		this.dbEnv = dbEnv;
-		this.parser = parser;
-		this.store = store;
 		this.serialization = serialization;
 		this.systemCounters = systemCounters;
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
@@ -237,8 +222,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	@Inject
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
-		REParser parser,
-		BerkeleyTransactionsByIdStore store,
 		Serialization serialization,
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
@@ -246,7 +229,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		Addressing addressing,
 		Forks forks
 	) {
-		this(dbEnv, parser, store, serialization, systemCounters,
+		this(dbEnv, serialization, systemCounters,
 			 scheduledFlushEventDispatcher, transactionParser, false, addressing, forks
 		);
 	}
