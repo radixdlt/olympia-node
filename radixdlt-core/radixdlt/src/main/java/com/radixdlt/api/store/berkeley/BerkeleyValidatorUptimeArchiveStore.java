@@ -97,7 +97,7 @@ public final class BerkeleyValidatorUptimeArchiveStore implements BerkeleyAdditi
 	private static final String VALIDATOR_UPTME_DB = "radix.validator_uptime_db";
 	private Database validatorUptime;
 	private final AtomicLong curEpoch = new AtomicLong();
-	private static final long EPOCH_WINDOW_LENGTH = 150;
+	private static final long NUM_EPOCHS_WINDOW = 500;
 
 	private void downEpoch(Transaction dbTxn, long epoch) {
 		var nextEpoch = epoch + 1;
@@ -124,7 +124,7 @@ public final class BerkeleyValidatorUptimeArchiveStore implements BerkeleyAdditi
 
 	public ValidatorUptime getUptimeTwoWeeks(ECPublicKey validatorKey) {
 		var lastEpoch = curEpoch.get();
-		long epochStart = Math.max(curEpoch.get() - EPOCH_WINDOW_LENGTH, 0);
+		long epochStart = Math.max(curEpoch.get() - NUM_EPOCHS_WINDOW, 0);
 
 		var uptime = ValidatorUptime.empty();
 		for (var epoch = epochStart; epoch <= lastEpoch; epoch++) {
@@ -149,7 +149,7 @@ public final class BerkeleyValidatorUptimeArchiveStore implements BerkeleyAdditi
 
 	public Map<ECPublicKey, ValidatorUptime> getUptimeTwoWeeks() {
 		var map = new HashMap<ECPublicKey, ValidatorUptime>();
-		long epochStart = Math.max(curEpoch.get() - EPOCH_WINDOW_LENGTH, 0);
+		long epochStart = Math.max(curEpoch.get() - NUM_EPOCHS_WINDOW, 0);
 		try (var cursor = validatorUptime.openCursor(null, null)) {
 			var key = new DatabaseEntry(Longs.toByteArray(epochStart));
 			var value = new DatabaseEntry();
