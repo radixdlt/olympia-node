@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.api.accounts.BerkeleyAccountInfoStore;
 import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
@@ -90,18 +91,20 @@ import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
-import static com.radixdlt.utils.functional.Tuple.tuple;
 
-public class ArchiveAccountHandler {
+public final class ArchiveAccountHandler {
 	private final ArchiveAccountService accountService;
+	private final BerkeleyAccountInfoStore store;
 	private final Addressing addressing;
 
 	@Inject
 	public ArchiveAccountHandler(
 		ArchiveAccountService accountService,
+		BerkeleyAccountInfoStore store,
 		Addressing addressing
 	) {
 		this.accountService = accountService;
+		this.store = store;
 		this.addressing = addressing;
 	}
 
@@ -109,9 +112,9 @@ public class ArchiveAccountHandler {
 		return withRequiredStringParameter(
 			request,
 			"address",
-			address -> addressing.forAccounts().parseFunctional(address)
-				.flatMap(key -> accountService.getTokenBalances(key).map(v -> tuple(key, v)))
-				.map(tuple -> tuple.map(this::formatTokenBalances))
+			address -> addressing.forAccounts()
+				.parseFunctional(address)
+				.map(store::getAccountInfo)
 		);
 	}
 

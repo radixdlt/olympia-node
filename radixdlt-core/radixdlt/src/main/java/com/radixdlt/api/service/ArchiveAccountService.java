@@ -69,7 +69,6 @@ import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.ClientApiStore.BalanceType;
-import com.radixdlt.api.store.TokenBalance;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
@@ -77,23 +76,15 @@ import com.radixdlt.utils.functional.Tuple.Tuple2;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
-public class ArchiveAccountService {
+public final class ArchiveAccountService {
 	private final ClientApiStore clientApiStore;
 
 	@Inject
-	public ArchiveAccountService(
-		ClientApiStore clientApiStore
-	) {
+	public ArchiveAccountService(ClientApiStore clientApiStore) {
 		this.clientApiStore = clientApiStore;
-	}
-
-	public Result<List<TokenBalance>> getTokenBalances(REAddr address) {
-		return clientApiStore.getTokenBalances(address, BalanceType.SPENDABLE)
-			.map(list -> list.stream().map(TokenBalance::from).collect(Collectors.toList()));
 	}
 
 	public Result<Tuple2<Optional<Instant>, List<TxHistoryEntry>>> getTransactionHistory(

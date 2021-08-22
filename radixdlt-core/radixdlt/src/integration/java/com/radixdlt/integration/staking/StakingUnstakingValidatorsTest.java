@@ -67,6 +67,7 @@ package com.radixdlt.integration.staking;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.accounts.BerkeleyAccountInfoStore;
 import com.radixdlt.api.store.ValidatorUptime;
 import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
 import com.radixdlt.api.tokens.BerkeleyResourceInfoStore;
@@ -296,11 +297,12 @@ public class StakingUnstakingValidatorsTest {
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 					bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
-					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class).addBinding()
-						.to(BerkeleyValidatorUptimeArchiveStore.class);
+					var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
+					binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
 					bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
-					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-						.addBinding().to(BerkeleyResourceInfoStore.class);
+					binder.addBinding().to(BerkeleyResourceInfoStore.class);
+					bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
+					binder.addBinding().to(BerkeleyAccountInfoStore.class);
 				}
 
 				@Provides
@@ -320,6 +322,7 @@ public class StakingUnstakingValidatorsTest {
 		private final ClassToInstanceMap<Object> lastEvents;
 		private final BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore;
 		private final BerkeleyResourceInfoStore resourceInfoStore;
+		private final BerkeleyAccountInfoStore accountInfoStore;
 		private final Forks forks;
 
 		@Inject
@@ -330,6 +333,7 @@ public class StakingUnstakingValidatorsTest {
 			RadixEngine<LedgerAndBFTProof> radixEngine,
 			BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore,
 			BerkeleyResourceInfoStore resourceInfoStore,
+			BerkeleyAccountInfoStore accountInfoStore,
 			Forks forks
 		) {
 			this.self = self;
@@ -338,6 +342,7 @@ public class StakingUnstakingValidatorsTest {
 			this.radixEngine = radixEngine;
 			this.uptimeArchiveStore = uptimeArchiveStore;
 			this.resourceInfoStore = resourceInfoStore;
+			this.accountInfoStore = accountInfoStore;
 			this.forks = forks;
 		}
 
@@ -405,6 +410,15 @@ public class StakingUnstakingValidatorsTest {
 
 		public JSONObject getNativeToken() {
 			return resourceInfoStore.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
+		}
+
+		public JSONObject getAccountInfo(REAddr addr) {
+			return accountInfoStore.getAccountInfo(addr);
+		}
+
+		public BigInteger getTotalTokensInAccounts() {
+			var totalTokens = radixEngine.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			return new BigInteger(1, totalTokens.toByteArray());
 		}
 
 		public UInt256 getTotalNativeTokens() {
@@ -521,6 +535,23 @@ public class StakingUnstakingValidatorsTest {
 		var totalMinted = new BigInteger(json.getString("totalMinted"), 10);
 		var totalBurned = new BigInteger(json.getString("totalBurned"), 10);
 		assertThat(supplyFromJson).isEqualTo(totalMinted.subtract(totalBurned));
+
+		var totalTokenBalance = PrivateKeys.numeric(1).limit(20)
+			.map(ECKeyPair::getPublicKey)
+			.map(REAddr::ofPubKeyAccount)
+			.map(nodeState::getAccountInfo)
+			.map(jsonAccount -> {
+				var jsonArray = jsonAccount.getJSONArray("tokenBalances");
+				if (jsonArray.length() == 1) {
+					return new BigInteger(jsonArray.getJSONObject(0).getString("amount"), 10);
+				} else if (jsonArray.isEmpty()) {
+					return BigInteger.ZERO;
+				} else {
+					throw new IllegalStateException();
+				}
+			})
+			.reduce(BigInteger.ZERO, BigInteger::add);
+		assertThat(totalTokenBalance).isEqualTo(nodeState.getTotalTokensInAccounts());
 
 		for (var e : nodeState.getValidators().entrySet()) {
 			logger.info("{} {}", e.getKey(), e.getValue());
