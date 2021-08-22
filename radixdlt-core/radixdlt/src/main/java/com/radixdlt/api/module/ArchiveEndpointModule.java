@@ -67,6 +67,7 @@ package com.radixdlt.api.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
@@ -80,6 +81,8 @@ import com.radixdlt.api.handler.ArchiveValidationHandler;
 import com.radixdlt.api.qualifier.ArchiveEndpoint;
 import com.radixdlt.api.qualifier.ArchiveServer;
 import com.radixdlt.api.server.JsonRpcServer;
+import com.radixdlt.api.store.berkeley.BerkeleyResourceInfoStore;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
 import java.util.Map;
 
@@ -87,6 +90,12 @@ public class ArchiveEndpointModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(ArchiveAccountHandler.class).in(Scopes.SINGLETON);
+
+		// Token info stuff
+		bind(ArchiveTokenHandler.class).in(Scopes.SINGLETON);
+		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+			.addBinding().to(BerkeleyResourceInfoStore.class);
 	}
 
 	@ArchiveServer

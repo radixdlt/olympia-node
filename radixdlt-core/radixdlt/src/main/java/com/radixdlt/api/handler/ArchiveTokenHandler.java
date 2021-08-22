@@ -64,43 +64,39 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.api.store.berkeley.BerkeleyResourceInfoStore;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.radixdlt.api.service.TokenService;
 
-import static com.radixdlt.api.JsonRpcUtil.invalidParamsError;
-import static com.radixdlt.api.JsonRpcUtil.response;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
 
-@Singleton
-public class ArchiveTokenHandler {
-	private final TokenService tokenService;
+public final class ArchiveTokenHandler {
+	private final BerkeleyResourceInfoStore store;
 	private final Addressing addressing;
 
 	@Inject
 	public ArchiveTokenHandler(
-		TokenService tokenService,
+		BerkeleyResourceInfoStore store,
 		Addressing addressing
 	) {
-		this.tokenService = tokenService;
+		this.store = store;
 		this.addressing = addressing;
 	}
 
 	public JSONObject handleTokensGetNativeToken(JSONObject request) {
-		return tokenService.getNativeTokenDescription()
-			.map(r -> r.asJson(addressing))
-			.fold(failure -> invalidParamsError(request, failure.message()), response -> response(request, response));
+		return store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
 	}
 
 	public JSONObject handleTokensGetInfo(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
 			"rri",
-			tokenId -> tokenService.getTokenDescription(tokenId)
-				.map(r -> r.asJson(addressing))
+			rri ->
+				addressing.forResources().parseFunctional(rri)
+					.map(e -> e.map((symbol, addr) -> store.getResourceInfo(addr).orElseThrow()))
 		);
 	}
 }
