@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.tokens;
+package com.radixdlt.api.transactions.index;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
@@ -69,38 +69,68 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.qualifier.ArchiveEndpoint;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.api.qualifier.DeveloperEndpoint;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.functional.Failure;
+import com.radixdlt.utils.functional.Result;
+import org.json.JSONArray;
 
-import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
+import java.util.List;
 
-public final class ArchiveTokensModule extends AbstractModule {
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
+
+public final class TransactionIndexApiModule extends AbstractModule {
 	@Override
-	protected void configure() {
-		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
+	public void configure() {
+		bind(BerkeleyTransactionIndexStore.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-			.addBinding().to(BerkeleyResourceInfoStore.class);
+			.addBinding().to(BerkeleyTransactionIndexStore.class);
 	}
 
-	@ArchiveEndpoint
+	@DeveloperEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("tokens.get_native_token")
-	public JsonRpcHandler tokensGetNativeToken(BerkeleyResourceInfoStore store) {
-		return req -> store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
+	@StringMapKey("index.get_transaction_count")
+	public JsonRpcHandler indexGetTransactionCount(BerkeleyTransactionIndexStore store) {
+		return request -> withRequiredParameters(
+			request,
+			List.of(),
+			params -> Result.wrap(
+				e -> Failure.failure(-1, e.getMessage()),
+				() -> {
+					var totalCount = store.getCount();
+					return jsonObject()
+						.put("totalCount", totalCount);
+				}
+			)
+		);
 	}
 
-	@ArchiveEndpoint
+	@DeveloperEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("tokens.get_info")
-	public JsonRpcHandler tokensGetInfo(Addressing addressing, BerkeleyResourceInfoStore store) {
-		return req -> withRequiredStringParameter(
-			req,
-			"rri",
-			rri ->
-				addressing.forResources().parseFunctional(rri)
-					.map(e -> e.map((symbol, addr) -> store.getResourceInfo(addr).orElseThrow()))
+	@StringMapKey("index.get_transactions")
+	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexStore store) {
+		return request -> withRequiredParameters(
+			request,
+			List.of("offset", "limit"),
+			params -> Result.wrap(
+				e -> Failure.failure(-1, e.getMessage()),
+				() -> {
+					var offset = params.getLong("offset");
+					var limit = params.getLong("limit");
+					var transactions = new JSONArray();
+					try (var stream = store.get(offset)) {
+						stream.limit(limit).forEach(transactions::put);
+					}
+					var totalCount = store.getCount();
+					var nextOffset = offset + transactions.length();
+					return jsonObject()
+						.put("transactions", transactions)
+						.put("count", transactions.length())
+						.put("totalCount", totalCount)
+						.put("nextOffset", nextOffset);
+				}
+			)
 		);
 	}
 }

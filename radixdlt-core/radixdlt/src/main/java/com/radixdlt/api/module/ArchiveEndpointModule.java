@@ -74,12 +74,12 @@ import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.JsonRpcController;
 import com.radixdlt.api.handler.ArchiveAccountHandler;
 import com.radixdlt.api.handler.ArchiveNetworkHandler;
-import com.radixdlt.api.handler.ArchiveTransactionsHandler;
+import com.radixdlt.api.transactions.lookup.ArchiveTransactionStatusAndLookupApiModule;
 import com.radixdlt.api.handler.ArchiveValidationHandler;
 import com.radixdlt.api.qualifier.ArchiveEndpoint;
 import com.radixdlt.api.qualifier.ArchiveServer;
 import com.radixdlt.api.server.JsonRpcServer;
-import com.radixdlt.api.tokens.ArchiveTokensModule;
+import com.radixdlt.api.tokens.ArchiveTokensApiModule;
 
 import java.util.Map;
 
@@ -87,8 +87,8 @@ public class ArchiveEndpointModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(ArchiveAccountHandler.class).in(Scopes.SINGLETON);
-
-		install(new ArchiveTokensModule());
+		install(new ArchiveTokensApiModule());
+		install(new ArchiveTransactionStatusAndLookupApiModule());
 	}
 
 	@ArchiveServer
@@ -130,20 +130,6 @@ public class ArchiveEndpointModule extends AbstractModule {
 	@StringMapKey("account.get_transaction_history")
 	public JsonRpcHandler accountGetTransactionHistory(ArchiveAccountHandler archiveAccountHandler) {
 		return archiveAccountHandler::handleAccountGetTransactionHistory;
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.lookup_transaction")
-	public JsonRpcHandler transactionsLookupTransaction(ArchiveTransactionsHandler archiveTransactionsHandler) {
-		return archiveTransactionsHandler::handleTransactionsLookupTransaction;
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.get_transaction_status")
-	public JsonRpcHandler transactionsGetTransactionStatus(ArchiveTransactionsHandler archiveTransactionsHandler) {
-		return archiveTransactionsHandler::handleTransactionsGetTransactionStatus;
 	}
 
 	@ArchiveEndpoint
