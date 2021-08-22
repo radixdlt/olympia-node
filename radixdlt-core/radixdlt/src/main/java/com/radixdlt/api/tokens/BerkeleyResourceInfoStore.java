@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.store.berkeley;
+package com.radixdlt.api.tokens;
 
 import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
@@ -146,9 +146,9 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 					.put("iconURL", resourceCreated.getMetadata().getIconUrl())
 					.put("tokenInfoURL", resourceCreated.getMetadata().getUrl())
 					.put("granularity", resourceCreated.getTokenResource().getGranularity())
-					.put("currentSupply", BigInteger.ZERO)
-					.put("totalBurned", BigInteger.ZERO)
-					.put("totalMinted", BigInteger.ZERO)
+					.put("currentSupply", BigInteger.ZERO.toString())
+					.put("totalBurned", BigInteger.ZERO.toString())
+					.put("totalMinted", BigInteger.ZERO.toString())
 					.put("isSupplyMutable", resourceCreated.getTokenResource().isMutable());
 
 				var key = new DatabaseEntry(resourceCreated.getTokenResource().getAddr().getBytes());
@@ -181,11 +181,11 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 				if (change.signum() > 0) {
 					var minted = new BigInteger(json.getString("totalMinted"), 10);
 					var newMinted = minted.add(change);
-					json.put("totalMinted", newMinted);
+					json.put("totalMinted", newMinted.toString());
 				} else {
 					var burned = new BigInteger(json.getString("totalBurned"), 10);
 					var newBurned = burned.subtract(change);
-					json.put("totalBurned", newBurned);
+					json.put("totalBurned", newBurned.toString());
 				}
 				var newVal = new DatabaseEntry(json.toString().getBytes(StandardCharsets.UTF_8));
 				status = resourceInfoDatabase.put(dbTxn, key, newVal);

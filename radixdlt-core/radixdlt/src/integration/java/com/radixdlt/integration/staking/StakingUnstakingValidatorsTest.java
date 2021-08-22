@@ -69,6 +69,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.store.ValidatorUptime;
 import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
+import com.radixdlt.api.tokens.BerkeleyResourceInfoStore;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
@@ -91,6 +92,7 @@ import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.util.Throwables;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -155,6 +157,7 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.UInt256;
 
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -295,6 +298,9 @@ public class StakingUnstakingValidatorsTest {
 					bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
 					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class).addBinding()
 						.to(BerkeleyValidatorUptimeArchiveStore.class);
+					bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
+					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+						.addBinding().to(BerkeleyResourceInfoStore.class);
 				}
 
 				@Provides
@@ -313,6 +319,7 @@ public class StakingUnstakingValidatorsTest {
 		private final RadixEngine<LedgerAndBFTProof> radixEngine;
 		private final ClassToInstanceMap<Object> lastEvents;
 		private final BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore;
+		private final BerkeleyResourceInfoStore resourceInfoStore;
 		private final Forks forks;
 
 		@Inject
@@ -322,6 +329,7 @@ public class StakingUnstakingValidatorsTest {
 			@LastProof LedgerProof lastLedgerProof,
 			RadixEngine<LedgerAndBFTProof> radixEngine,
 			BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore,
+			BerkeleyResourceInfoStore resourceInfoStore,
 			Forks forks
 		) {
 			this.self = self;
@@ -329,6 +337,7 @@ public class StakingUnstakingValidatorsTest {
 			this.lastLedgerProof = lastLedgerProof;
 			this.radixEngine = radixEngine;
 			this.uptimeArchiveStore = uptimeArchiveStore;
+			this.resourceInfoStore = resourceInfoStore;
 			this.forks = forks;
 		}
 
@@ -392,6 +401,10 @@ public class StakingUnstakingValidatorsTest {
 
 		public Map<ECPublicKey, ValidatorUptime> getUptime() {
 			return uptimeArchiveStore.getUptimeTwoWeeks();
+		}
+
+		public JSONObject getNativeToken() {
+			return resourceInfoStore.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
 		}
 
 		public UInt256 getTotalNativeTokens() {
@@ -500,6 +513,14 @@ public class StakingUnstakingValidatorsTest {
 		logger.info("Total uptime {}", totalUptime);
 		assertThat(totalUptime.getProposalsCompleted() + totalUptime.getProposalsMissed())
 			.isEqualTo(totalRounds);
+		var json = nodeState.getNativeToken();
+		logger.info("json {}", json.toString(4));
+		var supplyStringFromJson = json.getString("currentSupply");
+		assertThat(finalCount.toString()).isLessThanOrEqualTo(supplyStringFromJson);
+		var supplyFromJson = new BigInteger(supplyStringFromJson, 10);
+		var totalMinted = new BigInteger(json.getString("totalMinted"), 10);
+		var totalBurned = new BigInteger(json.getString("totalBurned"), 10);
+		assertThat(supplyFromJson).isEqualTo(totalMinted.subtract(totalBurned));
 
 		for (var e : nodeState.getValidators().entrySet()) {
 			logger.info("{} {}", e.getKey(), e.getValue());

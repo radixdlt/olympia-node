@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix DLT Ltd incorporated in England.
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,122 +61,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.module;
+package com.radixdlt.api.tokens;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.controller.JsonRpcController;
-import com.radixdlt.api.handler.ArchiveAccountHandler;
-import com.radixdlt.api.handler.ArchiveNetworkHandler;
-import com.radixdlt.api.handler.ArchiveTransactionsHandler;
-import com.radixdlt.api.handler.ArchiveValidationHandler;
 import com.radixdlt.api.qualifier.ArchiveEndpoint;
-import com.radixdlt.api.qualifier.ArchiveServer;
-import com.radixdlt.api.server.JsonRpcServer;
-import com.radixdlt.api.tokens.ArchiveTokensModule;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-import java.util.Map;
+import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
 
-public class ArchiveEndpointModule extends AbstractModule {
+public final class ArchiveTokensModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(ArchiveAccountHandler.class).in(Scopes.SINGLETON);
-
-		install(new ArchiveTokensModule());
-	}
-
-	@ArchiveServer
-	@ProvidesIntoMap
-	@StringMapKey("/archive")
-	public Controller archiveController(@ArchiveEndpoint JsonRpcServer jsonRpcServer) {
-		return new JsonRpcController(jsonRpcServer);
-	}
-
-	@ArchiveEndpoint
-	@Provides
-	public JsonRpcServer rpcServer(@ArchiveEndpoint Map<String, JsonRpcHandler> additionalHandlers) {
-		return new JsonRpcServer(additionalHandlers);
+		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+			.addBinding().to(BerkeleyResourceInfoStore.class);
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("account.get_balances")
-	public JsonRpcHandler accountGetBalances(ArchiveAccountHandler archiveAccountHandler) {
-		return archiveAccountHandler::handleAccountGetBalances;
+	@StringMapKey("tokens.get_native_token")
+	public JsonRpcHandler tokensGetNativeToken(BerkeleyResourceInfoStore store) {
+		return req -> store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("account.get_stake_positions")
-	public JsonRpcHandler accountGetStakePositions(ArchiveAccountHandler archiveAccountHandler) {
-		return archiveAccountHandler::handleAccountGetStakePositions;
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("account.get_unstake_positions")
-	public JsonRpcHandler accountGetUnstakePositions(ArchiveAccountHandler archiveAccountHandler) {
-		return archiveAccountHandler::handleAccountGetUnstakePositions;
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("account.get_transaction_history")
-	public JsonRpcHandler accountGetTransactionHistory(ArchiveAccountHandler archiveAccountHandler) {
-		return archiveAccountHandler::handleAccountGetTransactionHistory;
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.lookup_transaction")
-	public JsonRpcHandler transactionsLookupTransaction(ArchiveTransactionsHandler archiveTransactionsHandler) {
-		return archiveTransactionsHandler::handleTransactionsLookupTransaction;
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.get_transaction_status")
-	public JsonRpcHandler transactionsGetTransactionStatus(ArchiveTransactionsHandler archiveTransactionsHandler) {
-		return archiveTransactionsHandler::handleTransactionsGetTransactionStatus;
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("validators.get_next_epoch_set")
-	public JsonRpcHandler validatorsGetNextEpochSet(ArchiveValidationHandler archiveValidationHandler) {
-		return archiveValidationHandler::handleValidatorsGetNextEpochSet;
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("validators.lookup_validator")
-	public JsonRpcHandler validatorsLookupValidator(ArchiveValidationHandler archiveValidationHandler) {
-		return archiveValidationHandler::handleValidatorsLookupValidator;
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("network.get_id")
-	public JsonRpcHandler networkGetId(ArchiveNetworkHandler archiveNetworkHandler) {
-		return archiveNetworkHandler::handleNetworkGetId;
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("network.get_throughput")
-	public JsonRpcHandler networkGetThroughput(ArchiveNetworkHandler archiveNetworkHandler) {
-		return archiveNetworkHandler::handleNetworkGetThroughput;
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("network.get_demand")
-	public JsonRpcHandler networkGetDemand(ArchiveNetworkHandler archiveNetworkHandler) {
-		return archiveNetworkHandler::handleNetworkGetDemand;
+	@StringMapKey("tokens.get_info")
+	public JsonRpcHandler tokensGetInfo(Addressing addressing, BerkeleyResourceInfoStore store) {
+		return req -> withRequiredStringParameter(
+			req,
+			"rri",
+			rri ->
+				addressing.forResources().parseFunctional(rri)
+					.map(e -> e.map((symbol, addr) -> store.getResourceInfo(addr).orElseThrow()))
+		);
 	}
 }
