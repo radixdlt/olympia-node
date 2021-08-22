@@ -75,16 +75,19 @@ import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.JsonRpcController;
 import com.radixdlt.api.handler.ArchiveAccountHandler;
 import com.radixdlt.api.handler.ArchiveNetworkHandler;
-import com.radixdlt.api.handler.ArchiveTokenHandler;
 import com.radixdlt.api.handler.ArchiveTransactionsHandler;
 import com.radixdlt.api.handler.ArchiveValidationHandler;
 import com.radixdlt.api.qualifier.ArchiveEndpoint;
 import com.radixdlt.api.qualifier.ArchiveServer;
 import com.radixdlt.api.server.JsonRpcServer;
 import com.radixdlt.api.store.berkeley.BerkeleyResourceInfoStore;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
 import java.util.Map;
+
+import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
 
 public class ArchiveEndpointModule extends AbstractModule {
 	@Override
@@ -92,7 +95,6 @@ public class ArchiveEndpointModule extends AbstractModule {
 		bind(ArchiveAccountHandler.class).in(Scopes.SINGLETON);
 
 		// Token info stuff
-		bind(ArchiveTokenHandler.class).in(Scopes.SINGLETON);
 		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
 			.addBinding().to(BerkeleyResourceInfoStore.class);
@@ -156,15 +158,21 @@ public class ArchiveEndpointModule extends AbstractModule {
 	@ArchiveEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("tokens.get_native_token")
-	public JsonRpcHandler tokensGetNativeToken(ArchiveTokenHandler archiveTokenHandler) {
-		return archiveTokenHandler::handleTokensGetNativeToken;
+	public JsonRpcHandler tokensGetNativeToken(BerkeleyResourceInfoStore store) {
+		return req -> store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("tokens.get_info")
-	public JsonRpcHandler tokensGetInfo(ArchiveTokenHandler archiveTokenHandler) {
-		return archiveTokenHandler::handleTokensGetInfo;
+	public JsonRpcHandler tokensGetInfo(Addressing addressing, BerkeleyResourceInfoStore store) {
+		return req -> withRequiredStringParameter(
+			req,
+			"rri",
+			rri ->
+				addressing.forResources().parseFunctional(rri)
+					.map(e -> e.map((symbol, addr) -> store.getResourceInfo(addr).orElseThrow()))
+		);
 	}
 
 	@ArchiveEndpoint

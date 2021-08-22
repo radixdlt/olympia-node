@@ -131,9 +131,7 @@ import io.netty.buffer.Unpooled;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
-import static com.radixdlt.api.data.ApiErrors.SYMBOL_DOES_NOT_MATCH;
 import static com.radixdlt.api.data.ApiErrors.UNKNOWN_ACCOUNT_ADDRESS;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_RRI;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_READ;
@@ -234,17 +232,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		);
 	}
 
-	@Override
-	public Result<REAddr> parseRri(String rri) {
-		return addressing.forResources().parseFunctional(rri)
-			.flatMap(tuple -> tuple.map(
-				(symbol, address) -> getTokenDefinition(address)
-					.map(TokenDefinitionRecord::getSymbol)
-					.filter(symbol::equals, SYMBOL_DOES_NOT_MATCH)
-					.map(__ -> address)
-			));
-	}
-
 	private UInt384 computeStakeFromOwnership(ECPublicKey delegateKey, UInt384 ownership) {
 		var key = asAddrBalanceValidatorStakeKey(delegateKey);
 		var data = entry();
@@ -311,30 +298,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	@Override
-	public Result<UInt384> getTokenSupply(String rri) {
-		try (var cursor = supplyBalances.openCursor(null, null)) {
-			var key = asKey(rri);
-			var data = entry();
-
-			var status = readBalance(() -> cursor.getSearchKeyRange(key, data, null), data);
-
-			if (status == OperationStatus.NOTFOUND) {
-				return Result.ok(UInt384.ZERO);
-			}
-
-			if (status != OperationStatus.SUCCESS) {
-				return UNKNOWN_RRI.with(rri).result();
-			}
-
-			return restore(serialization, data.getData(), BalanceEntry.class)
-				.onSuccess(entry -> log.trace("Stored token supply balance: {}", entry))
-				.map(BalanceEntry::getAmount);
-		}
-	}
-
-	@Override
-	public Result<TokenDefinitionRecord> getTokenDefinition(REAddr addr) {
+	private Result<TokenDefinitionRecord> getTokenDefinition(REAddr addr) {
 		try (var cursor = tokenDefinitions.openCursor(null, null)) {
 			var key = asAddrBalanceKey(addr);
 			var data = entry();
