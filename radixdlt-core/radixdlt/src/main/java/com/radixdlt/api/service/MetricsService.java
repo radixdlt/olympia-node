@@ -460,11 +460,8 @@ public class MetricsService {
 						appendCounter(builder, outName + "_used", (Number) cds.get("used"));
 					} else if (attribute.getName().equalsIgnoreCase("LastGcInfo")
 							&& attribute.getValue() instanceof CompositeData) {
-						final var gcInfo = GcInfo.from((CompositeData) attribute.getValue());
-						appendCounter(builder, outName + "_startTime", gcInfo.getStartTime());
-						appendCounter(builder, outName + "_endTime", gcInfo.getEndTime());
-						appendCounter(builder, outName + "_duration", gcInfo.getDuration());
-					} else if (attribute.getValue() != null){
+						appendGcInfoCounters(GcInfo.from((CompositeData) attribute.getValue()), builder, outName);
+					} else if (attribute.getValue() != null) {
 						appendCounter(builder, outName, (Number) attribute.getValue());
 					}
 				}
@@ -472,6 +469,12 @@ public class MetricsService {
 				log.error("Error while retrieving JMX metric " + objectNameString, e);
 			}
 		}
+	}
+
+	private static void appendGcInfoCounters(GcInfo gcInfo, StringBuilder builder, String outName) {
+		appendCounter(builder, outName + "_startTime", gcInfo.getStartTime());
+		appendCounter(builder, outName + "_endTime", gcInfo.getEndTime());
+		appendCounter(builder, outName + "_duration", gcInfo.getDuration());
 	}
 
 	private void appendJMXCounters(StringBuilder builder) {
