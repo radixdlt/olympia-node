@@ -73,6 +73,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.sun.management.GcInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -94,6 +95,7 @@ import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
+import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.CompositeDataSupport;
 
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
@@ -111,8 +113,8 @@ public class MetricsService {
 		jmxMetric("java.lang:type=MemoryPool,name=G1 Survivor Space", "Usage"),
 		jmxMetric("java.lang:type=MemoryPool,name=G1 Old Gen", "Usage"),
 		jmxMetric("java.lang:type=MemoryPool,name=Metaspace", "Usage"),
-		jmxMetric("java.lang:type=GarbageCollector,name=G1 Old Generation", "Usage"),
-		jmxMetric("java.lang:type=GarbageCollector,name=G1 Young Generation", "Usage"),
+		jmxMetric("java.lang:type=GarbageCollector,name=G1 Old Generation", "Usage", "CollectionTime", "CollectionCount", "LastGcInfo"),
+		jmxMetric("java.lang:type=GarbageCollector,name=G1 Young Generation", "Usage", "CollectionTime", "CollectionCount", "LastGcInfo"),
 		jmxMetric("java.lang:type=OperatingSystem", "SystemCpuLoad", "ProcessCpuLoad", "SystemLoadAverage"),
 		jmxMetric("java.lang:type=Threading", "ThreadCount", "DaemonThreadCount"),
 		jmxMetric("java.lang:type=Memory", "HeapMemoryUsage", "NonHeapMemoryUsage"),
@@ -332,7 +334,13 @@ public class MetricsService {
 						appendCounter(builder, outName + "_max", (Number) cds.get("max"));
 						appendCounter(builder, outName + "_committed", (Number) cds.get("committed"));
 						appendCounter(builder, outName + "_used", (Number) cds.get("used"));
-					} else {
+					} else if (attribute.getName().equalsIgnoreCase("LastGcInfo")
+							&& attribute.getValue() instanceof CompositeData) {
+						final var gcInfo = GcInfo.from((CompositeData) attribute.getValue());
+						appendCounter(builder, outName + "_startTime", gcInfo.getStartTime());
+						appendCounter(builder, outName + "_endTime", gcInfo.getEndTime());
+						appendCounter(builder, outName + "_duration", gcInfo.getDuration());
+					} else if (attribute.getValue() != null){
 						appendCounter(builder, outName, (Number) attribute.getValue());
 					}
 				}
@@ -346,4 +354,5 @@ public class MetricsService {
 		var connection = ManagementFactory.getPlatformMBeanServer();
 		JMX_METRICS.forEach(metric -> metric.readCounter(connection, builder));
 	}
+
 }
