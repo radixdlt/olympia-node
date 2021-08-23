@@ -72,7 +72,6 @@ import com.google.inject.Inject;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.service.ArchiveAccountService;
-import com.radixdlt.api.store.TokenBalance;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.functional.Result;
 
@@ -162,12 +161,6 @@ public final class ArchiveAccountHandler {
 				.put("withdrawTxID", unstake.getTxId())
 		);
 		return jsonObject().put(ARRAY, array);
-	}
-
-	private JSONObject formatTokenBalances(REAddr address, List<TokenBalance> balances) {
-		return jsonObject()
-			.put("owner", addressing.forAccounts().of(address))
-			.put("tokenBalances", fromList(balances, TokenBalance::asJson));
 	}
 
 	private JSONObject formatStakePositions(List<BalanceEntry> balances) {
