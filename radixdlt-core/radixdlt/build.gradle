@@ -113,6 +113,7 @@ configurations {
 task integrationTest(type: Test) {
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
+    maxParallelForks = Runtime.runtime.availableProcessors() / 2 //A greater number was tried, but the tests either failed or there was no gain in performance.
     mustRunAfter(test)
 }
 
