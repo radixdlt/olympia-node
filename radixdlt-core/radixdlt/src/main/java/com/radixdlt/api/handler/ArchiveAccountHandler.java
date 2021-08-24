@@ -143,25 +143,14 @@ public final class ArchiveAccountHandler {
 			request,
 			"address",
 			address -> addressing.forAccounts().parseFunctional(address)
-				.flatMap(accountService::getUnstakePositions)
-				.map(positions -> formatUnstakePositions(positions, accountService.getEpoch()))
+				.map(store::getAccountUnstakes)
+				.map(a -> jsonObject().put(ARRAY, a))
 		);
 	}
 
 	//-----------------------------------------------------------------------------------------------------
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
-
-	private JSONObject formatUnstakePositions(List<BalanceEntry> balances, long curEpoch) {
-		var array = fromList(balances, unstake ->
-			jsonObject()
-				.put("validator", addressing.forValidators().of(unstake.getDelegate()))
-				.put("amount", unstake.getAmount())
-				.put("epochsUntil", unstake.getEpochUnlocked() - curEpoch)
-				.put("withdrawTxID", unstake.getTxId())
-		);
-		return jsonObject().put(ARRAY, array);
-	}
 
 	private JSONObject formatStakePositions(List<BalanceEntry> balances) {
 		var array = fromList(balances, balance ->

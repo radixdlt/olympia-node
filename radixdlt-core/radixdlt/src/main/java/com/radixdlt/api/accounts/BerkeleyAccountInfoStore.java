@@ -66,6 +66,7 @@ package com.radixdlt.api.accounts;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.Particle;
@@ -79,6 +80,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.Pair;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -88,7 +90,9 @@ import org.json.JSONObject;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Function;
@@ -99,8 +103,8 @@ import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
-	private static final String TRANSACTIONS_DB = "radix.account_info";
 	private Database accountInfoDatabase;
+	private Database accountUnstakeInfoDatabase;
 	private final Addressing addressing;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 
@@ -108,6 +112,27 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 	BerkeleyAccountInfoStore(Addressing addressing, Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
 		this.addressing = addressing;
 		this.radixEngineProvider = radixEngineProvider;
+	}
+
+	public JSONArray getAccountUnstakes(REAddr addr) {
+		var key = new DatabaseEntry(addr.getBytes());
+		var value = new DatabaseEntry();
+
+		if (accountUnstakeInfoDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
+			var systemMapKey = SystemMapKey.ofSystem(SubstateTypeId.EPOCH_DATA.id());
+			var epochData = (EpochData) radixEngineProvider.get().get(systemMapKey).orElseThrow();
+			var curEpoch = epochData.getEpoch();
+			var jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
+			for (int i = 0; i < jsonArray.length(); i++) {
+				var json = jsonArray.getJSONObject(i);
+				var epochUnlocked = json.getLong("epochUnlocked");
+				json.remove("epochUnlocked");
+				json.put("epochsUntil", epochUnlocked - curEpoch);
+			}
+			return jsonArray;
+		}
+
+		return new JSONArray();
 	}
 
 	public JSONObject getAccountInfo(REAddr addr) {
@@ -126,7 +151,13 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
 		var env = dbEnv.getEnvironment();
-		accountInfoDatabase = env.openDatabase(null, TRANSACTIONS_DB, new DatabaseConfig()
+		accountInfoDatabase = env.openDatabase(null, "radix.account_info", new DatabaseConfig()
+			.setAllowCreate(true)
+			.setTransactional(true)
+			.setKeyPrefixing(true)
+			.setBtreeComparator(lexicographicalComparator())
+		);
+		accountUnstakeInfoDatabase = env.openDatabase(null, "radix.account_unstake_info", new DatabaseConfig()
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setKeyPrefixing(true)
@@ -139,6 +170,9 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		if (accountInfoDatabase != null) {
 			accountInfoDatabase.close();
 		}
+		if (accountUnstakeInfoDatabase != null) {
+			accountUnstakeInfoDatabase.close();
+		}
 	}
 
 	private Particle deserialize(byte[] data) {
@@ -150,6 +184,60 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		}
 	}
 
+	private void storeUnstakes(Transaction dbTxn, REResourceAccounting accounting) {
+		var unstakeAccounting = accounting.bucketAccounting().entrySet().stream()
+			.filter(e -> Objects.equals(e.getKey().resourceAddr(), REAddr.ofNativeToken()))
+			.filter(e -> e.getKey().getValidatorKey() != null)
+			.filter(e -> e.getKey().getEpochUnlock() != null)
+			.collect(Collectors.groupingBy(
+				e -> e.getKey().getOwner(),
+				Collectors.toMap(
+					e -> Pair.of(addressing.forValidators().of(e.getKey().getValidatorKey()), e.getKey().getEpochUnlock()),
+					Map.Entry::getValue
+				)
+			));
+		unstakeAccounting.forEach((accountAddr, unstakes) -> {
+			var key = new DatabaseEntry(accountAddr.getBytes());
+			var value = new DatabaseEntry();
+			var unstakeMap = new TreeMap<Pair<String, Long>, BigInteger>(
+				Comparator.<Pair<String, Long>, String>comparing(Pair::getFirst).thenComparing(Pair::getSecond)
+			);
+
+			var status = accountUnstakeInfoDatabase.get(dbTxn, key, value, null);
+			if (status == SUCCESS) {
+				var jsonString = new String(value.getData(), StandardCharsets.UTF_8);
+				var json = new JSONArray(jsonString);
+				for (int i = 0; i < json.length(); i++) {
+					var jsonAmount = json.getJSONObject(i);
+					var validatorAndEpoch = Pair.of(jsonAmount.getString("validator"), jsonAmount.getLong("epochUnlocked"));
+					unstakeMap.put(validatorAndEpoch, new BigInteger(jsonAmount.getString("amount"), 10));
+				}
+			}
+			unstakes.forEach((p, amt) ->
+				unstakeMap.compute(p, (pair, cur) -> {
+					var curAmt = cur == null ? BigInteger.ZERO : cur;
+					var nextAmt = curAmt.add(amt);
+					return nextAmt.equals(BigInteger.ZERO) ? null : nextAmt;
+				})
+			);
+
+			var nextUnstakes = new JSONArray();
+			unstakeMap.forEach((validatorAndEpoch, amt) ->
+				nextUnstakes.put(new JSONObject()
+					.put("validator", validatorAndEpoch.getFirst())
+					.put("epochUnlocked", validatorAndEpoch.getSecond())
+					.put("amount", amt.toString())
+				)
+			);
+
+			var nextValue = new DatabaseEntry(nextUnstakes.toString().getBytes(StandardCharsets.UTF_8));
+			status = accountUnstakeInfoDatabase.put(dbTxn, key, nextValue);
+			if (status != SUCCESS) {
+				throw new IllegalStateException();
+			}
+		});
+	}
+
 	@Override
 	public void process(
 		Transaction dbTxn,
@@ -158,6 +246,8 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
 	) {
 		var accounting = REResourceAccounting.compute(txn.stateUpdates());
+		storeUnstakes(dbTxn, accounting);
+
 		var accountAccounting = accounting.bucketAccounting().entrySet().stream()
 			.filter(e -> e.getKey().resourceAddr() != null)
 			.filter(e -> e.getKey().getValidatorKey() == null)

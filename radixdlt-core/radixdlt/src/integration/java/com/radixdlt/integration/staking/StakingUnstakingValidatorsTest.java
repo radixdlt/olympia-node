@@ -93,6 +93,7 @@ import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.util.Throwables;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -416,6 +417,15 @@ public class StakingUnstakingValidatorsTest {
 			return accountInfoStore.getAccountInfo(addr);
 		}
 
+		public JSONArray getAccountUnstakes(REAddr addr) {
+			return accountInfoStore.getAccountUnstakes(addr);
+		}
+
+		public BigInteger getTotalExittingStake() {
+			var totalStakeExitting = radixEngine.reduce(ExittingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			return new BigInteger(1, totalStakeExitting.toByteArray());
+		}
+
 		public BigInteger getTotalTokensInAccounts() {
 			var totalTokens = radixEngine.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
 			return new BigInteger(1, totalTokens.toByteArray());
@@ -552,6 +562,21 @@ public class StakingUnstakingValidatorsTest {
 			})
 			.reduce(BigInteger.ZERO, BigInteger::add);
 		assertThat(totalTokenBalance).isEqualTo(nodeState.getTotalTokensInAccounts());
+
+		var totalUnstakingBalance = PrivateKeys.numeric(1).limit(20)
+			.map(ECKeyPair::getPublicKey)
+			.map(REAddr::ofPubKeyAccount)
+			.map(nodeState::getAccountUnstakes)
+			.map(jsonUnstakes -> {
+				BigInteger sum = BigInteger.ZERO;
+				for (int i = 0; i < jsonUnstakes.length(); i++) {
+					var amt = new BigInteger(jsonUnstakes.getJSONObject(i).getString("amount"), 10);
+					sum = sum.add(amt);
+				}
+				return sum;
+			})
+			.reduce(BigInteger.ZERO, BigInteger::add);
+		assertThat(totalUnstakingBalance).isEqualTo(nodeState.getTotalExittingStake());
 
 		for (var e : nodeState.getValidators().entrySet()) {
 			logger.info("{} {}", e.getKey(), e.getValue());
