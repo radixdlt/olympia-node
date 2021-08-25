@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.server;
 
+import io.undertow.server.handlers.RequestLimitingHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -89,6 +90,8 @@ import static java.util.logging.Logger.getLogger;
 public class AbstractHttpServer implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
 	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+	private static final int MAXIMUM_CONCURRENT_REQUESTS = Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
+	private static final int QUEUE_SIZE = 2000;
 
 	private final Map<String, Controller> controllers;
 	private final String name;
@@ -120,9 +123,12 @@ public class AbstractHttpServer implements ModuleRunner {
 
 	@Override
 	public void start() {
+		RequestLimitingHandler requestLimitingHandler = new RequestLimitingHandler(
+			MAXIMUM_CONCURRENT_REQUESTS, QUEUE_SIZE, configureRoutes()
+		);
 		server = Undertow.builder()
 			.addHttpListener(port, bindAddress)
-			.setHandler(configureRoutes())
+			.setHandler(requestLimitingHandler)
 			.build();
 		server.start();
 
