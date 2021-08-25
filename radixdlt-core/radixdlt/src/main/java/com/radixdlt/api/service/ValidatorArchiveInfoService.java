@@ -65,14 +65,12 @@
 package com.radixdlt.api.service;
 
 import com.google.common.base.Suppliers;
-import com.google.common.cache.Cache;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
