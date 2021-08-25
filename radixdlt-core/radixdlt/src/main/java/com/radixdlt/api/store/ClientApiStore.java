@@ -71,7 +71,6 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.REOutput;
-import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
@@ -82,8 +81,6 @@ import java.util.Optional;
  * High level JSON RPC client API store.
  */
 public interface ClientApiStore {
-
-
 	enum BalanceType {
 		SPENDABLE, STAKES, UNSTAKES;
 	}
@@ -105,25 +102,6 @@ public interface ClientApiStore {
 	long getEpoch();
 
 	/**
-	 * Get current supply of the specified token.
-	 *
-	 * @param rri token for which supply is requested
-	 *
-	 * @return eventually consistent token supply
-	 */
-	Result<UInt384> getTokenSupply(String rri);
-
-	/**
-	 * Retrieve token definition. Note that for mutable supply tokens supply is returned zero.
-	 * If actual token supply value is necessary then {@link #getTokenSupply(String)} should be used.
-	 *
-	 * @param rri token for which definition is requested
-	 *
-	 * @return token definition.
-	 */
-	Result<TokenDefinitionRecord> getTokenDefinition(REAddr rri);
-
-	/**
 	 * Retrieve transaction history for provided address.
 	 *
 	 * @param address client address
@@ -134,8 +112,6 @@ public interface ClientApiStore {
 	 * @return list of transaction history entries.
 	 */
 	Result<List<TxHistoryEntry>> getTransactionHistory(REAddr address, int size, Optional<Instant> cursor, boolean verbose);
-
-	Result<REAddr> parseRri(String rri);
 
 	EventProcessor<ScheduledQueueFlush> queueFlushProcessor();
 

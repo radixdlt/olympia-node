@@ -87,15 +87,12 @@ import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceCreatedEvent;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
@@ -134,9 +131,7 @@ import io.netty.buffer.Unpooled;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
-import static com.radixdlt.api.data.ApiErrors.SYMBOL_DOES_NOT_MATCH;
 import static com.radixdlt.api.data.ApiErrors.UNKNOWN_ACCOUNT_ADDRESS;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_RRI;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_READ;
@@ -174,14 +169,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	private static final String SUPPLY_BALANCE_DB = "radix.supply.balance_db";
 	private static final String TOKEN_DEFINITION_DB = "radix.token_definition_db";
 
-	//Make sure this array contains all listed above DB names
-	private static final String[] DB_NAMES = {
-		EXECUTED_TRANSACTIONS_DB,
-		ADDRESS_BALANCE_DB,
-		SUPPLY_BALANCE_DB,
-		TOKEN_DEFINITION_DB
-	};
-
 	private static final long DEFAULT_FLUSH_INTERVAL = 250L;
 	private static final int KEY_BUFFER_INITIAL_CAPACITY = 1024;
 	private static final int TIMESTAMP_SIZE = Long.BYTES + Integer.BYTES;
@@ -189,7 +176,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	private static final Failure IGNORED = Failure.failure(0, "Ignored");
 
 	private final DatabaseEnvironment dbEnv;
-	private final BerkeleyTransactionsByIdStore store;
 	private final Serialization serialization;
 	private final SystemCounters systemCounters;
 	private final ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher;
@@ -198,7 +184,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	private final AtomicLong currentEpoch = new AtomicLong(0);
 	private final AtomicLong currentRound = new AtomicLong(0);
 	private final TransactionParser transactionParser;
-	private final REParser parser;
 	private final Addressing addressing;
 	private final Forks forks;
 
@@ -213,8 +198,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
-		REParser parser,
-		BerkeleyTransactionsByIdStore store,
 		Serialization serialization,
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
@@ -224,8 +207,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		Forks forks
 	) {
 		this.dbEnv = dbEnv;
-		this.parser = parser;
-		this.store = store;
 		this.serialization = serialization;
 		this.systemCounters = systemCounters;
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
@@ -239,8 +220,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	@Inject
 	public BerkeleyClientApiStore(
 		DatabaseEnvironment dbEnv,
-		REParser parser,
-		BerkeleyTransactionsByIdStore store,
 		Serialization serialization,
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
@@ -248,20 +227,9 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		Addressing addressing,
 		Forks forks
 	) {
-		this(dbEnv, parser, store, serialization, systemCounters,
+		this(dbEnv, serialization, systemCounters,
 			 scheduledFlushEventDispatcher, transactionParser, false, addressing, forks
 		);
-	}
-
-	@Override
-	public Result<REAddr> parseRri(String rri) {
-		return addressing.forResources().parseFunctional(rri)
-			.flatMap(tuple -> tuple.map(
-				(symbol, address) -> getTokenDefinition(address)
-					.map(TokenDefinitionRecord::getSymbol)
-					.filter(symbol::equals, SYMBOL_DOES_NOT_MATCH)
-					.map(__ -> address)
-			));
 	}
 
 	private UInt384 computeStakeFromOwnership(ECPublicKey delegateKey, UInt384 ownership) {
@@ -330,30 +298,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
-	@Override
-	public Result<UInt384> getTokenSupply(String rri) {
-		try (var cursor = supplyBalances.openCursor(null, null)) {
-			var key = asKey(rri);
-			var data = entry();
-
-			var status = readBalance(() -> cursor.getSearchKeyRange(key, data, null), data);
-
-			if (status == OperationStatus.NOTFOUND) {
-				return Result.ok(UInt384.ZERO);
-			}
-
-			if (status != OperationStatus.SUCCESS) {
-				return UNKNOWN_RRI.with(rri).result();
-			}
-
-			return restore(serialization, data.getData(), BalanceEntry.class)
-				.onSuccess(entry -> log.trace("Stored token supply balance: {}", entry))
-				.map(BalanceEntry::getAmount);
-		}
-	}
-
-	@Override
-	public Result<TokenDefinitionRecord> getTokenDefinition(REAddr addr) {
+	private Result<TokenDefinitionRecord> getTokenDefinition(REAddr addr) {
 		try (var cursor = tokenDefinitions.openCursor(null, null)) {
 			var key = asAddrBalanceKey(addr);
 			var data = entry();
@@ -474,10 +419,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 			   : Result.ok(entry.withActions(filteredActions));
 	}
 
-	private boolean validateHistoryEntry(TxHistoryEntry entry) {
-		return !entry.getActions().isEmpty();
-	}
-
 	@Override
 	public EventProcessor<ScheduledQueueFlush> queueFlushProcessor() {
 		return flush -> {
@@ -489,10 +430,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 	public void close() {
 		storeCollected();
 		closeAll();
-	}
-
-	private boolean sameTxId(Txn txn, TxHistoryEntry txHistoryEntry) {
-		return txHistoryEntry.getTxId().equals(txn.getId());
 	}
 
 	private Instant instantFromKey(DatabaseEntry key) {
@@ -615,18 +552,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		if (database != null) {
 			database.close();
 		}
-	}
-
-	private void resetAll() {
-		var transaction = dbEnv.getEnvironment()
-			.beginTransaction(null, null);
-
-		for (var dbName : DB_NAMES) {
-			log.info("Dropping existing {}", dbName);
-			dbEnv.getEnvironment().truncateDatabase(transaction, dbName, false);
-		}
-
-		transaction.commit();
 	}
 
 	@Override
@@ -815,14 +740,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 			.forEach(this::storeBalanceEntry);
 
 		return accounting;
-	}
-
-	private Optional<ECPublicKey> extractCreator(Txn tx) {
-		try {
-			return parser.parse(tx).getSignedBy();
-		} catch (TxnParseException e) {
-			throw new IllegalStateException("Creator extraction failure", e);
-		}
 	}
 
 	private void storeSingleTransaction(TxHistoryEntry txn, REAddr address) {

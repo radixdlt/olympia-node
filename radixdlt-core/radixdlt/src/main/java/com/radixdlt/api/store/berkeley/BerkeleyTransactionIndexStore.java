@@ -66,16 +66,22 @@ package com.radixdlt.api.store.berkeley;
 
 import com.google.common.collect.Streams;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.ResourceCreatedEvent;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.Longs;
@@ -99,28 +105,22 @@ import static com.google.common.primitives.UnsignedBytes.lexicographicalComparat
 import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
-public final class BerkeleyTransactionIndexArchiveStore implements BerkeleyAdditionalStore {
+public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalStore {
 	private static final String TRANSACTIONS_DB = "radix.transactions";
-	private static final String RESOURCE_SYMBOLS_DB = "radix.resource_symbols";
-	private Database resources;
 	private Database transactions;
 	private final Addressing addressing;
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 
 	@Inject
-	BerkeleyTransactionIndexArchiveStore(Addressing addressing) {
+	BerkeleyTransactionIndexStore(Addressing addressing, Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
 		this.addressing = addressing;
+		this.radixEngineProvider = radixEngineProvider;
 	}
 
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
 		var env = dbEnv.getEnvironment();
 		transactions = env.openDatabase(null, TRANSACTIONS_DB, new DatabaseConfig()
-			.setAllowCreate(true)
-			.setTransactional(true)
-			.setKeyPrefixing(true)
-			.setBtreeComparator(lexicographicalComparator())
-		);
-		resources = env.openDatabase(null, RESOURCE_SYMBOLS_DB, new DatabaseConfig()
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setKeyPrefixing(true)
@@ -133,32 +133,6 @@ public final class BerkeleyTransactionIndexArchiveStore implements BerkeleyAddit
 		if (transactions != null) {
 			transactions.close();
 		}
-
-		if (resources != null) {
-			resources.close();
-		}
-	}
-
-	private void storeResourceSymbol(Transaction dbTxn, ResourceCreatedEvent resourceCreatedEvent) {
-		var key = new DatabaseEntry(resourceCreatedEvent.getTokenResource().getAddr().getBytes());
-		var symbol = resourceCreatedEvent.getSymbol();
-		var value = new DatabaseEntry(symbol.getBytes(StandardCharsets.UTF_8));
-		var status = resources.putNoOverwrite(dbTxn, key, value);
-		if (status != OperationStatus.SUCCESS) {
-			throw new IllegalStateException();
-		}
-	}
-
-	private String getRri(Transaction dbTxn, REAddr addr) {
-		var key = new DatabaseEntry(addr.getBytes());
-		var value = new DatabaseEntry();
-		var status = resources.get(dbTxn, key, value, null);
-		if (status != OperationStatus.SUCCESS) {
-			throw new IllegalStateException();
-		}
-
-		var symbol = new String(value.getData(), StandardCharsets.UTF_8);
-		return addressing.forResources().of(symbol, addr);
 	}
 
 	public long getCount() {
@@ -196,6 +170,16 @@ public final class BerkeleyTransactionIndexArchiveStore implements BerkeleyAddit
 			.onClose(cursor::close);
 	}
 
+
+	private Particle deserialize(byte[] data) {
+		var deserialization = radixEngineProvider.get().getSubstateDeserialization();
+		try {
+			return deserialization.deserialize(data);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException();
+		}
+	}
+
 	@Override
 	public void process(
 		Transaction dbTxn,
@@ -227,7 +211,6 @@ public final class BerkeleyTransactionIndexArchiveStore implements BerkeleyAddit
 		for (var event : txn.getEvents()) {
 			if (event instanceof ResourceCreatedEvent) {
 				var resourceCreated = (ResourceCreatedEvent) event;
-				storeResourceSymbol(dbTxn, resourceCreated);
 				var rri = addressing.forResources().of(resourceCreated.getSymbol(), resourceCreated.getTokenResource().getAddr());
 				var eventJson = new JSONObject()
 					.put("type", "token_created")
@@ -274,7 +257,13 @@ public final class BerkeleyTransactionIndexArchiveStore implements BerkeleyAddit
 				// Don't keep track of stakeOwnership
 				continue;
 			}
-			bucketJson.put("asset", getRri(dbTxn, b.resourceAddr()));
+
+			var mapKey = SystemMapKey.ofResourceData(b.resourceAddr(), SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+			var data = mapper.apply(mapKey).orElseThrow().getData();
+			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+			var metadata = (TokenResourceMetadata) deserialize(data);
+			var rri = addressing.forResources().of(metadata.getSymbol(), b.resourceAddr());
+			bucketJson.put("asset", rri);
 			bucketAccounting.put(bucketJson);
 		}
 		txnJson.put("accounting_entries", bucketAccounting);

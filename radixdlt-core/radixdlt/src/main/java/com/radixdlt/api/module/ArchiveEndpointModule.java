@@ -74,12 +74,12 @@ import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.JsonRpcController;
 import com.radixdlt.api.handler.ArchiveAccountHandler;
 import com.radixdlt.api.handler.ArchiveNetworkHandler;
-import com.radixdlt.api.handler.ArchiveTokenHandler;
 import com.radixdlt.api.handler.ArchiveTransactionsHandler;
 import com.radixdlt.api.handler.ArchiveValidationHandler;
 import com.radixdlt.api.qualifier.ArchiveEndpoint;
 import com.radixdlt.api.qualifier.ArchiveServer;
 import com.radixdlt.api.server.JsonRpcServer;
+import com.radixdlt.api.tokens.ArchiveTokensModule;
 
 import java.util.Map;
 
@@ -87,6 +87,8 @@ public class ArchiveEndpointModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(ArchiveAccountHandler.class).in(Scopes.SINGLETON);
+
+		install(new ArchiveTokensModule());
 	}
 
 	@ArchiveServer
@@ -142,20 +144,6 @@ public class ArchiveEndpointModule extends AbstractModule {
 	@StringMapKey("transactions.get_transaction_status")
 	public JsonRpcHandler transactionsGetTransactionStatus(ArchiveTransactionsHandler archiveTransactionsHandler) {
 		return archiveTransactionsHandler::handleTransactionsGetTransactionStatus;
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("tokens.get_native_token")
-	public JsonRpcHandler tokensGetNativeToken(ArchiveTokenHandler archiveTokenHandler) {
-		return archiveTokenHandler::handleTokensGetNativeToken;
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("tokens.get_info")
-	public JsonRpcHandler tokensGetInfo(ArchiveTokenHandler archiveTokenHandler) {
-		return archiveTokenHandler::handleTokensGetInfo;
 	}
 
 	@ArchiveEndpoint

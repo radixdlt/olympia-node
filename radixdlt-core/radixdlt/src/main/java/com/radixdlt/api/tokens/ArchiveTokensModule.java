@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix DLT Ltd incorporated in England.
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,45 +61,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.handler;
+package com.radixdlt.api.tokens;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.JsonRpcHandler;
+import com.radixdlt.api.qualifier.ArchiveEndpoint;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import org.json.JSONObject;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.radixdlt.api.service.TokenService;
-
-import static com.radixdlt.api.JsonRpcUtil.invalidParamsError;
-import static com.radixdlt.api.JsonRpcUtil.response;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
 
-@Singleton
-public class ArchiveTokenHandler {
-	private final TokenService tokenService;
-	private final Addressing addressing;
-
-	@Inject
-	public ArchiveTokenHandler(
-		TokenService tokenService,
-		Addressing addressing
-	) {
-		this.tokenService = tokenService;
-		this.addressing = addressing;
+public final class ArchiveTokensModule extends AbstractModule {
+	@Override
+	protected void configure() {
+		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+			.addBinding().to(BerkeleyResourceInfoStore.class);
 	}
 
-	public JSONObject handleTokensGetNativeToken(JSONObject request) {
-		return tokenService.getNativeTokenDescription()
-			.map(r -> r.asJson(addressing))
-			.fold(failure -> invalidParamsError(request, failure.message()), response -> response(request, response));
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("tokens.get_native_token")
+	public JsonRpcHandler tokensGetNativeToken(BerkeleyResourceInfoStore store) {
+		return req -> store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
 	}
 
-	public JSONObject handleTokensGetInfo(JSONObject request) {
-		return withRequiredStringParameter(
-			request,
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("tokens.get_info")
+	public JsonRpcHandler tokensGetInfo(Addressing addressing, BerkeleyResourceInfoStore store) {
+		return req -> withRequiredStringParameter(
+			req,
 			"rri",
-			tokenId -> tokenService.getTokenDescription(tokenId)
-				.map(r -> r.asJson(addressing))
+			rri ->
+				addressing.forResources().parseFunctional(rri)
+					.map(e -> e.map((symbol, addr) -> store.getResourceInfo(addr).orElseThrow()))
 		);
 	}
 }
