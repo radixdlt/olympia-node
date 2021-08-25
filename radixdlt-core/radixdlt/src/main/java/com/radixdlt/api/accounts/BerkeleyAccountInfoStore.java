@@ -67,6 +67,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.Particle;
@@ -104,7 +105,8 @@ import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 	private Database accountInfoDatabase;
-	private Database accountUnstakeInfoDatabase;
+	private Database accountExittingStakeDatabase;
+	private Database accountUnstakeOwnershipDatabase;
 	private final Addressing addressing;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 
@@ -117,22 +119,36 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 	public JSONArray getAccountUnstakes(REAddr addr) {
 		var key = new DatabaseEntry(addr.getBytes());
 		var value = new DatabaseEntry();
+		var jsonArray = new JSONArray();
 
-		if (accountUnstakeInfoDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
+		if (accountExittingStakeDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
 			var systemMapKey = SystemMapKey.ofSystem(SubstateTypeId.EPOCH_DATA.id());
 			var epochData = (EpochData) radixEngineProvider.get().get(systemMapKey).orElseThrow();
 			var curEpoch = epochData.getEpoch();
-			var jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
+			jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
 			for (int i = 0; i < jsonArray.length(); i++) {
 				var json = jsonArray.getJSONObject(i);
 				var epochUnlocked = json.getLong("epochUnlocked");
 				json.remove("epochUnlocked");
 				json.put("epochsUntil", epochUnlocked - curEpoch);
 			}
-			return jsonArray;
 		}
 
-		return new JSONArray();
+		if (accountUnstakeOwnershipDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
+			var unstakeOwnershipJson = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
+			for (int i = 0; i < unstakeOwnershipJson.length(); i++) {
+				var json = unstakeOwnershipJson.getJSONObject(i);
+				var ownership = new BigInteger(json.getString("amount"), 10);
+				var totalStake = new BigInteger(json.getString("validatorTotalStake"), 10);
+				var totalOwnership = new BigInteger(json.getString("validatorTotalOwnership"), 10);
+				var estimatedUnstake = ownership.multiply(totalStake).divide(totalOwnership);
+				json.put("amount", estimatedUnstake.toString());
+				json.put("epochsUntil", 500);
+				jsonArray.put(json);
+			}
+		}
+
+		return jsonArray;
 	}
 
 	public JSONObject getAccountInfo(REAddr addr) {
@@ -157,7 +173,13 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			.setKeyPrefixing(true)
 			.setBtreeComparator(lexicographicalComparator())
 		);
-		accountUnstakeInfoDatabase = env.openDatabase(null, "radix.account_unstake_info", new DatabaseConfig()
+		accountExittingStakeDatabase = env.openDatabase(null, "radix.account_unstake_info", new DatabaseConfig()
+			.setAllowCreate(true)
+			.setTransactional(true)
+			.setKeyPrefixing(true)
+			.setBtreeComparator(lexicographicalComparator())
+		);
+		accountUnstakeOwnershipDatabase = env.openDatabase(null, "radix.account_unstake_ownership", new DatabaseConfig()
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setKeyPrefixing(true)
@@ -170,8 +192,11 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		if (accountInfoDatabase != null) {
 			accountInfoDatabase.close();
 		}
-		if (accountUnstakeInfoDatabase != null) {
-			accountUnstakeInfoDatabase.close();
+		if (accountExittingStakeDatabase != null) {
+			accountExittingStakeDatabase.close();
+		}
+		if (accountUnstakeOwnershipDatabase != null) {
+			accountUnstakeOwnershipDatabase.close();
 		}
 	}
 
@@ -184,7 +209,71 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		}
 	}
 
-	private void storeUnstakes(Transaction dbTxn, REResourceAccounting accounting) {
+	private void storePreparedUnstake(Transaction dbTxn, REResourceAccounting accounting, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
+		var unstakeAccounting = accounting.bucketAccounting().entrySet().stream()
+			.filter(e -> e.getKey().resourceAddr() == null)
+			.filter(e -> e.getKey().getValidatorKey() != null)
+			.filter(e -> e.getKey().getEpochUnlock() != null)
+			.collect(Collectors.groupingBy(
+				e -> e.getKey().getOwner(),
+				Collectors.toMap(
+					e -> addressing.forValidators().of(e.getKey().getValidatorKey()),
+					Map.Entry::getValue
+				)
+			));
+		unstakeAccounting.forEach((accountAddr, unstakes) -> {
+			var key = new DatabaseEntry(accountAddr.getBytes());
+			var value = new DatabaseEntry();
+			var preparedMap = new TreeMap<String, BigInteger>();
+
+			var status = accountUnstakeOwnershipDatabase.get(dbTxn, key, value, null);
+			if (status == SUCCESS) {
+				var jsonString = new String(value.getData(), StandardCharsets.UTF_8);
+				var json = new JSONArray(jsonString);
+				for (int i = 0; i < json.length(); i++) {
+					var jsonAmount = json.getJSONObject(i);
+					var validator = jsonAmount.getString("validator");
+					var amount = new BigInteger(jsonAmount.getString("amount"), 10);
+					preparedMap.put(validator, amount);
+				}
+			}
+			unstakes.forEach((p, amt) ->
+				preparedMap.compute(p, (pair, cur) -> {
+					var curAmt = cur == null ? BigInteger.ZERO : cur;
+					var nextAmt = curAmt.add(amt);
+					return nextAmt.equals(BigInteger.ZERO) ? null : nextAmt;
+				})
+			);
+
+			var nextUnstakes = new JSONArray();
+			preparedMap.forEach((validator, amt) -> {
+				try {
+					var validatorKey = addressing.forValidators().parse(validator);
+					var validatorDataKey = SystemMapKey.ofSystem(
+						SubstateTypeId.VALIDATOR_STAKE_DATA.id(),
+						validatorKey.getCompressedBytes()
+					);
+					var stakeData = (ValidatorStakeData) deserialize(mapper.apply(validatorDataKey).orElseThrow().getData());
+					nextUnstakes.put(new JSONObject()
+						.put("validator", validator)
+						.put("amount", amt.toString())
+						.put("validatorTotalStake", stakeData.getTotalStake())
+						.put("validatorTotalOwnership", stakeData.getTotalOwnership())
+					);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+			});
+
+			var nextValue = new DatabaseEntry(nextUnstakes.toString().getBytes(StandardCharsets.UTF_8));
+			status = accountUnstakeOwnershipDatabase.put(dbTxn, key, nextValue);
+			if (status != SUCCESS) {
+				throw new IllegalStateException();
+			}
+		});
+	}
+
+	private void storeExittingStake(Transaction dbTxn, REResourceAccounting accounting) {
 		var unstakeAccounting = accounting.bucketAccounting().entrySet().stream()
 			.filter(e -> Objects.equals(e.getKey().resourceAddr(), REAddr.ofNativeToken()))
 			.filter(e -> e.getKey().getValidatorKey() != null)
@@ -203,13 +292,16 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 				Comparator.<Pair<String, Long>, String>comparing(Pair::getFirst).thenComparing(Pair::getSecond)
 			);
 
-			var status = accountUnstakeInfoDatabase.get(dbTxn, key, value, null);
+			var status = accountExittingStakeDatabase.get(dbTxn, key, value, null);
 			if (status == SUCCESS) {
 				var jsonString = new String(value.getData(), StandardCharsets.UTF_8);
 				var json = new JSONArray(jsonString);
 				for (int i = 0; i < json.length(); i++) {
 					var jsonAmount = json.getJSONObject(i);
-					var validatorAndEpoch = Pair.of(jsonAmount.getString("validator"), jsonAmount.getLong("epochUnlocked"));
+					var validatorAndEpoch = Pair.of(
+						jsonAmount.getString("validator"),
+						jsonAmount.getLong("epochUnlocked")
+					);
 					unstakeMap.put(validatorAndEpoch, new BigInteger(jsonAmount.getString("amount"), 10));
 				}
 			}
@@ -231,23 +323,14 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			);
 
 			var nextValue = new DatabaseEntry(nextUnstakes.toString().getBytes(StandardCharsets.UTF_8));
-			status = accountUnstakeInfoDatabase.put(dbTxn, key, nextValue);
+			status = accountExittingStakeDatabase.put(dbTxn, key, nextValue);
 			if (status != SUCCESS) {
 				throw new IllegalStateException();
 			}
 		});
 	}
 
-	@Override
-	public void process(
-		Transaction dbTxn,
-		REProcessedTxn txn,
-		long stateVersion,
-		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
-	) {
-		var accounting = REResourceAccounting.compute(txn.stateUpdates());
-		storeUnstakes(dbTxn, accounting);
-
+	private void storeBalances(Transaction dbTxn, REResourceAccounting accounting, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
 		var accountAccounting = accounting.bucketAccounting().entrySet().stream()
 			.filter(e -> e.getKey().resourceAddr() != null)
 			.filter(e -> e.getKey().getValidatorKey() == null)
@@ -267,44 +350,58 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			));
 
 		accountAccounting.forEach((accountAddr, resourceAccounting) -> {
-				var key = new DatabaseEntry(accountAddr.getBytes());
-				var value = new DatabaseEntry();
-				var status = accountInfoDatabase.get(dbTxn, key, value, null);
-				final JSONObject json;
-				if (status != SUCCESS) {
-					json = new JSONObject()
-						.put("owner", addressing.forAccounts().of(accountAddr))
-						.put("tokenBalances", new JSONArray());
-				} else {
-					var jsonString = new String(value.getData(), StandardCharsets.UTF_8);
-					json = new JSONObject(jsonString);
-				}
-				var tokenBalances = json.getJSONArray("tokenBalances");
-				var tokenBalanceMap = new TreeMap<String, BigInteger>();
-				for (int i = 0; i < tokenBalances.length(); i++) {
-					var jsonAmount = tokenBalances.getJSONObject(i);
-					tokenBalanceMap.put(jsonAmount.getString("rri"), new BigInteger(jsonAmount.getString("amount"), 10));
-				}
-				resourceAccounting.forEach((rri, amt) -> {
-					tokenBalanceMap.compute(rri, (k, cur) -> {
-						var curAmt = cur == null ? BigInteger.ZERO : cur;
-						var nextAmt = curAmt.add(amt);
-						return nextAmt.equals(BigInteger.ZERO) ? null : nextAmt;
-					});
+			var key = new DatabaseEntry(accountAddr.getBytes());
+			var value = new DatabaseEntry();
+			var status = accountInfoDatabase.get(dbTxn, key, value, null);
+			final JSONObject json;
+			if (status != SUCCESS) {
+				json = new JSONObject()
+					.put("owner", addressing.forAccounts().of(accountAddr))
+					.put("tokenBalances", new JSONArray());
+			} else {
+				var jsonString = new String(value.getData(), StandardCharsets.UTF_8);
+				json = new JSONObject(jsonString);
+			}
+			var tokenBalances = json.getJSONArray("tokenBalances");
+			var tokenBalanceMap = new TreeMap<String, BigInteger>();
+			for (int i = 0; i < tokenBalances.length(); i++) {
+				var jsonAmount = tokenBalances.getJSONObject(i);
+				tokenBalanceMap.put(jsonAmount.getString("rri"), new BigInteger(jsonAmount.getString("amount"), 10));
+			}
+			resourceAccounting.forEach((rri, amt) -> {
+				tokenBalanceMap.compute(rri, (k, cur) -> {
+					var curAmt = cur == null ? BigInteger.ZERO : cur;
+					var nextAmt = curAmt.add(amt);
+					return nextAmt.equals(BigInteger.ZERO) ? null : nextAmt;
 				});
-				var nextTokenBalances = new JSONArray();
-				tokenBalanceMap.forEach((rri, amt) -> {
-					nextTokenBalances.put(new JSONObject()
-						.put("rri", rri)
-						.put("amount", amt.toString())
-					);
-				});
-				json.put("tokenBalances", nextTokenBalances);
-				var nextValue = new DatabaseEntry(json.toString().getBytes(StandardCharsets.UTF_8));
-				status = accountInfoDatabase.put(dbTxn, key, nextValue);
-				if (status != SUCCESS) {
-					throw new IllegalStateException();
-				}
 			});
+			var nextTokenBalances = new JSONArray();
+			tokenBalanceMap.forEach((rri, amt) -> {
+				nextTokenBalances.put(new JSONObject()
+					.put("rri", rri)
+					.put("amount", amt.toString())
+				);
+			});
+			json.put("tokenBalances", nextTokenBalances);
+			var nextValue = new DatabaseEntry(json.toString().getBytes(StandardCharsets.UTF_8));
+			status = accountInfoDatabase.put(dbTxn, key, nextValue);
+			if (status != SUCCESS) {
+				throw new IllegalStateException();
+			}
+		});
+	}
+
+
+	@Override
+	public void process(
+		Transaction dbTxn,
+		REProcessedTxn txn,
+		long stateVersion,
+		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
+	) {
+		var accounting = REResourceAccounting.compute(txn.stateUpdates());
+		storePreparedUnstake(dbTxn, accounting, mapper);
+		storeExittingStake(dbTxn, accounting);
+		storeBalances(dbTxn, accounting, mapper);
 	}
 }

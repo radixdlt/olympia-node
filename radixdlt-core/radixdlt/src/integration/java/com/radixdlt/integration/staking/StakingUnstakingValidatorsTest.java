@@ -570,8 +570,10 @@ public class StakingUnstakingValidatorsTest {
 			.map(jsonUnstakes -> {
 				BigInteger sum = BigInteger.ZERO;
 				for (int i = 0; i < jsonUnstakes.length(); i++) {
-					var amt = new BigInteger(jsonUnstakes.getJSONObject(i).getString("amount"), 10);
-					sum = sum.add(amt);
+					if (jsonUnstakes.getJSONObject(i).getLong("epochsUntil") != 500) {
+						var amt = new BigInteger(jsonUnstakes.getJSONObject(i).getString("amount"), 10);
+						sum = sum.add(amt);
+					}
 				}
 				return sum;
 			})
