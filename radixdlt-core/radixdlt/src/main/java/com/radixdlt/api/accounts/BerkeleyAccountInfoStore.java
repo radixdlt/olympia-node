@@ -93,6 +93,7 @@ import org.json.JSONObject;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -105,11 +106,15 @@ import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
-	private Database balancesDatabase;
-	private Database exittingStakeDatabase;
-	private Database preparedUnstakeOwnershipDatabase;
 	private final Addressing addressing;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+	private static final Map<ResourceType, String> DB_NAMES = Map.of(
+		ResourceType.TOKEN_BALANCES, "radix.account_token_balances",
+		ResourceType.PREPARED_STAKES, "radix.account_prepared_stakes",
+		ResourceType.PREPARED_UNSTAKES, "radix.acconut_prepared_unstakes",
+		ResourceType.EXITTING_UNSTAKES, "radix.acconut_exitting_unstakes"
+	);
+	private final Map<ResourceType, Database> databases = new HashMap<>();
 
 	@Inject
 	BerkeleyAccountInfoStore(Addressing addressing, Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
@@ -122,7 +127,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		var value = new DatabaseEntry();
 		var jsonArray = new JSONArray();
 
-		if (exittingStakeDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
+		if (databases.get(ResourceType.EXITTING_UNSTAKES).get(null, key, value, DEFAULT) == SUCCESS) {
 			var systemMapKey = SystemMapKey.ofSystem(SubstateTypeId.EPOCH_DATA.id());
 			var epochData = (EpochData) radixEngineProvider.get().get(systemMapKey).orElseThrow();
 			var curEpoch = epochData.getEpoch();
@@ -135,7 +140,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			}
 		}
 
-		if (preparedUnstakeOwnershipDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
+		if (databases.get(ResourceType.PREPARED_UNSTAKES).get(null, key, value, DEFAULT) == SUCCESS) {
 			var unstakeOwnershipJson = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
 			for (int i = 0; i < unstakeOwnershipJson.length(); i++) {
 				var json = unstakeOwnershipJson.getJSONObject(i);
@@ -159,7 +164,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		var json = new JSONObject()
 			.put("owner", addressing.forAccounts().of(addr));
 
-		if (balancesDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
+		if (databases.get(ResourceType.TOKEN_BALANCES).get(null, key, value, DEFAULT) == SUCCESS) {
 			var jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
 			json.put("tokenBalances", jsonArray);
 		} else {
@@ -172,37 +177,20 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
 		var env = dbEnv.getEnvironment();
-		balancesDatabase = env.openDatabase(null, "radix.account_info", new DatabaseConfig()
-			.setAllowCreate(true)
-			.setTransactional(true)
-			.setKeyPrefixing(true)
-			.setBtreeComparator(lexicographicalComparator())
-		);
-		exittingStakeDatabase = env.openDatabase(null, "radix.account_unstake_info", new DatabaseConfig()
-			.setAllowCreate(true)
-			.setTransactional(true)
-			.setKeyPrefixing(true)
-			.setBtreeComparator(lexicographicalComparator())
-		);
-		preparedUnstakeOwnershipDatabase = env.openDatabase(null, "radix.account_unstake_ownership", new DatabaseConfig()
-			.setAllowCreate(true)
-			.setTransactional(true)
-			.setKeyPrefixing(true)
-			.setBtreeComparator(lexicographicalComparator())
-		);
+		DB_NAMES.forEach((type, name) -> {
+			var db = env.openDatabase(null, name, new DatabaseConfig()
+				.setAllowCreate(true)
+				.setTransactional(true)
+				.setKeyPrefixing(true)
+				.setBtreeComparator(lexicographicalComparator())
+			);
+			databases.put(type, db);
+		});
 	}
 
 	@Override
 	public void close() {
-		if (balancesDatabase != null) {
-			balancesDatabase.close();
-		}
-		if (exittingStakeDatabase != null) {
-			exittingStakeDatabase.close();
-		}
-		if (preparedUnstakeOwnershipDatabase != null) {
-			preparedUnstakeOwnershipDatabase.close();
-		}
+		databases.forEach((type, db) -> db.close());
 	}
 
 	private Particle deserialize(byte[] data) {
@@ -248,7 +236,37 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 				return new JSONObject().put("rri", rri);
 			}
 		},
-		PREPARED {
+		PREPARED_STAKES {
+			@Override
+			boolean bucketCheck(Bucket bucket) {
+				return Objects.equals(bucket.resourceAddr(), REAddr.ofNativeToken())
+					&& bucket.getOwner() != null
+					&& bucket.getValidatorKey() != null
+					&& bucket.getEpochUnlock() == null;
+			}
+
+			@Override
+			Comparator<Object> comparator() {
+				return Comparator.comparing(o -> (String) o);
+			}
+
+			@Override
+			Object toKey(BerkeleyAccountInfoStore parent, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper, Bucket bucket) {
+				return parent.addressing.forValidators().of(bucket.getValidatorKey());
+			}
+
+			@Override
+			Object jsonToKey(JSONObject json) {
+				return json.getString("validator");
+			}
+
+			@Override
+			JSONObject toJSON(BerkeleyAccountInfoStore parent, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper, Object o) {
+				var validator = (String) o;
+				return new JSONObject().put("validator", validator);
+			}
+		},
+		PREPARED_UNSTAKES {
 			@Override
 			boolean bucketCheck(Bucket bucket) {
 				return bucket.resourceAddr() == null
@@ -288,7 +306,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 				}
 			}
 		},
-		EXITTING {
+		EXITTING_UNSTAKES {
 			@Override
 			boolean bucketCheck(Bucket bucket) {
 				return Objects.equals(bucket.resourceAddr(), REAddr.ofNativeToken())
@@ -334,10 +352,10 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		Transaction dbTxn,
 		REResourceAccounting accounting,
 		ResourceType resourceType,
-		Database db,
 		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
 	) {
-		var unstakeAccounting = accounting.bucketAccounting().entrySet().stream()
+		var db = databases.get(resourceType);
+		var accountAccounting = accounting.bucketAccounting().entrySet().stream()
 			.filter(e -> resourceType.bucketCheck(e.getKey()))
 			.collect(Collectors.groupingBy(
 				e -> e.getKey().getOwner(),
@@ -346,7 +364,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 					Map.Entry::getValue
 				)
 			));
-		unstakeAccounting.forEach((accountAddr, unstakes) -> {
+		accountAccounting.forEach((accountAddr, bucketAccounting) -> {
 			var key = new DatabaseEntry(accountAddr.getBytes());
 			var value = new DatabaseEntry();
 			var preparedMap = new TreeMap<Object, BigInteger>(resourceType.comparator());
@@ -361,7 +379,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 					preparedMap.put(k, amount);
 				}
 			}
-			unstakes.forEach((p, amt) ->
+			bucketAccounting.forEach((p, amt) ->
 				preparedMap.compute(p, (pair, cur) -> {
 					var curAmt = cur == null ? BigInteger.ZERO : cur;
 					var nextAmt = curAmt.add(amt);
@@ -391,8 +409,8 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
 	) {
 		var accounting = REResourceAccounting.compute(txn.stateUpdates());
-		storeAccounting(dbTxn, accounting, ResourceType.PREPARED, preparedUnstakeOwnershipDatabase, mapper);
-		storeAccounting(dbTxn, accounting, ResourceType.EXITTING, exittingStakeDatabase, mapper);
-		storeAccounting(dbTxn, accounting, ResourceType.TOKEN_BALANCES, balancesDatabase, mapper);
+		for (var t : ResourceType.values()) {
+			storeAccounting(dbTxn, accounting, t, mapper);
+		}
 	}
 }
