@@ -133,8 +133,8 @@ public final class ArchiveAccountHandler {
 			request,
 			"address",
 			address -> addressing.forAccounts().parseFunctional(address)
-				.flatMap(accountService::getStakePositions)
-				.map(this::formatStakePositions)
+				.map(store::getAccountStakes)
+				.map(a -> jsonObject().put(ARRAY, a))
 		);
 	}
 

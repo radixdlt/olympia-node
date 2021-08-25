@@ -65,10 +65,8 @@
 package com.radixdlt.api.service;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.api.store.ClientApiStore.BalanceType;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
@@ -92,18 +90,6 @@ public final class ArchiveAccountService {
 	) {
 		return clientApiStore.getTransactionHistory(address, size, cursor, verbose)
 			.map(response -> tuple(calculateNewCursor(response), response));
-	}
-
-	public Result<List<BalanceEntry>> getStakePositions(REAddr address) {
-		return clientApiStore.getTokenBalances(address, BalanceType.STAKES);
-	}
-
-	public Result<List<BalanceEntry>> getUnstakePositions(REAddr address) {
-		return clientApiStore.getTokenBalances(address, BalanceType.UNSTAKES);
-	}
-
-	public long getEpoch() {
-		return clientApiStore.getEpoch();
 	}
 
 	private static Optional<Instant> calculateNewCursor(List<TxHistoryEntry> response) {

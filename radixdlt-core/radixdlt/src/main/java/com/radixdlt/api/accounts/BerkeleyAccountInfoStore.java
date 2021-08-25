@@ -111,6 +111,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 	private static final Map<ResourceType, String> DB_NAMES = Map.of(
 		ResourceType.TOKEN_BALANCES, "radix.account_token_balances",
 		ResourceType.PREPARED_STAKES, "radix.account_prepared_stakes",
+		ResourceType.STAKED, "radix.account_staked",
 		ResourceType.PREPARED_UNSTAKES, "radix.acconut_prepared_unstakes",
 		ResourceType.EXITTING_UNSTAKES, "radix.acconut_exitting_unstakes"
 	);
@@ -120,6 +121,45 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 	BerkeleyAccountInfoStore(Addressing addressing, Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
 		this.addressing = addressing;
 		this.radixEngineProvider = radixEngineProvider;
+	}
+
+	public JSONArray getAccountStakes(REAddr addr) {
+		var key = new DatabaseEntry(addr.getBytes());
+		var value = new DatabaseEntry();
+		var stakes = new TreeMap<String, JSONObject>();
+		if (databases.get(ResourceType.PREPARED_STAKES).get(null, key, value, DEFAULT) == SUCCESS) {
+			var jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
+			for (int i = 0; i < jsonArray.length(); i++) {
+				var json = jsonArray.getJSONObject(i);
+				stakes.put(json.getString("validator"), json);
+			}
+		}
+
+		if (databases.get(ResourceType.STAKED).get(null, key, value, DEFAULT) == SUCCESS) {
+			var stakedJson = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
+			for (int i = 0; i < stakedJson.length(); i++) {
+				var json = stakedJson.getJSONObject(i);
+				var ownership = new BigInteger(json.getString("amount"), 10);
+				var totalStake = new BigInteger(json.getString("validatorTotalStake"), 10);
+				var totalOwnership = new BigInteger(json.getString("validatorTotalOwnership"), 10);
+				var estimatedStake = ownership.multiply(totalStake).divide(totalOwnership);
+				stakes.compute(json.getString("validator"), (v, obj) -> {
+					if (obj == null) {
+						return new JSONObject()
+							.put("amount", estimatedStake.toString())
+							.put("validator", json.getString("validator"));
+					} else {
+						var cur = new BigInteger(obj.getString("amount"), 10);
+						obj.put("amount", cur.add(estimatedStake).toString());
+						return obj;
+					}
+				});
+			}
+		}
+
+		var result = new JSONArray();
+		stakes.forEach((validator, json) -> result.put(json));
+		return result;
 	}
 
 	public JSONArray getAccountUnstakes(REAddr addr) {
@@ -264,6 +304,47 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			JSONObject toJSON(BerkeleyAccountInfoStore parent, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper, Object o) {
 				var validator = (String) o;
 				return new JSONObject().put("validator", validator);
+			}
+		},
+		STAKED {
+			@Override
+			boolean bucketCheck(Bucket bucket) {
+				return bucket.resourceAddr() == null
+					&& bucket.getValidatorKey() != null
+					&& bucket.getEpochUnlock() == null;
+			}
+
+			@Override
+			Comparator<Object> comparator() {
+				return Comparator.comparing(o -> (String) o);
+			}
+
+			@Override
+			Object toKey(BerkeleyAccountInfoStore parent, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper, Bucket bucket) {
+				return parent.addressing.forValidators().of(bucket.getValidatorKey());
+			}
+
+			@Override
+			Object jsonToKey(JSONObject json) {
+				return json.getString("validator");
+			}
+
+			@Override
+			JSONObject toJSON(BerkeleyAccountInfoStore parent, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper, Object o) {
+				try {
+					var validatorKey = parent.addressing.forValidators().parse((String) o);
+					var validatorDataKey = SystemMapKey.ofSystem(
+						SubstateTypeId.VALIDATOR_STAKE_DATA.id(),
+						validatorKey.getCompressedBytes()
+					);
+					var stakeData = (ValidatorStakeData) parent.deserialize(mapper.apply(validatorDataKey).orElseThrow().getData());
+					return new JSONObject()
+						.put("validator", o)
+						.put("validatorTotalStake", stakeData.getTotalStake())
+						.put("validatorTotalOwnership", stakeData.getTotalOwnership());
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
 			}
 		},
 		PREPARED_UNSTAKES {

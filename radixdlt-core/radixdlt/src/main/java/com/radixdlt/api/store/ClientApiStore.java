@@ -64,7 +64,6 @@
 
 package com.radixdlt.api.store;
 
-import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.environment.EventProcessor;
@@ -84,22 +83,6 @@ public interface ClientApiStore {
 	enum BalanceType {
 		SPENDABLE, STAKES, UNSTAKES;
 	}
-	/**
-	 * Retrieve list of immediately spendable token balances or stakes.
-	 *
-	 * @param addr client address
-	 * @param type the type of balance
-	 *
-	 * @return list of token balances
-	 */
-	Result<List<BalanceEntry>> getTokenBalances(REAddr addr, BalanceType type);
-
-	/**
-	 * Get current consensus epoch.
-	 *
-	 * @return current consensus epoch
-	 */
-	long getEpoch();
 
 	/**
 	 * Retrieve transaction history for provided address.
