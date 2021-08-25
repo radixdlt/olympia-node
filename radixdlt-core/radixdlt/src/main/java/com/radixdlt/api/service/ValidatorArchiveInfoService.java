@@ -64,6 +64,8 @@
 
 package com.radixdlt.api.service;
 
+import com.google.common.base.Suppliers;
+import com.google.common.cache.Cache;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
@@ -82,6 +84,8 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.utils.functional.FunctionalUtils.skipUntil;
@@ -91,23 +95,22 @@ public class ValidatorArchiveInfoService {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ValidatorInfoService validatorInfoService;
 	private final BerkeleyValidatorUptimeArchiveStore uptimeStore;
-	private final Addressing addressing;
+	private final Supplier<List<ValidatorInfoDetails>> infoDetailsCache
+		= Suppliers.memoizeWithExpiration(this::getAllValidators, 60, TimeUnit.SECONDS);
 
 	@Inject
 	public ValidatorArchiveInfoService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		BerkeleyValidatorUptimeArchiveStore uptimeStore,
-		ValidatorInfoService validatorInfoService,
-		Addressing addressing
+		ValidatorInfoService validatorInfoService
 	) {
 		this.radixEngine = radixEngine;
 		this.uptimeStore = uptimeStore;
 		this.validatorInfoService = validatorInfoService;
-		this.addressing = addressing;
 	}
 
 	public Mapper2<Optional<ECPublicKey>, List<ValidatorInfoDetails>> getValidators(int size, Optional<ECPublicKey> cursor) {
-		var result = getAllValidators();
+		var result = infoDetailsCache.get();
 		var paged = cursor
 			.map(key -> skipUntil(result, v -> v.getValidatorKey().equals(key)))
 			.orElse(result);
