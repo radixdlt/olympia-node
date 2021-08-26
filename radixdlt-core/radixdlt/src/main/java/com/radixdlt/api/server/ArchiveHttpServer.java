@@ -76,7 +76,11 @@ public final class ArchiveHttpServer extends AbstractHttpServer {
 	private static final int DEFAULT_PORT = 8080;
 
 	@Inject
-	public ArchiveHttpServer(@ArchiveServer Map<String, Controller> controllers, RuntimeProperties properties, SystemCounters counters) {
+	public ArchiveHttpServer(
+		@ArchiveServer Map<String, Controller> controllers,
+		RuntimeProperties properties,
+		SystemCounters counters
+	) {
 		super(controllers, properties, "archive", DEFAULT_PORT, counters);
 	}
 }

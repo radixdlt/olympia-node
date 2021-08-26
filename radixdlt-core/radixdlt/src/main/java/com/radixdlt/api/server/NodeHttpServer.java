@@ -76,7 +76,11 @@ public final class NodeHttpServer extends AbstractHttpServer {
 	private static final int DEFAULT_PORT = 3333;
 
 	@Inject
-	public NodeHttpServer(@NodeServer Map<String, Controller> controllers, RuntimeProperties properties, SystemCounters counters) {
+	public NodeHttpServer(
+		@NodeServer Map<String, Controller> controllers,
+		RuntimeProperties properties,
+		SystemCounters counters
+	) {
 		super(controllers, properties, "node", DEFAULT_PORT, counters);
 	}
 }
