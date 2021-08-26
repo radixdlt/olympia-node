@@ -1,68 +1,121 @@
-/*
- * (C) Copyright 2021 Radix DLT Ltd
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
- * Radix DLT Ltd licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in
- * compliance with the License.  You may obtain a copy of the
- * License at
+ * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at:
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * radixfoundation.org/licenses/LICENSE-v1
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied.  See the License for the specific
- * language governing permissions and limitations under the License.
+ * The Licensor hereby grants permission for the Canonical version of the Work to be
+ * published, distributed and used under or by reference to the Licensor’s trademark
+ * Radix ® and use of any unregistered trade names, logos or get-up.
+ *
+ * The Licensor provides the Work (and each Contributor provides its Contributions) on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
+ * including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT,
+ * MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * Whilst the Work is capable of being deployed, used and adopted (instantiated) to create
+ * a distributed ledger it is your responsibility to test and validate the code, together
+ * with all logic and performance of that code under all foreseeable scenarios.
+ *
+ * The Licensor does not make or purport to make and hereby excludes liability for all
+ * and any representation, warranty or undertaking in any form whatsoever, whether express
+ * or implied, to any entity or person, including any representation, warranty or
+ * undertaking, as to the functionality security use, value or other characteristics of
+ * any distributed ledger nor in respect the functioning or value of any tokens which may
+ * be created stored or transferred using the Work. The Licensor does not warrant that the
+ * Work or any use of the Work complies with any law or regulation in any territory where
+ * it may be implemented or used or that it will be appropriate for any specific purpose.
+ *
+ * Neither the licensor nor any current or former employees, officers, directors, partners,
+ * trustees, representatives, agents, advisors, contractors, or volunteers of the Licensor
+ * shall be liable for any direct or indirect, special, incidental, consequential or other
+ * losses of any kind, in tort, contract or otherwise (including but not limited to loss
+ * of revenue, income or profits, or loss of use or data, or loss of reputation, or loss
+ * of any economic or other opportunity of whatsoever nature or howsoever arising), arising
+ * out of or in connection with (without limitation of any use, misuse, of any ledger system
+ * or use made or its functionality or any performance or operation of any code or protocol
+ * caused by bugs or programming or logic errors or otherwise);
+ *
+ * A. any offer, purchase, holding, use, sale, exchange or transmission of any
+ * cryptographic keys, tokens or assets created, exchanged, stored or arising from any
+ * interaction with the Work;
+ *
+ * B. any failure in a transmission or loss of any token or assets keys or other digital
+ * artefacts due to errors in transmission;
+ *
+ * C. bugs, hacks, logic errors or faults in the Work or any communication;
+ *
+ * D. system software or apparatus including but not limited to losses caused by errors
+ * in holding or transmitting tokens by any third-party;
+ *
+ * E. breaches or failure of security including hacker attacks, loss or disclosure of
+ * password, loss of private key, unauthorised use or misuse of such passwords or keys;
+ *
+ * F. any losses including loss of anticipated savings or other benefits resulting from
+ * use of the Work or any changes to the Work (however implemented).
+ *
+ * You are solely responsible for; testing, validating and evaluation of all operation
+ * logic, functionality, security and appropriateness of using the Work for any commercial
+ * or non-commercial purpose and for any reproduction or redistribution by You of the
+ * Work. You assume all risks associated with Your use of the Work and the exercise of
+ * permissions under this License.
  */
 
 package com.radixdlt;
 
-import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.StokenetForkConfigsModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.universe.system.LocalSystem;
+import org.apache.logging.log4j.util.Strings;
+import org.json.JSONObject;
+import org.radix.utils.IOUtils;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.module.ArchiveApiModule;
 import com.radixdlt.api.module.CommonApiModule;
 import com.radixdlt.api.module.NodeApiModule;
 import com.radixdlt.api.qualifier.Endpoints;
-import com.radixdlt.api.service.RriParser;
 import com.radixdlt.application.NodeApplicationModule;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.network.messaging.MessagingModule;
 import com.radixdlt.network.p2p.P2PModule;
 import com.radixdlt.network.p2p.PeerDiscoveryModule;
 import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.statecomputer.RadixEngineConfig;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
-import com.radixdlt.universe.Universe.UniverseType;
-import com.radixdlt.universe.UniverseModule;
+import com.radixdlt.utils.Bytes;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
@@ -77,13 +130,85 @@ public final class RadixNodeModule extends AbstractModule {
 	private static final Logger log = LogManager.getLogger();
 
 	private final RuntimeProperties properties;
+	private final int networkId;
 
 	public RadixNodeModule(RuntimeProperties properties) {
 		this.properties = properties;
+		var networkId = properties.get("network.id");
+		if (networkId == null) {
+			throw new IllegalStateException("Must specify network.id");
+		}
+		this.networkId = Integer.parseInt(networkId);
+	}
+
+	@Provides
+	@Genesis
+	@Singleton
+	VerifiedTxnsAndProof genesis(@Genesis Txn genesis, GenesisBuilder genesisBuilder) throws RadixEngineException {
+		var proof = genesisBuilder.generateGenesisProof(genesis);
+		return VerifiedTxnsAndProof.create(List.of(genesis), proof);
+	}
+
+	private Txn loadGenesisFile(String genesisFile) {
+		try (var genesisJsonString = new FileInputStream(genesisFile)) {
+			var genesisJson = new JSONObject(IOUtils.toString(genesisJsonString));
+			var genesisHex = genesisJson.getString("genesis");
+			return Txn.create(Bytes.fromHexString(genesisHex));
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private Txn loadGenesis(int networkId) {
+		var genesisTxnHex = properties.get("network.genesis_txn");
+		var genesisFile = properties.get("network.genesis_file");
+		var network = Network.ofId(networkId);
+		var networkGenesis = network
+			.flatMap(Network::genesisTxn)
+			.map(Bytes::fromHexString)
+			.map(Txn::create);
+
+		if (networkGenesis.isPresent()) {
+			if (Strings.isNotBlank(genesisTxnHex)) {
+				throw new IllegalStateException("Cannot provide genesis txn for well-known network " + network.orElseThrow());
+			}
+
+			if (Strings.isNotBlank(genesisFile)) {
+				throw new IllegalStateException("Cannot provide genesis file for well-known network " + network.orElseThrow());
+			}
+			return networkGenesis.get();
+		} else {
+			var genesisCount = 0;
+			genesisCount += Strings.isNotBlank(genesisTxnHex) ? 1 : 0;
+			genesisCount += Strings.isNotBlank(genesisFile) ? 1 : 0;
+			if (genesisCount > 1) {
+				throw new IllegalStateException("Multiple genesis txn specified.");
+			}
+			if (genesisCount == 0) {
+				throw new IllegalStateException("No genesis txn specified.");
+			}
+			return Strings.isNotBlank(genesisTxnHex) ? Txn.create(Bytes.fromHexString(genesisTxnHex)) : loadGenesisFile(genesisFile);
+		}
 	}
 
 	@Override
 	protected void configure() {
+		if (this.networkId <= 0) {
+			throw new IllegalStateException("Illegal networkId " + networkId);
+		}
+
+		var addressing = Addressing.ofNetworkId(networkId);
+		bind(Addressing.class).toInstance(addressing);
+		bindConstant().annotatedWith(NetworkId.class).to(networkId);
+		var genesis = loadGenesis(networkId);
+		bind(Txn.class).annotatedWith(Genesis.class).toInstance(genesis);
+		// TODO: Refactor
+		if (networkId == Network.MAINNET.getId()) {
+			install(new MainnetForkConfigsModule());
+		} else {
+			install(new StokenetForkConfigsModule());
+		}
+		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
 		bind(RuntimeProperties.class).toInstance(properties);
 
 		// Consensus configuration
@@ -104,17 +229,12 @@ public final class RadixNodeModule extends AbstractModule {
 		final long syncPatience = properties.get("sync.patience", 5000L);
 		bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
 
-		// Radix Engine configuration
-		// These cannot be changed without introducing possible forks with
-		// the network.
-		// TODO: Move these deeper into radix engine.
-		install(RadixEngineConfig.asModule(1, 100, 50));
-
 		// System (e.g. time, random)
 		install(new SystemModule());
 
 		install(new RxEnvironmentModule());
 
+		install(new EventLoggerModule());
 		install(new DispatcherModule());
 
 		// Application
@@ -153,9 +273,6 @@ public final class RadixNodeModule extends AbstractModule {
 		// Checkpoints
 		install(new RadixEngineCheckpointModule());
 
-		var universeModule = new UniverseModule();
-		install(universeModule);
-
 		// Storage
 		install(new DatabasePropertiesModule());
 		install(new PersistenceModule());
@@ -174,23 +291,13 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new PeerLivenessMonitorModule());
 
 		// API
-		configureApi(universeType(universeModule));
+		configureApi();
 	}
 
-	private UniverseType universeType(UniverseModule universeModule) {
-		try {
-			return universeModule.universe(properties, DefaultSerialization.getInstance()).type();
-		} catch (NullPointerException e) {
-			return UniverseType.PRODUCTION;    //Assume production environment with relevant restrictions
-		} catch (IOException e) {
-			throw new IllegalStateException("Unable to load universe", e);
-		}
-	}
-
-	private void configureApi(UniverseType universeType) {
-		var archiveEndpoints = enabledArchiveEndpoints(properties, universeType);
-		var nodeEndpoints = enabledNodeEndpoints(properties, universeType);
-		var statuses = endpointStatuses(properties, universeType);
+	private void configureApi() {
+		var archiveEndpoints = enabledArchiveEndpoints(properties, networkId);
+		var nodeEndpoints = enabledNodeEndpoints(properties, networkId);
+		var statuses = endpointStatuses(properties, networkId);
 
 		bind(new TypeLiteral<List<EndpointStatus>>() {}).annotatedWith(Endpoints.class).toInstance(statuses);
 
@@ -203,21 +310,11 @@ public final class RadixNodeModule extends AbstractModule {
 		}
 
 		if (!nodeEndpoints.isEmpty()) {
-			if (archiveEndpoints.isEmpty()) {
-				bind(RriParser.class).toInstance(Rri::rriParser);
-			}
-
 			install(new NodeApiModule(nodeEndpoints));
 		}
 	}
 
 	private boolean hasActiveEndpoints(List<EndpointConfig> archiveEndpoints, List<EndpointConfig> nodeEndpoints) {
 		return !archiveEndpoints.isEmpty() || !nodeEndpoints.isEmpty();
-	}
-
-	@Provides
-	@Singleton
-	LocalSystem localSystem(@Self BFTNode self, InfoSupplier infoSupplier) {
-		return LocalSystem.create(self, infoSupplier);
 	}
 }

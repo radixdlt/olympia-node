@@ -1,91 +1,124 @@
-/*
- * (C) Copyright 2021 Radix DLT Ltd
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
- * Radix DLT Ltd licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in
- * compliance with the License.  You may obtain a copy of the
- * License at
+ * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at:
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * radixfoundation.org/licenses/LICENSE-v1
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied.  See the License for the specific
- * language governing permissions and limitations under the License.
+ * The Licensor hereby grants permission for the Canonical version of the Work to be
+ * published, distributed and used under or by reference to the Licensor’s trademark
+ * Radix ® and use of any unregistered trade names, logos or get-up.
  *
+ * The Licensor provides the Work (and each Contributor provides its Contributions) on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
+ * including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT,
+ * MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * Whilst the Work is capable of being deployed, used and adopted (instantiated) to create
+ * a distributed ledger it is your responsibility to test and validate the code, together
+ * with all logic and performance of that code under all foreseeable scenarios.
+ *
+ * The Licensor does not make or purport to make and hereby excludes liability for all
+ * and any representation, warranty or undertaking in any form whatsoever, whether express
+ * or implied, to any entity or person, including any representation, warranty or
+ * undertaking, as to the functionality security use, value or other characteristics of
+ * any distributed ledger nor in respect the functioning or value of any tokens which may
+ * be created stored or transferred using the Work. The Licensor does not warrant that the
+ * Work or any use of the Work complies with any law or regulation in any territory where
+ * it may be implemented or used or that it will be appropriate for any specific purpose.
+ *
+ * Neither the licensor nor any current or former employees, officers, directors, partners,
+ * trustees, representatives, agents, advisors, contractors, or volunteers of the Licensor
+ * shall be liable for any direct or indirect, special, incidental, consequential or other
+ * losses of any kind, in tort, contract or otherwise (including but not limited to loss
+ * of revenue, income or profits, or loss of use or data, or loss of reputation, or loss
+ * of any economic or other opportunity of whatsoever nature or howsoever arising), arising
+ * out of or in connection with (without limitation of any use, misuse, of any ledger system
+ * or use made or its functionality or any performance or operation of any code or protocol
+ * caused by bugs or programming or logic errors or otherwise);
+ *
+ * A. any offer, purchase, holding, use, sale, exchange or transmission of any
+ * cryptographic keys, tokens or assets created, exchanged, stored or arising from any
+ * interaction with the Work;
+ *
+ * B. any failure in a transmission or loss of any token or assets keys or other digital
+ * artefacts due to errors in transmission;
+ *
+ * C. bugs, hacks, logic errors or faults in the Work or any communication;
+ *
+ * D. system software or apparatus including but not limited to losses caused by errors
+ * in holding or transmitting tokens by any third-party;
+ *
+ * E. breaches or failure of security including hacker attacks, loss or disclosure of
+ * password, loss of private key, unauthorised use or misuse of such passwords or keys;
+ *
+ * F. any losses including loss of anticipated savings or other benefits resulting from
+ * use of the Work or any changes to the Work (however implemented).
+ *
+ * You are solely responsible for; testing, validating and evaluation of all operation
+ * logic, functionality, security and appropriateness of using the Work for any commercial
+ * or non-commercial purpose and for any reproduction or redistribution by You of the
+ * Work. You assume all risks associated with Your use of the Work and the exercise of
+ * permissions under this License.
  */
 
 package com.radixdlt.statecomputer.checkpoint;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.actions.CreateSystem;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.SystemNextEpoch;
 import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.StakedValidators;
+import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
-import org.radix.StakeDelegation;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.TokenIssuance;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Generates a genesis atom
  */
 public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
+	private static final Logger logger = LogManager.getLogger();
 	private final ImmutableList<TokenIssuance> tokenIssuances;
-	private final ImmutableList<ECKeyPair> validatorKeys;
-	private final ImmutableList<StakeDelegation> stakeDelegations;
-	private final MutableTokenDefinition tokenDefinition;
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final LedgerAccumulator ledgerAccumulator;
+	private final Set<ECPublicKey> validatorKeys;
+	private final Set<StakeTokens> stakeTokens;
+	private final Optional<List<TxAction>> additionalActions;
+	private final GenesisBuilder genesisBuilder;
 	private final long timestamp;
-	private final List<TxAction> additionalActions;
 
 	@Inject
 	public GenesisProvider(
+		GenesisBuilder genesisBuilder,
 		@Genesis long timestamp,
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		LedgerAccumulator ledgerAccumulator,
-		@NativeToken MutableTokenDefinition tokenDefinition,
 		@Genesis ImmutableList<TokenIssuance> tokenIssuances,
-		@Genesis ImmutableList<StakeDelegation> stakeDelegations,
-		@Genesis ImmutableList<ECKeyPair> validatorKeys, // TODO: Remove private keys, replace with public keys
-		@Genesis List<TxAction> additionalActions
+		@Genesis Set<StakeTokens> stakeTokens,
+		@Genesis Set<ECPublicKey> validatorKeys,
+		@Genesis Optional<List<TxAction>> additionalActions
 	) {
+		this.genesisBuilder = genesisBuilder;
 		this.timestamp = timestamp;
-		this.radixEngine = radixEngine;
-		this.ledgerAccumulator = ledgerAccumulator;
-		this.tokenDefinition = tokenDefinition;
 		this.tokenIssuances = tokenIssuances;
 		this.validatorKeys = validatorKeys;
-		this.stakeDelegations = stakeDelegations;
+		this.stakeTokens = stakeTokens;
 		this.additionalActions = additionalActions;
 	}
 
@@ -94,78 +127,46 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 		// Check that issuances are sufficient for delegations
 		final var issuances = tokenIssuances.stream()
 			.collect(ImmutableMap.toImmutableMap(TokenIssuance::receiver, TokenIssuance::amount, UInt256::add));
-		final var requiredDelegations = stakeDelegations.stream()
-			.collect(ImmutableMap.toImmutableMap(StakeDelegation::staker, StakeDelegation::amount, UInt256::add));
-		requiredDelegations.forEach((pk, amount) -> {
-			final var issuedAmount = issuances.getOrDefault(pk, UInt256.ZERO);
-			if (amount.compareTo(issuedAmount) > 0) {
-				throw new IllegalStateException(
-					String.format("%s wants to stake %s, but was only issued %s", pk, amount, issuedAmount)
-				);
-			}
-		});
 
-		var branch = radixEngine.transientBranch();
-		var genesisTxnConstruction = TxnConstructionRequest.create();
+		var actions = new ArrayList<TxAction>();
+		actions.add(new CreateMutableToken(
+			null,
+			"xrd",
+			"Rads",
+			"Radix Tokens",
+			"",
+			""
+		));
 		var rri = REAddr.ofNativeToken();
 		try {
-			// Initialize system address
-			genesisTxnConstruction.action(new CreateSystem());
-
-			// Network token
-			genesisTxnConstruction.createMutableToken(tokenDefinition);
 			for (var e : issuances.entrySet()) {
 				var addr = REAddr.ofPubKeyAccount(e.getKey());
-				genesisTxnConstruction.mint(rri, addr, e.getValue());
+				actions.add(new MintToken(rri, addr, e.getValue()));
 			}
 
-			// Initial validator registration
-			for (var validatorKey : validatorKeys) {
-				genesisTxnConstruction.registerAsValidator(validatorKey.getPublicKey());
-				genesisTxnConstruction.action(new UpdateAllowDelegationFlag(validatorKey.getPublicKey(), true));
-			}
+			validatorKeys.stream()
+				.sorted(KeyComparator.instance())
+				.forEach(k -> {
+					actions.add(new RegisterValidator(k));
+					actions.add(new UpdateValidatorFee(k, 0));
+					actions.add(new UpdateAllowDelegationFlag(k, true));
+				});
 
-			// Initial stakes
-			for (var stakeDelegation : stakeDelegations) {
-				var delegateAddr = REAddr.ofPubKeyAccount(stakeDelegation.staker());
-				var stakeTokens = new StakeTokens(delegateAddr, stakeDelegation.delegate(), stakeDelegation.amount());
-				genesisTxnConstruction.action(stakeTokens);
-			}
+			stakeTokens.stream()
+				.sorted(
+					Comparator.<StakeTokens, byte[]>comparing(t -> t.from().getBytes(), UnsignedBytes.lexicographicalComparator())
+						.thenComparing(t -> t.from().getBytes(), UnsignedBytes.lexicographicalComparator())
+						.thenComparing(StakeTokens::amount)
+				)
+				.forEach(actions::add);
 
-			if (!additionalActions.isEmpty()) {
-				additionalActions.forEach(genesisTxnConstruction::action);
-			}
-			var temp = branch.construct(genesisTxnConstruction).buildWithoutSignature();
-			branch.execute(List.of(temp), PermissionLevel.SYSTEM);
+			additionalActions.ifPresent(actions::addAll);
+			var genesis = genesisBuilder.build("hello", timestamp, actions);
 
-			var stakedValidators = branch.getComputedState(StakedValidators.class);
-			var genesisValidatorSet = new AtomicReference<BFTValidatorSet>();
-			genesisTxnConstruction.action(new SystemNextEpoch(updates -> {
-				var cur = stakedValidators;
-				for (var u : updates) {
-					cur = cur.setStake(u.getValidatorKey(), u.getAmount());
-				}
-				// FIXME: cur.toValidatorSet() may be null
-				genesisValidatorSet.set(cur.toValidatorSet());
-				return genesisValidatorSet.get().nodes().stream()
-					.map(BFTNode::getKey)
-					.sorted(Comparator.comparing(ECPublicKey::getBytes, Arrays::compare))
-					.collect(Collectors.toList());
-			}, timestamp));
-			radixEngine.deleteBranches();
-			var txn = radixEngine.construct(genesisTxnConstruction).buildWithoutSignature();
+			logger.info("gen_create{tx_id={}}", genesis.getId());
 
-			var accumulatorState = new AccumulatorState(0, txn.getId().asHashCode());
-			var genesisProof = LedgerProof.genesis(
-				accumulatorState,
-				genesisValidatorSet.get(),
-				timestamp
-			);
-			if (!genesisProof.isEndOfEpoch()) {
-				throw new IllegalStateException("Genesis must be end of epoch");
-			}
-
-			return VerifiedTxnsAndProof.create(List.of(txn), genesisProof);
+			var proof = genesisBuilder.generateGenesisProof(genesis);
+			return VerifiedTxnsAndProof.create(List.of(genesis), proof);
 		} catch (TxBuilderException | RadixEngineException e) {
 			throw new IllegalStateException(e);
 		}

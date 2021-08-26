@@ -16,17 +16,19 @@ pub trait Substate: std::fmt::Debug {
 }
 
 #[derive(Debug)]
-pub struct REAddress {
+pub struct TokenResource {
     pub reserved: u8,
-    pub address: Address,
+    pub resource: Address,
+    pub granularity: U256,
+    pub is_mutable: Boolean,
+    pub minter: Option<PublicKey>,
 }
 
 #[derive(Debug)]
-pub struct TokenDefinition {
-    pub token_type: u8,
-    pub supply: Option<U256>,
-    pub minter: Option<PublicKey>,
+pub struct TokenResourceMetadata {
+    pub reserved: u8,
     pub resource: Address,
+    pub symbol: UTF8,
     pub name: UTF8,
     pub description: UTF8,
     pub url: UTF8,
@@ -36,16 +38,16 @@ pub struct TokenDefinition {
 #[derive(Debug)]
 pub struct Tokens {
     pub reserved: u8,
-    pub resource: Address,
     pub owner: Address,
+    pub resource: Address,
     pub amount: U256,
 }
 
 #[derive(Debug)]
 pub struct PreparedStake {
     pub reserved: u8,
-    pub owner: Address,
     pub validator: PublicKey,
+    pub owner: Address,
     pub amount: U256,
 }
 
@@ -75,20 +77,6 @@ pub struct ExitingStake {
 }
 
 #[derive(Debug)]
-pub struct ValidatorRegisteredFlagCopy {
-    pub reserved: u8,
-    pub validator: PublicKey,
-    pub is_registered: Boolean,
-}
-
-#[derive(Debug)]
-pub struct PreparedRegisteredFlagUpdate {
-    pub reserved: u8,
-    pub validator: PublicKey,
-    pub is_delegation_allowed: Boolean,
-}
-
-#[derive(Debug)]
 pub struct ValidatorMetadata {
     pub reserved: u8,
     pub validator: PublicKey,
@@ -104,8 +92,25 @@ pub struct ValidatorAllowDelegationFlag {
 }
 
 #[derive(Debug)]
+pub struct ValidatorRegisteredFlagCopy {
+    pub reserved: u8,
+    pub update_epoch: Option<u64>,
+    pub validator: PublicKey,
+    pub is_registered: Boolean,
+}
+
+#[derive(Debug)]
+pub struct ValidatorRakeCopy {
+    pub reserved: u8,
+    pub update_epoch: Option<u64>,
+    pub validator: PublicKey,
+    pub rake: u32,
+}
+
+#[derive(Debug)]
 pub struct ValidatorOwnerCopy {
     pub reserved: u8,
+    pub update_epoch: Option<u64>,
     pub validator: PublicKey,
     pub owner: Address,
 }
@@ -118,38 +123,41 @@ fn read_reserved_byte(buffer: &mut ByteBuffer) -> u8 {
     reserved
 }
 
-impl Substate for REAddress {
+impl Substate for TokenResource {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
         let reserved = read_reserved_byte(buffer);
+        let resource = Address::from_buffer(buffer);
+        let granularity = U256::from_buffer(buffer);
+        let is_mutable = Boolean::from_buffer(buffer);
+        let minter = match Boolean::from_buffer(buffer).raw {
+            0x01 => Some(PublicKey::from_buffer(buffer)),
+            _ => None,
+        };
+
         Self {
             reserved,
-            address: Address::from_buffer(buffer),
+            resource,
+            granularity,
+            is_mutable,
+            minter,
         }
     }
 }
 
-impl Substate for TokenDefinition {
+impl Substate for TokenResourceMetadata {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
-        let token_type = buffer.read_u8();
-        let supply = match token_type {
-            0x02 => Some(U256::from_buffer(buffer)),
-            _ => None,
-        };
-        let minter = match token_type {
-            0x01 => Some(PublicKey::from_buffer(buffer)),
-            _ => None,
-        };
+        let reserved = read_reserved_byte(buffer);
         let resource = Address::from_buffer(buffer);
+        let symbol = UTF8::from_buffer(buffer);
         let name = UTF8::from_buffer(buffer);
         let description = UTF8::from_buffer(buffer);
         let url = UTF8::from_buffer(buffer);
         let icon_url = UTF8::from_buffer(buffer);
 
         Self {
-            token_type,
-            supply,
-            minter,
+            reserved,
             resource,
+            symbol,
             name,
             description,
             url,
@@ -161,8 +169,8 @@ impl Substate for TokenDefinition {
 impl Substate for Tokens {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
         let reserved = read_reserved_byte(buffer);
-        let resource = Address::from_buffer(buffer);
         let owner = Address::from_buffer(buffer);
+        let resource = Address::from_buffer(buffer);
         let amount = U256::from_buffer(buffer);
 
         Self {
@@ -177,8 +185,8 @@ impl Substate for Tokens {
 impl Substate for PreparedStake {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
         let reserved = read_reserved_byte(buffer);
-        let owner = Address::from_buffer(buffer);
         let validator = PublicKey::from_buffer(buffer);
+        let owner = Address::from_buffer(buffer);
         let amount = U256::from_buffer(buffer);
 
         Self {
@@ -240,20 +248,6 @@ impl Substate for ExitingStake {
     }
 }
 
-impl Substate for ValidatorRegisteredFlagCopy {
-    fn from_buffer(buffer: &mut ByteBuffer) -> Self {
-        let reserved = read_reserved_byte(buffer);
-        let validator = PublicKey::from_buffer(buffer);
-        let is_registered = Boolean::from_buffer(buffer);
-
-        Self {
-            reserved,
-            validator,
-            is_registered,
-        }
-    }
-}
-
 impl Substate for ValidatorMetadata {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
         let reserved = read_reserved_byte(buffer);
@@ -284,16 +278,40 @@ impl Substate for ValidatorAllowDelegationFlag {
     }
 }
 
-impl Substate for PreparedRegisteredFlagUpdate {
+impl Substate for ValidatorRegisteredFlagCopy {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
         let reserved = read_reserved_byte(buffer);
+        let update_epoch = match Boolean::from_buffer(buffer).raw {
+            0x01 => Some(buffer.read_u64()),
+            _ => None,
+        };
         let validator = PublicKey::from_buffer(buffer);
-        let is_delegation_allowed = Boolean::from_buffer(buffer);
+        let is_registered = Boolean::from_buffer(buffer);
 
         Self {
             reserved,
+            update_epoch,
             validator,
-            is_delegation_allowed,
+            is_registered,
+        }
+    }
+}
+
+impl Substate for ValidatorRakeCopy {
+    fn from_buffer(buffer: &mut ByteBuffer) -> Self {
+        let reserved = read_reserved_byte(buffer);
+        let update_epoch = match Boolean::from_buffer(buffer).raw {
+            0x01 => Some(buffer.read_u64()),
+            _ => None,
+        };
+        let validator = PublicKey::from_buffer(buffer);
+        let rake = buffer.read_u32();
+
+        Self {
+            reserved,
+            update_epoch,
+            validator,
+            rake,
         }
     }
 }
@@ -301,11 +319,16 @@ impl Substate for PreparedRegisteredFlagUpdate {
 impl Substate for ValidatorOwnerCopy {
     fn from_buffer(buffer: &mut ByteBuffer) -> Self {
         let reserved = read_reserved_byte(buffer);
+        let update_epoch = match Boolean::from_buffer(buffer).raw {
+            0x01 => Some(buffer.read_u64()),
+            _ => None,
+        };
         let validator = PublicKey::from_buffer(buffer);
         let owner = Address::from_buffer(buffer);
 
         Self {
             reserved,
+            update_epoch,
             validator,
             owner,
         }
