@@ -50,6 +50,11 @@ def get_transaction_history_method(client, account):
     archive_endpoint_request(client, payload, f"transaction_history")
 
 
+def get_archive_network_id_method(client, account):
+    payload = RequestData.get_archive_network_id()
+    archive_endpoint_request(client, payload, f"network_id")
+
+
 def stake_tokens_method(client, from_account, to_validator):
     build_txn_payload = RequestData.build_transaction()
     action_stake_transaction = {

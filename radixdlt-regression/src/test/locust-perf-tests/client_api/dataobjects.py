@@ -11,6 +11,10 @@ class RequestData():
         }
 
     @staticmethod
+    def get_archive_network_id():
+        return { "jsonrpc": "2.0", "method": "network.get_id", "params": [], "id": 1}
+
+    @staticmethod
     def build_transaction():
         return {
             "method": "construction.build_transaction",
