@@ -70,9 +70,11 @@ import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.engine.RadixEngine;
@@ -83,6 +85,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -91,6 +94,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -111,11 +115,12 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 	private static final Map<ResourceType, String> DB_NAMES = Map.of(
 		ResourceType.TOKEN_BALANCES, "radix.account_token_balances",
 		ResourceType.PREPARED_STAKES, "radix.account_prepared_stakes",
-		ResourceType.STAKED, "radix.account_staked",
+		ResourceType.STAKED_OWNERSHIP, "radix.account_staked",
 		ResourceType.PREPARED_UNSTAKES, "radix.acconut_prepared_unstakes",
 		ResourceType.EXITTING_UNSTAKES, "radix.acconut_exitting_unstakes"
 	);
 	private final Map<ResourceType, Database> databases = new HashMap<>();
+	private Database validatorStakes;
 
 	@Inject
 	BerkeleyAccountInfoStore(Addressing addressing, Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
@@ -135,13 +140,26 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			}
 		}
 
-		if (databases.get(ResourceType.STAKED).get(null, key, value, DEFAULT) == SUCCESS) {
+		if (databases.get(ResourceType.STAKED_OWNERSHIP).get(null, key, value, DEFAULT) == SUCCESS) {
 			var stakedJson = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
 			for (int i = 0; i < stakedJson.length(); i++) {
 				var json = stakedJson.getJSONObject(i);
 				var ownership = new BigInteger(json.getString("amount"), 10);
-				var totalStake = new BigInteger(json.getString("validatorTotalStake"), 10);
-				var totalOwnership = new BigInteger(json.getString("validatorTotalOwnership"), 10);
+				DatabaseEntry databaseKey;
+				try {
+					var validatorKey = addressing.forValidators().parse(json.getString("validator"));
+					databaseKey = new DatabaseEntry(validatorKey.getCompressedBytes());
+				} catch (DeserializeException e) {
+					throw new IllegalStateException();
+				}
+				var validatorStake = new DatabaseEntry();
+				var status = validatorStakes.get(null, databaseKey, validatorStake, null);
+				if (status != SUCCESS) {
+					throw new IllegalStateException();
+				}
+				var buf = ByteBuffer.wrap(validatorStake.getData());
+				var totalStake = new BigInteger(1, REFieldSerialization.deserializeUInt256(buf).toByteArray());
+				var totalOwnership = new BigInteger(1, REFieldSerialization.deserializeUInt256(buf).toByteArray());
 				var estimatedStake = ownership.multiply(totalStake).divide(totalOwnership);
 				stakes.compute(json.getString("validator"), (v, obj) -> {
 					if (obj == null) {
@@ -226,11 +244,20 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			);
 			databases.put(type, db);
 		});
+		validatorStakes = env.openDatabase(null, "radix.validator_stakes", new DatabaseConfig()
+			.setAllowCreate(true)
+			.setTransactional(true)
+			.setKeyPrefixing(true)
+			.setBtreeComparator(lexicographicalComparator())
+		);
 	}
 
 	@Override
 	public void close() {
 		databases.forEach((type, db) -> db.close());
+		if (validatorStakes != null) {
+			validatorStakes.close();
+		}
 	}
 
 	private Particle deserialize(byte[] data) {
@@ -306,7 +333,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 				return new JSONObject().put("validator", validator);
 			}
 		},
-		STAKED {
+		STAKED_OWNERSHIP {
 			@Override
 			boolean bucketCheck(Bucket bucket) {
 				return bucket.resourceAddr() == null
@@ -493,5 +520,20 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		for (var t : ResourceType.values()) {
 			storeAccounting(dbTxn, accounting, t, mapper);
 		}
+		txn.stateUpdates()
+			.filter(REStateUpdate::isBootUp)
+			.filter(u -> u.getParsed() instanceof ValidatorStakeData)
+			.map(u -> (ValidatorStakeData) u.getParsed())
+			.forEach(s -> {
+				var key = new DatabaseEntry(s.getValidatorKey().getCompressedBytes());
+				var buf = ByteBuffer.allocate(UInt256.BYTES * 2);
+				buf.put(s.getTotalStake().toByteArray());
+				buf.put(s.getTotalOwnership().toByteArray());
+				var value = new DatabaseEntry(buf.array());
+				var status = validatorStakes.put(dbTxn, key, value);
+				if (status != SUCCESS) {
+					throw new IllegalStateException();
+				}
+			});
 	}
 }
