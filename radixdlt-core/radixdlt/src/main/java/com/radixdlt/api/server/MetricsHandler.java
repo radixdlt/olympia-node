@@ -64,121 +64,59 @@
 
 package com.radixdlt.api.server;
 
+import com.radixdlt.api.service.MovingAverage;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.counters.SystemCounters;
-import io.undertow.server.handlers.RequestLimitingHandler;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.Controller;
-import com.radixdlt.properties.RuntimeProperties;
-import com.stijndewitt.undertow.cors.AllowAll;
-import com.stijndewitt.undertow.cors.Filter;
-
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.logging.Level;
-
-import io.undertow.Handlers;
-import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
-import io.undertow.util.StatusCodes;
 
-import static java.util.logging.Logger.getLogger;
+import java.util.Objects;
 
-public class AbstractHttpServer implements ModuleRunner {
-	private static final Logger log = LogManager.getLogger();
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
-	private static final int MAXIMUM_CONCURRENT_REQUESTS = Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
-	private static final int QUEUE_SIZE = 2000;
+public final class MetricsHandler implements HttpHandler {
 
-	private final Map<String, Controller> controllers;
-	private final String name;
-	private final int port;
-	private final String bindAddress;
 	private final SystemCounters counters;
+	private final HttpHandler next;
 
-	private Undertow server;
+	private final CounterType totalResponsesCounter;
+	private final CounterType okResponsesCounter;
+	private final CounterType nonOkResponsesCounter;
+	private final CounterType avgProcessingTimeCounter;
+	private final CounterType totalProcessingTimeCounter;
 
-	public AbstractHttpServer(
-		Map<String, Controller> controllers,
-		RuntimeProperties properties,
-		String name,
-		int defaultPort,
-		SystemCounters counters
-	) {
-		this.controllers = controllers;
-		this.name = name.toLowerCase(Locale.US);
-		this.port = properties.get("api." + name + ".port", defaultPort);
-		this.bindAddress = properties.get("api." + name + ".bind.address", DEFAULT_BIND_ADDRESS);
+	private final MovingAverage timeAvg = MovingAverage.create(10L);
+
+	public MetricsHandler(SystemCounters counters, String serverName, HttpHandler next) {
 		this.counters = Objects.requireNonNull(counters);
-	}
+		this.next = Objects.requireNonNull(next);
 
-	private static void fallbackHandler(HttpServerExchange exchange) {
-		exchange.setStatusCode(StatusCodes.NOT_FOUND);
-		exchange.getResponseSender().send(
-			"No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
-		);
-	}
-
-	private static void invalidMethodHandler(HttpServerExchange exchange) {
-		exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
-		exchange.getResponseSender().send(
-			"Invalid method, path exists for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
-		);
+		final var nameUpper = serverName.toUpperCase();
+		this.totalResponsesCounter = CounterType.valueOf(String.format("SERVER_%s_TOTAL_RESPONSES", nameUpper));
+		this.okResponsesCounter = CounterType.valueOf(String.format("SERVER_%s_OK_RESPONSES", nameUpper));
+		this.nonOkResponsesCounter = CounterType.valueOf(String.format("SERVER_%s_NON_OK_RESPONSES", nameUpper));
+		this.avgProcessingTimeCounter = CounterType.valueOf(String.format("SERVER_%s_AVG_PROCESSING_TIME", nameUpper));
+		this.totalProcessingTimeCounter = CounterType.valueOf(String.format("SERVER_%s_TOTAL_PROCESSING_TIME", nameUpper));
 	}
 
 	@Override
-	public void start() {
-		final var handler = new MetricsHandler(
-			counters,
-			name,
-			new RequestLimitingHandler(
-				MAXIMUM_CONCURRENT_REQUESTS,
-				QUEUE_SIZE,
-				configureRoutes()
-			)
-		);
+	public void handleRequest(HttpServerExchange exchange) throws Exception {
+		if (!exchange.isComplete()) {
+			final long start = System.currentTimeMillis();
+			exchange.addExchangeCompleteListener((completedExchange, nextListener) -> {
+				long time = System.currentTimeMillis() - start;
+				timeAvg.update(time);
+				counters.set(avgProcessingTimeCounter, timeAvg.asLong());
+				counters.add(totalProcessingTimeCounter, time);
 
-		server = Undertow.builder()
-			.addHttpListener(port, bindAddress)
-			.setHandler(handler)
-			.build();
-		server.start();
+				counters.increment(totalResponsesCounter);
+				if (completedExchange.getStatusCode() == 200) {
+					counters.increment(okResponsesCounter);
+				} else {
+					counters.increment(nonOkResponsesCounter);
+				}
 
-		log.info("Starting {} HTTP Server at {}:{}", name.toUpperCase(Locale.US), bindAddress, port);
-	}
-
-	@Override
-	public void stop() {
-		server.stop();
-	}
-
-	private HttpHandler configureRoutes() {
-		var handler = Handlers.routing(true); // add path params to query params with this flag
-
-		controllers.forEach((root, controller) -> {
-			log.info("Configuring routes under {}", root);
-			controller.configureRoutes(root, handler);
-		});
-
-		handler.setFallbackHandler(AbstractHttpServer::fallbackHandler);
-		handler.setInvalidMethodHandler(AbstractHttpServer::invalidMethodHandler);
-
-		return wrapWithCorsFilter(handler);
-	}
-
-	private Filter wrapWithCorsFilter(final RoutingHandler handler) {
-		var filter = new Filter(handler);
-
-		// Disable INFO logging for CORS filter, as it's a bit distracting
-		getLogger(filter.getClass().getName()).setLevel(Level.WARNING);
-		filter.setPolicyClass(AllowAll.class.getName());
-		filter.setUrlPattern("^.*$");
-
-		return filter;
+				nextListener.proceed();
+			});
+		}
+		next.handleRequest(exchange);
 	}
 }

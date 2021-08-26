@@ -67,6 +67,7 @@ package com.radixdlt.api.server;
 import com.google.inject.Inject;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.qualifier.ArchiveServer;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.properties.RuntimeProperties;
 
 import java.util.Map;
@@ -75,7 +76,7 @@ public final class ArchiveHttpServer extends AbstractHttpServer {
 	private static final int DEFAULT_PORT = 8080;
 
 	@Inject
-	public ArchiveHttpServer(@ArchiveServer Map<String, Controller> controllers, RuntimeProperties properties) {
-		super(controllers, properties, "archive", DEFAULT_PORT);
+	public ArchiveHttpServer(@ArchiveServer Map<String, Controller> controllers, RuntimeProperties properties, SystemCounters counters) {
+		super(controllers, properties, "archive", DEFAULT_PORT, counters);
 	}
 }

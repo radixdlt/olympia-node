@@ -238,7 +238,18 @@ public interface SystemCounters {
 
 		SIGNATURES_SIGNED("signatures.signed"),
 		SIGNATURES_VERIFIED("signatures.verified"),
-		TIME_DURATION("time.duration");
+		TIME_DURATION("time.duration"),
+
+		SERVER_ARCHIVE_TOTAL_RESPONSES("server.archive.total_responses"),
+		SERVER_ARCHIVE_OK_RESPONSES("server.archive.ok_responses"),
+		SERVER_ARCHIVE_NON_OK_RESPONSES("server.archive.non_ok_responses"),
+		SERVER_ARCHIVE_AVG_PROCESSING_TIME("server.archive.avg_processing_time"),
+		SERVER_ARCHIVE_TOTAL_PROCESSING_TIME("server.archive.total_processing_time"),
+		SERVER_NODE_TOTAL_RESPONSES("server.node.total_responses"),
+		SERVER_NODE_OK_RESPONSES("server.node.ok_responses"),
+		SERVER_NODE_NON_OK_RESPONSES("server.node.non_ok_responses"),
+		SERVER_NODE_AVG_PROCESSING_TIME("server.node.avg_processing_time"),
+		SERVER_NODE_TOTAL_PROCESSING_TIME("server.node.total_processing_time");
 
 		private final String jsonPath;
 

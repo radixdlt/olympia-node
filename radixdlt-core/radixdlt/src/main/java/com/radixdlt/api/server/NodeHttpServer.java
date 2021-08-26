@@ -67,6 +67,7 @@ package com.radixdlt.api.server;
 import com.google.inject.Inject;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.qualifier.NodeServer;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.properties.RuntimeProperties;
 
 import java.util.Map;
@@ -75,7 +76,7 @@ public final class NodeHttpServer extends AbstractHttpServer {
 	private static final int DEFAULT_PORT = 3333;
 
 	@Inject
-	public NodeHttpServer(@NodeServer Map<String, Controller> controllers, RuntimeProperties properties) {
-		super(controllers, properties, "node", DEFAULT_PORT);
+	public NodeHttpServer(@NodeServer Map<String, Controller> controllers, RuntimeProperties properties, SystemCounters counters) {
+		super(controllers, properties, "node", DEFAULT_PORT, counters);
 	}
 }
