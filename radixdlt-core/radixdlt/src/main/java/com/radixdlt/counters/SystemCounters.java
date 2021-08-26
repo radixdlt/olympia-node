@@ -235,6 +235,10 @@ public interface SystemCounters {
 		NETWORKING_TCP_CLOSED("networking.tcp.closed"),
 		NETWORKING_SENT_BYTES("networking.sent_bytes"),
 		NETWORKING_RECEIVED_BYTES("networking.received_bytes"),
+		NETWORKING_P2P_ACTIVE_INBOUND_CHANNELS("networking.p2p.active_inbound_channels"),
+		NETWORKING_P2P_ACTIVE_OUTBOUND_CHANNELS("networking.p2p.active_outbound_channels"),
+		NETWORKING_P2P_ACTIVE_CHANNELS("networking.p2p.active_channels"),
+		NETWORKING_P2P_CHANNELS_INITIALIZED("networking.p2p.channels_initialized"),
 
 		SIGNATURES_SIGNED("signatures.signed"),
 		SIGNATURES_VERIFIED("signatures.verified"),
@@ -250,6 +254,7 @@ public interface SystemCounters {
 		SERVER_NODE_NON_OK_RESPONSES("server.node.non_ok_responses"),
 		SERVER_NODE_AVG_PROCESSING_TIME("server.node.avg_processing_time"),
 		SERVER_NODE_TOTAL_PROCESSING_TIME("server.node.total_processing_time");
+
 
 		private final String jsonPath;
 
