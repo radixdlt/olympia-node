@@ -1,32 +1,44 @@
 from locust import HttpUser, SequentialTaskSet, task, between
 
 from client_api import archive_api
-from client_api.archive_api import stake_tokens_method, get_existing_entity, transfer_tokens_method, \
-    get_transaction_history_method
-from client_api.dataobjects import RequestData
-from radix_transaction.signatory import Signatory
+from client_api.archive_api import get_archive_network_id_method, get_native_token_method, \
+    get_relasenet_transaction_history_method, get_lookup_validator_method
 
 
 class ArchiveBehavior(SequentialTaskSet):
+    @task()
+    def get_native_token(self):
+        get_native_token_method(self.client)
+
+    @task()
+    def get_archive_network_id(self):
+        get_archive_network_id_method(self.client)
+
+    # @task()
+    # def get_account_balance(self):
+    #     get_account_balance_method(self.client)
 
     @task()
     def get_transaction_history(self):
-        account = archive_api.get_archive_network_id_method()
-        get_transaction_history_method(self.client, account)
+        get_relasenet_transaction_history_method(self.client)
 
     @task()
-    def stake_tokens(self):
-        from_account = get_existing_entity("accounts")
-        to_validator = get_existing_entity("validators")
-        stake_tokens_method(self.client, from_account, to_validator)
+    def get_lookup_validator(self):
+        get_lookup_validator_method(self.client)
 
-    @task()
-    def transfer_token(self):
-        from_account = get_existing_entity("accounts")
-
-        while True:
-            to_account = get_existing_entity("accounts")
-            if from_account["private_key"] != to_account["private_key"]:
-                break
-
-        transfer_tokens_method(self.client, from_account, to_account)
+#     @task()
+#     def stake_tokens(self):
+#         from_account = get_existing_entity("accounts")
+#         to_validator = get_existing_entity("validators")
+#         stake_tokens_method(self.client, from_account, to_validator)
+#
+#     @task()
+#     def transfer_token(self):
+#         from_account = get_existing_entity("accounts")
+#
+#         while True:
+#             to_account = get_existing_entity("accounts")
+#             if from_account["private_key"] != to_account["private_key"]:
+#                 break
+#
+#         transfer_tokens_method(self.client, from_account, to_account)

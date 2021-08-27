@@ -44,15 +44,37 @@ def construction_endpoint_request(client, payload, name):
     return post_rpc_request(client, name, payload, construction_endpoint)
 
 
-def get_transaction_history_method(client, account):
-    payload = RequestData.get_transaction_history()
-    payload["params"]["address"] = str(account["wallet_address"])
-    archive_endpoint_request(client, payload, f"transaction_history")
+# def get_transaction_history_method(client, account):
+#     payload = RequestData.get_transaction_history()
+#     payload["params"]["address"] = str(account["wallet_address"])
+#     payload["params"]["address"] = str(account["wallet_address"])
+#     archive_endpoint_request(client, payload, f"transaction_history")
+#
 
-
-def get_archive_network_id_method(client, account):
+def get_archive_network_id_method(client):
     payload = RequestData.get_archive_network_id()
     archive_endpoint_request(client, payload, f"network_id")
+
+def get_relasenet_transaction_history_method(client):
+    payload = RequestData.get_transaction_history_r()
+    archive_endpoint_request(client, payload, f"tx_history")
+
+def get_lookup_validator_method(client):
+    payload = RequestData.get_lookup_validator()
+    archive_endpoint_request(client, payload, f"lookup_validator")
+
+
+def get_native_token_method(client):
+    payload = RequestData.get_native_token()
+    archive_endpoint_request(client, payload, f"native_token")
+
+def get_xrd_token_info_method(client):
+    payload = RequestData.get_xrd_token_info()
+    archive_endpoint_request(client, payload, f"xrd_token_info")
+
+def get_xrd_token_info_method(client):
+    payload = RequestData.get_xrd_token_info()
+    archive_endpoint_request(client, payload, f"xrd_token_info")
 
 
 def stake_tokens_method(client, from_account, to_validator):
