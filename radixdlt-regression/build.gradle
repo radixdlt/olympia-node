@@ -73,14 +73,6 @@ configurations {
     acceptanceTestImplementation.extendsFrom testImplementation
 }
 
-test {
-    enabled false
-    jacoco {
-        // Don't attempt to include these in code coverage.
-        enabled false
-    }
-}
-
 sourceSets {
     acceptanceTest {
         java {
@@ -96,6 +88,14 @@ sourceSets {
 task acceptanceTest(type: Test) {
     testClassesDirs = sourceSets.acceptanceTest.output.classesDirs
     classpath = sourceSets.acceptanceTest.runtimeClasspath
+}
+
+test {
+    enabled false
+    jacoco {
+        // Don't attempt to include these in code coverage.
+        enabled false
+    }
 }
 
 acceptanceTest {
@@ -124,11 +124,7 @@ checkstyleAcceptanceTest {
 dependencies {
     api project(':radixdlt-java')
 
-    implementation 'io.reactivex.rxjava2:rxjava'
     implementation 'com.google.guava:guava'
-    implementation 'org.awaitility:awaitility:4.0.3'
-    implementation 'com.squareup.okhttp3:okhttp'
-    implementation 'com.squareup.okhttp3:logging-interceptor'
     implementation 'org.slf4j:slf4j-simple:2.0.0-alpha2'
     implementation 'com.github.docker-java:docker-java:3.2.8'
     implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.8'
@@ -138,4 +134,8 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'io.cucumber:cucumber-java:6.10.3'
     testImplementation 'io.cucumber:cucumber-junit:6.10.3'
+    testImplementation 'org.awaitility:awaitility:4.0.3'
+    testImplementation 'com.github.docker-java:docker-java:3.2.8'
+    testImplementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.8'
+    testImplementation 'com.konghq:unirest-java:3.11.09:standalone'
 }
