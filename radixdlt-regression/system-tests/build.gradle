@@ -64,6 +64,7 @@
 
 apply plugin: 'java'
 apply plugin: 'idea'
+apply plugin: 'java-library'
 
 dependencies {
     implementation project(':radixdlt-regression')
