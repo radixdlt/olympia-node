@@ -49,7 +49,7 @@ public class RadixNetworkNodeLocator {
         var secondaryPort = configuration.getSecondaryPort();
         var dockerContainerName = configuration.getDockerConfiguration().getContainerName();
         return IntStream.range(0, expectedNoOfNodes).mapToObj(counter -> {
-            String containerName = String.format(dockerContainerName, counter);
+            var containerName = String.format(dockerContainerName, counter);
             return figureOutNode(configuration.getJsonRpcRootUrl(), primaryPort + counter, secondaryPort + counter,
                 containerName, httpClient, dockerClient);
         }).collect(Collectors.toList());

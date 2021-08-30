@@ -1,10 +1,11 @@
 package com.radixdlt.test.network;
 
+import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.test.account.Account;
 import com.radixdlt.test.network.client.RadixHttpClient;
 import com.radixdlt.test.network.client.docker.DockerClient;
 import com.radixdlt.test.network.client.docker.LocalDockerClient;
-import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.test.network.client.docker.LocalDockerNetworkCreator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,12 +39,16 @@ public class RadixNetwork {
         var configuration = RadixNetworkConfiguration.fromEnv();
         prettyPrintConfiguration(configuration);
 
-        int networkId = configuration.pingJsonRpcApi();
+        var dockerClient = createDockerClient(configuration);
+        if (configuration.getDockerConfiguration().shouldInitializeNetwork()) {
+            LocalDockerNetworkCreator.createNewLocalNetwork(configuration, dockerClient);
+        }
+
+        var networkId = configuration.pingJsonRpcApi();
         logger.info("Connected to JSON RPC API at {}", configuration.getJsonRpcRootUrl());
 
-        RadixHttpClient httpClient = RadixHttpClient.fromRadixNetworkConfiguration(configuration);
-        DockerClient dockerClient = createDockerClient(configuration);
-        List<RadixNode> radixNodes = RadixNetworkNodeLocator.locateNodes(configuration, httpClient, dockerClient);
+        var httpClient = RadixHttpClient.fromRadixNetworkConfiguration(configuration);
+        var radixNodes = RadixNetworkNodeLocator.locateNodes(configuration, httpClient, dockerClient);
         if (radixNodes == null || radixNodes.size() == 0) {
             throw new RuntimeException("No nodes found, cannot run tests");
         }
@@ -85,14 +90,14 @@ public class RadixNetwork {
      * @return the txId of the faucet's transaction
      */
     public String faucet(AccountAddress to) {
-        List<RadixNode> faucets = nodes.stream().filter(node -> node.getAvailableServices()
+        var faucets = nodes.stream().filter(node -> node.getAvailableServices()
             .contains(RadixNode.ServiceType.FAUCET)).collect(Collectors.toList());
         if (faucets.isEmpty()) {
             throw new NoFaucetException("No faucet found in this network");
         }
-        RadixNode nodeWithFaucet = faucets.get(0);
-        String address = to.toString(networkId);
-        String txID = httpClient.callFaucet(nodeWithFaucet.getRootUrl(), nodeWithFaucet.getSecondaryPort(), address);
+        var nodeWithFaucet = faucets.get(0);
+        var address = to.toString(networkId);
+        var txID = httpClient.callFaucet(nodeWithFaucet.getRootUrl(), nodeWithFaucet.getSecondaryPort(), address);
         logger.debug("Successfully called faucet to send tokens to {}. TxID: {}", address, txID);
         return txID;
     }

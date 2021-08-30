@@ -1,10 +1,12 @@
 package com.radixdlt.test.system;
 
+import com.radixdlt.test.system.annotation.RadixSystemTest;
+
 public class SmokeTesting extends SystemTest {
 
-    @com.radixdlt.test.system.annotation.SystemTest
+    @RadixSystemTest
     public void testCaseOne() {
-        System.out.println("\n\n\ndude\n\n\n");
+        System.out.println("INSIDE TEST CASE 1");
     }
 
 }

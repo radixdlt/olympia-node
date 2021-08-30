@@ -11,7 +11,6 @@ import java.net.URL;
  */
 public final class RadixNetworkConfiguration {
 
-
     enum Type {
         LOCALNET,
         TESTNET;
@@ -46,6 +45,9 @@ public final class RadixNetworkConfiguration {
             var basicAuth = System.getenv("RADIXDLT_BASIC_AUTH");
             var type = determineType(jsonRpcRootUrlString);
             var dockerConfiguration = DockerConfiguration.fromEnv();
+
+            // TODO check if docker network should be initialized but type is NOT local
+
             return new RadixNetworkConfiguration(jsonRpcRootUrlString, primaryPort, secondaryPort, basicAuth, type,
                 dockerConfiguration);
         } catch (MalformedURLException e) {

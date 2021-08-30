@@ -1,15 +1,25 @@
 package com.radixdlt.test.network.client.docker;
 
+import com.github.dockerjava.api.command.*;
+import com.github.dockerjava.api.exception.BadRequestException;
+import com.github.dockerjava.api.exception.NotFoundException;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.Network;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
+import com.google.common.collect.Lists;
+import com.radixdlt.test.utils.universe.ValidatorKeypair;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -54,4 +64,46 @@ public class LocalDockerClient implements DockerClient {
         }
         return output.toString(StandardCharsets.UTF_8);
     }
+
+    @Override
+    public void startNewNode(String image, String containerName, List<String> environment, HostConfig hostConfig, List<ExposedPort> exposedPorts,
+                             String networkName) {
+        var environmentArray = environment.toArray(new String[0]);
+        CreateContainerResponse createContainer = dockerClient.createContainerCmd(image)
+            .withName(containerName)
+            .withEnv(environmentArray)
+            .withHostConfig(hostConfig)
+            .withExposedPorts(exposedPorts)
+            .exec();
+
+        dockerClient.startContainerCmd(createContainer.getId()).exec();
+        dockerClient.connectToNetworkCmd().withNetworkId(networkName).withContainerId(containerName).exec();
+    }
+
+    @Override
+    public void createNetwork(String networkName) {
+        try {
+            dockerClient.inspectNetworkCmd().withNetworkId(networkName).exec();
+            wipeNetwork(networkName);
+        } catch (NotFoundException e) {
+            // all good, proceed
+        } catch (BadRequestException e) { // weird edge case
+            wipeNetwork(networkName);
+        }
+        dockerClient.createNetworkCmd().withName(networkName).exec();
+    }
+
+    private void wipeNetwork(String networkName) {
+        logger.debug("Existing network '{}' found, will delete", networkName);
+
+        dockerClient.listContainersCmd().withShowAll(true).exec().forEach(container -> {
+            if (container.getNetworkSettings().getNetworks().keySet().contains(networkName)) {
+                dockerClient.removeContainerCmd(container.getId()).exec();
+                logger.debug("Removed container '{}'", container.getId());
+            }
+        });
+
+        dockerClient.removeNetworkCmd(networkName).exec();
+    }
+
 }
