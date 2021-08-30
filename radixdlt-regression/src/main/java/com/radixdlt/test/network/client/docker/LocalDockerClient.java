@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit;
  * A tcp, socket-based client that connects to a local daemon, consuming Docker's Engine API: https://docs.docker.com/engine/api/v1.40/
  */
 public class LocalDockerClient implements DockerClient {
-
     private static Logger logger = LoggerFactory.getLogger(LocalDockerClient.class);
 
     // the unix default is unix:///var/run/docker.sock. tcp://localhost:2375 might work on windows
@@ -37,6 +36,7 @@ public class LocalDockerClient implements DockerClient {
         dockerClient.pingCmd().exec();
     }
 
+    @SuppressWarnings("deprecation")
     public String runShellCommandAndGetOutput(String containerId, String... commands) {
         var output = new ByteArrayOutputStream();
         var error = new ByteArrayOutputStream();
@@ -44,7 +44,8 @@ public class LocalDockerClient implements DockerClient {
             .withCmd(commands).exec();
         try {
             dockerClient.execStartCmd(cmdResponse.getId())
-                .exec(new ExecStartResultCallback(output, error)).awaitCompletion(10, TimeUnit.SECONDS);
+                .exec(new ExecStartResultCallback(output, error))
+                .awaitCompletion(10, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -53,5 +54,4 @@ public class LocalDockerClient implements DockerClient {
         }
         return output.toString(StandardCharsets.UTF_8);
     }
-
 }

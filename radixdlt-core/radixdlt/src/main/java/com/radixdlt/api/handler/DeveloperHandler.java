@@ -77,6 +77,7 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.NodeAddressing;
@@ -84,11 +85,14 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ResourceAddressing;
 import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.discovery.DiscoverPeers;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
@@ -119,6 +123,9 @@ public final class DeveloperHandler {
 	private final BerkeleyLedgerEntryStore engineStore;
 	private final Addressing addressing;
 	private final TxnIndex txnIndex;
+	private final AddressBook addressBook;
+	private final EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher;
+	private final Forks forks;
 
 	@Inject
 	public DeveloperHandler(
@@ -126,13 +133,19 @@ public final class DeveloperHandler {
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		BerkeleyLedgerEntryStore engineStore,
 		Addressing addressing,
-		TxnIndex txnIndex
+		TxnIndex txnIndex,
+		AddressBook addressBook,
+		EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher,
+		Forks forks
 	) {
 		this.genesisBuilder = genesisBuilder;
 		this.radixEngine = radixEngine;
 		this.addressing = addressing;
 		this.engineStore = engineStore;
 		this.txnIndex = txnIndex;
+		this.addressBook = addressBook;
+		this.discoverPeersEventDispatcher = discoverPeersEventDispatcher;
+		this.forks = forks;
 	}
 
 	private Result<VerifiedTxnsAndProof> build(String message, List<TransactionAction> steps) {
@@ -159,7 +172,7 @@ public final class DeveloperHandler {
 			params -> {
 				var message = params.getString("message");
 				var addressing = Addressing.ofNetworkId(params.getInt("networkId"));
-				var actionParserService = new ActionParserService(addressing);
+				var actionParserService = new ActionParserService(addressing, forks);
 
 				return allOf(safeArray(params, "actions"))
 					.flatMap(actions ->
@@ -232,6 +245,7 @@ public final class DeveloperHandler {
 					throw new IllegalArgumentException("Invalid resource index " + index.getSubstateClass());
 				}
 				var resultJson = jsonArray();
+				@SuppressWarnings("unchecked")
 				var map = radixEngine.reduceResourcesWithSubstateCount(
 					(SubstateIndex<ResourceInBucket>) index,
 					r -> keyMapper.apply(r.bucket()),
@@ -325,7 +339,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("txn"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var txnHex = params.getString("txId");
 					var txId = AID.from(txnHex);
@@ -345,7 +359,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("txn"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var parser = radixEngine.getParser();
 					var txnHex = params.getString("txn");
@@ -376,7 +390,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("data"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var data = Bytes.fromHexString(params.getString("data"));
 					var deserialization = radixEngine.getSubstateDeserialization();
@@ -407,7 +421,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("address", "type"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var type = params.getString("type");
 					if (type.equals("resource")) {
@@ -435,7 +449,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("amount"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var amountString = params.getString("amount");
 					var amount = UInt256.from(amountString);
@@ -464,7 +478,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("networkId", "type"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var networkId = params.getInt("networkId");
 					var network = Network.ofId(networkId).orElseThrow();
@@ -486,5 +500,15 @@ public final class DeveloperHandler {
 				}
 			)
 		);
+	}
+
+	public JSONObject clearAddressBook(JSONObject request) {
+		this.addressBook.clear();
+		this.discoverPeersEventDispatcher.dispatch(DiscoverPeers.create());
+		return jsonObject();
+	}
+
+	private static Failure toFailure(Throwable e) {
+		return Failure.failure(e.getMessage());
 	}
 }

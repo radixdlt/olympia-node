@@ -65,18 +65,66 @@
 package com.radixdlt.api.module;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.controller.HealthController;
 import com.radixdlt.api.qualifier.NodeServer;
+import com.radixdlt.api.service.ForkVoteStatusService;
 import com.radixdlt.api.service.NetworkInfoService;
+import com.radixdlt.api.service.PeersForksHashesInfoService;
+import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.network.p2p.PeerEvent;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
 
 public class HealthEndpointModule extends AbstractModule {
+
+	@Override
+	protected void configure() {
+		bind(ForkVoteStatusService.class).in(Scopes.SINGLETON);
+		bind(PeersForksHashesInfoService.class).in(Scopes.SINGLETON);
+	}
+
 	@NodeServer
 	@ProvidesIntoMap
 	@StringMapKey("/health")
-	public Controller healthController(NetworkInfoService networkInfoService) {
-		return new HealthController(networkInfoService);
+	public Controller healthController(
+		NetworkInfoService networkInfoService,
+		ForkVoteStatusService forkVoteStatusService,
+		PeersForksHashesInfoService peersForksHashesInfoService,
+		ForksEpochStore forksEpochStore
+	) {
+		return new HealthController(networkInfoService, forkVoteStatusService, peersForksHashesInfoService, forksEpochStore);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> peerEventProcessorOnRunner(PeersForksHashesInfoService peersForksHashesInfoService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			PeerEvent.class,
+			peersForksHashesInfoService.peerEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> ledgerUpdateEventProcessorOnRunnerpPeersForksService(PeersForksHashesInfoService peersForksHashesInfoService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			LedgerUpdate.class,
+			peersForksHashesInfoService.ledgerUpdateEventProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> ledgerUpdateEventProcessorOnRunnerVoteStatusService(ForkVoteStatusService forkVoteStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			LedgerUpdate.class,
+			forkVoteStatusService.ledgerUpdateEventProcessor()
+		);
 	}
 }

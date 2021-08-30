@@ -64,7 +64,11 @@
 
 package com.radixdlt.network.p2p.test;
 
-import com.google.common.collect.ImmutableList;
+import org.apache.commons.cli.ParseException;
+import org.json.JSONObject;
+import org.junit.rules.TemporaryFolder;
+
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -100,25 +104,27 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.statecomputer.forks.LatestForkConfig;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import org.apache.commons.cli.ParseException;
-import org.json.JSONObject;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public final class P2PTestNetworkRunner {
 
-	private final ImmutableList<TestNode> nodes;
+	private final List<TestNode> nodes;
 	private final DeterministicNetwork deterministicNetwork;
 
 	private P2PTestNetworkRunner(
-		ImmutableList<TestNode> nodes,
+		List<TestNode> nodes,
 		DeterministicNetwork deterministicNetwork
 	) {
 		this.nodes = Objects.requireNonNull(nodes);
@@ -128,7 +134,7 @@ public final class P2PTestNetworkRunner {
 	public static P2PTestNetworkRunner create(int numNodes, P2PConfig p2pConfig) throws Exception {
 		final var nodesKeys = IntStream.range(0, numNodes)
 			.mapToObj(unused -> ECKeyPair.generateNew())
-			.collect(ImmutableList.toImmutableList());
+			.collect(Collectors.toList());
 
 		final var network = new DeterministicNetwork(
 			nodesKeys.stream().map(key -> BFTNode.create(key.getPublicKey())).collect(Collectors.toList()),
@@ -138,7 +144,7 @@ public final class P2PTestNetworkRunner {
 
 		final var p2pNetwork = new MockP2PNetwork();
 
-		final var builder = ImmutableList.<TestNode>builder();
+		final var builder = new ArrayList<TestNode>();
 		for (int i = 0; i < numNodes; i++) {
 			final var nodeKey = nodesKeys.get(i);
 			final var uri = RadixNodeUri.fromPubKeyAndAddress(
@@ -147,7 +153,7 @@ public final class P2PTestNetworkRunner {
 			builder.add(new TestNode(injector, uri, nodeKey));
 		}
 
-		final var injectors = builder.build();
+		final var injectors = List.copyOf(builder);
 
 		p2pNetwork.setNodes(injectors);
 
@@ -162,7 +168,7 @@ public final class P2PTestNetworkRunner {
 		RadixNodeUri selfUri,
 		int selfNodeIndex
 	) throws ParseException {
-		final var properties = new RuntimeProperties(new JSONObject(), new String[] {});
+		final var properties = new RuntimeProperties(new JSONObject(), new String[]{});
 		return Guice.createInjector(
 				Modules.override(new P2PModule(properties)).with(
 					new AbstractModule() {
@@ -204,6 +210,8 @@ public final class P2PTestNetworkRunner {
 						bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
 						bind(DeterministicProcessor.class);
 						Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
+						bind(ForkConfig.class).annotatedWith(LatestForkConfig.class).toInstance(
+							new FixedEpochForkConfig("genesis", HashCode.fromInt(1), null, 0L));
 					}
 				}
 		);

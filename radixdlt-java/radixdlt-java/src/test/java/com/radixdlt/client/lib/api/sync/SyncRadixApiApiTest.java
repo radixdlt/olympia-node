@@ -102,7 +102,7 @@ public class SyncRadixApiApiTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.api().configuration()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(configurationDTO -> assertEquals(12, configurationDTO.getEndpoints().size())));
+				.onSuccess(configuration -> assertEquals(12, configuration.getEndpoints().size())));
 	}
 
 	@Test

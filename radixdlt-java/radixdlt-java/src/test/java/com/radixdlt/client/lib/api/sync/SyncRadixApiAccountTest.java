@@ -130,8 +130,8 @@ public class SyncRadixApiAccountTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.account().history(ACCOUNT_ADDRESS1, 5, Optional.empty())
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getCursor()))
-				.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getTransactions()))
+				.onSuccess(transactionHistory -> assertNotNull(transactionHistory.getCursor()))
+				.onSuccess(transactionHistory -> assertNotNull(transactionHistory.getTransactions()))
 				.map(TransactionHistory::getTransactions)
 				.onSuccess(txs -> assertEquals(1, txs.size()))
 				.map(txs -> txs.get(0).getActions())
@@ -145,7 +145,7 @@ public class SyncRadixApiAccountTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.account().balances(ACCOUNT_ADDRESS1)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(tokenBalancesDTO -> assertEquals(ACCOUNT_ADDRESS1, tokenBalancesDTO.getOwner()))
+				.onSuccess(tokenBalances -> assertEquals(ACCOUNT_ADDRESS1, tokenBalances.getOwner()))
 				.map(TokenBalances::getTokenBalances)
 				.onSuccess(balances -> assertEquals(1, balances.size())));
 	}
@@ -167,8 +167,8 @@ public class SyncRadixApiAccountTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.account().stakes(ACCOUNT_ADDRESS1)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(stakePositionsDTOS -> assertEquals(1, stakePositionsDTOS.size()))
-				.onSuccess(stakePositionsDTOS -> assertEquals(amount(2000).tokens(), stakePositionsDTOS.get(0).getAmount())));
+				.onSuccess(stakePositions -> assertEquals(1, stakePositions.size()))
+				.onSuccess(stakePositions -> assertEquals(amount(2000).tokens(), stakePositions.get(0).getAmount())));
 	}
 
 	@Test
@@ -178,8 +178,8 @@ public class SyncRadixApiAccountTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.account().unstakes(ACCOUNT_ADDRESS1)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(unstakePositionsDTOS -> assertEquals(1, unstakePositionsDTOS.size()))
-				.onSuccess(unstakePositionsDTOS -> assertEquals(amount(100).tokens(), unstakePositionsDTOS.get(0).getAmount())));
+				.onSuccess(unstakePositions -> assertEquals(1, unstakePositions.size()))
+				.onSuccess(unstakePositions -> assertEquals(amount(100).tokens(), unstakePositions.get(0).getAmount())));
 	}
 
 	@Test

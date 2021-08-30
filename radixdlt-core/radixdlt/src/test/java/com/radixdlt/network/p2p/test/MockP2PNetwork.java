@@ -64,8 +64,8 @@
 
 package com.radixdlt.network.p2p.test;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECKeyOps;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
 
 import com.google.inject.Key;
@@ -83,17 +83,18 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.SocketChannel;
 
 import java.security.SecureRandom;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
+import static org.mockito.Mockito.when;
 
 final class MockP2PNetwork {
-	private ImmutableList<TestNode> nodes;
+	private List<TestNode> nodes;
 
 	// this needs to be mutable due to circular dependency in runner
-	void setNodes(ImmutableList<TestNode> nodes) {
+	void setNodes(List<TestNode> nodes) {
 		this.nodes = nodes;
 	}
 
@@ -110,6 +111,7 @@ final class MockP2PNetwork {
 			clientPeer.injector.getInstance(P2PConfig.class),
 			Addressing.ofNetwork(Network.LOCALNET),
 			1,
+			HashUtils.random(32),
 			clientPeer.injector.getInstance(SystemCounters.class),
 			clientPeer.injector.getInstance(Serialization.class),
 			new SecureRandom(),
@@ -123,6 +125,7 @@ final class MockP2PNetwork {
 			serverPeer.injector.getInstance(P2PConfig.class),
 			Addressing.ofNetwork(Network.LOCALNET),
 			1,
+			HashUtils.random(32),
 			serverPeer.injector.getInstance(SystemCounters.class),
 			serverPeer.injector.getInstance(Serialization.class),
 			new SecureRandom(),

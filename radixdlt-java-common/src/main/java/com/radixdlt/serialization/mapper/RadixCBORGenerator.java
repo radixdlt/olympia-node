@@ -197,7 +197,7 @@ public class RadixCBORGenerator extends GeneratorBase
             return flags;
         }
 
-        private Feature(boolean defaultState) {
+        Feature(boolean defaultState) {
             _defaultState = defaultState;
             _mask = (1 << ordinal());
         }
@@ -250,7 +250,7 @@ public class RadixCBORGenerator extends GeneratorBase
 
     /**
      * Bit flag composed of bits that indicate which
-     * {@link CBORGenerator.Feature}s are enabled.
+     * {@code CBORGenerator.Feature}s are enabled.
      */
     protected int _formatFeatures;
 
@@ -618,6 +618,7 @@ public class RadixCBORGenerator extends GeneratorBase
      */
 
     @Override
+    @SuppressWarnings("deprecation")
     public void writeStartArray(int elementsToWrite) throws IOException {
         _verifyValueWrite("start an array");
         _writeContext = _writeContext.createChildArrayContext();

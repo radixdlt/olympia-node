@@ -98,6 +98,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 
 import static java.util.function.Predicate.not;
@@ -183,6 +184,10 @@ public class SimulationNodes {
 
 		<T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node);
 
+		<T> T getInstance(Class<T> clazz, BFTNode node);
+
+		<T> T getInstance(Key<T> clazz, BFTNode node);
+
 		SimulationNetwork getUnderlyingNetwork();
 
 		Map<BFTNode, SystemCounters> getSystemCounters();
@@ -228,13 +233,15 @@ public class SimulationNodes {
 			@Override
 			public Observable<EpochChange> latestEpochChanges() {
 				// Just do first instance for now
-				EpochChange initialEpoch =  nodeInstances.get(0).getInstance(EpochChange.class);
+				EpochChange initialEpoch = nodeInstances.get(0).getInstance(EpochChange.class);
 
 				Set<Observable<EpochChange>> epochChanges = nodeInstances.stream()
 					.map(i -> i.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { })))
 					.map(o -> o
-						.map(u -> u.getStateComputerOutput().getInstance(EpochChange.class))
-						.filter(Objects::nonNull)
+						.flatMapMaybe(u -> {
+							var e = u.getStateComputerOutput().getInstance(EpochChange.class);
+							return e == null ? Maybe.empty() : Maybe.just(e);
+						})
 					)
 					.collect(Collectors.toSet());
 
@@ -260,8 +267,17 @@ public class SimulationNodes {
 
 			@Override
 			public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node) {
-				int index = getNodes().indexOf(node);
-				return nodeInstances.get(index).getInstance(Environment.class).getDispatcher(eventClass);
+				return getInstance(Environment.class, node).getDispatcher(eventClass);
+			}
+
+			@Override
+			public <T> T getInstance(Class<T> clazz, BFTNode node) {
+				return nodeInstances.get(getNodes().indexOf(node)).getInstance(clazz);
+			}
+
+			@Override
+			public <T> T getInstance(Key<T> clazz, BFTNode node) {
+				return nodeInstances.get(getNodes().indexOf(node)).getInstance(clazz);
 			}
 
 			@Override

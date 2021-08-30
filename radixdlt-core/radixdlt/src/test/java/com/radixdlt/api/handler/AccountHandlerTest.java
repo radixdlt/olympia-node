@@ -64,9 +64,13 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.RERules;
 import org.json.JSONObject;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.api.service.AccountInfoService;
@@ -80,13 +84,15 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.functional.Result;
 
+import java.util.Optional;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
+import static org.mockito.Mockito.when;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
@@ -95,7 +101,8 @@ public class AccountHandlerTest {
 	private final SubmissionService submissionService = mock(SubmissionService.class);
 	private final AccountInfoService accountService = mock(AccountInfoService.class);
 	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
-	private final ActionParserService actionParserService = new ActionParserService(addressing);
+	private final Forks forks = mock(Forks.class);
+	private final ActionParserService actionParserService = new ActionParserService(addressing, forks);
 
 	private final ECKeyPair keyPair = ECKeyPair.generateNew();
 	private final ECPublicKey bftKey = keyPair.getPublicKey();
@@ -105,6 +112,13 @@ public class AccountHandlerTest {
 		accountService, submissionService, actionParserService,
 		hashSigner, REAddr.ofPubKeyAccount(keyPair.getPublicKey())
 	);
+
+	@Before
+	public void setup() {
+		final var reRules = mock(RERules.class);
+		when(reRules.getMaxRounds()).thenReturn(View.of(10L));
+		when(forks.getCandidateFork()).thenReturn(Optional.empty());
+	}
 
 	@Test
 	public void testHandleAccountGetInfo() {

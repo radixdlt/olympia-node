@@ -64,42 +64,28 @@
 
 package com.radixdlt.application;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.application.tokens.Bucket;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 import org.reflections.Reflections;
 
+import com.radixdlt.application.tokens.Bucket;
+
 import java.lang.reflect.Modifier;
-import java.util.HashSet;
 import java.util.Set;
 
-public class BucketEqualsHashCode {
-	private static final ImmutableMap<Class<?>, ImmutableList<String>> ignoredFieldsByClass = ImmutableMap.of(
-	);
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 
+public class BucketEqualsHashCode {
 	@Test
 	public void verify_all_buckets_correctly_override_equals_and_hash_code() {
-		final Set<Class<? extends Bucket>> subTypes = new HashSet<>();
-		subTypes.addAll(findSubTypesInPkg("org.radix"));
-		subTypes.addAll(findSubTypesInPkg("com.radixdlt"));
-
-		subTypes.stream()
+		findSubTypesInPkg("com.radixdlt").stream()
 			.filter(cls -> !Modifier.isAbstract(cls.getModifiers()))
 			.forEachOrdered(this::testEquals);
 	}
 
 	private void testEquals(Class<? extends Bucket> cls) {
-		final String[] ignoredFields = ignoredFieldsByClass.entrySet().stream()
-			.filter(e -> e.getKey().isAssignableFrom(cls))
-			.flatMap(e -> e.getValue().stream())
-			.toArray(String[]::new);
-
 		EqualsVerifier.forClass(cls)
 			.suppress(Warning.NONFINAL_FIELDS)
-			.withIgnoredFields(ignoredFields)
 			.verify();
 	}
 

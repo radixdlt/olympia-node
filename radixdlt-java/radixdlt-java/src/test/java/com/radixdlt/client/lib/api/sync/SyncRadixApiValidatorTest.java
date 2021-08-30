@@ -142,8 +142,8 @@ public class SyncRadixApiValidatorTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.validator().lookup(address)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(validatorDTO -> assertTrue(validatorDTO.isExternalStakeAccepted()))
-				.onSuccess(validatorDTO -> assertEquals(amount(140100).tokens(), validatorDTO.getTotalDelegatedStake())));
+				.onSuccess(validator -> assertTrue(validator.isExternalStakeAccepted()))
+				.onSuccess(validator -> assertEquals(amount(140100).tokens(), validator.getTotalDelegatedStake())));
 	}
 
 	private Result<RadixApi> prepareClient(String responseBody) throws Exception {

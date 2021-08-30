@@ -67,7 +67,7 @@ package com.radixdlt.api.chaos.mempoolfiller;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.utils.PrivateKeys;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
@@ -118,8 +118,8 @@ public class MempoolFillerTest {
 		return Guice.createInjector(
 			new RadixEngineForksLatestOnlyModule(),
 			MempoolConfig.asModule(10, 10),
-			new MainnetForkConfigsModule(),
 			new ForksModule(),
+			new MainnetForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
 			new MockedGenesisModule(
 				Set.of(TEST_KEY.getPublicKey()),

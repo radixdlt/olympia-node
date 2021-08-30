@@ -109,6 +109,7 @@ import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
+import com.radixdlt.client.lib.network.HttpClientUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Result;
 
@@ -483,7 +484,11 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 		int secondaryPort,
 		Optional<BasicAuth> authentication
 	) {
-		return buildHttpClient().fold(Promise::failure, client -> connect(url, primaryPort, secondaryPort, client, authentication));
+		return HttpClientUtils.buildHttpClient(DEFAULT_TIMEOUT)
+			.fold(
+				Promise::failure,
+				client -> connect(url, primaryPort, secondaryPort, client, authentication)
+			);
 	}
 
 	static Promise<RadixApi> connect(
