@@ -1,27 +1,19 @@
 package com.radixdlt.test.network.client;
 
-import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.client.lib.api.sync.RadixApiException;
-import com.radixdlt.test.network.RadixNode;
+import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.utils.functional.Failure;
 import kong.unirest.HttpResponse;
 import kong.unirest.JsonNode;
 import kong.unirest.Unirest;
 import kong.unirest.json.JSONObject;
-import org.apache.commons.compress.utils.Lists;
-import org.apache.commons.lang.StringUtils;
 
-import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * A small HTTP client that consumes the non-JSON-RPC methods e.g. /health.
- *
+ * <p>
  * Also consumes the JSON-RPC methods that are not part of the RadixApi client e.g. /faucet
  */
 public class RadixHttpClient {
@@ -53,14 +45,10 @@ public class RadixHttpClient {
         return HealthStatus.valueOf(response.getBody().getObject().getString("network_status"));
     }
 
-    public String getMetrics(String rootUrl) {
+    public Metrics getMetrics(String rootUrl) {
         String url = rootUrl + METRICS_PATH;
         String response = Unirest.get(url).asString().getBody();
-        System.out.println(response);
-        List<String> metricLines = Arrays.asList(response.split("\\R"));
-        List<String> aaa = metricLines.stream().filter(line -> line.contains("view")).collect(Collectors.toList());
-        System.out.println(aaa);
-        return response;
+        return new Metrics(response);
     }
 
     public String callFaucet(String rootUrl, int port, String address) {

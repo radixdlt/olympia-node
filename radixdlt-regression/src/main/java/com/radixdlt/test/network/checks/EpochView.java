@@ -25,4 +25,10 @@ public class EpochView {
     public void setView(int view) {
         this.view = view;
     }
+
+    @Override
+    public String toString() {
+        return "Epoch: " + epoch + ", view: " + view;
+    }
+
 }

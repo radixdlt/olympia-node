@@ -3,7 +3,6 @@ package com.radixdlt.test.network.client.docker;
 import com.github.dockerjava.api.exception.DockerException;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
-import com.radixdlt.test.utils.universe.ValidatorKeypair;
 
 import java.util.List;
 

@@ -96,7 +96,7 @@ public class RadixNetworkNodeLocator {
         // check that the container name is correct. TODO handle exception?
         try {
             dockerClient.runShellCommandAndGetOutput(expectedContainerName, "pwd");
-        } catch(DockerException e) {
+        } catch (DockerException e) {
             logger.warn("Docker client could not connect due to {} and will be disabled.", e.getMessage());
         }
 

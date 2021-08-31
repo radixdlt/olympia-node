@@ -1,10 +1,10 @@
 package com.radixdlt.test.system;
 
-import com.radixdlt.test.system.annotation.RadixSystemTest;
+import org.junit.jupiter.api.Test;
 
 public class SmokeTesting extends SystemTest {
 
-    @RadixSystemTest
+    @Test
     public void smoke_test_1() {
         runCheck("liveness");
 

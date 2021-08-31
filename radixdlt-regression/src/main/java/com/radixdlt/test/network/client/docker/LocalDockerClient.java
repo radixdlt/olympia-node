@@ -74,8 +74,9 @@ public class LocalDockerClient implements DockerClient {
             .withExposedPorts(exposedPorts)
             .exec();
 
+        TestingUtils.sleepMillis(250);
         dockerClient.startContainerCmd(createContainer.getId()).exec();
-        TestingUtils.sleepMillis(500);
+        TestingUtils.sleepMillis(250);
         dockerClient.connectToNetworkCmd().withNetworkId(networkName).withContainerId(containerName).exec();
     }
 

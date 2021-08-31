@@ -1,6 +1,7 @@
 package com.radixdlt.test.network.checks;
 
 import com.radixdlt.test.network.RadixNode;
+import com.radixdlt.test.network.client.Metrics;
 import com.radixdlt.test.network.client.RadixHttpClient;
 import com.radixdlt.test.utils.TestingUtils;
 import org.apache.logging.log4j.LogManager;
@@ -21,7 +22,7 @@ public class LivenessCheck implements Check {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private static Comparator<EpochView> VIEW_COMPARATOR = Comparator.comparingLong(EpochView::getEpoch)
+    private static final Comparator<EpochView> VIEW_COMPARATOR = Comparator.comparingLong(EpochView::getEpoch)
         .thenComparingLong(EpochView::getView);
 
     private final List<RadixNode> nodes;
@@ -49,11 +50,11 @@ public class LivenessCheck implements Check {
     private EpochView getMaxHighestQC(List<RadixNode> nodes) {
         Optional<EpochView> maybeHighestView = nodes.stream().map(node -> {
             try {
-                String metrics = client.getMetrics(node.getRootUrl() + ":" + node.getSecondaryPort());
-                System.out.println(metrics);
-                return new EpochView(1,2);
+                Metrics metrics = client.getMetrics(node.getRootUrl() + ":" + node.getSecondaryPort());
+                return new EpochView(metrics.getEpoch(), metrics.getView());
             } catch (Exception e) {
-                return null; // TODO
+                logger.warn("Could not get epoch/view: {}", e.getMessage());
+                return null;
             }
         }).filter(Objects::nonNull).max(VIEW_COMPARATOR);
         return maybeHighestView.orElseThrow();

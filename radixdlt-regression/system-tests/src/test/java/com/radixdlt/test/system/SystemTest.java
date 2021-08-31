@@ -15,18 +15,13 @@ public class SystemTest extends RadixNetworkTest {
 
     private UniverseVariables variables;
 
-    @BeforeEach
-    public void setup(TestInfo testInfo) {
-        logger.info("Before each!\n");
-    }
-
     public void restartNode(RadixNode node) {
         radixNetwork.getDockerClient().restartContainer(node.getContainerName());
     }
 
     @AfterEach
     public void teardown() {
-        logger.info("Stop nodes!");
+        logger.info("TODO stop nodes");
     }
 
 }

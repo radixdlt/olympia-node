@@ -30,8 +30,12 @@ public class LocalDockerNetworkCreator {
 
     private static final Logger logger = LogManager.getLogger();
 
-    public final static int MAX_NUMBER_OF_NODES = 3;
-    public final static Duration MAX_TIME_TO_WAIT_FOR_NODES_UP = Durations.TWO_MINUTES;
+    public static final int MAX_NUMBER_OF_NODES = 3;
+    public static final Duration MAX_TIME_TO_WAIT_FOR_NODES_UP = Durations.TWO_MINUTES;
+
+    private LocalDockerNetworkCreator() {
+
+    }
 
     public static void createNewLocalNetwork(RadixNetworkConfiguration configuration, DockerClient dockerClient) {
         int numberOfNodes = configuration.getDockerConfiguration().getInitialNumberOfNodes();
@@ -114,10 +118,11 @@ public class LocalDockerNetworkCreator {
         List<String> env = Lists.newArrayList();
 
         // java opts
-        env.add("JAVA_OPTS=-server -Xmx512m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:+AlwaysPreTouch -Dguice_bytecode_gen_option=DISABLED " +
-            "-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom " +
-            "-Dcom.sun.management.jmxremote.port=9011 -Dcom.sun.management.jmxremote.rmi.port=9011 -Dcom.sun.management.jmxremote.authenticate=false " +
-            "-Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50505,suspend=n,server=y");
+        env.add("JAVA_OPTS=-server -Xmx512m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:+AlwaysPreTouch -Dguice_bytecode_gen_option=DISABLED "
+            + "-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom "
+            + "-Dcom.sun.management.jmxremote.port=9011 -Dcom.sun.management.jmxremote.rmi.port=9011 -Dcom.sun.management.jmxremote.authenticate"
+            + "=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,"
+            + "address=50505,suspend=n,server=y");
 
         // per node variables
         env.add("RADIXDLT_NETWORK_SEEDS_REMOTE=" + remoteSeeds);

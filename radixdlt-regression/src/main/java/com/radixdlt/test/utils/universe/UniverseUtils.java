@@ -14,6 +14,10 @@ import java.util.stream.IntStream;
  */
 public class UniverseUtils {
 
+    private UniverseUtils() {
+
+    }
+
     /**
      * is probably not thread safe
      */
