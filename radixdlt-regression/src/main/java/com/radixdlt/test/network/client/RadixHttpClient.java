@@ -8,9 +8,16 @@ import kong.unirest.HttpResponse;
 import kong.unirest.JsonNode;
 import kong.unirest.Unirest;
 import kong.unirest.json.JSONObject;
+import org.apache.commons.compress.utils.Lists;
+import org.apache.commons.lang.StringUtils;
 
+import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A small HTTP client that consumes the non-JSON-RPC methods e.g. /health.
@@ -48,8 +55,12 @@ public class RadixHttpClient {
 
     public String getMetrics(String rootUrl) {
         String url = rootUrl + METRICS_PATH;
-        HttpResponse<JsonNode> response = Unirest.get(url).asJson();
-        return response.getBody().toPrettyString();
+        String response = Unirest.get(url).asString().getBody();
+        System.out.println(response);
+        List<String> metricLines = Arrays.asList(response.split("\\R"));
+        List<String> aaa = metricLines.stream().filter(line -> line.contains("view")).collect(Collectors.toList());
+        System.out.println(aaa);
+        return response;
     }
 
     public String callFaucet(String rootUrl, int port, String address) {

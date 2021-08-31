@@ -17,7 +17,7 @@ public class SystemTest extends RadixNetworkTest {
 
     @BeforeEach
     public void setup(TestInfo testInfo) {
-        logger.info(testInfo);
+        logger.info("Before each!\n");
     }
 
     public void restartNode(RadixNode node) {

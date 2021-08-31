@@ -9,6 +9,7 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
+import com.radixdlt.test.utils.TestingUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +75,7 @@ public class LocalDockerClient implements DockerClient {
             .exec();
 
         dockerClient.startContainerCmd(createContainer.getId()).exec();
+        TestingUtils.sleepMillis(500);
         dockerClient.connectToNetworkCmd().withNetworkId(networkName).withContainerId(containerName).exec();
     }
 

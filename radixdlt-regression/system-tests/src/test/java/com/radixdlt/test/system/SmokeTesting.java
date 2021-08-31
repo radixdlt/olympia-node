@@ -6,10 +6,7 @@ public class SmokeTesting extends SystemTest {
 
     @RadixSystemTest
     public void smoke_test_1() {
-        logger.info("Inside test case 1!!");
-
-        // do a liveness test
-        //LivenessCheck a;
+        runCheck("liveness");
 
         // stop a node
         //stopNode(0);

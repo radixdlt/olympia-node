@@ -6,4 +6,5 @@ public interface Check {
      * TODO document
      */
     boolean check();
+
 }

@@ -81,4 +81,8 @@ public abstract class RadixNetworkTest {
         }
     }
 
+    public void runCheck(String name) {
+        checks.runCheck(name);
+    }
+
 }
