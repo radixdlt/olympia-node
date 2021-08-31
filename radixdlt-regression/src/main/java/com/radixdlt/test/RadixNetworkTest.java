@@ -7,6 +7,7 @@ import com.radixdlt.client.lib.dto.Balance;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.test.account.Account;
 import com.radixdlt.test.network.RadixNetwork;
+import com.radixdlt.test.network.checks.CheckFailureException;
 import com.radixdlt.test.network.checks.Checks;
 import com.radixdlt.test.utils.TransactionUtils;
 import org.apache.logging.log4j.LogManager;
@@ -81,8 +82,16 @@ public abstract class RadixNetworkTest {
         }
     }
 
+    /**
+     * @throws IllegalArgumentException if such a check does not exist
+     * @throws CheckFailureException    if the check failed
+     */
     public void runCheck(String name) {
-        checks.runCheck(name);
+        boolean result = checks.runCheck(name);
+        if (!result) {
+            throw new CheckFailureException(name);
+        }
+        logger.info("Check '{}' passed", name);
     }
 
 }

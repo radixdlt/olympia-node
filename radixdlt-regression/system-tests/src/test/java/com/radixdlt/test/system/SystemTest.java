@@ -6,8 +6,6 @@ import com.radixdlt.test.utils.universe.UniverseVariables;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
 
 public class SystemTest extends RadixNetworkTest {
 
@@ -21,7 +19,7 @@ public class SystemTest extends RadixNetworkTest {
 
     @AfterEach
     public void teardown() {
-        logger.info("TODO stop nodes");
+        logger.info("Nodes should be stopped here");
     }
 
 }

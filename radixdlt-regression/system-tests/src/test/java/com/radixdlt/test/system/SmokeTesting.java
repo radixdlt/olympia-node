@@ -9,7 +9,7 @@ public class SmokeTesting extends SystemTest {
         runCheck("liveness");
 
         // stop a node
-        //stopNode(0);
+        // stopNode(0);
 
         // do another liveness test
     }

@@ -36,21 +36,18 @@ public class LivenessCheck implements Check {
     }
 
     public boolean check() {
-        EpochView highestQC = getMaxHighestQC(nodes);
+        var highestQC = getMaxHighestQC(nodes);
         TestingUtils.sleep(patienceSeconds);
-        EpochView highestQCAfterAWhile = getMaxHighestQC(nodes);
+        var highestQCAfterAWhile = getMaxHighestQC(nodes);
 
-        int compare = VIEW_COMPARATOR.compare(highestQC, highestQCAfterAWhile);
-        logger.info(highestQC + " vs " + highestQCAfterAWhile + " = ");
-        logger.info(compare);
-
-        return false;
+        var comparisonResult = VIEW_COMPARATOR.compare(highestQC, highestQCAfterAWhile);
+        return comparisonResult == -1;
     }
 
     private EpochView getMaxHighestQC(List<RadixNode> nodes) {
         Optional<EpochView> maybeHighestView = nodes.stream().map(node -> {
             try {
-                Metrics metrics = client.getMetrics(node.getRootUrl() + ":" + node.getSecondaryPort());
+                var metrics = client.getMetrics(node.getRootUrl() + ":" + node.getSecondaryPort());
                 return new EpochView(metrics.getEpoch(), metrics.getView());
             } catch (Exception e) {
                 logger.warn("Could not get epoch/view: {}", e.getMessage());
