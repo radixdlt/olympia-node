@@ -1,15 +1,20 @@
 package com.radixdlt.test.network;
 
-import com.radixdlt.test.utils.TestingUtils;
 import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
+import com.radixdlt.client.lib.api.sync.RadixApiException;
+import com.radixdlt.test.utils.TestingUtils;
+import org.awaitility.Durations;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.awaitility.Awaitility.await;
 
 /**
  * Information needed for the initialization of a {@link RadixNetwork}
  */
-public final class RadixNetworkConfiguration {
+public class RadixNetworkConfiguration {
 
     enum Type {
         LOCALNET,
@@ -17,12 +22,11 @@ public final class RadixNetworkConfiguration {
     }
 
     private final String jsonRpcRootUrl;
-
     private final int primaryPort;
     private final int secondaryPort;
     private final String basicAuth;
     private final Type type;
-    private DockerConfiguration dockerConfiguration;
+    private final DockerConfiguration dockerConfiguration;
 
     private RadixNetworkConfiguration(String jsonRpcRootUrl, int primaryPort, int secondaryPort, String basicAuth,
                                       Type type, DockerConfiguration dockerConfiguration) {
@@ -45,9 +49,7 @@ public final class RadixNetworkConfiguration {
             var basicAuth = System.getenv("RADIXDLT_BASIC_AUTH");
             var type = determineType(jsonRpcRootUrlString);
             var dockerConfiguration = DockerConfiguration.fromEnv();
-
             // TODO check if docker network should be initialized but type is NOT local
-
             return new RadixNetworkConfiguration(jsonRpcRootUrlString, primaryPort, secondaryPort, basicAuth, type,
                 dockerConfiguration);
         } catch (MalformedURLException e) {
@@ -74,7 +76,13 @@ public final class RadixNetworkConfiguration {
      * @return the network id
      */
     public int pingJsonRpcApi() {
-        return ImperativeRadixApi.connect(jsonRpcRootUrl, primaryPort, secondaryPort).network().id().getNetworkId();
+        AtomicInteger networkId = new AtomicInteger();
+        await().atMost(Durations.ONE_MINUTE).ignoreException(RadixApiException.class).until(() -> {
+            networkId.set(ImperativeRadixApi.connect(jsonRpcRootUrl, primaryPort, secondaryPort).network().id().getNetworkId());
+            TestingUtils.sleepMillis(250);
+            return true;
+        });
+        return networkId.intValue();
     }
 
     public String getJsonRpcRootUrl() {

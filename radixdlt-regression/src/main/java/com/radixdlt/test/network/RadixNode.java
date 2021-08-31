@@ -10,9 +10,6 @@ public class RadixNode {
     private final String containerName;
     private final Set<ServiceType> availableServices;
 
-    /**
-     * TODO explain
-     */
     public enum ServiceType {
         ARCHIVE,
         ACCOUNT,
@@ -35,8 +32,16 @@ public class RadixNode {
         return rootUrl;
     }
 
+    public int getPrimaryPort() {
+        return primaryPort;
+    }
+
     public int getSecondaryPort() {
         return secondaryPort;
+    }
+
+    public String getContainerName() {
+        return containerName;
     }
 
     public Set<ServiceType> getAvailableServices() {

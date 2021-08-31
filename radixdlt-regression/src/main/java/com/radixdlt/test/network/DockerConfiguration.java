@@ -2,24 +2,28 @@ package com.radixdlt.test.network;
 
 
 import com.radixdlt.test.utils.TestingUtils;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.experimental.Accessors;
 
 /**
  * Configuration properties for using docker in the context of a radix (test) network
  */
-@Getter
-@AllArgsConstructor
 public class DockerConfiguration {
 
     private final String socketUrl;
     private final String containerName;
-    @Accessors(fluent = true)
     private final boolean shouldInitializeNetwork;
     private final String image;
     private final int initialNumberOfNodes;
     private final String networkName;
+
+    public DockerConfiguration(String socketUrl, String containerName, boolean shouldInitializeNetwork, String image, int initialNumberOfNodes,
+                               String networkName) {
+        this.socketUrl = socketUrl;
+        this.containerName = containerName;
+        this.shouldInitializeNetwork = shouldInitializeNetwork;
+        this.image = image;
+        this.initialNumberOfNodes = initialNumberOfNodes;
+        this.networkName = networkName;
+    }
 
     public static DockerConfiguration fromEnv() {
         var socketUrl = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_SOCKET_URL", "unix:///var/run/docker.sock");
@@ -34,6 +38,30 @@ public class DockerConfiguration {
         var initialNumberOfNodes = Integer.parseInt(initialNumberOfNodesString);
         var networkName = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_NETWORK_NAME", "system_testing_network");
         return new DockerConfiguration(socketUrl, containerName, shouldInitializeNetwork, image, initialNumberOfNodes, networkName);
+    }
+
+    public String getNetworkName() {
+        return networkName;
+    }
+
+    public String getSocketUrl() {
+        return socketUrl;
+    }
+
+    public String getContainerName() {
+        return containerName;
+    }
+
+    public boolean isShouldInitializeNetwork() {
+        return shouldInitializeNetwork;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public int getInitialNumberOfNodes() {
+        return initialNumberOfNodes;
     }
 
 }

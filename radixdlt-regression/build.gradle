@@ -133,7 +133,8 @@ dependencies {
     implementation 'org.buildobjects:jproc:2.6.2'
     implementation 'org.awaitility:awaitility:4.0.3'
 
-    implementation 'org.projectlombok:lombok:1.18.20'
+    // the project lobmok dependencies.
+    // Normally the lombok plugin is used, but for some reason it doesn't work so the deps are added manually
     compileOnly 'org.projectlombok:lombok:1.18.20'
     annotationProcessor 'org.projectlombok:lombok:1.18.20'
     testCompileOnly 'org.projectlombok:lombok:1.18.20'
@@ -143,8 +144,4 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'io.cucumber:cucumber-java:6.10.3'
     testImplementation 'io.cucumber:cucumber-junit:6.10.3'
-    //testImplementation 'org.awaitility:awaitility:4.0.3'
-    testImplementation 'com.github.docker-java:docker-java:3.2.8'
-    testImplementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.8'
-    testImplementation 'com.konghq:unirest-java:3.11.09:standalone'
 }

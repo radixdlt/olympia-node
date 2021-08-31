@@ -1,5 +1,6 @@
 package com.radixdlt.test.network;
 
+import com.github.dockerjava.api.exception.DockerException;
 import com.google.common.collect.Sets;
 import com.radixdlt.test.network.client.RadixHttpClient;
 import com.radixdlt.test.network.client.docker.DockerClient;
@@ -93,7 +94,11 @@ public class RadixNetworkNodeLocator {
         availableNodeServices.add(RadixNode.ServiceType.FAUCET);
 
         // check that the container name is correct. TODO handle exception?
-        dockerClient.runShellCommandAndGetOutput(expectedContainerName, "pwd");
+        try {
+            dockerClient.runShellCommandAndGetOutput(expectedContainerName, "pwd");
+        } catch(DockerException e) {
+            logger.warn("Docker client could not connect due to {} and will be disabled.", e.getMessage());
+        }
 
         return new RadixNode(jsonRpcRootUrl, primaryPort, secondaryPort, expectedContainerName, availableNodeServices);
     }

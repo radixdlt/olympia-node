@@ -40,7 +40,7 @@ public class RadixNetwork {
         prettyPrintConfiguration(configuration);
 
         var dockerClient = createDockerClient(configuration);
-        if (configuration.getDockerConfiguration().shouldInitializeNetwork()) {
+        if (configuration.getDockerConfiguration().isShouldInitializeNetwork()) {
             LocalDockerNetworkCreator.createNewLocalNetwork(configuration, dockerClient);
         }
 
@@ -57,27 +57,6 @@ public class RadixNetwork {
         radixNodes.forEach(logger::debug);
 
         return new RadixNetwork(configuration, networkId, radixNodes, httpClient, dockerClient);
-    }
-
-    private static void prettyPrintConfiguration(RadixNetworkConfiguration configuration) {
-        logger.debug("Network configuration:");
-        logger.debug("JSON-RPC URL: {}, type: {}", configuration.getJsonRpcRootUrl(), configuration.getType());
-    }
-
-    private static DockerClient createDockerClient(RadixNetworkConfiguration configuration) {
-        var dockerConfiguration = configuration.getDockerConfiguration();
-        DockerClient dockerClient;
-        switch (configuration.getType()) {
-            case LOCALNET:
-                dockerClient = new LocalDockerClient(dockerConfiguration.getSocketUrl());
-                break;
-            case TESTNET:
-            default:
-                throw new RuntimeException("Unimplemented");
-        }
-        dockerClient.connect();
-        logger.debug("Successfully initialized a {} docker client", configuration.getType());
-        return dockerClient;
     }
 
     public Account generateNewAccount() {
@@ -100,6 +79,39 @@ public class RadixNetwork {
         var txID = httpClient.callFaucet(nodeWithFaucet.getRootUrl(), nodeWithFaucet.getSecondaryPort(), address);
         logger.debug("Successfully called faucet to send tokens to {}. TxID: {}", address, txID);
         return txID;
+    }
+
+    public DockerClient getDockerClient() {
+        return dockerClient;
+    }
+
+    public List<RadixNode> getNodes() {
+        return nodes;
+    }
+
+    public RadixNetworkConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    private static void prettyPrintConfiguration(RadixNetworkConfiguration configuration) {
+        logger.debug("Network configuration:");
+        logger.debug("JSON-RPC URL: {}, type: {}", configuration.getJsonRpcRootUrl(), configuration.getType());
+    }
+
+    private static DockerClient createDockerClient(RadixNetworkConfiguration configuration) {
+        var dockerConfiguration = configuration.getDockerConfiguration();
+        DockerClient dockerClient;
+        switch (configuration.getType()) {
+            case LOCALNET:
+                dockerClient = new LocalDockerClient(dockerConfiguration.getSocketUrl());
+                break;
+            case TESTNET:
+            default:
+                throw new RuntimeException("Unimplemented");
+        }
+        dockerClient.connect();
+        logger.debug("Successfully initialized a {} docker client", configuration.getType());
+        return dockerClient;
     }
 
 }

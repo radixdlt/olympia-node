@@ -5,34 +5,42 @@ import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Ports;
 import com.radixdlt.test.network.RadixNetworkConfiguration;
+import com.radixdlt.test.network.client.RadixHttpClient;
+import com.radixdlt.test.network.client.RadixHttpClient.HealthStatus;
+import com.radixdlt.test.utils.TestingUtils;
 import com.radixdlt.test.utils.universe.UniverseUtils;
 import com.radixdlt.test.utils.universe.UniverseVariables;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.compress.utils.Lists;
-import org.apache.commons.lang.StringUtils;
-import org.glassfish.jersey.internal.guava.Joiner;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.awaitility.Durations;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.awaitility.Awaitility.await;
 
 /**
  * self-explanatory
  */
-@Log4j2
 public class LocalDockerNetworkCreator {
+
+    private static final Logger logger = LogManager.getLogger();
+
+    public final static int MAX_NUMBER_OF_NODES = 3;
+    public final static Duration MAX_TIME_TO_WAIT_FOR_NODES_UP = Durations.TWO_MINUTES;
 
     public static void createNewLocalNetwork(RadixNetworkConfiguration configuration, DockerClient dockerClient) {
         int numberOfNodes = configuration.getDockerConfiguration().getInitialNumberOfNodes();
-        log.info("Initializing new docker network with {} nodes...", numberOfNodes);
+        logger.info("Initializing new docker network with {} nodes...", numberOfNodes);
 
-        var variables = UniverseUtils.generateEnvironmentVariables(3); // the max # of nodes
-        var firstNodePublicKey = variables.getValidatorKeypairs().get(0).getPublicKey();
+        var variables = UniverseUtils.generateEnvironmentVariables(MAX_NUMBER_OF_NODES);
 
         // network stuff
-        String networkName = configuration.getDockerConfiguration().getNetworkName();
+        var networkName = configuration.getDockerConfiguration().getNetworkName();
         dockerClient.createNetwork(networkName);
 
         // starting the network
@@ -58,7 +66,31 @@ public class LocalDockerNetworkCreator {
             );
         });
 
-        log.info("Network initialized");
+        logger.info("Network started. Waiting for all nodes to be UP...");
+
+        waitUntilNodesAreUp(configuration, MAX_NUMBER_OF_NODES);
+
+        logger.info("All nodes are UP");
+    }
+
+    private static void waitUntilNodesAreUp(RadixNetworkConfiguration configuration, int numberOfNodes) {
+        var secondaryPort = configuration.getSecondaryPort();
+        var httpClient = RadixHttpClient.fromRadixNetworkConfiguration(configuration);
+
+        List<String> rootUrls = IntStream.range(0, numberOfNodes).mapToObj(index -> "http://localhost:" + (secondaryPort + index))
+            .collect(Collectors.toList());
+
+        rootUrls.parallelStream().forEach(rootUrl -> {
+            await().atMost(MAX_TIME_TO_WAIT_FOR_NODES_UP).ignoreExceptions().until(() -> {
+                TestingUtils.sleepMillis(250);
+                HealthStatus status = httpClient.getHealthStatus(rootUrl);
+                if (!status.equals(HealthStatus.UP)) {
+                    return false;
+                }
+                logger.debug("Node at {} is UP", rootUrl);
+                return true;
+            });
+        });
     }
 
     private static String generateRemoteSeedsConfig(UniverseVariables variables, RadixNetworkConfiguration configuration, int nodeNumber) {
@@ -85,12 +117,10 @@ public class LocalDockerNetworkCreator {
         env.add("JAVA_OPTS=-server -Xmx512m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:+AlwaysPreTouch -Dguice_bytecode_gen_option=DISABLED " +
             "-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom " +
             "-Dcom.sun.management.jmxremote.port=9011 -Dcom.sun.management.jmxremote.rmi.port=9011 -Dcom.sun.management.jmxremote.authenticate=false " +
-            "-Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=core -agentlib:jdwp=transport=dt_socket,address=50505,suspend=n,server=y");
+            "-Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50505,suspend=n,server=y");
 
         // per node variables
-        //RADIXDLT_NETWORK_SEEDS_REMOTE: "radix://${RADIXDLT_VALIDATOR_1_PUBKEY}@core1,radix://${RADIXDLT_VALIDATOR_2_PUBKEY}@core2"
-        //env.add("RADIXDLT_NETWORK_SEEDS_REMOTE=radix://" + fixedPublicKey + "@docker_test_core0_1");
-        //env.add("RADIXDLT_NETWORK_SEEDS_REMOTE=" + remoteSeeds);
+        env.add("RADIXDLT_NETWORK_SEEDS_REMOTE=" + remoteSeeds);
         env.add("RADIXDLT_NODE_KEY=" + privateKey);
         env.add("RADIXDLT_HOST_IP_ADDRESS=" + hostIpAddress);
 
@@ -103,7 +133,6 @@ public class LocalDockerNetworkCreator {
         env.add("RADIXDLT_ACCOUNT_API_ENABLE=true");
         env.add("RADIXDLT_METRICS_API_ENABLE=true");
         env.add("RADIXDLT_CONSTRUCT_API_ENABLE=true");
-
         env.add("RADIXDLT_CHAOS_API_ENABLE=true");
         env.add("RADIXDLT_FAUCET_API_ENABLE=true");
         env.add("RADIXDLT_HEALTH_API_ENABLE=true");
@@ -112,22 +141,23 @@ public class LocalDockerNetworkCreator {
 
         // genesis transaction
         env.add("RADIXDLT_GENESIS_TXN=" + genesisTransaction);
+
         return env;
     }
 
     private static HostConfig createHostConfigWithPortBindings(int index, List<ExposedPort> exposedPorts, int primaryPort,
                                                                int secondaryPort) {
-        Ports portBindings = new Ports();
+        var portBindings = new Ports();
 
-        // primary port
+        // primary port (client API)
         int exposedPrimaryPortNumber = primaryPort + index;
-        ExposedPort exposedPrimaryPort = ExposedPort.tcp(primaryPort);
+        var exposedPrimaryPort = ExposedPort.tcp(primaryPort);
         portBindings.bind(exposedPrimaryPort, Ports.Binding.bindPort(exposedPrimaryPortNumber));
         exposedPorts.add(exposedPrimaryPort);
 
-        // secondary port
+        // secondary port (node API)
         int exposedSecondaryPortNumber = secondaryPort + index;
-        ExposedPort exposedSecondaryPort = ExposedPort.tcp(secondaryPort);
+        var exposedSecondaryPort = ExposedPort.tcp(secondaryPort);
         portBindings.bind(exposedSecondaryPort, Ports.Binding.bindPort(exposedSecondaryPortNumber));
         exposedPorts.add(exposedSecondaryPort);
 

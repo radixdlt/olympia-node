@@ -29,4 +29,6 @@ public interface DockerClient {
 
     void createNetwork(String networkName);
 
+    void restartContainer(String containerId);
+
 }

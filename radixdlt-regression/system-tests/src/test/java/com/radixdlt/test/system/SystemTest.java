@@ -1,37 +1,32 @@
 package com.radixdlt.test.system;
 
-import com.radixdlt.test.network.RadixNetwork;
-import com.radixdlt.test.utils.universe.UniverseUtils;
+import com.radixdlt.test.RadixNetworkTest;
+import com.radixdlt.test.network.RadixNode;
 import com.radixdlt.test.utils.universe.UniverseVariables;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 
-public class SystemTest {
+public class SystemTest extends RadixNetworkTest {
 
-    private RadixNetwork radixNetwork;
+    protected static final Logger logger = LogManager.getLogger();
+
     private UniverseVariables variables;
 
     @BeforeEach
     public void setup(TestInfo testInfo) {
-        radixNetwork = RadixNetwork.initializeFromEnv();
-        createDockerNetwork();
+        logger.info(testInfo);
     }
 
-    public SystemTest() {
-
+    public void restartNode(RadixNode node) {
+        radixNetwork.getDockerClient().restartContainer(node.getContainerName());
     }
 
-    public void createDockerNetwork() {
-        // initialize environment properties for a large number of validators
-        this.variables = UniverseUtils.generateEnvironmentVariables(3);
-
-        // start 3 of them
-        //DockerClient dockerClient = radixNetwork.getDockerClient();
-
-    }
-
-    public void addNode() {
-
+    @AfterEach
+    public void teardown() {
+        logger.info("Stop nodes!");
     }
 
 }

@@ -1,7 +1,7 @@
 package com.radixdlt.test.utils;
 
-import com.radixdlt.test.account.Account;
 import com.radixdlt.application.tokens.TokenUtils;
+import com.radixdlt.test.account.Account;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 import org.apache.logging.log4j.LogManager;
@@ -27,8 +27,12 @@ public final class TestingUtils {
     }
 
     public static void sleep(int seconds) {
+        sleepMillis(1000L * seconds);
+    }
+
+    public static void sleepMillis(long millis) {
         try {
-            Thread.sleep(seconds * 1000L);
+            Thread.sleep(millis);
         } catch (InterruptedException e) {
             throw new TestFailureException(e);
         }

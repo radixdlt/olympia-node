@@ -1,6 +1,5 @@
 package com.radixdlt.test.utils.universe;
 
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang.StringUtils;
 import org.radix.GenerateUniverses;
 
@@ -13,7 +12,6 @@ import java.util.stream.IntStream;
 /**
  * Helps when generating universes and such
  */
-@Log4j2
 public class UniverseUtils {
 
     /**

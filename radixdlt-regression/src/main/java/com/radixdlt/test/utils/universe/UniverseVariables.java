@@ -1,18 +1,29 @@
 package com.radixdlt.test.utils.universe;
 
-import lombok.Data;
-import lombok.ToString;
-
 import java.util.List;
 
 /**
  * holds the output from the universe generation
  */
-@Data
-@ToString
 public class UniverseVariables {
 
     private List<ValidatorKeypair> validatorKeypairs;
     private String genesisTransaction;
+
+    public List<ValidatorKeypair> getValidatorKeypairs() {
+        return validatorKeypairs;
+    }
+
+    public void setValidatorKeypairs(List<ValidatorKeypair> validatorKeypairs) {
+        this.validatorKeypairs = validatorKeypairs;
+    }
+
+    public String getGenesisTransaction() {
+        return genesisTransaction;
+    }
+
+    public void setGenesisTransaction(String genesisTransaction) {
+        this.genesisTransaction = genesisTransaction;
+    }
 
 }

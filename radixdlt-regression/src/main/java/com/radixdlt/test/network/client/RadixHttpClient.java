@@ -2,6 +2,7 @@ package com.radixdlt.test.network.client;
 
 import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.client.lib.api.sync.RadixApiException;
+import com.radixdlt.test.network.RadixNode;
 import com.radixdlt.utils.functional.Failure;
 import kong.unirest.HttpResponse;
 import kong.unirest.JsonNode;
@@ -18,7 +19,14 @@ import java.util.Base64;
  */
 public class RadixHttpClient {
 
+    public enum HealthStatus {
+        BOOTING,
+        UP
+    }
+
     private static final String FAUCET_PATH = "/faucet";
+    private static final String HEALTH_PATH = "/health";
+    private static final String METRICS_PATH = "/metrics";
 
     public static RadixHttpClient fromRadixNetworkConfiguration(RadixNetworkConfiguration configuration) {
         return new RadixHttpClient(configuration.getBasicAuth());
@@ -29,6 +37,19 @@ public class RadixHttpClient {
             var encodedCredentials = Base64.getEncoder().encodeToString(basicAuth.getBytes(StandardCharsets.UTF_8));
             Unirest.config().setDefaultHeader("Authorization", "Basic " + encodedCredentials);
         }
+        Unirest.config().automaticRetries(false);
+    }
+
+    public HealthStatus getHealthStatus(String rootUrl) {
+        String url = rootUrl + HEALTH_PATH;
+        HttpResponse<JsonNode> response = Unirest.get(url).asJson();
+        return HealthStatus.valueOf(response.getBody().getObject().getString("network_status"));
+    }
+
+    public String getMetrics(String rootUrl) {
+        String url = rootUrl + METRICS_PATH;
+        HttpResponse<JsonNode> response = Unirest.get(url).asJson();
+        return response.getBody().toPrettyString();
     }
 
     public String callFaucet(String rootUrl, int port, String address) {

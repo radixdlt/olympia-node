@@ -1,13 +1,14 @@
 package com.radixdlt.test;
 
 import com.google.common.collect.Lists;
-import com.radixdlt.test.account.Account;
-import com.radixdlt.test.network.RadixNetwork;
-import com.radixdlt.test.utils.TransactionUtils;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.dto.Balance;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.test.account.Account;
+import com.radixdlt.test.network.RadixNetwork;
+import com.radixdlt.test.network.checks.Checks;
+import com.radixdlt.test.utils.TransactionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,7 +21,8 @@ public abstract class RadixNetworkTest {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private final RadixNetwork radixNetwork;
+    protected final RadixNetwork radixNetwork;
+    protected final Checks checks;
     private final List<Account> accounts;
     protected final Account account1;
     protected final Account account2;
@@ -30,6 +32,7 @@ public abstract class RadixNetworkTest {
 
     public RadixNetworkTest() {
         radixNetwork = RadixNetwork.initializeFromEnv();
+        checks = Checks.forNodesAndCheckConfiguration(radixNetwork.getNodes(), radixNetwork.getConfiguration());
         accounts = Lists.newArrayList();
         IntStream.range(0, 6).forEach(i -> {
             var account = radixNetwork.generateNewAccount();
