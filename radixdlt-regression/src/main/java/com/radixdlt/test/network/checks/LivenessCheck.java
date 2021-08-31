@@ -35,7 +35,7 @@ public class LivenessCheck implements Check {
     }
 
     @Override
-    public boolean check(Object ... options) {
+    public boolean check(Object... options) {
         var patienceSeconds = determinePatience(options);
         var highestQC = getMaxHighestQC(nodes);
         TestingUtils.sleep(patienceSeconds);
@@ -46,7 +46,7 @@ public class LivenessCheck implements Check {
         return comparisonResult == -1;
     }
 
-    private int determinePatience(Object ... options) {
+    private int determinePatience(Object... options) {
         return (options.length == 1) ? Integer.parseInt(options[0].toString()) : patienceSeconds;
     }
 

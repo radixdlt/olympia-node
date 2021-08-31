@@ -28,7 +28,7 @@ public class Checks {
         checks.put(LivenessCheck.class, livenessCheck);
     }
 
-    public boolean runCheck(String name, Object ... options) {
+    public boolean runCheck(String name, Object... options) {
         AtomicReference<Check> checkWithMatchingName = new AtomicReference<>();
         checks.forEach((key, value) -> {
             if (key.getSimpleName().toLowerCase().contains(name.toLowerCase())) {
@@ -43,7 +43,7 @@ public class Checks {
         return checkWithMatchingName.get().check(options);
     }
 
-    public boolean runCheck(Class<?> type, Object ... options) {
+    public boolean runCheck(Class<?> type, Object... options) {
         if (!checks.containsKey(type)) {
             throw new IllegalArgumentException("Check '" + type + "' not found");
         }
