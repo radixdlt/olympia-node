@@ -48,7 +48,12 @@ public class RadixNode {
         return availableServices;
     }
 
+    @Override
     public String toString() {
+        return String.format("%s:%d|%d", rootUrl, primaryPort, secondaryPort);
+    }
+
+    public String toStringWithServices() {
         return String.format("%s:%d:%d, container: %S, services: %s", rootUrl, primaryPort, secondaryPort, containerName,
             availableServices);
     }

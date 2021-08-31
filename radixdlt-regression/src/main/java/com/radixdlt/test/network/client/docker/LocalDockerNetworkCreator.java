@@ -6,7 +6,6 @@ import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Ports;
 import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.test.network.client.RadixHttpClient;
-import com.radixdlt.test.network.client.RadixHttpClient.HealthStatus;
 import com.radixdlt.test.utils.TestingUtils;
 import com.radixdlt.test.utils.universe.UniverseUtils;
 import com.radixdlt.test.utils.universe.UniverseVariables;
@@ -21,8 +20,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.awaitility.Awaitility.await;
-
 /**
  * self-explanatory
  */
@@ -31,13 +28,12 @@ public class LocalDockerNetworkCreator {
     private static final Logger logger = LogManager.getLogger();
 
     public static final int MAX_NUMBER_OF_NODES = 3;
-    public static final Duration MAX_TIME_TO_WAIT_FOR_NODES_UP = Durations.TWO_MINUTES;
 
     private LocalDockerNetworkCreator() {
 
     }
 
-    public static void createNewLocalNetwork(RadixNetworkConfiguration configuration, DockerClient dockerClient) {
+    public static UniverseVariables createNewLocalNetwork(RadixNetworkConfiguration configuration, DockerClient dockerClient) {
         int numberOfNodes = configuration.getDockerConfiguration().getInitialNumberOfNodes();
         logger.info("Initializing new docker network with {} nodes...", numberOfNodes);
 
@@ -45,7 +41,9 @@ public class LocalDockerNetworkCreator {
 
         // network stuff
         var networkName = configuration.getDockerConfiguration().getNetworkName();
-        dockerClient.createNetwork(networkName);
+        if (!Boolean.parseBoolean(System.getenv("RADIXDLT_DOCKER_DO_NOT_CREATE_NETWORK"))) {
+            dockerClient.createNetwork(networkName);
+        }
 
         // starting the network
         IntStream.range(0, numberOfNodes).forEach(nodeNumber -> {
@@ -75,6 +73,7 @@ public class LocalDockerNetworkCreator {
         waitUntilNodesAreUp(configuration, MAX_NUMBER_OF_NODES);
 
         logger.info("All nodes are UP");
+        return variables;
     }
 
     private static void waitUntilNodesAreUp(RadixNetworkConfiguration configuration, int numberOfNodes) {
@@ -84,17 +83,9 @@ public class LocalDockerNetworkCreator {
         List<String> rootUrls = IntStream.range(0, numberOfNodes).mapToObj(index -> "http://localhost:" + (secondaryPort + index))
             .collect(Collectors.toList());
 
-        rootUrls.parallelStream().forEach(rootUrl -> {
-            await().atMost(MAX_TIME_TO_WAIT_FOR_NODES_UP).ignoreExceptions().until(() -> {
-                TestingUtils.sleepMillis(250);
-                HealthStatus status = httpClient.getHealthStatus(rootUrl);
-                if (!status.equals(HealthStatus.UP)) {
-                    return false;
-                }
-                logger.debug("Node at {} is UP", rootUrl);
-                return true;
-            });
-        });
+        rootUrls.parallelStream().forEach(rootUrl ->
+            TestingUtils.waitForNodeToBeUp(httpClient, rootUrl)
+        );
     }
 
     private static String generateRemoteSeedsConfig(UniverseVariables variables, RadixNetworkConfiguration configuration, int nodeNumber) {

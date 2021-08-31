@@ -84,13 +84,13 @@ public class LocalDockerClient implements DockerClient {
     public void createNetwork(String networkName) {
         try {
             dockerClient.inspectNetworkCmd().withNetworkId(networkName).exec();
-            //wipeNetwork(networkName);
+            wipeNetwork(networkName);
         } catch (NotFoundException e) {
             // all good, proceed
         } catch (BadRequestException e) { // weird edge case
-            //wipeNetwork(networkName);
+            wipeNetwork(networkName);
         }
-        //dockerClient.createNetworkCmd().withName(networkName).exec();
+        dockerClient.createNetworkCmd().withName(networkName).exec();
     }
 
     @Override
@@ -98,7 +98,8 @@ public class LocalDockerClient implements DockerClient {
         dockerClient.restartContainerCmd(containerId).exec();
     }
 
-    private void wipeNetwork(String networkName) {
+    @Override
+    public void wipeNetwork(String networkName) {
         var count = new AtomicInteger();
         dockerClient.listContainersCmd().withShowAll(true).exec().forEach(container -> {
             if (container.getNetworkSettings().getNetworks().keySet().contains(networkName)) {

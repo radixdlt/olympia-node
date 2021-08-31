@@ -30,4 +30,9 @@ public interface DockerClient {
 
     void restartContainer(String containerId);
 
+    /**
+     * removes the network and ALL of its containers
+     */
+    void wipeNetwork(String networkName);
+
 }

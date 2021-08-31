@@ -1,7 +1,6 @@
 package com.radixdlt.test.network.checks;
 
 import com.radixdlt.test.network.RadixNode;
-import com.radixdlt.test.network.client.Metrics;
 import com.radixdlt.test.network.client.RadixHttpClient;
 import com.radixdlt.test.utils.TestingUtils;
 import org.apache.logging.log4j.LogManager;
@@ -35,22 +34,30 @@ public class LivenessCheck implements Check {
         this.client = client;
     }
 
-    public boolean check() {
+    @Override
+    public boolean check(Object ... options) {
+        var patienceSeconds = determinePatience(options);
         var highestQC = getMaxHighestQC(nodes);
         TestingUtils.sleep(patienceSeconds);
         var highestQCAfterAWhile = getMaxHighestQC(nodes);
 
         var comparisonResult = VIEW_COMPARATOR.compare(highestQC, highestQCAfterAWhile);
+        logger.trace("First: {}, second: {}, result: {}", highestQC, highestQCAfterAWhile, comparisonResult);
         return comparisonResult == -1;
+    }
+
+    private int determinePatience(Object ... options) {
+        return (options.length == 1) ? Integer.parseInt(options[0].toString()) : patienceSeconds;
     }
 
     private EpochView getMaxHighestQC(List<RadixNode> nodes) {
         Optional<EpochView> maybeHighestView = nodes.stream().map(node -> {
             try {
                 var metrics = client.getMetrics(node.getRootUrl() + ":" + node.getSecondaryPort());
+                logger.trace("Node ({}}) gave: {}", node, new EpochView(metrics.getEpoch(), metrics.getView()));
                 return new EpochView(metrics.getEpoch(), metrics.getView());
             } catch (Exception e) {
-                logger.warn("Could not get epoch/view: {}", e.getMessage());
+                logger.trace("Could not get epoch/view for {}: {}", node, e.getMessage());
                 return null;
             }
         }).filter(Objects::nonNull).max(VIEW_COMPARATOR);

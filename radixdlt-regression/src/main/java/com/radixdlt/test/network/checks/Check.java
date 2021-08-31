@@ -5,6 +5,6 @@ public interface Check {
     /**
      * TODO document
      */
-    boolean check();
+    boolean check(Object ... options);
 
 }

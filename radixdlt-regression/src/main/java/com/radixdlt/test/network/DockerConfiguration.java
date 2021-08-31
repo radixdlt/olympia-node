@@ -52,7 +52,7 @@ public class DockerConfiguration {
         return containerName;
     }
 
-    public boolean isShouldInitializeNetwork() {
+    public boolean shouldInitializeNetwork() {
         return shouldInitializeNetwork;
     }
 

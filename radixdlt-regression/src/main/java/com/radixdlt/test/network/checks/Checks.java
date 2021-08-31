@@ -7,7 +7,6 @@ import com.radixdlt.test.network.client.RadixHttpClient;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Checks {
@@ -25,11 +24,11 @@ public class Checks {
         checks = Maps.newHashMap();
 
         // initialize the checks
-        var livenessCheck = new LivenessCheck(nodes, 2, RadixHttpClient.fromRadixNetworkConfiguration(configuration));
+        var livenessCheck = new LivenessCheck(nodes, 3, RadixHttpClient.fromRadixNetworkConfiguration(configuration));
         checks.put(LivenessCheck.class, livenessCheck);
     }
 
-    public boolean runCheck(String name) {
+    public boolean runCheck(String name, Object ... options) {
         AtomicReference<Check> checkWithMatchingName = new AtomicReference<>();
         checks.forEach((key, value) -> {
             if (key.getSimpleName().toLowerCase().contains(name.toLowerCase())) {
@@ -41,14 +40,14 @@ public class Checks {
         if (checkWithMatchingName.get() == null) {
             throw new IllegalArgumentException("Check named '" + name + "' not found");
         }
-        return checkWithMatchingName.get().check();
+        return checkWithMatchingName.get().check(options);
     }
 
-    public boolean runCheck(Class<?> type) {
+    public boolean runCheck(Class<?> type, Object ... options) {
         if (!checks.containsKey(type)) {
             throw new IllegalArgumentException("Check '" + type + "' not found");
         }
-        return checks.get(type).check();
+        return checks.get(type).check(options);
     }
 
 }

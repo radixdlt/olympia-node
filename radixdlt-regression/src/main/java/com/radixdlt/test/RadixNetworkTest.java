@@ -86,8 +86,8 @@ public abstract class RadixNetworkTest {
      * @throws IllegalArgumentException if such a check does not exist
      * @throws CheckFailureException    if the check failed
      */
-    public void runCheck(String name) {
-        boolean result = checks.runCheck(name);
+    public void runCheck(String name, Object ... variables) {
+        boolean result = checks.runCheck(name, variables);
         if (!result) {
             throw new CheckFailureException(name);
         }

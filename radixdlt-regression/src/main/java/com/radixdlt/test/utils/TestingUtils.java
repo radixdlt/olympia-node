@@ -2,6 +2,9 @@ package com.radixdlt.test.utils;
 
 import com.radixdlt.application.tokens.TokenUtils;
 import com.radixdlt.test.account.Account;
+import com.radixdlt.test.network.RadixNetworkConfiguration;
+import com.radixdlt.test.network.RadixNode;
+import com.radixdlt.test.network.client.RadixHttpClient;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 import org.apache.logging.log4j.LogManager;
@@ -9,12 +12,16 @@ import org.apache.logging.log4j.Logger;
 import org.awaitility.Durations;
 import org.awaitility.core.ConditionTimeoutException;
 
+import java.time.Duration;
+
 import static org.awaitility.Awaitility.await;
 
 /**
  * Various testing utilities
  */
 public final class TestingUtils {
+
+    public static final Duration MAX_TIME_TO_WAIT_FOR_NODES_UP = Durations.TWO_MINUTES;
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -92,6 +99,26 @@ public final class TestingUtils {
         } catch (ConditionTimeoutException e) {
             throw new TestFailureException("Account's balance did not change");
         }
+    }
+
+    /**
+     * Uses a default duration (might want to externalize this)
+     */
+    public static void waitForNodeToBeUp(RadixHttpClient httpClient, String rootUrl) {
+        await().atMost(MAX_TIME_TO_WAIT_FOR_NODES_UP).ignoreExceptions().until(() -> {
+            TestingUtils.sleepMillis(250);
+            RadixHttpClient.HealthStatus status = httpClient.getHealthStatus(rootUrl);
+            if (!status.equals(RadixHttpClient.HealthStatus.UP)) {
+                return false;
+            }
+            logger.debug("Node at {} is UP", rootUrl);
+            return true;
+        });
+    }
+
+    public static void waitForNodeToBeUp(RadixNode node, RadixNetworkConfiguration configuration) {
+        String healthRootUrl = node.getRootUrl() + ":" + node.getSecondaryPort();
+        waitForNodeToBeUp(RadixHttpClient.fromRadixNetworkConfiguration(configuration), healthRootUrl);
     }
 
     /**

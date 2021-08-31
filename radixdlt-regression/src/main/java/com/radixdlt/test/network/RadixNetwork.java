@@ -6,6 +6,7 @@ import com.radixdlt.test.network.client.RadixHttpClient;
 import com.radixdlt.test.network.client.docker.DockerClient;
 import com.radixdlt.test.network.client.docker.LocalDockerClient;
 import com.radixdlt.test.network.client.docker.LocalDockerNetworkCreator;
+import com.radixdlt.test.utils.universe.UniverseVariables;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,14 +26,16 @@ public class RadixNetwork {
     private final List<RadixNode> nodes;
     private final DockerClient dockerClient;
     private final RadixHttpClient httpClient;
+    private final UniverseVariables universeVariables;
 
     private RadixNetwork(RadixNetworkConfiguration configuration, int networkId, List<RadixNode> nodes,
-                         RadixHttpClient httpClient, DockerClient dockerClient) {
+                         RadixHttpClient httpClient, DockerClient dockerClient, UniverseVariables universeVariables) {
         this.configuration = configuration;
         this.networkId = networkId;
         this.nodes = nodes;
         this.httpClient = httpClient;
         this.dockerClient = dockerClient;
+        this.universeVariables = universeVariables;
     }
 
     public static RadixNetwork initializeFromEnv() {
@@ -40,8 +43,9 @@ public class RadixNetwork {
         prettyPrintConfiguration(configuration);
 
         var dockerClient = createDockerClient(configuration);
-        if (configuration.getDockerConfiguration().isShouldInitializeNetwork()) {
-            LocalDockerNetworkCreator.createNewLocalNetwork(configuration, dockerClient);
+        UniverseVariables universeVariables = null;
+        if (configuration.getDockerConfiguration().shouldInitializeNetwork()) {
+            universeVariables = LocalDockerNetworkCreator.createNewLocalNetwork(configuration, dockerClient);
         }
 
         var networkId = configuration.pingJsonRpcApi();
@@ -56,7 +60,7 @@ public class RadixNetwork {
         logger.info("Located {} nodes", radixNodes.size());
         radixNodes.forEach(logger::debug);
 
-        return new RadixNetwork(configuration, networkId, radixNodes, httpClient, dockerClient);
+        return new RadixNetwork(configuration, networkId, radixNodes, httpClient, dockerClient, universeVariables);
     }
 
     public Account generateNewAccount() {
@@ -91,6 +95,10 @@ public class RadixNetwork {
 
     public RadixNetworkConfiguration getConfiguration() {
         return configuration;
+    }
+
+    public UniverseVariables getUniverseVariables() {
+        return universeVariables;
     }
 
     private static void prettyPrintConfiguration(RadixNetworkConfiguration configuration) {
