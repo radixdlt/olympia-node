@@ -38,16 +38,16 @@ These are the environment variables that the test framework uses.
 
 General properties:
 
-* `RADIXDLT_JSON_RPC_API_ROOT_URL`: The tests will use this JSON-RPC to communicate with the network e.g. submit transactions, query state.
+* `RADIXDLT_JSON_RPC_API_ROOT_URL`: The JSON-RPC API of the network to test.
 * `RADIXDLT_JSON_RPC_API_PRIMARY_PORT`: Radix JSON-RPC APIs have two ports: A primary one for public functionality and a secondary one for internal ones. 
-* `RADIXDLT_JSON_RPC_API_SECONDARY_PORT`: See above
-* `RADIXDLT_BASIC_AUTH`: If your JSON-RPC API is using basic auth, set the credentials like username:password. 
+* `RADIXDLT_JSON_RPC_API_SECONDARY_PORT`: See above.
+* `RADIXDLT_BASIC_AUTH`: If your node is using basic auth, set the username:password here.
 
 Docker properties:
 
-* RADIXDLT_DOCKER_DAEMON_URL: 
-* RADIXDLT_DOCKER_CONTAINER_NAME:
-* RADIXDLT_DOCKER_INITIALIZE_NETWORK: 
-* RADIXDLT_DOCKER_IMAGE:
-* RADIXDLT_DOCKER_INITIAL_NUMBER_OF_NODES:
-* RADIXDLT_DOCKER_NETWORK_NAME:
+* `RADIXDLT_DOCKER_DAEMON_URL`: The system tests use docker to create netowrks and manipulate containers. Set the non-TLS docker daemon URL of your docker installation here. 
+* `RADIXDLT_DOCKER_CONTAINER_NAME`: The naming pattern of the containers to be created. Uses wildcard %d for the container number. 
+* `RADIXDLT_DOCKER_INITIALIZE_NETWORK`: Will create a new radix network via docker, before running the tests. When running system tests, this is true by default.  
+* `RADIXDLT_DOCKER_IMAGE`: The radix node image to be used, defaults to radixdlt/radixdlt-core:develop.
+* `RADIXDLT_DOCKER_INITIAL_NUMBER_OF_NODES`: If a network is to be initialized, it will consist of this number of nodes.
+* `RADIXDLT_DOCKER_NETWORK_NAME`: The name of the actual docker network created for system testing.

@@ -9,7 +9,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * 1) We query every node for its highest QC and we calculate the max (biggest) of them all.
