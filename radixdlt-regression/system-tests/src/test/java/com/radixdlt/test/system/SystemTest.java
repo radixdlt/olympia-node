@@ -16,6 +16,11 @@ public class SystemTest extends RadixNetworkTest {
         logger.info("Restarted (docker restart) node {}", node);
     }
 
+    public void stopNode(RadixNode node) {
+        radixNetwork.getDockerClient().stopContainer(node.getContainerName());
+        logger.info("Stopped (docker stop) node {}", node);
+    }
+
     public void waitForNodeToBeUp(RadixNode node) {
         TestingUtils.waitForNodeToBeUp(node, radixNetwork.getConfiguration());
         logger.info("Node {} is UP", node);

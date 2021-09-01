@@ -94,8 +94,13 @@ public class LocalDockerClient implements DockerClient {
     }
 
     @Override
-    public void restartContainer(String containerId) {
-        dockerClient.restartContainerCmd(containerId).exec();
+    public void restartContainer(String containerName) {
+        dockerClient.restartContainerCmd(containerName).exec();
+    }
+
+    @Override
+    public void stopContainer(String containerName) {
+        dockerClient.stopContainerCmd(containerName).exec();
     }
 
     @Override

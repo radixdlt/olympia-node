@@ -8,7 +8,7 @@ public class SmokeTesting extends SystemTest {
     public void smoke_test_1() {
         runCheck("liveness");
         var firstNode = radixNetwork.getNodes().get(0);
-        restartNode(firstNode);
+        stopNode(firstNode);
         runCheck("liveness", 60);
         waitForNodeToBeUp(firstNode);
     }

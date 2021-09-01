@@ -28,7 +28,9 @@ public interface DockerClient {
 
     void createNetwork(String networkName);
 
-    void restartContainer(String containerId);
+    void restartContainer(String containerName);
+
+    void stopContainer(String containerName);
 
     /**
      * removes the network and ALL of its containers
