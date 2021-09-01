@@ -30,13 +30,7 @@ public class Checks {
 
     public boolean runCheck(String name, Object... options) {
         AtomicReference<Check> checkWithMatchingName = new AtomicReference<>();
-        checks.forEach((key, value) -> {
-            if (key.getSimpleName().toLowerCase().contains(name.toLowerCase())) {
-                if (checkWithMatchingName.get() == null) {
-                    checkWithMatchingName.set(value);
-                }
-            }
-        });
+        checks.forEach((key, value) -> checkWithMatchingName.compareAndSet(null, value));
         if (checkWithMatchingName.get() == null) {
             throw new IllegalArgumentException("Check named '" + name + "' not found");
         }

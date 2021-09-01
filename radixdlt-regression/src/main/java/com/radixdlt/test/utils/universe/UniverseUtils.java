@@ -5,7 +5,6 @@ import org.radix.GenerateUniverses;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -24,11 +23,11 @@ public class UniverseUtils {
     public static UniverseVariables generateEnvironmentVariables(int numberOfValidators) {
         // create a custom stream to hold system.out output until the generation finishes.
         // this could be super messy when run concurrently
-        String outputAsString = getUniverseGenerationOutputAsString(numberOfValidators);
-        String[] output = outputAsString.split("\\R");
-        List<ValidatorKeypair> keyPairs = IntStream.range(0, numberOfValidators)
+        var outputAsString = getUniverseGenerationOutputAsString(numberOfValidators);
+        var output = outputAsString.split("\\R");
+        var keyPairs = IntStream.range(0, numberOfValidators)
             .mapToObj(index -> new ValidatorKeypair()).collect(Collectors.toList());
-        UniverseVariables variables = new UniverseVariables();
+        var variables = new UniverseVariables();
         variables.setValidatorKeypairs(keyPairs);
 
         for (String outputLine : output) {
@@ -37,15 +36,15 @@ public class UniverseUtils {
             }
 
             if (outputLine.contains("PUBKEY")) {
-                String publicKey = StringUtils.substringAfter(outputLine, "PUBKEY=");
-                int validatorNumber = Integer.parseInt(StringUtils.substringBetween(outputLine, "VALIDATOR_", "_PUBKEY"));
+                var publicKey = StringUtils.substringAfter(outputLine, "PUBKEY=");
+                var validatorNumber = Integer.parseInt(StringUtils.substringBetween(outputLine, "VALIDATOR_", "_PUBKEY"));
                 keyPairs.get(validatorNumber).setPublicKey(publicKey);
             } else if (outputLine.contains("PRIVKEY")) {
-                String privateKey = StringUtils.substringAfter(outputLine, "PRIVKEY=");
-                int validatorNumber = Integer.parseInt(StringUtils.substringBetween(outputLine, "VALIDATOR_", "_PRIVKEY"));
+                var privateKey = StringUtils.substringAfter(outputLine, "PRIVKEY=");
+                var validatorNumber = Integer.parseInt(StringUtils.substringBetween(outputLine, "VALIDATOR_", "_PRIVKEY"));
                 keyPairs.get(validatorNumber).setPrivateKey(privateKey);
             } else if (outputLine.contains("RADIXDLT_GENESIS_TXN")) {
-                String genesisTransaction = StringUtils.substringAfter(outputLine, "RADIXDLT_GENESIS_TXN=");
+                var genesisTransaction = StringUtils.substringAfter(outputLine, "RADIXDLT_GENESIS_TXN=");
                 variables.setGenesisTransaction(genesisTransaction);
             }
 
@@ -55,9 +54,9 @@ public class UniverseUtils {
     }
 
     private static String getUniverseGenerationOutputAsString(int numberOfValidators) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        PrintStream printStream = new PrintStream(outputStream);
-        PrintStream old = System.out;
+        var outputStream = new ByteArrayOutputStream();
+        var printStream = new PrintStream(outputStream);
+        var old = System.out;
         System.setOut(printStream);
 
         try {
