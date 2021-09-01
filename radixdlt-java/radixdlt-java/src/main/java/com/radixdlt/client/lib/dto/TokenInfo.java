@@ -80,6 +80,8 @@ public final class TokenInfo {
 	private final UInt256 granularity;
 	private final boolean isSupplyMutable;
 	private final UInt256 currentSupply;
+	private final UInt256 totalBurned;
+	private final UInt256 totalMinted;
 	private final String tokenInfoURL;
 	private final String iconURL;
 
@@ -91,6 +93,8 @@ public final class TokenInfo {
 		UInt256 granularity,
 		boolean isSupplyMutable,
 		UInt256 currentSupply,
+		UInt256 totalBurned,
+		UInt256 totalMinted,
 		String tokenInfoURL,
 		String iconURL
 	) {
@@ -101,6 +105,8 @@ public final class TokenInfo {
 		this.granularity = granularity;
 		this.isSupplyMutable = isSupplyMutable;
 		this.currentSupply = currentSupply;
+		this.totalBurned = totalBurned;
+		this.totalMinted = totalMinted;
 		this.tokenInfoURL = tokenInfoURL;
 		this.iconURL = iconURL;
 	}
@@ -114,6 +120,8 @@ public final class TokenInfo {
 		@JsonProperty(value = "granularity", required = true) UInt256 granularity,
 		@JsonProperty(value = "isSupplyMutable", required = true) boolean isSupplyMutable,
 		@JsonProperty(value = "currentSupply", required = true) UInt256 currentSupply,
+		@JsonProperty(value = "totalBurned", required = true) UInt256 totalMinted,
+		@JsonProperty(value = "totalMinted", required = true) UInt256 totalBurned,
 		@JsonProperty(value = "tokenInfoURL", required = true) String tokenInfoURL,
 		@JsonProperty(value = "iconURL", required = true) String iconURL
 	) {
@@ -124,12 +132,15 @@ public final class TokenInfo {
 		requireNonNull(granularity);
 		requireNonNull(isSupplyMutable);
 		requireNonNull(currentSupply);
+		requireNonNull(totalBurned);
+		requireNonNull(totalMinted);
 		requireNonNull(tokenInfoURL);
 		requireNonNull(iconURL);
 
 		return new TokenInfo(
 			name, rri, symbol, description, granularity,
-			isSupplyMutable, currentSupply, tokenInfoURL, iconURL
+			isSupplyMutable, currentSupply, totalBurned, totalMinted,
+			tokenInfoURL, iconURL
 		);
 	}
 
@@ -150,6 +161,8 @@ public final class TokenInfo {
 			&& description.equals(that.description)
 			&& granularity.equals(that.granularity)
 			&& currentSupply.equals(that.currentSupply)
+			&& totalBurned.equals(that.totalBurned)
+			&& totalMinted.equals(that.totalMinted)
 			&& tokenInfoURL.equals(that.tokenInfoURL)
 			&& iconURL.equals(that.iconURL);
 	}
@@ -158,23 +171,26 @@ public final class TokenInfo {
 	public int hashCode() {
 		return Objects.hash(
 			name, rri, symbol, description, granularity,
-			isSupplyMutable, currentSupply, tokenInfoURL, iconURL
+			isSupplyMutable, currentSupply, totalBurned, totalMinted,
+			tokenInfoURL, iconURL
 		);
 	}
 
 	@Override
 	public String toString() {
-		return "TokenInfo("
-			+ "name='" + name + '\''
-			+ ", rri=" + rri
-			+ ", symbol='" + symbol + '\''
-			+ ", description='" + description + '\''
-			+ ", granularity=" + granularity
-			+ ", isSupplyMutable=" + isSupplyMutable
-			+ ", currentSupply=" + currentSupply
-			+ ", tokenInfoURL='" + tokenInfoURL + '\''
-			+ ", iconURL='" + iconURL + '\''
-			+ ')';
+		return "TokenInfo{" +
+			"name='" + name + '\'' +
+			", rri='" + rri + '\'' +
+			", symbol='" + symbol + '\'' +
+			", description='" + description + '\'' +
+			", granularity=" + granularity +
+			", isSupplyMutable=" + isSupplyMutable +
+			", currentSupply=" + currentSupply +
+			", totalBurned=" + totalBurned +
+			", totalMinted=" + totalMinted +
+			", tokenInfoURL='" + tokenInfoURL + '\'' +
+			", iconURL='" + iconURL + '\'' +
+			'}';
 	}
 
 	public String getName() {
@@ -203,6 +219,14 @@ public final class TokenInfo {
 
 	public UInt256 getCurrentSupply() {
 		return currentSupply;
+	}
+
+	public UInt256 getTotalBurned() {
+		return totalBurned;
+	}
+
+	public UInt256 getTotalMinted() {
+		return totalMinted;
 	}
 
 	public String getTokenInfoURL() {

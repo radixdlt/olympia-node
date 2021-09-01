@@ -69,12 +69,17 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.JsonRpcHandler;
+import com.radixdlt.api.data.ApiErrors;
 import com.radixdlt.api.qualifier.ArchiveEndpoint;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.functional.Result;
 
+import static com.radixdlt.api.JsonRpcUtil.response;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
+import static com.radixdlt.api.data.ApiErrors.UNKNOWN_RRI;
+import static com.radixdlt.utils.functional.Result.fromOptional;
 
 public final class ArchiveTokensApiModule extends AbstractModule {
 	@Override
@@ -88,7 +93,7 @@ public final class ArchiveTokensApiModule extends AbstractModule {
 	@ProvidesIntoMap
 	@StringMapKey("tokens.get_native_token")
 	public JsonRpcHandler tokensGetNativeToken(BerkeleyResourceInfoStore store) {
-		return req -> store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
+		return req -> response(req, store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow());
 	}
 
 	@ArchiveEndpoint
@@ -99,8 +104,8 @@ public final class ArchiveTokensApiModule extends AbstractModule {
 			req,
 			"rri",
 			rri ->
-				addressing.forResources().parseFunctional(rri)
-					.map(e -> e.map((symbol, addr) -> store.getResourceInfo(addr).orElseThrow()))
+				addressing.forResources().parseToAddr(rri)
+					.flatMap(addr -> fromOptional(UNKNOWN_RRI.with(rri), store.getResourceInfo(addr)))
 		);
 	}
 }

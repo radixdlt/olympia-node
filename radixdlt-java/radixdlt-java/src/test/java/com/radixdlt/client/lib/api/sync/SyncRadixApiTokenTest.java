@@ -85,10 +85,11 @@ public class SyncRadixApiTokenTest {
 	private static final String BASE_URL = "http://localhost/";
 
 	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
-	private static final String NATIVE_TOKEN = "{\"result\":{\"tokenInfoURL\":\"https://assets.radixdlt.com/ico"
-		+ "ns/icon-xrd-32x32.png\",\"symbol\":\"xrd\",\"isSupplyMutable\":true,\"granularity\":\"1\",\"name\":\""
-		+ "Rads\",\"rri\":\"xrd_dr1qyrs8qwl\",\"description\":\"Radix Tokens\",\"currentSupply\":\"8000000000000"
-		+ "000000000000000\",\"iconURL\":\"https://tokens.radixdlt.com/\"},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String NATIVE_TOKEN = "{\"result\":{\"tokenInfoURL\":\"\",\"symbol\":\"xrd\","
+		+ "\"isSupplyMutable\":true,\"granularity\":\"1\",\"totalBurned\":\"0\",\"name\":\"Rads\","
+		+ "\"rri\":\"xrd_dr1qyrs8qwl\",\"description\":\"Radix Tokens\",\"iconURL\":\"\","
+		+ "\"currentSupply\":\"8000161536692300000000000000\",\"totalMinted\":\"8000161536692300000000000000\"},"
+		+ "\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);
 
