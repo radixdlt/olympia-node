@@ -2,6 +2,7 @@ package com.radixdlt.test.network.client.docker;
 
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.exception.BadRequestException;
+import com.github.dockerjava.api.exception.DockerClientException;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
@@ -41,7 +42,12 @@ public class LocalDockerClient implements DockerClient {
         var httpClient = new ApacheDockerHttpClient.Builder().dockerHost(config.getDockerHost())
             .sslConfig(config.getSSLConfig()).build();
         dockerClient = DockerClientImpl.getInstance(config, httpClient);
-        dockerClient.pingCmd().exec();
+        try {
+            dockerClient.pingCmd().exec();
+        } catch (UnsatisfiedLinkError e) { //  this happen when you try to connect to a socket via windows
+            throw new DockerClientException("Could not connect to socket " + dockerSocketUrl
+                + ". Are you running the tests from windows?");
+        }
     }
 
     @SuppressWarnings("deprecation")

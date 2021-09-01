@@ -36,7 +36,7 @@ public abstract class RadixNetworkTest {
         checks = Checks.forNodesAndCheckConfiguration(radixNetwork.getNodes(), radixNetwork.getConfiguration());
         accounts = Lists.newArrayList();
         IntStream.range(0, 6).forEach(i -> {
-            var account = radixNetwork.generateNewAccount();
+            var account  = radixNetwork.generateNewAccount();
             accounts.add(account);
         });
         account1 = accounts.get(0);

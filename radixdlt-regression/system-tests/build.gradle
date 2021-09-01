@@ -93,6 +93,7 @@ task systemTests(type: Test) {
         includeTestsMatching "com.radixdlt.test.system.*"
     }
     testLogging.showStandardStreams = true
+    environment "RADIXDLT_DOCKER_INITIALIZE_NETWORK", "true"
     systemProperties System.getProperties()
     jacoco {
         // We don't want these tests included in code coverage.

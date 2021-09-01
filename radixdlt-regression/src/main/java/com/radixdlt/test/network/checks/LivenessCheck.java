@@ -42,7 +42,7 @@ public class LivenessCheck implements Check {
         var highestQCAfterAWhile = getMaxHighestQC(nodes);
 
         var comparisonResult = VIEW_COMPARATOR.compare(highestQC, highestQCAfterAWhile);
-        logger.info("First: {}, second: {}, result: {}", highestQC, highestQCAfterAWhile, comparisonResult);
+        logger.trace("First: {}, second: {}, result: {}", highestQC, highestQCAfterAWhile, comparisonResult);
         return comparisonResult == -1;
     }
 
@@ -51,13 +51,13 @@ public class LivenessCheck implements Check {
     }
 
     private EpochView getMaxHighestQC(List<RadixNode> nodes) {
-        Optional<EpochView> maybeHighestView = nodes.stream().map(node -> {
+        var maybeHighestView = nodes.stream().map(node -> {
             try {
                 var metrics = client.getMetrics(node.getRootUrl() + ":" + node.getSecondaryPort());
-                logger.info("Node ({}}) gave: {}", node, new EpochView(metrics.getEpoch(), metrics.getView()));
+                logger.trace("Node ({}}) gave: {}", node, new EpochView(metrics.getEpoch(), metrics.getView()));
                 return new EpochView(metrics.getEpoch(), metrics.getView());
             } catch (Exception e) {
-                logger.info("Could not get epoch/view for {}: {}", node, e.getMessage());
+                logger.trace("Could not get epoch/view for {}: {}", node, e.getMessage());
                 return null;
             }
         }).filter(Objects::nonNull).max(VIEW_COMPARATOR);

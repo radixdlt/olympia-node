@@ -28,7 +28,7 @@ public class SystemTest extends RadixNetworkTest {
 
     @AfterEach
     public void teardown() {
-        if (Boolean.parseBoolean(System.getenv("RADIXDLT_DOCKER_DO_NOT_CREATE_NETWORK"))) {
+        if (Boolean.parseBoolean(System.getenv("RADIXDLT_DOCKER_DO_NOT_WIPE_NETWORK"))) {
             return;
         }
         String networkName = radixNetwork.getConfiguration().getDockerConfiguration().getNetworkName();

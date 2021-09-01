@@ -26,10 +26,12 @@ public class DockerConfiguration {
     }
 
     public static DockerConfiguration fromEnv() {
-        var socketUrl = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_SOCKET_URL", "unix:///var/run/docker.sock");
-        var containerName = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_CONTAINER_NAME", "docker_core%d_1");
+        var socketUrl = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_DAEMON_URL", "unix:///var/run/docker.sock");
+        var containerName = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_CONTAINER_NAME", "system-testing-core%d");
         if (!containerName.contains("%d")) {
             throw new RuntimeException("Docker container name needs to contain a '%d' wildcard e.g. docker_core%d_1");
+        } else if (containerName.contains("_")) {
+            throw new RuntimeException("Can't have underscores in container name (" + containerName + ")");
         }
         var shouldInitializeNetworkString = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_INITIALIZE_NETWORK", "false");
         var shouldInitializeNetwork = Boolean.parseBoolean(shouldInitializeNetworkString);
