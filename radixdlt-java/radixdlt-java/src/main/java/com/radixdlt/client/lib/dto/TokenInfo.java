@@ -178,19 +178,18 @@ public final class TokenInfo {
 
 	@Override
 	public String toString() {
-		return "TokenInfo{" +
-			"name='" + name + '\'' +
-			", rri='" + rri + '\'' +
-			", symbol='" + symbol + '\'' +
-			", description='" + description + '\'' +
-			", granularity=" + granularity +
-			", isSupplyMutable=" + isSupplyMutable +
-			", currentSupply=" + currentSupply +
-			", totalBurned=" + totalBurned +
-			", totalMinted=" + totalMinted +
-			", tokenInfoURL='" + tokenInfoURL + '\'' +
-			", iconURL='" + iconURL + '\'' +
-			'}';
+		return "TokenInfo{"
+			+ "name='" + name + '\''
+			+ ", rri='" + rri + '\''
+			+ ", symbol='" + symbol + '\''
+			+ ", description='" + description + '\''
+			+ ", granularity=" + granularity
+			+ ", isSupplyMutable=" + isSupplyMutable
+			+ ", currentSupply=" + currentSupply
+			+ ", totalBurned=" + totalBurned
+			+ ", totalMinted=" + totalMinted
+			+ ", tokenInfoURL='" + tokenInfoURL + '\''
+			+ ", iconURL='" + iconURL + '\'' + '}';
 	}
 
 	public String getName() {

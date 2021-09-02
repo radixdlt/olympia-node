@@ -69,12 +69,10 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.data.ApiErrors;
 import com.radixdlt.api.qualifier.ArchiveEndpoint;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import com.radixdlt.utils.functional.Result;
 
 import static com.radixdlt.api.JsonRpcUtil.response;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
