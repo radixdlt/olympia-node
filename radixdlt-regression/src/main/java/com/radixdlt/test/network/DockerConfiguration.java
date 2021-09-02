@@ -2,11 +2,14 @@ package com.radixdlt.test.network;
 
 
 import com.radixdlt.test.utils.TestingUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Configuration properties for using docker in the context of a radix (test) network
  */
 public class DockerConfiguration {
+    private static final Logger logger = LogManager.getLogger();
 
     private final String socketUrl;
     private final String containerName;
@@ -31,7 +34,7 @@ public class DockerConfiguration {
         if (!containerName.contains("%d")) {
             throw new RuntimeException("Docker container name needs to contain a '%d' wildcard e.g. docker_core%d_1");
         } else if (containerName.contains("_")) {
-            throw new RuntimeException("Can't have underscores in container name (" + containerName + ")");
+            logger.warn("Underscores in container names ({}} should be avoided", containerName);
         }
         var shouldInitializeNetworkString = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_INITIALIZE_NETWORK", "false");
         var shouldInitializeNetwork = Boolean.parseBoolean(shouldInitializeNetworkString);
