@@ -9,9 +9,8 @@ import org.apache.logging.log4j.Logger;
  * Configuration properties for using docker in the context of a radix (test) network
  */
 public class DockerConfiguration {
-
     private static final Logger logger = LogManager.getLogger();
-    
+
     private final String socketUrl;
     private final String containerName;
     private final boolean shouldInitializeNetwork;
