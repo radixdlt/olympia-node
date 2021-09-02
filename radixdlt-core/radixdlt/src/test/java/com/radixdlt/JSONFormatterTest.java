@@ -65,13 +65,11 @@
 package com.radixdlt;
 
 import com.radixdlt.utils.JSONFormatter;
-import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 public class JSONFormatterTest {
 
-	@Test
 	public void test_sort_and_pretty_print_json() {
 		String jsonString = "{\n"
 			+ "    \"hid\": \":uid:85561567e9dc96578362806ce9e136f2\",\n"

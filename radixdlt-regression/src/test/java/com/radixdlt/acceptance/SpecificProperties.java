@@ -62,54 +62,104 @@
  * permissions under this License.
  */
 
-apply plugin: 'java'
-apply plugin: 'idea'
-apply plugin: 'java-library'
+package com.radixdlt.acceptance;
 
-dependencies {
-    api project(':radixdlt-regression')
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
-    testImplementation 'org.awaitility:awaitility'
-    testImplementation 'com.google.guava:guava:29.0-jre'
-    testImplementation 'com.github.mwiede:jsch:0.1.61'
-    testImplementation 'commons-io:commons-io:2.8.0'
-    testImplementation 'org.apache.logging.log4j:log4j-api:2.13.1'
-    testImplementation 'org.apache.logging.log4j:log4j-core:2.13.1'
+import com.google.common.collect.ImmutableMap;
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.2'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
+/**
+ * Class for maintaining a map of string names to string values,
+ * where allowable names and default values can be specified.
+ */
+public class SpecificProperties {
+	private final ImmutableMap<String, String> defaultValues;
+	private final Map<String, String> propertyValues = new HashMap<>();
+
+	SpecificProperties(String... propertyNamesAndValues) {
+		ImmutableMap.Builder<String, String> defaults = ImmutableMap.builder();
+		for (int i = 0; i < propertyNamesAndValues.length; i += 2) {
+			defaults.put(propertyNamesAndValues[i], propertyNamesAndValues[i + 1]);
+		}
+		this.defaultValues = defaults.build();
+		this.propertyValues.putAll(this.defaultValues);
+	}
+
+	/**
+	 * Retrieves a value for a given property name.
+	 * @param name The property name to retrieve the value for.
+	 * @return The property value
+	 * @throws IllegalArgumentException if the given property does not have a value
+	 */
+	public String get(String name) {
+		Objects.requireNonNull(name);
+		if (!this.propertyValues.containsKey(name)) {
+			throw new IllegalArgumentException("No such property: " + name);
+		}
+		return this.propertyValues.get(name);
+	}
+
+	/**
+	 * Associates a value with a given property name.
+	 * @param name The property name
+	 * @param value The property value
+	 * @throws IllegalArgumentException if the specified property name is not known
+	 */
+	public void put(String name, String value) {
+		Objects.requireNonNull(name);
+		Objects.requireNonNull(value);
+		if (!this.defaultValues.containsKey(name)) {
+			throw new IllegalArgumentException("Invalid property name: " + name);
+		}
+		this.propertyValues.put(name, value);
+	}
+
+	/**
+	 * Resets this property map to default values.
+	 */
+	public void clear() {
+		this.propertyValues.clear();
+		this.propertyValues.putAll(this.defaultValues);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.defaultValues, this.propertyValues);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj instanceof SpecificProperties) {
+			SpecificProperties other = (SpecificProperties) obj;
+			return Objects.equals(this.defaultValues, other.defaultValues)
+				&& Objects.equals(this.propertyValues, other.propertyValues);
+		}
+		return false;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[defaults=%s, values=%s]",
+				getClass().getSimpleName(), defaultValues, propertyValues);
+	}
+
+	/**
+	 * Constructs a properties map of names to default values.
+	 * @param propertyNamesAndValues A sequence of alternating property names and
+	 * 		default values.  A default value of {@code null} may be used to indicate
+	 * 		no default value.  There must therefore be an even number of elements
+	 * 		in this sequence.
+	 * @return The corresponding properties map.
+	 */
+	public static SpecificProperties of(String... propertyNamesAndValues) {
+		if ((propertyNamesAndValues.length % 2) != 0) {
+			throw new IllegalArgumentException("Must specify names and values");
+		}
+		return new SpecificProperties(propertyNamesAndValues);
+	}
 }
-
-test {
-    enabled false
-    jacoco {
-        enabled false // Don't attempt to include these in code coverage.
-    }
-}
-
-task systemTests(type: Test) {
-    useJUnitPlatform()
-    filter {
-        includeTestsMatching "com.radixdlt.test.system.*"
-    }
-    testLogging.showStandardStreams = true
-    environment "RADIXDLT_DOCKER_INITIALIZE_NETWORK", "true"
-    systemProperties System.getProperties()
-    jacoco {
-        // We don't want these tests included in code coverage.
-        enabled false
-    }
-}
-
-task chaosExperiments(type: Test) {
-    filter {
-        includeTestsMatching "com.radixdlt.test.chaos.*"
-    }
-    testLogging.showStandardStreams = true
-    systemProperties System.getProperties()
-    jacoco {
-        // We don't want these tests included in code coverage.
-        enabled false
-    }
-}
-
