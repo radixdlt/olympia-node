@@ -7,6 +7,7 @@ import com.radixdlt.client.lib.dto.Balance;
 import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
@@ -37,6 +38,11 @@ public final class AsyncAccount implements RadixApi {
     public AsyncAccount withTrace() {
         client.withTrace();
         return this;
+    }
+
+    @Override
+    public Addressing addressing() {
+        return client.addressing();
     }
 
     @Override
