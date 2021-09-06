@@ -77,6 +77,7 @@ import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
@@ -128,6 +129,19 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		this.radixEngineProvider = radixEngineProvider;
 	}
 
+	private BigInteger computeEstimatedStake(ECPublicKey validatorKey, BigInteger ownership) {
+		var databaseKey = new DatabaseEntry(validatorKey.getCompressedBytes());
+		var validatorStake = new DatabaseEntry();
+		var status = validatorStakes.get(null, databaseKey, validatorStake, null);
+		if (status != SUCCESS) {
+			throw new IllegalStateException("Unable to retrieve validator stakes: " + status);
+		}
+		var buf = ByteBuffer.wrap(validatorStake.getData());
+		var totalStake = new BigInteger(1, REFieldSerialization.deserializeUInt256(buf).toByteArray());
+		var totalOwnership = new BigInteger(1, REFieldSerialization.deserializeUInt256(buf).toByteArray());
+		return ownership.multiply(totalStake).divide(totalOwnership);
+	}
+
 	public JSONArray getAccountStakes(REAddr addr) {
 		var key = new DatabaseEntry(addr.getBytes());
 		var value = new DatabaseEntry();
@@ -145,22 +159,13 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			for (int i = 0; i < stakedJson.length(); i++) {
 				var json = stakedJson.getJSONObject(i);
 				var ownership = new BigInteger(json.getString("amount"), 10);
-				DatabaseEntry databaseKey;
+				ECPublicKey validatorKey;
 				try {
-					var validatorKey = addressing.forValidators().parse(json.getString("validator"));
-					databaseKey = new DatabaseEntry(validatorKey.getCompressedBytes());
+					validatorKey = addressing.forValidators().parse(json.getString("validator"));
 				} catch (DeserializeException e) {
-					throw new IllegalStateException();
+					throw new IllegalStateException("Unable to deserialize", e);
 				}
-				var validatorStake = new DatabaseEntry();
-				var status = validatorStakes.get(null, databaseKey, validatorStake, null);
-				if (status != SUCCESS) {
-					throw new IllegalStateException();
-				}
-				var buf = ByteBuffer.wrap(validatorStake.getData());
-				var totalStake = new BigInteger(1, REFieldSerialization.deserializeUInt256(buf).toByteArray());
-				var totalOwnership = new BigInteger(1, REFieldSerialization.deserializeUInt256(buf).toByteArray());
-				var estimatedStake = ownership.multiply(totalStake).divide(totalOwnership);
+				var estimatedStake = computeEstimatedStake(validatorKey, ownership);
 				stakes.compute(json.getString("validator"), (v, obj) -> {
 					if (obj == null) {
 						return new JSONObject()
@@ -508,6 +513,17 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		});
 	}
 
+	private void storeStakeData(Transaction dbTxn, ValidatorStakeData data) {
+		var key = new DatabaseEntry(data.getValidatorKey().getCompressedBytes());
+		var buf = ByteBuffer.allocate(UInt256.BYTES * 2);
+		buf.put(data.getTotalStake().toByteArray());
+		buf.put(data.getTotalOwnership().toByteArray());
+		var value = new DatabaseEntry(buf.array());
+		var status = validatorStakes.put(dbTxn, key, value);
+		if (status != SUCCESS) {
+			throw new IllegalStateException("Unable to store validator stake data: " + status);
+		}
+	}
 
 	@Override
 	public void process(
@@ -524,16 +540,6 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			.filter(REStateUpdate::isBootUp)
 			.filter(u -> u.getParsed() instanceof ValidatorStakeData)
 			.map(u -> (ValidatorStakeData) u.getParsed())
-			.forEach(s -> {
-				var key = new DatabaseEntry(s.getValidatorKey().getCompressedBytes());
-				var buf = ByteBuffer.allocate(UInt256.BYTES * 2);
-				buf.put(s.getTotalStake().toByteArray());
-				buf.put(s.getTotalOwnership().toByteArray());
-				var value = new DatabaseEntry(buf.array());
-				var status = validatorStakes.put(dbTxn, key, value);
-				if (status != SUCCESS) {
-					throw new IllegalStateException();
-				}
-			});
+			.forEach(s -> storeStakeData(dbTxn, s));
 	}
 }
