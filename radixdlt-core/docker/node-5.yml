@@ -78,7 +78,5 @@ services:
       - "8084:8080"
       - "9015:9011"
       - "50509:50505"
-    networks:
-      - five_nodes
 networks:
   five_nodes:

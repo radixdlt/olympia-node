@@ -63,7 +63,5 @@ services:
       - "8083:8080"
       - "9014:9011"
       - "50508:50505"
-    networks:
-      - four_nodes
 networks:
   four_nodes:

@@ -64,23 +64,59 @@
 
 package com.radixdlt.api.server;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.Controller;
-import com.radixdlt.api.qualifier.ArchiveServer;
+import com.radixdlt.api.service.MovingAverage;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.properties.RuntimeProperties;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 
-import java.util.Map;
+import java.util.Objects;
 
-public final class ArchiveHttpServer extends AbstractHttpServer {
-	private static final int DEFAULT_PORT = 8080;
+public final class MetricsHandler implements HttpHandler {
 
-	@Inject
-	public ArchiveHttpServer(
-		@ArchiveServer Map<String, Controller> controllers,
-		RuntimeProperties properties,
-		SystemCounters counters
-	) {
-		super(controllers, properties, "archive", DEFAULT_PORT, counters);
+	private final SystemCounters counters;
+	private final HttpHandler next;
+
+	private final CounterType totalResponsesCounter;
+	private final CounterType okResponsesCounter;
+	private final CounterType nonOkResponsesCounter;
+	private final CounterType avgProcessingTimeCounter;
+	private final CounterType totalProcessingTimeCounter;
+
+	private final MovingAverage timeAvg = MovingAverage.create(10L);
+
+	public MetricsHandler(SystemCounters counters, String serverName, HttpHandler next) {
+		this.counters = Objects.requireNonNull(counters);
+		this.next = Objects.requireNonNull(next);
+
+		final var nameUpper = serverName.toUpperCase();
+		this.totalResponsesCounter = CounterType.valueOf(String.format("SERVER_%s_TOTAL_RESPONSES", nameUpper));
+		this.okResponsesCounter = CounterType.valueOf(String.format("SERVER_%s_OK_RESPONSES", nameUpper));
+		this.nonOkResponsesCounter = CounterType.valueOf(String.format("SERVER_%s_NON_OK_RESPONSES", nameUpper));
+		this.avgProcessingTimeCounter = CounterType.valueOf(String.format("SERVER_%s_AVG_PROCESSING_TIME", nameUpper));
+		this.totalProcessingTimeCounter = CounterType.valueOf(String.format("SERVER_%s_TOTAL_PROCESSING_TIME", nameUpper));
+	}
+
+	@Override
+	public void handleRequest(HttpServerExchange exchange) throws Exception {
+		if (!exchange.isComplete()) {
+			final long start = System.currentTimeMillis();
+			exchange.addExchangeCompleteListener((completedExchange, nextListener) -> {
+				long time = System.currentTimeMillis() - start;
+				timeAvg.update(time);
+				counters.set(avgProcessingTimeCounter, timeAvg.asLong());
+				counters.add(totalProcessingTimeCounter, time);
+
+				counters.increment(totalResponsesCounter);
+				if (completedExchange.getStatusCode() == 200) {
+					counters.increment(okResponsesCounter);
+				} else {
+					counters.increment(nonOkResponsesCounter);
+				}
+
+				nextListener.proceed();
+			});
+		}
+		next.handleRequest(exchange);
 	}
 }
