@@ -193,14 +193,13 @@ public final class ActionParserService {
 				).map(TransactionAction::updateValidatorMetadata);
 
 			case UPDATE_VALIDATOR_SYSTEM_METADATA:
-				return allOf(
-					validator(element)
-				).map(validatorKey -> {
-					final var forkVoteHash = forks.getCandidateFork()
-						.map(f -> ForkConfig.voteHash(validatorKey, f))
-						.orElseGet(HashUtils::zero256);
-					return TransactionAction.updateValidatorSystemMetadata(validatorKey, forkVoteHash);
-				});
+				return validator(element)
+					.map(validatorKey -> {
+						final var forkVoteHash = forks.getCandidateFork()
+							.map(f -> ForkConfig.voteHash(validatorKey, f))
+							.orElseGet(HashUtils::zero256);
+						return TransactionAction.updateValidatorSystemMetadata(validatorKey, forkVoteHash);
+					});
 
 			case UPDATE_VALIDATOR_FEE:
 				return allOf(

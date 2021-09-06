@@ -182,13 +182,12 @@ public final class DeveloperHandler {
 				var addressing = Addressing.ofNetworkId(params.getInt("networkId"));
 				var actionParserService = new ActionParserService(addressing, forks);
 
-				return allOf(safeArray(params, "actions"))
+				return safeArray(params, "actions")
 					.flatMap(actions ->
 								 actionParserService.parse(actions).flatMap(steps -> this.build(message, steps))
 									 .map(p -> jsonObject()
 										 .put("txns", fromCollection(p.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
-										 .put("proof", p.getProof().asJSON(addressing)))
-					);
+										 .put("proof", p.getProof().asJSON(addressing))));
 			}
 		);
 	}
@@ -258,20 +257,20 @@ public final class DeveloperHandler {
 				);
 				map.entrySet().stream()
 					.sorted(Comparator.<Map.Entry<String, Pair<UInt384, Long>>, UInt384>comparing(e -> e.getValue().getFirst()).reversed())
-					.forEach(e ->
-						resultJson.put(jsonObject()
+					.forEach(e -> resultJson.put(
+						jsonObject()
 							.put("key", e.getKey())
 							.put("amount", e.getValue().getFirst())
-							.put("substateCount", e.getValue().getSecond())
-						)
+							.put("substateCount", e.getValue().getSecond()))
 					);
 				var totalSubstateCount = map.values().stream().mapToLong(Pair::getSecond).sum();
 				var totalAmount = map.values().stream().map(Pair::getFirst).reduce(UInt384::add).orElse(UInt384.ZERO);
-				return Result.ok(jsonObject()
-					.put("entries", resultJson)
-					.put("entryCount", map.size())
-					.put("totalSubstateCount", totalSubstateCount)
-					.put("totalAmount", totalAmount)
+				return Result.ok(
+					jsonObject()
+						.put("entries", resultJson)
+						.put("entryCount", map.size())
+						.put("totalSubstateCount", totalSubstateCount)
+						.put("totalAmount", totalAmount)
 				);
 			}
 		);
@@ -285,9 +284,10 @@ public final class DeveloperHandler {
 				var key = Bytes.fromHexString(params.getString("key"));
 				var systemMapKey = SystemMapKey.create(key);
 				var bytes = engineStore.get(systemMapKey).orElseThrow();
-				return Result.ok(jsonObject()
-									 .put("id", Bytes.toHexString(bytes.getId()))
-									 .put("data", Bytes.toHexString(bytes.getData()))
+				return Result.ok(
+					jsonObject()
+						.put("id", Bytes.toHexString(bytes.getId()))
+						.put("data", Bytes.toHexString(bytes.getData()))
 				);
 			}
 		);
@@ -328,13 +328,14 @@ public final class DeveloperHandler {
 				var countByGroupJson = jsonObject();
 				countByGroup.forEach(countByGroupJson::put);
 
-				return Result.ok(jsonObject()
-									 .put("loaded", found)
-									 .put("countBySubstateType", countByGroupJson)
-									 .put("totalIdSize", totalKeySize.get())
-									 .put("totalDataSize", totalValueSize.get())
-									 .put("totalSize", totalKeySize.get() + totalValueSize.get())
-									 .put("totalCount", countByGroup.values().stream().mapToLong(l -> l).sum())
+				return Result.ok(
+					jsonObject()
+						.put("loaded", found)
+						.put("countBySubstateType", countByGroupJson)
+						.put("totalIdSize", totalKeySize.get())
+						.put("totalDataSize", totalValueSize.get())
+						.put("totalSize", totalKeySize.get() + totalValueSize.get())
+						.put("totalCount", countByGroup.values().stream().mapToLong(l -> l).sum())
 				);
 			}
 		);

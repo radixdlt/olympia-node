@@ -125,7 +125,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 			var validator = builder.read(ValidatorOwnerCopy.class, action.to());
 			var owner = validator.getOwner();
 			if (!action.from().equals(owner)) {
-				throw new TxBuilderException(STAKING_NOT_ALLOWED);
+				throw new TxBuilderException(STAKING_NOT_ALLOWED.with("Delegation flag is false and you are not the owner."));
 			}
 		}
 		builder.up(new PreparedStake(action.amount(), action.from(), action.to()));

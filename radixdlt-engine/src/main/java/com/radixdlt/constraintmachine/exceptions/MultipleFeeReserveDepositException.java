@@ -64,6 +64,7 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
+//TODO: add Failure parameter
 public class MultipleFeeReserveDepositException extends ProcedureException {
 	public MultipleFeeReserveDepositException() {
 		super("MultipleFeeReserveDeposit");

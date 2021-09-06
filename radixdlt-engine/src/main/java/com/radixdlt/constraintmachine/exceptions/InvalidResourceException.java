@@ -66,6 +66,7 @@ package com.radixdlt.constraintmachine.exceptions;
 
 import com.radixdlt.identifiers.REAddr;
 
+//TODO: add Failure parameter
 public final class InvalidResourceException extends ProcedureException {
 	private final REAddr expected;
 	private final REAddr actual;

@@ -103,10 +103,6 @@ public final class JsonRpcUtil {
 		throw new IllegalStateException("Can't construct");
 	}
 
-//	public static Result<JSONObject> jsonObject(String data) {
-//		return wrap(UNABLE_TO_PARSE_JSON, () -> new JSONObject(data));
-//	}
-
 	public static JSONObject jsonObject() {
 		return new JSONObject();
 	}

@@ -79,14 +79,12 @@ public final class CallData {
 	}
 
 	public byte get(int offset) throws CallDataAccessException {
-		int accessSize = Byte.BYTES;
-		validateBounds(offset, accessSize);
+		validateBounds(offset, Byte.BYTES);
 		return data[offset];
 	}
 
 	public UInt256 getUInt256(int offset) throws CallDataAccessException, TrailingBytesException {
-		int accessSize = UInt256.BYTES;
-		validateBounds(offset, accessSize);
+		validateBounds(offset, UInt256.BYTES);
 
 		if (data.length > offset + UInt256.BYTES) {
 			throw new TrailingBytesException("Call data has " + data.length + " bytes.");

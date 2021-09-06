@@ -865,19 +865,19 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 				var r = e.getKey();
 				var i = e.getValue();
 				var rri = r.resourceAddr() != null ? getRriOrFail(r.resourceAddr()) : "stake-ownership";
-				var epochUnlock = r.getEpochUnlock();
-				var entry = BalanceEntry.create(
+				var epochUnlocked = (r.getEpochUnlock() != null && r.getEpochUnlock() == 0)
+									 ? (Long) (curEpoch + 1 + rules.getConfig().getUnstakingEpochDelay())
+									 : r.getEpochUnlock();
+
+				return BalanceEntry.create(
 					r.getOwner(),
 					r.getValidatorKey(),
 					rri,
 					UInt384.from(i.abs().toByteArray()),
 					i.signum() == -1,
-					(epochUnlock != null && epochUnlock == 0)
-					? (Long) (curEpoch + 1 + rules.getConfig().getUnstakingEpochDelay())
-					: epochUnlock,
+					epochUnlocked,
 					txId
 				);
-				return entry;
 			});
 		var stakeOwnershipEntries = accounting.stakeOwnershipAccounting().entrySet().stream()
 			.filter(e -> !e.getValue().equals(BigInteger.ZERO))

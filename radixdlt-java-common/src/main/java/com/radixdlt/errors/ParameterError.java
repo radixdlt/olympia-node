@@ -92,7 +92,7 @@ public enum ParameterError implements Failure {
 	INVALID_MINIMUM_STAKE("Minimum to stake is {0} but trying to stake {1}"),
 	INVALID_AID_LENGTH("AID string has incorrect length {0}"),
 	VALUE_OUT_OF_RANGE("Parameter {0} must be between {1} and {2}"),
-	STAKING_NOT_ALLOWED("Delegation flag is false and you are not the owner."),
+	STAKING_NOT_ALLOWED("Stacking is not allowed: {0}"),
 	AID_IS_NULL("AID string is 'null'"),
 	BASE_URL_IS_MANDATORY("Base URL is mandatory");
 
