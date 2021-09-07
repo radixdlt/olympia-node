@@ -117,8 +117,8 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		ResourceType.TOKEN_BALANCES, "radix.account_token_balances",
 		ResourceType.PREPARED_STAKES, "radix.account_prepared_stakes",
 		ResourceType.STAKED_OWNERSHIP, "radix.account_staked",
-		ResourceType.PREPARED_UNSTAKES, "radix.acconut_prepared_unstakes",
-		ResourceType.EXITTING_UNSTAKES, "radix.acconut_exitting_unstakes"
+		ResourceType.PREPARED_UNSTAKES, "radix.account_prepared_unstakes",
+		ResourceType.EXITTING_UNSTAKES, "radix.account_exitting_unstakes"
 	);
 	private final Map<ResourceType, Database> databases = new HashMap<>();
 	private Database validatorStakes;
@@ -270,7 +270,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		try {
 			return deserialization.deserialize(data);
 		} catch (DeserializeException e) {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Deserialization failed", e);
 		}
 	}
 
@@ -508,7 +508,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			var nextValue = new DatabaseEntry(nextUnstakes.toString().getBytes(StandardCharsets.UTF_8));
 			status = db.put(dbTxn, key, nextValue);
 			if (status != SUCCESS) {
-				throw new IllegalStateException();
+				throw new IllegalStateException("Unable to store unstakes: " + status);
 			}
 		});
 	}
