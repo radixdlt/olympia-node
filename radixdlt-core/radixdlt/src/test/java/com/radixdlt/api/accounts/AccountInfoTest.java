@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.tokens;
+package com.radixdlt.api.accounts;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -75,6 +75,7 @@ import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.TransferToken;
+import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -101,7 +102,6 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -112,7 +112,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TokensInfoTest {
+public class AccountInfoTest {
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
@@ -133,7 +133,7 @@ public class TokensInfoTest {
 	@Inject
 	private EventDispatcher<MempoolAdd> mempoolDispatcher;
 	@Inject
-	private BerkeleyResourceInfoStore store;
+	private BerkeleyAccountInfoStore store;
 
 	private Injector injector;
 
@@ -143,7 +143,7 @@ public class TokensInfoTest {
 			MempoolConfig.asModule(1000, 10),
 			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.noFees())
+				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.noFees()).overrideMaxRounds(1000)
 			),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
@@ -158,9 +158,9 @@ public class TokensInfoTest {
 				protected void configure() {
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
+					bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
 					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-						.addBinding().to(BerkeleyResourceInfoStore.class);
+						.addBinding().to(BerkeleyAccountInfoStore.class);
 				}
 			}
 		);
@@ -175,7 +175,7 @@ public class TokensInfoTest {
 	}
 
 	@Test
-	public void transfer_should_not_change_native_token_definition() throws Exception {
+	public void transferring_all_tokens_should_give_no_balance() throws Exception {
 		// Arrange
 		runner.start();
 
@@ -188,7 +188,7 @@ public class TokensInfoTest {
 					REAddr.ofNativeToken(),
 					acct,
 					REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey()),
-					UInt256.ONE
+					Amount.ofTokens(10).toSubunits()
 				)
 			);
 		var txBuilder = radixEngine.construct(request);
@@ -203,9 +203,42 @@ public class TokensInfoTest {
 		);
 
 		// Assert
-		var json = store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
-		assertThat(json.getString("currentSupply")).isEqualTo(totalTokenAmount.toSubunits().toString());
-		assertThat(json.getString("totalMinted")).isEqualTo(totalTokenAmount.toSubunits().toString());
-		assertThat(json.getString("totalBurned")).isEqualTo(UInt256.ZERO.toString());
+		var json = store.getAccountInfo(acct);
+		var balances = json.getJSONArray("tokenBalances");
+		assertThat(balances.length()).isEqualTo(0);
+	}
+
+	@Test
+	public void unstaking_should_not_add_to_balances() throws Exception {
+		// Arrange
+		runner.start();
+
+		// Act
+		var acct = REAddr.ofPubKeyAccount(self);
+		var request = TxnConstructionRequest.create()
+			.feePayer(acct)
+			.action(
+				new UnstakeTokens(
+					acct,
+					PrivateKeys.ofNumeric(1).getPublicKey(),
+					Amount.ofTokens(50).toSubunits()
+				)
+			);
+		var txBuilder = radixEngine.construct(request);
+		var transfer = txBuilder.signAndBuild(hashSigner::sign);
+		mempoolDispatcher.dispatch(MempoolAdd.create(transfer));
+		runner.runNextEventsThrough(
+			LedgerUpdate.class,
+			u -> {
+				var output = u.getStateComputerOutput().getInstance(REOutput.class);
+				return output.getProcessedTxns().stream().anyMatch(txn -> txn.getTxn().getId().equals(transfer.getId()));
+			}
+		);
+
+		// Assert
+		var json = store.getAccountInfo(acct);
+		var balances = json.getJSONArray("tokenBalances");
+		var amtString = balances.getJSONObject(0).getString("amount");
+		assertThat(amtString).isEqualTo(Amount.ofTokens(10).toSubunits().toString());
 	}
 }

@@ -110,6 +110,7 @@ import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
@@ -484,6 +485,11 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 	public SyncRadixApi withTrace() {
 		enableTrace();
 		return this;
+	}
+
+	@Override
+	public Addressing addressing() {
+		return networkAddressing();
 	}
 
 	@Override

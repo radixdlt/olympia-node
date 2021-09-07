@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix DLT Ltd incorporated in England.
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,37 +61,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.transactions;
+package com.radixdlt.api.transactions.lookup;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.mempool.MempoolAddSuccess;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.JsonRpcHandler;
+import com.radixdlt.api.qualifier.ArchiveEndpoint;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-public class TransactionStatusServiceModule extends AbstractModule {
+public class ArchiveTransactionStatusAndLookupApiModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
+		install(new TransactionStatusServiceModule());
+		bind(BerkeleyTransactionsByIdStore.class).in(Scopes.SINGLETON);
+		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
+		binder.addBinding().to(BerkeleyTransactionsByIdStore.class);
 	}
 
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			MempoolAddFailure.class,
-			transactionStatusService.mempoolAddFailureEventProcessor()
-		);
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("transactions.lookup_transaction")
+	public JsonRpcHandler transactionsLookupTransaction(ArchiveTransactionsHandler archiveTransactionsHandler) {
+		return archiveTransactionsHandler::handleTransactionsLookupTransaction;
 	}
 
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			MempoolAddSuccess.class,
-			transactionStatusService.mempoolAddSuccessEventProcessor()
-		);
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("transactions.get_transaction_status")
+	public JsonRpcHandler transactionsGetTransactionStatus(ArchiveTransactionsHandler archiveTransactionsHandler) {
+		return archiveTransactionsHandler::handleTransactionsGetTransactionStatus;
 	}
 }

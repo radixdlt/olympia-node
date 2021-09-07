@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
- *
+/*
+ * Copyright 2021 Radix DLT Ltd incorporated in England.
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.store.berkeley;
+package com.radixdlt.api.transactions.index;
 
 import com.google.common.collect.Streams;
 import com.google.inject.Inject;
@@ -169,7 +168,6 @@ public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalSt
 			.map(b -> new JSONObject(new String(b, StandardCharsets.UTF_8)))
 			.onClose(cursor::close);
 	}
-
 
 	private Particle deserialize(byte[] data) {
 		var deserialization = radixEngineProvider.get().getSubstateDeserialization();

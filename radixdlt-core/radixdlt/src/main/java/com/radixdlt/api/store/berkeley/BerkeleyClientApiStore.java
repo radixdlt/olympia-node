@@ -249,55 +249,6 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		return totalStake.getAmount().multiply(ownership).divide(totalOwnership.getAmount());
 	}
 
-	private BalanceEntry computeStakeEntry(BalanceEntry entry) {
-		return BalanceEntry.create(
-			entry.getOwner(),
-			entry.getDelegate(),
-			getRriOrFail(REAddr.ofNativeToken()),
-			computeStakeFromOwnership(entry.getDelegate(), entry.getAmount()),
-			false,
-			entry.getEpochUnlocked(),
-			entry.getTxId()
-		);
-	}
-
-	public long getEpoch() {
-		return currentEpoch.get();
-	}
-
-	@Override
-	public Result<List<BalanceEntry>> getTokenBalances(REAddr addr, BalanceType type) {
-		try (var cursor = addressBalances.openCursor(null, null)) {
-			var key = asAddrBalanceKey(addr);
-			var data = entry();
-			var status = readBalance(() -> cursor.getSearchKeyRange(key, data, null), data);
-
-			if (status != OperationStatus.SUCCESS) {
-				return Result.ok(List.of());
-			}
-
-			var list = new ArrayList<BalanceEntry>();
-
-			do {
-				restore(serialization, data.getData(), BalanceEntry.class)
-					.onFailureDo(
-						() -> log.error("Error deserializing existing balance while scanning DB for address {}", addr)
-					)
-					.toOptional()
-					.filter(entry -> entry.getType().equals(type))
-					.filter(entry -> entry.getOwner().equals(addr))
-					.filter(entry -> type != BalanceType.SPENDABLE || !entry.getAmount().isZero())
-					.map(entry -> entry.rri().equals("stake-ownership") ? computeStakeEntry(entry) : entry)
-					.ifPresent(list::add);
-
-
-				status = readBalance(() -> cursor.getNext(key, data, null), data);
-			} while (status == OperationStatus.SUCCESS);
-
-			return Result.ok(list);
-		}
-	}
-
 	private Result<TokenDefinitionRecord> getTokenDefinition(REAddr addr) {
 		try (var cursor = tokenDefinitions.openCursor(null, null)) {
 			var key = asAddrBalanceKey(addr);

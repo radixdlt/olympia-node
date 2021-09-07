@@ -105,6 +105,7 @@ import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.networks.Addressing;
 
 import java.time.Duration;
 import java.util.List;
@@ -199,6 +200,11 @@ public interface RadixApi {
 	 * Enable tracing in client.
 	 */
 	RadixApi withTrace();
+
+	/**
+	 * Get {@link Addressing} instance corresponding to connected network
+	 */
+	Addressing addressing();
 
 	/**
 	 * Configure timeout for asynchronous operations.

@@ -65,9 +65,8 @@
 package com.radixdlt.api.module;
 
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.store.berkeley.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.accounts.BerkeleyAccountInfoStore;
 import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
-import com.radixdlt.api.transactions.TransactionStatusServiceModule;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
 import com.google.inject.AbstractModule;
@@ -95,10 +94,8 @@ public class ArchiveApiModule extends AbstractModule {
 		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
 		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
 		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
-
-		install(new TransactionStatusServiceModule());
-		bind(BerkeleyTransactionsByIdStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyTransactionsByIdStore.class);
+		bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
+		binder.addBinding().to(BerkeleyAccountInfoStore.class);
 
 		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
 	}

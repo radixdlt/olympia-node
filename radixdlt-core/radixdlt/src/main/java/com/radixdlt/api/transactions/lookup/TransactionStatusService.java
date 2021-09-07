@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix DLT Ltd incorporated in England.
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,43 +61,63 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.handler;
+package com.radixdlt.api.transactions.lookup;
 
-import com.radixdlt.utils.functional.Result;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.inject.Inject;
+import com.radixdlt.api.data.TransactionStatus;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import org.json.JSONObject;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.radixdlt.api.transactions.TransactionStatusService;
-import com.radixdlt.identifiers.AID;
+import java.time.Duration;
+import java.util.Optional;
 
-import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
+import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
+import static com.radixdlt.api.data.TransactionStatus.FAILED;
+import static com.radixdlt.api.data.TransactionStatus.PENDING;
+import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
 
-@Singleton
-public class ArchiveTransactionsHandler {
-	private final TransactionStatusService transactionStatusService;
+public class TransactionStatusService {
+	private final Cache<AID, TransactionStatus> cache = CacheBuilder.newBuilder()
+		.maximumSize(100000)
+		.expireAfterAccess(Duration.ofMinutes(10))
+		.build();
+	private final BerkeleyTransactionsByIdStore store;
 
 	@Inject
-	public ArchiveTransactionsHandler(TransactionStatusService transactionStatusService) {
-		this.transactionStatusService = transactionStatusService;
+	public TransactionStatusService(BerkeleyTransactionsByIdStore store) {
+		this.store = store;
 	}
 
-	public JSONObject handleTransactionsGetTransactionStatus(JSONObject request) {
-		return withRequiredStringParameter(
-			request,
-			"txID",
-			idString -> AID.fromString(idString)
-				.map(txId -> transactionStatusService.getTransactionStatus(txId).asJson().put("txID", txId))
-		);
+	private void onReject(MempoolAddFailure mempoolAddFailure) {
+		cache.put(mempoolAddFailure.getTxn().getId(), FAILED);
 	}
 
-	public JSONObject handleTransactionsLookupTransaction(JSONObject request) {
-		return withRequiredStringParameter(
-			request,
-			"txID",
-			idString -> AID.fromString(idString)
-				.flatMap(txId -> Result.fromOptional(UNKNOWN_TX_ID.with(txId), transactionStatusService.getTransaction(txId)))
-		);
+	private void onSuccess(MempoolAddSuccess mempoolAddSuccess) {
+		cache.put(mempoolAddSuccess.getTxn().getId(), PENDING);
+	}
+
+	public EventProcessor<MempoolAddFailure> mempoolAddFailureEventProcessor() {
+		return this::onReject;
+	}
+
+	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
+		return this::onSuccess;
+	}
+
+	public Optional<JSONObject> getTransaction(AID txId) {
+		return store.getTransactionJSON(txId);
+	}
+
+	public TransactionStatus getTransactionStatus(AID txId) {
+		var status = cache.getIfPresent(txId);
+		if (store.contains(txId)) {
+			return CONFIRMED;
+		}
+		return status != null ? status : TRANSACTION_NOT_FOUND;
 	}
 }

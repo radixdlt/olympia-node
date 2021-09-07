@@ -82,6 +82,7 @@ import com.radixdlt.client.lib.dto.serializer.NodeAddressSerializer;
 import com.radixdlt.client.lib.dto.serializer.ValidatorAddressDeserializer;
 import com.radixdlt.client.lib.dto.serializer.ValidatorAddressSerializer;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
@@ -104,13 +105,14 @@ public class AddressSerializationTest {
 
 		var module = new SimpleModule();
 		int networkId = 1;
+		var networkAddressing = Addressing.ofNetworkId(networkId);
 
-		module.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkId));
-		module.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkId));
-		module.addSerializer(NodeAddress.class, new NodeAddressSerializer(networkId));
-		module.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkId));
-		module.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(networkId));
-		module.addDeserializer(NodeAddress.class, new NodeAddressDeserializer(networkId));
+		module.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkAddressing));
+		module.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkAddressing));
+		module.addSerializer(NodeAddress.class, new NodeAddressSerializer(networkAddressing));
+		module.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkAddressing));
+		module.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(networkAddressing));
+		module.addDeserializer(NodeAddress.class, new NodeAddressDeserializer(networkAddressing));
 
 		var objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
 			.registerModule(module);

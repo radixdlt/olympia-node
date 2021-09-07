@@ -61,46 +61,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.tokens;
+package com.radixdlt.api.transactions.lookup;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.qualifier.ArchiveEndpoint;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 
-import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-
-public final class ArchiveTokensModule extends AbstractModule {
+public class TransactionStatusServiceModule extends AbstractModule {
 	@Override
-	protected void configure() {
-		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-			.addBinding().to(BerkeleyResourceInfoStore.class);
+	public void configure() {
+		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("tokens.get_native_token")
-	public JsonRpcHandler tokensGetNativeToken(BerkeleyResourceInfoStore store) {
-		return req -> store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			MempoolAddFailure.class,
+			transactionStatusService.mempoolAddFailureEventProcessor()
+		);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("tokens.get_info")
-	public JsonRpcHandler tokensGetInfo(Addressing addressing, BerkeleyResourceInfoStore store) {
-		return req -> withRequiredStringParameter(
-			req,
-			"rri",
-			rri ->
-				addressing.forResources().parseFunctional(rri)
-					.map(e -> e.map((symbol, addr) -> store.getResourceInfo(addr).orElseThrow()))
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			MempoolAddSuccess.class,
+			transactionStatusService.mempoolAddSuccessEventProcessor()
 		);
 	}
 }

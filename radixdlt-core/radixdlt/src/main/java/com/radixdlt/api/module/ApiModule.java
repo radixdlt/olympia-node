@@ -67,6 +67,7 @@ package com.radixdlt.api.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.api.qualifier.Endpoints;
+import com.radixdlt.api.transactions.index.TransactionIndexApiModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.properties.RuntimeProperties;
 

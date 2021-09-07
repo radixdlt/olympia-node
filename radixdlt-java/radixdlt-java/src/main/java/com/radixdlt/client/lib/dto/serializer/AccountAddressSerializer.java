@@ -76,9 +76,9 @@ import java.io.IOException;
 public class AccountAddressSerializer extends StdSerializer<AccountAddress> {
 	private final AccountAddressing addressing;
 
-	public AccountAddressSerializer(int networkId) {
+	public AccountAddressSerializer(Addressing networkAddressing) {
 		super(AccountAddress.class);
-		addressing = Addressing.ofNetworkId(networkId).forAccounts();
+		addressing = networkAddressing.forAccounts();
 	}
 
 	@Override
