@@ -83,6 +83,7 @@ public final class FixedFeeMeter implements Meter {
 
 	@Override
 	public void onStart(ExecutionContext context) {
+		//FIXME: can silently throw IllegalStateException
 		context.addSystemLoan(fixedFee);
 	}
 

@@ -80,9 +80,10 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.errors.ParameterError;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.serialization.DeserializeException;
 
 import java.util.Objects;
@@ -111,24 +112,24 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 
 		void update(ValidatorFeeCopy update) throws ProcedureException {
 			if (!Objects.equals(stakeData.getValidatorKey(), update.getValidatorKey())) {
-				throw new ProcedureException("Must update same key");
+				throw new ProcedureException(ParameterError.MUST_UPDATE_SAME_KEY);
 			}
 
 			var rakeIncrease = update.getRakePercentage() - stakeData.getRakePercentage();
 			if (rakeIncrease > MAX_RAKE_INCREASE) {
-				throw new ProcedureException("Max rake increase is " + MAX_RAKE_INCREASE + " but trying to increase " + rakeIncrease);
+				throw new ProcedureException(ParameterError.INVALID_RAKE_INCREASE.with(MAX_RAKE_INCREASE, rakeIncrease));
 			}
 
-			var epoch = update.getEpochUpdate().orElseThrow(() -> new ProcedureException("Must contain epoch update"));
+			var epoch = update.getEpochUpdate().orElseThrow(() -> new ProcedureException(ParameterError.MUST_CONTAIN_EPOCH_UPDATE));
 			if (rakeIncrease > 0) {
 				var expectedEpoch = epochData.getEpoch() + 1 + rakeIncreaseDebounceEpochLength;
 				if (epoch != expectedEpoch) {
-					throw new ProcedureException("Increasing rake requires epoch delay to " + expectedEpoch + " but was " + epoch);
+					throw new ProcedureException(ParameterError.CANT_INCREASE_RAKE.with(expectedEpoch, epoch));
 				}
 			} else {
 				var expectedEpoch = epochData.getEpoch() + 1;
 				if (epoch != expectedEpoch) {
-					throw new ProcedureException("Decreasing rake requires epoch delay to " + expectedEpoch + " but was " + epoch);
+					throw new ProcedureException(ParameterError.CANT_DECREASE_RAKE.with(expectedEpoch, epoch));
 				}
 			}
 		}
@@ -143,7 +144,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 
 		public ReducerState readValidatorStakeState(ValidatorStakeData validatorStakeData) throws ProcedureException {
 			if (!validatorStakeData.getValidatorKey().equals(validatorKey)) {
-				throw new ProcedureException("Invalid key update");
+				throw new ProcedureException(ParameterError.MUST_UPDATE_SAME_KEY);
 			}
 
 			return new UpdatingRakeNeedToReadEpoch(validatorStakeData);

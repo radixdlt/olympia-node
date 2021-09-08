@@ -108,7 +108,7 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 		try {
 			return upReducer.reduce((S) reducerState, (U) o, context, immutableAddrs);
 		} catch (Exception e) {
-			throw new ProcedureException(e);
+			throw ProcedureException.wrap(e);
 		}
 	}
 }

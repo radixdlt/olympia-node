@@ -64,6 +64,7 @@
 
 package com.radixdlt.errors;
 
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.functional.Failure;
 
 /**
@@ -82,7 +83,23 @@ public enum InternalStateError implements Failure {
 	SSL_GENERAL_ERROR("SSL algorithm error: {0}"),
 	NEXT_EPOCH_STAKE_FAILURE("Preparing stakes to next epoch failed: {0}"),
 	COULD_NOT_FIND_PARTICLE("Could not find large particle greater than {0}"),
-	NEXT_VIEW_IS_NOT_HIGHER_THAN_CURRENT("Next view: {0} is not higher than current view: {1}");
+	NEXT_VIEW_IS_NOT_HIGHER_THAN_CURRENT("Next view: {0} is not higher than current view: {1}"),
+	DELEGATION_NOT_ALLOWED("Delegation not allowed by owner."),
+	INVALID_ADDRESS_TYPE("Expected address to be " + REAddr.REAddrType.HASHED_KEY + " but was {0}"),
+	INVALID_RESOURCE("Expected resource {0} but was {1}"),
+	INVALID_SUBSTATE("Expected substate {0} but was {1}"),
+	INVALID_DATA("Invalid data: {0}"),
+	TOKEN_IS_NOT_MUTABLE("Can only burn mutable tokens."),
+	SHARES_CANNOT_BE_BURNT("Shares cannot be burnt."),
+	MISSING_KEY("Missing key"),
+	INVALID_CALL_TYPE("Invalid call type {0}"),
+	INVALID_SHUTDOWN_OF_EXITTING_STAKE("Invalid shutdown of exitting stake update epoch expected {0} but was {1}"),
+	STAKE_MUST_BE_LOCKED("Stake must still be locked."),
+	INVALID_NEXT_STATE("Expecting next state to be {0} but was {1}"),
+	ALREADY_INSERTED("Already inserted {0}"),
+	INCONSISTENT_DATA("Inconsistent data, there should only be a single substate per validator"),
+	EPOCH_IS_NOT_FINISHED("Must execute epoch update on end of round {0} but is {1}"),
+	VALIDATOR_STARTED_UPDATE("Validator already started to update.");
 
 	private final String message;
 

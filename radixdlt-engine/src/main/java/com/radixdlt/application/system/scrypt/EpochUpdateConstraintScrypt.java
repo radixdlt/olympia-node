@@ -68,8 +68,6 @@ import com.google.common.collect.Streams;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.application.system.ValidatorBFTDataEvent;
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.HasEpochData;
 import com.radixdlt.application.system.state.RoundData;
@@ -80,25 +78,29 @@ import com.radixdlt.application.tokens.state.ExittingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.IndexedSubstateIterator;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReadIndexProcedure;
-import com.radixdlt.constraintmachine.exceptions.MismatchException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
-import com.radixdlt.constraintmachine.IndexedSubstateIterator;
 import com.radixdlt.constraintmachine.ShutdownAllProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
+import com.radixdlt.constraintmachine.exceptions.ParticleMismatchException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.errors.InternalStateError;
+import com.radixdlt.errors.ParameterError;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.Longs;
@@ -109,11 +111,18 @@ import java.util.LinkedList;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
+import static com.radixdlt.errors.InternalStateError.EPOCH_IS_NOT_FINISHED;
+import static com.radixdlt.errors.InternalStateError.INVALID_NEXT_STATE;
+import static com.radixdlt.errors.InternalStateError.INVALID_SHUTDOWN_OF_EXITTING_STAKE;
+import static com.radixdlt.errors.ParameterError.INVALID_VIEW;
+import static com.radixdlt.errors.ParameterError.MUST_UPDATE_SAME_KEY;
+import static com.radixdlt.errors.ParameterError.RAKE_MUST_MATCH;
+import static com.radixdlt.errors.ParameterError.REGISTERED_FLAGS_MUST_MATCH;
+import static com.radixdlt.errors.ParameterError.SHOULD_NOT_HAVE_EPOCH;
 
 public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private final long maxRounds;
@@ -151,14 +160,18 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var expectedPrefix = new byte[Long.BYTES + 1];
 			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
 			indexedSubstateIterator.verifyPostTypePrefixEquals(expectedPrefix);
-			indexedSubstateIterator.iterator().forEachRemaining(e -> {
-				// Sanity check
-				if (e.getEpochUnlocked() != expectedEpoch) {
-					throw new IllegalStateException("Invalid shutdown of exitting stake update epoch expected "
-						+ expectedEpoch + " but was " + e.getEpochUnlocked());
-				}
-				exitting.add(e);
-			});
+			try {
+				indexedSubstateIterator.iterator().forEachRemaining(e -> {
+					// Sanity check
+					if (e.getEpochUnlocked() != expectedEpoch) {
+						throw new IllegalStateException(
+							new ProcedureException(INVALID_SHUTDOWN_OF_EXITTING_STAKE.with(expectedEpoch, e.getEpochUnlocked())));
+					}
+					exitting.add(e);
+				});
+			} catch (IllegalStateException e) {
+				throw (ProcedureException) e.getCause();
+			}
 			return next();
 		}
 
@@ -166,11 +179,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var exit = exitting.first();
 			exitting.remove(exit);
 			if (exit.getEpochUnlocked() != updatingEpoch.prevEpoch.getEpoch() + 1) {
-				throw new ProcedureException("Stake must still be locked.");
+				throw new ProcedureException(InternalStateError.STAKE_MUST_BE_LOCKED);
 			}
 			var expected = exit.unlock();
 			if (!expected.equals(u)) {
-				throw new ProcedureException("Expecting next state to be " + expected + " but was " + u);
+				throw new ProcedureException(INVALID_NEXT_STATE.with(expected, u));
 			}
 
 			return next();
@@ -198,7 +211,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			while (iter.hasNext()) {
 				var validatorEpochData = iter.next();
 				if (validatorBFTData.containsKey(validatorEpochData.getValidatorKey())) {
-					throw new ProcedureException("Already inserted " + validatorEpochData.getValidatorKey());
+					throw new ProcedureException(InternalStateError.ALREADY_INSERTED.with(validatorEpochData.getValidatorKey()));
 				}
 				validatorBFTData.put(validatorEpochData.getValidatorKey(), validatorEpochData);
 			}
@@ -206,14 +219,14 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			return next(context);
 		}
 
-		ReducerState next(ExecutionContext context) {
+		ReducerState next(ExecutionContext context) throws ProcedureException {
 			if (validatorBFTData.isEmpty()) {
 				return new PreparingUnstake(updatingEpoch, updatingValidators, preparingStake);
 			}
 
 			var k = validatorBFTData.firstKey();
 			if (updatingValidators.containsKey(k)) {
-				throw new IllegalStateException("Inconsistent data, there should only be a single substate per validator");
+				throw new ProcedureException(InternalStateError.INCONSISTENT_DATA);
 			}
 			var bftData = validatorBFTData.remove(k);
 			context.emitEvent(ValidatorBFTDataEvent.create(k, bftData.proposalsCompleted(), bftData.proposalsMissed()));
@@ -265,9 +278,9 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.onDone = onDone;
 		}
 
-		public ReducerState bootUp(ValidatorBFTData data) throws MismatchException {
+		public ReducerState bootUp(ValidatorBFTData data) throws ProcedureException {
 			if (!Objects.equals(this.expected, data)) {
-				throw new MismatchException(this.expected, data);
+				throw new ParticleMismatchException(this.expected, data);
 			}
 			return this.onDone.get();
 		}
@@ -282,8 +295,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState nextEpoch(EpochData u) throws ProcedureException {
 			if (u.getEpoch() != prevEpoch.getEpoch() + 1) {
-				throw new ProcedureException("Invalid next epoch: " + u.getEpoch()
-					+ " Expected: " + (prevEpoch.getEpoch() + 1));
+				throw new ProcedureException(ParameterError.INVALID_EPOCH.with(u.getEpoch(), prevEpoch.getEpoch() + 1));
 			}
 			return new StartingEpochRound();
 		}
@@ -352,7 +364,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.onDone = onDone;
 		}
 
-		ReducerState exit(ExittingStake u) throws MismatchException {
+		ReducerState exit(ExittingStake u) throws ProcedureException {
 			var firstAddr = unstaking.firstKey();
 			var ownershipUnstake = unstaking.remove(firstAddr);
 			var epochUnlocked = updatingEpoch.prevEpoch.getEpoch() + unstakingEpochDelay + 1;
@@ -360,7 +372,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				firstAddr, ownershipUnstake, epochUnlocked
 			);
 			if (!u.equals(expectedExit)) {
-				throw new MismatchException(expectedExit, u);
+				throw new ParticleMismatchException(expectedExit, u);
 			}
 
 			return unstaking.isEmpty() ? onDone.get() : this;
@@ -427,12 +439,12 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.onDone = onDone;
 		}
 
-		ReducerState stake(StakeOwnership stakeOwnership) throws MismatchException, ProcedureException {
+		ReducerState stake(StakeOwnership stakeOwnership) throws ProcedureException {
 			var accountAddr = stakes.firstKey();
 			var stakeAmt = stakes.remove(accountAddr);
 			var expectedOwnership = validatorScratchPad.stake(accountAddr, stakeAmt);
 			if (!Objects.equals(stakeOwnership, expectedOwnership)) {
-				throw new MismatchException(expectedOwnership, stakeOwnership);
+				throw new ParticleMismatchException(expectedOwnership, stakeOwnership);
 			}
 			return stakes.isEmpty() ? onDone.get() : this;
 		}
@@ -440,16 +452,16 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 	private static final class LoadingStake implements ReducerState {
 		private final ECPublicKey key;
-		private final Function<ValidatorScratchPad, ReducerState> onDone;
+		private final OnDoneFunction<ValidatorScratchPad, ReducerState> onDone;
 
-		LoadingStake(ECPublicKey key, Function<ValidatorScratchPad, ReducerState> onDone) {
+		LoadingStake(ECPublicKey key, OnDoneFunction<ValidatorScratchPad, ReducerState> onDone) {
 			this.key = key;
 			this.onDone = onDone;
 		}
 
 		ReducerState startUpdate(ValidatorStakeData stake) throws ProcedureException {
 			if (!stake.getValidatorKey().equals(key)) {
-				throw new ProcedureException("Invalid stake load");
+				throw new ProcedureException(MUST_UPDATE_SAME_KEY);
 			}
 			return onDone.apply(new ValidatorScratchPad(stake));
 		}
@@ -517,15 +529,15 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState reset(ValidatorFeeCopy rakeCopy) throws ProcedureException {
 			if (!rakeCopy.getValidatorKey().equals(update.getValidatorKey())) {
-				throw new ProcedureException("Validator keys must match.");
+				throw new ProcedureException(MUST_UPDATE_SAME_KEY);
 			}
 
 			if (rakeCopy.getRakePercentage() != update.getRakePercentage()) {
-				throw new ProcedureException("Rake percentage must match.");
+				throw new ProcedureException(RAKE_MUST_MATCH);
 			}
 
 			if (rakeCopy.getEpochUpdate().isPresent()) {
-				throw new ProcedureException("Reset of rake update should not have an epoch.");
+				throw new ProcedureException(SHOULD_NOT_HAVE_EPOCH);
 			}
 
 			return next.get();
@@ -597,11 +609,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState reset(ValidatorOwnerCopy update) throws ProcedureException {
 			if (!validatorKey.equals(update.getValidatorKey())) {
-				throw new ProcedureException("Validator keys must match.");
+				throw new ProcedureException(MUST_UPDATE_SAME_KEY);
 			}
 
 			if (update.getEpochUpdate().isPresent()) {
-				throw new ProcedureException("Epoch should not be present.");
+				throw new ProcedureException(SHOULD_NOT_HAVE_EPOCH);
 			}
 
 			return next.get();
@@ -673,15 +685,15 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState reset(ValidatorRegisteredCopy registeredCopy) throws ProcedureException {
 			if (!registeredCopy.getValidatorKey().equals(update.getValidatorKey())) {
-				throw new ProcedureException("Validator keys must match.");
+				throw new ProcedureException(MUST_UPDATE_SAME_KEY);
 			}
 
 			if (registeredCopy.isRegistered() != update.isRegistered()) {
-				throw new ProcedureException("Registered flags must match.");
+				throw new ProcedureException(REGISTERED_FLAGS_MUST_MATCH);
 			}
 
 			if (registeredCopy.getEpochUpdate().isPresent()) {
-				throw new ProcedureException("Should not have an epoch.");
+				throw new ProcedureException(SHOULD_NOT_HAVE_EPOCH);
 			}
 
 			return next.get();
@@ -746,11 +758,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
-		ReducerState updateStake(ValidatorStakeData stake) throws MismatchException {
+		ReducerState updateStake(ValidatorStakeData stake) throws ProcedureException {
 			var k = validatorsScratchPad.firstKey();
 			var expectedValidatorData = validatorsScratchPad.remove(k).toSubstate();
 			if (!stake.equals(expectedValidatorData)) {
-				throw new MismatchException(expectedValidatorData, stake);
+				throw new ParticleMismatchException(expectedValidatorData, stake);
 			}
 
 			return validatorsScratchPad.isEmpty() ? new CreatingNextValidatorSet(updatingEpoch) : this;
@@ -770,8 +782,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			(d, s, r, c) -> {
 				// TODO: Should move this authorization instead of checking epoch > 0
 				if (d.getEpoch() > 0 && s.getClosedRound().getView() != maxRounds) {
-					throw new ProcedureException("Must execute epoch update on end of round " + maxRounds
-						+ " but is " + s.getClosedRound().getView());
+					throw new ProcedureException(EPOCH_IS_NOT_FINISHED.with(maxRounds, s.getClosedRound().getView()));
 				}
 
 				return ReducerResult.incomplete(new UpdatingEpoch(d));
@@ -885,7 +896,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (u.getView() != 0) {
-					throw new ProcedureException("Epoch must start with view 0");
+					throw new ProcedureException(INVALID_VIEW.with(0, u.getView()));
 				}
 
 				return ReducerResult.complete();

@@ -64,29 +64,31 @@
 
 package com.radixdlt.application.unique;
 
+import org.assertj.core.api.Condition;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.unique.scrypt.MutexConstraintScrypt;
+import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
-import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.application.unique.scrypt.MutexConstraintScrypt;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.SubstateSerialization;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
-import org.junit.Before;
-import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -148,6 +150,10 @@ public class UniqueTest {
 		var sig = keyPair.sign(builder.hashToSign());
 		var txn = builder.sig(sig).build();
 		assertThatThrownBy(() -> this.sut.execute(List.of(txn)))
-			.hasRootCauseInstanceOf(InvalidHashedKeyException.class);
+			.getRootCause()
+			.isInstanceOf(ProcedureException.class)
+			.has(new Condition<>(v -> {
+				return v != null;
+			}, ""));
 	}
 }

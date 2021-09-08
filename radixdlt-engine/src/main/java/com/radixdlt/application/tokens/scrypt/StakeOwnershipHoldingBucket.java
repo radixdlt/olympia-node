@@ -66,11 +66,12 @@ package com.radixdlt.application.tokens.scrypt;
 
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.constraintmachine.exceptions.MismatchException;
+import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.errors.InternalStateError;
+import com.radixdlt.errors.ParameterError;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -103,17 +104,17 @@ public final class StakeOwnershipHoldingBucket implements ReducerState {
 		return new StakeOwnership(delegate, accountAddr, amount);
 	}
 
-	public void depositOwnership(StakeOwnership stakeOwnership) throws MismatchException {
+	public void depositOwnership(StakeOwnership stakeOwnership) throws ProcedureException {
 		if (!delegate.equals(stakeOwnership.getDelegateKey())) {
-			throw new MismatchException("Shares must be from same delegate");
+			throw new ProcedureException(ParameterError.SHARES_MUST_BE_FROM_SAME_DELEGATE);
 		}
 		if (!stakeOwnership.getOwner().equals(accountAddr)) {
-			throw new MismatchException("Shares must be for same account");
+			throw new ProcedureException(ParameterError.SHARES_MUST_BE_FOR_SAME_ACCOUNT);
 		}
 		ownershipAmount = UInt384.from(stakeOwnership.getAmount()).add(ownershipAmount);
 	}
 
-	public PreparedUnstakeOwnership unstake(UInt256 amount) throws NotEnoughResourcesException, MismatchException {
+	public PreparedUnstakeOwnership unstake(UInt256 amount) throws NotEnoughResourcesException {
 		var unstakeAmount = UInt384.from(amount);
 		if (ownershipAmount.compareTo(unstakeAmount) < 0) {
 			throw new NotEnoughResourcesException(amount, ownershipAmount.getLow());
@@ -124,7 +125,7 @@ public final class StakeOwnershipHoldingBucket implements ReducerState {
 
 	public void destroy() throws ProcedureException {
 		if (!ownershipAmount.isZero()) {
-			throw new ProcedureException("Shares cannot be burnt.");
+			throw new ProcedureException(InternalStateError.SHARES_CANNOT_BE_BURNT);
 		}
 	}
 

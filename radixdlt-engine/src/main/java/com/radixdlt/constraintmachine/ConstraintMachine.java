@@ -65,11 +65,10 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.application.system.state.VirtualParent;
-import com.radixdlt.atom.Substate;
-import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.atom.SubstateId;
 import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.identifiers.exception.AuthorizationException;
+import com.radixdlt.atom.CloseableCursor;
+import com.radixdlt.atom.Substate;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.LocalSubstateNotFoundException;
@@ -81,10 +80,11 @@ import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
-import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
-import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.constraintmachine.meter.Meter;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
+import com.radixdlt.errors.ProcessingError;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.utils.Pair;
@@ -100,6 +100,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+
+import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_EXTRA_BYTES;
 
 /**
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
@@ -345,9 +347,6 @@ public final class ConstraintMachine {
 		return procedure.call(procedureParam, reducerState, immutableAddrs, context).state();
 	}
 
-	private static class MissingExpectedEndException extends Exception {
-	}
-
 	/**
 	 * Executes transition procedures and witness validators in a particle group and validates
 	 * that the particle group is well formed.
@@ -364,12 +363,12 @@ public final class ConstraintMachine {
 		var groupedStateUpdates = new ArrayList<List<REStateUpdate>>();
 		var stateUpdates = new ArrayList<REStateUpdate>();
 
-		meter.onStart(context);
+		meter.onStart(context);	//FIXME: can silently throw IllegalStateException
 
 		for (REInstruction inst : instructions) {
 			try {
 				if (expectEnd && inst.getMicroOp() != REInstruction.REMicroOp.END) {
-					throw new MissingExpectedEndException();
+					throw new ProcedureException(ProcessingError.MISSING_END_INSTRUCTION);
 				}
 
 				if (inst.getMicroOp() == REInstruction.REMicroOp.SYSCALL) {
@@ -392,7 +391,7 @@ public final class ConstraintMachine {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.localVirtualRead(substateId);
 					} else {
-						throw new IllegalStateException("Unknown read op " + inst.getMicroOp());
+						throw new ProcedureException(ProcessingError.UNKNOWN_OPERATION.with("read", inst.getMicroOp()));
 					}
 					var eventId = OpSignature.ofSubstateUpdate(inst.getMicroOp().getOp(), nextParticle.getClass());
 					var methodProcedure = loadProcedure(reducerState, eventId);
@@ -441,7 +440,7 @@ public final class ConstraintMachine {
 						var buf = upSubstate.getSubstateBuffer();
 						nextParticle = validationState.deserialization.deserialize(buf);
 						if (buf.hasRemaining()) {
-							throw new TrailingBytesException("Substate has trailing bytes.");
+							throw new ProcedureException(BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
 						}
 						substateId = upSubstate.getSubstateId();
 						substateBuffer = upSubstate::getSubstateBuffer;
@@ -463,7 +462,7 @@ public final class ConstraintMachine {
 						substateBuffer = null;
 						nextParticle = validationState.localVirtualShutdown(substateId);
 					} else {
-						throw new IllegalStateException("Unhandled op: " + inst.getMicroOp());
+						throw new ProcedureException(ProcessingError.UNKNOWN_OPERATION.with("unhandled", inst.getMicroOp()));
 					}
 
 					var op = inst.getMicroOp().getOp();
@@ -492,7 +491,7 @@ public final class ConstraintMachine {
 					// Collect no-ops here
 					if (inst.getMicroOp() != REInstruction.REMicroOp.MSG
 						&& inst.getMicroOp() != REInstruction.REMicroOp.HEADER) {
-						throw new ProcedureException("Unknown op " + inst.getMicroOp());
+						throw new ProcedureException(ProcessingError.UNKNOWN_OPERATION.with("no-op", inst.getMicroOp()));
 					}
 				}
 			} catch (Exception e) {

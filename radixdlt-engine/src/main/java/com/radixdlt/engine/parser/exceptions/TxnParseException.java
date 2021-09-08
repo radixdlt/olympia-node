@@ -66,7 +66,6 @@ package com.radixdlt.engine.parser.exceptions;
 
 import com.radixdlt.engine.parser.REParser;
 
-//TODO: add Failure as a parameter
 public class TxnParseException extends Exception {
 	private final REParser.ParserState parserState;
 

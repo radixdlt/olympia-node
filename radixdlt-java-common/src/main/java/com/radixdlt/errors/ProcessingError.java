@@ -85,7 +85,11 @@ public enum ProcessingError implements Failure {
 	SELF_CONNECTION_ATTEMPT("Attempt to connect to self"),
 	PEER_BANNED("Peer is banned"),
 	OPERATION_INTERRUPTED("Operation was interrupted {0}"),
-	BUFFER_HAS_UNUSED_SPACE("Buffer has unused {0} bytes");
+	BUFFER_HAS_EXTRA_BYTES("Buffer has extra {0} bytes"),
+	MULTIPLE_FEE_RESERVE_DEPOSIT("MultipleFeeReserveDeposit"),
+	MISSING_END_INSTRUCTION("Missing END instruction"),
+	UNKNOWN_OPERATION("Unknown {0} instruction {1}"),
+	CALL_DATA_ERROR("CallData invalid access (index: {0} accessSize: {1}) on size {2}");
 
 	private final String message;
 

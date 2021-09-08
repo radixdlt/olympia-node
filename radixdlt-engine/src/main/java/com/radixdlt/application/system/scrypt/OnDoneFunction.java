@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,11 +62,11 @@
  * permissions under this License.
  */
 
-package com.radixdlt.constraintmachine.exceptions;
+package com.radixdlt.application.system.scrypt;
 
-//TODO: add Failure parameter
-public class InvalidHashedKeyException extends ProcedureException {
-	public InvalidHashedKeyException(String message) {
-		super(message);
-	}
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+
+@FunctionalInterface
+public interface OnDoneFunction<T, R> {
+	R apply(T t) throws ProcedureException;
 }

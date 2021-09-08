@@ -65,15 +65,18 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
-import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Arrays;
 import java.util.Objects;
 
+import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_EXTRA_BYTES;
+
 public final class CallData {
 	private final byte[] data;
+
 	public CallData(byte[] data) {
 		this.data = Objects.requireNonNull(data);
 	}
@@ -83,11 +86,11 @@ public final class CallData {
 		return data[offset];
 	}
 
-	public UInt256 getUInt256(int offset) throws CallDataAccessException, TrailingBytesException {
+	public UInt256 getUInt256(int offset) throws ProcedureException {
 		validateBounds(offset, UInt256.BYTES);
 
 		if (data.length > offset + UInt256.BYTES) {
-			throw new TrailingBytesException("Call data has " + data.length + " bytes.");
+			throw new ProcedureException(BUFFER_HAS_EXTRA_BYTES.with(data.length - offset - UInt256.BYTES));
 		}
 
 		return UInt256.from(data, offset);

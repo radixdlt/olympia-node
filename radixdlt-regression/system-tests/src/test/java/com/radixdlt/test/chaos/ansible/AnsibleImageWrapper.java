@@ -82,6 +82,7 @@ import java.util.regex.Pattern;
  * We have our own image with ansible and several playbook. We use this image via docker.
  * This class has the docker commands needed to utilize these playbooks.
  */
+@SuppressWarnings("deprecation")
 public class AnsibleImageWrapper {
 
     private static final Logger logger = LogManager.getLogger();

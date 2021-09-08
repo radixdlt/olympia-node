@@ -65,9 +65,12 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.utils.Bytes;
 
 import java.util.Iterator;
+
+import static com.radixdlt.errors.ParameterError.INVALID_PREFIX;
+import static com.radixdlt.errors.ParameterError.INVALID_PREFIX_LEN;
+import static com.radixdlt.utils.Bytes.toHexString;
 
 public final class IndexedSubstateIterator<D extends Particle> {
 	private SubstateIndex<?> index;
@@ -80,21 +83,18 @@ public final class IndexedSubstateIterator<D extends Particle> {
 
 	public void verifyPostTypePrefixEquals(byte[] prefix) throws ProcedureException {
 		if (index.getPrefix().length != 1 + prefix.length) {
-			throw new ProcedureException("Invalid shutdownAll prefix");
+			throw new ProcedureException(INVALID_PREFIX_LEN.with(index.getPrefix().length, 1 + prefix.length));
 		}
 		for (int i = 0; i < prefix.length; i++) {
 			if (index.getPrefix()[i + 1] != prefix[i]) {
-				throw new ProcedureException(
-					"Invalid shutdownAll prefix, expected " + Bytes.toHexString(prefix)
-						+ " but was " + Bytes.toHexString(index.getPrefix())
-				);
+				throw new ProcedureException(INVALID_PREFIX.with(toHexString(prefix), toHexString(index.getPrefix())));
 			}
 		}
 	}
 
 	public void verifyPostTypePrefixIsEmpty() throws ProcedureException {
 		if (index.getPrefix().length != 1) {
-			throw new ProcedureException("Invalid shutdownAll prefix");
+			throw new ProcedureException(INVALID_PREFIX_LEN.with(1, index.getPrefix().length));
 		}
 	}
 

@@ -120,7 +120,6 @@ import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.JsonRpcUtil.safeArray;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.errors.ProcessingError.UNABLE_TO_PREPARE_TX;
-import static com.radixdlt.utils.functional.Result.allOf;
 
 public final class DeveloperHandler {
 	private final GenesisBuilder genesisBuilder;

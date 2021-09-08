@@ -64,22 +64,23 @@
 
 package com.radixdlt.application.system.scrypt;
 
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.errors.InternalStateError;
 import com.radixdlt.utils.KeyComparator;
 
 import java.util.TreeMap;
@@ -101,7 +102,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 
 		public ReducerState beginUpdate(ValidatorBFTData validatorBFTData) throws ProcedureException {
 			if (validatorsToUpdate.containsKey(validatorBFTData.getValidatorKey())) {
-				throw new ProcedureException("Validator already started to update.");
+				throw new ProcedureException(InternalStateError.VALIDATOR_STARTED_UPDATE);
 			}
 
 			validatorsToUpdate.put(validatorBFTData.getValidatorKey(), validatorBFTData);

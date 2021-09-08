@@ -65,23 +65,26 @@
 package com.radixdlt.application.validators.scrypt;
 
 import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.ReadProcedure;
-import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.ReadProcedure;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.exception.AuthorizationException;
+
+import static com.radixdlt.errors.ParameterError.INVALID_EPOCH;
+import static com.radixdlt.errors.ParameterError.MUST_UPDATE_SAME_KEY;
 
 public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 	private static class UpdatingRegistered implements ReducerState {
@@ -95,12 +98,12 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 
 		void update(ValidatorRegisteredCopy update) throws ProcedureException {
 			if (!update.getValidatorKey().equals(validatorKey)) {
-				throw new ProcedureException("Cannot update validator");
+				throw new ProcedureException(MUST_UPDATE_SAME_KEY);
 			}
 
 			var expectedEpoch = epochData.getEpoch() + 1;
 			if (update.getEpochUpdate().orElseThrow() != expectedEpoch) {
-				throw new ProcedureException("Expected epoch to be " + expectedEpoch + " but is " + update.getEpochUpdate());
+				throw new ProcedureException(INVALID_EPOCH.with(expectedEpoch, update.getEpochUpdate()));
 			}
 		}
 	}
@@ -135,7 +138,7 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.put((byte) (s.isRegistered() ? 1 : 0));
 			},
-			buf -> REFieldSerialization.deserializeKey(buf),
+			REFieldSerialization::deserializeKey,
 			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
 			k -> new ValidatorRegisteredCopy((ECPublicKey) k, false)
 		));

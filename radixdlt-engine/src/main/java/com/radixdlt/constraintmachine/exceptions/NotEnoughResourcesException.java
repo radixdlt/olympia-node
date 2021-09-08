@@ -66,13 +66,14 @@ package com.radixdlt.constraintmachine.exceptions;
 
 import com.radixdlt.utils.UInt256;
 
-//TODO: add Failure parameter
+import static com.radixdlt.errors.ParameterError.NOT_ENOUGH_RESOURCES;
+
 public final class NotEnoughResourcesException extends ProcedureException {
 	private final UInt256 request;
 	private final UInt256 amount;
 
 	public NotEnoughResourcesException(UInt256 request, UInt256 amount) {
-		super("request: " + request + " amount: " + amount);
+		super(NOT_ENOUGH_RESOURCES.with(request, amount));
 		this.request = request;
 		this.amount = amount;
 	}

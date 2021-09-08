@@ -79,11 +79,14 @@ import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
-import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 
 import java.util.OptionalLong;
+
+import static com.radixdlt.errors.ParameterError.INVALID_EPOCH;
+import static com.radixdlt.errors.ParameterError.MUST_UPDATE_SAME_KEY;
 
 public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 
@@ -98,12 +101,13 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 
 		void update(ValidatorOwnerCopy update) throws ProcedureException {
 			if (!update.getValidatorKey().equals(validatorKey)) {
-				throw new ProcedureException("Invalid key update");
+				throw new ProcedureException(MUST_UPDATE_SAME_KEY);
 			}
 
 			var expectedEpoch = epochData.getEpoch() + 1;
 			if (update.getEpochUpdate().orElseThrow() != expectedEpoch) {
-				throw new ProcedureException("Expected epoch to be " + expectedEpoch + " but is " + update.getEpochUpdate());
+
+				throw new ProcedureException(INVALID_EPOCH.with(expectedEpoch, update.getEpochUpdate()));
 			}
 		}
 	}

@@ -64,21 +64,22 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.Txn;
-import com.radixdlt.application.tokens.scrypt.Tokens;
 import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
-import com.radixdlt.identifiers.exception.AuthorizationException;
+import com.radixdlt.application.tokens.scrypt.Tokens;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
+import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
 import com.radixdlt.constraintmachine.exceptions.ExecutionContextDestroyException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
-import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
-import com.radixdlt.constraintmachine.exceptions.MultipleFeeReserveDepositException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.errors.ProcessingError;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
@@ -110,6 +111,7 @@ public final class ExecutionContext {
 		this.reserve = new TokenHoldingBucket(Tokens.create(REAddr.ofNativeToken(), UInt256.ZERO));
 	}
 
+	//FIXME: can silently throw IllegalStateException
 	public void addSystemLoan(UInt256 loan) {
 		this.systemLoan = this.systemLoan.add(loan);
 		try {
@@ -142,13 +144,13 @@ public final class ExecutionContext {
 		return sigsLeft;
 	}
 
-	public Tokens withdrawFeeReserve(UInt256 amount) throws InvalidResourceException, NotEnoughResourcesException {
+	public Tokens withdrawFeeReserve(UInt256 amount) throws ProcedureException {
 		return reserve.withdraw(REAddr.ofNativeToken(), amount);
 	}
 
-	public void depositFeeReserve(Tokens tokens) throws InvalidResourceException, MultipleFeeReserveDepositException {
+	public void depositFeeReserve(Tokens tokens) throws ProcedureException {
 		if (feeDeposit != null) {
-			throw new MultipleFeeReserveDepositException();
+			throw new ProcedureException(ProcessingError.MULTIPLE_FEE_RESERVE_DEPOSIT);
 		}
 		reserve.deposit(tokens);
 		feeDeposit = tokens.getAmount().getLow();

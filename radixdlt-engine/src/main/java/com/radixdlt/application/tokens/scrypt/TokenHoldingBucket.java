@@ -65,13 +65,14 @@
 package com.radixdlt.application.tokens.scrypt;
 
 import com.radixdlt.constraintmachine.ExecutionContext;
+import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.Resources;
 import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
 import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.constraintmachine.Resources;
-import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
+import com.radixdlt.errors.InternalStateError;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
@@ -114,7 +115,7 @@ public final class TokenHoldingBucket implements ReducerState {
 
 			var tokenResource = r.loadResource(tokens.getResourceAddr());
 			if (!tokenResource.isMutable()) {
-				throw new ProcedureException("Can only burn mutable tokens.");
+				throw new ProcedureException(InternalStateError.TOKEN_IS_NOT_MUTABLE);
 			}
 		}
 	}

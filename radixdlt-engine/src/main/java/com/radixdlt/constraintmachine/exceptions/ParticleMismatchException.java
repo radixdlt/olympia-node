@@ -64,10 +64,12 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.constraintmachine.Particle;
 
-public class MinimumStakeException extends Exception {
-	public MinimumStakeException(UInt256 minimum, UInt256 actual) {
-		super("Minimum amount to stake must be >= " + minimum + " but trying to stake " + actual);
+import static com.radixdlt.errors.InternalStateError.INVALID_SUBSTATE;
+
+public class ParticleMismatchException extends ProcedureException {
+	public ParticleMismatchException(Particle expected, Particle actual) {
+		super(INVALID_SUBSTATE.with(expected, actual));
 	}
 }

@@ -67,11 +67,15 @@ package com.radixdlt.application.system.scrypt;
 import com.radixdlt.application.system.ValidatorMissedProposalsEvent;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.errors.ParameterError;
 
 import java.util.TreeMap;
+
+import static com.radixdlt.errors.ParameterError.INVALID_VIEW;
+import static com.radixdlt.errors.ParameterError.VIEW_OVERFLOW;
 
 public class UpdatingValidatorBFTData implements ReducerState {
 	private final long maxRounds;
@@ -86,12 +90,11 @@ public class UpdatingValidatorBFTData implements ReducerState {
 
 	private void incrementViews(long count) throws ProcedureException {
 		if (this.expectedNextView + count < this.expectedNextView) {
-			throw new ProcedureException("View overflow");
+			throw new ProcedureException(VIEW_OVERFLOW);
 		}
 
 		if (this.expectedNextView + count > maxRounds) {
-			throw new ProcedureException("Max rounds is " + maxRounds + " but attempting to execute "
-				+ (this.expectedNextView + count));
+			throw new ProcedureException(INVALID_VIEW.with(maxRounds, this.expectedNextView + count));
 		}
 
 		this.expectedNextView += count;
@@ -100,16 +103,16 @@ public class UpdatingValidatorBFTData implements ReducerState {
 	public ReducerState update(ValidatorBFTData next, ExecutionContext context) throws ProcedureException {
 		var first = validatorsToUpdate.firstKey();
 		if (!next.getValidatorKey().equals(first)) {
-			throw new ProcedureException("Invalid key for validator bft data update");
+			throw new ProcedureException(ParameterError.INVALID_KEY_FOR_VALIDATOR_UPDATE);
 		}
 		var old = validatorsToUpdate.remove(first);
 		if (old.proposalsCompleted() > next.proposalsCompleted()
 			|| old.proposalsMissed() > next.proposalsMissed()) {
-			throw new ProcedureException("Invalid data for validator bft data update");
+			throw new ProcedureException(ParameterError.INVALID_DATA_FOR_VALIDATOR_UPDATE);
 		}
 
 		if (old.proposalsCompleted() == next.proposalsCompleted() && old.proposalsMissed() == next.proposalsMissed()) {
-			throw new ProcedureException("No update to Validator BFT data");
+			throw new ProcedureException(ParameterError.NO_UPDATE_FOR_VALIDATOR_DATA);
 		}
 
 		var additionalProposalsCompleted = next.proposalsCompleted() - old.proposalsCompleted();

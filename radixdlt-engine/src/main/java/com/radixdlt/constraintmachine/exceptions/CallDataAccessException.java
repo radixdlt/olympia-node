@@ -64,9 +64,10 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-//TODO: add Failure parameter
+import com.radixdlt.errors.ProcessingError;
+
 public class CallDataAccessException extends ProcedureException {
 	public CallDataAccessException(int callDataSize, int index, int accessSize) {
-		super("CallData invalid access (index: " + index + " accessSize: " + accessSize + ") on size " + callDataSize);
+		super(ProcessingError.CALL_DATA_ERROR.with(index, accessSize, callDataSize));
 	}
 }

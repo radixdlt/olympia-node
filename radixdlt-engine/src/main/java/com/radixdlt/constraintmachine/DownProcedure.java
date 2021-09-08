@@ -107,8 +107,7 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 		try {
 			return downReducer.reduce((D) o, (S) reducerState, immutableAddrs, context);
 		} catch (Exception e) {
-			//TODO: prevent double wrapping of ProcedureException
-			throw new ProcedureException(e);
+			throw ProcedureException.wrap(e);
 		}
 	}
 }

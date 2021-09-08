@@ -66,24 +66,24 @@ package com.radixdlt.application.tokens.scrypt;
 
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.ResourceCreatedEvent;
+import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
+import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.UInt256;
@@ -91,6 +91,11 @@ import com.radixdlt.utils.UInt256;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.regex.Pattern;
+
+import static com.radixdlt.errors.ParameterError.INVALID_TOKEN_GRANULARITY;
+import static com.radixdlt.errors.ParameterError.INVALID_TOKEN_SYMBOL;
+import static com.radixdlt.errors.ParameterError.TOKEN_ADDRESS_MISMATCH;
+import static com.radixdlt.errors.ParameterError.TOKEN_SYMBOL_MISMATCH;
 
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	private final Set<String> reservedSymbols;
@@ -200,12 +205,12 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 
 		void metadata(TokenResourceMetadata metadata, ExecutionContext context) throws ProcedureException {
 			if (!metadata.getAddr().equals(tokenResource.getAddr())) {
-				throw new ProcedureException("Addresses don't match.");
+				throw new ProcedureException(TOKEN_ADDRESS_MISMATCH.with(metadata.getAddr(), tokenResource.getAddr()));
 			}
 
 			var symbol = new String(arg, StandardCharsets.UTF_8);
 			if (!symbol.equals(metadata.getSymbol())) {
-				throw new ProcedureException("Symbols don't match.");
+				throw new ProcedureException(TOKEN_SYMBOL_MISMATCH.with(symbol, metadata.getSymbol()));
 			}
 			context.emitEvent(new ResourceCreatedEvent(symbol, tokenResource, metadata));
 		}
@@ -217,7 +222,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
-					throw new ProcedureException("Addresses don't match");
+					throw new ProcedureException(TOKEN_ADDRESS_MISMATCH.with(u.getAddr(), s.getAddr()));
 				}
 
 				var str = new String(s.getArg());
@@ -225,7 +230,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 					throw new ReservedSymbolException(str);
 				}
 				if (!tokenSymbolPattern.matcher(str).matches()) {
-					throw new ProcedureException("invalid token symbol: " + str);
+					throw new ProcedureException(INVALID_TOKEN_SYMBOL.with(str));
 				}
 
 				if (u.isMutable()) {
@@ -233,7 +238,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 				}
 
 				if (!u.getGranularity().equals(UInt256.ONE)) {
-					throw new ProcedureException("Granularity must be one.");
+					throw new ProcedureException(INVALID_TOKEN_GRANULARITY);
 				}
 
 				return ReducerResult.incomplete(new NeedFixedTokenSupply(s.getArg(), u));
@@ -245,7 +250,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
-					throw new ProcedureException("Addresses don't match.");
+					throw new ProcedureException(TOKEN_ADDRESS_MISMATCH.with(u.getResourceAddr(), s.tokenResource.getAddr()));
 				}
 				return ReducerResult.incomplete(new NeedMetadata(s.arg, s.tokenResource));
 			}

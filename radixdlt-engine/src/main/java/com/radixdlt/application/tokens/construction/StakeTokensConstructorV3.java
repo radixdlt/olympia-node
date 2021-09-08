@@ -83,7 +83,7 @@ import java.nio.ByteBuffer;
 import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_BALANCE;
 import static com.radixdlt.errors.ParameterError.INVALID_MINIMUM_STAKE;
 import static com.radixdlt.errors.ParameterError.STAKING_NOT_ALLOWED;
-import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_UNUSED_SPACE;
+import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_EXTRA_BYTES;
 
 public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> {
 	private final UInt256 minimumStake;
@@ -104,7 +104,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 		buf.put((byte) 0);
 		buf.put(action.from().getBytes());
 		if (buf.hasRemaining()) {
-			throw new TxBuilderException(BUFFER_HAS_UNUSED_SPACE.with(buf.remaining()));
+			throw new TxBuilderException(BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
 		}
 
 		var index = SubstateIndex.create(buf.array(), TokensInAccount.class);

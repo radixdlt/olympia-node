@@ -77,6 +77,7 @@ public final class Meters {
 		return new Meter() {
 			@Override
 			public void onStart(ExecutionContext context) {
+				//FIXME: can silently throw IllegalStateException
 				m0.onStart(context);
 				m1.onStart(context);
 			}

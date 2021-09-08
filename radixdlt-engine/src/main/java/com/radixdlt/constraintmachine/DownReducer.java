@@ -64,10 +64,9 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
 public interface DownReducer<I extends Particle, S extends ReducerState> {
 	ReducerResult reduce(I inputParticle, S reducerState, Resources immutableAddrs, ExecutionContext context)
-		throws ProcedureException, MismatchException;	//TODO: remove MismatchException
+		throws ProcedureException;
 }

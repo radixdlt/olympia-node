@@ -86,6 +86,7 @@ public class TxnSizeFeeMeter implements Meter {
 
 	@Override
 	public void onStart(ExecutionContext context) {
+		//FIXME: can silently throw IllegalStateException
 		context.addSystemLoan(systemLoan);
 	}
 

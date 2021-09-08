@@ -80,12 +80,12 @@ import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
+import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
+import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.middleware2.network.MessageCentralMempool;
 import com.radixdlt.middleware2.network.MessageCentralPeerDiscovery;
 import com.radixdlt.middleware2.network.MessageCentralPeerLiveness;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
-import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
-import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.network.p2p.discovery.GetPeers;
 import com.radixdlt.network.p2p.discovery.PeersResponse;
 import com.radixdlt.network.p2p.liveness.Ping;
@@ -95,6 +95,7 @@ import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+
 import io.reactivex.rxjava3.core.Flowable;
 
 /**
@@ -240,7 +241,7 @@ public final class MessagingModule extends AbstractModule {
 				} else if (remoteEventClass == PeersResponse.class) {
 					return messageCentralPeerDiscovery.peersResponses().map(m -> (RemoteEvent<T>) m);
 				} else {
-					throw new IllegalStateException();
+					throw new IllegalStateException("Unknown remote event class " + remoteEventClass);
 				}
 			}
 		};

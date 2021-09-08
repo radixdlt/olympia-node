@@ -84,12 +84,20 @@ import com.radixdlt.constraintmachine.SystemCallProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.errors.InternalStateError;
+import com.radixdlt.errors.ParameterError;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Bytes;
 
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedList;
+
+import static com.radixdlt.errors.InternalStateError.INVALID_CALL_TYPE;
+import static com.radixdlt.errors.InternalStateError.INVALID_DATA;
+import static com.radixdlt.errors.ParameterError.INVALID_EPOCH;
+import static com.radixdlt.errors.ParameterError.INVALID_SUBSTATE_TYPE_ID;
+import static com.radixdlt.errors.ParameterError.INVALID_VIEW;
 
 public final class SystemConstraintScrypt implements ConstraintScrypt {
 	private static class AllocatingSystem implements ReducerState {
@@ -110,7 +118,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		public ReducerState createVirtualSubstate(VirtualParent virtualParent) throws ProcedureException {
 			var typeId = substatesToVirtualize.remove(0);
 			if (!Arrays.equals(virtualParent.getData(), new byte[] {typeId.id()})) {
-				throw new ProcedureException("Expected " + typeId + " but was " + Bytes.toHexString(virtualParent.getData()));
+				throw new ProcedureException(INVALID_SUBSTATE_TYPE_ID.with(typeId, Bytes.toHexString(virtualParent.getData())));
 			}
 			return substatesToVirtualize.isEmpty() ? null : this;
 		}
@@ -143,7 +151,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 		public ReducerState claim(UnclaimedREAddr unclaimedREAddr, ExecutionContext ctx) throws ProcedureException {
 			if (ctx.permissionLevel() != PermissionLevel.SYSTEM) {
-				var key = ctx.key().orElseThrow(() -> new ProcedureException("Missing key"));
+				var key = ctx.key().orElseThrow(() -> new ProcedureException(InternalStateError.MISSING_KEY));
 				unclaimedREAddr.verifyHashedKey(key, arg);
 			}
 			return new REAddrClaim(unclaimedREAddr, arg);
@@ -175,10 +183,10 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (u.getData().length != 1) {
-					throw new ProcedureException("Invalid data: " + Bytes.toHexString(u.getData()));
+					throw new ProcedureException(INVALID_DATA.with(Bytes.toHexString(u.getData())));
 				}
 				if (u.getData()[0] != SubstateTypeId.UNCLAIMED_READDR.id()) {
-					throw new ProcedureException("Invalid data: " + Bytes.toHexString(u.getData()));
+					throw new ProcedureException(INVALID_DATA.with(Bytes.toHexString(u.getData())));
 				}
 				return ReducerResult.complete();
 			}
@@ -224,9 +232,9 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				() -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 				(s, d, c) -> {
 					var id = d.get(0);
-					var syscall = Syscall.of(id).orElseThrow(() -> new ProcedureException("Invalid call type " + id));
+					var syscall = Syscall.of(id).orElseThrow(() -> new ProcedureException(INVALID_CALL_TYPE.with(id)));
 					if (syscall != Syscall.FEE_RESERVE_PUT) {
-						throw new ProcedureException("Invalid call type: " + syscall);
+						throw new ProcedureException(INVALID_CALL_TYPE.with(syscall));
 					}
 
 					var amt = d.getUInt256(1);
@@ -243,7 +251,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				() -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
 				(s, d, c) -> {
 					var id = d.get(0);
-					var syscall = Syscall.of(id).orElseThrow(() -> new ProcedureException("Invalid call type " + id));
+					var syscall = Syscall.of(id).orElseThrow(() -> new ProcedureException(INVALID_CALL_TYPE.with(id)));
 					if (syscall == Syscall.FEE_RESERVE_TAKE) {
 						var amt = d.getUInt256(1);
 						var tokens = c.withdrawFeeReserve(amt);
@@ -251,11 +259,11 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 					} else if (syscall == Syscall.READDR_CLAIM) {
 						var bytes = d.getRemainingBytes(1);
 						if (bytes.length > 32) {
-							throw new ProcedureException("Address claim too large.");
+							throw new ProcedureException(ParameterError.ADDRESS_CLAIM_TOO_LARGE);
 						}
 						return ReducerResult.incomplete(new REAddrClaimStart(bytes));
 					} else {
-						throw new ProcedureException("Invalid call type: " + syscall);
+						throw new ProcedureException(INVALID_CALL_TYPE.with(syscall));
 					}
 				}
 			)
@@ -299,7 +307,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (u.getEpoch() != 0) {
-					throw new ProcedureException("First epoch must be 0.");
+					throw new ProcedureException(INVALID_EPOCH.with(0, u.getEpoch()));
 				}
 
 				return ReducerResult.incomplete(new AllocatingSystem());
@@ -310,7 +318,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
 			(s, u, c, r) -> {
 				if (u.getView() != 0) {
-					throw new ProcedureException("First view must be 0.");
+					throw new ProcedureException(INVALID_VIEW.with(0, u.getView()));
 				}
 				return ReducerResult.incomplete(new AllocatingVirtualState());
 			}

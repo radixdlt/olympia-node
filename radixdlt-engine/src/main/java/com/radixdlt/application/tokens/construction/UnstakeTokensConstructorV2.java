@@ -64,14 +64,14 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 
@@ -79,7 +79,7 @@ import java.nio.ByteBuffer;
 
 import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_BALANCE;
 import static com.radixdlt.errors.ParameterError.INVALID_UNSTAKE_AMOUNT;
-import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_UNUSED_SPACE;
+import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_EXTRA_BYTES;
 
 public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
 	@Override
@@ -100,7 +100,7 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 		buf.put(action.from().getCompressedBytes());
 		buf.put(action.accountAddr().getBytes());
 		if (buf.hasRemaining()) {
-			throw new TxBuilderException(BUFFER_HAS_UNUSED_SPACE.with(buf.remaining()));
+			throw new TxBuilderException(BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
 		}
 
 		var index = SubstateIndex.create(buf.array(), StakeOwnership.class);

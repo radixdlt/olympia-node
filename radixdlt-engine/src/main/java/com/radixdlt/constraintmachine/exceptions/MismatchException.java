@@ -64,16 +64,11 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.constraintmachine.Particle;
-
 //FIXME: used in two different scenarios - one as a kind of specific ProcedureException, second as a
 // general purpose exception for cases when actual state does not match expected state
 // (i.e. as a replacement for IllegalStateException)
 public class MismatchException extends Exception {
 	// FIXME: ProcedureException cases constructor
-	public MismatchException(Particle expected, Particle actual) {
-		super("Expected substate " + expected + " but was " + actual);
-	}
 
 	//FIXME: general purpose variant constructor
 	public MismatchException(String msg) {

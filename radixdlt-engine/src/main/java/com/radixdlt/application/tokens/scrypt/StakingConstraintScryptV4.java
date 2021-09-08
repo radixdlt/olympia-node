@@ -64,13 +64,13 @@
 
 package com.radixdlt.application.tokens.scrypt;
 
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.atom.REFieldSerialization;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Loader;
 import com.radixdlt.atomos.SubstateDefinition;
@@ -78,22 +78,23 @@ import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.exceptions.InvalidDelegationException;
-import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
-import com.radixdlt.constraintmachine.exceptions.MinimumStakeException;
-import com.radixdlt.constraintmachine.exceptions.MismatchException;
-import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReadProcedure;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
+import com.radixdlt.constraintmachine.exceptions.ParticleMismatchException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.util.function.Predicate;
+
+import static com.radixdlt.errors.InternalStateError.DELEGATION_NOT_ALLOWED;
+import static com.radixdlt.errors.ParameterError.INVALID_MINIMUM_STAKE;
+import static com.radixdlt.errors.ParameterError.MUST_UPDATE_SAME_KEY;
+import static com.radixdlt.errors.ParameterError.NO_MATCHING_VALIDATOR_KEYS;
 
 public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 	private final UInt256 minimumStake;
@@ -158,7 +159,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 
 		ReducerState readOwner(ValidatorOwnerCopy ownerCopy) throws ProcedureException {
 			if (!allowDelegationFlag.getValidatorKey().equals(ownerCopy.getValidatorKey())) {
-				throw new ProcedureException("Not matching validator keys");
+				throw new ProcedureException(MUST_UPDATE_SAME_KEY);
 			}
 			var owner = ownerCopy.getOwner();
 			return new StakePrepare(
@@ -180,20 +181,20 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			this.delegateAllowed = delegateAllowed;
 		}
 
-		ReducerState withdrawTo(PreparedStake preparedStake) throws MinimumStakeException, NotEnoughResourcesException,
-			InvalidResourceException, InvalidDelegationException, MismatchException {
+		ReducerState withdrawTo(PreparedStake preparedStake) throws ProcedureException {
 
 			tokenHoldingBucket.withdraw(preparedStake.getResourceAddr(), preparedStake.getAmount());
 
 			if (preparedStake.getAmount().compareTo(minimumStake) < 0) {
-				throw new MinimumStakeException(minimumStake, preparedStake.getAmount());
+				throw new ProcedureException(INVALID_MINIMUM_STAKE.with(minimumStake, preparedStake.getAmount()));
 			}
+
 			if (!preparedStake.getDelegateKey().equals(validatorKey)) {
-				throw new MismatchException("Not matching validator keys");
+				throw new ProcedureException(NO_MATCHING_VALIDATOR_KEYS);
 			}
 
 			if (!delegateAllowed.test(preparedStake.getOwner())) {
-				throw new InvalidDelegationException();
+				throw new ProcedureException(DELEGATION_NOT_ALLOWED);
 			}
 
 			return tokenHoldingBucket;
@@ -251,7 +252,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			(s, u, c, r) -> {
 				var ownership = s.withdrawOwnership(u.getAmount());
 				if (!ownership.equals(u)) {
-					throw new MismatchException(ownership, u);
+					throw new ParticleMismatchException(ownership, u);
 				}
 				return ReducerResult.incomplete(s);
 			}
@@ -262,7 +263,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			(s, u, c, r) -> {
 				var unstake = s.unstake(u.getAmount());
 				if (!unstake.equals(u)) {
-					throw new MismatchException(unstake, u);
+					throw new ParticleMismatchException(unstake, u);
 				}
 				return ReducerResult.incomplete(s);
 			}
