@@ -64,6 +64,7 @@
 
 package com.radixdlt.client.lib.api.sync;
 
+import com.radixdlt.client.lib.dto.TransactionHistory2;
 import org.bouncycastle.util.encoders.Hex;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -120,49 +121,14 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.NETWORK_IO_ERROR;
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.OPERATION_INTERRUPTED;
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.UNKNOWN_ERROR;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_BALANCES;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_HISTORY;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_INFO;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_STAKES;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_SUBMIT_SINGLE_STEP;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_UNSTAKES;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.API_CONFIGURATION;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.API_DATA;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.BFT_CONFIGURATION;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.BFT_DATA;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.CONSTRUCTION_BUILD;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.CONSTRUCTION_FINALIZE;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.CONSTRUCTION_SUBMIT;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.LEDGER_CHECKPOINTS;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.LEDGER_EPOCH_PROOF;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.LEDGER_PROOF;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.MEMPOOL_CONFIGURATION;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.MEMPOOL_DATA;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_ADDRESS_BOOK;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_CONFIG;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_DATA;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_DEMAND;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_ID;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_PEERS;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_THROUGHPUT;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.RADIX_ENGINE_CONFIGURATION;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.RADIX_ENGINE_DATA;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.SYNC_CONFIGURATION;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.SYNC_DATA;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.TOKEN_INFO;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.TOKEN_NATIVE;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.TRANSACTION_LOOKUP;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.TRANSACTION_STATUS;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_CURRENT_EPOCH;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_NODE_INFO;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LIST;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
 
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.*;
 import static java.util.Optional.ofNullable;
 
 public class SyncRadixApi extends RadixApiBase implements RadixApi {
@@ -289,6 +255,16 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 		) {
 			var request = request(ACCOUNT_HISTORY, address.toString(networkId()), size);
 			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
+
+			return call(request, new TypeReference<>() {});
+		}
+
+		@Override
+		public Result<TransactionHistory2> history2(
+			AccountAddress address, int size, OptionalLong nextOffset
+		) {
+			var request = request(ACCOUNT_HISTORY2, address.toString(networkId()), size);
+			nextOffset.ifPresent(request::addParameters);
 
 			return call(request, new TypeReference<>() {});
 		}
