@@ -61,7 +61,7 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
-package com.radixdlt.client.lib.api.async;
+package com.radixdlt.client.lib.api.sync;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -93,7 +93,7 @@ import static org.junit.Assert.fail;
  * Then run testTransactionHistoryInPages(). It should print list of transactions split into batches of 50 (see parameters)
  */
 //TODO: move to acceptance tests
-public class AsyncRadixApiHistory2PaginationTest {
+public class SyncRadixApiHistory2PaginationTest {
 	private static final String BASE_URL = "http://localhost/";
 	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
 	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
@@ -105,7 +105,6 @@ public class AsyncRadixApiHistory2PaginationTest {
 	public void testAddManyTransactions() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
-			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> {
 				for (int i = 0; i < 20; i++) {
@@ -124,13 +123,12 @@ public class AsyncRadixApiHistory2PaginationTest {
 	public void testTransactionHistoryInPages() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
-			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(
 				client -> {
 					var cursorHolder = new AtomicReference<>(OptionalLong.empty());
 					do {
-						client.account().history2(ACCOUNT_ADDRESS1, 50, cursorHolder.get()).join()
+						client.account().history2(ACCOUNT_ADDRESS1, 50, cursorHolder.get())
 							.onFailure(failure -> fail(failure.toString()))
 							.onSuccess(v -> v.getNextOffset().ifPresent(System.out::println))
 							.onSuccess(v -> cursorHolder.set(v.getNextOffset()))
@@ -166,10 +164,10 @@ public class AsyncRadixApiHistory2PaginationTest {
 			.message("Test message " + count)
 			.build();
 
-		client.transaction().build(request).join()
+		client.transaction().build(request)
 			.onFailure(failure -> fail(failure.toString()))
-			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true).join());
+			.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
+			.flatMap(transaction -> client.transaction().finalize(transaction, true));
 	}
 
 	private static ECKeyPair keyPairOf(int pk) {
