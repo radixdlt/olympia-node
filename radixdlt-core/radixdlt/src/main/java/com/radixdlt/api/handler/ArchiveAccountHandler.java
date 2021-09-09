@@ -131,7 +131,7 @@ public final class ArchiveAccountHandler {
 		return withRequiredParameters(
 			request,
 			List.of("address", "limit"),
-			List.of("verbose", "offset"),
+			List.of("offset", "verbose"),
 			params -> allOf(parseAddress(params), ok(params.getLong("limit")), ok(params.optLong("offset", -1)), parseVerboseFlag(params))
 				.map((addr, limit, offset, verboseFlag) -> {
 					var txnArray = new JSONArray();

@@ -63,6 +63,7 @@
  */
 package com.radixdlt.client.lib.api.sync;
 
+import com.radixdlt.utils.PrivateKeys;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -71,9 +72,6 @@ import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.dto.Transaction2DTO;
 import com.radixdlt.client.lib.dto.TransactionHistory2;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
@@ -86,7 +84,7 @@ import static org.junit.Assert.fail;
 /*
  * Before running this test, launch in separate console local network (cd radixdlt-core/docker && ./scripts/rundocker.sh 2).
  *
- * Then comment '@Ignore' annotations for both tests.
+ * Then comment out '@Ignore' annotations for both tests.
  *
  * Then run testAddManyTransactions() few times (it generates a number of transfer transactions)
  *
@@ -95,8 +93,8 @@ import static org.junit.Assert.fail;
 //TODO: move to acceptance tests
 public class SyncRadixApiHistory2PaginationTest {
 	private static final String BASE_URL = "http://localhost/";
-	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
-	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
+	public static final ECKeyPair KEY_PAIR1 = PrivateKeys.ofNumeric(1);
+	public static final ECKeyPair KEY_PAIR2 = PrivateKeys.ofNumeric(2);
 	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
 	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
@@ -168,17 +166,5 @@ public class SyncRadixApiHistory2PaginationTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
 			.flatMap(transaction -> client.transaction().finalize(transaction, true));
-	}
-
-	private static ECKeyPair keyPairOf(int pk) {
-		var privateKey = new byte[ECKeyPair.BYTES];
-
-		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
-
-		try {
-			return ECKeyPair.fromPrivateKey(privateKey);
-		} catch (PrivateKeyException | PublicKeyException e) {
-			throw new IllegalArgumentException("Error while generating public key", e);
-		}
 	}
 }
