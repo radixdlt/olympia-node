@@ -81,6 +81,7 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.errors.ParameterError;
 import com.radixdlt.identifiers.exception.AuthorizationException;
 
 import static com.radixdlt.errors.ParameterError.INVALID_EPOCH;
@@ -149,7 +150,7 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 				PermissionLevel.USER,
 				(r, c) -> {
 					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
-						throw new AuthorizationException("Key does not match.");
+						throw new AuthorizationException(ParameterError.MUST_UPDATE_SAME_KEY);
 					}
 				}
 			),
@@ -160,13 +161,13 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 
 		os.procedure(new ReadProcedure<>(
 			UpdatingRegisteredNeedToReadEpoch.class, EpochData.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, r) -> ReducerResult.incomplete(s.readEpoch(u))
 		));
 
 		os.procedure(new UpProcedure<>(
 			UpdatingRegistered.class, ValidatorRegisteredCopy.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				s.update(u);
 				return ReducerResult.complete();

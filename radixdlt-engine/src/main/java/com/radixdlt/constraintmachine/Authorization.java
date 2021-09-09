@@ -64,8 +64,8 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 
 /**
  * Validates whether a specific transition procedure is permissible
@@ -77,6 +77,14 @@ public final class Authorization {
 	}
 	private final PermissionLevel permissionLevel;
 	private final Authorizer authorizer;
+
+	public static final Authorization SYSTEM = new Authorization(PermissionLevel.SYSTEM);
+	public static final Authorization SUPER_USER = new Authorization(PermissionLevel.SUPER_USER);
+	public static final Authorization USER = new Authorization(PermissionLevel.USER);
+
+	public Authorization(PermissionLevel permissionLevel) {
+		this(permissionLevel, (r, c) -> { });
+	}
 
 	public Authorization(PermissionLevel permissionLevel, Authorizer authorizer) {
 		this.permissionLevel = permissionLevel;

@@ -77,7 +77,6 @@ import com.radixdlt.atomos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.EndProcedure;
-import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReadProcedure;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
@@ -205,7 +204,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		// Stake
 		os.procedure(new ReadProcedure<>(
 			TokenHoldingBucket.class, AllowDelegationFlag.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, d, r) -> {
 				var nextState = (!d.allowsDelegation())
 					? new OwnerStakePrepare(s, d)
@@ -215,7 +214,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		));
 		os.procedure(new ReadProcedure<>(
 			OwnerStakePrepare.class, ValidatorOwnerCopy.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, d, r) -> {
 				var nextState = s.readOwner(d);
 				return ReducerResult.incomplete(nextState);
@@ -223,7 +222,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		));
 		os.procedure(new UpProcedure<>(
 			StakePrepare.class, PreparedStake.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				var nextState = s.withdrawTo(u);
 				return ReducerResult.incomplete(nextState);
@@ -248,7 +247,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		// Change
 		os.procedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, StakeOwnership.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				var ownership = s.withdrawOwnership(u.getAmount());
 				if (!ownership.equals(u)) {
@@ -259,7 +258,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		));
 		os.procedure(new UpProcedure<>(
 			StakeOwnershipHoldingBucket.class, PreparedUnstakeOwnership.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				var unstake = s.unstake(u.getAmount());
 				if (!unstake.equals(u)) {
@@ -272,7 +271,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		// Deallocate Stake Holding Bucket
 		os.procedure(new EndProcedure<>(
 			StakeOwnershipHoldingBucket.class,
-			s -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			s -> Authorization.USER,
 			(s, c, r) -> s.destroy()
 		));
 	}

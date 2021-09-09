@@ -186,7 +186,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				buf.putInt(s.getRakePercentage());
 			},
-			buf -> REFieldSerialization.deserializeKey(buf),
+			REFieldSerialization::deserializeKey,
 			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
 			k -> ValidatorFeeCopy.createVirtual((ECPublicKey) k)
 		));
@@ -197,7 +197,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 				PermissionLevel.USER,
 				(r, c) -> {
 					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
-						throw new AuthorizationException("Key does not match.");
+						throw new AuthorizationException(ParameterError.MUST_UPDATE_SAME_KEY);
 					}
 				}
 			),
@@ -207,18 +207,18 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 		));
 		os.procedure(new ReadProcedure<>(
 			UpdatingRakeNeedToReadEpoch.class, EpochData.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, r) -> ReducerResult.incomplete(s.readEpoch(u))
 		));
 		os.procedure(new ReadProcedure<>(
 			UpdatingRakeNeedToReadCurrentRake.class, ValidatorStakeData.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, r) -> ReducerResult.incomplete(s.readValidatorStakeState(u))
 		));
 
 		os.procedure(new UpProcedure<>(
 			UpdatingRakeReady.class, ValidatorFeeCopy.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				s.update(u);
 				return ReducerResult.complete();

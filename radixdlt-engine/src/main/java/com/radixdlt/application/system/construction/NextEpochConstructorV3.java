@@ -67,12 +67,6 @@ package com.radixdlt.application.system.construction;
 import com.google.common.collect.Streams;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.application.system.scrypt.ValidatorScratchPad;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.NextEpoch;
-
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
@@ -81,9 +75,14 @@ import com.radixdlt.application.tokens.state.ExittingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.validators.state.ValidatorData;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.actions.NextEpoch;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -190,10 +189,11 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			i.forEachRemaining(e -> bftData.put(e.getValidatorKey(), e));
 			return bftData;
 		});
+
 		var preparingStake = new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(KeyComparator.instance());
-		for (var e : validatorBFTData.entrySet()) {
-			var k = e.getKey();
-			var bftData = e.getValue();
+		for (var entry : validatorBFTData.entrySet()) {
+			var k = entry.getKey();
+			var bftData = entry.getValue();
 			if (bftData.proposalsCompleted() + bftData.proposalsMissed() == 0) {
 				continue;
 			}
@@ -227,7 +227,12 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			} else {
 				rakedEmissions = nodeRewards;
 			}
-			validatorStakeData.addEmission(rakedEmissions);
+
+			try {
+				validatorStakeData.addEmission(rakedEmissions);
+			} catch (ProcedureException ex) {
+				throw new TxBuilderException(ex);
+			}
 		}
 
 		var allPreparedUnstake = txBuilder.shutdownAll(PreparedUnstakeOwnership.class, i -> {
@@ -250,8 +255,12 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 				var addr = entry.getKey();
 				var amt = entry.getValue();
 				var epochUnlocked = closingEpoch.getEpoch() + 1 + unstakingEpochDelay;
-				var exittingStake = curValidator.unstakeOwnership(addr, amt, epochUnlocked);
-				txBuilder.up(exittingStake);
+				try {
+					var exittingStake = curValidator.unstakeOwnership(addr, amt, epochUnlocked);
+					txBuilder.up(exittingStake);
+				} catch (ProcedureException ex) {
+					throw new TxBuilderException(ex);
+				}
 			}
 			validatorsToUpdate.put(k, curValidator);
 		}

@@ -67,12 +67,14 @@ package com.radixdlt.constraintmachine.exceptions;
 import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.utils.UInt256;
 
+import static com.radixdlt.errors.ProcessingError.NOT_ENOUGH_RESERVE;
+
 public class DepletedFeeReserveException extends AuthorizationException {
 	private final UInt256 charge;
 	private final UInt256 reserveAmount;
 
 	public DepletedFeeReserveException(NotEnoughResourcesException cause) {
-		super("Charging " + cause.getRequest() + " but fee reserve only contains " + cause.getAmount());
+		super(NOT_ENOUGH_RESERVE.with(cause.getRequest(), cause.getAmount()), cause);
 		this.charge = cause.getRequest();
 		this.reserveAmount = cause.getAmount();
 	}

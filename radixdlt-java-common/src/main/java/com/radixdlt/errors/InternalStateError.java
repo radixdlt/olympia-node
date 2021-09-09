@@ -99,7 +99,8 @@ public enum InternalStateError implements Failure {
 	ALREADY_INSERTED("Already inserted {0}"),
 	INCONSISTENT_DATA("Inconsistent data, there should only be a single substate per validator"),
 	EPOCH_IS_NOT_FINISHED("Must execute epoch update on end of round {0} but is {1}"),
-	VALIDATOR_STARTED_UPDATE("Validator already started to update.");
+	VALIDATOR_STARTED_UPDATE("Validator already started to update."),
+	VIRTUAL_PARENT_NOT_EXISTS("Virtual parent {0} does not exist.");
 
 	private final String message;
 

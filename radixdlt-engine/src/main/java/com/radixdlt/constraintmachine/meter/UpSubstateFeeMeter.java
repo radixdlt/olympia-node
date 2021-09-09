@@ -68,6 +68,8 @@ import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ProcedureKey;
 import com.radixdlt.constraintmachine.REOp;
+import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
+import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
 import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.utils.UInt256;
 
@@ -90,7 +92,8 @@ public final class UpSubstateFeeMeter implements Meter {
 	}
 
 	@Override
-	public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
+	public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context
+	) throws DepletedFeeReserveException, DefaultedSystemLoanException {
 		// TODO: Clean this up
 		if (procedureKey.opSignature().op() == REOp.UP && param instanceof Particle) {
 			var substate = (Particle) param;
@@ -103,7 +106,7 @@ public final class UpSubstateFeeMeter implements Meter {
 	}
 
 	@Override
-	public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
+	public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws DefaultedSystemLoanException {
 		// No-op
 	}
 

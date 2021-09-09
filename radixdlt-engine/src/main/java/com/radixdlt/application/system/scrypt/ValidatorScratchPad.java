@@ -69,6 +69,7 @@ import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.ExittingStake;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.errors.ProcessingError;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -114,22 +115,21 @@ public final class ValidatorScratchPad {
 		this.ownerAddr = ownerAddr;
 	}
 
-	public void addEmission(UInt256 amount) {
+	public void addEmission(UInt256 amount) throws ProcedureException {
 		this.totalStake = verifyNoOverflow(this.totalStake.add(amount));
 	}
 
-	private static UInt384 verifyNoOverflow(UInt384 i) {
+	private static UInt384 verifyNoOverflow(UInt384 i) throws ProcedureException {
 		if (!i.getHigh().isZero()) {
-			throw new IllegalStateException("Unexpected overflow occurred " + i);
+			throw new ProcedureException(ProcessingError.AMOUNT_OVERFLOW.with(i));
 		}
 		return i;
 	}
 
-	private static UInt256 toSafeLow(UInt384 i) {
+	private static UInt256 toSafeLow(UInt384 i) throws ProcedureException {
 		return verifyNoOverflow(i).getLow();
 	}
 
-	//TODO: there are no ProcedureExceptions thrown, but several IllegalStateException
 	public StakeOwnership stake(REAddr owner, UInt256 stake) throws ProcedureException {
 		if (totalStake.isZero()) {
 			this.totalStake = UInt384.from(stake);
@@ -145,7 +145,7 @@ public final class ValidatorScratchPad {
 		return new StakeOwnership(validatorKey, owner, ownershipAmt);
 	}
 
-	public ExittingStake unstakeOwnership(REAddr owner, UInt256 unstakeOwnership, long epochUnlocked) {
+	public ExittingStake unstakeOwnership(REAddr owner, UInt256 unstakeOwnership, long epochUnlocked) throws ProcedureException {
 		if (totalOwnership.getLow().compareTo(unstakeOwnership) < 0) {
 			throw new IllegalStateException("Not enough ownership");
 		}

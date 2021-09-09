@@ -157,8 +157,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				PermissionLevel.USER,
 				(r, c) -> {
 					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
-						//TODO replace with throw new ProcedureException(ParameterError.MUST_UPDATE_SAME_KEY);
-						throw new AuthorizationException("Key does not match.");
+						throw new AuthorizationException(ParameterError.MUST_UPDATE_SAME_KEY);
 					}
 				}
 			),
@@ -166,7 +165,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		));
 		os.procedure(new UpProcedure<>(
 			UpdatingValidatorHashMetadata.class, ValidatorSystemMetadata.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				s.update(u);
 				return ReducerResult.complete();
@@ -202,8 +201,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				PermissionLevel.USER,
 				(r, c) -> {
 					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
-						//TODO replace with throw new ProcedureException(ParameterError.MUST_UPDATE_SAME_KEY);
-						throw new AuthorizationException("Key does not match.");
+						throw new AuthorizationException(ParameterError.MUST_UPDATE_SAME_KEY);
 					}
 				}
 			),
@@ -212,7 +210,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 		os.procedure(new UpProcedure<>(
 			UpdatingValidatorInfo.class, ValidatorMetaData.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				if (!Objects.equals(s.prevState.getValidatorKey(), u.getValidatorKey())) {
 					throw new ProcedureException(VALIDATOR_ADDRESSES_DO_NOT_MATCH
@@ -251,8 +249,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				PermissionLevel.USER,
 				(r, c) -> {
 					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
-						//TODO replace with throw new ProcedureException(ParameterError.MUST_UPDATE_SAME_KEY);
-						throw new AuthorizationException("Key does not match.");
+						throw new AuthorizationException(ParameterError.MUST_UPDATE_SAME_KEY);
 					}
 				}
 			),
@@ -261,7 +258,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 		os.procedure(new UpProcedure<>(
 			UpdatingDelegationFlag.class, AllowDelegationFlag.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				s.update(u);
 				return ReducerResult.complete();

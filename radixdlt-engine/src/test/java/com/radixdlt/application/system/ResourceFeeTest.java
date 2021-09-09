@@ -64,6 +64,9 @@
 
 package com.radixdlt.application.system;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
@@ -86,7 +89,7 @@ import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
+import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.meter.UpSubstateFeeMeter;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -94,8 +97,6 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
-import org.junit.Before;
-import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
@@ -195,6 +196,6 @@ public final class ResourceFeeTest {
 
 		// Act
 		assertThatThrownBy(() -> this.engine.execute(List.of(create)))
-			.hasRootCauseInstanceOf(DepletedFeeReserveException.class);
+			.hasRootCauseInstanceOf(NotEnoughResourcesException.class);
 	}
 }

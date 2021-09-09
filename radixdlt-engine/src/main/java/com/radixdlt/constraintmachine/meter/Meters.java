@@ -66,6 +66,9 @@ package com.radixdlt.constraintmachine.meter;
 
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.ProcedureKey;
+import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
+import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
+import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
 import com.radixdlt.identifiers.exception.AuthorizationException;
 
 public final class Meters {
@@ -76,20 +79,21 @@ public final class Meters {
 	public static Meter combine(Meter m0, Meter m1) {
 		return new Meter() {
 			@Override
-			public void onStart(ExecutionContext context) {
-				//FIXME: can silently throw IllegalStateException
+			public void onStart(ExecutionContext context) throws InvalidResourceException {
 				m0.onStart(context);
 				m1.onStart(context);
 			}
 
 			@Override
-			public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
+			public void onUserProcedure(
+				ProcedureKey procedureKey, Object param, ExecutionContext context
+			) throws DepletedFeeReserveException, DefaultedSystemLoanException {
 				m0.onUserProcedure(procedureKey, param, context);
 				m1.onUserProcedure(procedureKey, param, context);
 			}
 
 			@Override
-			public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
+			public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws DefaultedSystemLoanException {
 				m0.onSuperUserProcedure(procedureKey, param, context);
 				m1.onSuperUserProcedure(procedureKey, param, context);
 			}

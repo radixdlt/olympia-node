@@ -111,14 +111,9 @@ public final class ExecutionContext {
 		this.reserve = new TokenHoldingBucket(Tokens.create(REAddr.ofNativeToken(), UInt256.ZERO));
 	}
 
-	//FIXME: can silently throw IllegalStateException
-	public void addSystemLoan(UInt256 loan) {
+	public void addSystemLoan(UInt256 loan) throws InvalidResourceException {
 		this.systemLoan = this.systemLoan.add(loan);
-		try {
-			this.reserve.deposit(Tokens.create(REAddr.ofNativeToken(), loan));
-		} catch (InvalidResourceException e) {
-			throw new IllegalStateException(e);
-		}
+		this.reserve.deposit(Tokens.create(REAddr.ofNativeToken(), loan));
 	}
 
 	public List<REEvent> getEvents() {
@@ -135,7 +130,7 @@ public final class ExecutionContext {
 
 	public void sig() throws AuthorizationException {
 		if (this.sigsLeft == 0) {
-			throw new AuthorizationException("Used up all signatures allowed");
+			throw new AuthorizationException(ProcessingError.NO_SIGNATURES_LEFT);
 		}
 		this.sigsLeft--;
 	}

@@ -71,6 +71,7 @@ import com.radixdlt.atom.Substate;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
+import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
 import com.radixdlt.constraintmachine.exceptions.LocalSubstateNotFoundException;
 import com.radixdlt.constraintmachine.exceptions.MeterException;
 import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
@@ -85,6 +86,7 @@ import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.errors.ProcessingError;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.exception.AuthorizationException;
+import com.radixdlt.identifiers.exception.FailureContainer;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.utils.Pair;
@@ -102,6 +104,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_EXTRA_BYTES;
+import static com.radixdlt.errors.ProcessingError.UNKNOWN_ERROR;
+import static com.radixdlt.errors.ProcessingError.UNKNOWN_OPERATION;
 
 /**
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
@@ -338,9 +342,10 @@ public final class ConstraintMachine {
 
 			try {
 				authorization.authorizer().verify(immutableAddrs, context);
-			} catch (Exception e) {
-				//TODO: avoid double wrapping of authorization exception
-				throw new AuthorizationException(e);
+			} catch (NotAResourceException e) {
+				throw new AuthorizationException(((FailureContainer) e).failure(), e);
+			} catch (RuntimeException e) {
+				throw new AuthorizationException(UNKNOWN_ERROR.with(e.getClass(), e.getMessage()), e);
 			}
 		}
 
@@ -363,9 +368,13 @@ public final class ConstraintMachine {
 		var groupedStateUpdates = new ArrayList<List<REStateUpdate>>();
 		var stateUpdates = new ArrayList<REStateUpdate>();
 
-		meter.onStart(context);	//FIXME: can silently throw IllegalStateException
+		try {
+			meter.onStart(context);
+		} catch (InvalidResourceException e) {
+			throw new ConstraintMachineException(instIndex, instructions, null, e);
+		}
 
-		for (REInstruction inst : instructions) {
+		for (var inst : instructions) {
 			try {
 				if (expectEnd && inst.getMicroOp() != REInstruction.REMicroOp.END) {
 					throw new ProcedureException(ProcessingError.MISSING_END_INSTRUCTION);
@@ -391,7 +400,7 @@ public final class ConstraintMachine {
 						SubstateId substateId = inst.getData();
 						nextParticle = validationState.localVirtualRead(substateId);
 					} else {
-						throw new ProcedureException(ProcessingError.UNKNOWN_OPERATION.with("read", inst.getMicroOp()));
+						throw new ProcedureException(UNKNOWN_OPERATION.with("read", inst.getMicroOp()));
 					}
 					var eventId = OpSignature.ofSubstateUpdate(inst.getMicroOp().getOp(), nextParticle.getClass());
 					var methodProcedure = loadProcedure(reducerState, eventId);
@@ -462,7 +471,7 @@ public final class ConstraintMachine {
 						substateBuffer = null;
 						nextParticle = validationState.localVirtualShutdown(substateId);
 					} else {
-						throw new ProcedureException(ProcessingError.UNKNOWN_OPERATION.with("unhandled", inst.getMicroOp()));
+						throw new ProcedureException(UNKNOWN_OPERATION.with("unhandled", inst.getMicroOp()));
 					}
 
 					var op = inst.getMicroOp().getOp();
@@ -491,7 +500,7 @@ public final class ConstraintMachine {
 					// Collect no-ops here
 					if (inst.getMicroOp() != REInstruction.REMicroOp.MSG
 						&& inst.getMicroOp() != REInstruction.REMicroOp.HEADER) {
-						throw new ProcedureException(ProcessingError.UNKNOWN_OPERATION.with("no-op", inst.getMicroOp()));
+						throw new ProcedureException(UNKNOWN_OPERATION.with("no-op", inst.getMicroOp()));
 					}
 				}
 			} catch (Exception e) {

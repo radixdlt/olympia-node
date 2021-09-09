@@ -62,52 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.errors;
+package com.radixdlt.identifiers.exception;
 
 import com.radixdlt.utils.functional.Failure;
 
-/**
- * Errors met during processing. For example, errors encountered during dispatching events.
- * <p>
- * <b>WARNING:</b> New errors should be added to the end, no insertions or re-arrangements are allowed!
- */
-public enum ProcessingError implements Failure {
-	UNKNOWN_ERROR("Unknown error of type {0} with message {1}"),
-	SUBMISSION_FAILURE("Transaction submission failed: {0}"),
-	ASYNC_PROCESSING_ERROR("Async processing error {0}"),
-	UNABLE_TO_PREPARE_TX("Unable to prepare transaction {0}"),
-	UNABLE_TO_RESTORE_CREATOR("Unable to restore creator from transaction {0}"),
-	UNABLE_TO_RESTORE_ACCOUNT_ADDRESS("Unable to restore account address {0} from DB key: {1}"),
-	UNABLE_TO_PARSE_TRANSACTION("Unable to parse transaction: {0}"),
-	UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE("Unable to convert signature to recoverable {0}"),
-	MESSAGE_EXPIRED("Message expired"),
-	IO_ERROR("I/O Error: {0} {1}"),
-	SELF_CONNECTION_ATTEMPT("Attempt to connect to self"),
-	PEER_BANNED("Peer is banned"),
-	OPERATION_INTERRUPTED("Operation was interrupted {0}"),
-	BUFFER_HAS_EXTRA_BYTES("Buffer has extra {0} bytes"),
-	MULTIPLE_FEE_RESERVE_DEPOSIT("MultipleFeeReserveDeposit"),
-	MISSING_END_INSTRUCTION("Missing END instruction"),
-	UNKNOWN_OPERATION("Unknown {0} instruction {1}"),
-	AMOUNT_OVERFLOW("Unexpected overflow occurred {0}"),
-	CALL_DATA_ERROR("CallData invalid access (index: {0} accessSize: {1}) on size {2}"),
-	SYSTEM_LOAN_DEFAULTED("Reserve fee deposit {0} not enough to cover basic txn fee of {1}"),
-	NO_SIGNATURES_LEFT("Used up all signatures allowed"),
-	NOT_ENOUGH_RESERVE("Charging {0} but fee reserve only contains {1}");
+public class TopLevelExceptionWithFailure extends Exception implements FailureContainer {
+	private final Failure failure;
 
-	private final String message;
+	protected TopLevelExceptionWithFailure(Failure failure) {
+		this(failure, null);
+	}
 
-	ProcessingError(String message) {
-		this.message = message;
+	protected TopLevelExceptionWithFailure(Failure failure, Exception cause) {
+		super(cause);
+		this.failure = failure;
 	}
 
 	@Override
-	public String message() {
-		return message;
-	}
-
-	@Override
-	public int code() {
-		return Category.PROCESSING.forId(ordinal());
+	public Failure failure() {
+		return failure;
 	}
 }

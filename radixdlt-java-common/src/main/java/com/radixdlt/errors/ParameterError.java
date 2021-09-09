@@ -122,7 +122,11 @@ public enum ParameterError implements Failure {
 	TOKEN_ADDRESS_MISMATCH("Token address {0} does not match update token addresses {1}"),
 	TOKEN_SYMBOL_MISMATCH("Token symbol {0} does not match update token symbol {1}"),
 	INVALID_TOKEN_SYMBOL("Invalid token symbol {0}"),
-	INVALID_TOKEN_GRANULARITY("Granularity must be one.");
+	INVALID_TOKEN_GRANULARITY("Granularity must be one."),
+	NOT_A_RESOURCE("The address {0} is not a resource"),
+	NOT_AN_ACCOUNT("The address {0} is not an account address"),
+	NO_KEY_PRESENT("No key present."),
+	KEY_NOT_AUTHORIZED("Key not authorized: {0}");
 
 	private final String message;
 

@@ -64,13 +64,15 @@
 
 package com.radixdlt.identifiers.exception;
 
+import com.radixdlt.utils.functional.Failure;
+
 //TODO: add Failure as a parameter
-public class AuthorizationException extends Exception {
-	public AuthorizationException(Exception cause) {
-		super(cause);
+public class AuthorizationException extends TopLevelExceptionWithFailure {
+	public AuthorizationException(Failure failure, Exception cause) {
+		super(failure, cause);
 	}
 
-	public AuthorizationException(String msg) {
-		super(msg);
+	public AuthorizationException(Failure failure) {
+		super(failure);
 	}
 }

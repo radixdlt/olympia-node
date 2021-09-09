@@ -219,7 +219,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	private void defineTokenCreation(Loader os) {
 		os.procedure(new UpProcedure<>(
 			SystemConstraintScrypt.REAddrClaim.class, TokenResource.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
 					throw new ProcedureException(TOKEN_ADDRESS_MISMATCH.with(u.getAddr(), s.getAddr()));
@@ -247,7 +247,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 
 		os.procedure(new UpProcedure<>(
 			NeedFixedTokenSupply.class, TokensInAccount.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
 					throw new ProcedureException(TOKEN_ADDRESS_MISMATCH.with(u.getResourceAddr(), s.tokenResource.getAddr()));
@@ -258,7 +258,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 
 		os.procedure(new UpProcedure<>(
 			NeedMetadata.class, TokenResourceMetadata.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				s.metadata(u, c);
 				return ReducerResult.complete();
@@ -272,7 +272,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			VoidReducerState.class, TokensInAccount.class,
 			u -> {
 				if (u.getResourceAddr().isNativeToken()) {
-					return new Authorization(PermissionLevel.SYSTEM, (r, c) -> { });
+					return Authorization.SYSTEM;
 				}
 
 				return new Authorization(PermissionLevel.USER, (r, c) -> {
@@ -322,7 +322,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		// Deposit
 		os.procedure(new UpProcedure<>(
 			TokenHoldingBucket.class, TokensInAccount.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				s.withdraw(u.getResourceAddr(), u.getAmount());
 				return ReducerResult.incomplete(s);

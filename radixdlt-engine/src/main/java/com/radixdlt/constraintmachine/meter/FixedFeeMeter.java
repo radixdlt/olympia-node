@@ -68,6 +68,9 @@ import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.ProcedureKey;
 import com.radixdlt.constraintmachine.REOp;
+import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
+import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
+import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
 import com.radixdlt.utils.UInt256;
 
 public final class FixedFeeMeter implements Meter {
@@ -82,13 +85,14 @@ public final class FixedFeeMeter implements Meter {
 	}
 
 	@Override
-	public void onStart(ExecutionContext context) {
-		//FIXME: can silently throw IllegalStateException
+	public void onStart(ExecutionContext context) throws InvalidResourceException {
 		context.addSystemLoan(fixedFee);
 	}
 
 	@Override
-	public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
+	public void onUserProcedure(
+		ProcedureKey procedureKey, Object param, ExecutionContext context
+	) throws DepletedFeeReserveException, DefaultedSystemLoanException {
 		context.chargeOneTimeTransactionFee(txn -> fixedFee);
 
 		if (procedureKey.opSignature().op() == REOp.SYSCALL) {
@@ -109,7 +113,7 @@ public final class FixedFeeMeter implements Meter {
 	}
 
 	@Override
-	public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
+	public void onSuperUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws DefaultedSystemLoanException {
 		context.payOffLoan();
 	}
 

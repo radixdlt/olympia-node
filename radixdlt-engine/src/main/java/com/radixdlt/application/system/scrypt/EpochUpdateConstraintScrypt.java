@@ -90,7 +90,6 @@ import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.IndexedSubstateIterator;
-import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.ReadIndexProcedure;
 import com.radixdlt.constraintmachine.ReducerResult;
 import com.radixdlt.constraintmachine.ReducerState;
@@ -778,7 +777,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		// Epoch Update
 		os.procedure(new DownProcedure<>(
 			EndPrevRound.class, EpochData.class,
-			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			d -> Authorization.SUPER_USER,
 			(d, s, r, c) -> {
 				// TODO: Should move this authorization instead of checking epoch > 0
 				if (d.getEpoch() > 0 && s.getClosedRound().getView() != maxRounds) {
@@ -791,7 +790,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		os.procedure(new ShutdownAllProcedure<>(
 			ExittingStake.class, UpdatingEpoch.class,
-			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			() -> Authorization.SUPER_USER,
 			(s, d, c, r) -> {
 				var exittingStake = new ProcessExittingStake(s);
 				return ReducerResult.incomplete(exittingStake.process(d));
@@ -799,19 +798,19 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		));
 		os.procedure(new UpProcedure<>(
 			ProcessExittingStake.class, TokensInAccount.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			u -> Authorization.SUPER_USER,
 			(s, u, c, r) -> ReducerResult.incomplete(s.unlock(u))
 		));
 
 		os.procedure(new ShutdownAllProcedure<>(
 			ValidatorBFTData.class, RewardingValidators.class,
-			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			() -> Authorization.SUPER_USER,
 			(s, d, c, r) -> ReducerResult.incomplete(s.process(d, c))
 		));
 
 		os.procedure(new ShutdownAllProcedure<>(
 			PreparedUnstakeOwnership.class, PreparingUnstake.class,
-			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			() -> Authorization.SUPER_USER,
 			(s, d, c, r) -> ReducerResult.incomplete(s.unstakes(d))
 		));
 		os.procedure(new DownProcedure<>(
@@ -821,79 +820,79 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		));
 		os.procedure(new UpProcedure<>(
 			Unstaking.class, ExittingStake.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			u -> Authorization.SUPER_USER,
 			(s, u, c, r) -> ReducerResult.incomplete(s.exit(u))
 		));
 		os.procedure(new ShutdownAllProcedure<>(
 			PreparedStake.class, PreparingStake.class,
-			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			() -> Authorization.SUPER_USER,
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareStakes(d))
 		));
 		os.procedure(new ShutdownAllProcedure<>(
 			ValidatorFeeCopy.class, PreparingRakeUpdate.class,
-			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			() -> Authorization.SUPER_USER,
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareRakeUpdates(d))
 		));
 		os.procedure(new UpProcedure<>(
 			ResetRakeUpdate.class, ValidatorFeeCopy.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			u -> Authorization.SUPER_USER,
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
 
 		os.procedure(new ShutdownAllProcedure<>(
 			ValidatorOwnerCopy.class, PreparingOwnerUpdate.class,
-			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			() -> Authorization.SUPER_USER,
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareValidatorUpdate(d))
 		));
 		os.procedure(new UpProcedure<>(
 			ResetOwnerUpdate.class, ValidatorOwnerCopy.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			u -> Authorization.SUPER_USER,
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
 
 		os.procedure(new ShutdownAllProcedure<>(
 			ValidatorRegisteredCopy.class, PreparingRegisteredUpdate.class,
-			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			() -> Authorization.SUPER_USER,
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareRegisterUpdates(d))
 		));
 		os.procedure(new UpProcedure<>(
 			ResetRegisteredUpdate.class, ValidatorRegisteredCopy.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			u -> Authorization.SUPER_USER,
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
 
 		os.procedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			u -> Authorization.SUPER_USER,
 			(s, u, c, r) -> ReducerResult.incomplete(s.stake(u))
 		));
 		os.procedure(new UpProcedure<>(
 			UpdatingValidatorStakes.class, ValidatorStakeData.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			u -> Authorization.SUPER_USER,
 			(s, u, c, r) -> ReducerResult.incomplete(s.updateStake(u))
 		));
 
 		os.procedure(new ReadIndexProcedure<>(
 			CreatingNextValidatorSet.class, ValidatorStakeData.class,
-			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			() -> Authorization.SUPER_USER,
 			(s, d, c, r) -> ReducerResult.incomplete(s.readIndex(d, c))
 		));
 
 		os.procedure(new UpProcedure<>(
 			BootupValidator.class, ValidatorBFTData.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			u -> Authorization.SUPER_USER,
 			(s, u, c, r) -> ReducerResult.incomplete(s.bootUp(u))
 		));
 
 		os.procedure(new UpProcedure<>(
 			StartingNextEpoch.class, EpochData.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			u -> Authorization.SUPER_USER,
 			(s, u, c, r) -> ReducerResult.incomplete(s.nextEpoch(u))
 		));
 
 		os.procedure(new UpProcedure<>(
 			StartingEpochRound.class, RoundData.class,
-			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			u -> Authorization.SUPER_USER,
 			(s, u, c, r) -> {
 				if (u.getView() != 0) {
 					throw new ProcedureException(INVALID_VIEW.with(0, u.getView()));
@@ -930,7 +929,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					buf.putInt(s.getRakePercentage());
 					REFieldSerialization.serializeREAddr(buf, s.getOwnerAddr());
 				},
-				buf -> REFieldSerialization.deserializeKey(buf),
+				REFieldSerialization::deserializeKey,
 				(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
 				k -> ValidatorStakeData.createVirtual((ECPublicKey) k)
 			)

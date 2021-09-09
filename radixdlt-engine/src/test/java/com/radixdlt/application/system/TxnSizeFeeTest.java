@@ -98,8 +98,8 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
-import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
 import com.radixdlt.constraintmachine.exceptions.ExecutionContextDestroyException;
+import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -198,7 +198,7 @@ public class TxnSizeFeeTest {
 
 		// Act
 		assertThatThrownBy(() -> this.engine.execute(List.of(transfer)))
-			.hasRootCauseInstanceOf(DepletedFeeReserveException.class);
+			.hasRootCauseInstanceOf(NotEnoughResourcesException.class);
 	}
 
 	@Test

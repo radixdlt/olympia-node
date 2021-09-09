@@ -81,6 +81,7 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.errors.ParameterError;
 import com.radixdlt.identifiers.exception.AuthorizationException;
 
 import java.util.OptionalLong;
@@ -143,7 +144,7 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
 				REFieldSerialization.serializeREAddr(buf, s.getOwner());
 			},
-			buf -> REFieldSerialization.deserializeKey(buf),
+			REFieldSerialization::deserializeKey,
 			(k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
 			k -> ValidatorOwnerCopy.createVirtual((ECPublicKey) k)
 		));
@@ -154,7 +155,7 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 				PermissionLevel.USER,
 				(r, c) -> {
 					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
-						throw new AuthorizationException("Key does not match.");
+						throw new AuthorizationException(ParameterError.MUST_UPDATE_SAME_KEY);
 					}
 				}
 			),
@@ -164,13 +165,13 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 
 		os.procedure(new ReadProcedure<>(
 			UpdatingOwnerNeedToReadEpoch.class, EpochData.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, r) -> ReducerResult.incomplete(s.readEpoch(u))
 		));
 
 		os.procedure(new UpProcedure<>(
 			UpdatingValidatorOwner.class, ValidatorOwnerCopy.class,
-			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				s.update(u);
 				return ReducerResult.complete();

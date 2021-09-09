@@ -180,7 +180,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		// TODO: Down singleton
 		os.procedure(new UpProcedure<>(
 			VoidReducerState.class, VirtualParent.class,
-			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
+			u -> Authorization.SYSTEM,
 			(s, u, c, r) -> {
 				if (u.getData().length != 1) {
 					throw new ProcedureException(INVALID_DATA.with(Bytes.toHexString(u.getData())));
@@ -229,7 +229,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		os.procedure(
 			new SystemCallProcedure<>(
 				TokenHoldingBucket.class, REAddr.ofSystem(),
-				() -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+				() -> Authorization.USER,
 				(s, d, c) -> {
 					var id = d.get(0);
 					var syscall = Syscall.of(id).orElseThrow(() -> new ProcedureException(INVALID_CALL_TYPE.with(id)));
@@ -248,7 +248,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		os.procedure(
 			new SystemCallProcedure<>(
 				VoidReducerState.class, REAddr.ofSystem(),
-				() -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+				() -> Authorization.USER,
 				(s, d, c) -> {
 					var id = d.get(0);
 					var syscall = Syscall.of(id).orElseThrow(() -> new ProcedureException(INVALID_CALL_TYPE.with(id)));
@@ -296,7 +296,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 				} else {
 					permissionLevel = PermissionLevel.USER;
 				}
-				return new Authorization(permissionLevel, (r, ctx) -> { });
+				return new Authorization(permissionLevel);
 			},
 			(d, s, r, c) -> ReducerResult.incomplete(s.claim(d, c))
 		));
@@ -304,7 +304,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		// For Mainnet Genesis
 		os.procedure(new UpProcedure<>(
 			SystemConstraintScrypt.REAddrClaim.class, EpochData.class,
-			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
+			u -> Authorization.SYSTEM,
 			(s, u, c, r) -> {
 				if (u.getEpoch() != 0) {
 					throw new ProcedureException(INVALID_EPOCH.with(0, u.getEpoch()));
@@ -315,7 +315,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		));
 		os.procedure(new UpProcedure<>(
 			AllocatingSystem.class, RoundData.class,
-			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
+			u -> Authorization.SYSTEM,
 			(s, u, c, r) -> {
 				if (u.getView() != 0) {
 					throw new ProcedureException(INVALID_VIEW.with(0, u.getView()));
@@ -325,7 +325,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		));
 		os.procedure(new UpProcedure<>(
 			AllocatingVirtualState.class, VirtualParent.class,
-			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
+			u -> Authorization.SYSTEM,
 			(s, u, c, r) -> {
 				var next = s.createVirtualSubstate(u);
 				return next == null ? ReducerResult.complete() : ReducerResult.incomplete(next);
