@@ -208,17 +208,19 @@ public class BerkeleyAccountTxHistoryStore implements BerkeleyAdditionalStore {
 		}
 	}
 
+	private void storeTxnForAccount(Transaction dbTxn, REProcessedTxn txn, REAddr addr) {
+		var offset = nextOffset(dbTxn, addr);
+		var key = key(addr, offset);
+		var value = new DatabaseEntry(txn.getTxnId().getBytes());
+		var status = accountTxHistory.putNoOverwrite(dbTxn, key, value);
+		if (status != OperationStatus.SUCCESS) {
+			throw new IllegalStateException("Unable to store account transaction(off: " + offset + "): " + status);
+		}
+	}
+
 	@Override
 	public void process(Transaction dbTxn, REProcessedTxn txn, long stateVersion, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
 		getAccountsAssociatedWithTxn(txn)
-			.forEach(addr -> {
-				var offset = nextOffset(dbTxn, addr);
-				var key = key(addr, offset);
-				var value = new DatabaseEntry(txn.getTxnId().getBytes());
-				var status = accountTxHistory.putNoOverwrite(dbTxn, key, value);
-				if (status != OperationStatus.SUCCESS) {
-					throw new IllegalStateException("Unable to store account transaction(off: " + offset + "): " + status);
-				}
-			});
+			.forEach(addr -> storeTxnForAccount(dbTxn, txn, addr));
 	}
 }
