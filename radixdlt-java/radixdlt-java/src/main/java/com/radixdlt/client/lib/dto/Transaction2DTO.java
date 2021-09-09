@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix DLT Ltd incorporated in England.
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -63,35 +64,54 @@
 
 package com.radixdlt.client.lib.dto;
 
+import org.bouncycastle.util.encoders.Hex;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.lib.api.TxTimestamp;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.utils.UInt256;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.OptionalLong;
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-public final class TransactionHistory2 {
-	private final Long nextOffset;
-	private final List<Transaction2DTO> transactions;
-	private final long totalCount;
+public final class Transaction2DTO {
+	private final AID txID;
+	private final TxTimestamp sentAt;
+	private final UInt256 fee;
+	private final String message;
+	private final List<Action> actions;
+	private final byte[] raw;
 
-	private TransactionHistory2(Long nextOffset, List<Transaction2DTO> transactions, long totalCount) {
-		this.nextOffset = nextOffset;
-		this.transactions = transactions;
-		this.totalCount = totalCount;
+	private Transaction2DTO(AID txID, TxTimestamp sentAt, UInt256 fee, String message, List<Action> actions, byte[] raw) {
+		this.txID = txID;
+		this.sentAt = sentAt;
+		this.fee = fee;
+		this.message = message;
+		this.actions = actions;
+		this.raw = raw;
 	}
 
 	@JsonCreator
-	public static TransactionHistory2 create(
-		@JsonProperty("nextOffset") Long nextOffset,
-		@JsonProperty(value = "transactions", required = true) List<Transaction2DTO> transactions,
-		@JsonProperty(value = "totalCount", required = true) long totalCount
+	public static Transaction2DTO create(
+		@JsonProperty(value = "txID", required = true) AID txID,
+		@JsonProperty(value = "timestamp", required = true) TxTimestamp sentAt,
+		@JsonProperty(value = "fee", required = true) UInt256 fee,
+		@JsonProperty(value = "message", required = true) String message,
+		@JsonProperty(value = "actions", required = true) List<Action> actions,
+		@JsonProperty(value = "raw", required = true) String blob
 	) {
-		requireNonNull(transactions);
+		requireNonNull(txID);
+		requireNonNull(sentAt);
+		requireNonNull(fee);
+		requireNonNull(actions);
+		requireNonNull(blob);
 
-		return new TransactionHistory2(nextOffset, transactions, totalCount);
+		return new Transaction2DTO(txID, sentAt, fee, message, actions, Hex.decode(blob));
 	}
 
 	@Override
@@ -100,38 +120,57 @@ public final class TransactionHistory2 {
 			return true;
 		}
 
-		if (!(o instanceof TransactionHistory2)) {
+		if (!(o instanceof Transaction2DTO)) {
 			return false;
 		}
 
-		var that = (TransactionHistory2) o;
-		return totalCount == that.totalCount
-			&& Objects.equals(nextOffset, that.nextOffset)
-			&& transactions.equals(that.transactions);
+		var that = (Transaction2DTO) o;
+		return txID.equals(that.txID)
+			&& sentAt.equals(that.sentAt)
+			&& fee.equals(that.fee)
+			&& Objects.equals(message, that.message)
+			&& Arrays.equals(raw, that.raw)
+			&& actions.equals(that.actions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(nextOffset, transactions, totalCount);
+		return Objects.hash(txID, sentAt, fee, message, actions, Arrays.hashCode(raw));
 	}
 
 	@Override
 	public String toString() {
-		return "TransactionHistory2("
-			+ "nextOffset=" + nextOffset
-			+ ", transactions=" + transactions
-			+ ", totalCount=" + totalCount + ')';
+		return "Transaction("
+			+ "txID=" + txID
+			+ ", sentAt=" + sentAt
+			+ ", fee=" + fee
+			+ ", message='" + message + '\''
+			+ ", actions=" + actions
+			+ ", raw=" + Hex.toHexString(raw)
+			+ ')';
 	}
 
-	public OptionalLong getNextOffset() {
-		return nextOffset == null ? OptionalLong.empty() : OptionalLong.of(nextOffset);
+	public AID getTxID() {
+		return txID;
 	}
 
-	public List<Transaction2DTO> getTransactions() {
-		return transactions;
+	public TxTimestamp getSentAt() {
+		return sentAt;
 	}
 
-	public long getTotalCount() {
-		return totalCount;
+	public UInt256 getFee() {
+		return fee;
+	}
+
+	public Optional<String> getMessage() {
+		return Optional.ofNullable(message);
+	}
+
+	public List<Action> getActions() {
+		return actions;
+	}
+
+	public byte[] getRaw() {
+		return raw;
 	}
 }

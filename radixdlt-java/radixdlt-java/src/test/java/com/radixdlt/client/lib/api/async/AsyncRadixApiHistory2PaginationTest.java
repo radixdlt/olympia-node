@@ -67,10 +67,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.client.lib.dto.TransactionHistory;
+import com.radixdlt.client.lib.dto.Transaction2DTO;
+import com.radixdlt.client.lib.dto.TransactionHistory2;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -78,7 +77,7 @@ import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -96,7 +95,7 @@ import static org.junit.Assert.fail;
  * Then run testTransactionHistoryInPages(). It should print list of transactions split into batches of 50 (see parameters)
  */
 //TODO: move to acceptance tests
-public class AsyncRadixApiHistoryPaginationTest {
+public class AsyncRadixApiHistory2PaginationTest {
 	private static final String BASE_URL = "http://localhost/";
 	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
 	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
@@ -114,7 +113,7 @@ public class AsyncRadixApiHistoryPaginationTest {
 				for (int i = 0; i < 20; i++) {
 					addTransaction(client, i);
 					try {
-						Thread.sleep(100);
+						Thread.sleep(500);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -131,20 +130,20 @@ public class AsyncRadixApiHistoryPaginationTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(
 				client -> {
-					var cursorHolder = new AtomicReference<NavigationCursor>();
+					var cursorHolder = new AtomicReference<>(OptionalLong.empty());
 					do {
-						client.account().history(ACCOUNT_ADDRESS1, 50, Optional.ofNullable(cursorHolder.get())).join()
+						client.account().history2(ACCOUNT_ADDRESS1, 50, cursorHolder.get()).join()
 							.onFailure(failure -> fail(failure.toString()))
-							.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
-							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
-							.map(TransactionHistory::getTransactions)
+							.onSuccess(v -> v.getNextOffset().ifPresent(System.out::println))
+							.onSuccess(v -> cursorHolder.set(v.getNextOffset()))
+							.map(TransactionHistory2::getTransactions)
 							.map(this::formatTxns)
 							.onSuccess(System.out::println);
-					} while (cursorHolder.get() != null && !cursorHolder.get().value().isEmpty());
+					} while (cursorHolder.get().isPresent());
 				});
 	}
 
-	private List<String> formatTxns(List<TransactionDTO> t) {
+	private List<String> formatTxns(List<Transaction2DTO> t) {
 		return t.stream()
 			.map(v -> String.format(
 				"%s (%s) - %s (%d:%d), Fee: %s%n",

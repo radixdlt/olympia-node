@@ -132,26 +132,6 @@ import static com.radixdlt.client.lib.api.rpc.RpcMethod.*;
 import static java.util.Optional.ofNullable;
 
 public class SyncRadixApi extends RadixApiBase implements RadixApi {
-//	private static final Logger log = LogManager.getLogger();
-//	private static final String AUTH_HEADER = "Authorization";
-//	private static final String CONTENT_TYPE = "Content-Type";
-//	private static final String APPLICATION_JSON = "application/json";
-//	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
-//	private static final ObjectMapper DEFAULT_OBJECT_MAPPER = createDefaultMapper();
-//
-//	private final AtomicLong idCounter = new AtomicLong();
-//
-//	private final String baseUrl;
-//	private final int primaryPort;
-//	private final int secondaryPort;
-//	private final HttpClient client;
-//	private final Optional<String> authHeader;
-//
-//	private Duration timeout = DEFAULT_TIMEOUT;
-//	private boolean doTrace = false;
-//	private ObjectMapper objectMapper;
-//	private int networkId = LOCALNET.getId();
-
 	private final Network network = new Network() {
 		@Override
 		public Result<NetworkId> id() {
