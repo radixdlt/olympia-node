@@ -118,9 +118,8 @@ public class BerkeleyAccountTxHistoryStore implements BerkeleyAdditionalStore {
 		}
 	}
 
-	public Stream<Pair<AID, Long>> getTxnIdsAssociatedWithAccount(REAddr addr, Long offset) {
-		var cursor = accountTxHistory.openCursor(null, null);
-		var iterator = new Iterator<Pair<AID, Long>>() {
+	private Iterator<Pair<AID, Long>> createReverseIteratorFromCursor(REAddr addr, Long offset, Cursor cursor) {
+		return new Iterator<>() {
 			private final DatabaseEntry key;
 			private final DatabaseEntry value = new DatabaseEntry();
 			private OperationStatus status;
@@ -157,6 +156,11 @@ public class BerkeleyAccountTxHistoryStore implements BerkeleyAdditionalStore {
 				return Pair.of(nextValue, nextOffset);
 			}
 		};
+	}
+
+	public Stream<Pair<AID, Long>> getTxnIdsAssociatedWithAccount(REAddr addr, Long offset) {
+		var cursor = accountTxHistory.openCursor(null, null);
+		var iterator = createReverseIteratorFromCursor(addr, offset, cursor);
 		return Streams.stream(iterator)
 			.onClose(cursor::close);
 	}
