@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix DLT Ltd incorporated in England.
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,67 +61,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.module;
+package com.radixdlt.api.validators;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.accounts.AccountApiModule;
-import com.radixdlt.api.controller.JsonRpcController;
-import com.radixdlt.api.handler.ArchiveNetworkHandler;
-import com.radixdlt.api.transactions.TransactionApiModule;
 import com.radixdlt.api.qualifier.ArchiveEndpoint;
-import com.radixdlt.api.qualifier.ArchiveServer;
-import com.radixdlt.api.server.JsonRpcServer;
-import com.radixdlt.api.tokens.TokenApiModule;
-import com.radixdlt.api.validators.ValidatorApiModule;
+import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-import java.util.Map;
-
-public class ArchiveEndpointModule extends AbstractModule {
+public class ValidatorApiModule extends AbstractModule {
 	@Override
-	protected void configure() {
-		install(new AccountApiModule());
-		install(new TokenApiModule());
-		install(new TransactionApiModule());
-		install(new ValidatorApiModule());
-	}
-
-	@ArchiveServer
-	@ProvidesIntoMap
-	@StringMapKey("/archive")
-	public Controller archiveController(@ArchiveEndpoint JsonRpcServer jsonRpcServer) {
-		return new JsonRpcController(jsonRpcServer);
-	}
-
-	@ArchiveEndpoint
-	@Provides
-	public JsonRpcServer rpcServer(@ArchiveEndpoint Map<String, JsonRpcHandler> additionalHandlers) {
-		return new JsonRpcServer(additionalHandlers);
+	public void configure() {
+		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
+		bind(ArchiveValidationHandler.class).in(Scopes.SINGLETON);
+		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
+		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
 	}
 
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("network.get_id")
-	public JsonRpcHandler networkGetId(ArchiveNetworkHandler archiveNetworkHandler) {
-		return archiveNetworkHandler::handleNetworkGetId;
+	@StringMapKey("validators.get_next_epoch_set")
+	public JsonRpcHandler validatorsGetNextEpochSet(ArchiveValidationHandler archiveValidationHandler) {
+		return archiveValidationHandler::handleValidatorsGetNextEpochSet;
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("network.get_throughput")
-	public JsonRpcHandler networkGetThroughput(ArchiveNetworkHandler archiveNetworkHandler) {
-		return archiveNetworkHandler::handleNetworkGetThroughput;
+	@StringMapKey("validators.lookup_validator")
+	public JsonRpcHandler validatorsLookupValidator(ArchiveValidationHandler archiveValidationHandler) {
+		return archiveValidationHandler::handleValidatorsLookupValidator;
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("network.get_demand")
-	public JsonRpcHandler networkGetDemand(ArchiveNetworkHandler archiveNetworkHandler) {
-		return archiveNetworkHandler::handleNetworkGetDemand;
-	}
 }

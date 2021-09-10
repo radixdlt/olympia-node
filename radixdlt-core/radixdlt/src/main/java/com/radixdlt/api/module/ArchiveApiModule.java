@@ -64,10 +64,6 @@
 
 package com.radixdlt.api.module;
 
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
@@ -89,10 +85,6 @@ public class ArchiveApiModule extends AbstractModule {
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
 			.addBinding(Runners.ARCHIVE_API)
 			.to(ArchiveHttpServer.class);
-
-		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
 
 		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
 	}
