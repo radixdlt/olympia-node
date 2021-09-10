@@ -67,7 +67,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.TransactionStatus;
-import com.radixdlt.api.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAddFailure;

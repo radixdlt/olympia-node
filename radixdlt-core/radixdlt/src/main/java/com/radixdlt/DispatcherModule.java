@@ -65,7 +65,7 @@
 package com.radixdlt;
 
 import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.api.service.ScheduledStatsCollecting;
+import com.radixdlt.api.service.network.ScheduledStatsCollecting;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -89,10 +89,10 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.api.chaos.mempoolfiller.ScheduledMempoolFill;
-import com.radixdlt.api.chaos.messageflooder.MessageFlooderUpdate;
-import com.radixdlt.api.chaos.messageflooder.ScheduledMessageFlood;
+import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.api.node.chaos.mempoolfiller.ScheduledMempoolFill;
+import com.radixdlt.api.node.chaos.messageflooder.MessageFlooderUpdate;
+import com.radixdlt.api.node.chaos.messageflooder.ScheduledMessageFlood;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;

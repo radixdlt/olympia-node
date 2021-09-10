@@ -63,6 +63,7 @@
  */
 package com.radixdlt.api.store;
 
+import com.radixdlt.api.archive.to_deprecate.TokenDefinitionRecord;
 import org.junit.Test;
 
 import nl.jqno.equalsverifier.EqualsVerifier;

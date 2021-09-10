@@ -68,9 +68,8 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.qualifier.ArchiveEndpoint;
-import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.api.archive.ArchiveEndpoint;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
 public class ValidatorApiModule extends AbstractModule {

@@ -67,7 +67,7 @@ package com.radixdlt.integration.services;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.data.TransactionStatus;
-import com.radixdlt.api.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.api.archive.transactions.TransactionStatusService;
 import com.radixdlt.api.archive.transactions.TransactionStatusServiceModule;
 import com.radixdlt.engine.RadixEngine;
