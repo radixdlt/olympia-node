@@ -65,8 +65,6 @@
 package com.radixdlt.api.module;
 
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.accounts.BerkeleyAccountInfoStore;
-import com.radixdlt.api.accounts.BerkeleyAccountTxHistoryStore;
 import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
