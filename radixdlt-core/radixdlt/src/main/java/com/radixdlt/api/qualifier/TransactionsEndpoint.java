@@ -61,37 +61,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.transactions.lookup;
+package com.radixdlt.api.qualifier;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.mempool.MempoolAddSuccess;
+import javax.inject.Qualifier;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-public class TransactionStatusServiceModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
-	}
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			MempoolAddFailure.class,
-			transactionStatusService.mempoolAddFailureEventProcessor()
-		);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			MempoolAddSuccess.class,
-			transactionStatusService.mempoolAddSuccessEventProcessor()
-		);
-	}
+@Qualifier
+@Target({ FIELD, PARAMETER, METHOD })
+@Retention(RUNTIME)
+public @interface TransactionsEndpoint {
 }

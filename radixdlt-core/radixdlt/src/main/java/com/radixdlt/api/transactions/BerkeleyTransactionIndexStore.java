@@ -61,58 +61,41 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.tokens;
+package com.radixdlt.api.transactions;
 
-import com.google.inject.Inject;
-import com.radixdlt.accounting.REResourceAccounting;
-import com.radixdlt.application.tokens.ResourceCreatedEvent;
+import com.google.common.collect.Streams;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.Get;
+import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
-import org.json.JSONObject;
 
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
-public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore {
-	private static final String TRANSACTIONS_DB = "radix.resource_info";
-	private Database resourceInfoDatabase;
-	private final Addressing addressing;
-
-	@Inject
-	BerkeleyResourceInfoStore(Addressing addressing) {
-		this.addressing = addressing;
-	}
-
-	public Optional<JSONObject> getResourceInfo(REAddr addr) {
-		var key = new DatabaseEntry(addr.getBytes());
-		var value = new DatabaseEntry();
-
-		if (resourceInfoDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
-			return Optional.of(new JSONObject(new String(value.getData(), StandardCharsets.UTF_8)));
-		}
-
-		return Optional.empty();
-	}
+public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalStore {
+	private static final String TRANSACTIONS_DB = "radix.versioned_transactions";
+	private Database transactions;
 
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
 		var env = dbEnv.getEnvironment();
-		resourceInfoDatabase = env.openDatabase(null, TRANSACTIONS_DB, new DatabaseConfig()
+		transactions = env.openDatabase(null, TRANSACTIONS_DB, new DatabaseConfig()
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setKeyPrefixing(true)
@@ -122,9 +105,42 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 
 	@Override
 	public void close() {
-		if (resourceInfoDatabase != null) {
-			resourceInfoDatabase.close();
+		if (transactions != null) {
+			transactions.close();
 		}
+	}
+
+	public long getCount() {
+		try (var cursor = transactions.openCursor(null, null)) {
+			final DatabaseEntry key = new DatabaseEntry();
+			var result = cursor.getLast(key, null, null);
+			return result == SUCCESS ? Longs.fromByteArray(key.getData()) : 0;
+		}
+	}
+
+	public Stream<AID> get(long stateVersion) {
+		var cursor = transactions.openCursor(null, null);
+		var iterator = new Iterator<AID>() {
+			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion));
+			final DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
+
+			@Override
+			public boolean hasNext() {
+				return status == SUCCESS;
+			}
+
+			@Override
+			public AID next() {
+				if (status != SUCCESS) {
+					throw new NoSuchElementException();
+				}
+				var next = AID.from(value.getData());
+				status = cursor.getNext(key, value, null);
+				return next;
+			}
+		};
+		return Streams.stream(iterator).onClose(cursor::close);
 	}
 
 	@Override
@@ -134,64 +150,22 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 		long stateVersion,
 		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
 	) {
-		for (var event : txn.getEvents()) {
-			if (event instanceof ResourceCreatedEvent) {
-				var resourceCreated = (ResourceCreatedEvent) event;
-				var rri = addressing.forResources().of(resourceCreated.getSymbol(), resourceCreated.getTokenResource().getAddr());
-				var json = new JSONObject()
-					.put("name", resourceCreated.getMetadata().getName())
-					.put("rri", rri)
-					.put("symbol", resourceCreated.getSymbol())
-					.put("description", resourceCreated.getMetadata().getDescription())
-					.put("iconURL", resourceCreated.getMetadata().getIconUrl())
-					.put("tokenInfoURL", resourceCreated.getMetadata().getUrl())
-					.put("granularity", resourceCreated.getTokenResource().getGranularity())
-					.put("currentSupply", BigInteger.ZERO.toString())
-					.put("totalBurned", BigInteger.ZERO.toString())
-					.put("totalMinted", BigInteger.ZERO.toString())
-					.put("isSupplyMutable", resourceCreated.getTokenResource().isMutable());
-
-				var key = new DatabaseEntry(resourceCreated.getTokenResource().getAddr().getBytes());
-				var value = new DatabaseEntry(json.toString().getBytes(StandardCharsets.UTF_8));
-				var status = resourceInfoDatabase.putNoOverwrite(dbTxn, key, value);
-				if (status != SUCCESS) {
-					throw new IllegalStateException();
-				}
+		final long expectedVersion;
+		try (var cursor = transactions.openCursor(dbTxn, null)) {
+			var key = new DatabaseEntry();
+			var status = cursor.getLast(key, null, DEFAULT);
+			if (status == OperationStatus.NOTFOUND) {
+				expectedVersion = 1;
+			} else {
+				expectedVersion = Longs.fromByteArray(key.getData()) + 1;
 			}
 		}
+		if (stateVersion != expectedVersion) {
+			throw new IllegalStateException("Expected version " + expectedVersion + " but is " + stateVersion);
+		}
 
-		var accounting = REResourceAccounting.compute(txn.stateUpdates());
-		var resourceAccounting = accounting.resourceAccounting();
-		resourceAccounting.entrySet().stream()
-			.filter(e -> !e.getValue().equals(BigInteger.ZERO))
-			.forEach(e -> {
-				var resourceAddr = e.getKey();
-				var key = new DatabaseEntry(resourceAddr.getBytes());
-				var value = new DatabaseEntry();
-				var status = resourceInfoDatabase.get(dbTxn, key, value, null);
-				if (status != SUCCESS) {
-					throw new IllegalStateException();
-				}
-				var jsonString = new String(value.getData(), StandardCharsets.UTF_8);
-				var json = new JSONObject(jsonString);
-				var supply = new BigInteger(json.getString("currentSupply"), 10);
-				var change = e.getValue();
-				var newSupply = supply.add(change);
-				json.put("currentSupply", newSupply);
-				if (change.signum() > 0) {
-					var minted = new BigInteger(json.getString("totalMinted"), 10);
-					var newMinted = minted.add(change);
-					json.put("totalMinted", newMinted.toString());
-				} else {
-					var burned = new BigInteger(json.getString("totalBurned"), 10);
-					var newBurned = burned.subtract(change);
-					json.put("totalBurned", newBurned.toString());
-				}
-				var newVal = new DatabaseEntry(json.toString().getBytes(StandardCharsets.UTF_8));
-				status = resourceInfoDatabase.put(dbTxn, key, newVal);
-				if (status != SUCCESS) {
-					throw new IllegalStateException();
-				}
-			});
+		var key = new DatabaseEntry(Longs.toByteArray(stateVersion));
+		var value = new DatabaseEntry(txn.getTxnId().getBytes());
+		transactions.putNoOverwrite(dbTxn, key, value);
 	}
 }

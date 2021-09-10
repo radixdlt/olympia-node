@@ -66,18 +66,13 @@ package com.radixdlt.api.transactions;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.transactions.index.TransactionIndexApiModule;
-import com.radixdlt.api.transactions.lookup.BerkeleyTransactionsByIdStore;
-import com.radixdlt.api.transactions.lookup.TransactionStatusAndLookupApiModule;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-public class TransactionApiModule extends AbstractModule {
+public class TransactionsByIdStoreModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(BerkeleyTransactionsByIdStore.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
 			.addBinding().to(BerkeleyTransactionsByIdStore.class);
-		install(new TransactionStatusAndLookupApiModule());
-		install(new TransactionIndexApiModule());
 	}
 }

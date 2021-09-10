@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.accounts;
+package com.radixdlt.api.archive.accounts;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;

@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.tokens;
+package com.radixdlt.api.archive.validators;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
@@ -70,40 +70,31 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.qualifier.ArchiveEndpoint;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-import static com.radixdlt.api.JsonRpcUtil.response;
-import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_RRI;
-import static com.radixdlt.utils.functional.Result.fromOptional;
-
-public final class TokenApiModule extends AbstractModule {
+public class ValidatorApiModule extends AbstractModule {
 	@Override
-	protected void configure() {
-		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-			.addBinding().to(BerkeleyResourceInfoStore.class);
+	public void configure() {
+		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
+		bind(ArchiveValidationHandler.class).in(Scopes.SINGLETON);
+		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
+		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
+	}
+
+
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("validators.get_next_epoch_set")
+	public JsonRpcHandler validatorsGetNextEpochSet(ArchiveValidationHandler archiveValidationHandler) {
+		return archiveValidationHandler::handleValidatorsGetNextEpochSet;
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("tokens.get_native_token")
-	public JsonRpcHandler tokensGetNativeToken(BerkeleyResourceInfoStore store) {
-		return req -> response(req, store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow());
+	@StringMapKey("validators.lookup_validator")
+	public JsonRpcHandler validatorsLookupValidator(ArchiveValidationHandler archiveValidationHandler) {
+		return archiveValidationHandler::handleValidatorsLookupValidator;
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("tokens.get_info")
-	public JsonRpcHandler tokensGetInfo(Addressing addressing, BerkeleyResourceInfoStore store) {
-		return req -> withRequiredStringParameter(
-			req,
-			"rri",
-			rri ->
-				addressing.forResources().parseToAddr(rri)
-					.flatMap(addr -> fromOptional(UNKNOWN_RRI.with(rri), store.getResourceInfo(addr)))
-		);
-	}
 }

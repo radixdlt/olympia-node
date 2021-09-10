@@ -61,46 +61,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.transactions.lookup;
+package com.radixdlt.api.archive;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.qualifier.ArchiveEndpoint;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.utils.functional.Result;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.ModuleRunner;
+import com.radixdlt.api.data.ScheduledQueueFlush;
+import com.radixdlt.api.server.ArchiveHttpServer;
+import com.radixdlt.api.store.ClientApiStore;
+import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
+import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.statecomputer.REOutput;
 
-import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
-
-public class TransactionStatusAndLookupApiModule extends AbstractModule {
+public class ArchiveApiModule extends AbstractModule {
 	@Override
 	public void configure() {
-		install(new TransactionStatusServiceModule());
+		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
+		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
+			.addBinding(Runners.ARCHIVE_API)
+			.to(ArchiveHttpServer.class);
+
+		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.lookup_transaction")
-	public JsonRpcHandler transactionsLookupTransaction(TransactionStatusService transactionStatusService) {
-		return request -> withRequiredStringParameter(
-			request,
-			"txID",
-			idString -> AID.fromString(idString)
-				.map(txId -> transactionStatusService.getTransactionStatus(txId).asJson().put("txID", txId))
+	@ProvidesIntoSet
+	private EventProcessorOnRunner<?> atomsCommittedToLedgerEventProcessorApiStore(ClientApiStore clientApiStore) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			REOutput.class,
+			clientApiStore.atomsCommittedToLedgerEventProcessor()
 		);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.get_transaction_status")
-	public JsonRpcHandler transactionsGetTransactionStatus(TransactionStatusService transactionStatusService) {
-		return request -> withRequiredStringParameter(
-			request,
-			"txID",
-			idString -> AID.fromString(idString)
-				.flatMap(txId -> Result.fromOptional(UNKNOWN_TX_ID.with(txId), transactionStatusService.getTransaction(txId)))
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> ledgerUpdateToLedgerApiStore(ClientApiStore clientApiStore) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			LedgerUpdate.class,
+			clientApiStore.ledgerUpdateProcessor()
+		);
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> queueFlushProcessor(ClientApiStore clientApiStore) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			ScheduledQueueFlush.class,
+			clientApiStore.queueFlushProcessor()
 		);
 	}
 }

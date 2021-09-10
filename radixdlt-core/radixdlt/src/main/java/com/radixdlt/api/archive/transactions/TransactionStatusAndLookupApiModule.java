@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix DLT Ltd incorporated in England.
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,122 +61,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.module;
+package com.radixdlt.api.archive.transactions;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveApiModule;
-import com.radixdlt.api.archive.ArchiveEndpointModule;
-import com.radixdlt.api.qualifier.Endpoints;
-import com.radixdlt.api.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.api.transactions.TransactionIndexApiModule;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.JsonRpcHandler;
+import com.radixdlt.api.qualifier.ArchiveEndpoint;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.utils.functional.Result;
 
-import java.util.HashMap;
-import java.util.Map;
+import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
+import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
 
-public class ApiModule extends AbstractModule {
-	private final RuntimeProperties properties;
-	private final int networkId;
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
-	}
-
+public class TransactionStatusAndLookupApiModule extends AbstractModule {
 	@Override
 	public void configure() {
-		install(new CommonApiModule());
+		install(new TransactionStatusServiceModule());
+	}
 
-		var endpointStatus = new HashMap<String, Boolean>();
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("transactions.lookup_transaction")
+	public JsonRpcHandler transactionsLookupTransaction(TransactionStatusService transactionStatusService) {
+		return request -> withRequiredStringParameter(
+			request,
+			"txID",
+			idString -> AID.fromString(idString)
+				.map(txId -> transactionStatusService.getTransactionStatus(txId).asJson().put("txID", txId))
+		);
+	}
 
-		var archiveEnable = properties.get("api.archive.enable", false);
-		if (archiveEnable) {
-			install(new ArchiveEndpointModule());
-		}
-		endpointStatus.put("archive", archiveEnable);
-
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		if (transactionsEnable) {
-			install(new TransactionIndexApiModule());
-		}
-		endpointStatus.put("transactions", transactionsEnable);
-
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
-		}
-
-		var constructionEnable = properties.get("api.construction.enable", false);
-		if (constructionEnable) {
-			install(new ConstructEndpointModule());
-		}
-		endpointStatus.put("construction", constructionEnable);
-		if (archiveEnable || constructionEnable) {
-			install(new ArchiveApiModule());
-		}
-
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		if (metricsEnable) {
-			install(new MetricsEndpointModule());
-		}
-		endpointStatus.put("metrics", metricsEnable);
-
-		var systemEnable = properties.get("api.system.enable", false);
-		if (systemEnable) {
-			install(new SystemEndpointModule());
-		}
-		endpointStatus.put("system", systemEnable);
-
-		var accountEnable = properties.get("api.account.enable", false);
-		if (accountEnable) {
-			install(new AccountEndpointModule());
-		}
-		endpointStatus.put("account", accountEnable);
-
-		var validationEnable = properties.get("api.validation.enable", false);
-		if (validationEnable) {
-			install(new ValidationEndpointModule());
-		}
-		endpointStatus.put("validation", validationEnable);
-
-		// TODO: Remove
-		var universeEnable = properties.get("api.universe.enable", false);
-		if (universeEnable) {
-			install(new UniverseEndpointModule());
-		}
-		endpointStatus.put("universe", universeEnable);
-
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		if (faucetEnable) {
-			install(new FaucetEndpointModule());
-		}
-		endpointStatus.put("faucet", faucetEnable);
-
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		if (chaosEnable) {
-			install(new ChaosEndpointModule());
-		}
-		endpointStatus.put("chaos", chaosEnable);
-
-		var healthEnable = properties.get("api.health.enable", true);
-		if (healthEnable) {
-			install(new HealthEndpointModule());
-		}
-		endpointStatus.put("health", healthEnable);
-
-		var versionEnable = properties.get("api.version.enable", true);
-		if (versionEnable) {
-			install(new VersionEndpointModule());
-		}
-		endpointStatus.put("version", versionEnable);
-
-		var developerEnable = properties.get("api.developer.enable", true);
-		if (developerEnable) {
-			install(new DeveloperEndpointModule());
-		}
-		endpointStatus.put("developer", developerEnable);
-
-		install(new NodeApiModule());
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("transactions.get_transaction_status")
+	public JsonRpcHandler transactionsGetTransactionStatus(TransactionStatusService transactionStatusService) {
+		return request -> withRequiredStringParameter(
+			request,
+			"txID",
+			idString -> AID.fromString(idString)
+				.flatMap(txId -> Result.fromOptional(UNKNOWN_TX_ID.with(txId), transactionStatusService.getTransaction(txId)))
+		);
 	}
 }

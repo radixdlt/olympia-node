@@ -61,9 +61,9 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.accounts;
+package com.radixdlt.api.archive.accounts;
 
-import com.radixdlt.api.transactions.lookup.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;

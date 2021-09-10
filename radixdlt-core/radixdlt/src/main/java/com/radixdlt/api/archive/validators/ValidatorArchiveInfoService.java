@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.validators;
+package com.radixdlt.api.archive.validators;
 
 import com.google.common.base.Suppliers;
 import com.google.inject.Inject;

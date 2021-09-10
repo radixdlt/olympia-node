@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.transactions.lookup;
+package com.radixdlt.api.transactions;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;

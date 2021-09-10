@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix DLT Ltd incorporated in England.
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,57 +61,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.module;
+package com.radixdlt.api.archive.transactions;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.data.ScheduledQueueFlush;
-import com.radixdlt.api.server.ArchiveHttpServer;
-import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.statecomputer.REOutput;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 
-public class ArchiveApiModule extends AbstractModule {
+public class TransactionStatusServiceModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
-		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
-			.addBinding(Runners.ARCHIVE_API)
-			.to(ArchiveHttpServer.class);
-
-		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
+		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
 	}
 
 	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> atomsCommittedToLedgerEventProcessorApiStore(ClientApiStore clientApiStore) {
+	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
-			REOutput.class,
-			clientApiStore.atomsCommittedToLedgerEventProcessor()
+			MempoolAddFailure.class,
+			transactionStatusService.mempoolAddFailureEventProcessor()
 		);
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> ledgerUpdateToLedgerApiStore(ClientApiStore clientApiStore) {
+	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
-			LedgerUpdate.class,
-			clientApiStore.ledgerUpdateProcessor()
-		);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> queueFlushProcessor(ClientApiStore clientApiStore) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			ScheduledQueueFlush.class,
-			clientApiStore.queueFlushProcessor()
+			MempoolAddSuccess.class,
+			transactionStatusService.mempoolAddSuccessEventProcessor()
 		);
 	}
 }

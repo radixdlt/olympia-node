@@ -61,60 +61,86 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.accounts;
+package com.radixdlt.api.archive.validators;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.qualifier.ArchiveEndpoint;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.networks.Addressing;
+import org.json.JSONObject;
 
-public class AccountApiModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountInfoStore.class);
-		bind(BerkeleyAccountTxHistoryStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountTxHistoryStore.class);
-		bind(ArchiveAccountHandler.class).in(Scopes.SINGLETON);
+import com.google.inject.Inject;
+import com.radixdlt.api.data.ValidatorInfoDetails;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.functional.Result;
+
+import java.util.List;
+import java.util.Optional;
+
+import static com.radixdlt.api.JsonRpcUtil.fromList;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.safeInteger;
+import static com.radixdlt.api.JsonRpcUtil.safeString;
+import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
+import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
+import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
+import static com.radixdlt.utils.functional.Result.allOf;
+import static com.radixdlt.utils.functional.Result.ok;
+
+public class ArchiveValidationHandler {
+	private final ValidatorArchiveInfoService validatorInfoService;
+	private final Addressing addressing;
+
+	@Inject
+	public ArchiveValidationHandler(
+		ValidatorArchiveInfoService validatorInfoService,
+		Addressing addressing
+	) {
+		this.validatorInfoService = validatorInfoService;
+		this.addressing = addressing;
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("account.get_balances")
-	public JsonRpcHandler accountGetBalances(ArchiveAccountHandler archiveAccountHandler) {
-		return archiveAccountHandler::handleAccountGetBalances;
+	public JSONObject handleValidatorsGetNextEpochSet(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("size"),
+			List.of("cursor"),
+			params -> allOf(parseSize(params), ok(parseAddressCursor(params)))
+				.flatMap((size, cursor) ->
+							 validatorInfoService.getValidators(size, cursor)
+								 .map(this::formatValidatorResponse))
+		);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("account.get_stake_positions")
-	public JsonRpcHandler accountGetStakePositions(ArchiveAccountHandler archiveAccountHandler) {
-		return archiveAccountHandler::handleAccountGetStakePositions;
+	public JSONObject handleValidatorsLookupValidator(JSONObject request) {
+		return withRequiredStringParameter(
+			request,
+			"validatorAddress",
+			address -> addressing.forValidators().fromString(address)
+				.map(validatorInfoService::getNextEpochValidator)
+				.map(d -> d.asJson(addressing))
+		);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("account.get_unstake_positions")
-	public JsonRpcHandler accountGetUnstakePositions(ArchiveAccountHandler archiveAccountHandler) {
-		return archiveAccountHandler::handleAccountGetUnstakePositions;
+	//-----------------------------------------------------------------------------------------------------
+	// internal processing
+	//-----------------------------------------------------------------------------------------------------
+
+	private JSONObject formatValidatorResponse(Optional<ECPublicKey> cursor, List<ValidatorInfoDetails> transactions) {
+		return jsonObject()
+			.put("cursor", cursor.map(addressing.forValidators()::of).orElse(""))
+			.put("validators", fromList(transactions, d -> d.asJson(addressing)));
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("account.get_transaction_history2")
-	public JsonRpcHandler accountGetTransactionHistoryReverse(ArchiveAccountHandler archiveAccountHandler) {
-		return archiveAccountHandler::handleAccountGetTransactionHistoryReverse;
+	private Optional<ECPublicKey> parseAddressCursor(JSONObject params) {
+		return safeString(params, "cursor")
+			.toOptional()
+			.flatMap(this::parsePublicKey);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("account.get_transaction_history")
-	public JsonRpcHandler accountGetTransactionHistory(ArchiveAccountHandler archiveAccountHandler) {
-		return archiveAccountHandler::handleAccountGetTransactionHistory;
+	private Optional<ECPublicKey> parsePublicKey(String address) {
+		return addressing.forValidators().fromString(address).toOptional();
+	}
+
+	private static Result<Integer> parseSize(JSONObject params) {
+		return safeInteger(params, "size")
+			.filter(value -> value > 0, INVALID_PAGE_SIZE);
 	}
 }

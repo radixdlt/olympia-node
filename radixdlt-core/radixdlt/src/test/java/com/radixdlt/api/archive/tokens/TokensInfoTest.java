@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.tokens;
+package com.radixdlt.api.archive.tokens;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;

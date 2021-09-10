@@ -61,86 +61,64 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.validators;
+package com.radixdlt.api.archive.transactions;
 
-import com.radixdlt.networks.Addressing;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.inject.Inject;
+import com.radixdlt.api.data.TransactionStatus;
+import com.radixdlt.api.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import org.json.JSONObject;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.data.ValidatorInfoDetails;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.utils.functional.Result;
-
-import java.util.List;
+import java.time.Duration;
 import java.util.Optional;
 
-import static com.radixdlt.api.JsonRpcUtil.fromList;
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.JsonRpcUtil.safeInteger;
-import static com.radixdlt.api.JsonRpcUtil.safeString;
-import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
-import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
-import static com.radixdlt.utils.functional.Result.allOf;
-import static com.radixdlt.utils.functional.Result.ok;
+import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
+import static com.radixdlt.api.data.TransactionStatus.FAILED;
+import static com.radixdlt.api.data.TransactionStatus.PENDING;
+import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
 
-public class ArchiveValidationHandler {
-	private final ValidatorArchiveInfoService validatorInfoService;
-	private final Addressing addressing;
+public class TransactionStatusService {
+	private final Cache<AID, TransactionStatus> cache = CacheBuilder.newBuilder()
+		.maximumSize(100000)
+		.expireAfterAccess(Duration.ofMinutes(10))
+		.build();
+	private final BerkeleyTransactionsByIdStore store;
 
 	@Inject
-	public ArchiveValidationHandler(
-		ValidatorArchiveInfoService validatorInfoService,
-		Addressing addressing
-	) {
-		this.validatorInfoService = validatorInfoService;
-		this.addressing = addressing;
+	public TransactionStatusService(BerkeleyTransactionsByIdStore store) {
+		this.store = store;
 	}
 
-	public JSONObject handleValidatorsGetNextEpochSet(JSONObject request) {
-		return withRequiredParameters(
-			request,
-			List.of("size"),
-			List.of("cursor"),
-			params -> allOf(parseSize(params), ok(parseAddressCursor(params)))
-				.flatMap((size, cursor) ->
-							 validatorInfoService.getValidators(size, cursor)
-								 .map(this::formatValidatorResponse))
-		);
+	private void onReject(MempoolAddFailure mempoolAddFailure) {
+		cache.put(mempoolAddFailure.getTxn().getId(), FAILED);
 	}
 
-	public JSONObject handleValidatorsLookupValidator(JSONObject request) {
-		return withRequiredStringParameter(
-			request,
-			"validatorAddress",
-			address -> addressing.forValidators().fromString(address)
-				.map(validatorInfoService::getNextEpochValidator)
-				.map(d -> d.asJson(addressing))
-		);
+	private void onSuccess(MempoolAddSuccess mempoolAddSuccess) {
+		cache.put(mempoolAddSuccess.getTxn().getId(), PENDING);
 	}
 
-	//-----------------------------------------------------------------------------------------------------
-	// internal processing
-	//-----------------------------------------------------------------------------------------------------
-
-	private JSONObject formatValidatorResponse(Optional<ECPublicKey> cursor, List<ValidatorInfoDetails> transactions) {
-		return jsonObject()
-			.put("cursor", cursor.map(addressing.forValidators()::of).orElse(""))
-			.put("validators", fromList(transactions, d -> d.asJson(addressing)));
+	public EventProcessor<MempoolAddFailure> mempoolAddFailureEventProcessor() {
+		return this::onReject;
 	}
 
-	private Optional<ECPublicKey> parseAddressCursor(JSONObject params) {
-		return safeString(params, "cursor")
-			.toOptional()
-			.flatMap(this::parsePublicKey);
+	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
+		return this::onSuccess;
 	}
 
-	private Optional<ECPublicKey> parsePublicKey(String address) {
-		return addressing.forValidators().fromString(address).toOptional();
+	public Optional<JSONObject> getTransaction(AID txId) {
+		return store.getTransactionJSON(txId);
 	}
 
-	private static Result<Integer> parseSize(JSONObject params) {
-		return safeInteger(params, "size")
-			.filter(value -> value > 0, INVALID_PAGE_SIZE);
+	public TransactionStatus getTransactionStatus(AID txId) {
+		var status = cache.getIfPresent(txId);
+		if (store.contains(txId)) {
+			return CONFIRMED;
+		}
+		return status != null ? status : TRANSACTION_NOT_FOUND;
 	}
 }

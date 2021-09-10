@@ -61,63 +61,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.transactions.lookup;
+package com.radixdlt.api.archive.accounts;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.inject.Inject;
-import com.radixdlt.api.data.TransactionStatus;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import org.json.JSONObject;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.JsonRpcHandler;
+import com.radixdlt.api.qualifier.ArchiveEndpoint;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-import java.time.Duration;
-import java.util.Optional;
-
-import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
-import static com.radixdlt.api.data.TransactionStatus.FAILED;
-import static com.radixdlt.api.data.TransactionStatus.PENDING;
-import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
-
-public class TransactionStatusService {
-	private final Cache<AID, TransactionStatus> cache = CacheBuilder.newBuilder()
-		.maximumSize(100000)
-		.expireAfterAccess(Duration.ofMinutes(10))
-		.build();
-	private final BerkeleyTransactionsByIdStore store;
-
-	@Inject
-	public TransactionStatusService(BerkeleyTransactionsByIdStore store) {
-		this.store = store;
+public class AccountApiModule extends AbstractModule {
+	@Override
+	protected void configure() {
+		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
+		bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
+		binder.addBinding().to(BerkeleyAccountInfoStore.class);
+		bind(BerkeleyAccountTxHistoryStore.class).in(Scopes.SINGLETON);
+		binder.addBinding().to(BerkeleyAccountTxHistoryStore.class);
+		bind(ArchiveAccountHandler.class).in(Scopes.SINGLETON);
 	}
 
-	private void onReject(MempoolAddFailure mempoolAddFailure) {
-		cache.put(mempoolAddFailure.getTxn().getId(), FAILED);
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("account.get_balances")
+	public JsonRpcHandler accountGetBalances(ArchiveAccountHandler archiveAccountHandler) {
+		return archiveAccountHandler::handleAccountGetBalances;
 	}
 
-	private void onSuccess(MempoolAddSuccess mempoolAddSuccess) {
-		cache.put(mempoolAddSuccess.getTxn().getId(), PENDING);
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("account.get_stake_positions")
+	public JsonRpcHandler accountGetStakePositions(ArchiveAccountHandler archiveAccountHandler) {
+		return archiveAccountHandler::handleAccountGetStakePositions;
 	}
 
-	public EventProcessor<MempoolAddFailure> mempoolAddFailureEventProcessor() {
-		return this::onReject;
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("account.get_unstake_positions")
+	public JsonRpcHandler accountGetUnstakePositions(ArchiveAccountHandler archiveAccountHandler) {
+		return archiveAccountHandler::handleAccountGetUnstakePositions;
 	}
 
-	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
-		return this::onSuccess;
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("account.get_transaction_history2")
+	public JsonRpcHandler accountGetTransactionHistoryReverse(ArchiveAccountHandler archiveAccountHandler) {
+		return archiveAccountHandler::handleAccountGetTransactionHistoryReverse;
 	}
 
-	public Optional<JSONObject> getTransaction(AID txId) {
-		return store.getTransactionJSON(txId);
-	}
-
-	public TransactionStatus getTransactionStatus(AID txId) {
-		var status = cache.getIfPresent(txId);
-		if (store.contains(txId)) {
-			return CONFIRMED;
-		}
-		return status != null ? status : TRANSACTION_NOT_FOUND;
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("account.get_transaction_history")
+	public JsonRpcHandler accountGetTransactionHistory(ArchiveAccountHandler archiveAccountHandler) {
+		return archiveAccountHandler::handleAccountGetTransactionHistory;
 	}
 }

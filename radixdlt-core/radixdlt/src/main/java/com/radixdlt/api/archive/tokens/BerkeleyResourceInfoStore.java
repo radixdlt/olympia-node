@@ -61,49 +61,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.accounts;
+package com.radixdlt.api.archive.tokens;
 
-import com.google.common.collect.Streams;
+import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
-import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import com.radixdlt.utils.Longs;
-import com.radixdlt.utils.Pair;
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.CursorConfig;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.Get;
-import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
+import org.json.JSONObject;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.sleepycat.je.OperationStatus.NOTFOUND;
+import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
-public class BerkeleyAccountTxHistoryStore implements BerkeleyAdditionalStore {
-	private Database accountTxHistory;
+public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore {
+	private static final String TRANSACTIONS_DB = "radix.resource_info";
+	private Database resourceInfoDatabase;
+	private final Addressing addressing;
+
+	@Inject
+	BerkeleyResourceInfoStore(Addressing addressing) {
+		this.addressing = addressing;
+	}
+
+	public Optional<JSONObject> getResourceInfo(REAddr addr) {
+		var key = new DatabaseEntry(addr.getBytes());
+		var value = new DatabaseEntry();
+
+		if (resourceInfoDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
+			return Optional.of(new JSONObject(new String(value.getData(), StandardCharsets.UTF_8)));
+		}
+
+		return Optional.empty();
+	}
 
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
 		var env = dbEnv.getEnvironment();
-		this.accountTxHistory = env.openDatabase(null, "radix.account_txn_history", new DatabaseConfig()
+		resourceInfoDatabase = env.openDatabase(null, TRANSACTIONS_DB, new DatabaseConfig()
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setKeyPrefixing(true)
@@ -113,118 +122,76 @@ public class BerkeleyAccountTxHistoryStore implements BerkeleyAdditionalStore {
 
 	@Override
 	public void close() {
-		if (accountTxHistory != null) {
-			accountTxHistory.close();
-		}
-	}
-
-	private Iterator<Pair<AID, Long>> createReverseIteratorFromCursor(REAddr addr, Long offset, Cursor cursor) {
-		return new Iterator<>() {
-			private final DatabaseEntry key;
-			private final DatabaseEntry value = new DatabaseEntry();
-			private OperationStatus status;
-			{
-				if (offset != null) {
-					key = key(addr, offset);
-					status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
-				} else {
-					var maybeLast = lastOffset(cursor, value, addr);
-					if (maybeLast.isPresent()) {
-						key = maybeLast.get();
-						status = SUCCESS;
-					} else {
-						key = new DatabaseEntry();
-						status = NOTFOUND;
-					}
-				}
-			}
-
-			@Override
-			public boolean hasNext() {
-				return status == SUCCESS;
-			}
-
-			@Override
-			public Pair<AID, Long> next() {
-				if (status != SUCCESS) {
-					throw new NoSuchElementException();
-				}
-				var nextOffset = Longs.fromByteArray(key.getData(), REAddr.PUB_KEY_BYTES);
-				var nextValue = AID.from(value.getData());
-				var curStatus = cursor.getPrev(key, value, null);
-				status = curStatus == SUCCESS && keyIsREAddr(key, addr) ? SUCCESS : NOTFOUND;
-				return Pair.of(nextValue, nextOffset);
-			}
-		};
-	}
-
-	public Stream<Pair<AID, Long>> getTxnIdsAssociatedWithAccount(REAddr addr, Long offset) {
-		var cursor = accountTxHistory.openCursor(null, null);
-		var iterator = createReverseIteratorFromCursor(addr, offset, cursor);
-		return Streams.stream(iterator)
-			.onClose(cursor::close);
-	}
-
-	private static Stream<REAddr> getAccountsAssociatedWithTxn(REProcessedTxn txn) {
-		// Only save user transactions
-		if (txn.getSignedBy().isEmpty()) {
-			return Stream.empty();
-		}
-		var accounting = REResourceAccounting.compute(txn.stateUpdates());
-		return accounting.bucketAccounting().keySet().stream()
-			.map(Bucket::getOwner)
-			.filter(Objects::nonNull)
-			.distinct();
-	}
-
-	private DatabaseEntry key(REAddr addr, Long offset) {
-		var addrBytes = addr.getBytes();
-		var buf = ByteBuffer.allocate(addrBytes.length + (offset != null ? Long.BYTES : 0));
-		buf.put(addrBytes);
-		if (offset != null) {
-			buf.putLong(offset);
-		}
-		return new DatabaseEntry(buf.array());
-	}
-
-	private static boolean keyIsREAddr(DatabaseEntry key, REAddr addr) {
-		return Arrays.equals(key.getData(), 0, REAddr.PUB_KEY_BYTES, addr.getBytes(), 0, REAddr.PUB_KEY_BYTES);
-	}
-
-	private Optional<DatabaseEntry> lastOffset(Cursor cursor, DatabaseEntry value, REAddr addr) {
-		var key = key(addr, Long.MAX_VALUE);
-		cursor.getSearchKeyRange(key, null, null);
-		var result = cursor.getPrev(key, value, null);
-		if (result == OperationStatus.NOTFOUND) {
-			return Optional.empty();
-		} else if (result == SUCCESS) {
-			return keyIsREAddr(key, addr) ? Optional.of(key) : Optional.empty();
-		} else {
-			throw new IllegalStateException("Unexpected result " + result);
-		}
-	}
-
-	private long nextOffset(Transaction dbTxn, REAddr addr) {
-		try (var cursor = accountTxHistory.openCursor(dbTxn, CursorConfig.READ_UNCOMMITTED)) {
-			return lastOffset(cursor, null, addr)
-				.map(e -> Longs.fromByteArray(e.getData(), REAddr.PUB_KEY_BYTES) + 1)
-				.orElse(0L);
-		}
-	}
-
-	private void storeTxnForAccount(Transaction dbTxn, REProcessedTxn txn, REAddr addr) {
-		var offset = nextOffset(dbTxn, addr);
-		var key = key(addr, offset);
-		var value = new DatabaseEntry(txn.getTxnId().getBytes());
-		var status = accountTxHistory.putNoOverwrite(dbTxn, key, value);
-		if (status != OperationStatus.SUCCESS) {
-			throw new IllegalStateException("Unable to store account transaction(off: " + offset + "): " + status);
+		if (resourceInfoDatabase != null) {
+			resourceInfoDatabase.close();
 		}
 	}
 
 	@Override
-	public void process(Transaction dbTxn, REProcessedTxn txn, long stateVersion, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
-		getAccountsAssociatedWithTxn(txn)
-			.forEach(addr -> storeTxnForAccount(dbTxn, txn, addr));
+	public void process(
+		Transaction dbTxn,
+		REProcessedTxn txn,
+		long stateVersion,
+		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
+	) {
+		for (var event : txn.getEvents()) {
+			if (event instanceof ResourceCreatedEvent) {
+				var resourceCreated = (ResourceCreatedEvent) event;
+				var rri = addressing.forResources().of(resourceCreated.getSymbol(), resourceCreated.getTokenResource().getAddr());
+				var json = new JSONObject()
+					.put("name", resourceCreated.getMetadata().getName())
+					.put("rri", rri)
+					.put("symbol", resourceCreated.getSymbol())
+					.put("description", resourceCreated.getMetadata().getDescription())
+					.put("iconURL", resourceCreated.getMetadata().getIconUrl())
+					.put("tokenInfoURL", resourceCreated.getMetadata().getUrl())
+					.put("granularity", resourceCreated.getTokenResource().getGranularity())
+					.put("currentSupply", BigInteger.ZERO.toString())
+					.put("totalBurned", BigInteger.ZERO.toString())
+					.put("totalMinted", BigInteger.ZERO.toString())
+					.put("isSupplyMutable", resourceCreated.getTokenResource().isMutable());
+
+				var key = new DatabaseEntry(resourceCreated.getTokenResource().getAddr().getBytes());
+				var value = new DatabaseEntry(json.toString().getBytes(StandardCharsets.UTF_8));
+				var status = resourceInfoDatabase.putNoOverwrite(dbTxn, key, value);
+				if (status != SUCCESS) {
+					throw new IllegalStateException();
+				}
+			}
+		}
+
+		var accounting = REResourceAccounting.compute(txn.stateUpdates());
+		var resourceAccounting = accounting.resourceAccounting();
+		resourceAccounting.entrySet().stream()
+			.filter(e -> !e.getValue().equals(BigInteger.ZERO))
+			.forEach(e -> {
+				var resourceAddr = e.getKey();
+				var key = new DatabaseEntry(resourceAddr.getBytes());
+				var value = new DatabaseEntry();
+				var status = resourceInfoDatabase.get(dbTxn, key, value, null);
+				if (status != SUCCESS) {
+					throw new IllegalStateException();
+				}
+				var jsonString = new String(value.getData(), StandardCharsets.UTF_8);
+				var json = new JSONObject(jsonString);
+				var supply = new BigInteger(json.getString("currentSupply"), 10);
+				var change = e.getValue();
+				var newSupply = supply.add(change);
+				json.put("currentSupply", newSupply);
+				if (change.signum() > 0) {
+					var minted = new BigInteger(json.getString("totalMinted"), 10);
+					var newMinted = minted.add(change);
+					json.put("totalMinted", newMinted.toString());
+				} else {
+					var burned = new BigInteger(json.getString("totalBurned"), 10);
+					var newBurned = burned.subtract(change);
+					json.put("totalBurned", newBurned.toString());
+				}
+				var newVal = new DatabaseEntry(json.toString().getBytes(StandardCharsets.UTF_8));
+				status = resourceInfoDatabase.put(dbTxn, key, newVal);
+				if (status != SUCCESS) {
+					throw new IllegalStateException();
+				}
+			});
 	}
 }
