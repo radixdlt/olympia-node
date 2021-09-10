@@ -76,7 +76,7 @@ import com.radixdlt.identifiers.REAddr;
 
 import java.nio.charset.StandardCharsets;
 
-import static com.radixdlt.errors.ParameterError.INVALID_RESOURCE_ADDRESS;
+import static com.radixdlt.errors.RadixErrors.INVALID_RESOURCE_ADDRESS;
 
 public final class CreateFixedTokenConstructor implements ActionConstructor<CreateFixedToken> {
 	@Override

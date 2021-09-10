@@ -80,9 +80,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import static com.radixdlt.errors.InternalStateError.SSL_ALGORITHM_ERROR;
-import static com.radixdlt.errors.InternalStateError.SSL_GENERAL_ERROR;
-import static com.radixdlt.errors.InternalStateError.SSL_KEY_ERROR;
+import static com.radixdlt.errors.RadixErrors.ERROR_SSL_ALGORITHM;
+import static com.radixdlt.errors.RadixErrors.ERROR_SSL_GENERAL;
+import static com.radixdlt.errors.RadixErrors.ERROR_SSL_KEY;
 
 public final class HttpClientUtils {
 	private static final TrustManager[] trustAllCerts = new TrustManager[]{
@@ -125,13 +125,13 @@ public final class HttpClientUtils {
 
 	private static Failure decodeSslExceptions(Throwable throwable) {
 		if (throwable instanceof NoSuchAlgorithmException) {
-			return SSL_KEY_ERROR.with(throwable.getMessage());
+			return ERROR_SSL_KEY.with(throwable.getMessage());
 		}
 
 		if (throwable instanceof KeyException) {
-			return SSL_ALGORITHM_ERROR.with(throwable.getMessage());
+			return ERROR_SSL_ALGORITHM.with(throwable.getMessage());
 		}
 
-		return SSL_GENERAL_ERROR.with(throwable.getMessage());
+		return ERROR_SSL_GENERAL.with(throwable.getMessage());
 	}
 }

@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_BALANCE_FOR_FEES;
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_BALANCE_FOR_FEES;
 
 /**
  * Has utilities for scanning and locating nodes in radix networks

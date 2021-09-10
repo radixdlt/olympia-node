@@ -107,7 +107,7 @@ import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.PublishProcessor;
 
-import static com.radixdlt.errors.ProcessingError.IO_ERROR;
+import static com.radixdlt.errors.RadixErrors.ERROR_IO;
 
 /**
  * Class that manages TCP connection channel.
@@ -279,7 +279,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	public Result<Object> send(byte[] data) {
 		synchronized (this.lock) {
 			if (this.state != ChannelState.ACTIVE) {
-				return IO_ERROR.with("Unable to send data", "Channel is inactive").result();
+				return ERROR_IO.with("Unable to send data", "Channel is inactive").result();
 			} else {
 				try {
 					final var baos = new ByteArrayOutputStream();
@@ -288,7 +288,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 					this.outMessagesStats.tick();
 					return Result.ok(new Object());
 				} catch (IOException e) {
-					return IO_ERROR.with("Unable to send data", e.getMessage()).result();
+					return ERROR_IO.with("Unable to send data", e.getMessage()).result();
 				}
 			}
 		}

@@ -64,10 +64,10 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.errors.ProcessingError;
+import com.radixdlt.errors.RadixErrors;
 
 public class CallDataAccessException extends ProcedureException {
 	public CallDataAccessException(int callDataSize, int index, int accessSize) {
-		super(ProcessingError.CALL_DATA_ERROR.with(index, accessSize, callDataSize));
+		super(RadixErrors.ERROR_CALL_DATA.with(index, accessSize, callDataSize));
 	}
 }

@@ -80,10 +80,10 @@ import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
 
-import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_BALANCE;
-import static com.radixdlt.errors.ParameterError.INVALID_MINIMUM_STAKE;
-import static com.radixdlt.errors.ParameterError.STAKING_NOT_ALLOWED;
-import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_EXTRA_BYTES;
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_BALANCE;
+import static com.radixdlt.errors.RadixErrors.INVALID_MINIMUM_STAKE;
+import static com.radixdlt.errors.RadixErrors.NOT_ALLOWED_STAKING;
+import static com.radixdlt.errors.RadixErrors.INVALID_STATE_BUFFER_HAS_EXTRA_BYTES;
 
 public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> {
 	private final UInt256 minimumStake;
@@ -104,7 +104,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 		buf.put((byte) 0);
 		buf.put(action.from().getBytes());
 		if (buf.hasRemaining()) {
-			throw new TxBuilderException(BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
+			throw new TxBuilderException(INVALID_STATE_BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
 		}
 
 		var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
@@ -125,7 +125,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 			var validator = builder.read(ValidatorOwnerCopy.class, action.to());
 			var owner = validator.getOwner();
 			if (!action.from().equals(owner)) {
-				throw new TxBuilderException(STAKING_NOT_ALLOWED.with("Delegation flag is false and you are not the owner."));
+				throw new TxBuilderException(NOT_ALLOWED_STAKING.with("Delegation flag is false and you are not the owner."));
 			}
 		}
 		builder.up(new PreparedStake(action.amount(), action.from(), action.to()));

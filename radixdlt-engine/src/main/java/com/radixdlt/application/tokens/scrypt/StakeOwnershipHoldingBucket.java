@@ -70,8 +70,7 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.errors.InternalStateError;
-import com.radixdlt.errors.ParameterError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -106,10 +105,10 @@ public final class StakeOwnershipHoldingBucket implements ReducerState {
 
 	public void depositOwnership(StakeOwnership stakeOwnership) throws ProcedureException {
 		if (!delegate.equals(stakeOwnership.getDelegateKey())) {
-			throw new ProcedureException(ParameterError.SHARES_MUST_BE_FROM_SAME_DELEGATE);
+			throw new ProcedureException(RadixErrors.MUST_BE_SHARES_FROM_SAME_DELEGATE);
 		}
 		if (!stakeOwnership.getOwner().equals(accountAddr)) {
-			throw new ProcedureException(ParameterError.SHARES_MUST_BE_FOR_SAME_ACCOUNT);
+			throw new ProcedureException(RadixErrors.MUST_BE_SHARES_FOR_SAME_ACCOUNT);
 		}
 		ownershipAmount = UInt384.from(stakeOwnership.getAmount()).add(ownershipAmount);
 	}
@@ -125,7 +124,7 @@ public final class StakeOwnershipHoldingBucket implements ReducerState {
 
 	public void destroy() throws ProcedureException {
 		if (!ownershipAmount.isZero()) {
-			throw new ProcedureException(InternalStateError.SHARES_CANNOT_BE_BURNT);
+			throw new ProcedureException(RadixErrors.UNABLE_TO_BURN_SHARES);
 		}
 	}
 

@@ -83,8 +83,8 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 
-import static com.radixdlt.errors.ProcessingError.IO_ERROR;
-import static com.radixdlt.errors.ProcessingError.MESSAGE_EXPIRED;
+import static com.radixdlt.errors.RadixErrors.ERROR_IO;
+import static com.radixdlt.errors.RadixErrors.INVALID_MESSAGE_EXPIRED;
 
 /**
  * Handles incoming messages. Deserializes raw messages and validates them.
@@ -132,7 +132,7 @@ final class MessagePreprocessor {
 		final var currentTime = timeSource.currentTime();
 
 		if (currentTime - message.getTimestamp() > messageTtlMs) {
-			return MESSAGE_EXPIRED.result();
+			return INVALID_MESSAGE_EXPIRED.result();
 		} else {
 			return Result.ok(new MessageFromPeer<>(source, message));
 		}
@@ -150,7 +150,7 @@ final class MessagePreprocessor {
 
 			log.error(msg, e);
 			peerControl.get().banPeer(inboundMessage.source(), Duration.ofMinutes(5), "Failed to deserialize inbound message");
-			return IO_ERROR.with(msg, e.getMessage()).result();
+			return ERROR_IO.with(msg, e.getMessage()).result();
 		}
 	}
 }

@@ -92,7 +92,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import static com.radixdlt.errors.ProcessingError.UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE;
 
 /**
  * Utilities used by both {@link ECPublicKey} and {@link ECKeyPair}.

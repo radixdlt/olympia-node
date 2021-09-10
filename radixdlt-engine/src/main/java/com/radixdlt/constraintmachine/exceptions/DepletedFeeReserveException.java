@@ -67,7 +67,7 @@ package com.radixdlt.constraintmachine.exceptions;
 import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.utils.UInt256;
 
-import static com.radixdlt.errors.ProcessingError.NOT_ENOUGH_RESERVE;
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_RESERVE;
 
 public class DepletedFeeReserveException extends AuthorizationException {
 	private final UInt256 charge;

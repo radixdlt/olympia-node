@@ -72,7 +72,7 @@ import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Result.Mapper2;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
 
-import static com.radixdlt.errors.ParameterError.INVALID_RESOURCE_ADDRESS;
+import static com.radixdlt.errors.RadixErrors.INVALID_RESOURCE_ADDRESS;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 /**

@@ -72,7 +72,7 @@ import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
-import com.radixdlt.errors.InternalStateError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
@@ -115,7 +115,7 @@ public final class TokenHoldingBucket implements ReducerState {
 
 			var tokenResource = r.loadResource(tokens.getResourceAddr());
 			if (!tokenResource.isMutable()) {
-				throw new ProcedureException(InternalStateError.TOKEN_IS_NOT_MUTABLE);
+				throw new ProcedureException(RadixErrors.UNABLE_TO_BURN_FIXED_TOKENS);
 			}
 		}
 	}

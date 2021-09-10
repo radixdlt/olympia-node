@@ -92,10 +92,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static com.radixdlt.errors.ParameterError.INVALID_TOKEN_GRANULARITY;
-import static com.radixdlt.errors.ParameterError.INVALID_TOKEN_SYMBOL;
-import static com.radixdlt.errors.ParameterError.TOKEN_ADDRESS_MISMATCH;
-import static com.radixdlt.errors.ParameterError.TOKEN_SYMBOL_MISMATCH;
+import static com.radixdlt.errors.RadixErrors.INVALID_TOKEN_GRANULARITY;
+import static com.radixdlt.errors.RadixErrors.INVALID_TOKEN_SYMBOL;
+import static com.radixdlt.errors.RadixErrors.MUST_MATCH_TOKEN_ADDRESS;
+import static com.radixdlt.errors.RadixErrors.MUST_MATCH_TOKEN_SYMBOL;
 
 public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 	private final Set<String> reservedSymbols;
@@ -205,12 +205,12 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 
 		void metadata(TokenResourceMetadata metadata, ExecutionContext context) throws ProcedureException {
 			if (!metadata.getAddr().equals(tokenResource.getAddr())) {
-				throw new ProcedureException(TOKEN_ADDRESS_MISMATCH.with(metadata.getAddr(), tokenResource.getAddr()));
+				throw new ProcedureException(MUST_MATCH_TOKEN_ADDRESS.with(metadata.getAddr(), tokenResource.getAddr()));
 			}
 
 			var symbol = new String(arg, StandardCharsets.UTF_8);
 			if (!symbol.equals(metadata.getSymbol())) {
-				throw new ProcedureException(TOKEN_SYMBOL_MISMATCH.with(symbol, metadata.getSymbol()));
+				throw new ProcedureException(MUST_MATCH_TOKEN_SYMBOL.with(symbol, metadata.getSymbol()));
 			}
 			context.emitEvent(new ResourceCreatedEvent(symbol, tokenResource, metadata));
 		}
@@ -222,7 +222,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
-					throw new ProcedureException(TOKEN_ADDRESS_MISMATCH.with(u.getAddr(), s.getAddr()));
+					throw new ProcedureException(MUST_MATCH_TOKEN_ADDRESS.with(u.getAddr(), s.getAddr()));
 				}
 
 				var str = new String(s.getArg());
@@ -250,7 +250,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				if (!u.getResourceAddr().equals(s.tokenResource.getAddr())) {
-					throw new ProcedureException(TOKEN_ADDRESS_MISMATCH.with(u.getResourceAddr(), s.tokenResource.getAddr()));
+					throw new ProcedureException(MUST_MATCH_TOKEN_ADDRESS.with(u.getResourceAddr(), s.tokenResource.getAddr()));
 				}
 				return ReducerResult.incomplete(new NeedMetadata(s.arg, s.tokenResource));
 			}

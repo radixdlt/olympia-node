@@ -90,10 +90,10 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.function.Predicate;
 
-import static com.radixdlt.errors.InternalStateError.DELEGATION_NOT_ALLOWED;
-import static com.radixdlt.errors.ParameterError.INVALID_MINIMUM_STAKE;
-import static com.radixdlt.errors.ParameterError.MUST_UPDATE_SAME_KEY;
-import static com.radixdlt.errors.ParameterError.NO_MATCHING_VALIDATOR_KEYS;
+import static com.radixdlt.errors.RadixErrors.NOT_ALLOWED_DELEGATION;
+import static com.radixdlt.errors.RadixErrors.INVALID_MINIMUM_STAKE;
+import static com.radixdlt.errors.RadixErrors.MUST_UPDATE_SAME_KEY;
+import static com.radixdlt.errors.RadixErrors.NO_MATCHING_VALIDATOR_KEYS;
 
 public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 	private final UInt256 minimumStake;
@@ -193,7 +193,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			}
 
 			if (!delegateAllowed.test(preparedStake.getOwner())) {
-				throw new ProcedureException(DELEGATION_NOT_ALLOWED);
+				throw new ProcedureException(NOT_ALLOWED_DELEGATION);
 			}
 
 			return tokenHoldingBucket;

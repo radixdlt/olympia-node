@@ -82,12 +82,12 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.errors.ParameterError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.exception.AuthorizationException;
 
 import java.util.Objects;
 
-import static com.radixdlt.errors.ParameterError.VALIDATOR_ADDRESSES_DO_NOT_MATCH;
+import static com.radixdlt.errors.RadixErrors.MUST_MATCH_VALIDATOR_ADDRESSES;
 
 
 public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
@@ -101,7 +101,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 		void update(ValidatorSystemMetadata next) throws ProcedureException {
 			if (!prevState.getValidatorKey().equals(next.getValidatorKey())) {
-				throw new ProcedureException(ParameterError.MUST_UPDATE_SAME_KEY);
+				throw new ProcedureException(RadixErrors.MUST_UPDATE_SAME_KEY);
 			}
 		}
 	}
@@ -123,7 +123,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 		void update(AllowDelegationFlag next) throws ProcedureException {
 			if (!current.getValidatorKey().equals(next.getValidatorKey())) {
-				throw new ProcedureException(ParameterError.MUST_UPDATE_SAME_KEY);
+				throw new ProcedureException(RadixErrors.MUST_UPDATE_SAME_KEY);
 			}
 		}
 	}
@@ -157,7 +157,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				PermissionLevel.USER,
 				(r, c) -> {
 					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
-						throw new AuthorizationException(ParameterError.MUST_UPDATE_SAME_KEY);
+						throw new AuthorizationException(RadixErrors.MUST_UPDATE_SAME_KEY);
 					}
 				}
 			),
@@ -201,7 +201,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				PermissionLevel.USER,
 				(r, c) -> {
 					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
-						throw new AuthorizationException(ParameterError.MUST_UPDATE_SAME_KEY);
+						throw new AuthorizationException(RadixErrors.MUST_UPDATE_SAME_KEY);
 					}
 				}
 			),
@@ -213,7 +213,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			u -> Authorization.USER,
 			(s, u, c, r) -> {
 				if (!Objects.equals(s.prevState.getValidatorKey(), u.getValidatorKey())) {
-					throw new ProcedureException(VALIDATOR_ADDRESSES_DO_NOT_MATCH
+					throw new ProcedureException(MUST_MATCH_VALIDATOR_ADDRESSES
 													 .with(s.prevState.getValidatorKey(), u.getValidatorKey()));
 				}
 				return ReducerResult.complete();
@@ -249,7 +249,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 				PermissionLevel.USER,
 				(r, c) -> {
 					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
-						throw new AuthorizationException(ParameterError.MUST_UPDATE_SAME_KEY);
+						throw new AuthorizationException(RadixErrors.MUST_UPDATE_SAME_KEY);
 					}
 				}
 			),

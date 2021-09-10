@@ -72,7 +72,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.errors.ParameterError.UNKNOWN_ACTION;
+import static com.radixdlt.errors.RadixErrors.UNKNOWN_ACTION;
 
 public enum ActionType {
 	MSG("Message"),

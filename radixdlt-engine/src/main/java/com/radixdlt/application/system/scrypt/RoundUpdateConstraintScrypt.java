@@ -79,7 +79,7 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.errors.InternalStateError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.utils.KeyComparator;
 
 import java.util.TreeMap;
@@ -101,7 +101,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 
 		public ReducerState beginUpdate(ValidatorBFTData validatorBFTData) throws ProcedureException {
 			if (validatorsToUpdate.containsKey(validatorBFTData.getValidatorKey())) {
-				throw new ProcedureException(InternalStateError.VALIDATOR_STARTED_UPDATE);
+				throw new ProcedureException(RadixErrors.INVALID_STATE_VALIDATOR_STARTED_UPDATE);
 			}
 
 			validatorsToUpdate.put(validatorBFTData.getValidatorKey(), validatorBFTData);

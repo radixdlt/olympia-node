@@ -68,13 +68,8 @@ package com.radixdlt.errors;
  * General error categories.
  */
 public enum Category {
-	CONVERSION(1),
-	PARAMETER(2),
-	INTERNAL_STATE(3),
-	EXTERNAL_STATE(4),
-	PROCESSING(5),
-	PROTOCOL(32),
-	OTHER(99);
+	GENERAL(1),
+	PROTOCOL(32);
 
 	private final int code;
 

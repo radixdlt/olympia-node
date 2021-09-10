@@ -69,7 +69,7 @@ import org.bouncycastle.util.encoders.Hex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.errors.ParameterError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.exception.AuthorizationException;
 
 import java.nio.ByteBuffer;
@@ -235,18 +235,18 @@ public final class REAddr {
 
 	public void verifyWithdrawAuthorization(Optional<ECPublicKey> publicKey) throws AuthorizationException {
 		if (getType() != REAddrType.PUB_KEY) {
-			throw new AuthorizationException(ParameterError.NOT_AN_ACCOUNT.with(this));
+			throw new AuthorizationException(RadixErrors.NOT_AN_ACCOUNT.with(this));
 		}
 
 		if (publicKey.isEmpty()) {
-			throw new AuthorizationException(ParameterError.NO_KEY_PRESENT);
+			throw new AuthorizationException(RadixErrors.NO_KEY_PRESENT);
 		}
 
 		if (!Arrays.equals(
 			addr, 1, 1 + ECPublicKey.COMPRESSED_BYTES,
 			publicKey.get().getCompressedBytes(), 0, ECPublicKey.COMPRESSED_BYTES
 		)) {
-			throw new AuthorizationException(ParameterError.INVALID_PUBLIC_KEY.with(publicKey.get()));
+			throw new AuthorizationException(RadixErrors.INVALID_PUBLIC_KEY.with(publicKey.get()));
 		}
 	}
 

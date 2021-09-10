@@ -65,7 +65,7 @@
 package com.radixdlt.application.tokens.state;
 
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.errors.ParameterError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.utils.UInt256;
@@ -107,13 +107,13 @@ public final class TokenResource implements ResourceData {
 
 	public void verifyMintAuthorization(Optional<ECPublicKey> key) throws AuthorizationException {
 		if (!key.flatMap(p -> getOwner().map(p::equals)).orElse(false)) {
-			throw new AuthorizationException(ParameterError.KEY_NOT_AUTHORIZED.with(key));
+			throw new AuthorizationException(RadixErrors.NOT_AUTHORIZED_KEY.with(key));
 		}
 	}
 
 	public void verifyBurnAuthorization(Optional<ECPublicKey> key) throws AuthorizationException {
 		if (!key.flatMap(p -> getOwner().map(p::equals)).orElse(false)) {
-			throw new AuthorizationException(ParameterError.KEY_NOT_AUTHORIZED.with(key));
+			throw new AuthorizationException(RadixErrors.NOT_AUTHORIZED_KEY.with(key));
 		}
 	}
 

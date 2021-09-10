@@ -67,7 +67,7 @@ package com.radixdlt.constraintmachine.exceptions;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.exception.TopLevelExceptionWithFailure;
 
-import static com.radixdlt.errors.ParameterError.NOT_A_RESOURCE;
+import static com.radixdlt.errors.RadixErrors.NOT_A_RESOURCE;
 
 public class NotAResourceException extends TopLevelExceptionWithFailure {
 	public NotAResourceException(REAddr addr) {

@@ -74,7 +74,7 @@ import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
 
-import static com.radixdlt.errors.ParameterError.INVALID_ACCOUNT_ADDRESS;
+import static com.radixdlt.errors.RadixErrors.INVALID_ACCOUNT_ADDRESS;
 
 /**
  * Bech-32 encoding/decoding of account addresses.

@@ -77,7 +77,7 @@ import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.errors.ProcessingError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.utils.UInt256;
@@ -130,7 +130,7 @@ public final class ExecutionContext {
 
 	public void sig() throws AuthorizationException {
 		if (this.sigsLeft == 0) {
-			throw new AuthorizationException(ProcessingError.NO_SIGNATURES_LEFT);
+			throw new AuthorizationException(RadixErrors.NO_SIGNATURES_LEFT);
 		}
 		this.sigsLeft--;
 	}
@@ -145,7 +145,7 @@ public final class ExecutionContext {
 
 	public void depositFeeReserve(Tokens tokens) throws ProcedureException {
 		if (feeDeposit != null) {
-			throw new ProcedureException(ProcessingError.MULTIPLE_FEE_RESERVE_DEPOSIT);
+			throw new ProcedureException(RadixErrors.NOT_ALLOWED_MULTIPLE_FEE_RESERVE_DEPOSIT);
 		}
 		reserve.deposit(tokens);
 		feeDeposit = tokens.getAmount().getLow();

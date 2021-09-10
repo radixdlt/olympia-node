@@ -158,10 +158,10 @@ import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_CURRENT_EPOCH
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_NODE_INFO;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LIST;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
-import static com.radixdlt.errors.ParameterError.BASE_URL_IS_MANDATORY;
-import static com.radixdlt.errors.ProcessingError.IO_ERROR;
-import static com.radixdlt.errors.ProcessingError.OPERATION_INTERRUPTED;
-import static com.radixdlt.errors.ProcessingError.UNKNOWN_ERROR;
+import static com.radixdlt.errors.RadixErrors.MISSING_BASE_URL;
+import static com.radixdlt.errors.RadixErrors.ERROR_INTERRUPTED;
+import static com.radixdlt.errors.RadixErrors.ERROR_IO;
+import static com.radixdlt.errors.RadixErrors.UNKNOWN;
 
 import static java.util.Optional.ofNullable;
 
@@ -502,7 +502,7 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 	) {
 		return ofNullable(url)
 			.map(baseUrl -> Result.ok(new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
-			.orElseGet(BASE_URL_IS_MANDATORY::result)
+			.orElseGet(MISSING_BASE_URL::result)
 			.flatMap(syncRadixApi -> syncRadixApi.network().id()
 				.onSuccess(networkId -> syncRadixApi.configure(networkId.getNetworkId()))
 				.map(__ -> syncRadixApi));
@@ -518,14 +518,14 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 
 	private Failure errorMapper(Throwable throwable) {
 		if (throwable instanceof IOException) {
-			return IO_ERROR.with("", throwable.getMessage());
+			return ERROR_IO.with("", throwable.getMessage());
 		}
 
 		if (throwable instanceof InterruptedException) {
-			return OPERATION_INTERRUPTED.with(throwable.getMessage());
+			return ERROR_INTERRUPTED.with(throwable.getMessage());
 		}
 
-		return UNKNOWN_ERROR.with(throwable.getClass().getName(), throwable.getMessage());
+		return UNKNOWN.with(throwable.getClass().getName(), throwable.getMessage());
 	}
 
 	private <T> Result<T> bodyHandler(

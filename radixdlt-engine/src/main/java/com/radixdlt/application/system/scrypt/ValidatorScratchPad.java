@@ -69,7 +69,7 @@ import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.ExittingStake;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.errors.ProcessingError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -121,7 +121,7 @@ public final class ValidatorScratchPad {
 
 	private static UInt384 verifyNoOverflow(UInt384 i) throws ProcedureException {
 		if (!i.getHigh().isZero()) {
-			throw new ProcedureException(ProcessingError.AMOUNT_OVERFLOW.with(i));
+			throw new ProcedureException(RadixErrors.OVERFLOW_AMOUNT.with(i));
 		}
 		return i;
 	}

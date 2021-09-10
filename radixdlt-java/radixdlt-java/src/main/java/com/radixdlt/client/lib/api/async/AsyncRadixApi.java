@@ -156,7 +156,7 @@ import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_CURRENT_EPOCH
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_NODE_INFO;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LIST;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
-import static com.radixdlt.errors.ParameterError.BASE_URL_IS_MANDATORY;
+import static com.radixdlt.errors.RadixErrors.MISSING_BASE_URL;
 
 import static java.util.Optional.ofNullable;
 
@@ -500,7 +500,7 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 	) {
 		return ofNullable(url)
 			.map(baseUrl -> Result.ok(new AsyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
-			.orElseGet(BASE_URL_IS_MANDATORY::result)
+			.orElseGet(MISSING_BASE_URL::result)
 			.flatMap(asyncRadixApi -> asyncRadixApi.network().id().join()
 				.onSuccess(networkId -> asyncRadixApi.configure(networkId.getNetworkId()))
 				.map(__ -> asyncRadixApi))

@@ -79,7 +79,7 @@ import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
 
-import static com.radixdlt.errors.ProcessingError.UNABLE_TO_PARSE_TRANSACTION;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PARSE_TRANSACTION;
 
 public final class TxnParser {
 	private final LogCMStore logCMStore;

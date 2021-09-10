@@ -66,7 +66,7 @@ package com.radixdlt.constraintmachine.exceptions;
 
 import com.radixdlt.constraintmachine.Particle;
 
-import static com.radixdlt.errors.InternalStateError.INVALID_SUBSTATE;
+import static com.radixdlt.errors.RadixErrors.INVALID_SUBSTATE;
 
 public class ParticleMismatchException extends ProcedureException {
 	public ParticleMismatchException(Particle expected, Particle actual) {

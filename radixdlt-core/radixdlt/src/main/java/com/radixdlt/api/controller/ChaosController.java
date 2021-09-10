@@ -70,9 +70,9 @@ import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.api.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.errors.Category;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -145,7 +145,7 @@ public final class ChaosController implements Controller {
 			} catch (ExecutionException e) {
 				var response = jsonObject()
 					.put("error", jsonObject()
-						.put("code", Category.OTHER.forId(0))
+						.put("code", RadixErrors.UNKNOWN.code())
 						.put("message", e.getCause().getMessage()));
 				respond(exchange, response);
 			}

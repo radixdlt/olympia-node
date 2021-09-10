@@ -75,14 +75,14 @@ import com.radixdlt.utils.KeyComparator;
 
 import java.util.TreeMap;
 
-import static com.radixdlt.errors.InternalStateError.NEXT_VIEW_IS_NOT_HIGHER_THAN_CURRENT;
+import static com.radixdlt.errors.RadixErrors.INVALID_NEXT_VIEW;
 
 public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 	@Override
 	public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
 		var prevRound = txBuilder.downSystem(RoundData.class);
 		if (action.view() <= prevRound.getView()) {
-			throw new TxBuilderException(NEXT_VIEW_IS_NOT_HIGHER_THAN_CURRENT.with(action, prevRound));
+			throw new TxBuilderException(INVALID_NEXT_VIEW.with(action, prevRound));
 		}
 
 		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(KeyComparator.instance());

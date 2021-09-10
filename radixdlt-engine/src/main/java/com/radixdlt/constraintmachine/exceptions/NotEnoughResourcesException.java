@@ -66,7 +66,7 @@ package com.radixdlt.constraintmachine.exceptions;
 
 import com.radixdlt.utils.UInt256;
 
-import static com.radixdlt.errors.ParameterError.NOT_ENOUGH_RESOURCES;
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_RESOURCES;
 
 public final class NotEnoughResourcesException extends ProcedureException {
 	private final UInt256 request;

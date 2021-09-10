@@ -67,8 +67,7 @@ package com.radixdlt.application.system.state;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.errors.InternalStateError;
-import com.radixdlt.errors.ParameterError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.Arrays;
@@ -89,14 +88,14 @@ public final class UnclaimedREAddr implements Particle {
 
 	public void verifyHashedKey(ECPublicKey publicKey, byte[] arg) throws ProcedureException {
 		if (addr.getType() != REAddr.REAddrType.HASHED_KEY) {
-			throw new ProcedureException(InternalStateError.INVALID_ADDRESS_TYPE.with(addr.getType()));
+			throw new ProcedureException(RadixErrors.INVALID_ADDRESS_TYPE.with(addr.getType()));
 		}
 
 		var str = new String(arg);
 		var hash = REAddr.pkToHash(str, publicKey);
 
 		if (!Arrays.equals(addr.getBytes(), 1, HASHED_KEY_BYTES + 1, hash, 0, HASHED_KEY_BYTES)) {
-			throw new ProcedureException(ParameterError.HASHED_KEY_DOES_NOT_MATCH.with(str));
+			throw new ProcedureException(RadixErrors.MUST_MATCH_HASHED_KEY.with(str));
 		}
 	}
 

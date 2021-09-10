@@ -86,7 +86,7 @@ import static com.radixdlt.api.JsonRpcUtil.safeString;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
 import static com.radixdlt.api.JsonRpcUtil.wrapArray;
-import static com.radixdlt.errors.ParameterError.INVALID_PAGE_SIZE;
+import static com.radixdlt.errors.RadixErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;

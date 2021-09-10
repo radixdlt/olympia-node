@@ -68,8 +68,8 @@ import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
 import java.util.Iterator;
 
-import static com.radixdlt.errors.ParameterError.INVALID_PREFIX;
-import static com.radixdlt.errors.ParameterError.INVALID_PREFIX_LEN;
+import static com.radixdlt.errors.RadixErrors.INVALID_PREFIX;
+import static com.radixdlt.errors.RadixErrors.INVALID_PREFIX_LEN;
 import static com.radixdlt.utils.Bytes.toHexString;
 
 public final class IndexedSubstateIterator<D extends Particle> {

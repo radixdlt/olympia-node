@@ -66,7 +66,7 @@ package com.radixdlt.constraintmachine.exceptions;
 
 import com.radixdlt.identifiers.REAddr;
 
-import static com.radixdlt.errors.InternalStateError.INVALID_RESOURCE;
+import static com.radixdlt.errors.RadixErrors.INVALID_RESOURCE;
 
 public final class InvalidResourceException extends ProcedureException {
 	private final REAddr expected;

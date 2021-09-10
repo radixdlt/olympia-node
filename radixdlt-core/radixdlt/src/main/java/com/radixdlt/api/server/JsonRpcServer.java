@@ -80,8 +80,8 @@ import io.undertow.server.HttpServerExchange;
 import static com.radixdlt.api.JsonRpcUtil.failureResponse;
 import static com.radixdlt.api.RestUtils.respond;
 import static com.radixdlt.api.RestUtils.withBody;
-import static com.radixdlt.errors.ProtocolError.INVALID_REQUEST;
-import static com.radixdlt.errors.ProtocolError.METHOD_NOT_FOUND;
+import static com.radixdlt.errors.ProtocolErrors.INVALID_REQUEST;
+import static com.radixdlt.errors.ProtocolErrors.METHOD_NOT_FOUND;
 
 import static java.util.Optional.ofNullable;
 

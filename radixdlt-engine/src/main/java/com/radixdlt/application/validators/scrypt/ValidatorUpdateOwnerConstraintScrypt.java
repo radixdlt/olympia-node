@@ -81,13 +81,13 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.errors.ParameterError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.exception.AuthorizationException;
 
 import java.util.OptionalLong;
 
-import static com.radixdlt.errors.ParameterError.INVALID_EPOCH;
-import static com.radixdlt.errors.ParameterError.MUST_UPDATE_SAME_KEY;
+import static com.radixdlt.errors.RadixErrors.INVALID_EPOCH;
+import static com.radixdlt.errors.RadixErrors.MUST_UPDATE_SAME_KEY;
 
 public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 
@@ -155,7 +155,7 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 				PermissionLevel.USER,
 				(r, c) -> {
 					if (!c.key().map(d.getValidatorKey()::equals).orElse(false)) {
-						throw new AuthorizationException(ParameterError.MUST_UPDATE_SAME_KEY);
+						throw new AuthorizationException(RadixErrors.MUST_UPDATE_SAME_KEY);
 					}
 				}
 			),

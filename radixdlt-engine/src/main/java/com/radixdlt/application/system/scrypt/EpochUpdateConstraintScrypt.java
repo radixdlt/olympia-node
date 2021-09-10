@@ -98,8 +98,7 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.exceptions.ParticleMismatchException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.errors.InternalStateError;
-import com.radixdlt.errors.ParameterError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.Longs;
@@ -114,14 +113,14 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
-import static com.radixdlt.errors.InternalStateError.EPOCH_IS_NOT_FINISHED;
-import static com.radixdlt.errors.InternalStateError.INVALID_NEXT_STATE;
-import static com.radixdlt.errors.InternalStateError.INVALID_SHUTDOWN_OF_EXITTING_STAKE;
-import static com.radixdlt.errors.ParameterError.INVALID_VIEW;
-import static com.radixdlt.errors.ParameterError.MUST_UPDATE_SAME_KEY;
-import static com.radixdlt.errors.ParameterError.RAKE_MUST_MATCH;
-import static com.radixdlt.errors.ParameterError.REGISTERED_FLAGS_MUST_MATCH;
-import static com.radixdlt.errors.ParameterError.SHOULD_NOT_HAVE_EPOCH;
+import static com.radixdlt.errors.RadixErrors.INVALID_STATE_EPOCH_IS_NOT_FINISHED;
+import static com.radixdlt.errors.RadixErrors.INVALID_NEXT_STATE;
+import static com.radixdlt.errors.RadixErrors.INVALID_SHUTDOWN_OF_EXITTING_STAKE;
+import static com.radixdlt.errors.RadixErrors.INVALID_VIEW;
+import static com.radixdlt.errors.RadixErrors.MUST_UPDATE_SAME_KEY;
+import static com.radixdlt.errors.RadixErrors.MUST_MATCH_RAKE_PERCENTAGE;
+import static com.radixdlt.errors.RadixErrors.MUST_MATCH_REGISTERED_FLAGS;
+import static com.radixdlt.errors.RadixErrors.MUST_NOT_HAVE_EPOCH;
 
 public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	private final long maxRounds;
@@ -178,7 +177,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var exit = exitting.first();
 			exitting.remove(exit);
 			if (exit.getEpochUnlocked() != updatingEpoch.prevEpoch.getEpoch() + 1) {
-				throw new ProcedureException(InternalStateError.STAKE_MUST_BE_LOCKED);
+				throw new ProcedureException(RadixErrors.MUST_KEEP_STAKE_LOCKED);
 			}
 			var expected = exit.unlock();
 			if (!expected.equals(u)) {
@@ -210,7 +209,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			while (iter.hasNext()) {
 				var validatorEpochData = iter.next();
 				if (validatorBFTData.containsKey(validatorEpochData.getValidatorKey())) {
-					throw new ProcedureException(InternalStateError.ALREADY_INSERTED.with(validatorEpochData.getValidatorKey()));
+					throw new ProcedureException(RadixErrors.INVALID_STATE_ALREADY_INSERTED.with(validatorEpochData.getValidatorKey()));
 				}
 				validatorBFTData.put(validatorEpochData.getValidatorKey(), validatorEpochData);
 			}
@@ -225,7 +224,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 			var k = validatorBFTData.firstKey();
 			if (updatingValidators.containsKey(k)) {
-				throw new ProcedureException(InternalStateError.INCONSISTENT_DATA);
+				throw new ProcedureException(RadixErrors.INVALID_STATE_INCONSISTENT_DATA);
 			}
 			var bftData = validatorBFTData.remove(k);
 			context.emitEvent(ValidatorBFTDataEvent.create(k, bftData.proposalsCompleted(), bftData.proposalsMissed()));
@@ -294,7 +293,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState nextEpoch(EpochData u) throws ProcedureException {
 			if (u.getEpoch() != prevEpoch.getEpoch() + 1) {
-				throw new ProcedureException(ParameterError.INVALID_EPOCH.with(u.getEpoch(), prevEpoch.getEpoch() + 1));
+				throw new ProcedureException(RadixErrors.INVALID_EPOCH.with(u.getEpoch(), prevEpoch.getEpoch() + 1));
 			}
 			return new StartingEpochRound();
 		}
@@ -532,11 +531,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			}
 
 			if (rakeCopy.getRakePercentage() != update.getRakePercentage()) {
-				throw new ProcedureException(RAKE_MUST_MATCH);
+				throw new ProcedureException(MUST_MATCH_RAKE_PERCENTAGE);
 			}
 
 			if (rakeCopy.getEpochUpdate().isPresent()) {
-				throw new ProcedureException(SHOULD_NOT_HAVE_EPOCH);
+				throw new ProcedureException(MUST_NOT_HAVE_EPOCH);
 			}
 
 			return next.get();
@@ -612,7 +611,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			}
 
 			if (update.getEpochUpdate().isPresent()) {
-				throw new ProcedureException(SHOULD_NOT_HAVE_EPOCH);
+				throw new ProcedureException(MUST_NOT_HAVE_EPOCH);
 			}
 
 			return next.get();
@@ -688,11 +687,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			}
 
 			if (registeredCopy.isRegistered() != update.isRegistered()) {
-				throw new ProcedureException(REGISTERED_FLAGS_MUST_MATCH);
+				throw new ProcedureException(MUST_MATCH_REGISTERED_FLAGS);
 			}
 
 			if (registeredCopy.getEpochUpdate().isPresent()) {
-				throw new ProcedureException(SHOULD_NOT_HAVE_EPOCH);
+				throw new ProcedureException(MUST_NOT_HAVE_EPOCH);
 			}
 
 			return next.get();
@@ -781,7 +780,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			(d, s, r, c) -> {
 				// TODO: Should move this authorization instead of checking epoch > 0
 				if (d.getEpoch() > 0 && s.getClosedRound().getView() != maxRounds) {
-					throw new ProcedureException(EPOCH_IS_NOT_FINISHED.with(maxRounds, s.getClosedRound().getView()));
+					throw new ProcedureException(INVALID_STATE_EPOCH_IS_NOT_FINISHED.with(maxRounds, s.getClosedRound().getView()));
 				}
 
 				return ReducerResult.incomplete(new UpdatingEpoch(d));

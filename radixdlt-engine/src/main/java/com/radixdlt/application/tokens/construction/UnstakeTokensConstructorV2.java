@@ -77,16 +77,16 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.nio.ByteBuffer;
 
-import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_BALANCE;
-import static com.radixdlt.errors.ParameterError.INVALID_UNSTAKE_AMOUNT;
-import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_EXTRA_BYTES;
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_BALANCE;
+import static com.radixdlt.errors.RadixErrors.INVALID_MINIMUM_UNSTAKE;
+import static com.radixdlt.errors.RadixErrors.INVALID_STATE_BUFFER_HAS_EXTRA_BYTES;
 
 public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
 	@Override
 	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
 		var validatorStake = txBuilder.find(ValidatorStakeData.class, action.from());
 		if (action.amount().isZero()) {
-			throw new TxBuilderException(INVALID_UNSTAKE_AMOUNT);
+			throw new TxBuilderException(INVALID_MINIMUM_UNSTAKE);
 		}
 
 		var ownershipAmt = action.amount()
@@ -100,7 +100,7 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 		buf.put(action.from().getCompressedBytes());
 		buf.put(action.accountAddr().getBytes());
 		if (buf.hasRemaining()) {
-			throw new TxBuilderException(BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
+			throw new TxBuilderException(INVALID_STATE_BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
 		}
 
 		var index = SubstateIndex.create(buf.array(), StakeOwnership.class);

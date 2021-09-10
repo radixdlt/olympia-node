@@ -71,7 +71,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.radixdlt.errors.ProcessingError.ASYNC_PROCESSING_ERROR;
+import static com.radixdlt.errors.RadixErrors.ERROR_ASYNC;
 
 public class Promise<T> extends CompletableFuture<Result<T>> {
 	private Promise() {
@@ -126,7 +126,7 @@ public class Promise<T> extends CompletableFuture<Result<T>> {
 	public Promise<T> onResult(Consumer<Result<T>> action) {
 		whenComplete((value, exception) -> {
 			if (exception != null) {
-				action.accept(ASYNC_PROCESSING_ERROR.with(exception.getMessage()).result());
+				action.accept(ERROR_ASYNC.with(exception.getMessage()).result());
 			} else {
 				action.accept(value);
 			}

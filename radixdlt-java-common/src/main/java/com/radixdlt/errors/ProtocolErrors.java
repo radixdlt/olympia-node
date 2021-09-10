@@ -67,70 +67,21 @@ package com.radixdlt.errors;
 import com.radixdlt.utils.functional.Failure;
 
 /**
- * Input parameters errors encountered during parsing/validation
+ * Errors defined by JSON-RPC specification.
  * <p>
- * <b>WARNING:</b> New errors should be added to the end, no insertions or re-arrangements are allowed!
+ * <b>WARNING: New errors should be added to the end of the list to preserve error codes.</b>
  */
-public enum ParameterError implements Failure {
-	MISSING_PARAMETER("The parameter {0} is missing"),
-	UNKNOWN_ACTION("Unknown action {0}"),
-	UNSUPPORTED_ACTION("Action type {0} is not supported"),
-	MISSING_ACTION_FIELD("Required field {0} is not present in action definition"),
-	INVALID_PAGE_SIZE("Size {0} must be greater than zero"),
-	INVALID_SIGNATURE_DER("Invalid signature DER {0}"),
-	INVALID_TX_ID("Invalid TX ID {0}"),
-	INVALID_VALIDATOR_ADDRESS("Invalid validator address {0}"),
-	INVALID_ACCOUNT_ADDRESS("Invalid account address {0}"),
-	INVALID_RESOURCE_ADDRESS("Invalid resource address {0}"),
-	INVALID_PUBLIC_KEY("Invalid public key {0}"),
-	INVALID_SYSCALL_PARAMETER("Length must be >= 1 and <= 32 but was {0}"),
-	INVALID_VALIDATOR_FEE_INCREASE("Max rake increase is {0} but trying to increase {1}"),
-	INVALID_MINT_AMOUNT("Must mint > 0 tokens"),
-	INVALID_BURN_AMOUNT("Must burn > 0 tokens"),
-	INVALID_UNSTAKE_AMOUNT("Must unstake > 0 tokens"),
-	INVALID_TRANSFER_AMOUNT("Invalid transfer amount {0}. The amount must be > 0."),
-	INVALID_MINIMUM_STAKE("Minimum to stake is {0} but trying to stake {1}"),
-	INVALID_AID_LENGTH("AID string has incorrect length {0}"),
-	VALUE_OUT_OF_RANGE("Parameter {0} must be between {1} and {2}"),
-	STAKING_NOT_ALLOWED("Stacking is not allowed: {0}"),
-	AID_IS_NULL("AID string is 'null'"),
-	BASE_URL_IS_MANDATORY("Base URL is mandatory"),
-	HASHED_KEY_DOES_NOT_MATCH("Hashed key does not match: [{0}]"),
-	NOT_ENOUGH_RESOURCES("Not enough resources. Requested {0}, available {1}"),
-	SHARES_MUST_BE_FROM_SAME_DELEGATE("Shares must be from same delegate"),
-	SHARES_MUST_BE_FOR_SAME_ACCOUNT("Shares must be for same account"),
-	INVALID_RAKE_INCREASE("Max rake increase is {0} but trying to increase {1}"),
-	MUST_CONTAIN_EPOCH_UPDATE("Must contain epoch update"),
-	CANT_INCREASE_RAKE("Increasing rake requires epoch delay to {0} but was {1}"),
-	CANT_DECREASE_RAKE("Decreasing rake requires epoch delay to {0} but was {1}"),
-	INVALID_EPOCH("Expected epoch to be {0} but is {1}"),
-	INVALID_VIEW("Expected view to be {0} but is {1}"),
-	VIEW_OVERFLOW("View overflow"),
-	NO_MATCHING_VALIDATOR_KEYS("Prepared stake delegate key does not match validator key"), //TODO: merge all 3 below?
-	MUST_UPDATE_SAME_KEY("Must update same key (validator key != request validator key)"),
-	VALIDATOR_ADDRESSES_DO_NOT_MATCH("Validator addresses do not match: {0} != {1}"),
-	INVALID_SUBSTATE_TYPE_ID("Invalid substate type id. Expected {0} but was {1}"),
-	ADDRESS_CLAIM_TOO_LARGE("Address claim too large."),
-	RAKE_MUST_MATCH("Rake percentage must match."),
-	REGISTERED_FLAGS_MUST_MATCH("Registered flags must match."),
-	SHOULD_NOT_HAVE_EPOCH("Should not have an epoch."),
-	INVALID_PREFIX_LEN("Invalid shutdownAll prefix length, expected {0}, received {1}"),
-	INVALID_PREFIX("Invalid shutdownAll prefix, expected {0}, received {1}"),
-	INVALID_KEY_FOR_VALIDATOR_UPDATE("Invalid key for validator bft data update"),
-	INVALID_DATA_FOR_VALIDATOR_UPDATE("Invalid data for validator bft data update"),
-	NO_UPDATE_FOR_VALIDATOR_DATA("No update to Validator BFT data"),
-	TOKEN_ADDRESS_MISMATCH("Token address {0} does not match update token addresses {1}"),
-	TOKEN_SYMBOL_MISMATCH("Token symbol {0} does not match update token symbol {1}"),
-	INVALID_TOKEN_SYMBOL("Invalid token symbol {0}"),
-	INVALID_TOKEN_GRANULARITY("Granularity must be one."),
-	NOT_A_RESOURCE("The address {0} is not a resource"),
-	NOT_AN_ACCOUNT("The address {0} is not an account address"),
-	NO_KEY_PRESENT("No key present."),
-	KEY_NOT_AUTHORIZED("Key not authorized: {0}");
+public enum ProtocolErrors implements Failure {
+	INVALID_REQUEST(600, "Invalid request: {0}"),
+	INVALID_PARAMETERS(602, "Invalid parameters: {0} {1}"),
+	PARSE_ERROR(700, "Parse error: {0}"),
+	METHOD_NOT_FOUND(601, "Method {0} not found");
 
+	private final int code;
 	private final String message;
 
-	ParameterError(String message) {
+	ProtocolErrors(int code, String message) {
+		this.code = code;
 		this.message = message;
 	}
 
@@ -141,6 +92,6 @@ public enum ParameterError implements Failure {
 
 	@Override
 	public int code() {
-		return Category.PARAMETER.forId(ordinal());
+		return Category.PROTOCOL.forId(code);
 	}
 }

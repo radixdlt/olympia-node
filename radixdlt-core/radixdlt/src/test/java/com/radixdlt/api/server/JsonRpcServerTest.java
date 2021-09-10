@@ -71,8 +71,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.errors.ProtocolError.INVALID_REQUEST;
-import static com.radixdlt.errors.ProtocolError.METHOD_NOT_FOUND;
+import static com.radixdlt.errors.ProtocolErrors.INVALID_REQUEST;
+import static com.radixdlt.errors.ProtocolErrors.METHOD_NOT_FOUND;
 
 public class JsonRpcServerTest {
 	@Test

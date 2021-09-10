@@ -117,7 +117,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_FEES;
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_FEES;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.

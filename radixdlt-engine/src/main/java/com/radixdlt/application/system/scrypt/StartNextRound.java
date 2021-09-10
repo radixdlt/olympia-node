@@ -68,7 +68,7 @@ import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
-import static com.radixdlt.errors.ParameterError.INVALID_VIEW;
+import static com.radixdlt.errors.RadixErrors.INVALID_VIEW;
 
 public class StartNextRound implements ReducerState {
 	private final long expectedView;

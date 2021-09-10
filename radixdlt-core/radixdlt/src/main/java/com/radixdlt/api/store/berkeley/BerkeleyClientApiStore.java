@@ -162,13 +162,13 @@ import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TOK
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TOKEN_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TRANSACTION_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TRANSACTION_WRITE;
-import static com.radixdlt.errors.ConversionError.SYMBOL_DOES_NOT_MATCH;
-import static com.radixdlt.errors.InternalStateError.UNKNOWN_RRI;
-import static com.radixdlt.errors.InternalStateError.UNKNOWN_TOKEN_DEFINITION;
-import static com.radixdlt.errors.InternalStateError.UNKNOWN_TX_ID;
-import static com.radixdlt.errors.ParameterError.INVALID_PAGE_SIZE;
-import static com.radixdlt.errors.ProcessingError.UNABLE_TO_RESTORE_ACCOUNT_ADDRESS;
-import static com.radixdlt.errors.ProcessingError.UNABLE_TO_RESTORE_CREATOR;
+import static com.radixdlt.errors.RadixErrors.MUST_MATCH_SYMBOL;
+import static com.radixdlt.errors.RadixErrors.UNKNOWN_RRI;
+import static com.radixdlt.errors.RadixErrors.UNKNOWN_TOKEN_DEFINITION;
+import static com.radixdlt.errors.RadixErrors.UNKNOWN_TX_ID;
+import static com.radixdlt.errors.RadixErrors.INVALID_PAGE_SIZE;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_RESTORE_ACCOUNT_ADDRESS;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_RESTORE_CREATOR;
 import static com.radixdlt.serialization.DsonOutput.Output;
 import static com.radixdlt.serialization.SerializationUtils.restore;
 import static com.radixdlt.utils.functional.Result.wrap;
@@ -274,7 +274,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		return addressing.forResources().parseFunctional(rri)
 			.flatMap((symbol, address) -> getTokenDefinition(address)
 				.map(TokenDefinitionRecord::getSymbol)
-				.filter(symbol::equals, SYMBOL_DOES_NOT_MATCH)
+				.filter(symbol::equals, MUST_MATCH_SYMBOL)
 				.map(__ -> address)
 			);
 	}

@@ -68,7 +68,7 @@ import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.FeeReservePut;
-import com.radixdlt.errors.ExternalStateError;
+import com.radixdlt.errors.RadixErrors;
 
 public class FeeReservePutConstructor implements ActionConstructor<FeeReservePut> {
 	@Override
@@ -76,7 +76,7 @@ public class FeeReservePutConstructor implements ActionConstructor<FeeReservePut
 		if (action.amount().isZero()) {
 			return;
 		}
-		txBuilder.putFeeReserve(action.from(), action.amount(), () -> ExternalStateError.NOT_ENOUGH_BALANCE_FOR_FEES);
+		txBuilder.putFeeReserve(action.from(), action.amount(), () -> RadixErrors.NOT_ENOUGH_BALANCE_FOR_FEES);
 		txBuilder.end();
 	}
 }

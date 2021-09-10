@@ -76,7 +76,7 @@ import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.errors.ParameterError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.utils.Shorts;
 import com.radixdlt.utils.UInt256;
 
@@ -307,7 +307,7 @@ public final class TxLowLevelBuilder {
 
 	public TxLowLevelBuilder syscall(Syscall syscall, byte[] bytes) throws TxBuilderException {
 		if (bytes.length < 1 || bytes.length > 32) {
-			throw new TxBuilderException(ParameterError.INVALID_SYSCALL_PARAMETER.with(bytes.length));
+			throw new TxBuilderException(RadixErrors.INVALID_SYSCALL_PARAMETER.with(bytes.length));
 		}
 		var data = new byte[Short.BYTES + 1 + bytes.length];
 		data[0] = 0;

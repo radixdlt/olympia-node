@@ -75,9 +75,9 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.nio.ByteBuffer;
 
-import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_BALANCE;
-import static com.radixdlt.errors.ParameterError.INVALID_BURN_AMOUNT;
-import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_EXTRA_BYTES;
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_BALANCE;
+import static com.radixdlt.errors.RadixErrors.INVALID_BURN_AMOUNT;
+import static com.radixdlt.errors.RadixErrors.INVALID_STATE_BUFFER_HAS_EXTRA_BYTES;
 
 public final class BurnTokenConstructor implements ActionConstructor<BurnToken> {
 
@@ -92,7 +92,7 @@ public final class BurnTokenConstructor implements ActionConstructor<BurnToken> 
 		buf.put((byte) 0);
 		buf.put(action.from().getBytes());
 		if (buf.hasRemaining()) {
-			throw new TxBuilderException(BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
+			throw new TxBuilderException(INVALID_STATE_BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
 		}
 
 		var index = SubstateIndex.create(buf.array(), TokensInAccount.class);

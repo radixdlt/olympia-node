@@ -80,7 +80,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_BALANCE;
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_BALANCE;
 
 public class FaucetTokensTransferConstructor implements ActionConstructor<FaucetTokensTransfer> {
 	private static final Amount AMOUNT_TO_TRANSFER = Amount.ofTokens(10);

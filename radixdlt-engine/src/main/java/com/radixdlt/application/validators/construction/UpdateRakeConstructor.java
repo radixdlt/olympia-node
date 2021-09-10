@@ -74,7 +74,7 @@ import com.radixdlt.atom.actions.UpdateValidatorFee;
 
 import java.util.OptionalLong;
 
-import static com.radixdlt.errors.ParameterError.INVALID_VALIDATOR_FEE_INCREASE;
+import static com.radixdlt.errors.RadixErrors.INVALID_VALIDATOR_FEE_INCREASE;
 
 public final class UpdateRakeConstructor implements ActionConstructor<UpdateValidatorFee> {
 	private final long rakeIncreaseDebounceEpochLength;

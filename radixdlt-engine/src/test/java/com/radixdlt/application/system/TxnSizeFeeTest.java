@@ -106,7 +106,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.errors.InternalStateError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -235,7 +235,7 @@ public class TxnSizeFeeTest {
 				index,
 				p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(accountAddr),
 				fee,
-				() -> InternalStateError.GENERAL
+				() -> RadixErrors.GENERAL
 			);
 			txBuilder.toLowLevelBuilder().syscall(Syscall.FEE_RESERVE_PUT, fee.toByteArray());
 			if (!remainder.isZero()) {
@@ -266,7 +266,7 @@ public class TxnSizeFeeTest {
 				index,
 				p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(accountAddr),
 				fee,
-				() -> InternalStateError.GENERAL
+				() -> RadixErrors.GENERAL
 			);
 
 			var data = new byte[Short.BYTES + 1 + UInt256.BYTES + 1];

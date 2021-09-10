@@ -76,9 +76,9 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.nio.ByteBuffer;
 
-import static com.radixdlt.errors.ExternalStateError.NOT_ENOUGH_BALANCE;
-import static com.radixdlt.errors.ParameterError.INVALID_TRANSFER_AMOUNT;
-import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_EXTRA_BYTES;
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_BALANCE;
+import static com.radixdlt.errors.RadixErrors.INVALID_TRANSFER_AMOUNT;
+import static com.radixdlt.errors.RadixErrors.INVALID_STATE_BUFFER_HAS_EXTRA_BYTES;
 
 public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwnership> {
 	@Override
@@ -93,7 +93,7 @@ public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwn
 		buf.put(action.from().getCompressedBytes());
 		buf.put(action.accountAddr().getBytes());
 		if (buf.hasRemaining()) {
-			throw new TxBuilderException(BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
+			throw new TxBuilderException(INVALID_STATE_BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
 		}
 
 		var index = SubstateIndex.create(buf.array(), StakeOwnership.class);

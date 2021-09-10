@@ -83,7 +83,7 @@ import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 import com.radixdlt.constraintmachine.meter.Meter;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
-import com.radixdlt.errors.ProcessingError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.identifiers.exception.FailureContainer;
@@ -103,9 +103,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.radixdlt.errors.ProcessingError.BUFFER_HAS_EXTRA_BYTES;
-import static com.radixdlt.errors.ProcessingError.UNKNOWN_ERROR;
-import static com.radixdlt.errors.ProcessingError.UNKNOWN_OPERATION;
+import static com.radixdlt.errors.RadixErrors.INVALID_STATE_BUFFER_HAS_EXTRA_BYTES;
+import static com.radixdlt.errors.RadixErrors.UNKNOWN;
+import static com.radixdlt.errors.RadixErrors.UNKNOWN_OPERATION;
 
 /**
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
@@ -345,7 +345,7 @@ public final class ConstraintMachine {
 			} catch (NotAResourceException e) {
 				throw new AuthorizationException(((FailureContainer) e).failure(), e);
 			} catch (RuntimeException e) {
-				throw new AuthorizationException(UNKNOWN_ERROR.with(e.getClass(), e.getMessage()), e);
+				throw new AuthorizationException(UNKNOWN.with(e.getClass(), e.getMessage()), e);
 			}
 		}
 
@@ -377,7 +377,7 @@ public final class ConstraintMachine {
 		for (var inst : instructions) {
 			try {
 				if (expectEnd && inst.getMicroOp() != REInstruction.REMicroOp.END) {
-					throw new ProcedureException(ProcessingError.MISSING_END_INSTRUCTION);
+					throw new ProcedureException(RadixErrors.MISSING_END_INSTRUCTION);
 				}
 
 				if (inst.getMicroOp() == REInstruction.REMicroOp.SYSCALL) {
@@ -449,7 +449,7 @@ public final class ConstraintMachine {
 						var buf = upSubstate.getSubstateBuffer();
 						nextParticle = validationState.deserialization.deserialize(buf);
 						if (buf.hasRemaining()) {
-							throw new ProcedureException(BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
+							throw new ProcedureException(INVALID_STATE_BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
 						}
 						substateId = upSubstate.getSubstateId();
 						substateBuffer = upSubstate::getSubstateBuffer;

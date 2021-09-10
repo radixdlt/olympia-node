@@ -67,7 +67,7 @@ package com.radixdlt.constraintmachine.exceptions;
 import com.radixdlt.identifiers.exception.FailureContainer;
 import com.radixdlt.utils.functional.Failure;
 
-import static com.radixdlt.errors.ProcessingError.UNKNOWN_ERROR;
+import static com.radixdlt.errors.RadixErrors.UNKNOWN;
 
 public class ProcedureException extends Exception implements FailureContainer {
 	private final Failure failure;
@@ -91,7 +91,7 @@ public class ProcedureException extends Exception implements FailureContainer {
 			return new ProcedureException(failureContainer.failure(), e);
 		}
 
-		return new ProcedureException(UNKNOWN_ERROR.with(e.getClass(), e.getMessage()), e);
+		return new ProcedureException(UNKNOWN.with(e.getClass(), e.getMessage()), e);
 	}
 
 	@Override

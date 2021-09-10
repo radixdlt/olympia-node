@@ -85,8 +85,8 @@ import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-import static com.radixdlt.errors.ProcessingError.IO_ERROR;
-import static com.radixdlt.errors.ProcessingError.MESSAGE_EXPIRED;
+import static com.radixdlt.errors.RadixErrors.ERROR_IO;
+import static com.radixdlt.errors.RadixErrors.INVALID_MESSAGE_EXPIRED;
 
 /*
  * This could be moved into MessageCentralImpl at some stage, but has been
@@ -131,7 +131,7 @@ class MessageDispatcher {
 			);
 			log.warn(msg);
 			this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
-			return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
+			return CompletableFuture.completedFuture(INVALID_MESSAGE_EXPIRED.result());
 		}
 
 		final var bytes = serialize(message);
@@ -154,7 +154,7 @@ class MessageDispatcher {
 			addressing.forNodes().of(receiver.getPublicKey())
 		);
 		log.warn("{}: {}", msg, cause.getMessage());
-		return IO_ERROR.with(msg, cause.getMessage()).result();
+		return ERROR_IO.with(msg, cause.getMessage()).result();
 	}
 
 	private Result<Object> updateStatistics(Result<Object> result) {

@@ -69,11 +69,11 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
 
-import static com.radixdlt.errors.ProcessingError.SYSTEM_LOAN_DEFAULTED;
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_RESERVE;
 
 public class DefaultedSystemLoanException extends TopLevelExceptionWithFailure {
 	public DefaultedSystemLoanException(DepletedFeeReserveException cause, UInt256 feeDeposited) {
-		super(SYSTEM_LOAN_DEFAULTED.with(feeDeposited, calculateBasicFeeDeposit(cause.getMissingAmount(), feeDeposited)));
+		super(NOT_ENOUGH_RESERVE.with(calculateBasicFeeDeposit(cause.getMissingAmount(), feeDeposited), feeDeposited));
 	}
 
 	private static UInt256 calculateBasicFeeDeposit(UInt256 missingAmount, UInt256 feeDeposited) {

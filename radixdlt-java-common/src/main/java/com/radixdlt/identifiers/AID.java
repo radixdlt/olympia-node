@@ -75,8 +75,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 
-import static com.radixdlt.errors.ParameterError.AID_IS_NULL;
-import static com.radixdlt.errors.ParameterError.INVALID_AID_LENGTH;
+import static com.radixdlt.errors.RadixErrors.INVALID_AID_STRING;
+import static com.radixdlt.errors.RadixErrors.INVALID_AID_LENGTH;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
 import static java.util.Optional.ofNullable;
@@ -212,7 +212,7 @@ public final class AID implements Comparable<AID> {
 	 * @return Success {@link Result} if value can be successfully parsed and failure {@link Result} otherwise.
 	 */
 	public static Result<AID> fromString(String input) {
-		return fromOptional(AID_IS_NULL, ofNullable(input))
+		return fromOptional(INVALID_AID_STRING, ofNullable(input))
 			.filter(bytes -> bytes.length() == BYTES * 2, INVALID_AID_LENGTH)
 			.map(Bytes::fromHexString)
 			.flatMap(AID::fromBytes);
@@ -226,7 +226,7 @@ public final class AID implements Comparable<AID> {
 	 * @return Success result in case of successful conversion and failure result in case of error.
 	 */
 	public static Result<AID> fromBytes(byte[] input) {
-		return fromOptional(AID_IS_NULL, ofNullable(input))
+		return fromOptional(INVALID_AID_STRING, ofNullable(input))
 			.filter(bytes -> bytes.length == HASH_BYTES, INVALID_AID_LENGTH)
 			.map(AID::new);
 	}

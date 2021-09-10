@@ -99,8 +99,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
-import static com.radixdlt.errors.ProcessingError.PEER_BANNED;
-import static com.radixdlt.errors.ProcessingError.SELF_CONNECTION_ATTEMPT;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_CONNECT_BANNED_PEER;
+import static com.radixdlt.errors.RadixErrors.INVALID_CONNECT_TO_SELF_ATTEMPT;
 
 import static java.util.function.Predicate.not;
 
@@ -186,11 +186,11 @@ public final class PeerManager {
 	private Result<Object> canConnectTo(NodeId nodeId) {
 		if (nodeId.equals(self)) {
 			log.info("Ignoring self connection attempt");
-			return SELF_CONNECTION_ATTEMPT.result();
+			return INVALID_CONNECT_TO_SELF_ATTEMPT.result();
 		}
 
 		if (this.addressBook.get().findById(nodeId).filter(AddressBookEntry::isBanned).isPresent()) {
-			return PEER_BANNED.result();
+			return UNABLE_TO_CONNECT_BANNED_PEER.result();
 		}
 
 		return Result.ok(new Object());

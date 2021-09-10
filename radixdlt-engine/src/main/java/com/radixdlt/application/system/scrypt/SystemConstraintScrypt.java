@@ -84,8 +84,7 @@ import com.radixdlt.constraintmachine.SystemCallProcedure;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.errors.InternalStateError;
-import com.radixdlt.errors.ParameterError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Bytes;
 
@@ -93,11 +92,11 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedList;
 
-import static com.radixdlt.errors.InternalStateError.INVALID_CALL_TYPE;
-import static com.radixdlt.errors.InternalStateError.INVALID_DATA;
-import static com.radixdlt.errors.ParameterError.INVALID_EPOCH;
-import static com.radixdlt.errors.ParameterError.INVALID_SUBSTATE_TYPE_ID;
-import static com.radixdlt.errors.ParameterError.INVALID_VIEW;
+import static com.radixdlt.errors.RadixErrors.INVALID_CALL_TYPE;
+import static com.radixdlt.errors.RadixErrors.INVALID_DATA;
+import static com.radixdlt.errors.RadixErrors.INVALID_EPOCH;
+import static com.radixdlt.errors.RadixErrors.INVALID_SUBSTATE_TYPE_ID;
+import static com.radixdlt.errors.RadixErrors.INVALID_VIEW;
 
 public final class SystemConstraintScrypt implements ConstraintScrypt {
 	private static class AllocatingSystem implements ReducerState {
@@ -151,7 +150,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 		public ReducerState claim(UnclaimedREAddr unclaimedREAddr, ExecutionContext ctx) throws ProcedureException {
 			if (ctx.permissionLevel() != PermissionLevel.SYSTEM) {
-				var key = ctx.key().orElseThrow(() -> new ProcedureException(InternalStateError.MISSING_KEY));
+				var key = ctx.key().orElseThrow(() -> new ProcedureException(RadixErrors.MISSING_KEY));
 				unclaimedREAddr.verifyHashedKey(key, arg);
 			}
 			return new REAddrClaim(unclaimedREAddr, arg);
@@ -259,7 +258,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 					} else if (syscall == Syscall.READDR_CLAIM) {
 						var bytes = d.getRemainingBytes(1);
 						if (bytes.length > 32) {
-							throw new ProcedureException(ParameterError.ADDRESS_CLAIM_TOO_LARGE);
+							throw new ProcedureException(RadixErrors.INVALID_ADDRESS_CLAIM);
 						}
 						return ReducerResult.incomplete(new REAddrClaimStart(bytes));
 					} else {

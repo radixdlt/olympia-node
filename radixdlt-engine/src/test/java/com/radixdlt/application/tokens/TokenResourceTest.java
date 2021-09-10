@@ -95,7 +95,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.errors.ParameterError;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -269,7 +269,7 @@ public class TokenResourceTest {
 			.hasRootCauseInstanceOf(ProcedureException.class)
 			.getRootCause()
 			.has(new Condition<Throwable>(
-				rootCause -> ((ProcedureException) rootCause).failure().code() == ParameterError.HASHED_KEY_DOES_NOT_MATCH.code(),
+				rootCause -> ((ProcedureException) rootCause).failure().code() == RadixErrors.MUST_MATCH_HASHED_KEY.code(),
 				"Expected error code does not match"
 			));
 	}
