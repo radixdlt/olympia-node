@@ -74,12 +74,12 @@ import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.JsonRpcController;
 import com.radixdlt.api.handler.ArchiveAccountHandler;
 import com.radixdlt.api.handler.ArchiveNetworkHandler;
-import com.radixdlt.api.transactions.lookup.ArchiveTransactionStatusAndLookupApiModule;
+import com.radixdlt.api.transactions.TransactionApiModule;
 import com.radixdlt.api.handler.ArchiveValidationHandler;
 import com.radixdlt.api.qualifier.ArchiveEndpoint;
 import com.radixdlt.api.qualifier.ArchiveServer;
 import com.radixdlt.api.server.JsonRpcServer;
-import com.radixdlt.api.tokens.ArchiveTokensApiModule;
+import com.radixdlt.api.tokens.TokenApiModule;
 
 import java.util.Map;
 
@@ -87,8 +87,8 @@ public class ArchiveEndpointModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(ArchiveAccountHandler.class).in(Scopes.SINGLETON);
-		install(new ArchiveTokensApiModule());
-		install(new ArchiveTransactionStatusAndLookupApiModule());
+		install(new TokenApiModule());
+		install(new TransactionApiModule());
 	}
 
 	@ArchiveServer

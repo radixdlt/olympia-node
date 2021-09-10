@@ -69,6 +69,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.JsonRpcHandler;
+import com.radixdlt.api.qualifier.ArchiveEndpoint;
 import com.radixdlt.api.qualifier.DeveloperEndpoint;
 import com.radixdlt.api.transactions.lookup.BerkeleyTransactionsByIdStore;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
@@ -89,9 +90,9 @@ public final class TransactionIndexApiModule extends AbstractModule {
 			.addBinding().to(BerkeleyTransactionIndexStore.class);
 	}
 
-	@DeveloperEndpoint
+	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("index.get_transaction_count")
+	@StringMapKey("transactions.get_count")
 	public JsonRpcHandler indexGetTransactionCount(BerkeleyTransactionIndexStore store) {
 		return request -> withRequiredParameters(
 			request,
@@ -107,9 +108,9 @@ public final class TransactionIndexApiModule extends AbstractModule {
 		);
 	}
 
-	@DeveloperEndpoint
+	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("index.get_transactions")
+	@StringMapKey("transactions.get_transactions")
 	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexStore store, BerkeleyTransactionsByIdStore txnStore) {
 		return request -> withRequiredParameters(
 			request,

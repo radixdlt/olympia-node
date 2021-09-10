@@ -89,7 +89,7 @@ import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalStore {
-	private static final String TRANSACTIONS_DB = "radix.transactions";
+	private static final String TRANSACTIONS_DB = "radix.versioned_transactions";
 	private Database transactions;
 
 	@Override

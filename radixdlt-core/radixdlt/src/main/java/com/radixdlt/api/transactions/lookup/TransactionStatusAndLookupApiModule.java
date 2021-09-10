@@ -63,27 +63,32 @@
 
 package com.radixdlt.api.transactions.lookup;
 
-import com.radixdlt.utils.functional.Result;
-import org.json.JSONObject;
-
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.JsonRpcHandler;
+import com.radixdlt.api.data.TransactionStatus;
+import com.radixdlt.api.qualifier.ArchiveEndpoint;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.functional.Result;
 
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
 import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
 
-@Singleton
-public class ArchiveTransactionsHandler {
-	private final TransactionStatusService transactionStatusService;
-
-	@Inject
-	public ArchiveTransactionsHandler(TransactionStatusService transactionStatusService) {
-		this.transactionStatusService = transactionStatusService;
+public class TransactionStatusAndLookupApiModule extends AbstractModule {
+	@Override
+	public void configure() {
+		install(new TransactionStatusServiceModule());
 	}
 
-	public JSONObject handleTransactionsGetTransactionStatus(JSONObject request) {
-		return withRequiredStringParameter(
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("transactions.lookup_transaction")
+	public JsonRpcHandler transactionsLookupTransaction(TransactionStatusService transactionStatusService) {
+		return request -> withRequiredStringParameter(
 			request,
 			"txID",
 			idString -> AID.fromString(idString)
@@ -91,8 +96,11 @@ public class ArchiveTransactionsHandler {
 		);
 	}
 
-	public JSONObject handleTransactionsLookupTransaction(JSONObject request) {
-		return withRequiredStringParameter(
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("transactions.get_transaction_status")
+	public JsonRpcHandler transactionsGetTransactionStatus(TransactionStatusService transactionStatusService) {
+		return request -> withRequiredStringParameter(
 			request,
 			"txID",
 			idString -> AID.fromString(idString)

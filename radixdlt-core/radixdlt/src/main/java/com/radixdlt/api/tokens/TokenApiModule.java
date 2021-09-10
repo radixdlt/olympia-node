@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.transactions.lookup;
+package com.radixdlt.api.tokens;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
@@ -70,28 +70,40 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.qualifier.ArchiveEndpoint;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-public class ArchiveTransactionStatusAndLookupApiModule extends AbstractModule {
+import static com.radixdlt.api.JsonRpcUtil.response;
+import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
+import static com.radixdlt.api.data.ApiErrors.UNKNOWN_RRI;
+import static com.radixdlt.utils.functional.Result.fromOptional;
+
+public final class TokenApiModule extends AbstractModule {
 	@Override
-	public void configure() {
-		install(new TransactionStatusServiceModule());
-		bind(BerkeleyTransactionsByIdStore.class).in(Scopes.SINGLETON);
-		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		binder.addBinding().to(BerkeleyTransactionsByIdStore.class);
+	protected void configure() {
+		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+			.addBinding().to(BerkeleyResourceInfoStore.class);
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("transactions.lookup_transaction")
-	public JsonRpcHandler transactionsLookupTransaction(ArchiveTransactionsHandler archiveTransactionsHandler) {
-		return archiveTransactionsHandler::handleTransactionsLookupTransaction;
+	@StringMapKey("tokens.get_native_token")
+	public JsonRpcHandler tokensGetNativeToken(BerkeleyResourceInfoStore store) {
+		return req -> response(req, store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow());
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("transactions.get_transaction_status")
-	public JsonRpcHandler transactionsGetTransactionStatus(ArchiveTransactionsHandler archiveTransactionsHandler) {
-		return archiveTransactionsHandler::handleTransactionsGetTransactionStatus;
+	@StringMapKey("tokens.get_info")
+	public JsonRpcHandler tokensGetInfo(Addressing addressing, BerkeleyResourceInfoStore store) {
+		return req -> withRequiredStringParameter(
+			req,
+			"rri",
+			rri ->
+				addressing.forResources().parseToAddr(rri)
+					.flatMap(addr -> fromOptional(UNKNOWN_RRI.with(rri), store.getResourceInfo(addr)))
+		);
 	}
 }

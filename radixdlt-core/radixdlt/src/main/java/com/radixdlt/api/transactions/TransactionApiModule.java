@@ -61,49 +61,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.tokens;
+package com.radixdlt.api.transactions;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.qualifier.ArchiveEndpoint;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.api.transactions.index.TransactionIndexApiModule;
+import com.radixdlt.api.transactions.lookup.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.transactions.lookup.TransactionStatusAndLookupApiModule;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-import static com.radixdlt.api.JsonRpcUtil.response;
-import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_RRI;
-import static com.radixdlt.utils.functional.Result.fromOptional;
-
-public final class ArchiveTokensApiModule extends AbstractModule {
+public class TransactionApiModule extends AbstractModule {
 	@Override
-	protected void configure() {
-		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
+	public void configure() {
+		bind(BerkeleyTransactionsByIdStore.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-			.addBinding().to(BerkeleyResourceInfoStore.class);
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("tokens.get_native_token")
-	public JsonRpcHandler tokensGetNativeToken(BerkeleyResourceInfoStore store) {
-		return req -> response(req, store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow());
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("tokens.get_info")
-	public JsonRpcHandler tokensGetInfo(Addressing addressing, BerkeleyResourceInfoStore store) {
-		return req -> withRequiredStringParameter(
-			req,
-			"rri",
-			rri ->
-				addressing.forResources().parseToAddr(rri)
-					.flatMap(addr -> fromOptional(UNKNOWN_RRI.with(rri), store.getResourceInfo(addr)))
-		);
+			.addBinding().to(BerkeleyTransactionsByIdStore.class);
+		install(new TransactionStatusAndLookupApiModule());
+		install(new TransactionIndexApiModule());
 	}
 }
