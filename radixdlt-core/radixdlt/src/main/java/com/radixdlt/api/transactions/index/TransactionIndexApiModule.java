@@ -70,6 +70,7 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.qualifier.DeveloperEndpoint;
+import com.radixdlt.api.transactions.lookup.BerkeleyTransactionsByIdStore;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -109,7 +110,7 @@ public final class TransactionIndexApiModule extends AbstractModule {
 	@DeveloperEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("index.get_transactions")
-	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexStore store) {
+	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexStore store, BerkeleyTransactionsByIdStore txnStore) {
 		return request -> withRequiredParameters(
 			request,
 			List.of("offset", "limit"),
@@ -120,7 +121,9 @@ public final class TransactionIndexApiModule extends AbstractModule {
 					var limit = params.getLong("limit");
 					var transactions = new JSONArray();
 					try (var stream = store.get(offset)) {
-						stream.limit(limit).forEach(transactions::put);
+						stream.limit(limit)
+							.map(txnId -> txnStore.getTransactionJSON(txnId).orElseThrow())
+							.forEach(transactions::put);
 					}
 					var totalCount = store.getCount();
 					var nextOffset = offset + transactions.length();

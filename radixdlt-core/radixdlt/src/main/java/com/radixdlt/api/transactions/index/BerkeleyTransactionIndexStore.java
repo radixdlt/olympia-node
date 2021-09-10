@@ -64,23 +64,10 @@
 package com.radixdlt.api.transactions.index;
 
 import com.google.common.collect.Streams;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.radixdlt.accounting.REResourceAccounting;
-import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.application.tokens.ResourceCreatedEvent;
-import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.Longs;
@@ -90,10 +77,7 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Get;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -107,14 +91,6 @@ import static com.sleepycat.je.OperationStatus.SUCCESS;
 public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalStore {
 	private static final String TRANSACTIONS_DB = "radix.transactions";
 	private Database transactions;
-	private final Addressing addressing;
-	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
-
-	@Inject
-	BerkeleyTransactionIndexStore(Addressing addressing, Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
-		this.addressing = addressing;
-		this.radixEngineProvider = radixEngineProvider;
-	}
 
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
@@ -142,9 +118,9 @@ public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalSt
 		}
 	}
 
-	public Stream<JSONObject> get(long stateVersion) {
+	public Stream<AID> get(long stateVersion) {
 		var cursor = transactions.openCursor(null, null);
-		var iterator = new Iterator<byte[]>() {
+		var iterator = new Iterator<AID>() {
 			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion));
 			final DatabaseEntry value = new DatabaseEntry();
 			OperationStatus status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
@@ -155,27 +131,16 @@ public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalSt
 			}
 
 			@Override
-			public byte[] next() {
+			public AID next() {
 				if (status != SUCCESS) {
 					throw new NoSuchElementException();
 				}
-				var next = value.getData();
+				var next = AID.from(value.getData());
 				status = cursor.getNext(key, value, null);
 				return next;
 			}
 		};
-		return Streams.stream(iterator)
-			.map(b -> new JSONObject(new String(b, StandardCharsets.UTF_8)))
-			.onClose(cursor::close);
-	}
-
-	private Particle deserialize(byte[] data) {
-		var deserialization = radixEngineProvider.get().getSubstateDeserialization();
-		try {
-			return deserialization.deserialize(data);
-		} catch (DeserializeException e) {
-			throw new IllegalStateException();
-		}
+		return Streams.stream(iterator).onClose(cursor::close);
 	}
 
 	@Override
@@ -199,75 +164,8 @@ public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalSt
 			throw new IllegalStateException("Expected version " + expectedVersion + " but is " + stateVersion);
 		}
 
-
-		var txnJson = new JSONObject();
-		txnJson.put("state_version", stateVersion);
-		txnJson.put("transaction_identifier", txn.getTxnId().toString());
-		txnJson.put("transaction_size", txn.getTxn().getPayload().length);
-
-		var eventsJson = new JSONArray();
-		for (var event : txn.getEvents()) {
-			if (event instanceof ResourceCreatedEvent) {
-				var resourceCreated = (ResourceCreatedEvent) event;
-				var rri = addressing.forResources().of(resourceCreated.getSymbol(), resourceCreated.getTokenResource().getAddr());
-				var eventJson = new JSONObject()
-					.put("type", "token_created")
-					.put("rri", rri);
-				eventsJson.put(eventJson);
-			}
-		}
-
-		txn.stateUpdates().filter(REStateUpdate::isBootUp).forEach(update -> {
-			var substate = update.getParsed();
-			if (substate instanceof RoundData) {
-				var d = (RoundData) substate;
-				var eventJson = new JSONObject()
-					.put("type", "new_round")
-					.put("timestamp", d.getTimestamp())
-					.put("round", d.getView());
-				eventsJson.put(eventJson);
-			} else if (substate instanceof EpochData) {
-				var d = (EpochData) substate;
-				var eventJson = new JSONObject()
-					.put("type", "new_epoch")
-					.put("epoch", d.getEpoch());
-				eventsJson.put(eventJson);
-			}
-		});
-		txnJson.put("events", eventsJson);
-
-		var accounting = REResourceAccounting.compute(txn.stateUpdates());
-		txnJson.put("fee_paid", txn.getFeePaid());
-		var bucketAccounting = new JSONArray();
-		for (var e : accounting.bucketAccounting().entrySet()) {
-			var b = e.getKey();
-			var i = e.getValue();
-
-			var bucketJson = new JSONObject();
-			if (b.getOwner() != null) {
-				bucketJson.put("owner", addressing.forAccounts().of(b.getOwner()));
-			}
-			if (b.getValidatorKey() != null) {
-				bucketJson.put("validator", addressing.forValidators().of(b.getValidatorKey()));
-			}
-			bucketJson.put("delta", i.toString());
-			if (b.resourceAddr() == null) {
-				// Don't keep track of stakeOwnership
-				continue;
-			}
-
-			var mapKey = SystemMapKey.ofResourceData(b.resourceAddr(), SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-			var data = mapper.apply(mapKey).orElseThrow().getData();
-			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-			var metadata = (TokenResourceMetadata) deserialize(data);
-			var rri = addressing.forResources().of(metadata.getSymbol(), b.resourceAddr());
-			bucketJson.put("asset", rri);
-			bucketAccounting.put(bucketJson);
-		}
-		txnJson.put("accounting_entries", bucketAccounting);
-
 		var key = new DatabaseEntry(Longs.toByteArray(stateVersion));
-		var value = new DatabaseEntry(txnJson.toString().getBytes(StandardCharsets.UTF_8));
+		var value = new DatabaseEntry(txn.getTxnId().getBytes());
 		transactions.putNoOverwrite(dbTxn, key, value);
 	}
 }
