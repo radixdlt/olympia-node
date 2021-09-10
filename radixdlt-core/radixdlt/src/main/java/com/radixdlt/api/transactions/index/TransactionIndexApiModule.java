@@ -70,7 +70,6 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.qualifier.ArchiveEndpoint;
-import com.radixdlt.api.qualifier.DeveloperEndpoint;
 import com.radixdlt.api.transactions.lookup.BerkeleyTransactionsByIdStore;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.functional.Failure;
