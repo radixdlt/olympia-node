@@ -7,3 +7,4 @@ Feature: Token Transfer
     Given I have two accounts with funds at a suitable Radix network
     And I transfer 5 XRD from the first account to the second
     Then the second account can transfer 4 XRD back to the first
+

@@ -1,25 +1,75 @@
-/*
- * (C) Copyright 2021 Radix DLT Ltd
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
- * Radix DLT Ltd licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in
- * compliance with the License.  You may obtain a copy of the
- * License at
+ * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at:
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * radixfoundation.org/licenses/LICENSE-v1
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied.  See the License for the specific
- * language governing permissions and limitations under the License.
+ * The Licensor hereby grants permission for the Canonical version of the Work to be
+ * published, distributed and used under or by reference to the Licensor’s trademark
+ * Radix ® and use of any unregistered trade names, logos or get-up.
+ *
+ * The Licensor provides the Work (and each Contributor provides its Contributions) on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
+ * including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT,
+ * MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * Whilst the Work is capable of being deployed, used and adopted (instantiated) to create
+ * a distributed ledger it is your responsibility to test and validate the code, together
+ * with all logic and performance of that code under all foreseeable scenarios.
+ *
+ * The Licensor does not make or purport to make and hereby excludes liability for all
+ * and any representation, warranty or undertaking in any form whatsoever, whether express
+ * or implied, to any entity or person, including any representation, warranty or
+ * undertaking, as to the functionality security use, value or other characteristics of
+ * any distributed ledger nor in respect the functioning or value of any tokens which may
+ * be created stored or transferred using the Work. The Licensor does not warrant that the
+ * Work or any use of the Work complies with any law or regulation in any territory where
+ * it may be implemented or used or that it will be appropriate for any specific purpose.
+ *
+ * Neither the licensor nor any current or former employees, officers, directors, partners,
+ * trustees, representatives, agents, advisors, contractors, or volunteers of the Licensor
+ * shall be liable for any direct or indirect, special, incidental, consequential or other
+ * losses of any kind, in tort, contract or otherwise (including but not limited to loss
+ * of revenue, income or profits, or loss of use or data, or loss of reputation, or loss
+ * of any economic or other opportunity of whatsoever nature or howsoever arising), arising
+ * out of or in connection with (without limitation of any use, misuse, of any ledger system
+ * or use made or its functionality or any performance or operation of any code or protocol
+ * caused by bugs or programming or logic errors or otherwise);
+ *
+ * A. any offer, purchase, holding, use, sale, exchange or transmission of any
+ * cryptographic keys, tokens or assets created, exchanged, stored or arising from any
+ * interaction with the Work;
+ *
+ * B. any failure in a transmission or loss of any token or assets keys or other digital
+ * artefacts due to errors in transmission;
+ *
+ * C. bugs, hacks, logic errors or faults in the Work or any communication;
+ *
+ * D. system software or apparatus including but not limited to losses caused by errors
+ * in holding or transmitting tokens by any third-party;
+ *
+ * E. breaches or failure of security including hacker attacks, loss or disclosure of
+ * password, loss of private key, unauthorised use or misuse of such passwords or keys;
+ *
+ * F. any losses including loss of anticipated savings or other benefits resulting from
+ * use of the Work or any changes to the Work (however implemented).
+ *
+ * You are solely responsible for; testing, validating and evaluation of all operation
+ * logic, functionality, security and appropriateness of using the Work for any commercial
+ * or non-commercial purpose and for any reproduction or redistribution by You of the
+ * Work. You assume all risks associated with Your use of the Work and the exercise of
+ * permissions under this License.
  */
 
 package com.radixdlt.api.service;
 
+import com.radixdlt.atom.actions.UpdateValidatorFee;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+
 import org.json.JSONArray;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.atom.actions.BurnToken;
@@ -33,37 +83,26 @@ import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
-import com.radixdlt.utils.functional.Result;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class ActionParserServiceTest {
 	private final REAddr from = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 	private final REAddr to = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 	private final REAddr rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "ckee");
-	private final RriParser rriParser = mock(RriParser.class);
-	private final ActionParserService actionParserService = new ActionParserService(rriParser);
-
-	@Before
-	public void setup() {
-		when(rriParser.parse(any())).thenReturn(Result.ok(rri));
-	}
+	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
+	private final ActionParserService actionParserService = new ActionParserService(addressing);
 
 	@Test
 	public void transferActionIsParsedCorrectly() {
-		var fromAddr = AccountAddress.of(from);
-		var toAddr = AccountAddress.of(to);
+		var fromAddr = addressing.forAccounts().of(from);
+		var toAddr = addressing.forAccounts().of(to);
 		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, fromAddr, toAddr, UInt256.SIX, rri));
+		var actions = jsonArray(String.format(source, fromAddr, toAddr, UInt256.SIX, addressing.forResources().of("ckee", rri)));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)
@@ -88,8 +127,8 @@ public class ActionParserServiceTest {
 	@Test
 	public void stakeActionIsParsedCorrectly() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
-		var fromAddr = AccountAddress.of(from);
+		var validatorAddr = addressing.forValidators().of(key);
+		var fromAddr = addressing.forAccounts().of(from);
 		var source = "[{\"type\":\"StakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, validatorAddr, UInt256.NINE));
 
@@ -115,8 +154,8 @@ public class ActionParserServiceTest {
 	@Test
 	public void unstakeActionIsParsedCorrectly() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
-		var accountAddr = AccountAddress.of(from);
+		var validatorAddr = addressing.forValidators().of(key);
+		var accountAddr = addressing.forAccounts().of(from);
 		var source = "[{\"type\":\"UnstakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, accountAddr, validatorAddr, UInt256.EIGHT));
 
@@ -141,10 +180,10 @@ public class ActionParserServiceTest {
 
 	@Test
 	public void mintTokensIsParsedCorrectly() {
-		var toAccount = AccountAddress.of(to);
+		var toAccount = addressing.forAccounts().of(to);
 
 		var source = "[{\"type\":\"MintTokens\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, toAccount, UInt256.NINE, rri));
+		var actions = jsonArray(String.format(source, toAccount, UInt256.NINE, addressing.forResources().of("ckee", rri)));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)
@@ -167,10 +206,10 @@ public class ActionParserServiceTest {
 
 	@Test
 	public void burnTokensIsParsedCorrectly() {
-		var fromAddr = AccountAddress.of(from);
+		var fromAddr = addressing.forAccounts().of(from);
 
 		var source = "[{\"type\":\"BurnTokens\", \"from\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
-		var actions = jsonArray(String.format(source, fromAddr, UInt256.FIVE, rri));
+		var actions = jsonArray(String.format(source, fromAddr, UInt256.FIVE, addressing.forResources().of("ckee", rri)));
 
 		actionParserService.parse(actions)
 			.onFailure(this::fail)
@@ -194,7 +233,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void registerValidatorIsParsedCorrectlyWithUrlAndName() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = addressing.forValidators().of(key);
 
 		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
@@ -219,7 +258,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void registerValidatorIsParsedCorrectlyWithUrl() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = addressing.forValidators().of(key);
 
 		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
@@ -244,7 +283,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void registerValidatorIsParsedCorrectly() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = addressing.forValidators().of(key);
 
 		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
@@ -267,11 +306,11 @@ public class ActionParserServiceTest {
 	}
 
 	@Test
-	public void updateValidatorIsParsedCorrectlyWithUrlAndName() {
+	public void updateValidatorMetadataIsParsedCorrectlyWithUrlAndName() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = addressing.forValidators().of(key);
 
-		var source = "[{\"type\":\"UpdateValidator\", \"validator\":\"%s\", \"name\":\"%s\", \"url\":\"%s\"}]";
+		var source = "[{\"type\":\"UpdateValidatorMetadata\", \"validator\":\"%s\", \"name\":\"%s\", \"url\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr, "validator 1", "http://localhost/"));
 
 		actionParserService.parse(actions)
@@ -294,11 +333,11 @@ public class ActionParserServiceTest {
 	}
 
 	@Test
-	public void updateValidatorIsParsedCorrectlyWithUrl() {
+	public void updateValidatorMetadataIsParsedCorrectlyWithUrl() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = addressing.forValidators().of(key);
 
-		var source = "[{\"type\":\"UpdateValidator\", \"validator\":\"%s\", \"url\":\"%s\"}]";
+		var source = "[{\"type\":\"UpdateValidatorMetadata\", \"validator\":\"%s\", \"url\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr, "http://localhost/"));
 
 		actionParserService.parse(actions)
@@ -321,11 +360,11 @@ public class ActionParserServiceTest {
 	}
 
 	@Test
-	public void updateValidatorIsParsedCorrectly() {
+	public void updateValidatorMetadataIsParsedCorrectly() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = addressing.forValidators().of(key);
 
-		var source = "[{\"type\":\"UpdateValidator\", \"validator\":\"%s\"}]";
+		var source = "[{\"type\":\"UpdateValidatorMetadata\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
 
 		actionParserService.parse(actions)
@@ -348,9 +387,59 @@ public class ActionParserServiceTest {
 	}
 
 	@Test
+	public void updateValidatorFeeIsParsedCorrectly() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = addressing.forValidators().of(key);
+
+		var source = "[{\"type\":\"UpdateValidatorFee\", \"validator\":\"%s\", \"validatorFee\":\"1.2345\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr));
+
+		actionParserService.parse(actions)
+			.onFailure(this::fail)
+			.onSuccess(parsed -> {
+				assertEquals(1, parsed.size());
+
+				parsed.get(0).toAction().findAny()
+					.filter(UpdateValidatorFee.class::isInstance)
+					.map(UpdateValidatorFee.class::cast)
+					.ifPresentOrElse(
+						updateValidatorFee -> {
+							assertEquals(key, updateValidatorFee.validatorKey());
+							assertEquals(123, updateValidatorFee.getFeePercentage());
+						},
+						Assert::fail
+					);
+			});
+	}
+
+	@Test
+	public void updateValidatorFeeIsCheckedForUpperBound() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = addressing.forValidators().of(key);
+
+		var source = "[{\"type\":\"UpdateValidatorFee\", \"validator\":\"%s\", \"validatorFee\":\"100.1\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr));
+
+		actionParserService.parse(actions)
+			.onSuccessDo(this::failureExpected);
+	}
+
+	@Test
+	public void updateValidatorFeeIsCheckedForLowerBound() {
+		var key = ECKeyPair.generateNew().getPublicKey();
+		var validatorAddr = addressing.forValidators().of(key);
+
+		var source = "[{\"type\":\"UpdateValidatorFee\", \"validator\":\"%s\", \"validatorFee\":\"-0.01\"}]";
+		var actions = jsonArray(String.format(source, validatorAddr));
+
+		actionParserService.parse(actions)
+			.onSuccessDo(this::failureExpected);
+	}
+
+	@Test
 	public void unregisterValidatorIsParsedCorrectlyWithUrlAndName() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = addressing.forValidators().of(key);
 
 		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
@@ -375,7 +464,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void unregisterValidatorIsParsedCorrectlyWithUrl() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = addressing.forValidators().of(key);
 
 		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
@@ -400,7 +489,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void unregisterValidatorIsParsedCorrectly() {
 		var key = ECKeyPair.generateNew().getPublicKey();
-		var validatorAddr = ValidatorAddress.of(key);
+		var validatorAddr = addressing.forValidators().of(key);
 
 		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
@@ -424,10 +513,10 @@ public class ActionParserServiceTest {
 
 	@Test
 	public void createFixedTokenIsParsedCorrectly() {
-		var fromAddr = AccountAddress.of(from);
+		var fromAddr = addressing.forAccounts().of(from);
 		var signer = ECKeyPair.generateNew().getPublicKey();
 
-		var source = "[{\"type\":\"CreateFixedSupplyToken\", \"from\":\"%s\", \"publicKeyOfSigner\":\"%s\", \"symbol\":\"%s\", "
+		var source = "[{\"type\":\"CreateFixedSupplyToken\", \"to\":\"%s\", \"publicKeyOfSigner\":\"%s\", \"symbol\":\"%s\", "
 			+ "\"name\":\"%s\", \"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\", \"supply\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, signer.toHex(), "symbol",
 											  "name", "description", "http://icon.url/", "http://token.url/", UInt256.TEN
@@ -444,7 +533,7 @@ public class ActionParserServiceTest {
 					.ifPresentOrElse(
 						create -> {
 							assertEquals(from, create.getAccountAddr());
-							assertEquals(REAddr.ofPubKeyAccount(signer), create.getResourceAddr());
+							assertEquals(REAddr.ofHashedKey(signer, create.getSymbol()), create.getResourceAddr());
 							assertEquals("symbol", create.getSymbol());
 							assertEquals("name", create.getName());
 							assertEquals("description", create.getDescription());
@@ -460,7 +549,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void createMutableTokenIsParsedCorrectlyWithOptionalElements() {
 		var publicKey = ECKeyPair.generateNew().getPublicKey();
-		var fromAddr = AccountAddress.of(from);
+		var fromAddr = addressing.forAccounts().of(from);
 		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"from\":\"%s\", \"symbol\":\"%s\", \"name\":\"%s\", "
 			+ "\"description\":\"%s\", \"iconUrl\":\"%s\", \"tokenUrl\":\"%s\", \"publicKeyOfSigner\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, "symbol", "name",
@@ -491,7 +580,7 @@ public class ActionParserServiceTest {
 	@Test
 	public void createMutableTokenIsParsedCorrectlyWithoutOptionalElements() {
 		var publicKey = ECKeyPair.generateNew().getPublicKey();
-		var fromAddr = AccountAddress.of(from);
+		var fromAddr = addressing.forAccounts().of(from);
 		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"from\":\"%s\",  \"symbol\":\"%s\", \"name\":\"%s\", \"publicKeyOfSigner\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, "symbol", "name", publicKey.toHex()));
 
@@ -542,5 +631,9 @@ public class ActionParserServiceTest {
 
 	private void fail(Failure failure) {
 		Assert.fail(failure.message());
+	}
+
+	private void failureExpected() {
+		Assert.fail("Expected failure result, got success instead");
 	}
 }

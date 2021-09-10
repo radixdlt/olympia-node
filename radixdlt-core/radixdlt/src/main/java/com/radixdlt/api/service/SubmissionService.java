@@ -1,42 +1,90 @@
-/*
- * (C) Copyright 2021 Radix DLT Ltd
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
- * Radix DLT Ltd licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in
- * compliance with the License.  You may obtain a copy of the
- * License at
+ * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at:
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * radixfoundation.org/licenses/LICENSE-v1
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied.  See the License for the specific
- * language governing permissions and limitations under the License.
+ * The Licensor hereby grants permission for the Canonical version of the Work to be
+ * published, distributed and used under or by reference to the Licensor’s trademark
+ * Radix ® and use of any unregistered trade names, logos or get-up.
+ *
+ * The Licensor provides the Work (and each Contributor provides its Contributions) on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
+ * including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT,
+ * MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * Whilst the Work is capable of being deployed, used and adopted (instantiated) to create
+ * a distributed ledger it is your responsibility to test and validate the code, together
+ * with all logic and performance of that code under all foreseeable scenarios.
+ *
+ * The Licensor does not make or purport to make and hereby excludes liability for all
+ * and any representation, warranty or undertaking in any form whatsoever, whether express
+ * or implied, to any entity or person, including any representation, warranty or
+ * undertaking, as to the functionality security use, value or other characteristics of
+ * any distributed ledger nor in respect the functioning or value of any tokens which may
+ * be created stored or transferred using the Work. The Licensor does not warrant that the
+ * Work or any use of the Work complies with any law or regulation in any territory where
+ * it may be implemented or used or that it will be appropriate for any specific purpose.
+ *
+ * Neither the licensor nor any current or former employees, officers, directors, partners,
+ * trustees, representatives, agents, advisors, contractors, or volunteers of the Licensor
+ * shall be liable for any direct or indirect, special, incidental, consequential or other
+ * losses of any kind, in tort, contract or otherwise (including but not limited to loss
+ * of revenue, income or profits, or loss of use or data, or loss of reputation, or loss
+ * of any economic or other opportunity of whatsoever nature or howsoever arising), arising
+ * out of or in connection with (without limitation of any use, misuse, of any ledger system
+ * or use made or its functionality or any performance or operation of any code or protocol
+ * caused by bugs or programming or logic errors or otherwise);
+ *
+ * A. any offer, purchase, holding, use, sale, exchange or transmission of any
+ * cryptographic keys, tokens or assets created, exchanged, stored or arising from any
+ * interaction with the Work;
+ *
+ * B. any failure in a transmission or loss of any token or assets keys or other digital
+ * artefacts due to errors in transmission;
+ *
+ * C. bugs, hacks, logic errors or faults in the Work or any communication;
+ *
+ * D. system software or apparatus including but not limited to losses caused by errors
+ * in holding or transmitting tokens by any third-party;
+ *
+ * E. breaches or failure of security including hacker attacks, loss or disclosure of
+ * password, loss of private key, unauthorised use or misuse of such passwords or keys;
+ *
+ * F. any losses including loss of anticipated savings or other benefits resulting from
+ * use of the Work or any changes to the Work (however implemented).
+ *
+ * You are solely responsible for; testing, validating and evaluation of all operation
+ * logic, functionality, security and appropriateness of using the Work for any commercial
+ * or non-commercial purpose and for any reproduction or redistribution by You of the
+ * Work. You assume all risks associated with Your use of the Work and the exercise of
+ * permissions under this License.
  */
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.statecomputer.forks.MainnetForkRulesModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.PayFee;
+import com.radixdlt.atom.UnsignedTxnData;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.functional.Result;
@@ -71,41 +119,47 @@ public final class SubmissionService {
 			UNABLE_TO_PREPARE_TX,
 			() -> radixEngine.construct(toConstructionRequest(address, steps, message, disableResourceAllocAndDestroy))
 				.buildForExternalSign()
-				.map(this::toPreparedTx)
-		);
+		).map(this::toPreparedTx);
 	}
 
 	private TxnConstructionRequest toConstructionRequest(
-		REAddr addr,
+		REAddr feePayer,
 		List<TransactionAction> steps,
 		Optional<String> message,
 		boolean disableResourceAllocAndDestroy
 	) {
-		var txnConstructionRequest = TxnConstructionRequest.create();
+		var txnConstructionRequest = TxnConstructionRequest.create().feePayer(feePayer);
 		if (disableResourceAllocAndDestroy) {
 			txnConstructionRequest.disableResourceAllocAndDestroy();
 		}
-		txnConstructionRequest.action(new PayFee(addr, MainnetForkRulesModule.FIXED_FEE));
 		steps.stream().flatMap(TransactionAction::toAction).forEach(txnConstructionRequest::action);
 		message.map(t -> t.getBytes(RadixConstants.STANDARD_CHARSET)).ifPresent(txnConstructionRequest::msg);
 		return txnConstructionRequest;
 	}
 
-	public Result<AID> calculateTxId(byte[] blob, ECDSASignature recoverable) {
-		return Result.ok(buildTxn(blob, recoverable)).map(Txn::getId);
+	public Result<Txn> finalizeTxn(byte[] blob, ECDSASignature recoverable, boolean immediateSubmit) {
+		return Result.ok(buildTxn(blob, recoverable)).flatMap(txn -> submitNow(txn, immediateSubmit));
 	}
 
-	public Result<AID> submitTx(byte[] blob, ECDSASignature recoverable, AID txId) {
-		var txn = buildTxn(blob, recoverable);
+	private Result<Txn> submitNow(Txn txn, boolean immediateSubmit) {
+		return immediateSubmit ? submit(txn) : Result.ok(txn);
+	}
 
-		if (!txn.getId().equals(txId)) {
+	public Result<Txn> submitTx(byte[] blob, Optional<AID> txId) {
+		var txn = TxLowLevelBuilder.newBuilder(blob).build();
+
+		if (!sameTxId(txId, txn.getId())) {
 			return TRANSACTION_ADDRESS_DOES_NOT_MATCH.result();
 		}
 
 		return submit(txn);
 	}
 
-	private Result<AID> submit(Txn txn) {
+	private boolean sameTxId(Optional<AID> txId, AID newId) {
+		return txId.map(newId::equals).orElse(true);
+	}
+
+	private Result<Txn> submit(Txn txn) {
 		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
 
@@ -113,14 +167,38 @@ public final class SubmissionService {
 
 		try {
 			var success = completableFuture.get();
-			return Result.ok(success.getTxn().getId());
+			return Result.ok(success.getTxn());
 		} catch (ExecutionException e) {
-			logger.warn("Unable to fulfill submission request: " + txn.getId() + ": ", e);
-			return SUBMISSION_FAILURE.with(e.getMessage()).result();
+			var cause = lookupCause(e);
+
+			logger.warn("Unable to fulfill submission request for TxID (" + txn.getId() + ")", e);
+			return SUBMISSION_FAILURE.with(cause.getMessage()).result();
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new IllegalStateException(e);
 		}
+	}
+
+	private Throwable lookupCause(Throwable e) {
+		var reportedException = e;
+
+		while (reportedException.getCause() instanceof MempoolRejectedException) {
+			reportedException = reportedException.getCause();
+		}
+
+		while (reportedException.getCause() instanceof RadixEngineException) {
+			reportedException = reportedException.getCause();
+		}
+
+		while (reportedException.getCause() instanceof ConstraintMachineException) {
+			reportedException = reportedException.getCause();
+		}
+
+		if (reportedException instanceof  ConstraintMachineException && reportedException.getCause() != null) {
+			reportedException = reportedException.getCause();
+		}
+
+		return reportedException;
 	}
 
 	private Txn buildTxn(byte[] blob, ECDSASignature recoverable) {
@@ -134,10 +212,11 @@ public final class SubmissionService {
 		return prepareTransaction(address, steps, message, disableResourceAllocAndDestroy)
 			.onFailure(failure -> logger.error("Error preparing transaction {}", failure))
 			.map(prepared -> buildTxn(prepared.getBlob(), signer.sign(prepared.getHashToSign())))
-			.flatMap(this::submit);
+			.flatMap(this::submit)
+			.map(Txn::getId);
 	}
 
-	private PreparedTransaction toPreparedTx(byte[] first, HashCode second) {
-		return PreparedTransaction.create(first, second.asBytes(), MainnetForkRulesModule.FIXED_FEE);
+	private PreparedTransaction toPreparedTx(UnsignedTxnData unsignedTxnData) {
+		return PreparedTransaction.create(unsignedTxnData.blob(), unsignedTxnData.hashToSign().asBytes(), unsignedTxnData.feesPaid());
 	}
 }

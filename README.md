@@ -6,6 +6,7 @@ Distributed Ledger.
 It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/1803.05069) BFT-style consensus.
 
 ## Subdirectories
+
 Here we have:
 
 - [radixdlt-core](radixdlt-core/README.md): The core consensus and networking modules
@@ -14,6 +15,8 @@ Here we have:
 - [radixdlt-java-common](radixdlt-java-common/README.md): Common Java utilities used by various modules
 
 ## Contribute
+
+To contribute, you'll need to [setup development environment](docs/development/README.md).
 
 [Contributions](CONTRIBUTING.md) are welcome, we simply ask to:
 
@@ -36,4 +39,4 @@ Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions
 
 ## License
 
-The `radixdlt-core`, `radixdlt-engine`, `radixdlt-java-common` code is released under the [Apache 2.0 License](LICENSE).
+The `radixdlt-core`, `radixdlt-engine`, `radixdlt-java-common` code is released under the [Radix License](LICENSE).

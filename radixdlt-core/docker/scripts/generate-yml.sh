@@ -77,16 +77,17 @@ do
     p0=$(printf "%04d" $(( port_param+i )))
     p1=$(printf "%02d" $(( 11+i )))
     p2=$(printf "%02d" $(( 5+i )))
+    p3=$(printf "%04d" $(( 3333+i )))
 
     for ((j=0;j<$validators;j++));
     do
         if [ $j -ne $i ]
         then
-            nodelist="$nodelist,core$j"
+            nodelist="$nodelist,radix://\${RADIXDLT_VALIDATOR_${j}_PUBKEY}@core${j}"
         else
             if [ $validators -eq 1 ]
             then
-                nodelist=",core0"
+                nodelist=",radix://\${RADIXDLT_VALIDATOR_${j}_PUBKEY}@core0"
             fi
         fi
     done
@@ -99,11 +100,12 @@ do
     echo "      service: core">>${file_name}
     echo "    environment:">>${file_name}
     echo "      RADIXDLT_HOST_IP_ADDRESS: core${i}">>${file_name}
-    echo "      RADIXDLT_NETWORK_SEEDS_REMOTE: ${nodelist}">>${file_name}
-    echo "      RADIXDLT_NODE_KEY: \${RADIXDLT_VALIDATOR_${i}_PRIVKEY:?err}">>${file_name}
+    echo "      RADIXDLT_NETWORK_SEEDS_REMOTE: \"${nodelist}\"">>${file_name}
+    echo "      RADIXDLT_NODE_KEY: \${RADIXDLT_VALIDATOR_${i}_PRIVKEY}">>${file_name}
     echo "    networks:">>${file_name}
     echo "      - $network_name">>${file_name}
     echo "    ports:">>${file_name}
+    echo "      - \"${p3}:3333\"">>${file_name}
     echo "      - \"${p0}:8080\"">>${file_name}
     echo "      - \"90${p1}:9011\"">>${file_name}
     echo "      - \"505${p2}:50505\"">>${file_name}

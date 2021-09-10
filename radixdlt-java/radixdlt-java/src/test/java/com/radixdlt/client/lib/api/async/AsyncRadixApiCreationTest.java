@@ -1,18 +1,65 @@
-/*
- * (C) Copyright 2021 Radix DLT Ltd
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
- * Radix DLT Ltd licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in
- * compliance with the License.  You may obtain a copy of the
- * License at
+ * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at:
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * radixfoundation.org/licenses/LICENSE-v1
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied.  See the License for the specific
- * language governing permissions and limitations under the License.
+ * The Licensor hereby grants permission for the Canonical version of the Work to be
+ * published, distributed and used under or by reference to the Licensor’s trademark
+ * Radix ® and use of any unregistered trade names, logos or get-up.
+ *
+ * The Licensor provides the Work (and each Contributor provides its Contributions) on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
+ * including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT,
+ * MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * Whilst the Work is capable of being deployed, used and adopted (instantiated) to create
+ * a distributed ledger it is your responsibility to test and validate the code, together
+ * with all logic and performance of that code under all foreseeable scenarios.
+ *
+ * The Licensor does not make or purport to make and hereby excludes liability for all
+ * and any representation, warranty or undertaking in any form whatsoever, whether express
+ * or implied, to any entity or person, including any representation, warranty or
+ * undertaking, as to the functionality security use, value or other characteristics of
+ * any distributed ledger nor in respect the functioning or value of any tokens which may
+ * be created stored or transferred using the Work. The Licensor does not warrant that the
+ * Work or any use of the Work complies with any law or regulation in any territory where
+ * it may be implemented or used or that it will be appropriate for any specific purpose.
+ *
+ * Neither the licensor nor any current or former employees, officers, directors, partners,
+ * trustees, representatives, agents, advisors, contractors, or volunteers of the Licensor
+ * shall be liable for any direct or indirect, special, incidental, consequential or other
+ * losses of any kind, in tort, contract or otherwise (including but not limited to loss
+ * of revenue, income or profits, or loss of use or data, or loss of reputation, or loss
+ * of any economic or other opportunity of whatsoever nature or howsoever arising), arising
+ * out of or in connection with (without limitation of any use, misuse, of any ledger system
+ * or use made or its functionality or any performance or operation of any code or protocol
+ * caused by bugs or programming or logic errors or otherwise);
+ *
+ * A. any offer, purchase, holding, use, sale, exchange or transmission of any
+ * cryptographic keys, tokens or assets created, exchanged, stored or arising from any
+ * interaction with the Work;
+ *
+ * B. any failure in a transmission or loss of any token or assets keys or other digital
+ * artefacts due to errors in transmission;
+ *
+ * C. bugs, hacks, logic errors or faults in the Work or any communication;
+ *
+ * D. system software or apparatus including but not limited to losses caused by errors
+ * in holding or transmitting tokens by any third-party;
+ *
+ * E. breaches or failure of security including hacker attacks, loss or disclosure of
+ * password, loss of private key, unauthorised use or misuse of such passwords or keys;
+ *
+ * F. any losses including loss of anticipated savings or other benefits resulting from
+ * use of the Work or any changes to the Work (however implemented).
+ *
+ * You are solely responsible for; testing, validating and evaluation of all operation
+ * logic, functionality, security and appropriateness of using the Work for any commercial
+ * or non-commercial purpose and for any reproduction or redistribution by You of the
+ * Work. You assume all risks associated with Your use of the Work and the exercise of
+ * permissions under this License.
  */
 package com.radixdlt.client.lib.api.async;
 
@@ -22,7 +69,9 @@ import org.junit.Test;
 
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
+import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -35,143 +84,188 @@ import com.radixdlt.utils.UInt256;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static com.radixdlt.client.lib.api.token.Amount.amount;
+
+//TODO: test remaining actions!!!
 public class AsyncRadixApiCreationTest {
 	private static final String BASE_URL = "http://localhost/";
 	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
 	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
+	public static final ECKeyPair KEY_PAIR3 = keyPairOf(3);
 	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
 	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
+	private static final AccountAddress ACCOUNT_ADDRESS3 = AccountAddress.create(KEY_PAIR3.getPublicKey());
+	private static final ValidatorAddress VALIDATOR_ADDRESS = ValidatorAddress.of(KEY_PAIR3.getPublicKey());
 
-	private static final String BUILT_TRANSACTION = "{\"result\":{\"fee\":\"100000000000000000\","
-		+ "\"transaction\":{\"blob\":\"04391cb03c5195e82ee9ec92d48d8a65b6ce9c9c98b3dd80eb195d418a0"
-		+ "fd3e1df0000000304d1a119a0a76e66bed56bb50209896c8838bebbe559d2a0e1ea16090ff9e689ca000000"
-		+ "02092100000000000000000000000000000000000000000000000000016345785d8a0000010301040279be6"
-		+ "67ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798000000000000000000000000002c"
-		+ "d76fe086b93ce2f768a006f8cf96e761fffc000500000003010301040279be667ef9dcbbac55a06295ce870"
-		+ "b07029bfcdb2dce28d959f2815b16f81798000000000000000000000000002cd76fe086b93ce2f768a006f8"
-		+ "cf96e761fff30103010402c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee50"
-		+ "00000000000000000000000000000000000000000000000000000000000000900060c54657374206d657373"
-		+ "616765\",\"hashOfBlobToSign\":\"c102c08beb1dfe78abc3060a675e4d748d2bd6c2e70261341b1edd83688638a8\"}},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String NETWORK_ID = "{\"result\":{\"networkId\":2},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
+	private static final String BUILT_TRANSACTION = "{\"result\":{\"fee\":\"73800000000000000\",\"transaction\":{\"blob\":"
+		+ "\"060a104c95b2f14ca1c6500b519ad696bee17b7a982810c5e4fe43d39b979bfbc300000001012100000000000000000000000000000"
+		+ "000000000000000000000010630b5806c8000020500040279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817"
+		+ "98010000000000000000000000000000000000000000033b2e3730f52422c1c17ff6000700000000020500040279be667ef9dcbbac55a"
+		+ "06295ce870b07029bfcdb2dce28d959f2815b16f81798010000000000000000000000000000000000000000033b2e3730f52422c1c17f"
+		+ "ec0205000402c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5010000000000000000000000000000000"
+		+ "00000000000000000000000000000000a000b0c54657374206d657373616765\",\"hashOfBlobToSign\":\"76448a9f09e5bb9fbce1"
+		+ "1844731e8a7e28601733100787462401f47916bbc4ac\"}},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
 
-	private static final String FINALIZE_TRANSACTION = "{\"result\":{\"txID\":"
-		+ "\"a41e12e424431e8f5f8b86eddc36fb84c6a1811d9005607258f799675a3bc338\"},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String BLOB = "060a104c95b2f14ca1c6500b519ad696bee17b7a982810c5e4fe43d39b979bfbc300000001012100"
+		+ "000000000000000000000000000000000000000000000000010630b5806c8000020500040279be667ef9dcbbac55a06295ce870b07029"
+		+ "bfcdb2dce28d959f2815b16f81798010000000000000000000000000000000000000000033b2e3730f52422c1c17ff600070000000002"
+		+ "0500040279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817980100000000000000000000000000000000000"
+		+ "00000033b2e3730f52422c1c17fec0205000402c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5010000"
+		+ "00000000000000000000000000000000000000000000000000000000000a000b0c54657374206d657373616765";
+
+	private static final String TX_ID = "a84843d8c51f92a872a926cd29a2074f1c85bf47392a2fd0e41a4272e38f1aa5";
+	private static final String SIG = "3045022100f179714d7577a105d0a37891bc149ed6ba519435dcc53340f0467611e0d31bb40220388"
+		+ "dfd1e25b25a80366fc70415334d1e4af259aee5685e93a8cd03004e1a8157";
+	private static final String PUB_KEY = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+
+	private static final String FINALIZE_TRANSACTION = "{\"result\":{\"blob\":\"060a104c95b2f14ca1c6500b519ad696bee17b7a"
+		+ "982810c5e4fe43d39b979bfbc300000001012100000000000000000000000000000000000000000000000000010630b5806c800002050"
+		+ "0040279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817980100000000000000000000000000000000000000"
+		+ "00033b2e3730f52422c1c17ff6000700000000020500040279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81"
+		+ "798010000000000000000000000000000000000000000033b2e3730f52422c1c17fec0205000402c6047f9441ed7d6d3045406e95c07c"
+		+ "d85c778e4b8cef3ca7abac09b95c709ee501000000000000000000000000000000000000000000000000000000000000000a000b0c546"
+		+ "57374206d6573736167650a01f179714d7577a105d0a37891bc149ed6ba519435dcc53340f0467611e0d31bb4388dfd1e25b25a80366f"
+		+ "c70415334d1e4af259aee5685e93a8cd03004e1a8157\",\"txID\":\"a84843d8c51f92a872a926cd29a2074f1c85bf47392a2fd0e41"
+		+ "a4272e38f1aa5\"},\"id\":\"3\",\"jsonrpc\":\"2.0\"}";
+	private static final String SUBMIT_TRANSACTION = "{\"result\":{\"txID\":\"a84843d8c51f92a872a926cd29a2074f1c85bf4739"
+		+ "2a2fd0e41a4272e38f1aa5\"},\"id\":\"4\",\"jsonrpc\":\"2.0\"}";
 
 	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
 	public void testBuildTransaction() throws IOException {
-		var hash = Hex.decode("c102c08beb1dfe78abc3060a675e4d748d2bd6c2e70261341b1edd83688638a8");
+		var hash = Hex.decode("76448a9f09e5bb9fbce11844731e8a7e28601733100787462401f47916bbc4ac");
 
-		var request = TransactionRequest.createBuilder()
-			.transfer(
-				ACCOUNT_ADDRESS1,
-				ACCOUNT_ADDRESS2,
-				UInt256.NINE,
-				"xrd_rb1qya85pwq"
-			)
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
+			.transfer(ACCOUNT_ADDRESS1, ACCOUNT_ADDRESS2, amount(10).subunits(), "xrd_dr1qyrs8qwl")
 			.message("Test message")
 			.build();
 
 		prepareClient(BUILT_TRANSACTION)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.transaction().build(request)
+			.onSuccess(client -> client.transaction().build(request).join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(dto -> assertEquals(UInt256.from(100000000000000000L), dto.getFee()))
-				.onSuccess(dto -> assertArrayEquals(hash, dto.getTransaction().getHashToSign()))
-				.join())
-			.join();
+				.onSuccess(dto -> assertEquals(amount(73800).micros(), dto.getFee()))
+				.onSuccess(dto -> assertArrayEquals(hash, dto.getTransaction().getHashToSign())));
 	}
 
 	@Test
 	public void testFinalizeTransaction() throws Exception {
 		var request = buildFinalizedTransaction();
-		var txId = AID.from("a41e12e424431e8f5f8b86eddc36fb84c6a1811d9005607258f799675a3bc338");
+		var txId = AID.from(TX_ID);
 
 		prepareClient(FINALIZE_TRANSACTION)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.transaction().finalize(request)
+			.onSuccess(client -> client.transaction().finalize(request, false).join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(dto -> assertEquals(txId, dto.getTxId()))
-				.join())
-			.join();
+				.onSuccess(dto -> assertEquals(txId, dto.getTxId())));
 	}
 
 	@Test
 	public void testSubmitTransaction() throws Exception {
-		var txId = AID.from("a41e12e424431e8f5f8b86eddc36fb84c6a1811d9005607258f799675a3bc338");
-		var request = buildFinalizedTransaction().withTxId(txId);
+		var txId = AID.from(TX_ID);
+		var request = buildBlobDto();
 
-		prepareClient(FINALIZE_TRANSACTION)
+		prepareClient(SUBMIT_TRANSACTION)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.transaction().submit(request)
+			.onSuccess(client -> client.transaction().submit(request).join()
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(dto -> assertEquals(txId, dto.getTxId()))
-				.join())
-			.join();
+				.onSuccess(dto -> assertEquals(txId, dto.getTxId())));
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Online test")
 	public void testBuildAndSubmitTransactionWithMessage() {
-		var request = TransactionRequest.createBuilder()
-			.transfer(
-				ACCOUNT_ADDRESS1,
-				ACCOUNT_ADDRESS2,
-				UInt256.NINE,
-				"xrd_rb1qya85pwq"
-			)
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
+			.transfer(ACCOUNT_ADDRESS1, ACCOUNT_ADDRESS2, UInt256.NINE, "xrd_dr1qyrs8qwl")
 			.message("Test message")
 			.build();
 
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
+			.join()
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.transaction().build(request).join()
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(builtTransaction -> assertEquals(amount(73800).micros(), builtTransaction.getFee()))
+				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
+				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true).join()
+					.onFailure(failure -> fail(failure.toString()))));
+	}
+
+	@Test
+	@Ignore("Online test")
+	public void testCreateFixedSupplyToken() {
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
+			.createFixed(ACCOUNT_ADDRESS1, KEY_PAIR1.getPublicKey(),
+						 "fix", "fix", "fix",
+						 "https://some.host.com/", "https://some.other.host.com",
+						 amount(1000).tokens())
+			.build();
+
+		RadixApi.connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.join()
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> client.transaction().build(request)
+				.join()
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(builtTransaction -> assertEquals(amount(1000109).millis(), builtTransaction.getFee()))
+				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
+				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
+					.join()
+					.onFailure(failure -> fail(failure.toString()))));
+	}
+
+	@Test
+	@Ignore("Online test")
+	//TODO: for some reason operation succeeds only if transaction contains only one action
+	public void testRegisterValidator() {
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS3)
+			.registerValidator(VALIDATOR_ADDRESS, Optional.of("MyValidator"), Optional.of("http://my.validator.url.com/"))
+			.updateValidatorFee(VALIDATOR_ADDRESS, 3.1)
+			.updateValidatorOwner(VALIDATOR_ADDRESS, ACCOUNT_ADDRESS3)
+			.updateValidatorAllowDelegationFlag(VALIDATOR_ADDRESS, true)
+			.build();
+
+		RadixApi.connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.transaction().build(request)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
-				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction)
-					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-					.map(txDTO -> finalizedTransaction.withTxId(txDTO.getTxId()))
-					.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
-						.onFailure(failure -> fail(failure.toString()))
-						.onSuccess(txDTO -> submittableTransaction.rawTxId()
-							.ifPresentOrElse(aid -> assertEquals(aid, txDTO.getTxId()), () -> fail("Should not happen")))
-						.join()))
-				.join())
-			.join();
+				.onSuccess(builtTransaction -> assertEquals(amount(102600).micros(), builtTransaction.getFee()))
+				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR3))
+				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true).join()
+					.onFailure(failure -> fail(failure.toString()))));
+	}
+
+	private TxBlobDTO buildBlobDto() {
+		return TxBlobDTO.create(AID.from(TX_ID), BLOB);
 	}
 
 	private FinalizedTransaction buildFinalizedTransaction() throws PublicKeyException {
-		var blob = Hex.decode("0103010402c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee"
-								  + "5000000000000000000000000000000000000000000000000000000000000000904fcdcdd43e66c"
-								  + "ff732ba9a0cbd484cdd9fa9579388b67e3878fd981280a48372e00000003010301040279be667ef"
-								  + "9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798000000000000000000000000"
-								  + "002cd76fe086b93ce2f768a00b229ffffffffff7000500000002010301040279be667ef9dcbbac5"
-								  + "5a06295ce870b07029bfcdb2dce28d959f2815b16f81798000000000000000000000000002cd76f"
-								  + "e086b93ce2f768a009bf5a87a275fff700");
-		var sig = ECDSASignature.decodeFromHexDer("30440220768a67a36549e11f19ddb6e2c172c3"
-													  + "f2f2996600413f1d2f246667ab2de81ddf0220"
-													  + "70f3bb613bcba2704728b99fad91668e2d6759"
-													  + "3f73b7c3567eae61596242f64c");
-
-		var pubkey = ECPublicKey.fromHex("0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce"
-											 + "28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8"
-											 + "fd17b448a68554199c47d08ffb10d4b8");
-		return FinalizedTransaction.create(blob, sig, pubkey, null);
+		var sig = ECDSASignature.decodeFromHexDer(SIG);
+		var publicKey = ECPublicKey.fromHex(PUB_KEY);
+		var blob = buildBlobDto();
+		return FinalizedTransaction.create(blob.getBlob(), sig, publicKey, blob.getTxId());
 	}
 
 	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
@@ -179,14 +273,11 @@ public class AsyncRadixApiCreationTest {
 		var response = (HttpResponse<String>) mock(HttpResponse.class);
 		var completableFuture = new CompletableFuture<HttpResponse<String>>();
 
-		when(response.body()).thenReturn(responseBody);
+		when(response.body()).thenReturn(NETWORK_ID, responseBody);
 		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
 
-		try {
-			return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client);
-		} finally {
-			completableFuture.completeAsync(() -> response);
-		}
+		completableFuture.completeAsync(() -> response);
+		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 
 	private static ECKeyPair keyPairOf(int pk) {

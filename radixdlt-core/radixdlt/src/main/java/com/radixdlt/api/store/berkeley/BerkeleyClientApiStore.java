@@ -1,18 +1,65 @@
-/*
- * (C) Copyright 2021 Radix DLT Ltd
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
- * Radix DLT Ltd licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in
- * compliance with the License.  You may obtain a copy of the
- * License at
+ * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at:
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * radixfoundation.org/licenses/LICENSE-v1
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied.  See the License for the specific
- * language governing permissions and limitations under the License.
+ * The Licensor hereby grants permission for the Canonical version of the Work to be
+ * published, distributed and used under or by reference to the Licensor’s trademark
+ * Radix ® and use of any unregistered trade names, logos or get-up.
+ *
+ * The Licensor provides the Work (and each Contributor provides its Contributions) on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
+ * including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT,
+ * MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * Whilst the Work is capable of being deployed, used and adopted (instantiated) to create
+ * a distributed ledger it is your responsibility to test and validate the code, together
+ * with all logic and performance of that code under all foreseeable scenarios.
+ *
+ * The Licensor does not make or purport to make and hereby excludes liability for all
+ * and any representation, warranty or undertaking in any form whatsoever, whether express
+ * or implied, to any entity or person, including any representation, warranty or
+ * undertaking, as to the functionality security use, value or other characteristics of
+ * any distributed ledger nor in respect the functioning or value of any tokens which may
+ * be created stored or transferred using the Work. The Licensor does not warrant that the
+ * Work or any use of the Work complies with any law or regulation in any territory where
+ * it may be implemented or used or that it will be appropriate for any specific purpose.
+ *
+ * Neither the licensor nor any current or former employees, officers, directors, partners,
+ * trustees, representatives, agents, advisors, contractors, or volunteers of the Licensor
+ * shall be liable for any direct or indirect, special, incidental, consequential or other
+ * losses of any kind, in tort, contract or otherwise (including but not limited to loss
+ * of revenue, income or profits, or loss of use or data, or loss of reputation, or loss
+ * of any economic or other opportunity of whatsoever nature or howsoever arising), arising
+ * out of or in connection with (without limitation of any use, misuse, of any ledger system
+ * or use made or its functionality or any performance or operation of any code or protocol
+ * caused by bugs or programming or logic errors or otherwise);
+ *
+ * A. any offer, purchase, holding, use, sale, exchange or transmission of any
+ * cryptographic keys, tokens or assets created, exchanged, stored or arising from any
+ * interaction with the Work;
+ *
+ * B. any failure in a transmission or loss of any token or assets keys or other digital
+ * artefacts due to errors in transmission;
+ *
+ * C. bugs, hacks, logic errors or faults in the Work or any communication;
+ *
+ * D. system software or apparatus including but not limited to losses caused by errors
+ * in holding or transmitting tokens by any third-party;
+ *
+ * E. breaches or failure of security including hacker attacks, loss or disclosure of
+ * password, loss of private key, unauthorised use or misuse of such passwords or keys;
+ *
+ * F. any losses including loss of anticipated savings or other benefits resulting from
+ * use of the Work or any changes to the Work (however implemented).
+ *
+ * You are solely responsible for; testing, validating and evaluation of all operation
+ * logic, functionality, security and appropriateness of using the Work for any commercial
+ * or non-commercial purpose and for any reproduction or redistribution by You of the
+ * Work. You assume all risks associated with Your use of the Work and the exercise of
+ * permissions under this License.
  */
 
 package com.radixdlt.api.store.berkeley;
@@ -28,8 +75,8 @@ import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
-import com.radixdlt.api.Rri;
 import com.radixdlt.api.construction.TxnParser;
+import com.radixdlt.api.data.ActionEntry;
 import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.api.data.TxHistoryEntry;
@@ -37,27 +84,28 @@ import com.radixdlt.api.store.ClientApiStore;
 import com.radixdlt.api.store.ClientApiStoreException;
 import com.radixdlt.api.store.TokenDefinitionRecord;
 import com.radixdlt.api.store.TransactionParser;
+import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.system.state.RoundData;
+import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.atommodel.system.state.EpochData;
-import com.radixdlt.atommodel.system.state.RoundData;
-import com.radixdlt.atommodel.tokens.Bucket;
-import com.radixdlt.atommodel.tokens.state.TokenResource;
-import com.radixdlt.atomos.UnclaimedREAddr;
+import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.constraintmachine.TxnParseException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.AccountAddress;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ValidatorAddress;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.TxnsCommittedToLedger;
+import com.radixdlt.statecomputer.REOutput;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.UInt384;
@@ -122,7 +170,7 @@ import static com.radixdlt.serialization.DsonOutput.Output;
 import static com.radixdlt.serialization.SerializationUtils.restore;
 import static com.radixdlt.utils.functional.Result.wrap;
 
-public class BerkeleyClientApiStore implements ClientApiStore {
+public final class BerkeleyClientApiStore implements ClientApiStore {
 	private static final Logger log = LogManager.getLogger();
 
 	private static final String EXECUTED_TRANSACTIONS_DB = "radix.executed_transactions_db";
@@ -149,13 +197,15 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	private final Serialization serialization;
 	private final SystemCounters systemCounters;
 	private final ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher;
-	private final StackingCollector<TxnsCommittedToLedger> txCollector = StackingCollector.create();
+	private final StackingCollector<REOutput> txCollector = StackingCollector.create();
 	private final AtomicReference<Instant> currentTimestamp = new AtomicReference<>(NOW);
 	private final AtomicLong currentEpoch = new AtomicLong(0);
 	private final AtomicLong currentRound = new AtomicLong(0);
 	private final TxnParser txnParser;
 	private final TransactionParser transactionParser;
 	private final REParser parser;
+	private final Addressing addressing;
+	private final Forks forks;
 
 	private Database transactionHistory;
 	private Database tokenDefinitions;
@@ -175,7 +225,9 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
 		TransactionParser transactionParser,
-		boolean isTest
+		boolean isTest,
+		Addressing addressing,
+		Forks forks
 	) {
 		this.dbEnv = dbEnv;
 		this.parser = parser;
@@ -185,6 +237,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		this.systemCounters = systemCounters;
 		this.scheduledFlushEventDispatcher = scheduledFlushEventDispatcher;
 		this.transactionParser = transactionParser;
+		this.addressing = addressing;
+		this.forks = forks;
 
 		open(isTest);
 	}
@@ -198,16 +252,18 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		Serialization serialization,
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledQueueFlush> scheduledFlushEventDispatcher,
-		TransactionParser transactionParser
+		TransactionParser transactionParser,
+		Addressing addressing,
+		Forks forks
 	) {
 		this(dbEnv, parser, txnParser, store, serialization, systemCounters,
-			 scheduledFlushEventDispatcher, transactionParser, false
+			 scheduledFlushEventDispatcher, transactionParser, false, addressing, forks
 		);
 	}
 
 	@Override
 	public Result<REAddr> parseRri(String rri) {
-		return Rri.parseFunctional(rri)
+		return addressing.forResources().parseFunctional(rri)
 			.flatMap(tuple -> tuple.map(
 				(symbol, address) -> getTokenDefinition(address)
 					.map(TokenDefinitionRecord::getSymbol)
@@ -270,12 +326,13 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 					.toOptional()
 					.filter(entry -> entry.getType().equals(type))
 					.filter(entry -> entry.getOwner().equals(addr))
+					.filter(entry -> type != BalanceType.SPENDABLE || !entry.getAmount().isZero())
 					.map(entry -> entry.rri().equals("stake-ownership") ? computeStakeEntry(entry) : entry)
 					.ifPresent(list::add);
 
+
 				status = readBalance(() -> cursor.getNext(key, data, null), data);
-			}
-			while (status == OperationStatus.SUCCESS);
+			} while (status == OperationStatus.SUCCESS);
 
 			return Result.ok(list);
 		}
@@ -326,7 +383,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 
 	private String getRriOrFail(REAddr addr) {
 		try {
-			return rriCache.get(addr, () -> getTokenDefinition(addr).toOptional().orElseThrow().rri());
+			return rriCache.get(addr, () -> getTokenDefinition(addr).toOptional().orElseThrow().rri(addressing));
 		} catch (ExecutionException e) {
 			log.error("Unable to find rri of token at address {}", addr);
 			throw new IllegalStateException(e);
@@ -380,22 +437,24 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public Result<List<TxHistoryEntry>> getTransactionHistory(REAddr addr, int size, Optional<Instant> ptr) {
+	public Result<List<TxHistoryEntry>> getTransactionHistory(REAddr addr, int size, Optional<Instant> ptr, boolean verbose) {
 		if (size <= 0) {
 			return INVALID_PAGE_SIZE.with(size).result();
 		}
 
-		var instant = ptr.orElse(Instant.EPOCH);
+		var instant = ptr.orElse(Instant.MAX);
 		var key = asTxnHistoryKey(addr, instant);
 		var data = entry();
 
 		try (var cursor = transactionHistory.openCursor(null, null)) {
-			var status = readTxHistory(() -> cursor.getSearchKey(key, data, null), data);
+			var status = readTxHistory(() -> cursor.getSearchKeyRange(key, data, null), data);
 
 			//When searching with no cursor, exact navigation (cursor.getSearchKey) may fail,
 			//because there is no exact match. Nevertheless, cursor is positioned to correct location,
 			//so we just need get previous record.
 			if (status != OperationStatus.SUCCESS) {
+				log.debug("Skipping first record");
+
 				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
 
 				if (status != OperationStatus.SUCCESS) {
@@ -413,19 +472,54 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 			}
 
 			var list = new ArrayList<TxHistoryEntry>();
+			var rangeStarted = false;
+			var skipped = 0;
 
 			do {
-				addrFromKey(key)
-					.filter(addr::equals, Failure.failure(0, "Ignored"))
-					.flatMap(__ -> restore(serialization, data.getData(), TxHistoryEntry.class))
-					.onSuccess(list::add);
+				var reAddr = addrFromKey(key).fold(__ -> REAddr.ofSystem(), v -> v);
+
+				if (reAddr.equals(addr)) {
+					restore(serialization, data.getData(), TxHistoryEntry.class)
+						.flatMap(entry -> filterOtherActions(entry, verbose))
+						.onSuccess(list::add);
+
+					rangeStarted = true;
+				} else {
+					if (rangeStarted) {
+						break;
+					} else {
+						skipped++;
+					}
+				}
 
 				status = readTxHistory(() -> cursor.getPrev(key, data, null), data);
 			}
 			while (status == OperationStatus.SUCCESS && list.size() < size);
 
+			if (skipped > 1) {
+				log.debug("Skipped {} records for cursor {}", skipped, ptr);
+			}
+
 			return Result.ok(list);
 		}
+	}
+
+	private Result<TxHistoryEntry> filterOtherActions(TxHistoryEntry entry, boolean verbose) {
+		if (verbose) {
+			return Result.ok(entry);
+		}
+
+		var filteredActions = entry.getActions().stream()
+			.filter(ActionEntry::isKnown)
+			.collect(Collectors.toList());
+
+		return filteredActions.isEmpty()
+			   ? Result.fail(Failure.irrelevant())
+			   : Result.ok(entry.withActions(filteredActions));
+	}
+
+	private boolean validateHistoryEntry(TxHistoryEntry entry) {
+		return !entry.getActions().isEmpty();
 	}
 
 	@Override
@@ -606,17 +700,27 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 	}
 
 	@Override
-	public EventProcessor<TxnsCommittedToLedger> atomsCommittedToLedgerEventProcessor() {
+	public EventProcessor<REOutput> atomsCommittedToLedgerEventProcessor() {
 		return this::newBatch;
 	}
 
-	private void newBatch(TxnsCommittedToLedger transactions) {
+	@Override
+	public EventProcessor<LedgerUpdate> ledgerUpdateProcessor() {
+		return u -> {
+			var output = u.getStateComputerOutput().getInstance(REOutput.class);
+			if (output != null) {
+				newBatch(output);
+			}
+		};
+	}
+
+	private void newBatch(REOutput transactions) {
 		txCollector.push(transactions);
 		systemCounters.increment(COUNT_APIDB_QUEUE_SIZE);
 	}
 
-	private void storeTransactionBatch(TxnsCommittedToLedger act) {
-		act.getParsedTxs().forEach(this::processRETransaction);
+	private void storeTransactionBatch(REOutput act) {
+		act.getProcessedTxns().forEach(this::processRETransaction);
 	}
 
 	private JSONObject accountingJson(
@@ -650,10 +754,10 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				var bucketJson = new JSONObject();
 				bucketJson.put("type", b.getClass().getSimpleName());
 				if (b.getOwner() != null) {
-					bucketJson.put("owner", AccountAddress.of(b.getOwner()));
+					bucketJson.put("owner", addressing.forAccounts().of(b.getOwner()));
 				}
 				if (b.getValidatorKey() != null) {
-					bucketJson.put("validator", ValidatorAddress.of(b.getValidatorKey()));
+					bucketJson.put("validator", addressing.forValidators().of(b.getValidatorKey()));
 				}
 				bucketJson.put("delta", i.toString());
 				bucketJson.put("asset", b.resourceAddr() == null ? "stake_ownership" : getRriOrFail(b.resourceAddr()));
@@ -669,6 +773,8 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		// TODO: cur epoch retrieval a bit hacky but needs to be like this for now
 		// TODO: as epoch get updated at the end of an epoch transition
 		var curEpoch = currentEpoch.get();
+		processEvents(reTxn.getEvents());
+
 		var accountingObjects = reTxn.getGroupedStateUpdates().stream()
 			.map(updates -> processGroupedStateUpdates(updates, reTxn.getTxn().getId()))
 			.collect(Collectors.toList());
@@ -697,40 +803,42 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		log.debug("TRANSACTION_LOG: {}", () -> accountingJson(curEpoch, reTxn, accountingObjects));
 	}
 
-	private REResourceAccounting processGroupedStateUpdates(List<REStateUpdate> updates, AID txId) {
-		byte[] addressArg = null;
-
-		for (var update : updates) {
-			var substate = update.getRawSubstate();
-			if (substate instanceof UnclaimedREAddr) {
-				// FIXME: sort of a hacky way of getting this info
-				addressArg = update.getArg().orElse("xrd".getBytes(StandardCharsets.UTF_8));
-			} else if (substate instanceof TokenResource) {
-				var tokenResource = (TokenResource) substate;
-				if (addressArg == null) {
-					throw new IllegalStateException();
-				}
-				var symbol = new String(addressArg);
+	private void processEvents(List<REEvent> events) {
+		for (var event : events) {
+			if (event instanceof ResourceCreatedEvent) {
+				var resourceCreated = (ResourceCreatedEvent) event;
 				var record = TokenDefinitionRecord.create(
-					symbol,
-					tokenResource.getName(),
-					tokenResource.getAddr(),
-					tokenResource.getDescription(),
+					resourceCreated.getSymbol(),
+					resourceCreated.getMetadata().getName(),
+					resourceCreated.getMetadata().getAddr(),
+					resourceCreated.getMetadata().getDescription(),
 					UInt384.ZERO,
-					tokenResource.getIconUrl(),
-					tokenResource.getUrl(),
-					tokenResource.isMutable()
+					resourceCreated.getMetadata().getIconUrl(),
+					resourceCreated.getMetadata().getUrl(),
+					resourceCreated.getTokenResource().isMutable()
 				);
 				storeTokenDefinition(record);
-			} else if (substate instanceof RoundData) {
+			}
+		}
+	}
+
+	private REResourceAccounting processGroupedStateUpdates(List<REStateUpdate> updates, AID txId) {
+		var curEpoch = currentEpoch.get();
+		for (var update : updates) {
+			var substate = update.getParsed();
+			if (substate instanceof RoundData) {
 				var d = (RoundData) substate;
-				currentTimestamp.set(d.asInstant());
+				if (d.getTimestamp() > 0) {
+					currentTimestamp.set(d.asInstant());
+				}
 				currentRound.set(d.getView());
 			} else if (substate instanceof EpochData) {
 				var d = (EpochData) substate;
 				currentEpoch.set(d.getEpoch());
 			}
 		}
+
+		var rules = forks.get(curEpoch);
 
 		var accounting = REResourceAccounting.compute(updates);
 		var bucketAccounting = accounting.bucketAccounting();
@@ -739,15 +847,19 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 				var r = e.getKey();
 				var i = e.getValue();
 				var rri = r.resourceAddr() != null ? getRriOrFail(r.resourceAddr()) : "stake-ownership";
-				return BalanceEntry.create(
+				var epochUnlock = r.getEpochUnlock();
+				var entry = BalanceEntry.create(
 					r.getOwner(),
 					r.getValidatorKey(),
 					rri,
 					UInt384.from(i.abs().toByteArray()),
 					i.signum() == -1,
-					r.getEpochUnlock(),
+					(epochUnlock != null && epochUnlock == 0)
+						? (Long) (curEpoch + 1 + rules.getConfig().getUnstakingEpochDelay())
+						: epochUnlock,
 					txId
 				);
+				return entry;
 			});
 		var stakeOwnershipEntries = accounting.stakeOwnershipAccounting().entrySet().stream()
 			.filter(e -> !e.getValue().equals(BigInteger.ZERO))
@@ -807,7 +919,7 @@ public class BerkeleyClientApiStore implements ClientApiStore {
 		);
 
 		if (status != OperationStatus.SUCCESS) {
-			log.error("Error {} while storing token definition {}", status, tokenDefinition.asJson());
+			log.error("Error {} while storing token definition {}", status, tokenDefinition.asJson(addressing));
 		}
 	}
 

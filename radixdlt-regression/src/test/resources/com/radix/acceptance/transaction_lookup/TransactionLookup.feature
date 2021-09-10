@@ -1,3 +1,4 @@
+@single
 Feature: Transaction Lookup
   As an account owner,
   I want to get information about transactions in a radix network
