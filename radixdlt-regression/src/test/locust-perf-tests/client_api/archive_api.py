@@ -7,7 +7,7 @@ from client_api.datapool import DataPool
 from helpers import post_headers, logOnError
 from radix_transaction.signatory import Signatory
 
-with open('client_api/data.json', "r") as f:
+with open('client_api/devopsnet.json', "r") as f:
     data = json.load(f)
 
 testData = DataPool(data)
@@ -56,7 +56,7 @@ def stake_tokens_method(client, from_account, to_validator):
         "type": "StakeTokens",
         "from": str(from_account["wallet_address"]),
         "validator": str(to_validator),
-        "amount": "11000000000000000000"
+        "amount": "90000000000000000000"
     }
     build_txn_payload["params"]["actions"].append(action_stake_transaction)
     build_txn_payload["params"]["feePayer"] = str(from_account["wallet_address"])
@@ -95,13 +95,8 @@ def transfer_tokens_method(client, from_account, to_account):
 
 def submit_transaction_method(build_response, client, finalise_response, from_account, signed_hash_hex):
     submit_trx_payload = RequestData.submit_transaction()
-    blob = {
-        "blob": build_response["result"]["transaction"]["blob"]
-    }
-    submit_trx_payload["params"].append(blob)
-    submit_trx_payload["params"].append(signed_hash_hex)
-    submit_trx_payload["params"].append(from_account["public_key"])
-    submit_trx_payload["params"].append(finalise_response["result"]["txID"])
+    submit_trx_payload["params"]["blob"] = finalise_response["result"]["blob"]
+    submit_trx_payload["params"]["txID"] = finalise_response["result"]["txID"]
     return construction_endpoint_request(client, submit_trx_payload,
                                          "submit_transaction")
 
@@ -110,12 +105,13 @@ def finalize_transaction_method(build_txn_payload, client, from_account, build_r
     signed_hash_hex = Signatory.sign(build_response["result"]["transaction"]["hashOfBlobToSign"],
                                      from_account).hex()
     finalise_txn_payload = RequestData.finalise_transaction()
-    blob = {
-        "blob": build_response["result"]["transaction"]["blob"]
-    }
-    finalise_txn_payload["params"].append(blob)
-    finalise_txn_payload["params"].append(signed_hash_hex)
-    finalise_txn_payload["params"].append(from_account["public_key"])
+    # blob = {
+    #     "blob": build_response["result"]["transaction"]["blob"]
+    # }
+    finalise_txn_payload["params"]["blob"] = build_response["result"]["transaction"]["blob"]
+    finalise_txn_payload["params"]["signatureDER"] = signed_hash_hex
+    finalise_txn_payload["params"]["publicKeyOfSigner"] = from_account["public_key"]
+    finalise_txn_payload["params"]["immediateSubmit"] = "false"
     finalise_response = construction_endpoint_request(client, finalise_txn_payload,
                                                       "finalise_transaction")
     return build_response, finalise_response, signed_hash_hex

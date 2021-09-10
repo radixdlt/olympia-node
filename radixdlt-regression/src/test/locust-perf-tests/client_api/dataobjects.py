@@ -27,9 +27,7 @@ class RequestData():
     def finalise_transaction():
         return {
             "method": "construction.finalize_transaction",
-            "params": [
-
-            ],
+            "params": {},
             "id": 0
         }
 
@@ -37,8 +35,8 @@ class RequestData():
     def submit_transaction():
         return {
             "method": "construction.submit_transaction",
-            "params": [
+            "params": {
 
-            ],
+            },
             "id": 0
         }

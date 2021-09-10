@@ -137,3 +137,5 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 /client_api/data.json
+/client_api/releasenet.json
+/client_api/devopsnet.json

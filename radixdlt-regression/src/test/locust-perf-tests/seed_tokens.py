@@ -14,10 +14,8 @@ class SeedToken(SequentialTaskSet):
         for account in testData["accounts"]:
             print(f"Tranferring tokens wallet {from_account['wallet_address']} to  {account['wallet_address']}")
             transfer_tokens_method(self.client, from_account, account)
-            get_transaction_history_method(self.client,from_account)
+            get_transaction_history_method(self.client, from_account)
             time.sleep(10)
-
-
 
 
 class SuperUser(HttpUser):
