@@ -64,15 +64,11 @@
 package com.radixdlt.api.transactions.lookup;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.data.TransactionStatus;
 import com.radixdlt.api.qualifier.ArchiveEndpoint;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.functional.Result;
 
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
