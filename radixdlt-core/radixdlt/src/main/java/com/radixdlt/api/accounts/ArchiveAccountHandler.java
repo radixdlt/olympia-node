@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix DLT Ltd incorporated in England.
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,17 +61,14 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.handler;
+package com.radixdlt.api.accounts;
 
-import com.radixdlt.api.accounts.BerkeleyAccountInfoStore;
-import com.radixdlt.api.accounts.BerkeleyAccountTxHistoryStore;
 import com.radixdlt.api.transactions.lookup.BerkeleyTransactionsByIdStore;
 import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.data.BalanceEntry;
 import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.service.ArchiveAccountService;
 import com.radixdlt.identifiers.REAddr;
@@ -190,16 +186,6 @@ public final class ArchiveAccountHandler {
 	//-----------------------------------------------------------------------------------------------------
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
-
-	private JSONObject formatStakePositions(List<BalanceEntry> balances) {
-		var array = fromList(balances, balance ->
-			jsonObject()
-				.put("validator", addressing.forValidators().of(balance.getDelegate()))
-				.put("amount", balance.getAmount())
-		);
-
-		return jsonObject().put(ARRAY, array);
-	}
 
 	private static JSONObject formatHistoryResponse(Optional<Instant> cursor, List<TxHistoryEntry> transactions) {
 		return jsonObject()

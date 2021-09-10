@@ -91,7 +91,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
-public class AccountHandlerTest {
+public class LocalAccountHandlerTest {
 	private final SubmissionService submissionService = mock(SubmissionService.class);
 	private final AccountInfoService accountService = mock(AccountInfoService.class);
 	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
@@ -101,7 +101,7 @@ public class AccountHandlerTest {
 	private final ECPublicKey bftKey = keyPair.getPublicKey();
 	private final HashSigner hashSigner = keyPair::sign;
 
-	private final AccountHandler handler = new AccountHandler(
+	private final LocalAccountHandler handler = new LocalAccountHandler(
 		accountService, submissionService, actionParserService,
 		hashSigner, REAddr.ofPubKeyAccount(keyPair.getPublicKey())
 	);

@@ -95,10 +95,6 @@ public class ArchiveApiModule extends AbstractModule {
 		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
 		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
 		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
-		bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountInfoStore.class);
-		bind(BerkeleyAccountTxHistoryStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountTxHistoryStore.class);
 
 		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
 	}

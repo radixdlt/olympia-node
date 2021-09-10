@@ -88,7 +88,7 @@ import static com.radixdlt.api.JsonRpcUtil.safeArray;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.utils.functional.Result.allOf;
 
-public class AccountHandler {
+public class LocalAccountHandler {
 	private final AccountInfoService accountService;
 	private final SubmissionService submissionService;
 	private final ActionParserService actionParserService;
@@ -96,7 +96,7 @@ public class AccountHandler {
 	private final REAddr account;
 
 	@Inject
-	public AccountHandler(
+	public LocalAccountHandler(
 		AccountInfoService accountService,
 		SubmissionService submissionService,
 		ActionParserService actionParserService,
@@ -125,7 +125,7 @@ public class AccountHandler {
 			Result.ok(params.optBoolean("disableResourceAllocationAndDestroy"))
 		)
 			.flatMap(this::parseSignSubmit)
-			.map(AccountHandler::formatTxId);
+			.map(LocalAccountHandler::formatTxId);
 	}
 
 	private Result<AID> parseSignSubmit(

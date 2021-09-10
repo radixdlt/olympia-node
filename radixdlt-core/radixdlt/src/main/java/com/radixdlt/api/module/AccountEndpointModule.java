@@ -72,7 +72,7 @@ import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.Controller;
 import com.radixdlt.api.JsonRpcHandler;
 import com.radixdlt.api.controller.JsonRpcController;
-import com.radixdlt.api.handler.AccountHandler;
+import com.radixdlt.api.handler.LocalAccountHandler;
 import com.radixdlt.api.qualifier.AccountEndpoint;
 import com.radixdlt.api.qualifier.NodeServer;
 import com.radixdlt.api.server.JsonRpcServer;
@@ -82,7 +82,7 @@ import java.util.Map;
 public class AccountEndpointModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(AccountHandler.class).in(Scopes.SINGLETON);
+		bind(LocalAccountHandler.class).in(Scopes.SINGLETON);
 	}
 
 	@NodeServer
@@ -101,14 +101,14 @@ public class AccountEndpointModule extends AbstractModule {
 	@AccountEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("account.get_info")
-	public JsonRpcHandler accountGetInfo(AccountHandler accountHandler) {
+	public JsonRpcHandler accountGetInfo(LocalAccountHandler accountHandler) {
 		return accountHandler::handleAccountGetInfo;
 	}
 
 	@AccountEndpoint
 	@ProvidesIntoMap
 	@StringMapKey("account.submit_transaction_single_step")
-	public JsonRpcHandler accountSubmitTransactionSingleStep(AccountHandler accountHandler) {
+	public JsonRpcHandler accountSubmitTransactionSingleStep(LocalAccountHandler accountHandler) {
 		return accountHandler::handleAccountSubmitTransactionSingleStep;
 	}
 }
