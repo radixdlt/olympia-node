@@ -84,6 +84,15 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.fail;
 
+/*
+ * Before running this test, launch in separate console local network (cd radixdlt-core/docker && ./scripts/rundocker.sh 2).
+ *
+ * Then comment '@Ignore' annotations for both tests.
+ *
+ * Then run testAddManyTransactions() few times (it generates a number of transfer transactions)
+ *
+ * Then run testTransactionHistoryInPages(). It should print list of transactions split into batches of 50 (see parameters)
+ */
 //TODO: move to acceptance tests
 public class SyncRadixApiHistoryPaginationTest {
 	private static final String BASE_URL = "http://localhost/";

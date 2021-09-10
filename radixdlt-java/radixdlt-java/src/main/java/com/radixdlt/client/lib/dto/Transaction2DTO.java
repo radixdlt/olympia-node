@@ -62,71 +62,115 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.module;
+package com.radixdlt.client.lib.dto;
 
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.accounts.BerkeleyAccountInfoStore;
-import com.radixdlt.api.accounts.BerkeleyAccountTxHistoryStore;
-import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import org.bouncycastle.util.encoders.Hex;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.data.ScheduledQueueFlush;
-import com.radixdlt.api.server.ArchiveHttpServer;
-import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.statecomputer.REOutput;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.lib.api.TxTimestamp;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.utils.UInt256;
 
-public class ArchiveApiModule extends AbstractModule {
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import static java.util.Objects.requireNonNull;
+
+public final class Transaction2DTO {
+	private final AID txID;
+	private final TxTimestamp sentAt;
+	private final UInt256 fee;
+	private final String message;
+	private final List<Action> actions;
+	private final byte[] raw;
+
+	private Transaction2DTO(AID txID, TxTimestamp sentAt, UInt256 fee, String message, List<Action> actions, byte[] raw) {
+		this.txID = txID;
+		this.sentAt = sentAt;
+		this.fee = fee;
+		this.message = message;
+		this.actions = actions;
+		this.raw = raw;
+	}
+
+	@JsonCreator
+	public static Transaction2DTO create(
+		@JsonProperty(value = "txID", required = true) AID txID,
+		@JsonProperty(value = "timestamp", required = true) TxTimestamp sentAt,
+		@JsonProperty(value = "fee", required = true) UInt256 fee,
+		@JsonProperty(value = "message", required = true) String message,
+		@JsonProperty(value = "actions", required = true) List<Action> actions,
+		@JsonProperty(value = "raw", required = true) String blob
+	) {
+		requireNonNull(txID);
+		requireNonNull(sentAt);
+		requireNonNull(fee);
+		requireNonNull(actions);
+		requireNonNull(blob);
+
+		return new Transaction2DTO(txID, sentAt, fee, message, actions, Hex.decode(blob));
+	}
+
 	@Override
-	public void configure() {
-		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
-		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
-			.addBinding(Runners.ARCHIVE_API)
-			.to(ArchiveHttpServer.class);
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
 
-		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
-		bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountInfoStore.class);
-		bind(BerkeleyAccountTxHistoryStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountTxHistoryStore.class);
+		if (!(o instanceof Transaction2DTO)) {
+			return false;
+		}
 
-		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
+		var that = (Transaction2DTO) o;
+		return txID.equals(that.txID)
+			&& sentAt.equals(that.sentAt)
+			&& fee.equals(that.fee)
+			&& Objects.equals(message, that.message)
+			&& Arrays.equals(raw, that.raw)
+			&& actions.equals(that.actions);
 	}
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> atomsCommittedToLedgerEventProcessorApiStore(ClientApiStore clientApiStore) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			REOutput.class,
-			clientApiStore.atomsCommittedToLedgerEventProcessor()
-		);
+	@Override
+	public int hashCode() {
+		return Objects.hash(txID, sentAt, fee, message, actions, Arrays.hashCode(raw));
 	}
 
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> ledgerUpdateToLedgerApiStore(ClientApiStore clientApiStore) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			LedgerUpdate.class,
-			clientApiStore.ledgerUpdateProcessor()
-		);
+	@Override
+	public String toString() {
+		return "Transaction("
+			+ "txID=" + txID
+			+ ", sentAt=" + sentAt
+			+ ", fee=" + fee
+			+ ", message='" + message + '\''
+			+ ", actions=" + actions
+			+ ", raw=" + Hex.toHexString(raw)
+			+ ')';
 	}
 
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> queueFlushProcessor(ClientApiStore clientApiStore) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			ScheduledQueueFlush.class,
-			clientApiStore.queueFlushProcessor()
-		);
+	public AID getTxID() {
+		return txID;
+	}
+
+	public TxTimestamp getSentAt() {
+		return sentAt;
+	}
+
+	public UInt256 getFee() {
+		return fee;
+	}
+
+	public Optional<String> getMessage() {
+		return Optional.ofNullable(message);
+	}
+
+	public List<Action> getActions() {
+		return actions;
+	}
+
+	public byte[] getRaw() {
+		return raw;
 	}
 }

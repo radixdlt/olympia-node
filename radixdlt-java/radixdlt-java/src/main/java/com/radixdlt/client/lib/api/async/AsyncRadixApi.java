@@ -64,6 +64,7 @@
 
 package com.radixdlt.client.lib.api.async;
 
+import com.radixdlt.client.lib.dto.TransactionHistory2;
 import org.bouncycastle.util.encoders.Hex;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -118,10 +119,12 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_BALANCES;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_HISTORY;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_HISTORY2;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_INFO;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_STAKES;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_SUBMIT_SINGLE_STEP;
@@ -264,6 +267,16 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 		) {
 			var request = request(ACCOUNT_HISTORY, address.toString(networkId()), size);
 			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
+
+			return call(request, new TypeReference<>() {});
+		}
+
+		@Override
+		public Promise<TransactionHistory2> history2(
+			AccountAddress address, int size, OptionalLong nextOffset
+		) {
+			var request = request(ACCOUNT_HISTORY2, address.toString(networkId()), size);
+			nextOffset.ifPresent(request::addParameters);
 
 			return call(request, new TypeReference<>() {});
 		}

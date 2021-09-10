@@ -127,6 +127,13 @@ public class ArchiveEndpointModule extends AbstractModule {
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
+	@StringMapKey("account.get_transaction_history2")
+	public JsonRpcHandler accountGetTransactionHistoryReverse(ArchiveAccountHandler archiveAccountHandler) {
+		return archiveAccountHandler::handleAccountGetTransactionHistoryReverse;
+	}
+
+	@ArchiveEndpoint
+	@ProvidesIntoMap
 	@StringMapKey("account.get_transaction_history")
 	public JsonRpcHandler accountGetTransactionHistory(ArchiveAccountHandler archiveAccountHandler) {
 		return archiveAccountHandler::handleAccountGetTransactionHistory;

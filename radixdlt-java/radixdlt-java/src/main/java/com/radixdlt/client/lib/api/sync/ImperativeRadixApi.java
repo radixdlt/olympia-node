@@ -96,6 +96,7 @@ import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
+import com.radixdlt.client.lib.dto.TransactionHistory2;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
@@ -109,6 +110,7 @@ import com.radixdlt.utils.functional.Result;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * <h2>Imperative version of synchronous Radix JSON RPC client.</h2>
@@ -369,6 +371,15 @@ public interface ImperativeRadixApi {
 		 * @param cursor pagination cursor
 		 */
 		TransactionHistory history(AccountAddress address, int size, NavigationCursor cursor);
+
+		/**
+		 * Get transaction history.
+		 *
+		 * @param address account address for which information is requested
+		 * @param size batch size
+		 * @param offset offset to start retrieval at
+		 */
+		TransactionHistory2 history2(AccountAddress address, int size, OptionalLong offset);
 
 		/**
 		 * Get stakes made from given account.
@@ -656,6 +667,11 @@ public interface ImperativeRadixApi {
 					@Override
 					public TransactionHistory history(AccountAddress address, int size, NavigationCursor cursor) {
 						return unwrap(api.account().history(address, size, Optional.ofNullable(cursor)));
+					}
+
+					@Override
+					public TransactionHistory2 history2(AccountAddress address, int size, OptionalLong offset) {
+						return unwrap(api.account().history2(address, size, offset));
 					}
 
 					@Override

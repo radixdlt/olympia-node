@@ -61,72 +61,110 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
+package com.radixdlt.client.lib.api.sync;
 
-package com.radixdlt.api.module;
+import com.radixdlt.utils.PrivateKeys;
+import org.junit.Ignore;
+import org.junit.Test;
 
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.accounts.BerkeleyAccountInfoStore;
-import com.radixdlt.api.accounts.BerkeleyAccountTxHistoryStore;
-import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.dto.Transaction2DTO;
+import com.radixdlt.client.lib.dto.TransactionHistory2;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.utils.UInt256;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.data.ScheduledQueueFlush;
-import com.radixdlt.api.server.ArchiveHttpServer;
-import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.statecomputer.REOutput;
+import java.util.List;
+import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
-public class ArchiveApiModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
-		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
-			.addBinding(Runners.ARCHIVE_API)
-			.to(ArchiveHttpServer.class);
+import static org.junit.Assert.fail;
 
-		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
-		bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountInfoStore.class);
-		bind(BerkeleyAccountTxHistoryStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountTxHistoryStore.class);
+/*
+ * Before running this test, launch in separate console local network (cd radixdlt-core/docker && ./scripts/rundocker.sh 2).
+ *
+ * Then comment out '@Ignore' annotations for both tests.
+ *
+ * Then run testAddManyTransactions() few times (it generates a number of transfer transactions)
+ *
+ * Then run testTransactionHistoryInPages(). It should print list of transactions split into batches of 50 (see parameters)
+ */
+//TODO: move to acceptance tests
+public class SyncRadixApiHistory2PaginationTest {
+	private static final String BASE_URL = "http://localhost/";
+	public static final ECKeyPair KEY_PAIR1 = PrivateKeys.ofNumeric(1);
+	public static final ECKeyPair KEY_PAIR2 = PrivateKeys.ofNumeric(2);
+	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
+	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
-		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
+	@Test
+	@Ignore("Online test")
+	public void testAddManyTransactions() {
+		RadixApi.connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(client -> {
+				for (int i = 0; i < 20; i++) {
+					addTransaction(client, i);
+					try {
+						Thread.sleep(500);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			});
 	}
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> atomsCommittedToLedgerEventProcessorApiStore(ClientApiStore clientApiStore) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			REOutput.class,
-			clientApiStore.atomsCommittedToLedgerEventProcessor()
-		);
+	@Test
+	@Ignore("Online test")
+	public void testTransactionHistoryInPages() {
+		RadixApi.connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(
+				client -> {
+					var cursorHolder = new AtomicReference<>(OptionalLong.empty());
+					do {
+						client.account().history2(ACCOUNT_ADDRESS1, 50, cursorHolder.get())
+							.onFailure(failure -> fail(failure.toString()))
+							.onSuccess(v -> v.getNextOffset().ifPresent(System.out::println))
+							.onSuccess(v -> cursorHolder.set(v.getNextOffset()))
+							.map(TransactionHistory2::getTransactions)
+							.map(this::formatTxns)
+							.onSuccess(System.out::println);
+					} while (cursorHolder.get().isPresent());
+				});
 	}
 
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> ledgerUpdateToLedgerApiStore(ClientApiStore clientApiStore) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			LedgerUpdate.class,
-			clientApiStore.ledgerUpdateProcessor()
-		);
+	private List<String> formatTxns(List<Transaction2DTO> t) {
+		return t.stream()
+			.map(v -> String.format(
+				"%s (%s) - %s (%d:%d), Fee: %s%n",
+				v.getTxID(),
+				v.getMessage().orElse("<none>"),
+				v.getSentAt().getInstant(),
+				v.getSentAt().getInstant().getEpochSecond(),
+				v.getSentAt().getInstant().getNano(),
+				v.getFee()
+			))
+			.collect(Collectors.toList());
 	}
 
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> queueFlushProcessor(ClientApiStore clientApiStore) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			ScheduledQueueFlush.class,
-			clientApiStore.queueFlushProcessor()
-		);
+	private void addTransaction(RadixApi client, int count) {
+		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
+			.transfer(
+				ACCOUNT_ADDRESS1,
+				ACCOUNT_ADDRESS2,
+				UInt256.from(count + 10),
+				"xrd_dr1qyrs8qwl"
+			)
+			.message("Test message " + count)
+			.build();
+
+		client.transaction().build(request)
+			.onFailure(failure -> fail(failure.toString()))
+			.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
+			.flatMap(transaction -> client.transaction().finalize(transaction, true));
 	}
 }

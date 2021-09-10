@@ -65,7 +65,10 @@
 package com.radixdlt.api.handler;
 
 import com.radixdlt.api.accounts.BerkeleyAccountInfoStore;
+import com.radixdlt.api.accounts.BerkeleyAccountTxHistoryStore;
+import com.radixdlt.api.transactions.lookup.BerkeleyTransactionsByIdStore;
 import com.radixdlt.networks.Addressing;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -78,6 +81,7 @@ import com.radixdlt.utils.functional.Result;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.radixdlt.api.JsonRpcUtil.ARRAY;
 import static com.radixdlt.api.JsonRpcUtil.fromList;
@@ -94,16 +98,22 @@ import static com.radixdlt.utils.functional.Result.ok;
 public final class ArchiveAccountHandler {
 	private final ArchiveAccountService accountService;
 	private final BerkeleyAccountInfoStore store;
+	private final BerkeleyAccountTxHistoryStore txHistoryStore;
+	private final BerkeleyTransactionsByIdStore txByIdStore;
 	private final Addressing addressing;
 
 	@Inject
 	public ArchiveAccountHandler(
 		ArchiveAccountService accountService,
 		BerkeleyAccountInfoStore store,
+		BerkeleyAccountTxHistoryStore txHistoryStore,
+		BerkeleyTransactionsByIdStore txByIdStore,
 		Addressing addressing
 	) {
 		this.accountService = accountService;
 		this.store = store;
+		this.txHistoryStore = txHistoryStore;
+		this.txByIdStore = txByIdStore;
 		this.addressing = addressing;
 	}
 
@@ -114,6 +124,35 @@ public final class ArchiveAccountHandler {
 			address -> addressing.forAccounts()
 				.parseFunctional(address)
 				.map(store::getAccountInfo)
+		);
+	}
+
+	public JSONObject handleAccountGetTransactionHistoryReverse(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("address", "limit"),
+			List.of("offset", "verbose"),
+			params -> allOf(parseAddress(params), ok(params.getLong("limit")), ok(params.optLong("offset", -1)), parseVerboseFlag(params))
+				.map((addr, limit, offset, verboseFlag) -> {
+					var txnArray = new JSONArray();
+					var lastOffset = new AtomicLong(0);
+					txHistoryStore.getTxnIdsAssociatedWithAccount(addr, offset < 0 ? null : offset)
+						.limit(limit)
+						.forEach(pair -> {
+							var json = txByIdStore.getTransactionJSON(pair.getFirst()).orElseThrow();
+							lastOffset.set(pair.getSecond());
+							txnArray.put(json);
+						});
+
+					var result = new JSONObject();
+					if (lastOffset.get() > 0) {
+						result.put("nextOffset", lastOffset.get() - 1);
+					}
+
+					return result
+						.put("totalCount", txnArray.length())
+						.put("transactions", txnArray);
+				})
 		);
 	}
 

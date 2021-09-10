@@ -97,6 +97,7 @@ import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
+import com.radixdlt.client.lib.dto.TransactionHistory2;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
@@ -111,6 +112,7 @@ import com.radixdlt.utils.functional.Result;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * <h2>Synchronous Radix JSON RPC client.</h2>
@@ -381,6 +383,15 @@ public interface RadixApi {
 		 * @param cursor pagination cursor
 		 */
 		Result<TransactionHistory> history(AccountAddress address, int size, Optional<NavigationCursor> cursor);
+
+		/**
+		 * Get transaction history.
+		 *
+		 * @param address account address for which information is requested
+		 * @param size batch size
+		 * @param offset offset to start retrieval at
+		 */
+		Result<TransactionHistory2> history2(AccountAddress address, int size, OptionalLong offset);
 
 		/**
 		 * Get stakes made from given account.

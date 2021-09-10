@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix DLT Ltd incorporated in England.
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,71 +61,77 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.module;
+package com.radixdlt.client.lib.dto;
 
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.accounts.BerkeleyAccountInfoStore;
-import com.radixdlt.api.accounts.BerkeleyAccountTxHistoryStore;
-import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.data.ScheduledQueueFlush;
-import com.radixdlt.api.server.ArchiveHttpServer;
-import com.radixdlt.api.store.ClientApiStore;
-import com.radixdlt.api.store.berkeley.BerkeleyClientApiStore;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.statecomputer.REOutput;
+import java.util.List;
+import java.util.Objects;
+import java.util.OptionalLong;
 
-public class ArchiveApiModule extends AbstractModule {
+import static java.util.Objects.requireNonNull;
+
+public final class TransactionHistory2 {
+	private final Long nextOffset;
+	private final List<Transaction2DTO> transactions;
+	private final long totalCount;
+
+	private TransactionHistory2(Long nextOffset, List<Transaction2DTO> transactions, long totalCount) {
+		this.nextOffset = nextOffset;
+		this.transactions = transactions;
+		this.totalCount = totalCount;
+	}
+
+	@JsonCreator
+	public static TransactionHistory2 create(
+		@JsonProperty("nextOffset") Long nextOffset,
+		@JsonProperty(value = "transactions", required = true) List<Transaction2DTO> transactions,
+		@JsonProperty(value = "totalCount", required = true) long totalCount
+	) {
+		requireNonNull(transactions);
+
+		return new TransactionHistory2(nextOffset, transactions, totalCount);
+	}
+
 	@Override
-	public void configure() {
-		bind(ClientApiStore.class).to(BerkeleyClientApiStore.class).in(Scopes.SINGLETON);
-		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
-			.addBinding(Runners.ARCHIVE_API)
-			.to(ArchiveHttpServer.class);
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
 
-		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
-		bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountInfoStore.class);
-		bind(BerkeleyAccountTxHistoryStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountTxHistoryStore.class);
+		if (!(o instanceof TransactionHistory2)) {
+			return false;
+		}
 
-		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
+		var that = (TransactionHistory2) o;
+		return totalCount == that.totalCount
+			&& Objects.equals(nextOffset, that.nextOffset)
+			&& transactions.equals(that.transactions);
 	}
 
-	@ProvidesIntoSet
-	private EventProcessorOnRunner<?> atomsCommittedToLedgerEventProcessorApiStore(ClientApiStore clientApiStore) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			REOutput.class,
-			clientApiStore.atomsCommittedToLedgerEventProcessor()
-		);
+	@Override
+	public int hashCode() {
+		return Objects.hash(nextOffset, transactions, totalCount);
 	}
 
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> ledgerUpdateToLedgerApiStore(ClientApiStore clientApiStore) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			LedgerUpdate.class,
-			clientApiStore.ledgerUpdateProcessor()
-		);
+	@Override
+	public String toString() {
+		return "TransactionHistory2("
+			+ "nextOffset=" + nextOffset
+			+ ", transactions=" + transactions
+			+ ", totalCount=" + totalCount + ')';
 	}
 
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> queueFlushProcessor(ClientApiStore clientApiStore) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			ScheduledQueueFlush.class,
-			clientApiStore.queueFlushProcessor()
-		);
+	public OptionalLong getNextOffset() {
+		return nextOffset == null ? OptionalLong.empty() : OptionalLong.of(nextOffset);
+	}
+
+	public List<Transaction2DTO> getTransactions() {
+		return transactions;
+	}
+
+	public long getTotalCount() {
+		return totalCount;
 	}
 }
