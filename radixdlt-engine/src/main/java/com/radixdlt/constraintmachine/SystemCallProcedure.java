@@ -98,6 +98,7 @@ public class SystemCallProcedure<S extends ReducerState> implements Procedure {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,
@@ -107,7 +108,7 @@ public class SystemCallProcedure<S extends ReducerState> implements Procedure {
 		try {
 			return reducer.reduce((S) reducerState, (CallData) o, context);
 		} catch (Exception e) {
-			throw new ProcedureException(e);
+			throw ProcedureException.wrap(e);
 		}
 	}
 }

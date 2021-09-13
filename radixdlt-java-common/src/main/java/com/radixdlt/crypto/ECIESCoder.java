@@ -136,10 +136,6 @@ public final class ECIESCoder {
 		return iesEngine.processBlock(cipher, 0, cipher.length, macData);
 	}
 
-	public static byte[] encrypt(ECPoint toPub, byte[] plaintext) {
-		return encrypt(toPub, plaintext, null);
-	}
-
 	public static byte[] encrypt(ECPoint toPub, byte[] plaintext, byte[] macData) {
 		final var eGen = new ECKeyPairGenerator();
 		final var random = new SecureRandom();

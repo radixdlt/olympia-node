@@ -66,13 +66,13 @@ package com.radixdlt.api.server;
 
 import org.junit.Test;
 
-import com.radixdlt.api.JsonRpcUtil.RpcError;
-
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.errors.ProtocolErrors.INVALID_REQUEST;
+import static com.radixdlt.errors.ProtocolErrors.METHOD_NOT_FOUND;
 
 public class JsonRpcServerTest {
 	@Test
@@ -86,7 +86,37 @@ public class JsonRpcServerTest {
 		assertThat(response.has("id")).isTrue();
 		assertThat(response.isNull("id")).isTrue();
 		assertThat(response.getJSONObject("error")).isNotNull();
-		assertThat(response.getJSONObject("error").get("code")).isEqualTo(RpcError.INVALID_PARAMS.code());
-		assertThat(response.getJSONObject("error").getString("message")).isNotEmpty();
+		assertThat(response.getJSONObject("error").get("code")).isEqualTo(INVALID_REQUEST.code());
+		assertThat(response.getJSONObject("error").getString("message")).isEqualTo("Invalid request: The 'id' field is missing");
+	}
+
+	@Test
+	public void when_send_json_rpc_request_with_id_and_no_method__return_json_error_response() {
+		var server = new JsonRpcServer(Map.of());
+
+		var response = server.handle(jsonObject().put("id", "1"));
+
+		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
+		assertThat(response.has("result")).isFalse();
+		assertThat(response.has("id")).isTrue();
+		assertThat(response.get("id")).isEqualTo("1");
+		assertThat(response.getJSONObject("error")).isNotNull();
+		assertThat(response.getJSONObject("error").get("code")).isEqualTo(INVALID_REQUEST.code());
+		assertThat(response.getJSONObject("error").getString("message")).isEqualTo("Invalid request: The 'method' field is missing");
+	}
+
+	@Test
+	public void when_send_json_rpc_request_with_id_and_unknown_method__return_json_error_response() {
+		var server = new JsonRpcServer(Map.of());
+
+		var response = server.handle(jsonObject().put("id", "1").put("method", "some.method"));
+
+		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
+		assertThat(response.has("result")).isFalse();
+		assertThat(response.has("id")).isTrue();
+		assertThat(response.get("id")).isEqualTo("1");
+		assertThat(response.getJSONObject("error")).isNotNull();
+		assertThat(response.getJSONObject("error").get("code")).isEqualTo(METHOD_NOT_FOUND.code());
+		assertThat(response.getJSONObject("error").getString("message")).isEqualTo("Method some.method not found");
 	}
 }

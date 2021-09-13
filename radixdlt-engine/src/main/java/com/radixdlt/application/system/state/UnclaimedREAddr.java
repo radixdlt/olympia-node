@@ -64,13 +64,14 @@
 
 package com.radixdlt.application.system.state;
 
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.errors.RadixErrors;
+import com.radixdlt.identifiers.REAddr;
+
 import java.util.Arrays;
 import java.util.Objects;
-
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
 
 import static com.radixdlt.identifiers.REAddr.HASHED_KEY_BYTES;
 
@@ -85,14 +86,16 @@ public final class UnclaimedREAddr implements Particle {
 		return addr;
 	}
 
-	public void verifyHashedKey(ECPublicKey publicKey, byte[] arg) throws InvalidHashedKeyException {
+	public void verifyHashedKey(ECPublicKey publicKey, byte[] arg) throws ProcedureException {
 		if (addr.getType() != REAddr.REAddrType.HASHED_KEY) {
-			throw new InvalidHashedKeyException("Expected address to be " + REAddr.REAddrType.HASHED_KEY + " but was " + addr.getType());
+			throw new ProcedureException(RadixErrors.INVALID_ADDRESS_TYPE.with(addr.getType()));
 		}
+
 		var str = new String(arg);
-		var hash = REAddr.pkToHash(new String(arg), publicKey);
+		var hash = REAddr.pkToHash(str, publicKey);
+
 		if (!Arrays.equals(addr.getBytes(), 1, HASHED_KEY_BYTES + 1, hash, 0, HASHED_KEY_BYTES)) {
-			throw new InvalidHashedKeyException("Hashed key does not match {arg=\"" + str + "\"}");
+			throw new ProcedureException(RadixErrors.MUST_MATCH_HASHED_KEY.with(str));
 		}
 	}
 

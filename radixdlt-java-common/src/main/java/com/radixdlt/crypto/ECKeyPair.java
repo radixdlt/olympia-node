@@ -64,14 +64,6 @@
 
 package com.radixdlt.crypto;
 
-import com.radixdlt.SecurityCritical;
-import com.radixdlt.SecurityCritical.SecurityKind;
-import com.radixdlt.crypto.encryption.ECIES;
-import com.radixdlt.crypto.exception.ECIESException;
-import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.EUID;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
@@ -79,11 +71,12 @@ import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.EUID;
+
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
@@ -201,11 +194,6 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	}
 
 	@Override
-	public boolean canProduceSignatureForScheme(SignatureScheme signatureScheme) {
-		return SignatureScheme.ECDSA.equals(signatureScheme);
-	}
-
-	@Override
 	public boolean equals(Object object) {
 		if (this == object) {
 			return true;
@@ -228,48 +216,5 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		// Not going to print the private key here
 		return String.format("%s[%s]",
 			getClass().getSimpleName(), getPublicKey().toHex());
-	}
-
-	public static ECKeyPair fromFile(File file) throws PrivateKeyException, PublicKeyException {
-		try (InputStream inputStream = new FileInputStream(file)) {
-			byte[] privateKey = new byte[32];
-			int len = inputStream.read(privateKey);
-			if (len != 32) {
-				throw new IllegalStateException("Private Key file must be 32 bytes in " + file);
-			}
-			return fromPrivateKey(privateKey);
-		} catch (FileNotFoundException e) {
-			throw new IllegalArgumentException("Failed to read file", e);
-		} catch (IOException e) {
-			throw new IllegalArgumentException("Failed to read 32 bytes from content of file", e);
-		}
-	}
-
-	public byte[] encrypt(byte[] data) {
-		try {
-			return publicKey.encrypt(data);
-		} catch (ECIESException e) {
-			throw new IllegalStateException("Failed to encrypt data", e);
-		}
-	}
-
-	public byte[] decrypt(byte[] data) throws ECIESException {
-		return ECIES.decrypt(data, this);
-	}
-
-
-	public byte[] decrypt(byte[] data, EncryptedPrivateKey sharedKey)
-			throws PrivateKeyException, PublicKeyException, ECIESException {
-		byte[] privateKeyData = decrypt(sharedKey.toByteArray());
-		ECKeyPair sharedKeyPair = fromPrivateKey(privateKeyData);
-		return sharedKeyPair.decrypt(data);
-	}
-
-	public EncryptedPrivateKey encryptPrivateKeyWithPublicKey(ECPublicKey publicKeyUsedToEncrypt) {
-		try {
-			return new EncryptedPrivateKey(publicKeyUsedToEncrypt.encrypt(privateKey));
-		} catch (ECIESException e) {
-			throw new IllegalStateException("Failed to encrypt `privateKey` with provided `ECPublicKey`", e);
-		}
 	}
 }

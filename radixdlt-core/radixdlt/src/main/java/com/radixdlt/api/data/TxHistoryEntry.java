@@ -80,7 +80,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 
-import static com.radixdlt.api.JsonRpcUtil.fromList;
+import static com.radixdlt.api.JsonRpcUtil.fromCollection;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 
 import static java.util.Objects.requireNonNull;
@@ -186,7 +186,7 @@ public class TxHistoryEntry {
 			.put("txID", txId)
 			.put("sentAt", DateTimeFormatter.ISO_INSTANT.format(timestamp))
 			.put("fee", fee)
-			.put("actions", fromList(actions, ActionEntry::asJson))
+			.put("actions", fromCollection(actions, ActionEntry::asJson))
 			.putOpt("message", message);
 	}
 

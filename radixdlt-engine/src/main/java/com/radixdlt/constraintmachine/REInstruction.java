@@ -307,6 +307,7 @@ public final class REInstruction {
 		return ByteBuffer.wrap(array, offset, length);
 	}
 
+	@SuppressWarnings("unchecked")
 	public <T> T getData() {
 		return (T) data;
 	}

@@ -72,33 +72,28 @@ import com.radixdlt.api.service.NetworkInfoService;
 import com.radixdlt.networks.NetworkId;
 
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.JsonRpcUtil.response;
+import static com.radixdlt.api.JsonRpcUtil.successResponse;
 
 @Singleton
 public class ArchiveNetworkHandler {
 	private final NetworkInfoService networkInfoService;
-
 	private final int networkId;
 
 	@Inject
-	public ArchiveNetworkHandler(
-		NetworkInfoService networkInfoService,
-		@NetworkId int networkId
-	) {
+	public ArchiveNetworkHandler(NetworkInfoService networkInfoService, @NetworkId int networkId) {
 		this.networkInfoService = networkInfoService;
-
 		this.networkId = networkId;
 	}
 
 	public JSONObject handleNetworkGetId(JSONObject request) {
-		return response(request, jsonObject().put("networkId", networkId));
+		return successResponse(request, jsonObject().put("networkId", networkId));
 	}
 
 	public JSONObject handleNetworkGetThroughput(JSONObject request) {
-		return response(request, jsonObject().put("tps", networkInfoService.throughput()));
+		return successResponse(request, jsonObject().put("tps", networkInfoService.throughput()));
 	}
 
 	public JSONObject handleNetworkGetDemand(JSONObject request) {
-		return response(request, jsonObject().put("tps", networkInfoService.demand()));
+		return successResponse(request, jsonObject().put("tps", networkInfoService.demand()));
 	}
 }

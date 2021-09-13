@@ -66,22 +66,25 @@ package com.radixdlt.constraintmachine.meter;
 
 import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.ProcedureKey;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
+import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
+import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 
 public interface Meter {
-	void onStart(ExecutionContext context);
+	void onStart(ExecutionContext context) throws InvalidResourceException;
 
 	void onUserProcedure(
 		ProcedureKey procedureKey,
 		Object param,
 		ExecutionContext context
-	) throws Exception;
+	) throws DepletedFeeReserveException, DefaultedSystemLoanException;
 
 	void onSuperUserProcedure(
 		ProcedureKey procedureKey,
 		Object param,
 		ExecutionContext context
-	) throws Exception;
+	)  throws DefaultedSystemLoanException;
 
 	void onSigInstruction(ExecutionContext context) throws AuthorizationException;
 

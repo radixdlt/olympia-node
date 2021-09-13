@@ -473,7 +473,11 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 		int secondaryPort,
 		Optional<BasicAuth> authentication
 	) {
-		return buildHttpClient().fold(Promise::failure, client -> connect(url, primaryPort, secondaryPort, client, authentication));
+		return HttpClientUtils.buildHttpClient(DEFAULT_TIMEOUT)
+			.fold(
+				Promise::failure,
+				client -> connect(url, primaryPort, secondaryPort, client, authentication)
+			);
 	}
 
 	static Promise<RadixApi> connect(
@@ -485,9 +489,9 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 	) {
 		return ofNullable(url)
 			.map(baseUrl -> Result.ok(new AsyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
-			.orElseGet(BASE_URL_IS_MANDATORY::result)
+			.orElseGet(MISSING_BASE_URL::result)
 			.flatMap(asyncRadixApi -> asyncRadixApi.network().id().join()
-				.onSuccess(networkId -> asyncRadixApi.configureSerialization(networkId.getNetworkId()))
+				.onSuccess(networkId -> asyncRadixApi.configure(networkId.getNetworkId()))
 				.map(__ -> asyncRadixApi))
 			.fold(Promise::failure, Promise::ok);
 	}

@@ -82,8 +82,8 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 
-import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
-import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
+import static com.radixdlt.errors.RadixErrors.ERROR_IO;
+import static com.radixdlt.errors.RadixErrors.INVALID_MESSAGE_EXPIRED;
 
 /**
  * Handles incoming messages. Deserializes raw messages and validates them.
@@ -128,7 +128,7 @@ final class MessagePreprocessor {
 		final var currentTime = timeSource.currentTime();
 
 		if (currentTime - message.getTimestamp() > messageTtlMs) {
-			return MESSAGE_EXPIRED.result();
+			return INVALID_MESSAGE_EXPIRED.result();
 		} else {
 			return Result.ok(new MessageFromPeer<>(source, message));
 		}
@@ -139,9 +139,11 @@ final class MessagePreprocessor {
 			byte[] uncompressed = Compress.uncompress(in);
 			return Result.ok(serialization.fromDson(uncompressed, Message.class));
 		} catch (IOException e) {
-			log.error(String.format("Failed to deserialize message from peer %s", inboundMessage.source()), e);
+			var msg = String.format("Failed to deserialize message from peer %s", inboundMessage.source());
+
+			log.error(msg, e);
 			peerControl.get().banPeer(inboundMessage.source(), Duration.ofMinutes(5), "Failed to deserialize inbound message");
-			return IO_ERROR.result();
+			return ERROR_IO.with(msg, e.getMessage()).result();
 		}
 	}
 }

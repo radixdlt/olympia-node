@@ -65,9 +65,12 @@
 package com.radixdlt.constraintmachine.exceptions;
 
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.identifiers.exception.TopLevelExceptionWithFailure;
 
-public class VirtualParentStateDoesNotExist extends Exception {
+import static com.radixdlt.errors.RadixErrors.UNKNOWN_VIRTUAL_PARENT;
+
+public class VirtualParentStateDoesNotExist extends TopLevelExceptionWithFailure {
 	public VirtualParentStateDoesNotExist(SubstateId substateId) {
-		super("Virtual parent " + substateId + " does not exist.");
+		super(UNKNOWN_VIRTUAL_PARENT.with(substateId));
 	}
 }

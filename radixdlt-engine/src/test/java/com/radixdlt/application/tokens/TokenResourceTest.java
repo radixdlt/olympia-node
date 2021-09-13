@@ -64,9 +64,16 @@
 
 package com.radixdlt.application.tokens;
 
+import org.assertj.core.api.Condition;
+import org.junit.Before;
+import org.junit.Test;
+
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
+import com.radixdlt.application.tokens.construction.MintTokenConstructor;
+import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
@@ -78,26 +85,22 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
 import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
-import com.radixdlt.application.tokens.construction.MintTokenConstructor;
-import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import org.junit.Before;
-import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -241,7 +244,8 @@ public class TokenResourceTest {
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> this.engine.execute(List.of(txn))).isInstanceOf(RadixEngineException.class);
+		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
+			.isInstanceOf(RadixEngineException.class);
 	}
 
 	@Test
@@ -256,11 +260,17 @@ public class TokenResourceTest {
 			.virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
 			.up(tokenDefinitionParticle)
 			.end();
+
 		var sig = keyPair.sign(builder.hashToSign());
 		var txn = builder.sig(sig).build();
 
 		// Act and Assert
 		assertThatThrownBy(() -> this.engine.execute(List.of(txn)))
-			.hasRootCauseInstanceOf(InvalidHashedKeyException.class);
+			.hasRootCauseInstanceOf(ProcedureException.class)
+			.getRootCause()
+			.has(new Condition<Throwable>(
+				rootCause -> ((ProcedureException) rootCause).failure().code() == RadixErrors.MUST_MATCH_HASHED_KEY.code(),
+				"Expected error code does not match"
+			));
 	}
 }

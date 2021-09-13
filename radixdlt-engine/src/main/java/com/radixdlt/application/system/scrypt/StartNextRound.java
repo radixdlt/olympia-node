@@ -65,8 +65,10 @@
 package com.radixdlt.application.system.scrypt;
 
 import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.ReducerState;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+
+import static com.radixdlt.errors.RadixErrors.INVALID_VIEW;
 
 public class StartNextRound implements ReducerState {
 	private final long expectedView;
@@ -76,7 +78,7 @@ public class StartNextRound implements ReducerState {
 
 	public void update(RoundData next) throws ProcedureException {
 		if (this.expectedView != next.getView()) {
-			throw new ProcedureException("Expected view " + this.expectedView + " but was " + next.getView());
+			throw new ProcedureException(INVALID_VIEW.with(this.expectedView, next.getView()));
 		}
 	}
 }

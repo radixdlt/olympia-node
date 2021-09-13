@@ -69,13 +69,15 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.FeeReservePut;
 
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_BALANCE_FOR_FEES;
+
 public class FeeReservePutConstructor implements ActionConstructor<FeeReservePut> {
 	@Override
 	public void construct(FeeReservePut action, TxBuilder txBuilder) throws TxBuilderException {
 		if (action.amount().isZero()) {
 			return;
 		}
-		txBuilder.putFeeReserve(action.from(), action.amount(), FeeReserveNotEnoughBalanceException::new);
+		txBuilder.putFeeReserve(action.from(), action.amount(), () -> NOT_ENOUGH_BALANCE_FOR_FEES);
 		txBuilder.end();
 	}
 }

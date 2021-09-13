@@ -64,15 +64,17 @@
 
 package com.radixdlt.application.validators.construction;
 
+import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UpdateValidatorFee;
-import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 
 import java.util.OptionalLong;
+
+import static com.radixdlt.errors.RadixErrors.INVALID_VALIDATOR_FEE_INCREASE;
 
 public final class UpdateRakeConstructor implements ActionConstructor<UpdateValidatorFee> {
 	private final long rakeIncreaseDebounceEpochLength;
@@ -98,7 +100,7 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
 		var isIncrease = action.getFeePercentage() > curRakePercentage;
 		var rakeIncrease = action.getFeePercentage() - curRakePercentage;
 		if (isIncrease && rakeIncrease >= maxRakeIncrease) {
-			throw new TxBuilderException("Max rake increase is " + maxRakeIncrease + " but trying to increase " + rakeIncrease);
+			throw new TxBuilderException(INVALID_VALIDATOR_FEE_INCREASE.with(maxRakeIncrease, rakeIncrease));
 		}
 
 		var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;

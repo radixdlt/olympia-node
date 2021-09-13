@@ -64,25 +64,29 @@
 
 package com.radixdlt.application.tokens.construction;
 
+import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.nio.ByteBuffer;
+
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_BALANCE;
+import static com.radixdlt.errors.RadixErrors.INVALID_MINIMUM_UNSTAKE;
+import static com.radixdlt.errors.RadixErrors.INVALID_STATE_BUFFER_HAS_EXTRA_BYTES;
 
 public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
 	@Override
 	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
 		var validatorStake = txBuilder.find(ValidatorStakeData.class, action.from());
 		if (action.amount().isZero()) {
-			throw new TxBuilderException("Unstake amount can't be zero.");
+			throw new TxBuilderException(INVALID_MINIMUM_UNSTAKE);
 		}
 
 		var ownershipAmt = action.amount()
@@ -96,8 +100,7 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 		buf.put(action.from().getCompressedBytes());
 		buf.put(action.accountAddr().getBytes());
 		if (buf.hasRemaining()) {
-			// Sanity
-			throw new IllegalStateException();
+			throw new TxBuilderException(INVALID_STATE_BUFFER_HAS_EXTRA_BYTES.with(buf.remaining()));
 		}
 
 		var index = SubstateIndex.create(buf.array(), StakeOwnership.class);
@@ -105,7 +108,7 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 			index,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
 			ownershipAmt,
-			() -> new TxBuilderException("Not enough balance for transfer.")
+			() -> NOT_ENOUGH_BALANCE
 		);
 		if (!change.isZero()) {
 			txBuilder.up(new StakeOwnership(action.from(), action.accountAddr(), change));

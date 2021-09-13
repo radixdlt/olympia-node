@@ -64,13 +64,19 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
+import com.radixdlt.identifiers.exception.TopLevelExceptionWithFailure;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
 
-public class DefaultedSystemLoanException extends Exception {
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_RESERVE;
+
+public class DefaultedSystemLoanException extends TopLevelExceptionWithFailure {
 	public DefaultedSystemLoanException(DepletedFeeReserveException cause, UInt256 feeDeposited) {
-		super("Reserve fee deposit " + feeDeposited + " not enough to cover basic txn fee of "
-			+ Optional.ofNullable(feeDeposited).orElse(UInt256.ZERO).add(cause.getMissingAmount()));
+		super(NOT_ENOUGH_RESERVE.with(calculateBasicFeeDeposit(cause.getMissingAmount(), feeDeposited), feeDeposited));
+	}
+
+	private static UInt256 calculateBasicFeeDeposit(UInt256 missingAmount, UInt256 feeDeposited) {
+		return Optional.ofNullable(feeDeposited).orElse(UInt256.ZERO).add(missingAmount);
 	}
 }

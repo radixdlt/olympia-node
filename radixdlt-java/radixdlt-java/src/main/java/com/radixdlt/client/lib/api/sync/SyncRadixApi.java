@@ -111,6 +111,7 @@ import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
+import com.radixdlt.client.lib.network.HttpClientUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Failure;
@@ -124,11 +125,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.NETWORK_IO_ERROR;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.OPERATION_INTERRUPTED;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.UNKNOWN_ERROR;
-
+import static com.radixdlt.errors.RadixErrors.*;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.*;
 import static java.util.Optional.ofNullable;
 
@@ -478,7 +475,8 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 		int secondaryPort,
 		Optional<BasicAuth> authentication
 	) {
-		return buildHttpClient().flatMap(client -> connect(url, primaryPort, secondaryPort, client, authentication));
+		return HttpClientUtils.buildHttpClient(DEFAULT_TIMEOUT)
+			.flatMap(client -> connect(url, primaryPort, secondaryPort, client, authentication));
 	}
 
 	static Result<RadixApi> connect(
@@ -490,9 +488,9 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 	) {
 		return ofNullable(url)
 			.map(baseUrl -> Result.ok(new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
-			.orElseGet(BASE_URL_IS_MANDATORY::result)
+			.orElseGet(MISSING_BASE_URL::result)
 			.flatMap(syncRadixApi -> syncRadixApi.network().id()
-				.onSuccess(networkId -> syncRadixApi.configureSerialization(networkId.getNetworkId()))
+				.onSuccess(networkId -> syncRadixApi.configure(networkId.getNetworkId()))
 				.map(__ -> syncRadixApi));
 	}
 
@@ -506,14 +504,14 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 
 	private Failure errorMapper(Throwable throwable) {
 		if (throwable instanceof IOException) {
-			return NETWORK_IO_ERROR.with(throwable.getMessage());
+			return ERROR_IO.with("", throwable.getMessage());
 		}
 
 		if (throwable instanceof InterruptedException) {
-			return OPERATION_INTERRUPTED.with(throwable.getMessage());
+			return ERROR_INTERRUPTED.with(throwable.getMessage());
 		}
 
-		return UNKNOWN_ERROR.with(throwable.getClass().getName(), throwable.getMessage());
+		return UNKNOWN.with(throwable.getClass().getName(), throwable.getMessage());
 	}
 
 	private <T> Result<T> bodyHandler(
