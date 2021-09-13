@@ -81,14 +81,18 @@ import static java.util.Objects.requireNonNull;
 
 public final class Transaction2DTO {
 	private final AID txID;
+	private final long stateVersion;
+	private final long size;
 	private final TxTimestamp sentAt;
 	private final UInt256 fee;
 	private final String message;
 	private final List<Action> actions;
 	private final byte[] raw;
 
-	private Transaction2DTO(AID txID, TxTimestamp sentAt, UInt256 fee, String message, List<Action> actions, byte[] raw) {
+	private Transaction2DTO(AID txID, long stateVersion, long size, TxTimestamp sentAt, UInt256 fee, String message, List<Action> actions, byte[] raw) {
 		this.txID = txID;
+		this.stateVersion = stateVersion;
+		this.size = size;
 		this.sentAt = sentAt;
 		this.fee = fee;
 		this.message = message;
@@ -98,12 +102,16 @@ public final class Transaction2DTO {
 
 	@JsonCreator
 	public static Transaction2DTO create(
+		@JsonProperty(value = "size", required = true) long size,
 		@JsonProperty(value = "txID", required = true) AID txID,
 		@JsonProperty(value = "timestamp", required = true) TxTimestamp sentAt,
 		@JsonProperty(value = "fee", required = true) UInt256 fee,
-		@JsonProperty(value = "message", required = true) String message,
+		@JsonProperty(value = "message", required = false) String message,
 		@JsonProperty(value = "actions", required = true) List<Action> actions,
-		@JsonProperty(value = "raw", required = true) String blob
+		@JsonProperty(value = "raw", required = true) String blob,
+		@JsonProperty(value = "stateVersion", required = true) long stateVersion,
+		@JsonProperty(value = "accountingEntries", required = true) List<Object> entries,
+		@JsonProperty(value = "events", required = true) List<Object> events
 	) {
 		requireNonNull(txID);
 		requireNonNull(sentAt);
@@ -111,7 +119,7 @@ public final class Transaction2DTO {
 		requireNonNull(actions);
 		requireNonNull(blob);
 
-		return new Transaction2DTO(txID, sentAt, fee, message, actions, Hex.decode(blob));
+		return new Transaction2DTO(txID, stateVersion, size, sentAt, fee, message, actions, Hex.decode(blob));
 	}
 
 	@Override
@@ -126,6 +134,8 @@ public final class Transaction2DTO {
 
 		var that = (Transaction2DTO) o;
 		return txID.equals(that.txID)
+			&& size == that.size
+			&& stateVersion == that.stateVersion
 			&& sentAt.equals(that.sentAt)
 			&& fee.equals(that.fee)
 			&& Objects.equals(message, that.message)
@@ -135,13 +145,15 @@ public final class Transaction2DTO {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(txID, sentAt, fee, message, actions, Arrays.hashCode(raw));
+		return Objects.hash(txID, stateVersion, size, sentAt, fee, message, actions, Arrays.hashCode(raw));
 	}
 
 	@Override
 	public String toString() {
 		return "Transaction("
 			+ "txID=" + txID
+			+ ", stateVersion=" + stateVersion
+			+ ", size=" + size
 			+ ", sentAt=" + sentAt
 			+ ", fee=" + fee
 			+ ", message='" + message + '\''

@@ -61,82 +61,78 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.transactions.index;
+package com.radixdlt.client.lib.dto;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.qualifier.ArchiveEndpoint;
-import com.radixdlt.api.transactions.lookup.BerkeleyTransactionsByIdStore;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import com.radixdlt.utils.functional.Failure;
-import com.radixdlt.utils.functional.Result;
-import org.json.JSONArray;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.OptionalLong;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
+import static java.util.Objects.requireNonNull;
 
-public final class TransactionIndexApiModule extends AbstractModule {
+public class TransactionsDTO {
+	private final Long nextOffset;
+	private final List<Transaction2DTO> transactions;
+	private final long totalCount;
+
+	private TransactionsDTO(Long nextOffset, List<Transaction2DTO> transactions, long totalCount) {
+		this.nextOffset = nextOffset;
+		this.transactions = transactions;
+		this.totalCount = totalCount;
+	}
+
+	@JsonCreator
+	public static TransactionsDTO create(
+		@JsonProperty("nextOffset") Long nextOffset,
+		@JsonProperty(value = "transactions", required = true) List<Transaction2DTO> transactions,
+		@JsonProperty(value = "count", required = true) long count,
+		@JsonProperty(value = "totalCount", required = true) long totalCount
+	) {
+		requireNonNull(transactions);
+
+		return new TransactionsDTO(nextOffset, transactions, totalCount);
+	}
+
 	@Override
-	public void configure() {
-		bind(BerkeleyTransactionIndexStore.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-			.addBinding().to(BerkeleyTransactionIndexStore.class);
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof TransactionsDTO)) {
+			return false;
+		}
+
+		var that = (TransactionsDTO) o;
+		return totalCount == that.totalCount
+			&& Objects.equals(nextOffset, that.nextOffset)
+			&& transactions.equals(that.transactions);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.get_count")
-	public JsonRpcHandler indexGetTransactionCount(BerkeleyTransactionIndexStore store) {
-		return request -> withRequiredParameters(
-			request,
-			List.of(),
-			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
-				() -> {
-					var totalCount = store.getCount();
-					return jsonObject()
-						.put("totalCount", totalCount);
-				}
-			)
-		);
+	@Override
+	public int hashCode() {
+		return Objects.hash(nextOffset, transactions, totalCount);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.get_transactions")
-	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexStore store, BerkeleyTransactionsByIdStore txnStore) {
-		return request -> withRequiredParameters(
-			request,
-			List.of("offset", "limit"),
-			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
-				() -> {
-					var offset = params.getLong("offset");
-					var limit = params.getLong("limit");
-					var transactions = new JSONArray();
-					try (var stream = store.get(offset)) {
-						stream.limit(limit)
-							.map(txnId -> txnStore.getTransactionJSON(txnId).orElseThrow())
-							.forEach(transactions::put);
-					}
-					var totalCount = store.getCount();
-					var jsonResult = jsonObject();
-					if (transactions.length() > 0) {
-						var nextOffset = offset + transactions.length();
-						jsonResult.put("nextOffset", nextOffset);
-					}
-					return jsonResult
-						.put("transactions", transactions)
-						.put("count", transactions.length())
-						.put("totalCount", totalCount);
-				}
-			)
-		);
+	@Override
+	public String toString() {
+		return "TransactionsDTO("
+			+ "nextOffset=" + nextOffset
+			+ ", transactions=" + transactions
+			+ ", totalCount=" + totalCount + ')';
+	}
+
+	public OptionalLong getNextOffset() {
+		return nextOffset == null ? OptionalLong.empty() : OptionalLong.of(nextOffset);
+	}
+
+	public List<Transaction2DTO> getTransactions() {
+		return transactions;
+	}
+
+	public long getTotalCount() {
+		return totalCount;
 	}
 }

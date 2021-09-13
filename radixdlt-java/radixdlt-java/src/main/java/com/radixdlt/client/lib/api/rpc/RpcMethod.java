@@ -10,6 +10,9 @@ public enum RpcMethod {
 	TOKEN_NATIVE("tokens.get_native_token", ARCHIVE),
 	TOKEN_INFO("tokens.get_info", ARCHIVE),
 
+
+	TRANSACTIONS_GET("transactions.get_transactions", ARCHIVE),
+
 	ACCOUNT_BALANCES("account.get_balances", ARCHIVE),
 	ACCOUNT_HISTORY("account.get_transaction_history", ARCHIVE),
 	ACCOUNT_HISTORY2("account.get_transaction_history2", ARCHIVE),

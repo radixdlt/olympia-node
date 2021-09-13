@@ -99,6 +99,7 @@ import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionHistory2;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TransactionsDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
@@ -257,6 +258,13 @@ public interface RadixApi {
 	}
 
 	Network network();
+
+	interface Transactions {
+		Result<TransactionsDTO> get(long offset, int limit);
+
+	}
+
+	Transactions transactions();
 
 	/**
 	 * Transaction API's.

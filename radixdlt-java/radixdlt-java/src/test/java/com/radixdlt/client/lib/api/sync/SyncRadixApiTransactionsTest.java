@@ -61,82 +61,64 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.transactions.index;
+package com.radixdlt.client.lib.api.sync;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.qualifier.ArchiveEndpoint;
-import com.radixdlt.api.transactions.lookup.BerkeleyTransactionsByIdStore;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import com.radixdlt.utils.functional.Failure;
-import com.radixdlt.utils.functional.Result;
-import org.json.JSONArray;
+import com.radixdlt.client.lib.dto.Transaction2DTO;
+import com.radixdlt.client.lib.dto.TransactionsDTO;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.util.List;
+import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
+import static org.junit.Assert.fail;
 
-public final class TransactionIndexApiModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(BerkeleyTransactionIndexStore.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-			.addBinding().to(BerkeleyTransactionIndexStore.class);
+/*
+ * Before running this test, launch in separate console local network (cd radixdlt-core/docker && ./scripts/rundocker.sh 2).
+ *
+ * Then comment out '@Ignore' annotations for both tests.
+ *
+ * Then run testAddManyTransactions() few times (it generates a number of transfer transactions)
+ *
+ * Then run testTransactionHistoryInPages(). It should print list of transactions split into batches of 50 (see parameters)
+ */
+//TODO: move to acceptance tests
+public class SyncRadixApiTransactionsTest {
+	private static final String BASE_URL = "http://localhost/";
+
+	@Test
+	@Ignore("Online test")
+	public void testTransactionHistoryInPages() {
+		RadixApi.connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(
+				client -> {
+					var cursorHolder = new AtomicReference<>(OptionalLong.of(1));
+					do {
+						client.transactions().get(cursorHolder.get().getAsLong(), 100)
+							.onFailure(failure -> fail(failure.toString()))
+							.onSuccess(v -> cursorHolder.set(v.getNextOffset()))
+							.map(TransactionsDTO::getTransactions)
+							.map(this::formatTxns)
+							.onSuccess(System.out::println);
+					} while (cursorHolder.get().isPresent());
+				});
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.get_count")
-	public JsonRpcHandler indexGetTransactionCount(BerkeleyTransactionIndexStore store) {
-		return request -> withRequiredParameters(
-			request,
-			List.of(),
-			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
-				() -> {
-					var totalCount = store.getCount();
-					return jsonObject()
-						.put("totalCount", totalCount);
-				}
-			)
-		);
-	}
-
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.get_transactions")
-	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexStore store, BerkeleyTransactionsByIdStore txnStore) {
-		return request -> withRequiredParameters(
-			request,
-			List.of("offset", "limit"),
-			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
-				() -> {
-					var offset = params.getLong("offset");
-					var limit = params.getLong("limit");
-					var transactions = new JSONArray();
-					try (var stream = store.get(offset)) {
-						stream.limit(limit)
-							.map(txnId -> txnStore.getTransactionJSON(txnId).orElseThrow())
-							.forEach(transactions::put);
-					}
-					var totalCount = store.getCount();
-					var jsonResult = jsonObject();
-					if (transactions.length() > 0) {
-						var nextOffset = offset + transactions.length();
-						jsonResult.put("nextOffset", nextOffset);
-					}
-					return jsonResult
-						.put("transactions", transactions)
-						.put("count", transactions.length())
-						.put("totalCount", totalCount);
-				}
-			)
-		);
+	private List<String> formatTxns(List<Transaction2DTO> t) {
+		return t.stream()
+			.map(v -> String.format(
+				"%s (%s) - %s (%d:%d), Fee: %s%n",
+				v.getTxID(),
+				v.getMessage().orElse("<none>"),
+				v.getSentAt().getInstant(),
+				v.getSentAt().getInstant().getEpochSecond(),
+				v.getSentAt().getInstant().getNano(),
+				v.getFee()
+			))
+			.collect(Collectors.toList());
 	}
 }
