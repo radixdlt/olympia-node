@@ -68,27 +68,19 @@ import org.junit.Test;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.utils.Ints;
 
 import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
+import static com.radixdlt.client.lib.api.async.AsyncRadixApiTestUtils.keyPairOf;
+import static com.radixdlt.client.lib.api.async.AsyncRadixApiTestUtils.prepareClient;
 import static com.radixdlt.client.lib.api.token.Amount.amount;
 
 public class AsyncRadixApiLocalTest {
@@ -99,9 +91,6 @@ public class AsyncRadixApiLocalTest {
 	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
 	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
-	private static final String BASE_URL = "http://localhost/";
-
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String ACCOUNT_INFO = "{\"result\":{\"address\":\"ddx1qspll7tm6464am4yypzn59p42g6a8qhk"
 		+ "guhc269p3vhs27s5vq5h24sfvvdfj\",\"balance\":{\"stakes\":[],\"tokens\":[{\"amount\":\"1000000000000000"
 		+ "000000000000\",\"rri\":\"xrd_dr1qyrs8qwl\"}],\"preparedStakes\":[]}},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
@@ -138,8 +127,6 @@ public class AsyncRadixApiLocalTest {
 		+ "000000b0e54657374206d65737361676520310a00c07adf9012c81fed4205f14b7d7756808fecbf4615e39ad5b74c97057c532fb000"
 		+ "6e798ed8aa457afa82908c0492d6e086d105374623b1ae430be39b4dd6bc96\",\"txID\":\"b3b2c41c08b4b93d533c824b015f6e1"
 		+ "1e3370f1aeafb0116ee44aa3f4f442f37\"},\"id\":\"4\",\"jsonrpc\":\"2.0\"}";
-
-	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
 	public void testAccountInfo() throws IOException {
@@ -211,29 +198,5 @@ public class AsyncRadixApiLocalTest {
 			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
 			.flatMap(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true).join())
 			.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()));
-	}
-
-	private Promise<RadixApi> prepareClient(String... responseBodies) throws IOException {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
-		var completableFuture = new CompletableFuture<HttpResponse<String>>();
-
-		when(response.body()).thenReturn(NETWORK_ID, responseBodies);
-		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
-
-		completableFuture.completeAsync(() -> response);
-		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
-	}
-
-	private static ECKeyPair keyPairOf(int pk) {
-		var privateKey = new byte[ECKeyPair.BYTES];
-
-		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
-
-		try {
-			return ECKeyPair.fromPrivateKey(privateKey);
-		} catch (PrivateKeyException | PublicKeyException e) {
-			throw new IllegalArgumentException("Error while generating public key", e);
-		}
 	}
 }

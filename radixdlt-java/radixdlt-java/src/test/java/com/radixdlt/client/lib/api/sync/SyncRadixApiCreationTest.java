@@ -75,29 +75,23 @@ import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Result;
 
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
 import java.util.Optional;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
+import static com.radixdlt.client.lib.api.sync.SyncRadixApiTestUtils.BASE_URL;
+import static com.radixdlt.client.lib.api.sync.SyncRadixApiTestUtils.keyPairOf;
+import static com.radixdlt.client.lib.api.sync.SyncRadixApiTestUtils.prepareClient;
 import static com.radixdlt.client.lib.api.token.Amount.amount;
 
 //TODO: test remaining actions!!!
 public class SyncRadixApiCreationTest {
-	private static final String BASE_URL = "http://localhost/";
 	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
 	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
 	public static final ECKeyPair KEY_PAIR3 = keyPairOf(3);
@@ -106,7 +100,6 @@ public class SyncRadixApiCreationTest {
 	private static final AccountAddress ACCOUNT_ADDRESS3 = AccountAddress.create(KEY_PAIR3.getPublicKey());
 	private static final ValidatorAddress VALIDATOR_ADDRESS = ValidatorAddress.of(KEY_PAIR3.getPublicKey());
 
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":2},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String BUILT_TRANSACTION = "{\"result\":{\"fee\":\"73800000000000000\",\"transaction\":{\"blob\":"
 		+ "\"060a104c95b2f14ca1c6500b519ad696bee17b7a982810c5e4fe43d39b979bfbc300000001012100000000000000000000000000000"
 		+ "000000000000000000000010630b5806c8000020500040279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817"
@@ -139,8 +132,6 @@ public class SyncRadixApiCreationTest {
 		+ "a4272e38f1aa5\"},\"id\":\"3\",\"jsonrpc\":\"2.0\"}";
 	private static final String SUBMIT_TRANSACTION = "{\"result\":{\"txID\":\"a84843d8c51f92a872a926cd29a2074f1c85bf4739"
 		+ "2a2fd0e41a4272e38f1aa5\"},\"id\":\"4\",\"jsonrpc\":\"2.0\"}";
-
-	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
 	public void testBuildTransaction() throws Exception {
@@ -257,27 +248,5 @@ public class SyncRadixApiCreationTest {
 		var publicKey = ECPublicKey.fromHex(PUB_KEY);
 		var blob = buildBlobDto();
 		return FinalizedTransaction.create(blob.getBlob(), sig, publicKey, blob.getTxId());
-	}
-
-	private static ECKeyPair keyPairOf(int pk) {
-		var privateKey = new byte[ECKeyPair.BYTES];
-
-		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
-
-		try {
-			return ECKeyPair.fromPrivateKey(privateKey);
-		} catch (PrivateKeyException | PublicKeyException e) {
-			throw new IllegalArgumentException("Error while generating public key", e);
-		}
-	}
-
-	private Result<RadixApi> prepareClient(String responseBody) throws Exception {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
-
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>send(any(), any())).thenReturn(response);
-
-		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 }

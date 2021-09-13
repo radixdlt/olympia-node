@@ -69,24 +69,16 @@ import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.networks.Addressing;
 
 import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
+import static com.radixdlt.client.lib.api.async.AsyncRadixApiTestUtils.prepareClient;
 import static com.radixdlt.client.lib.api.token.Amount.amount;
 
 public class AsyncRadixApiValidatorTest {
-	private static final String BASE_URL = "http://localhost/";
-
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String LIST = "{\"result\":{\"cursor\":\"dv1qfwtmurydewmf64rnrektuh20g8r6svm0cpnpcuuay"
 		+ "4ammw2cnumc3jtmxl\",\"validators\":[{\"totalDelegatedStake\":\"80130000000000000000000\",\"uptimePer"
 		+ "centage\":\"100.00\",\"proposalsMissed\":0,\"address\":\"dv1qghsre0ptn9r28d07wzrldc08shs5x7aqhj6lzy2"
@@ -120,8 +112,6 @@ public class AsyncRadixApiValidatorTest {
 		+ "8qhkguhc269p3vhs27s5vq5h24sfvvdfj\",\"isExternalStakeAccepted\":true,\"proposalsCompleted\":14968},\"i"
 		+ "d\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private final HttpClient client = mock(HttpClient.class);
-
 	@Test
 	public void testList() throws IOException {
 		prepareClient(LIST)
@@ -149,17 +139,5 @@ public class AsyncRadixApiValidatorTest {
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(validatorDTO -> assertTrue(validatorDTO.isExternalStakeAccepted()))
 				.onSuccess(validatorDTO -> assertEquals(amount(140100).tokens(), validatorDTO.getTotalDelegatedStake())));
-	}
-
-	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
-		var completableFuture = new CompletableFuture<HttpResponse<String>>();
-
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
-
-		completableFuture.completeAsync(() -> response);
-		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 }

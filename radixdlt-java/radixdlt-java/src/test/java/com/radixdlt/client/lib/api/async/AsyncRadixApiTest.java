@@ -74,9 +74,6 @@ import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
@@ -88,12 +85,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import static com.radixdlt.client.lib.api.async.AsyncRadixApiTestUtils.BASE_URL;
+import static com.radixdlt.client.lib.api.async.AsyncRadixApiTestUtils.keyPairOf;
 import static com.radixdlt.client.lib.api.async.RadixApi.connect;
 import static com.radixdlt.client.lib.api.token.Amount.amount;
 
 //TODO: move to acceptance tests and repurpose to integration testing of the API's.
 public class AsyncRadixApiTest {
-	private static final String BASE_URL = "http://localhost/";
 	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
 	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
 	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
@@ -320,17 +318,5 @@ public class AsyncRadixApiTest {
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction).join()
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
-	}
-
-	private static ECKeyPair keyPairOf(int pk) {
-		var privateKey = new byte[ECKeyPair.BYTES];
-
-		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
-
-		try {
-			return ECKeyPair.fromPrivateKey(privateKey);
-		} catch (PrivateKeyException | PublicKeyException e) {
-			throw new IllegalArgumentException("Error while generating public key", e);
-		}
 	}
 }

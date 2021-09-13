@@ -77,10 +77,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class SyncRadixApiNetworkTest {
-	private static final String BASE_URL = "http://localhost/";
+import static com.radixdlt.client.lib.api.sync.SyncRadixApiTestUtils.NETWORK_ID;
+import static com.radixdlt.client.lib.api.sync.SyncRadixApiTestUtils.prepareClient;
 
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
+public class SyncRadixApiNetworkTest {
 	private static final String DEMAND = "{\"result\":{\"tps\":5},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
 	private static final String THROUGHPUT = "{\"result\":{\"tps\":283},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
 	private static final String DATA = "{\"result\":{\"messages\":{\"inbound\":{\"processed\":399028,"
@@ -122,8 +122,6 @@ public class SyncRadixApiNetworkTest {
 		+ "ydewmf64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumcfppt2p\",\"knownAddresses\":[{\"blacklisted\":false,\"lastSucc"
 		+ "essfulConnection\":\"2021-07-23T11:44:20.322728Z\",\"uri\":\"radix://dn1qfwtmurydewmf64rnrektuh20g8r6svm0cpn"
 		+ "pcuuay4ammw2cnumcfppt2p@172.20.0.2:30000\"}],\"banned\":false}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
-
-	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
 	public void testNetworkId() throws Exception {
@@ -193,15 +191,5 @@ public class SyncRadixApiNetworkTest {
 			.onSuccess(client -> client.network().addressBook()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(addressBookEntries -> assertEquals(4, addressBookEntries.size())));
-	}
-
-	private Result<RadixApi> prepareClient(String responseBody) throws Exception {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
-
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>send(any(), any())).thenReturn(response);
-
-		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 }
