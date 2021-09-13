@@ -67,15 +67,10 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import static com.radixdlt.client.lib.api.async.AsyncRadixApiTestUtils.NETWORK_ID;
 import static com.radixdlt.client.lib.api.async.AsyncRadixApiTestUtils.prepareClient;

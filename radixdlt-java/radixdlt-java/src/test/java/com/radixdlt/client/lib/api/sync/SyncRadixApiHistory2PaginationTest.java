@@ -63,7 +63,6 @@
  */
 package com.radixdlt.client.lib.api.sync;
 
-import com.radixdlt.utils.PrivateKeys;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -72,6 +71,7 @@ import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.dto.Transaction2DTO;
 import com.radixdlt.client.lib.dto.TransactionHistory2;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;

@@ -65,17 +65,8 @@ package com.radixdlt.client.lib.api.sync;
 
 import org.junit.Test;
 
-import com.radixdlt.utils.functional.Result;
-
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.util.Optional;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import static com.radixdlt.client.lib.api.sync.SyncRadixApiTestUtils.NETWORK_ID;
 import static com.radixdlt.client.lib.api.sync.SyncRadixApiTestUtils.prepareClient;
