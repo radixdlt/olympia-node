@@ -80,6 +80,8 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_BALANCE;
+
 public class FaucetTokensTransferConstructor implements ActionConstructor<FaucetTokensTransfer> {
 	private static final Amount AMOUNT_TO_TRANSFER = Amount.ofTokens(10);
 
@@ -106,7 +108,7 @@ public class FaucetTokensTransferConstructor implements ActionConstructor<Faucet
 				index,
 				p -> p.getResourceAddr().equals(e.getKey()) && p.getHoldingAddr().equals(action.from()),
 				AMOUNT_TO_TRANSFER.toSubunits(),
-				() -> new TxBuilderException("Not enough balance for transfer.")
+				() -> NOT_ENOUGH_BALANCE
 			);
 			if (!change.isZero()) {
 				txBuilder.up(new TokensInAccount(action.from(), e.getKey(), change));

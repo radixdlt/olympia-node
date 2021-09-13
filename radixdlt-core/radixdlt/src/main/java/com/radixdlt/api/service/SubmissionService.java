@@ -80,13 +80,16 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.exception.FailureContainer;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.RadixConstants;
+import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
@@ -94,9 +97,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_PREPARE_TX;
-import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
-import static com.radixdlt.atom.actions.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
+import static com.radixdlt.errors.RadixErrors.MUST_MATCH_TX_ID;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_SUBMIT_TX;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PREPARE_TX;
 
 public final class SubmissionService {
 	private final Logger logger = LogManager.getLogger();
@@ -149,7 +152,7 @@ public final class SubmissionService {
 		var txn = TxLowLevelBuilder.newBuilder(blob).build();
 
 		if (!sameTxId(txId, txn.getId())) {
-			return TRANSACTION_ADDRESS_DOES_NOT_MATCH.result();
+			return MUST_MATCH_TX_ID.result();
 		}
 
 		return submit(txn);
@@ -169,18 +172,27 @@ public final class SubmissionService {
 			var success = completableFuture.get();
 			return Result.ok(success.getTxn());
 		} catch (ExecutionException e) {
-			var cause = lookupCause(e);
-
 			logger.warn("Unable to fulfill submission request for TxID (" + txn.getId() + ")", e);
-			return SUBMISSION_FAILURE.with(cause.getMessage()).result();
+			return lookupCause(e).result();
 		} catch (InterruptedException e) {
+			logger.warn("Unexpected InterruptedException", e);
 			Thread.currentThread().interrupt();
-			throw new IllegalStateException(e);
+			return RadixErrors.ERROR_INTERRUPTED.with("transaction Id", txn.getId()).result();
 		}
 	}
 
-	private Throwable lookupCause(Throwable e) {
+	private Failure lookupCause(Throwable e) {
 		var reportedException = e;
+
+		while (reportedException != null) {
+			if (reportedException instanceof FailureContainer) {
+				return ((FailureContainer) reportedException).failure();
+			}
+			reportedException = reportedException.getCause();
+		}
+
+		// No useful exceptions found, use old approach
+		reportedException = e;
 
 		while (reportedException.getCause() instanceof MempoolRejectedException) {
 			reportedException = reportedException.getCause();
@@ -198,7 +210,7 @@ public final class SubmissionService {
 			reportedException = reportedException.getCause();
 		}
 
-		return reportedException;
+		return UNABLE_TO_SUBMIT_TX.with(reportedException.getMessage());
 	}
 
 	private Txn buildTxn(byte[] blob, ECDSASignature recoverable) {

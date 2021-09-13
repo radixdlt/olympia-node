@@ -307,6 +307,7 @@ public class EpochManagerTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void should_not_send_consensus_messages_if_not_part_of_new_epoch() {
 		// Arrange
 		epochManager.start();

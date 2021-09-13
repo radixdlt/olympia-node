@@ -64,21 +64,22 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.Txn;
-import com.radixdlt.application.tokens.scrypt.Tokens;
 import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.application.tokens.scrypt.Tokens;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
+import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
 import com.radixdlt.constraintmachine.exceptions.ExecutionContextDestroyException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
-import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
-import com.radixdlt.constraintmachine.exceptions.MultipleFeeReserveDepositException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.utils.UInt256;
 
 import java.util.ArrayList;
@@ -110,13 +111,9 @@ public final class ExecutionContext {
 		this.reserve = new TokenHoldingBucket(Tokens.create(REAddr.ofNativeToken(), UInt256.ZERO));
 	}
 
-	public void addSystemLoan(UInt256 loan) {
+	public void addSystemLoan(UInt256 loan) throws InvalidResourceException {
 		this.systemLoan = this.systemLoan.add(loan);
-		try {
-			this.reserve.deposit(Tokens.create(REAddr.ofNativeToken(), loan));
-		} catch (InvalidResourceException e) {
-			throw new IllegalStateException(e);
-		}
+		this.reserve.deposit(Tokens.create(REAddr.ofNativeToken(), loan));
 	}
 
 	public List<REEvent> getEvents() {
@@ -133,7 +130,7 @@ public final class ExecutionContext {
 
 	public void sig() throws AuthorizationException {
 		if (this.sigsLeft == 0) {
-			throw new AuthorizationException("Used up all signatures allowed");
+			throw new AuthorizationException(RadixErrors.NO_SIGNATURES_LEFT);
 		}
 		this.sigsLeft--;
 	}
@@ -142,13 +139,13 @@ public final class ExecutionContext {
 		return sigsLeft;
 	}
 
-	public Tokens withdrawFeeReserve(UInt256 amount) throws InvalidResourceException, NotEnoughResourcesException {
+	public Tokens withdrawFeeReserve(UInt256 amount) throws ProcedureException {
 		return reserve.withdraw(REAddr.ofNativeToken(), amount);
 	}
 
-	public void depositFeeReserve(Tokens tokens) throws InvalidResourceException, MultipleFeeReserveDepositException {
+	public void depositFeeReserve(Tokens tokens) throws ProcedureException {
 		if (feeDeposit != null) {
-			throw new MultipleFeeReserveDepositException();
+			throw new ProcedureException(RadixErrors.NOT_ALLOWED_MULTIPLE_FEE_RESERVE_DEPOSIT);
 		}
 		reserve.deposit(tokens);
 		feeDeposit = tokens.getAmount().getLow();

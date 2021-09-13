@@ -89,11 +89,11 @@ import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.exception.AuthorizationException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.TransientEngineStore;
@@ -115,6 +115,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import static com.radixdlt.errors.RadixErrors.NOT_ENOUGH_FEES;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -282,7 +284,11 @@ public final class RadixEngine<M> {
 	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
 	 */
 	public RadixEngineResult execute(List<Txn> txns) throws RadixEngineException {
-		return execute(txns, null, PermissionLevel.USER);
+		try {
+			return execute(txns, null, PermissionLevel.USER);
+		} catch (RadixEngineException e) {
+			throw e;
+		}
 	}
 
 	/**
@@ -452,7 +458,7 @@ public final class RadixEngine<M> {
 			}
 		}
 
-		throw new TxBuilderException("Not enough fees: unable to construct with fees after " + maxTries + " tries.");
+		throw new TxBuilderException(NOT_ENOUGH_FEES.with(maxTries));
 	}
 
 	public REParser getParser() {
@@ -463,8 +469,7 @@ public final class RadixEngine<M> {
 
 	public SubstateDeserialization getSubstateDeserialization() {
 		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			return deserialization;
+			return constraintMachine.getDeserialization();
 		}
 	}
 
@@ -554,6 +559,7 @@ public final class RadixEngine<M> {
 		return reduce(i, identity, accumulator, Long.MAX_VALUE);
 	}
 
+	@SuppressWarnings("unchecked")
 	public <U, T extends Particle> U reduce(SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator, long limit) {
 		synchronized (stateUpdateEngineLock) {
 			var deserialization = constraintMachine.getDeserialization();

@@ -91,11 +91,13 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Authorization authorization(Object o) {
 		return authorization.apply((D) o);
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,
@@ -105,7 +107,7 @@ public class DownProcedure<D extends Particle, S extends ReducerState> implement
 		try {
 			return downReducer.reduce((D) o, (S) reducerState, immutableAddrs, context);
 		} catch (Exception e) {
-			throw new ProcedureException(e);
+			throw ProcedureException.wrap(e);
 		}
 	}
 }

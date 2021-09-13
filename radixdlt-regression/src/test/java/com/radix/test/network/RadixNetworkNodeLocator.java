@@ -2,7 +2,6 @@ package com.radix.test.network;
 
 import com.radix.test.docker.DockerClient;
 import com.radix.test.network.client.RadixHttpClient;
-import com.radixdlt.application.system.construction.FeeReserveNotEnoughBalanceException;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
@@ -77,7 +76,7 @@ public class RadixNetworkNodeLocator {
             api.transaction().build(TransactionRequest.createBuilder(randomAddress).build());
         } catch (RadixApiException e) {
             // this is expected since the random address has no funds. However, it tells us that /construction is available
-            if (!(e.getMessage().contains(FeeReserveNotEnoughBalanceException.class.getSimpleName()))) {
+            if (!(e.getMessage().toLowerCase().contains("fee"))) {
                 throw e;
             }
         }

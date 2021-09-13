@@ -64,12 +64,38 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-public class ProcedureException extends Exception {
-	public ProcedureException(Throwable cause) {
-		super(cause);
+import com.radixdlt.identifiers.exception.FailureContainer;
+import com.radixdlt.utils.functional.Failure;
+
+import static com.radixdlt.errors.RadixErrors.UNKNOWN;
+
+public class ProcedureException extends Exception implements FailureContainer {
+	private final Failure failure;
+
+	public ProcedureException(Failure failure) {
+		this.failure = failure;
 	}
 
-	public ProcedureException(String msg) {
-		super(msg);
+	public ProcedureException(Failure failure, Exception e) {
+		super(e);
+		this.failure = failure;
+	}
+
+	public static ProcedureException wrap(Exception e) {
+		if (e instanceof ProcedureException) {
+			return (ProcedureException) e;
+		}
+
+		if (e instanceof FailureContainer) {
+			var failureContainer = (FailureContainer) e;
+			return new ProcedureException(failureContainer.failure(), e);
+		}
+
+		return new ProcedureException(UNKNOWN.with(e.getClass(), e.getMessage()), e);
+	}
+
+	@Override
+	public Failure failure() {
+		return failure;
 	}
 }

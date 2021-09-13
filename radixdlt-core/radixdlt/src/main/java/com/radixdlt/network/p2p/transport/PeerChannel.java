@@ -64,6 +64,10 @@
 
 package com.radixdlt.network.p2p.transport;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
@@ -71,30 +75,20 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.RadixNodeUri;
+import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
+import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
+import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
+import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
+import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeError;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
-import com.radixdlt.network.p2p.PeerEvent.PeerConnected;
-import com.radixdlt.network.p2p.PeerEvent.PeerDisconnected;
-import com.radixdlt.network.p2p.PeerEvent.PeerHandshakeFailed;
-import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
 import com.radixdlt.utils.functional.Result;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.socket.SocketChannel;
-import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.processors.PublishProcessor;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -104,7 +98,15 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.socket.SocketChannel;
+import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.processors.PublishProcessor;
+
+import static com.radixdlt.errors.RadixErrors.ERROR_IO;
 
 /**
  * Class that manages TCP connection channel.
@@ -120,6 +122,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	}
 
 	private final Object lock = new Object();
+	@SuppressWarnings("UnstableApiUsage")
 	private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
 	private final PublishProcessor<InboundMessage> inboundMessageSink = PublishProcessor.create();
 	private final Flowable<InboundMessage> inboundMessages;
@@ -272,7 +275,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	public Result<Object> send(byte[] data) {
 		synchronized (this.lock) {
 			if (this.state != ChannelState.ACTIVE) {
-				return IO_ERROR.result();
+				return ERROR_IO.with("Unable to send data", "Channel is inactive").result();
 			} else {
 				try {
 					final var baos = new ByteArrayOutputStream();
@@ -281,7 +284,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 					this.outMessagesStats.tick();
 					return Result.ok(new Object());
 				} catch (IOException e) {
-					return IO_ERROR.result();
+					return ERROR_IO.with("Unable to send data", e.getMessage()).result();
 				}
 			}
 		}

@@ -64,18 +64,17 @@
 
 package com.radixdlt.engine.parser;
 
-import com.radixdlt.atom.Txn;
 import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.CallData;
-import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
-import com.radixdlt.engine.parser.exceptions.TxnParseException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.UInt256;
 
@@ -179,7 +178,6 @@ public final class REParser {
 		}
 	}
 
-	@SuppressWarnings("rawtypes")
 	public ParsedTxn parse(Txn txn) throws TxnParseException {
 		UInt256 feePaid = null;
 		ECDSASignature sig = null;
@@ -238,7 +236,7 @@ public final class REParser {
 						default:
 							throw new TxnParseException(parserState, "Invalid call data type: " + id);
 					}
-				} catch (CallDataAccessException | TrailingBytesException e) {
+				} catch (ProcedureException e) {
 					throw new TxnParseException(parserState, e);
 				}
 			} else if (inst.getMicroOp() == REInstruction.REMicroOp.MSG) {

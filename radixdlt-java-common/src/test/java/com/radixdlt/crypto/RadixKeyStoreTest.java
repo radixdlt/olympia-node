@@ -83,7 +83,6 @@ import javax.crypto.SecretKey;
 import org.bouncycastle.jcajce.PKCS12Key;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.powermock.reflect.Whitebox;
 
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.crypto.exception.KeyStoreException;
@@ -231,7 +230,7 @@ public class RadixKeyStoreTest {
 		RadixKeyStore ks = RadixKeyStore.fromFile(file, "testpassword".toCharArray(), true);
 		assertTrue(file.exists());
 		ks.close();
-		char[] pwd = Whitebox.getInternalState(ks, "storePassword");
+		char[] pwd = ks.storePassword();
 		assertEquals(12, pwd.length);
 		assertTrue(IntStream.range(0, pwd.length).map(i -> pwd[i]).allMatch(i -> i == ' '));
 	}

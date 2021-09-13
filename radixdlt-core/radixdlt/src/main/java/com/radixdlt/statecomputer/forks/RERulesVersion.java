@@ -217,6 +217,5 @@ public enum RERulesVersion {
 		}
 	};
 
-
 	public abstract RERules create(RERulesConfig config);
 }

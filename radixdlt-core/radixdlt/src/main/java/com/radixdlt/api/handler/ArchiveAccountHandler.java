@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.handler;
 
+import com.radixdlt.api.JsonRpcUtil;
 import com.radixdlt.api.accounts.BerkeleyAccountInfoStore;
 import com.radixdlt.api.accounts.BerkeleyAccountTxHistoryStore;
 import com.radixdlt.api.transactions.lookup.BerkeleyTransactionsByIdStore;
@@ -83,14 +84,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.radixdlt.api.JsonRpcUtil.ARRAY;
-import static com.radixdlt.api.JsonRpcUtil.fromList;
+import static com.radixdlt.api.JsonRpcUtil.fromCollection;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.JsonRpcUtil.safeInteger;
 import static com.radixdlt.api.JsonRpcUtil.safeString;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
+import static com.radixdlt.api.JsonRpcUtil.wrapArray;
+import static com.radixdlt.errors.RadixErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
@@ -173,7 +174,7 @@ public final class ArchiveAccountHandler {
 			"address",
 			address -> addressing.forAccounts().parseFunctional(address)
 				.map(store::getAccountStakes)
-				.map(a -> jsonObject().put(ARRAY, a))
+				.map(JsonRpcUtil::wrapArray)
 		);
 	}
 
@@ -183,7 +184,7 @@ public final class ArchiveAccountHandler {
 			"address",
 			address -> addressing.forAccounts().parseFunctional(address)
 				.map(store::getAccountUnstakes)
-				.map(a -> jsonObject().put(ARRAY, a))
+				.map(JsonRpcUtil::wrapArray)
 		);
 	}
 
@@ -192,19 +193,17 @@ public final class ArchiveAccountHandler {
 	//-----------------------------------------------------------------------------------------------------
 
 	private JSONObject formatStakePositions(List<BalanceEntry> balances) {
-		var array = fromList(balances, balance ->
+		return wrapArray(fromCollection(balances, balance ->
 			jsonObject()
 				.put("validator", addressing.forValidators().of(balance.getDelegate()))
 				.put("amount", balance.getAmount())
-		);
-
-		return jsonObject().put(ARRAY, array);
+		));
 	}
 
 	private static JSONObject formatHistoryResponse(Optional<Instant> cursor, List<TxHistoryEntry> transactions) {
 		return jsonObject()
 			.put("cursor", cursor.map(ArchiveAccountHandler::asCursor).orElse(""))
-			.put("transactions", fromList(transactions, TxHistoryEntry::asJson));
+			.put("transactions", fromCollection(transactions, TxHistoryEntry::asJson));
 	}
 
 	private static String asCursor(Instant instant) {

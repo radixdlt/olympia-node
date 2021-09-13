@@ -97,7 +97,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class ChaosControllerTest {
+	@SuppressWarnings("unchecked")
 	private final EventDispatcher<MempoolFillerUpdate> mempool = mock(EventDispatcher.class);
+	@SuppressWarnings("unchecked")
 	private final EventDispatcher<MessageFlooderUpdate> message = mock(EventDispatcher.class);
 	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
 

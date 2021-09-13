@@ -75,6 +75,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -105,11 +106,7 @@ public final class ValidationHandler {
 		var metadata = validatorInfoService.getMetadata(self);
 		var validatorData = validatorInfoService.getValidatorStakeData(self);
 		var individualStakes = validatorInfoService.getEstimatedIndividualStakes(validatorData);
-		var stakesJson = jsonArray();
-		individualStakes.forEach((addr, amt) -> stakesJson.put(jsonObject()
-			.put("delegator", addressing.forAccounts().of(addr))
-			.put("amount", amt)
-		));
+
 		var allowDelegationFlag = validatorInfoService.getAllowDelegationFlag(self);
 		var uptime = validatorInfoService.getUptime(self);
 		var validatorAddress = addressing.forValidators().of(self);
@@ -119,6 +116,11 @@ public final class ValidationHandler {
 			.put("url", metadata.getUrl())
 			.put("address", validatorAddress)
 			.put("allowDelegation", allowDelegationFlag.allowsDelegation());
+
+		var stakesJson = fromMap(individualStakes, (addr, amt) -> jsonObject()
+			.put("delegator", addressing.forAccounts().of(addr))
+			.put("amount", amt)
+		);
 
 		var curEpoch = jsonObject()
 			.put("registered", validatorData.isRegistered())
@@ -131,48 +133,46 @@ public final class ValidationHandler {
 			.put("uptimePercentage", uptime.toPercentageString());
 
 		var updates = jsonObject();
+
 		var validatorRakeCopy = validatorInfoService.getNextValidatorFee(self);
 		if (validatorRakeCopy.getRakePercentage() != validatorData.getRakePercentage()) {
 			updates.put("validatorFee", (double) validatorRakeCopy.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "");
 		}
+
 		var nextEpochRegisteredFlag = validatorInfoService.getNextEpochRegisteredFlag(self).isRegistered();
 		if (nextEpochRegisteredFlag != validatorData.isRegistered()) {
 			updates.put("registered", nextEpochRegisteredFlag);
 		}
+
 		var nextEpochOwner = validatorInfoService.getNextEpochValidatorOwner(self).getOwner();
 		if (!nextEpochOwner.equals(validatorData.getOwnerAddr())) {
 			updates.put("owner", addressing.forAccounts().of(nextEpochOwner));
 		}
+
 		var preparedStakes = validatorInfoService.getPreparedStakes(self);
 		if (!preparedStakes.isEmpty()) {
-			var preparedStakesJson = jsonArray();
-			preparedStakes.forEach((addr, amount) -> preparedStakesJson.put(
-				jsonObject()
-					.put("amount", amount)
-					.put("delegator", addressing.forAccounts().of(addr))
+			updates.put("stakes", fromMap(preparedStakes, (addr, amount) -> jsonObject()
+				.put("amount", amount)
+				.put("delegator", addressing.forAccounts().of(addr))
 			));
-			updates.put("stakes", preparedStakesJson);
-		}
-		var preparedUnstakes = validatorInfoService.getEstimatedPreparedUnstakes(validatorData);
-		if (!preparedUnstakes.isEmpty()) {
-			var preparedUnstakesJson = jsonArray();
-			preparedUnstakes.forEach((addr, amount) -> preparedUnstakesJson.put(
-				jsonObject()
-					.put("amount", amount)
-					.put("delegator", addressing.forAccounts().of(addr))
-			));
-			updates.put("unstakes", preparedUnstakesJson);
 		}
 
-		return data
-			.put("epochInfo", jsonObject()
-				.put("current", curEpoch)
-				.put("updates", updates)
-			);
+		var preparedUnstakes = validatorInfoService.getEstimatedPreparedUnstakes(validatorData);
+		if (!preparedUnstakes.isEmpty()) {
+			updates.put("unstakes", fromMap(preparedUnstakes, (addr, amount) -> jsonObject()
+				.put("amount", amount)
+				.put("delegator", addressing.forAccounts().of(addr))
+			));
+		}
+
+		return data.put("epochInfo", jsonObject()
+			.put("current", curEpoch)
+			.put("updates", updates)
+		);
 	}
 
 	public JSONObject handleGetNodeInfo(JSONObject request) {
-		return response(request, getValidatorInfo());
+		return successResponse(request, getValidatorInfo());
 	}
 
 	public JSONObject handleGetCurrentEpochData(JSONObject request) {
@@ -200,6 +200,6 @@ public final class ValidationHandler {
 			return json.put(validatorJson);
 		}, 100); // TODO: remove the 100 hardcode
 
-		return response(request, jsonObject().put("validators", validators));
+		return successResponse(request, jsonObject().put("validators", validators));
 	}
 }

@@ -162,7 +162,6 @@ public final class ValidatorInfoService {
 		return unstakes;
 	}
 
-
 	public Map<REAddr, UInt256> getEstimatedIndividualStakes(ValidatorStakeData curData) {
 		var validatorKey = curData.getValidatorKey();
 		var index = SubstateIndex.create(

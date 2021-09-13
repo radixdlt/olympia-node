@@ -111,6 +111,7 @@ import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
+import com.radixdlt.client.lib.network.HttpClientUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
@@ -122,7 +123,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
+import static com.radixdlt.errors.RadixErrors.MISSING_BASE_URL;
 
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.*;
 import static java.util.Optional.ofNullable;
@@ -473,7 +474,11 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 		int secondaryPort,
 		Optional<BasicAuth> authentication
 	) {
-		return buildHttpClient().fold(Promise::failure, client -> connect(url, primaryPort, secondaryPort, client, authentication));
+		return HttpClientUtils.buildHttpClient(DEFAULT_TIMEOUT)
+			.fold(
+				Promise::failure,
+				client -> connect(url, primaryPort, secondaryPort, client, authentication)
+			);
 	}
 
 	static Promise<RadixApi> connect(
@@ -485,9 +490,9 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 	) {
 		return ofNullable(url)
 			.map(baseUrl -> Result.ok(new AsyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
-			.orElseGet(BASE_URL_IS_MANDATORY::result)
+			.orElseGet(MISSING_BASE_URL::result)
 			.flatMap(asyncRadixApi -> asyncRadixApi.network().id().join()
-				.onSuccess(networkId -> asyncRadixApi.configureSerialization(networkId.getNetworkId()))
+				.onSuccess(networkId -> asyncRadixApi.configure(networkId.getNetworkId()))
 				.map(__ -> asyncRadixApi))
 			.fold(Promise::failure, Promise::ok);
 	}

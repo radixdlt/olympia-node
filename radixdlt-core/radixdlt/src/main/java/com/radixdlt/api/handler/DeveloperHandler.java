@@ -107,9 +107,12 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.api.JsonRpcUtil.*;
-import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_PREPARE_TX;
-import static com.radixdlt.utils.functional.Result.allOf;
+import static com.radixdlt.api.JsonRpcUtil.fromCollection;
+import static com.radixdlt.api.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.safeArray;
+import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PREPARE_TX;
 
 public final class DeveloperHandler {
 	private final GenesisBuilder genesisBuilder;
@@ -131,7 +134,10 @@ public final class DeveloperHandler {
 	}
 
 	private Result<VerifiedTxnsAndProof> build(String message, List<TransactionAction> steps) {
-		var actions = steps.stream().flatMap(TransactionAction::toAction).collect(Collectors.toList());
+		var actions = steps.stream()
+			.flatMap(TransactionAction::toAction)
+			.collect(Collectors.toList());
+
 		return Result.wrap(
 			UNABLE_TO_PREPARE_TX,
 			() -> {
@@ -156,18 +162,14 @@ public final class DeveloperHandler {
 				var addressing = Addressing.ofNetworkId(params.getInt("networkId"));
 				var actionParserService = new ActionParserService(addressing);
 
-				return allOf(safeArray(params, "actions"))
+				return safeArray(params, "actions")
 					.flatMap(actions ->
-						actionParserService.parse(actions).flatMap(steps -> this.build(message, steps))
-							.map(p -> {
-								var o = jsonObject();
-								var txns = jsonArray();
-								p.getTxns().forEach(txn -> txns.put(Bytes.toHexString(txn.getPayload())));
-								var proof = p.getProof().asJSON(addressing);
-								return o.put("txns", txns).put("proof", proof);
-							})
-					);
-			});
+								 actionParserService.parse(actions).flatMap(steps -> this.build(message, steps))
+									 .map(p -> jsonObject()
+										 .put("txns", fromCollection(p.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
+										 .put("proof", p.getProof().asJSON(addressing))));
+			}
+		);
 	}
 
 	private Function<Bucket, String> getKeyMapper(String groupBy) {
@@ -227,6 +229,7 @@ public final class DeveloperHandler {
 					throw new IllegalArgumentException("Invalid resource index " + index.getSubstateClass());
 				}
 				var resultJson = jsonArray();
+				@SuppressWarnings("unchecked")
 				var map = radixEngine.reduceResourcesWithSubstateCount(
 					(SubstateIndex<ResourceInBucket>) index,
 					r -> keyMapper.apply(r.bucket()),
@@ -234,20 +237,20 @@ public final class DeveloperHandler {
 				);
 				map.entrySet().stream()
 					.sorted(Comparator.<Map.Entry<String, Pair<UInt384, Long>>, UInt384>comparing(e -> e.getValue().getFirst()).reversed())
-					.forEach(e ->
-						resultJson.put(jsonObject()
+					.forEach(e -> resultJson.put(
+						jsonObject()
 							.put("key", e.getKey())
 							.put("amount", e.getValue().getFirst())
-							.put("substateCount", e.getValue().getSecond())
-						)
+							.put("substateCount", e.getValue().getSecond()))
 					);
 				var totalSubstateCount = map.values().stream().mapToLong(Pair::getSecond).sum();
 				var totalAmount = map.values().stream().map(Pair::getFirst).reduce(UInt384::add).orElse(UInt384.ZERO);
-				return Result.ok(jsonObject()
-					.put("entries", resultJson)
-					.put("entryCount", map.size())
-					.put("totalSubstateCount", totalSubstateCount)
-					.put("totalAmount", totalAmount)
+				return Result.ok(
+					jsonObject()
+						.put("entries", resultJson)
+						.put("entryCount", map.size())
+						.put("totalSubstateCount", totalSubstateCount)
+						.put("totalAmount", totalAmount)
 				);
 			}
 		);
@@ -261,11 +264,13 @@ public final class DeveloperHandler {
 				var key = Bytes.fromHexString(params.getString("key"));
 				var systemMapKey = SystemMapKey.create(key);
 				var bytes = engineStore.get(systemMapKey).orElseThrow();
-				return Result.ok(jsonObject()
-					.put("id", Bytes.toHexString(bytes.getId()))
-					.put("data", Bytes.toHexString(bytes.getData()))
+				return Result.ok(
+					jsonObject()
+						.put("id", Bytes.toHexString(bytes.getId()))
+						.put("data", Bytes.toHexString(bytes.getData()))
 				);
-			});
+			}
+		);
 	}
 
 	public JSONObject handleScanSubstates(JSONObject request) {
@@ -281,7 +286,7 @@ public final class DeveloperHandler {
 				var found = jsonArray();
 				var totalKeySize = new AtomicLong();
 				var totalValueSize = new AtomicLong();
-				var countByGroup = engineStore.scanner()
+				var stream = engineStore.scanner()
 					.map(r -> Pair.of(Bytes.toHexString(r.getId()), Bytes.toHexString(r.getData())))
 					.filter(p -> keyPattern.test(p.getFirst()) && valuePattern.test(p.getSecond()))
 					.peek(p -> {
@@ -290,24 +295,27 @@ public final class DeveloperHandler {
 						}
 						totalKeySize.getAndAdd(p.getFirst().length() / 2);
 						totalValueSize.getAndAdd(p.getSecond().length() / 2);
-					})
+					});
+				var countByGroup = stream
 					.collect(
 						Collectors.groupingBy(
 							p -> p.getSecond().length() > 0 ? p.getSecond().substring(0, 2) : "virtual-down",
 							Collectors.counting()
 						)
 					);
+				stream.close();
 
 				var countByGroupJson = jsonObject();
 				countByGroup.forEach(countByGroupJson::put);
 
-				return Result.ok(jsonObject()
-					.put("loaded", found)
-					.put("countBySubstateType", countByGroupJson)
-					.put("totalIdSize", totalKeySize.get())
-					.put("totalDataSize", totalValueSize.get())
-					.put("totalSize", totalKeySize.get() + totalValueSize.get())
-					.put("totalCount", countByGroup.values().stream().mapToLong(l -> l).sum())
+				return Result.ok(
+					jsonObject()
+						.put("loaded", found)
+						.put("countBySubstateType", countByGroupJson)
+						.put("totalIdSize", totalKeySize.get())
+						.put("totalDataSize", totalValueSize.get())
+						.put("totalSize", totalKeySize.get() + totalValueSize.get())
+						.put("totalCount", countByGroup.values().stream().mapToLong(l -> l).sum())
 				);
 			}
 		);
@@ -318,27 +326,27 @@ public final class DeveloperHandler {
 			request,
 			List.of("txn"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var parser = radixEngine.getParser();
 					var txnHex = params.getString("txn");
 					var txn = Txn.create(Bytes.fromHexString(txnHex));
 					var result = parser.parse(txn);
-					var resultJson = jsonObject();
-					var instructionsJson = jsonArray();
-					resultJson.put("txId", txn.getId().toJson());
-					resultJson.put("size", txn.getPayload().length);
-					resultJson.put("instructions", instructionsJson);
-					result.instructions().forEach(i -> {
+
+					var instructions = fromCollection(result.instructions(), i -> {
 						var buf = i.getDataByteBuffer();
-						instructionsJson.put(jsonObject()
+
+						return jsonObject()
 							.put("op", i.getMicroOp().toString())
 							.put("data", i.getData() == null ? null : i.getData().toString())
 							.put("data_raw", Bytes.toHexString(buf.array(), buf.position(), i.getDataLength()))
-							.put("data_size", i.getDataLength())
-						);
+							.put("data_size", i.getDataLength());
 					});
-					return resultJson;
+
+					return jsonObject()
+						.put("txId", txn.getId().toJson())
+						.put("size", txn.getPayload().length)
+						.put("instructions", instructions);
 				}
 			)
 		);
@@ -349,7 +357,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("data"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var data = Bytes.fromHexString(params.getString("data"));
 					var deserialization = radixEngine.getSubstateDeserialization();
@@ -361,7 +369,7 @@ public final class DeveloperHandler {
 		);
 	}
 
-
+	//TODO: rework to avoid exceptions (bad for proper error reporting)
 	private static Pair<String, ECPublicKey> parseAddress(String type, String address) throws DeserializeException {
 		switch (type) {
 			case "account":
@@ -380,7 +388,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("address", "type"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var type = params.getString("type");
 					var address = params.getString("address");
@@ -400,7 +408,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("amount"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var amountString = params.getString("amount");
 					var amount = UInt256.from(amountString);
@@ -429,7 +437,7 @@ public final class DeveloperHandler {
 			request,
 			List.of("networkId", "type"),
 			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
+				DeveloperHandler::toFailure,
 				() -> {
 					var networkId = params.getInt("networkId");
 					var network = Network.ofId(networkId).orElseThrow();
@@ -451,5 +459,10 @@ public final class DeveloperHandler {
 				}
 			)
 		);
+	}
+
+	//FIXME: all errors are reported with same error code
+	private static Failure toFailure(Throwable e) {
+		return Failure.failure(e.getMessage());
 	}
 }

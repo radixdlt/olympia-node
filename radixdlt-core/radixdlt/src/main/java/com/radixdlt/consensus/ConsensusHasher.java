@@ -73,7 +73,6 @@ import java.io.IOException;
 
 public final class ConsensusHasher {
 	private ConsensusHasher() {
-		throw new IllegalStateException();
 	}
 
 	public static HashCode toHash(HashCode opaque, LedgerHeader header, long nodeTimestamp, Hasher hasher) {
@@ -103,7 +102,7 @@ public final class ConsensusHasher {
 			}
 			outputStream.writeLong(nodeTimestamp); // 8 bytes
 		} catch (IOException e) {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Should never happen");
 		}
 		var toHash = raw.toByteArray();
 		return hasher.hashBytes(toHash);

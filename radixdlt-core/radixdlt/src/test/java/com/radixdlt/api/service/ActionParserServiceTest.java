@@ -64,10 +64,6 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.atom.actions.UpdateValidatorFee;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
-
 import org.json.JSONArray;
 import org.junit.Assert;
 import org.junit.Test;
@@ -81,9 +77,12 @@ import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
+import com.radixdlt.atom.actions.UpdateValidatorFee;
 import com.radixdlt.atom.actions.UpdateValidatorMetadata;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 
@@ -156,7 +155,7 @@ public class ActionParserServiceTest {
 		var key = ECKeyPair.generateNew().getPublicKey();
 		var validatorAddr = addressing.forValidators().of(key);
 		var accountAddr = addressing.forAccounts().of(from);
-		var source = "[{\"type\":\"UnstakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
+		var source = "[{\"type\":\"UnstakeTokens\", \"to\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, accountAddr, validatorAddr, UInt256.EIGHT));
 
 		actionParserService.parse(actions)

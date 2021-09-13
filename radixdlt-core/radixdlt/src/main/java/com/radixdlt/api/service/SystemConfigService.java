@@ -96,10 +96,11 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.api.JsonRpcUtil.ARRAY;
-import static com.radixdlt.api.JsonRpcUtil.fromList;
+import static com.radixdlt.api.JsonRpcUtil.fromCollection;
+import static com.radixdlt.api.JsonRpcUtil.fromMap;
 import static com.radixdlt.api.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.wrapArray;
 
 public class SystemConfigService {
 	@VisibleForTesting
@@ -390,15 +391,13 @@ public class SystemConfigService {
 
 		return jsonObject().put(
 			"endpoints",
-			fromList(enabled, endpoint -> "/" + endpoint)
+			fromCollection(enabled, endpoint -> "/" + endpoint)
 		);
 	}
 
 	@VisibleForTesting
 	static JSONObject prepareRadixEngineConfiguration(TreeMap<Long, ForkConfig> forksConfigs) {
-		var forks = jsonArray();
-		forksConfigs.forEach((e, config) -> forks.put(config.asJson()));
-		return jsonObject().put(ARRAY, forks);
+		return wrapArray(fromMap(forksConfigs, (key, config) -> config.asJson()));
 	}
 
 	@VisibleForTesting
@@ -418,7 +417,7 @@ public class SystemConfigService {
 	@VisibleForTesting
 	JSONObject prepareCheckpointsConfiguration(VerifiedTxnsAndProof genesis) {
 		return jsonObject()
-			.put("txn", fromList(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
+			.put("txn", fromCollection(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
 			.put("proof", genesis.getProof().asJSON(addressing));
 	}
 
@@ -435,7 +434,7 @@ public class SystemConfigService {
 			.put("channelBufferSize", p2PConfig.channelBufferSize())
 			.put("peerLivenessCheckInterval", p2PConfig.peerLivenessCheckInterval())
 			.put("pingTimeout", p2PConfig.pingTimeout())
-			.put("seedNodes", fromList(p2PConfig.seedNodes(), seedNode -> seedNode))
+			.put("seedNodes", fromCollection(p2PConfig.seedNodes(), seedNode -> seedNode))
 			.put("nodeAddress", addressing.forNodes().of(self));
 	}
 

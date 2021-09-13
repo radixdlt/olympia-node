@@ -66,7 +66,6 @@ package com.radixdlt.application.tokens.state;
 
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 
@@ -85,7 +84,7 @@ public final class ExittingStakeBucket implements Bucket {
 
 	@Override
 	public Authorization withdrawAuthorization() {
-		return new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { });
+		return Authorization.SUPER_USER;
 	}
 
 	@Override

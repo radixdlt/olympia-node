@@ -80,7 +80,7 @@ import java.util.Objects;
 /**
  * Tuples of various size.
  */
-public interface Tuple<S extends Tuple> {
+public interface Tuple<S extends Tuple<?>> {
 	interface Tuple0 extends Tuple<Tuple0> {
 		<T> T map(FN0<T> mapper);
 	}
@@ -89,35 +89,42 @@ public interface Tuple<S extends Tuple> {
 		<T> T map(Functions.FN1<T, T1> mapper);
 	}
 
-	interface Tuple2<T1, T2> extends Tuple {
+	interface Tuple2<T1, T2> extends Tuple<Tuple2<T1, T2>> {
 		<T> T map(FN2<T, T1, T2> mapper);
+		default T1 first() {
+			return map((first, __) -> first);
+		}
+
+		default T2 last() {
+			return map((__, last) -> last);
+		}
 	}
 
-	interface Tuple3<T1, T2, T3> extends Tuple {
+	interface Tuple3<T1, T2, T3> extends Tuple<Tuple3<T1, T2, T3>> {
 		<T> T map(FN3<T, T1, T2, T3> mapper);
 	}
 
-	interface Tuple4<T1, T2, T3, T4> extends Tuple {
+	interface Tuple4<T1, T2, T3, T4> extends Tuple<Tuple4<T1, T2, T3, T4>> {
 		<T> T map(FN4<T, T1, T2, T3, T4> mapper);
 	}
 
-	interface Tuple5<T1, T2, T3, T4, T5> extends Tuple {
+	interface Tuple5<T1, T2, T3, T4, T5> extends Tuple<Tuple5<T1, T2, T3, T4, T5>> {
 		<T> T map(FN5<T, T1, T2, T3, T4, T5> mapper);
 	}
 
-	interface Tuple6<T1, T2, T3, T4, T5, T6> extends Tuple {
+	interface Tuple6<T1, T2, T3, T4, T5, T6> extends Tuple<Tuple6<T1, T2, T3, T4, T5, T6>> {
 		<T> T map(FN6<T, T1, T2, T3, T4, T5, T6> mapper);
 	}
 
-	interface Tuple7<T1, T2, T3, T4, T5, T6, T7> extends Tuple {
+	interface Tuple7<T1, T2, T3, T4, T5, T6, T7> extends Tuple<Tuple7<T1, T2, T3, T4, T5, T6, T7>> {
 		<T> T map(FN7<T, T1, T2, T3, T4, T5, T6, T7> mapper);
 	}
 
-	interface Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends Tuple {
+	interface Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends Tuple<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> {
 		<T> T map(FN8<T, T1, T2, T3, T4, T5, T6, T7, T8> mapper);
 	}
 
-	interface Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9> extends Tuple {
+	interface Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9> extends Tuple<Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9>> {
 		<T> T map(FN9<T, T1, T2, T3, T4, T5, T6, T7, T8, T9> mapper);
 	}
 

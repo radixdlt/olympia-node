@@ -70,6 +70,7 @@ import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.api.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.errors.RadixErrors;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
 
@@ -134,23 +135,29 @@ public final class ChaosController implements Controller {
 	@VisibleForTesting
 	void handleMempoolFill(HttpServerExchange exchange) {
 		withBody(exchange, values -> {
-			MempoolFillerUpdate update;
 			var completableFuture = new CompletableFuture<Void>();
-			var enable = values.getBoolean("enabled");
-			if (enable) {
-				update = MempoolFillerUpdate.enable(100, true, completableFuture);
-			} else {
-				update = MempoolFillerUpdate.disable(completableFuture);
-			}
+			var update = prepareUpdate(completableFuture, values.getBoolean("enabled"));
 			mempoolDispatcher.dispatch(update);
 
 			try {
 				completableFuture.get();
-				respond(exchange, jsonObject().put("result", enable ? "enabled" : "disabled"));
+				respond(exchange, jsonObject().put("result", values.getBoolean("enabled") ? "enabled" : "disabled"));
 			} catch (ExecutionException e) {
-				respond(exchange, jsonObject().put("error", jsonObject().put("message", e.getCause().getMessage())));
+				var response = jsonObject()
+					.put("error", jsonObject()
+						.put("code", RadixErrors.UNKNOWN.code())
+						.put("message", e.getCause().getMessage()));
+				respond(exchange, response);
 			}
 		});
+	}
+
+	private MempoolFillerUpdate prepareUpdate(CompletableFuture<Void> completableFuture, boolean enable) {
+		if (enable) {
+			return MempoolFillerUpdate.enable(100, true, completableFuture);
+		} else {
+			return MempoolFillerUpdate.disable(completableFuture);
+		}
 	}
 
 	private BFTNode createNodeByKey(final String nodeAddress) {

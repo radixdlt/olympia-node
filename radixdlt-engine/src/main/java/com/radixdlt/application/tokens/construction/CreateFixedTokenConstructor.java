@@ -65,22 +65,24 @@
 package com.radixdlt.application.tokens.construction;
 
 import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.identifiers.REAddr;
 
 import java.nio.charset.StandardCharsets;
+
+import static com.radixdlt.errors.RadixErrors.INVALID_RESOURCE_ADDRESS;
 
 public final class CreateFixedTokenConstructor implements ActionConstructor<CreateFixedToken> {
 	@Override
 	public void construct(CreateFixedToken action, TxBuilder txBuilder) throws TxBuilderException {
 		if (action.getResourceAddr().getType() != REAddr.REAddrType.HASHED_KEY) {
-			throw new TxBuilderException("Invalid resource address.");
+			throw new TxBuilderException(INVALID_RESOURCE_ADDRESS.with(action.getResourceAddr()));
 		}
 		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
 		txBuilder.downREAddr(action.getResourceAddr());

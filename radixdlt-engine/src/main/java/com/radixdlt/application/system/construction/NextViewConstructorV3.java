@@ -64,23 +64,25 @@
 
 package com.radixdlt.application.system.construction;
 
+import com.radixdlt.application.system.state.RoundData;
+import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.NextRound;
-import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.KeyComparator;
 
 import java.util.TreeMap;
+
+import static com.radixdlt.errors.RadixErrors.INVALID_NEXT_VIEW;
 
 public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 	@Override
 	public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
 		var prevRound = txBuilder.downSystem(RoundData.class);
 		if (action.view() <= prevRound.getView()) {
-			throw new TxBuilderException("Next view: " + action + " isn't higher than current view: " + prevRound);
+			throw new TxBuilderException(INVALID_NEXT_VIEW.with(action, prevRound));
 		}
 
 		var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(KeyComparator.instance());
@@ -99,11 +101,13 @@ public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
 			var validatorData = txBuilder.down(ValidatorBFTData.class, curLeader);
 			validatorsToUpdate.put(curLeader, validatorData);
 		}
+
 		var nextData = action.isTimeout()
 			? validatorsToUpdate.get(curLeader).incrementProposalsMissed()
 			: validatorsToUpdate.get(curLeader).incrementCompletedProposals();
 		validatorsToUpdate.put(curLeader, nextData);
 
+		//TODO: why not validatorsToUpdate.values()?
 		for (var e : validatorsToUpdate.entrySet()) {
 			txBuilder.up(e.getValue());
 		}
