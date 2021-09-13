@@ -102,7 +102,7 @@ public class SyncRadixApiAccountTest {
 		+ "ens\"},{\"amount\":\"100000000000000000000\",\"validator\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh"
 		+ "59rq9964vjryzf9\",\"from\":\"ddx1qspzsu73jt6ps6g8l0rj2yya2euunqapv7j2qemgaaujyej2tlp3lcs99m6k9\",\"type\":\""
 		+ "StakeTokens\"},{\"type\":\"Other\"}]}]},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String ERROR_RESPONSE = "{\"id\":\"2\",\"jsonrpc\":\"2.0\",\"error\":{\"code\":2523,\"data\":"
+	private static final String ERROR_RESPONSE = "{\"id\":\"2\",\"jsonrpc\":\"2.0\",\"error\":{\"code\":-1115,\"data\":"
 		+ "[\"0000000000000000000000000000000000000000000000000000000000000000\"],\"message\":\"Transaction with id 00"
 		+ "00000000000000000000000000000000000000000000000000000000000000 not found\"}}\n";
 

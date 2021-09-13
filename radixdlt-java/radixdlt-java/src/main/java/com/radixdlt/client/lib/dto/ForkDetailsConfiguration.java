@@ -78,6 +78,7 @@ public final class ForkDetailsConfiguration {
 	private final long minimumCompletedProposalsPercentage;
 	private final long unstakingDelayEpochLength;
 	private final FeeTable feeTable;
+	private final String tokenSymbolPattern;
 	private final long validatorFeeIncreaseDebouncerEpochLength;
 	private final UInt256 minimumStake;
 	private final List<String> reservedSymbols;
@@ -91,6 +92,7 @@ public final class ForkDetailsConfiguration {
 		long minimumCompletedProposalsPercentage,
 		long unstakingDelayEpochLength,
 		FeeTable feeTable,
+		String tokenSymbolPattern,
 		long validatorFeeIncreaseDebouncerEpochLength,
 		UInt256 minimumStake,
 		List<String> reservedSymbols,
@@ -103,6 +105,7 @@ public final class ForkDetailsConfiguration {
 		this.minimumCompletedProposalsPercentage = minimumCompletedProposalsPercentage;
 		this.unstakingDelayEpochLength = unstakingDelayEpochLength;
 		this.feeTable = feeTable;
+		this.tokenSymbolPattern = tokenSymbolPattern;
 		this.validatorFeeIncreaseDebouncerEpochLength = validatorFeeIncreaseDebouncerEpochLength;
 		this.minimumStake = minimumStake;
 		this.reservedSymbols = reservedSymbols;
@@ -118,6 +121,7 @@ public final class ForkDetailsConfiguration {
 		@JsonProperty(value = "minimumCompletedProposalsPercentage", required = true) long minimumCompletedProposalsPercentage,
 		@JsonProperty(value = "unstakingDelayEpochLength", required = true) long unstakingDelayEpochLength,
 		@JsonProperty(value = "feeTable", required = true) FeeTable feeTable,
+		@JsonProperty(value = "tokenSymbolPattern", required = true) String tokenSymbolPattern,
 		@JsonProperty(value = "validatorFeeIncreaseDebouncerEpochLength", required = true) long validatorFeeIncreaseDebouncerEpochLength,
 		@JsonProperty(value = "minimumStake", required = true) UInt256 minimumStake,
 		@JsonProperty(value = "reservedSymbols", required = true) List<String> reservedSymbols,
@@ -126,7 +130,7 @@ public final class ForkDetailsConfiguration {
 	) {
 		return new ForkDetailsConfiguration(
 			maxValidators, maxTransactionsPerRound, maxRoundsPerEpoch, minimumCompletedProposalsPercentage,
-			unstakingDelayEpochLength, feeTable, validatorFeeIncreaseDebouncerEpochLength, minimumStake,
+			unstakingDelayEpochLength, feeTable, tokenSymbolPattern, validatorFeeIncreaseDebouncerEpochLength, minimumStake,
 			reservedSymbols, maxTransactionSize, rewardsPerProposal
 		);
 	}
@@ -150,6 +154,7 @@ public final class ForkDetailsConfiguration {
 			&& validatorFeeIncreaseDebouncerEpochLength == that.validatorFeeIncreaseDebouncerEpochLength
 			&& maxTransactionSize == that.maxTransactionSize
 			&& feeTable.equals(that.feeTable)
+			&& tokenSymbolPattern.equals(that.tokenSymbolPattern)
 			&& minimumStake.equals(that.minimumStake)
 			&& reservedSymbols.equals(that.reservedSymbols)
 			&& rewardsPerProposal.equals(that.rewardsPerProposal);
@@ -164,6 +169,7 @@ public final class ForkDetailsConfiguration {
 			minimumCompletedProposalsPercentage,
 			unstakingDelayEpochLength,
 			feeTable,
+			tokenSymbolPattern,
 			validatorFeeIncreaseDebouncerEpochLength,
 			minimumStake,
 			reservedSymbols,
@@ -181,6 +187,7 @@ public final class ForkDetailsConfiguration {
 			+ ", minimumCompletedProposalsPercentage=" + minimumCompletedProposalsPercentage
 			+ ", unstakingDelayEpochLength=" + unstakingDelayEpochLength
 			+ ", feeTable=" + feeTable
+			+ ", tokenSymbolPattern=" + tokenSymbolPattern
 			+ ", validatorFeeIncreaseDebouncerEpochLength=" + validatorFeeIncreaseDebouncerEpochLength
 			+ ", minimumStake=" + minimumStake
 			+ ", reservedSymbols=" + reservedSymbols
@@ -211,6 +218,10 @@ public final class ForkDetailsConfiguration {
 
 	public FeeTable getFeeTable() {
 		return feeTable;
+	}
+
+	public String getTokenSymbolPattern() {
+		return tokenSymbolPattern;
 	}
 
 	public long getValidatorFeeIncreaseDebouncerEpochLength() {

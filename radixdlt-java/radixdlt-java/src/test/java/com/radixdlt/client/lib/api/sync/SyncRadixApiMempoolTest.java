@@ -73,8 +73,9 @@ import static com.radixdlt.client.lib.api.sync.SyncRadixApiTestUtils.prepareClie
 public class SyncRadixApiMempoolTest {
 	private static final String CONFIGURATION = "{\"result\":{\"throttleMs\":5,\"maxSize\":10000},\"id\":\"2\","
 		+ "\"jsonrpc\":\"2.0\"}";
-	private static final String DATA = "{\"result\":{\"addSuccess\":2,\"maxcount\":0,\"relayerSentCount\":2,\"proposedTransaction\":0,\"count\":0,"
-		+ "\"errors\":{\"other\":0,\"hook\":0,\"conflict\":0}},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String DATA = "{\"result\":{\"addSuccess\":1273473,\"maxcount\":0,\"relayerSentCount\":2,"
+		+ "\"proposedTransaction\":0,\"count\":0,"
+		+ "\"errors\":{\"other\":0,\"hook\":3,\"conflict\":0}},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	@Test
 	public void testConfiguration() throws Exception {

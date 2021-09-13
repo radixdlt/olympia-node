@@ -71,29 +71,20 @@ import static org.junit.Assert.fail;
 import static com.radixdlt.client.lib.api.sync.SyncRadixApiTestUtils.prepareClient;
 
 public class SyncRadixApiRadixEngineTest {
-	private static final String CONFIGURATION = "{\"result\":[{\"name\":\"olympia-first-epoch\",\"epoch\":0,\"version\":"
+	private static final String CONFIGURATION = "{\"result\":[{\"name\":\"stokenet\",\"epoch\":0,\"version\":"
 		+ "\"olympia_v1\",\"config\":{\"maxValidators\":100,\"maxTransactionsPerRound\":50,\"maxRoundsPerEpoch\":10000,"
-		+ "\"minimumCompletedProposalsPercentage\":9800,\"unstakingDelayEpochLength\":1,\"feeTable\":{\"perUpSubstateFee"
-		+ "\":{\"PreparedStake\":\"500000000000000000\",\"ValidatorRegisteredCopy\":\"5000000000000000000\","
-		+ "\"TokenResource\":\"100000000000000000000\",\"PreparedUnstakeOwnership\":\"500000000000000000\","
-		+ "\"ValidatorOwnerCopy\":\"5000000000000000000\",\"ValidatorMetaData\":\"5000000000000000000\","
-		+ "\"AllowDelegationFlag\":\"5000000000000000000\",\"ValidatorFeeCopy\":\"5000000000000000000\"},"
-		+ "\"perByteFee\":\"200000000000000\"},\"validatorFeeIncreaseDebouncerEpochLength\":1,\"minimumStake\":"
-		+ "\"100000000000000000000\",\"reservedSymbols\":[\"rads\",\"exrds\",\"xrds\",\"xrd\",\"rdxs\",\"rdx\","
-		+ "\"exrd\",\"radix\",\"rad\"],\"maxTransactionSize\":1048576,\"rewardsPerProposal\":"
-		+ "\"10000000000000000000\"}}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":[{\"name\":\"stokenet\",\"epoch\":0,\"version\":\"olympia_v1\","
-		+ "\"config\":{\"maxValidators\":100,\"maxTransactionsPerRound\":50,\"maxRoundsPerEpoch\":10000,"
-		+ "\"minimumCompletedProposalsPercentage\":9800,\"unstakingDelayEpochLength\":500,\"feeTable\":"
-		+ "{\"perUpSubstateFee\":{\"PreparedStake\":\"500000000000000000\",\"ValidatorRegisteredCopy\":"
-		+ "\"5000000000000000000\",\"TokenResource\":\"100000000000000000000\",\"PreparedUnstakeOwnership\":"
-		+ "\"500000000000000000\",\"ValidatorOwnerCopy\":\"5000000000000000000\",\"ValidatorMetaData\":"
+		+ "\"minimumCompletedProposalsPercentage\":9800,\"unstakingDelayEpochLength\":500,\"feeTable"
+		+ "\":{\"perUpSubstateFee\":{\"PreparedStake\":\"500000000000000000\",\"ValidatorRegisteredCopy\":"
+		+ "\"5000000000000000000\",\"PreparedUnstakeOwnership\":\"500000000000000000\",\"TokenResource\":"
+		+ "\"100000000000000000000\",\"ValidatorOwnerCopy\":\"5000000000000000000\",\"ValidatorMetaData\":"
 		+ "\"5000000000000000000\",\"AllowDelegationFlag\":\"5000000000000000000\",\"ValidatorFeeCopy\":"
 		+ "\"5000000000000000000\"},\"perByteFee\":\"200000000000000\"},\"tokenSymbolPattern\":\"[a-z0-9]+\","
 		+ "\"validatorFeeIncreaseDebouncerEpochLength\":500,\"minimumStake\":\"90000000000000000000\","
-		+ "\"reservedSymbols\":[\"rdxs\",\"rdx\",\"exrd\",\"radix\",\"rad\",\"rads\",\"exrds\",\"xrds\",\"xrd\"],"
+		+ "\"reservedSymbols\":[\"rads\",\"rad\",\"radix\",\"exrd\",\"rdx\",\"rdxs\",\"xrd\",\"xrds\",\"exrds\"],"
 		+ "\"maxTransactionSize\":1048576,\"rewardsPerProposal\":\"2307700000000000000\"}}],\"id\":\"2\","
 		+ "\"jsonrpc\":\"2.0\"}\n";
+	private static final String DATA = "{\"result\":{\"systemTransactions\":37884,\"invalidProposedCommands\":1,"
+		+ "\"userTransactions\":2016},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	@Test
 	public void testConfiguration() throws Exception {
@@ -103,7 +94,7 @@ public class SyncRadixApiRadixEngineTest {
 			.onSuccess(client -> client.radixEngine().configuration()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(configuration -> assertEquals(1, configuration.size()))
-				.onSuccess(configuration -> assertEquals("olympia-first-epoch", configuration.get(0).getName())));
+				.onSuccess(configuration -> assertEquals("stokenet", configuration.get(0).getName())));
 	}
 
 	@Test

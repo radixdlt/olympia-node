@@ -74,9 +74,6 @@ import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 
