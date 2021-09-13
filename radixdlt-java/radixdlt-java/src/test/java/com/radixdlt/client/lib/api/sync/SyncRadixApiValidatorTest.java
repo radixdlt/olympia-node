@@ -67,25 +67,17 @@ import org.junit.Test;
 
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.utils.functional.Result;
 
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
+import static com.radixdlt.client.lib.api.sync.SyncRadixApiTestUtils.prepareClient;
 import static com.radixdlt.client.lib.api.token.Amount.amount;
 
 public class SyncRadixApiValidatorTest {
-	private static final String BASE_URL = "http://localhost/";
-
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String LIST = "{\"result\":{\"cursor\":\"dv1qfwtmurydewmf64rnrektuh20g8r6svm0cpnpcuuay"
 		+ "4ammw2cnumc3jtmxl\",\"validators\":[{\"totalDelegatedStake\":\"80130000000000000000000\",\"uptimePer"
 		+ "centage\":\"100.00\",\"proposalsMissed\":0,\"address\":\"dv1qghsre0ptn9r28d07wzrldc08shs5x7aqhj6lzy2"
@@ -119,8 +111,6 @@ public class SyncRadixApiValidatorTest {
 		+ "8qhkguhc269p3vhs27s5vq5h24sfvvdfj\",\"isExternalStakeAccepted\":true,\"proposalsCompleted\":14968},\"i"
 		+ "d\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private final HttpClient client = mock(HttpClient.class);
-
 	@Test
 	public void testList() throws Exception {
 		prepareClient(LIST)
@@ -144,15 +134,5 @@ public class SyncRadixApiValidatorTest {
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(validator -> assertTrue(validator.isExternalStakeAccepted()))
 				.onSuccess(validator -> assertEquals(amount(140100).tokens(), validator.getTotalDelegatedStake())));
-	}
-
-	private Result<RadixApi> prepareClient(String responseBody) throws Exception {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
-
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>send(any(), any())).thenReturn(response);
-
-		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 }

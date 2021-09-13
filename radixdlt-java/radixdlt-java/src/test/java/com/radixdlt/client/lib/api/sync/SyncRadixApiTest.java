@@ -90,11 +90,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import static com.radixdlt.client.lib.api.sync.RadixApi.connect;
+import static com.radixdlt.client.lib.api.sync.SyncRadixApiTestUtils.BASE_URL;
+import static com.radixdlt.client.lib.api.sync.SyncRadixApiTestUtils.keyPairOf;
 import static com.radixdlt.client.lib.api.token.Amount.amount;
 
 //TODO: move to acceptance tests and repurpose to integration testing of the API's.
 public class SyncRadixApiTest {
-	private static final String BASE_URL = "http://localhost/";
 	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
 	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
 	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
@@ -302,17 +303,5 @@ public class SyncRadixApiTest {
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 					.onFailure(SyncRadixApiTest::reportFailure)
 					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
-	}
-
-	private static ECKeyPair keyPairOf(int pk) {
-		var privateKey = new byte[ECKeyPair.BYTES];
-
-		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
-
-		try {
-			return ECKeyPair.fromPrivateKey(privateKey);
-		} catch (PrivateKeyException | PublicKeyException e) {
-			throw new IllegalArgumentException("Error while generating public key", e);
-		}
 	}
 }

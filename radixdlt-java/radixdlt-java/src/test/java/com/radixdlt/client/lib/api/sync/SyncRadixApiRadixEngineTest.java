@@ -65,22 +65,12 @@ package com.radixdlt.client.lib.api.sync;
 
 import org.junit.Test;
 
-import com.radixdlt.utils.functional.Result;
-
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.util.Optional;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+
+import static com.radixdlt.client.lib.api.sync.SyncRadixApiTestUtils.prepareClient;
 
 public class SyncRadixApiRadixEngineTest {
-	private static final String BASE_URL = "http://localhost/";
-
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String CONFIGURATION = "{\"result\":[{\"name\":\"olympia-first-epoch\",\"epoch\":0,\"version\":"
 		+ "\"olympia_v1\",\"config\":{\"maxValidators\":100,\"maxTransactionsPerRound\":50,\"maxRoundsPerEpoch\":10000,"
 		+ "\"minimumCompletedProposalsPercentage\":9800,\"unstakingDelayEpochLength\":1,\"feeTable\":{\"perUpSubstateFee"
@@ -92,10 +82,18 @@ public class SyncRadixApiRadixEngineTest {
 		+ "\"100000000000000000000\",\"reservedSymbols\":[\"rads\",\"exrds\",\"xrds\",\"xrd\",\"rdxs\",\"rdx\","
 		+ "\"exrd\",\"radix\",\"rad\"],\"maxTransactionSize\":1048576,\"rewardsPerProposal\":"
 		+ "\"10000000000000000000\"}}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
-	private static final String DATA = "{\"result\":{\"systemTransactions\":37884,\"invalidProposedCommands\":1,"
-		+ "\"userTransactions\":2016},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
-
-	private final HttpClient client = mock(HttpClient.class);
+	private static final String DATA = "{\"result\":[{\"name\":\"stokenet\",\"epoch\":0,\"version\":\"olympia_v1\","
+		+ "\"config\":{\"maxValidators\":100,\"maxTransactionsPerRound\":50,\"maxRoundsPerEpoch\":10000,"
+		+ "\"minimumCompletedProposalsPercentage\":9800,\"unstakingDelayEpochLength\":500,\"feeTable\":"
+		+ "{\"perUpSubstateFee\":{\"PreparedStake\":\"500000000000000000\",\"ValidatorRegisteredCopy\":"
+		+ "\"5000000000000000000\",\"TokenResource\":\"100000000000000000000\",\"PreparedUnstakeOwnership\":"
+		+ "\"500000000000000000\",\"ValidatorOwnerCopy\":\"5000000000000000000\",\"ValidatorMetaData\":"
+		+ "\"5000000000000000000\",\"AllowDelegationFlag\":\"5000000000000000000\",\"ValidatorFeeCopy\":"
+		+ "\"5000000000000000000\"},\"perByteFee\":\"200000000000000\"},\"tokenSymbolPattern\":\"[a-z0-9]+\","
+		+ "\"validatorFeeIncreaseDebouncerEpochLength\":500,\"minimumStake\":\"90000000000000000000\","
+		+ "\"reservedSymbols\":[\"rdxs\",\"rdx\",\"exrd\",\"radix\",\"rad\",\"rads\",\"exrds\",\"xrds\",\"xrd\"],"
+		+ "\"maxTransactionSize\":1048576,\"rewardsPerProposal\":\"2307700000000000000\"}}],\"id\":\"2\","
+		+ "\"jsonrpc\":\"2.0\"}\n";
 
 	@Test
 	public void testConfiguration() throws Exception {
@@ -119,15 +117,5 @@ public class SyncRadixApiRadixEngineTest {
 					.onSuccess(data -> assertEquals(37884L, data.getSystemTransactions()))
 					.onSuccess(data -> assertEquals(2016L, data.getUserTransactions()))
 					.onSuccess(data -> assertEquals(1L, data.getInvalidProposedCommands())));
-	}
-
-	private Result<RadixApi> prepareClient(String responseBody) throws Exception {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
-
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>send(any(), any())).thenReturn(response);
-
-		return SyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 }

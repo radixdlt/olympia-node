@@ -77,10 +77,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class AsyncRadixApiNetworkTest {
-	private static final String BASE_URL = "http://localhost/";
+import static com.radixdlt.client.lib.api.async.AsyncRadixApiTestUtils.NETWORK_ID;
+import static com.radixdlt.client.lib.api.async.AsyncRadixApiTestUtils.prepareClient;
 
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
+public class AsyncRadixApiNetworkTest {
 	private static final String DEMAND = "{\"result\":{\"tps\":5},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
 	private static final String THROUGHPUT = "{\"result\":{\"tps\":283},\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
 	private static final String DATA = "{\"result\":{\"messages\":{\"inbound\":{\"processed\":399028,"
@@ -193,17 +193,5 @@ public class AsyncRadixApiNetworkTest {
 			.onSuccess(client -> client.network().addressBook().join()
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(addressBookEntries -> assertEquals(1, addressBookEntries.size())));
-	}
-
-	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
-		var completableFuture = new CompletableFuture<HttpResponse<String>>();
-
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
-
-		completableFuture.completeAsync(() -> response);
-		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 }

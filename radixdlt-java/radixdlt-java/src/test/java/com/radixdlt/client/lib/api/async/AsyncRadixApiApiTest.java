@@ -66,22 +66,14 @@ package com.radixdlt.client.lib.api.async;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+
+import static com.radixdlt.client.lib.api.async.AsyncRadixApiTestUtils.prepareClient;
 
 public class AsyncRadixApiApiTest {
-	private static final String BASE_URL = "http://localhost/";
-
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String CONFIGURATION = "{\"result\":{\"endpoints\":[\"/metrics\",\"/system\","
 		+ "\"/account\",\"/validation\",\"/universe\",\"/faucet\",\"/chaos\",\"/health\",\"/version\","
 		+ "\"/developer\",\"/archive\",\"/construction\"]},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
@@ -92,8 +84,6 @@ public class AsyncRadixApiApiTest {
 		+ ":6},\"transaction\":{\"total\":7,\"read\":0,\"bytes\":{\"read\":0,\"write\":13923},\"write\":7},"
 		+ "\"token\":{\"total\":2,\"read\":1,\"bytes\":{\"read\":245,\"write\":245},\"write\":1}}}},\"id\":"
 		+ "\"2\",\"jsonrpc\":\"2.0\"}\n";
-
-	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
 	public void testConfiguration() throws IOException {
@@ -119,17 +109,5 @@ public class AsyncRadixApiApiTest {
 				.onSuccess(data -> assertEquals(630722, data.getElapsed().getApiDb().getFlush().getTime()))
 				.onSuccess(data -> assertEquals(1672, data.getElapsed().getApiDb().getBalance().getRead()))
 				.onSuccess(data -> assertEquals(6, data.getCount().getApiDb().getQueue().getSize())));
-	}
-
-	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
-		var completableFuture = new CompletableFuture<HttpResponse<String>>();
-
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
-
-		completableFuture.completeAsync(() -> response);
-		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 }

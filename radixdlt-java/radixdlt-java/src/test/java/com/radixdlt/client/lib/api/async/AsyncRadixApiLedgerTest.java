@@ -66,21 +66,13 @@ package com.radixdlt.client.lib.api.async;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+
+import static com.radixdlt.client.lib.api.async.AsyncRadixApiTestUtils.prepareClient;
 
 public class AsyncRadixApiLedgerTest {
-	private static final String BASE_URL = "http://localhost/";
-
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String LATEST = "{\"result\":{\"opaque\":\"9d0d7d4db4822318f817e8c877d5041052f208e9e5"
 		+ "277c1e0b316506ace50174\",\"sigs\":[{\"signature\":\"00ac3318d3aa4fef7521ab3479da43f8f91905cf0b0a886"
 		+ "7154e911853e641c94633e78ca4b4d7a6bacced172844c4fc694cd9c0e3032e0f28130f200c1d5e5c0e\",\"key\":\"047"
@@ -151,8 +143,6 @@ public class AsyncRadixApiLedgerTest {
 		+ "or\":\"7d773d192544808ba16a047781ae06ce3cb140d65bb757439947de81aea8422b\",\"version\":1,\"timestamp"
 		+ "\":0}}},\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private final HttpClient client = mock(HttpClient.class);
-
 	@Test
 	public void testLatest() throws IOException {
 		prepareClient(LATEST)
@@ -192,17 +182,5 @@ public class AsyncRadixApiLedgerTest {
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(checkpoint -> assertEquals(1, checkpoint.getTxn().size()))
 				.onSuccess(checkpoint -> assertEquals(2, checkpoint.getProof().getHeader().getNextValidators().size())));
-	}
-
-	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
-		var completableFuture = new CompletableFuture<HttpResponse<String>>();
-
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
-
-		completableFuture.completeAsync(() -> response);
-		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 }

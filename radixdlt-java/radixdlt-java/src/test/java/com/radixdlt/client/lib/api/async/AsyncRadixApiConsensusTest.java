@@ -66,21 +66,13 @@ package com.radixdlt.client.lib.api.async;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+
+import static com.radixdlt.client.lib.api.async.AsyncRadixApiTestUtils.prepareClient;
 
 public class AsyncRadixApiConsensusTest {
-	private static final String BASE_URL = "http://localhost/";
-
-	private static final String NETWORK_ID = "{\"result\":{\"networkId\":99},\"id\":\"1\",\"jsonrpc\":\"2.0\"}";
 	private static final String CONFIGURATION = "{\"result\":{\"pacemakerTimeout\":3000,\"bftSyncPatienceMs\":200},"
 		+ "\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 	private static final String DATA = "{\"result\":{\"timeoutQuorums\":1,\"rejected\":0,\"voteQuorums\":79981,"
@@ -88,8 +80,6 @@ public class AsyncRadixApiConsensusTest {
 		+ "ion\":159960,\"processed\":159959,\"timedOutViews\":1,\"vertexStoreSize\":2,\"vertexStoreRebuilds\":"
 		+ "0,\"consensusEvents\":319926,\"indirectParent\":1,\"proposalsMade\":79981},\"id\":\"2\",\"jsonrpc\":"
 		+ "\"2.0\"}\n";
-
-	private final HttpClient client = mock(HttpClient.class);
 
 	@Test
 	public void testConfiguration() throws IOException {
@@ -114,17 +104,5 @@ public class AsyncRadixApiConsensusTest {
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(data -> assertEquals(159959L, data.getProcessed()))
 					.onSuccess(data -> assertEquals(159960L, data.getStateVersion())));
-	}
-
-	private Promise<RadixApi> prepareClient(String responseBody) throws IOException {
-		@SuppressWarnings("unchecked")
-		var response = (HttpResponse<String>) mock(HttpResponse.class);
-		var completableFuture = new CompletableFuture<HttpResponse<String>>();
-
-		when(response.body()).thenReturn(NETWORK_ID, responseBody);
-		when(client.<String>sendAsync(any(), any())).thenReturn(completableFuture);
-
-		completableFuture.completeAsync(() -> response);
-		return AsyncRadixApi.connect(BASE_URL, RadixApi.DEFAULT_PRIMARY_PORT, RadixApi.DEFAULT_SECONDARY_PORT, client, Optional.empty());
 	}
 }
