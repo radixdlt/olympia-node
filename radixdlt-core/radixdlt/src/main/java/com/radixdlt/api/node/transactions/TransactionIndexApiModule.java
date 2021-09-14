@@ -64,13 +64,11 @@
 package com.radixdlt.api.node.transactions;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.node.NodeServer;
-import com.radixdlt.api.node.system.SystemEndpoint;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcController;
