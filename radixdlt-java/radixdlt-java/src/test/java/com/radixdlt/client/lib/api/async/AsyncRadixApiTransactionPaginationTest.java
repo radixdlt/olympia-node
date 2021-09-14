@@ -90,7 +90,7 @@ public class AsyncRadixApiTransactionPaginationTest {
 	private static final String BASE_URL = "http://localhost/";
 
 	@Test
-	//@Ignore("Online test")
+	@Ignore("Online test")
 	public void testTransactionHistoryInPages() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)

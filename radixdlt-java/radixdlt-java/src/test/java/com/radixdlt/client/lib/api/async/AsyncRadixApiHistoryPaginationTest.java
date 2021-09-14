@@ -104,7 +104,7 @@ public class AsyncRadixApiHistoryPaginationTest {
 	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
 	@Test
-//	@Ignore("Online test")
+	@Ignore("Online test")
 	public void testAddManyTransactions() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
