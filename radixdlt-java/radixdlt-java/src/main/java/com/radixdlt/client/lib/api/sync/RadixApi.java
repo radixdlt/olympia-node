@@ -99,6 +99,7 @@ import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionHistory2;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TransactionsDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
@@ -258,6 +259,12 @@ public interface RadixApi {
 
 	Network network();
 
+	interface Transactions {
+		Result<TransactionsDTO> get(OptionalLong offset, long limit);
+	}
+
+	Transactions transactions();
+
 	/**
 	 * Transaction API's.
 	 * <p>
@@ -391,7 +398,7 @@ public interface RadixApi {
 		 * @param size batch size
 		 * @param offset offset to start retrieval at
 		 */
-		Result<TransactionHistory2> history2(AccountAddress address, int size, OptionalLong offset);
+		Result<TransactionHistory2> history2(AccountAddress address, int limit, OptionalLong offset);
 
 		/**
 		 * Get stakes made from given account.

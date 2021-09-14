@@ -65,6 +65,7 @@
 package com.radixdlt.client.lib.api.sync;
 
 import com.radixdlt.client.lib.dto.TransactionHistory2;
+import com.radixdlt.client.lib.dto.TransactionsDTO;
 import org.bouncycastle.util.encoders.Hex;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -380,6 +381,20 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 	@Override
 	public Network network() {
 		return network;
+	}
+
+	private final Transactions transactions = new Transactions() {
+		@Override
+		public Result<TransactionsDTO> get(OptionalLong offset, long limit) {
+			var request = request(TRANSACTIONS_GET, limit);
+			offset.ifPresent(request::addParameters);
+			return call(request, new TypeReference<>() {});
+		}
+	};
+
+	@Override
+	public Transactions transactions() {
+		return transactions;
 	}
 
 	@Override
