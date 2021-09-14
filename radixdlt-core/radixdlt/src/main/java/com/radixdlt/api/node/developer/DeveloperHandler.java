@@ -134,14 +134,9 @@ public final class DeveloperHandler {
 		return Result.wrap(
 			UNABLE_TO_PREPARE_TX,
 			() -> {
-				try {
-					var txn = genesisBuilder.build(message, System.currentTimeMillis(), actions);
-					var proof = genesisBuilder.generateGenesisProof(txn);
-					return VerifiedTxnsAndProof.create(List.of(txn), proof);
-				} catch (Exception e) {
-					e.printStackTrace();
-					throw e;
-				}
+				var txn = genesisBuilder.build(message, System.currentTimeMillis(), actions);
+				var proof = genesisBuilder.generateGenesisProof(txn);
+				return VerifiedTxnsAndProof.create(List.of(txn), proof);
 			}
 		);
 	}
