@@ -89,7 +89,16 @@ public final class Transaction2DTO {
 	private final List<Action> actions;
 	private final byte[] raw;
 
-	private Transaction2DTO(AID txID, long stateVersion, long size, TxTimestamp sentAt, UInt256 fee, String message, List<Action> actions, byte[] raw) {
+	private Transaction2DTO(
+		AID txID,
+		long stateVersion,
+		long size,
+		TxTimestamp sentAt,
+		UInt256 fee,
+		String message,
+		List<Action> actions,
+		byte[] raw
+	) {
 		this.txID = txID;
 		this.stateVersion = stateVersion;
 		this.size = size;
