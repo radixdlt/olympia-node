@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix DLT Ltd incorporated in England.
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -61,90 +60,55 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
-package com.radixdlt.client.lib.api.async;
 
+package com.radixdlt.client.lib.api.sync;
+
+import com.radixdlt.client.lib.dto.Transaction2DTO;
+import com.radixdlt.client.lib.dto.TransactionsDTO;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.NavigationCursor;
-import com.radixdlt.client.lib.api.TransactionRequest;
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.client.lib.dto.TransactionHistory;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.utils.Ints;
-import com.radixdlt.utils.UInt256;
-
 import java.util.List;
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 /*
  * Before running this test, launch in separate console local network (cd radixdlt-core/docker && ./scripts/rundocker.sh 2).
  *
- * Then comment '@Ignore' annotations for both tests.
+ * Then comment out '@Ignore' annotations for both tests.
  *
  * Then run testAddManyTransactions() few times (it generates a number of transfer transactions)
  *
  * Then run testTransactionHistoryInPages(). It should print list of transactions split into batches of 50 (see parameters)
  */
 //TODO: move to acceptance tests
-public class AsyncRadixApiHistoryPaginationTest {
+public class SyncRadixApiTransactionPaginationTest {
 	private static final String BASE_URL = "http://localhost/";
-	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
-	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
-	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
-	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
-
-	@Test
-	@Ignore("Online test")
-	public void testAddManyTransactions() {
-		RadixApi.connect(BASE_URL)
-			.map(RadixApi::withTrace)
-			.join()
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> {
-				for (int i = 0; i < 20; i++) {
-					addTransaction(client, i);
-					try {
-						Thread.sleep(500);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			});
-	}
 
 	@Test
 	@Ignore("Online test")
 	public void testTransactionHistoryInPages() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
-			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(
 				client -> {
-					var cursorHolder = new AtomicReference<NavigationCursor>();
+					var cursorHolder = new AtomicReference<>(OptionalLong.empty());
 					do {
-						client.account().history(ACCOUNT_ADDRESS1, 50, Optional.ofNullable(cursorHolder.get())).join()
+						client.transaction().list(100, cursorHolder.get())
 							.onFailure(failure -> fail(failure.toString()))
-							.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
-							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
-							.map(TransactionHistory::getTransactions)
+							.onSuccess(v -> cursorHolder.set(v.getNextOffset()))
+							.map(TransactionsDTO::getTransactions)
 							.map(this::formatTxns)
 							.onSuccess(System.out::println);
-					} while (cursorHolder.get() != null && !cursorHolder.get().value().isEmpty());
+					} while (cursorHolder.get().isPresent());
 				});
 	}
 
-	private List<String> formatTxns(List<TransactionDTO> t) {
+	private List<String> formatTxns(List<Transaction2DTO> t) {
 		return t.stream()
 			.map(v -> String.format(
 				"%s (%s) - %s (%d:%d), Fee: %s%n",
@@ -156,38 +120,5 @@ public class AsyncRadixApiHistoryPaginationTest {
 				v.getFee()
 			))
 			.collect(Collectors.toList());
-	}
-
-	private void addTransaction(RadixApi client, int count) {
-		var request = TransactionRequest.createBuilder(ACCOUNT_ADDRESS1)
-			.transfer(
-				ACCOUNT_ADDRESS1,
-				ACCOUNT_ADDRESS2,
-				UInt256.from(count + 10),
-				"xrd_dr1qyrs8qwl"
-			)
-			.message("Test message " + count)
-			.build();
-
-		client.transaction().build(request).join()
-			.onFailure(failure -> fail(failure.toString()))
-			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
-			.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false).join()
-				.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
-				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction).join()
-					.onFailure(failure -> fail(failure.toString()))
-					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
-	}
-
-	private static ECKeyPair keyPairOf(int pk) {
-		var privateKey = new byte[ECKeyPair.BYTES];
-
-		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
-
-		try {
-			return ECKeyPair.fromPrivateKey(privateKey);
-		} catch (PrivateKeyException | PublicKeyException e) {
-			throw new IllegalArgumentException("Error while generating public key", e);
-		}
 	}
 }

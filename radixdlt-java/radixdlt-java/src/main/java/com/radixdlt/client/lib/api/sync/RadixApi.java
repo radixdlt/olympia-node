@@ -259,12 +259,6 @@ public interface RadixApi {
 
 	Network network();
 
-	interface Transactions {
-		Result<TransactionsDTO> get(OptionalLong offset, long limit);
-	}
-
-	Transactions transactions();
-
 	/**
 	 * Transaction API's.
 	 * <p>
@@ -316,6 +310,14 @@ public interface RadixApi {
 		 * @param txId the ID of the transaction to get status for
 		 */
 		Result<TransactionStatusDTO> status(AID txId);
+
+		/**
+		 * Get paginated list of indexed transactions.
+		 *
+		 * @param limit number of transactions to return
+		 * @param offset starting offset
+		 */
+		Result<TransactionsDTO> list(long limit, OptionalLong offset);
 	}
 
 	Transaction transaction();

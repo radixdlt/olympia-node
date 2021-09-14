@@ -99,6 +99,7 @@ import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionHistory2;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TransactionsDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
@@ -308,6 +309,14 @@ public interface RadixApi {
 		 * @param txId the ID of the transaction to get status for
 		 */
 		Promise<TransactionStatusDTO> status(AID txId);
+
+		/**
+		 * Get paginated list of indexed transactions.
+		 *
+		 * @param limit number of transactions to return
+		 * @param offset starting offset
+		 */
+		Promise<TransactionsDTO> list(long limit, OptionalLong offset);
 	}
 
 	Transaction transaction();

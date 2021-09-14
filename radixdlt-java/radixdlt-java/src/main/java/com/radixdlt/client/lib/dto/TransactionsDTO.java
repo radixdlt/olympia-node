@@ -72,7 +72,7 @@ import java.util.OptionalLong;
 
 import static java.util.Objects.requireNonNull;
 
-public class TransactionsDTO {
+public final class TransactionsDTO {
 	private final Long nextOffset;
 	private final List<Transaction2DTO> transactions;
 	private final long totalCount;
