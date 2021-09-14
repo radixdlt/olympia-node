@@ -123,13 +123,13 @@ public class ValidatorArchiveInfoService {
 		var metadata = validatorInfoService.getMetadata(k);
 		var curData = validatorInfoService.getValidatorStakeData(k);
 		var owner = validatorInfoService.getNextEpochValidatorOwner(k).getOwner();
-		var individualStakes = validatorInfoService.getEstimatedIndividualStakes(curData);
+		var ownerEstimatedStake = validatorInfoService.getEstimatedIndividualStake(curData, owner);
 		var preparedStakes = validatorInfoService.getPreparedStakes(k);
 		var totalPreparedStakes = preparedStakes.values().stream().reduce(UInt384::add).orElse(UInt384.ZERO).getLow();
 		var preparedUnstakes = validatorInfoService.getEstimatedPreparedUnstakes(curData);
 		var totalPreparedUnstakes = preparedUnstakes.values().stream().reduce(UInt256::add).orElse(UInt256.ZERO);
 		var totalStake = curData.getTotalStake().add(totalPreparedStakes).subtract(totalPreparedUnstakes);
-		var ownerStake = individualStakes.getOrDefault(owner, UInt256.ZERO)
+		var ownerStake = ownerEstimatedStake
 			.add(preparedStakes.getOrDefault(owner, UInt384.ZERO).getLow())
 			.subtract(preparedUnstakes.getOrDefault(owner, UInt256.ZERO));
 		var allowsDelegation = validatorInfoService.getAllowDelegationFlag(k).allowsDelegation();
