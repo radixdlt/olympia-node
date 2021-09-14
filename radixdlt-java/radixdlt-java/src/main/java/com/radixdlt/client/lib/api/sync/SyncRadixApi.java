@@ -222,6 +222,13 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 		public Result<TransactionStatusDTO> status(AID txId) {
 			return call(request(TRANSACTION_STATUS, txId.toString()), new TypeReference<>() {});
 		}
+
+		@Override
+		public Result<TransactionsDTO> list(long limit, OptionalLong offset) {
+			var request = request(TRANSACTION_LIST, limit);
+			offset.ifPresent(request::addParameters);
+			return call(request, new TypeReference<>() {});
+		}
 	};
 
 	private final SingleAccount account = new SingleAccount() {
@@ -381,20 +388,6 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 	@Override
 	public Network network() {
 		return network;
-	}
-
-	private final Transactions transactions = new Transactions() {
-		@Override
-		public Result<TransactionsDTO> get(OptionalLong offset, long limit) {
-			var request = request(TRANSACTIONS_GET, limit);
-			offset.ifPresent(request::addParameters);
-			return call(request, new TypeReference<>() {});
-		}
-	};
-
-	@Override
-	public Transactions transactions() {
-		return transactions;
 	}
 
 	@Override

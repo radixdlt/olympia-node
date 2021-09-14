@@ -61,12 +61,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.client.lib.api.sync;
+package com.radixdlt.client.lib.api.async;
+
+import org.junit.Ignore;
+import org.junit.Test;
 
 import com.radixdlt.client.lib.dto.Transaction2DTO;
 import com.radixdlt.client.lib.dto.TransactionsDTO;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import java.util.List;
 import java.util.OptionalLong;
@@ -85,20 +86,21 @@ import static org.junit.Assert.fail;
  * Then run testTransactionHistoryInPages(). It should print list of transactions split into batches of 50 (see parameters)
  */
 //TODO: move to acceptance tests
-public class SyncRadixApiTransactionsTest {
+public class AsyncRadixApiTransactionPaginationTest {
 	private static final String BASE_URL = "http://localhost/";
 
 	@Test
-	@Ignore("Online test")
+	//@Ignore("Online test")
 	public void testTransactionHistoryInPages() {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
+			.join()
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(
 				client -> {
 					var cursorHolder = new AtomicReference<>(OptionalLong.empty());
 					do {
-						client.transactions().get(cursorHolder.get(), 100)
+						client.transaction().list(100, cursorHolder.get()).join()
 							.onFailure(failure -> fail(failure.toString()))
 							.onSuccess(v -> cursorHolder.set(v.getNextOffset()))
 							.map(TransactionsDTO::getTransactions)

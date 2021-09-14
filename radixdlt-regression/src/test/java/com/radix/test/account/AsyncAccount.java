@@ -57,11 +57,6 @@ public final class AsyncAccount implements RadixApi {
     }
 
     @Override
-    public Transactions transactions() {
-        return client.transactions();
-    }
-
-    @Override
     public Transaction transaction() {
         return client.transaction();
     }

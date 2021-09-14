@@ -61,78 +61,64 @@
  * permissions under this License.
  */
 
-package com.radixdlt.client.lib.dto;
+package com.radixdlt.client.lib.api.sync;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.lib.dto.Transaction2DTO;
+import com.radixdlt.client.lib.dto.TransactionsDTO;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
-import static java.util.Objects.requireNonNull;
+import static org.junit.Assert.fail;
 
-public final class TransactionsDTO {
-	private final Long nextOffset;
-	private final List<Transaction2DTO> transactions;
-	private final long totalCount;
+/*
+ * Before running this test, launch in separate console local network (cd radixdlt-core/docker && ./scripts/rundocker.sh 2).
+ *
+ * Then comment out '@Ignore' annotations for both tests.
+ *
+ * Then run testAddManyTransactions() few times (it generates a number of transfer transactions)
+ *
+ * Then run testTransactionHistoryInPages(). It should print list of transactions split into batches of 50 (see parameters)
+ */
+//TODO: move to acceptance tests
+public class SyncRadixApiTransactionPaginationTest {
+	private static final String BASE_URL = "http://localhost/";
 
-	private TransactionsDTO(Long nextOffset, List<Transaction2DTO> transactions, long totalCount) {
-		this.nextOffset = nextOffset;
-		this.transactions = transactions;
-		this.totalCount = totalCount;
+	@Test
+	@Ignore("Online test")
+	public void testTransactionHistoryInPages() {
+		RadixApi.connect(BASE_URL)
+			.map(RadixApi::withTrace)
+			.onFailure(failure -> fail(failure.toString()))
+			.onSuccess(
+				client -> {
+					var cursorHolder = new AtomicReference<>(OptionalLong.empty());
+					do {
+						client.transaction().list(100, cursorHolder.get())
+							.onFailure(failure -> fail(failure.toString()))
+							.onSuccess(v -> cursorHolder.set(v.getNextOffset()))
+							.map(TransactionsDTO::getTransactions)
+							.map(this::formatTxns)
+							.onSuccess(System.out::println);
+					} while (cursorHolder.get().isPresent());
+				});
 	}
 
-	@JsonCreator
-	public static TransactionsDTO create(
-		@JsonProperty("nextOffset") Long nextOffset,
-		@JsonProperty(value = "transactions", required = true) List<Transaction2DTO> transactions,
-		@JsonProperty(value = "count", required = true) long count,
-		@JsonProperty(value = "totalCount", required = true) long totalCount
-	) {
-		requireNonNull(transactions);
-
-		return new TransactionsDTO(nextOffset, transactions, totalCount);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-
-		if (!(o instanceof TransactionsDTO)) {
-			return false;
-		}
-
-		var that = (TransactionsDTO) o;
-		return totalCount == that.totalCount
-			&& Objects.equals(nextOffset, that.nextOffset)
-			&& transactions.equals(that.transactions);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(nextOffset, transactions, totalCount);
-	}
-
-	@Override
-	public String toString() {
-		return "TransactionsDTO("
-			+ "nextOffset=" + nextOffset
-			+ ", transactions=" + transactions
-			+ ", totalCount=" + totalCount + ')';
-	}
-
-	public OptionalLong getNextOffset() {
-		return nextOffset == null ? OptionalLong.empty() : OptionalLong.of(nextOffset);
-	}
-
-	public List<Transaction2DTO> getTransactions() {
-		return transactions;
-	}
-
-	public long getTotalCount() {
-		return totalCount;
+	private List<String> formatTxns(List<Transaction2DTO> t) {
+		return t.stream()
+			.map(v -> String.format(
+				"%s (%s) - %s (%d:%d), Fee: %s%n",
+				v.getTxID(),
+				v.getMessage().orElse("<none>"),
+				v.getSentAt().getInstant(),
+				v.getSentAt().getInstant().getEpochSecond(),
+				v.getSentAt().getInstant().getNano(),
+				v.getFee()
+			))
+			.collect(Collectors.toList());
 	}
 }
