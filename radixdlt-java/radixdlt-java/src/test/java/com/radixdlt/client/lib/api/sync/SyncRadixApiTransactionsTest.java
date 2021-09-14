@@ -96,7 +96,7 @@ public class SyncRadixApiTransactionsTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(
 				client -> {
-					var cursorHolder = new AtomicReference<>(OptionalLong.of(1));
+					var cursorHolder = new AtomicReference<>(OptionalLong.empty());
 					do {
 						client.transactions().get(cursorHolder.get().getAsLong(), 100)
 							.onFailure(failure -> fail(failure.toString()))

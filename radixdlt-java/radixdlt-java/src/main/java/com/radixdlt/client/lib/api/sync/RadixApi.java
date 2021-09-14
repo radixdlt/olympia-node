@@ -260,8 +260,7 @@ public interface RadixApi {
 	Network network();
 
 	interface Transactions {
-		Result<TransactionsDTO> get(long offset, int limit);
-
+		Result<TransactionsDTO> get(OptionalLong offset, long limit);
 	}
 
 	Transactions transactions();
@@ -399,7 +398,7 @@ public interface RadixApi {
 		 * @param size batch size
 		 * @param offset offset to start retrieval at
 		 */
-		Result<TransactionHistory2> history2(AccountAddress address, int size, OptionalLong offset);
+		Result<TransactionHistory2> history2(AccountAddress address, int limit, OptionalLong offset);
 
 		/**
 		 * Get stakes made from given account.

@@ -385,8 +385,9 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 
 	private final Transactions transactions = new Transactions() {
 		@Override
-		public Result<TransactionsDTO> get(long offset, int limit) {
-			var request = request(TRANSACTIONS_GET, offset, limit);
+		public Result<TransactionsDTO> get(OptionalLong offset, long limit) {
+			var request = request(TRANSACTIONS_GET, limit);
+			offset.ifPresent(request::addParameters);
 			return call(request, new TypeReference<>() {});
 		}
 	};

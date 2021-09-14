@@ -113,12 +113,13 @@ public final class TransactionIndexApiModule extends AbstractModule {
 	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexStore store, BerkeleyTransactionsByIdStore txnStore) {
 		return request -> withRequiredParameters(
 			request,
-			List.of("offset", "limit"),
+			List.of("limit"),
+			List.of("offset"),
 			params -> Result.wrap(
 				e -> Failure.failure(-1, e.getMessage()),
 				() -> {
-					var offset = params.getLong("offset");
 					var limit = params.getLong("limit");
+					var offset = params.optLong("offset", 1);
 					var transactions = new JSONArray();
 					try (var stream = store.get(offset)) {
 						stream.limit(limit)
