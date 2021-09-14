@@ -99,6 +99,7 @@ import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionHistory2;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TransactionsDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
@@ -309,6 +310,14 @@ public interface RadixApi {
 		 * @param txId the ID of the transaction to get status for
 		 */
 		Result<TransactionStatusDTO> status(AID txId);
+
+		/**
+		 * Get paginated list of indexed transactions.
+		 *
+		 * @param limit number of transactions to return
+		 * @param offset starting offset
+		 */
+		Result<TransactionsDTO> list(long limit, OptionalLong offset);
 	}
 
 	Transaction transaction();
@@ -391,7 +400,7 @@ public interface RadixApi {
 		 * @param size batch size
 		 * @param offset offset to start retrieval at
 		 */
-		Result<TransactionHistory2> history2(AccountAddress address, int size, OptionalLong offset);
+		Result<TransactionHistory2> history2(AccountAddress address, int limit, OptionalLong offset);
 
 		/**
 		 * Get stakes made from given account.

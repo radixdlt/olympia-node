@@ -61,37 +61,78 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.transactions.lookup;
+package com.radixdlt.client.lib.dto;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.JsonRpcHandler;
-import com.radixdlt.api.qualifier.ArchiveEndpoint;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ArchiveTransactionStatusAndLookupApiModule extends AbstractModule {
+import java.util.List;
+import java.util.Objects;
+import java.util.OptionalLong;
+
+import static java.util.Objects.requireNonNull;
+
+public final class TransactionsDTO {
+	private final Long nextOffset;
+	private final List<Transaction2DTO> transactions;
+	private final long totalCount;
+
+	private TransactionsDTO(Long nextOffset, List<Transaction2DTO> transactions, long totalCount) {
+		this.nextOffset = nextOffset;
+		this.transactions = transactions;
+		this.totalCount = totalCount;
+	}
+
+	@JsonCreator
+	public static TransactionsDTO create(
+		@JsonProperty("nextOffset") Long nextOffset,
+		@JsonProperty(value = "transactions", required = true) List<Transaction2DTO> transactions,
+		@JsonProperty(value = "count", required = true) long count,
+		@JsonProperty(value = "totalCount", required = true) long totalCount
+	) {
+		requireNonNull(transactions);
+
+		return new TransactionsDTO(nextOffset, transactions, totalCount);
+	}
+
 	@Override
-	public void configure() {
-		install(new TransactionStatusServiceModule());
-		bind(BerkeleyTransactionsByIdStore.class).in(Scopes.SINGLETON);
-		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		binder.addBinding().to(BerkeleyTransactionsByIdStore.class);
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof TransactionsDTO)) {
+			return false;
+		}
+
+		var that = (TransactionsDTO) o;
+		return totalCount == that.totalCount
+			&& Objects.equals(nextOffset, that.nextOffset)
+			&& transactions.equals(that.transactions);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.lookup_transaction")
-	public JsonRpcHandler transactionsLookupTransaction(ArchiveTransactionsHandler archiveTransactionsHandler) {
-		return archiveTransactionsHandler::handleTransactionsLookupTransaction;
+	@Override
+	public int hashCode() {
+		return Objects.hash(nextOffset, transactions, totalCount);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.get_transaction_status")
-	public JsonRpcHandler transactionsGetTransactionStatus(ArchiveTransactionsHandler archiveTransactionsHandler) {
-		return archiveTransactionsHandler::handleTransactionsGetTransactionStatus;
+	@Override
+	public String toString() {
+		return "TransactionsDTO("
+			+ "nextOffset=" + nextOffset
+			+ ", transactions=" + transactions
+			+ ", totalCount=" + totalCount + ')';
+	}
+
+	public OptionalLong getNextOffset() {
+		return nextOffset == null ? OptionalLong.empty() : OptionalLong.of(nextOffset);
+	}
+
+	public List<Transaction2DTO> getTransactions() {
+		return transactions;
+	}
+
+	public long getTotalCount() {
+		return totalCount;
 	}
 }

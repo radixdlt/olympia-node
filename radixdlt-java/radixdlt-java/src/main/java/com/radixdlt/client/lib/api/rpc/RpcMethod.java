@@ -16,6 +16,7 @@ public enum RpcMethod {
 	ACCOUNT_STAKES("account.get_stake_positions", ARCHIVE),
 	ACCOUNT_UNSTAKES("account.get_unstake_positions", ARCHIVE),
 
+	TRANSACTION_LIST("transactions.get_transactions", ARCHIVE),
 	TRANSACTION_LOOKUP("transactions.lookup_transaction", ARCHIVE),
 	TRANSACTION_STATUS("transactions.get_transaction_status", ARCHIVE),
 

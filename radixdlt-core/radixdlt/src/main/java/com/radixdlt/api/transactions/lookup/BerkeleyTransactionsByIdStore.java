@@ -68,14 +68,17 @@ import com.google.inject.Provider;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
 import com.radixdlt.api.data.ActionType;
+import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;
 import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
@@ -111,7 +114,7 @@ import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalStore {
-	private static final String TXN_ID_DB_NAME = "radix.transactions_by_id_db";
+	private static final String TXN_ID_DB_NAME = "radix.transactions";
 	private Database txnIdDatabase; // Txns by AID; Append-only
 	private final AtomicReference<Instant> timestamp = new AtomicReference<>();
 	private final Addressing addressing;
@@ -155,6 +158,71 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		if (txnIdDatabase != null) {
 			txnIdDatabase.close();
 		}
+	}
+
+	private JSONArray getAccountingJson(REProcessedTxn txn, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
+		var accounting = REResourceAccounting.compute(txn.stateUpdates());
+		var bucketAccounting = new JSONArray();
+		for (var e : accounting.bucketAccounting().entrySet()) {
+			var b = e.getKey();
+			var i = e.getValue();
+
+			var bucketJson = new JSONObject();
+			if (b.getOwner() != null) {
+				bucketJson.put("owner", addressing.forAccounts().of(b.getOwner()));
+			}
+			if (b.getValidatorKey() != null) {
+				bucketJson.put("validator", addressing.forValidators().of(b.getValidatorKey()));
+			}
+			bucketJson.put("delta", i.toString());
+			if (b.resourceAddr() == null) {
+				// Don't keep track of stakeOwnership
+				continue;
+			}
+
+			var mapKey = SystemMapKey.ofResourceData(b.resourceAddr(), SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+			var data = mapper.apply(mapKey).orElseThrow().getData();
+			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+			var metadata = (TokenResourceMetadata) deserialize(data);
+			var rri = addressing.forResources().of(metadata.getSymbol(), b.resourceAddr());
+			bucketJson.put("asset", rri);
+			bucketAccounting.put(bucketJson);
+		}
+		return bucketAccounting;
+	}
+
+
+	private JSONArray getEventsJson(REProcessedTxn txn) {
+		var eventsJson = new JSONArray();
+		for (var event : txn.getEvents()) {
+			if (event instanceof ResourceCreatedEvent) {
+				var resourceCreated = (ResourceCreatedEvent) event;
+				var rri = addressing.forResources().of(resourceCreated.getSymbol(), resourceCreated.getTokenResource().getAddr());
+				var eventJson = new JSONObject()
+					.put("type", "token_created")
+					.put("rri", rri);
+				eventsJson.put(eventJson);
+			}
+		}
+
+		txn.stateUpdates().filter(REStateUpdate::isBootUp).forEach(update -> {
+			var substate = update.getParsed();
+			if (substate instanceof RoundData) {
+				var d = (RoundData) substate;
+				var eventJson = new JSONObject()
+					.put("type", "new_round")
+					.put("timestamp", d.getTimestamp())
+					.put("round", d.getView());
+				eventsJson.put(eventJson);
+			} else if (substate instanceof EpochData) {
+				var d = (EpochData) substate;
+				var eventJson = new JSONObject()
+					.put("type", "new_epoch")
+					.put("epoch", d.getEpoch());
+				eventsJson.put(eventJson);
+			}
+		});
+		return eventsJson;
 	}
 
 	private JSONObject mapToJSON(
@@ -259,17 +327,22 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 				}
 			))
 			.forEach(actionsJson::put);
-
+		var eventsJson = getEventsJson(txn);
+		var accountingJson = getAccountingJson(txn, mapper);
 		var fee = txn.getFeePaid();
 		var message = txn.getMsg()
 			.map(bytes -> new String(bytes, RadixConstants.STANDARD_CHARSET));
 		var jsonString = new JSONObject()
 			.put("txID", txn.getTxnId())
+			.put("stateVersion", stateVersion)
 			.put("raw", Bytes.toHexString(txn.getTxn().getPayload()))
+			.put("accountingEntries", accountingJson)
+			.put("actions", actionsJson)
+			.put("events", eventsJson)
+			.putOpt("message", message.orElse(null))
+			.put("size", txn.getTxn().getPayload().length)
 			.put("timestamp", DateTimeFormatter.ISO_INSTANT.format(timestamp.get()))
 			.put("fee", fee)
-			.put("actions", actionsJson)
-			.putOpt("message", message.orElse(null))
 			.toString();
 		var value = new DatabaseEntry(jsonString.getBytes(StandardCharsets.UTF_8));
 

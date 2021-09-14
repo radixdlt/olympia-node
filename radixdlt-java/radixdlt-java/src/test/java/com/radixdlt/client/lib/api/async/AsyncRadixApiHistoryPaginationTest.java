@@ -114,7 +114,7 @@ public class AsyncRadixApiHistoryPaginationTest {
 				for (int i = 0; i < 20; i++) {
 					addTransaction(client, i);
 					try {
-						Thread.sleep(100);
+						Thread.sleep(500);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}

@@ -366,6 +366,11 @@ public class DtoTest {
 	}
 
 	@Test
+	public void testTransactionsDTO() {
+		EqualsVerifier.forClass(TransactionsDTO.class).suppress(Warning.NULL_FIELDS).verify();
+	}
+
+	@Test
 	public void testTransaction2DTO() {
 		EqualsVerifier.forClass(Transaction2DTO.class).suppress(Warning.NULL_FIELDS).verify();
 	}
