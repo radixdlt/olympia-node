@@ -123,10 +123,10 @@ import java.util.OptionalLong;
  * <p>
  * Each endpoint can be individually enabled or disabled, so even if client is successfully connected, it does not
  * mean that all API's are available. This should be kept in mind while using client with particular node.
- * <p>
+ *
  * <h3>Client API structure</h3>
  * API is split into following groups:
- * <p>
+ *
  * <table>
  * <caption style="display:none">apiGroups</caption>
  * <tbody>
@@ -206,16 +206,20 @@ public interface RadixApi {
 	RadixApi withTrace();
 
 	/**
-	 * Get {@link Addressing} instance corresponding to connected network
-	 */
-	Addressing addressing();
-
-	/**
 	 * Configure timeout for network operations.
 	 *
 	 * @param timeout - operation timeout
+	 *
+	 * @return {@code this} for fluent API compatibility
 	 */
 	RadixApi withTimeout(Duration timeout);
+
+	/**
+	 * Get {@link Addressing} instance corresponding to connected network
+	 *
+	 * @return {@link Addressing} instance
+	 */
+	Addressing addressing();
 
 	/**
 	 * Network API's
@@ -400,7 +404,7 @@ public interface RadixApi {
 		 * @param size batch size
 		 * @param offset offset to start retrieval at
 		 */
-		Result<TransactionHistory2> history2(AccountAddress address, int limit, OptionalLong offset);
+		Result<TransactionHistory2> history2(AccountAddress address, int size, OptionalLong offset);
 
 		/**
 		 * Get stakes made from given account.

@@ -122,10 +122,10 @@ import java.util.OptionalLong;
  * <p>
  * Each endpoint can be individually enabled or disabled, so even if client is successfully connected, it does not
  * mean that all API's are available. This should be kept in mind while using client with particular hode.
- * <p>
+ *
  * <h3>Client API structure</h3>
  * API is split into following groups:
- * <p>
+ *
  * <table>
  * <caption style="display:none">apiGroups</caption>
  * <tbody>

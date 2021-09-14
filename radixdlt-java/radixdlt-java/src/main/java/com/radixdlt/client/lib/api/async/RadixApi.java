@@ -122,10 +122,10 @@ import java.util.OptionalLong;
  * <p>
  * Each endpoint can be individually enabled or disabled, so even if client is successfully connected, it does not
  * mean that all API's are available. This should be kept in mind while using client with particular node.
- * <p>
+ *
  * <h3>Client API structure</h3>
  * API is split into following groups:
- * <p>
+ *
  * <table>
  * <caption style="display:none">apiGroups</caption>
  * <tbody>
@@ -201,20 +201,26 @@ public interface RadixApi {
 
 	/**
 	 * Enable tracing in client.
+	 *
+	 * @return {@code this} for fluent API compatibility
 	 */
 	RadixApi withTrace();
-
-	/**
-	 * Get {@link Addressing} instance corresponding to connected network
-	 */
-	Addressing addressing();
 
 	/**
 	 * Configure timeout for asynchronous operations.
 	 *
 	 * @param timeout - operation timeout
+	 *
+	 * @return {@code this} for fluent API compatibility
 	 */
-	AsyncRadixApi withTimeout(Duration timeout);
+	RadixApi withTimeout(Duration timeout);
+
+	/**
+	 * Get {@link Addressing} instance corresponding to connected network
+	 *
+	 * @return {@link Addressing} instance
+	 */
+	Addressing addressing();
 
 	/**
 	 * Network API's
