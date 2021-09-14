@@ -211,7 +211,7 @@ public class SyncRadixApiCreationTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.transaction().build(request)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(builtTransaction -> assertEquals(amount(1000109).millis(), builtTransaction.getFee()))
+				.onSuccess(builtTransaction -> assertEquals(amount(100116600).micros(), builtTransaction.getFee()))
 				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
 				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
 					.onFailure(failure -> fail(failure.toString()))));

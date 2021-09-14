@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -64,37 +64,31 @@
 
 package com.radixdlt.client.lib.dto;
 
-import org.bouncycastle.util.encoders.Hex;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public final class TxBlob {
-	private final byte[] blob;
-	private final byte[] hashToSign;
-	private final List<Notification> notifications;
+public final class Notification {
+	private final String symbol;
+	private final String rri;
 
-	private TxBlob(byte[] blob, byte[] hashToSign, List<Notification> notifications) {
-		this.blob = blob;
-		this.hashToSign = hashToSign;
-		this.notifications = notifications;
+	private Notification(String symbol, String rri) {
+		this.symbol = symbol;
+		this.rri = rri;
 	}
 
 	@JsonCreator
-	public static TxBlob create(
-		@JsonProperty(value = "blob", required = true) String blob,
-		@JsonProperty(value = "hashOfBlobToSign", required = true) String hashToSign,
-		@JsonProperty("notifications") List<Notification> notifications
+	public static Notification create(
+		@JsonProperty(value = "symbol", required = true) String symbol,
+		@JsonProperty(value = "rri", required = true) String rri
 	) {
-		requireNonNull(blob);
-		requireNonNull(hashToSign);
+		requireNonNull(symbol);
+		requireNonNull(rri);
 
-		return new TxBlob(Hex.decode(blob), Hex.decode(hashToSign), notifications == null ? List.of() : notifications);
+		return new Notification(symbol, rri);
 	}
 
 	@Override
@@ -103,39 +97,32 @@ public final class TxBlob {
 			return true;
 		}
 
-		if (!(o instanceof TxBlob)) {
+		if (!(o instanceof Notification)) {
 			return false;
 		}
 
-		var txBlob = (TxBlob) o;
-		return Arrays.equals(blob, txBlob.blob)
-			&& Arrays.equals(hashToSign, txBlob.hashToSign)
-			&& notifications.equals(txBlob.notifications);
+		var that = (Notification) o;
+		return symbol.equals(that.symbol) && rri.equals(that.rri);
 	}
 
 	@Override
 	public int hashCode() {
-		int result = Arrays.hashCode(blob);
-		result = 31 * result + Arrays.hashCode(hashToSign) + notifications.hashCode();
-		return result;
+		return Objects.hash(symbol, rri);
 	}
 
 	@Override
 	public String toString() {
-		return "TxBlobDTO(blob=" + Hex.toHexString(blob)
-			+ ", hashToSign=" + Hex.toHexString(hashToSign)
-			+ ", notifications= " + notifications + ')';
+		return "{"
+			+ "symbol='" + symbol + '\''
+			+ ", rri='" + rri + '\''
+			+ '}';
 	}
 
-	public byte[] getBlob() {
-		return blob;
+	public String getSymbol() {
+		return symbol;
 	}
 
-	public byte[] getHashToSign() {
-		return hashToSign;
-	}
-
-	public List<Notification> getNotifications() {
-		return notifications;
+	public String getRri() {
+		return rri;
 	}
 }
