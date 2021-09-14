@@ -67,10 +67,11 @@ package com.radixdlt.api.data.action;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.stream.Stream;
 
-class CreateMutableTokenAction implements TransactionAction {
+class CreateMutableTokenAction implements TransactionAction, ResourceAction {
 	private final ECPublicKey signer;
 	private final String name;
 	private final String symbol;
@@ -92,5 +93,15 @@ class CreateMutableTokenAction implements TransactionAction {
 	@Override
 	public Stream<TxAction> toAction() {
 		return Stream.of(new CreateMutableToken(signer, symbol, name, description, iconUrl, tokenUrl));
+	}
+
+	@Override
+	public String getSymbol() {
+		return symbol;
+	}
+
+	@Override
+	public REAddr getAddress() {
+		return REAddr.ofHashedKey(signer, symbol);
 	}
 }

@@ -413,7 +413,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		List<Txn> removed = this.mempool.committed(txCommitted);
 		systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 		if (!removed.isEmpty()) {
-			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
+			var atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
 		}
 

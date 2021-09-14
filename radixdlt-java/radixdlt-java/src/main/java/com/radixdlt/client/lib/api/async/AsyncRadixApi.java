@@ -64,7 +64,6 @@
 
 package com.radixdlt.client.lib.api.async;
 
-import com.radixdlt.client.lib.dto.TransactionHistory2;
 import org.bouncycastle.util.encoders.Hex;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -104,6 +103,7 @@ import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
+import com.radixdlt.client.lib.dto.TransactionHistory2;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
 import com.radixdlt.client.lib.dto.TransactionsDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
@@ -111,6 +111,7 @@ import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
+import com.radixdlt.client.lib.network.HttpClientUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
@@ -122,9 +123,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
-
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.*;
+import static com.radixdlt.errors.RadixErrors.MISSING_BASE_URL;
+
 import static java.util.Optional.ofNullable;
 
 public class AsyncRadixApi extends RadixApiBase implements RadixApi {

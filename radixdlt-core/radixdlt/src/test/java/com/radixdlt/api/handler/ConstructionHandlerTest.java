@@ -86,6 +86,7 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Result;
 
 import java.io.ByteArrayOutputStream;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -112,7 +113,7 @@ public class ConstructionHandlerTest {
 
 	@Test
 	public void testBuildTransactionPositional() {
-		var prepared = PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.TEN);
+		var prepared = PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.TEN, List.of());
 
 		when(submissionService.prepareTransaction(any(), any(), any(), eq(false)))
 			.thenReturn(Result.ok(prepared));
@@ -141,7 +142,7 @@ public class ConstructionHandlerTest {
 
 	@Test
 	public void testBuildTransactionNamed() {
-		var prepared = PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.TEN);
+		var prepared = PreparedTransaction.create(randomBytes(), randomBytes(), UInt256.TEN, List.of());
 
 		when(submissionService.prepareTransaction(any(), any(), any(), eq(false)))
 			.thenReturn(Result.ok(prepared));

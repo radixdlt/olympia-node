@@ -66,9 +66,11 @@ package com.radixdlt.api.service;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.data.PreparedTransaction;
+import com.radixdlt.api.data.action.ResourceAction;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
@@ -87,32 +89,38 @@ import com.radixdlt.identifiers.exception.FailureContainer;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
 import static com.radixdlt.errors.RadixErrors.MUST_MATCH_TX_ID;
-import static com.radixdlt.errors.RadixErrors.UNABLE_TO_SUBMIT_TX;
 import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PREPARE_TX;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_SUBMIT_TX;
 
 public final class SubmissionService {
 	private final Logger logger = LogManager.getLogger();
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
+	private final Addressing addressing;
 
 	@Inject
 	public SubmissionService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
+		Addressing addressing
 	) {
 		this.radixEngine = radixEngine;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
+		this.addressing = addressing;
 	}
 
 	public Result<PreparedTransaction> prepareTransaction(
@@ -122,7 +130,7 @@ public final class SubmissionService {
 			UNABLE_TO_PREPARE_TX,
 			() -> radixEngine.construct(toConstructionRequest(address, steps, message, disableResourceAllocAndDestroy))
 				.buildForExternalSign()
-		).map(this::toPreparedTx);
+		).map(unsignedTxnData -> toPreparedTx(unsignedTxnData, steps));
 	}
 
 	private TxnConstructionRequest toConstructionRequest(
@@ -228,7 +236,31 @@ public final class SubmissionService {
 			.map(Txn::getId);
 	}
 
-	private PreparedTransaction toPreparedTx(UnsignedTxnData unsignedTxnData) {
-		return PreparedTransaction.create(unsignedTxnData.blob(), unsignedTxnData.hashToSign().asBytes(), unsignedTxnData.feesPaid());
+	@SuppressWarnings("UnstableApiUsage")
+	private PreparedTransaction toPreparedTx(UnsignedTxnData unsignedTxnData, List<TransactionAction> steps) {
+		return PreparedTransaction.create(
+			unsignedTxnData.blob(),
+			unsignedTxnData.hashToSign().asBytes(),
+			unsignedTxnData.feesPaid(),
+			extractNotifications(steps)
+		);
+	}
+
+	private List<JSONObject> extractNotifications(List<TransactionAction> steps) {
+		var list = new ArrayList<JSONObject>();
+
+		steps.forEach(step -> processStep(step).ifPresent(list::add));
+
+		return list;
+	}
+
+	private Optional<JSONObject> processStep(TransactionAction step) {
+		if (step instanceof ResourceAction) {
+			var resourceAction = (ResourceAction) step;
+			var rri = addressing.forResources().of(resourceAction.getSymbol(), resourceAction.getAddress());
+			return Optional.of(jsonObject().put("symbol", resourceAction.getSymbol()).put("rri", rri));
+		}
+
+		return Optional.empty();
 	}
 }
