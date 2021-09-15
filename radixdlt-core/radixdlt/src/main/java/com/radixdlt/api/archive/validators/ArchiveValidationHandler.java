@@ -63,23 +63,23 @@
 
 package com.radixdlt.api.archive.validators;
 
-import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.data.ValidatorInfoDetails;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
 import java.util.Optional;
 
-import static com.radixdlt.api.util.JsonRpcUtil.fromList;
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.util.JsonRpcUtil.safeInteger;
-import static com.radixdlt.api.util.JsonRpcUtil.safeString;
-import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
-import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
+import static com.radixdlt.api.JsonRpcUtil.fromCollection;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.JsonRpcUtil.safeInteger;
+import static com.radixdlt.api.JsonRpcUtil.safeString;
+import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
+import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
 import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
@@ -126,7 +126,7 @@ public class ArchiveValidationHandler {
 	private JSONObject formatValidatorResponse(Optional<ECPublicKey> cursor, List<ValidatorInfoDetails> transactions) {
 		return jsonObject()
 			.put("cursor", cursor.map(addressing.forValidators()::of).orElse(""))
-			.put("validators", fromList(transactions, d -> d.asJson(addressing)));
+			.put("validators", fromCollection(transactions, d -> d.asJson(addressing)));
 	}
 
 	private Optional<ECPublicKey> parseAddressCursor(JSONObject params) {

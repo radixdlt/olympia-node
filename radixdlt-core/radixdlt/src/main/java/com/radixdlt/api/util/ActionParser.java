@@ -82,13 +82,14 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static com.radixdlt.api.data.ApiErrors.INVALID_ACTION_DATA;
-import static com.radixdlt.api.data.ApiErrors.MISSING_FIELD;
+import static com.radixdlt.api.data.ApiErrors.MISSING_ACTION_FIELD;
 import static com.radixdlt.api.data.ApiErrors.UNSUPPORTED_ACTION;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MIN;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
 import static com.radixdlt.identifiers.CommonErrors.VALUE_OUT_OF_RANGE;
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_BOOLEAN;
+import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_FLOAT;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.wrap;
 
@@ -141,7 +142,7 @@ public final class ActionParser {
 
 			case UNSTAKE:
 				return allOf(
-					from(element),
+					to(element),
 					validator(element),
 					amount(element)
 				).map(TransactionAction::unstake);
@@ -239,7 +240,7 @@ public final class ActionParser {
 	private Result<REAddr> rri(JSONObject element) {
 		// TODO: Need to verify symbol matches
 		return param(element, "rri")
-			.flatMap(p -> addressing.forResources().parseFunctional(p).map(t -> t.map((__, addr) -> addr)));
+			.flatMap(p -> addressing.forResources().parseToAddr(p));
 	}
 
 	private static final Failure FEE_BOUNDS_FAILURE = VALUE_OUT_OF_RANGE.with(
@@ -249,21 +250,19 @@ public final class ActionParser {
 
 	private Result<Integer> fee(JSONObject element) {
 		return param(element, "validatorFee")
-			.flatMap(parameter -> wrap(UNABLE_TO_DECODE, () -> Double.parseDouble(parameter)))
+			.flatMap(parameter -> wrap(() -> UNABLE_TO_PARSE_FLOAT.with(parameter), () -> Double.parseDouble(parameter)))
 			.map(doublePercentage -> (int) (doublePercentage * RAKE_PERCENTAGE_GRANULARITY))
 			.filter(percentage -> percentage >= RAKE_MIN && percentage <= RAKE_MAX, FEE_BOUNDS_FAILURE);
 	}
 
 	private Result<Boolean> allowDelegation(JSONObject element) {
 		return param(element, "allowDelegation")
-			.flatMap(parameter ->
-						 Stream.of("true", "false")
-							 .filter(parameter::equals)
-							 .findAny()
-							 .map(Boolean::parseBoolean)
-							 .map(Result::ok)
-							 .orElseGet(() -> UNABLE_TO_DECODE.with(parameter).result())
-			);
+			.flatMap(parameter -> Stream.of("true", "false")
+				.filter(parameter::equals)
+				.findAny()
+				.map(Boolean::parseBoolean)
+				.map(Result::ok)
+				.orElseGet(() -> UNABLE_TO_PARSE_BOOLEAN.with(parameter).result()));
 	}
 
 	private Result<REAddr> from(JSONObject element) {
@@ -350,6 +349,6 @@ public final class ActionParser {
 		return ofNullable(params.opt(name))
 			.map(Object::toString)
 			.map(Result::ok)
-			.orElseGet(() -> MISSING_FIELD.with(name).result());
+			.orElseGet(() -> MISSING_ACTION_FIELD.with(name).result());
 	}
 }

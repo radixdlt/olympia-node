@@ -83,7 +83,7 @@ import java.util.concurrent.ExecutionException;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
 
-import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
+import static com.radixdlt.atom.actions.ActionErrors.UNABLE_TO_SUBMIT_TX;
 
 public class FaucetHandler {
 	private final REAddr account;
@@ -119,7 +119,7 @@ public class FaucetHandler {
 			var success = completableFuture.get();
 			return Result.ok(FaucetHandler.formatTxId(success.getTxn().getId()));
 		} catch (ExecutionException e) {
-			return SUBMISSION_FAILURE.with(e.getCause().getMessage()).result();
+			return UNABLE_TO_SUBMIT_TX.with(e.getCause().getMessage()).result();
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new IllegalStateException(e);

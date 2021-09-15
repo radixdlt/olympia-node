@@ -66,9 +66,12 @@ package com.radixdlt.api.service;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.data.ApiErrors;
 import com.radixdlt.api.data.PreparedTransaction;
+import com.radixdlt.api.data.action.ResourceAction;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
@@ -85,41 +88,48 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.RadixConstants;
+import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_PREPARE_TX;
-import static com.radixdlt.atom.actions.ActionErrors.SUBMISSION_FAILURE;
-import static com.radixdlt.atom.actions.ActionErrors.TRANSACTION_ADDRESS_DOES_NOT_MATCH;
+import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.data.ApiErrors.MUST_MATCH_TX_ID;
+import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_SUBMIT_TX;
+import static com.radixdlt.identifiers.CommonErrors.OPERATION_INTERRUPTED;
 
 public final class SubmissionService {
 	private final Logger logger = LogManager.getLogger();
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
+	private final Addressing addressing;
 
 	@Inject
 	public SubmissionService(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
+		Addressing addressing
 	) {
 		this.radixEngine = radixEngine;
 		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
+		this.addressing = addressing;
 	}
 
 	public Result<PreparedTransaction> prepareTransaction(
 		REAddr address, List<TransactionAction> steps, Optional<String> message, boolean disableResourceAllocAndDestroy
 	) {
 		return Result.wrap(
-			UNABLE_TO_PREPARE_TX,
+			ApiErrors.UNABLE_TO_PREPARE_TX,
 			() -> radixEngine.construct(toConstructionRequest(address, steps, message, disableResourceAllocAndDestroy))
 				.buildForExternalSign()
-		).map(this::toPreparedTx);
+		).map(unsignedTxnData -> toPreparedTx(unsignedTxnData, steps));
 	}
 
 	private TxnConstructionRequest toConstructionRequest(
@@ -149,7 +159,7 @@ public final class SubmissionService {
 		var txn = TxLowLevelBuilder.newBuilder(blob).build();
 
 		if (!sameTxId(txId, txn.getId())) {
-			return TRANSACTION_ADDRESS_DOES_NOT_MATCH.result();
+			return MUST_MATCH_TX_ID.result();
 		}
 
 		return submit(txn);
@@ -169,17 +179,16 @@ public final class SubmissionService {
 			var success = completableFuture.get();
 			return Result.ok(success.getTxn());
 		} catch (ExecutionException e) {
-			var cause = lookupCause(e);
-
 			logger.warn("Unable to fulfill submission request for TxID (" + txn.getId() + ")", e);
-			return SUBMISSION_FAILURE.with(cause.getMessage()).result();
+			return lookupCause(e).result();
 		} catch (InterruptedException e) {
+			logger.warn("Unexpected InterruptedException", e);
 			Thread.currentThread().interrupt();
-			throw new IllegalStateException(e);
+			return OPERATION_INTERRUPTED.with("transaction Id", txn.getId()).result();
 		}
 	}
 
-	private Throwable lookupCause(Throwable e) {
+	private Failure lookupCause(Throwable e) {
 		var reportedException = e;
 
 		while (reportedException.getCause() instanceof MempoolRejectedException) {
@@ -194,11 +203,11 @@ public final class SubmissionService {
 			reportedException = reportedException.getCause();
 		}
 
-		if (reportedException instanceof  ConstraintMachineException && reportedException.getCause() != null) {
+		if (reportedException instanceof ConstraintMachineException && reportedException.getCause() != null) {
 			reportedException = reportedException.getCause();
 		}
 
-		return reportedException;
+		return UNABLE_TO_SUBMIT_TX.with(reportedException.getMessage());
 	}
 
 	private Txn buildTxn(byte[] blob, ECDSASignature recoverable) {
@@ -216,7 +225,34 @@ public final class SubmissionService {
 			.map(Txn::getId);
 	}
 
-	private PreparedTransaction toPreparedTx(UnsignedTxnData unsignedTxnData) {
-		return PreparedTransaction.create(unsignedTxnData.blob(), unsignedTxnData.hashToSign().asBytes(), unsignedTxnData.feesPaid());
+	@SuppressWarnings("UnstableApiUsage")
+	private PreparedTransaction toPreparedTx(UnsignedTxnData unsignedTxnData, List<TransactionAction> steps) {
+		return PreparedTransaction.create(
+			unsignedTxnData.blob(),
+			unsignedTxnData.hashToSign().asBytes(),
+			unsignedTxnData.feesPaid(),
+			extractNotifications(steps)
+		);
+	}
+
+	private List<JSONObject> extractNotifications(List<TransactionAction> steps) {
+		var list = new ArrayList<JSONObject>();
+
+		steps.forEach(step -> processStep(step).ifPresent(list::add));
+
+		return list;
+	}
+
+	private Optional<JSONObject> processStep(TransactionAction step) {
+		if (step instanceof ResourceAction) {
+			var resourceAction = (ResourceAction) step;
+			var rri = addressing.forResources().of(resourceAction.getSymbol(), resourceAction.getAddress());
+			return Optional.of(jsonObject()
+								   .put("type", "TokenCreate")
+								   .put("symbol", resourceAction.getSymbol())
+								   .put("rri", rri));
+		}
+
+		return Optional.empty();
 	}
 }

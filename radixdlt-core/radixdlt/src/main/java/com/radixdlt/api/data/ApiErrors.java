@@ -67,31 +67,32 @@ package com.radixdlt.api.data;
 import com.radixdlt.utils.functional.Failure;
 
 public enum ApiErrors implements Failure {
-	INVALID_HEX_STRING(2502, "The value {0} is not a correct hexadecimal string"),
-	MISSING_PARAMETER(2503, "The parameter {0} is missing"),
-	SYMBOL_DOES_NOT_MATCH(2504, "Symbol {0} does not match"),
-	INVALID_PAGE_SIZE(2505, "Size {0} must be greater than zero"),
-	MISSING_PARAMS(2506, "The 'params' field must be present"),
-	INVALID_NETWORK_ID(2507, "Network ID is not an integer"),
-	UNKNOWN_VALIDATOR(2508, "Validator {0} not found"),
-	INVALID_BLOB(2511, "Invalid blob {0}"),
-	INVALID_SIGNATURE_DER(2512, "Invalid signature DER {0}"),
-	INVALID_TX_ID(2514, "Invalid TX ID {0}"),
-	UNABLE_TO_PREPARE_TX(2515, "Unable to prepare transaction {0}"),
-	UNKNOWN_ACTION(2516, "Unknown action {0}"),
-	UNSUPPORTED_ACTION(2517, "Action type {0} is not supported"),
-	INVALID_ACTION_DATA(2518, "Action data are invalid {0}"),
-	MISSING_FIELD(2519, "Field {0} is missing or invalid"),
-	UNKNOWN_RRI(2520, "Unknown RRI {0}"),
-	UNKNOWN_ACCOUNT_ADDRESS(2521, "Unknown account address {0}"),
-	UNABLE_TO_RESTORE_CREATOR(2522, "Unable to restore creator from transaction {0}"),
-	UNKNOWN_TX_ID(2523, "Transaction with id {0} not found");
+	MISSING_PARAMETER("The parameter {0} is missing"),
+	SYMBOL_DOES_NOT_MATCH("Symbol {0} does not match"),
+	INVALID_PAGE_SIZE("Size {0} must be greater than zero"),
+	MISSING_PARAMS("The 'params' field must be present"),
+	INVALID_NETWORK_ID("Network ID is not an integer"),
+	UNKNOWN_VALIDATOR("Validator {0} not found"),
+	INVALID_BLOB("Invalid blob {0}"),
+	INVALID_SIGNATURE_DER("Invalid signature DER {0}"),
+	INVALID_TX_ID("Invalid TX ID {0}"),
+	UNABLE_TO_PREPARE_TX("Unable to prepare transaction {0}"),
+	UNKNOWN_ACTION("Unknown action {0}"),
+	UNSUPPORTED_ACTION("Action type {0} is not supported"),
+	INVALID_ACTION_DATA("Action data are invalid {0}"),
+	MISSING_ACTION_FIELD("Field {0} is missing or invalid"),
+	UNKNOWN_RRI("Unknown RRI {0}"),
+	UNKNOWN_ACCOUNT_ADDRESS("Unknown account address {0}"),
+	UNABLE_TO_RESTORE_CREATOR("Unable to restore creator from transaction {0}"),
+	UNKNOWN_TX_ID("Transaction with id {0} not found"),
+	UNKNOWN_TOKEN_DEFINITION("Unknown token definition {0}"),
+	UNABLE_TO_RESTORE_ACCOUNT_ADDRESS("Unable to restore account address {0} from DB key: {1}"),
+	UNABLE_TO_SUBMIT_TX("Transaction submission failed: {0}"),
+	MUST_MATCH_TX_ID("Provided txID does not match provided transaction");
 
-	private final int code;
 	private final String message;
 
-	ApiErrors(int code, String message) {
-		this.code = code;
+	ApiErrors(String message) {
 		this.message = message;
 	}
 
@@ -102,6 +103,6 @@ public enum ApiErrors implements Failure {
 
 	@Override
 	public int code() {
-		return code;
+		return -2000 - ordinal();
 	}
 }

@@ -71,6 +71,7 @@ import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
+import com.radixdlt.client.lib.dto.Notification;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -84,6 +85,7 @@ import com.radixdlt.utils.functional.Result;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -220,7 +222,16 @@ public class SyncRadixApiCreationTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.transaction().build(request)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(builtTransaction -> assertEquals(amount(1000109).millis(), builtTransaction.getFee()))
+				.onSuccess(builtTransaction -> {
+					assertEquals(amount(100116600).micros(), builtTransaction.getFee());
+
+					var notifications = builtTransaction.getTransaction().getNotifications();
+					assertEquals(1, notifications.size());
+					assertEquals("TokenCreate", notifications.get(0).getType());
+					assertEquals("fix", notifications.get(0).getSymbol().orElse(""));
+					assertEquals("fix_dr1qd5ah4xye2svl2smkk06st3q9lkqnkc6wgy0zxrrkmyszlawrz",
+								 notifications.get(0).getRri().orElse(""));
+				})
 				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
 				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
 					.onFailure(failure -> fail(failure.toString()))));

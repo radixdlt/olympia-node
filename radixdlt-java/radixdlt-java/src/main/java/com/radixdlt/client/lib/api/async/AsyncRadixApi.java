@@ -64,7 +64,6 @@
 
 package com.radixdlt.client.lib.api.async;
 
-import com.radixdlt.client.lib.dto.TransactionHistory2;
 import org.bouncycastle.util.encoders.Hex;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -104,6 +103,7 @@ import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
+import com.radixdlt.client.lib.dto.TransactionHistory2;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
 import com.radixdlt.client.lib.dto.TransactionsDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;

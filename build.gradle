@@ -269,7 +269,7 @@ subprojects {
             dependency 'org.powermock:powermock-module-junit4:2.0.7'
             dependency 'org.powermock:powermock-api-mockito2:2.0.7'
             dependency 'nl.jqno.equalsverifier:equalsverifier:3.4.2'
-            dependency 'org.assertj:assertj-core:3.11.1'
+            dependency 'org.assertj:assertj-core:3.20.2'
             dependency 'junit:junit:4.13.1'
 
             dependency('com.flipkart.zjsonpatch:zjsonpatch:0.4.5') {

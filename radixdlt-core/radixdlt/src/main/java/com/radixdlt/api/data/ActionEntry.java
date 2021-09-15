@@ -173,7 +173,7 @@ public class ActionEntry {
 
 			case UNSTAKE:
 				return json
-					.put("from", to) // FIXME: badness in API spec
+					.put("to", to)
 					.put("validator", from);
 			case STAKE:
 				return json

@@ -68,7 +68,8 @@ import org.json.JSONObject;
 
 import com.google.inject.Inject;
 
-import static com.radixdlt.api.util.JsonRpcUtil.response;
+import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
+import static com.radixdlt.api.util.JsonRpcUtil.wrapArray;
 
 public class SystemHandler {
 	private final SystemConfigService systemConfigService;
@@ -79,70 +80,70 @@ public class SystemHandler {
 	}
 
 	public JSONObject apiGetConfiguration(JSONObject request) {
-		return response(request, systemConfigService.getApiConfiguration());
+		return successResponse(request, systemConfigService.getApiConfiguration());
 	}
 
 	public JSONObject apiGetData(JSONObject request) {
-		return response(request, systemConfigService.getApiData());
+		return successResponse(request, systemConfigService.getApiData());
 	}
 
 	public JSONObject bftGetConfiguration(JSONObject request) {
-		return response(request, systemConfigService.getBftConfiguration());
+		return successResponse(request, systemConfigService.getBftConfiguration());
 	}
 
 	public JSONObject bftGetData(JSONObject request) {
-		return response(request, systemConfigService.getBftData());
+		return successResponse(request, systemConfigService.getBftData());
 	}
 
 	public JSONObject mempoolGetConfiguration(JSONObject request) {
-		return response(request, systemConfigService.getMempoolConfiguration());
+		return successResponse(request, systemConfigService.getMempoolConfiguration());
 	}
 
 	public JSONObject mempoolGetData(JSONObject request) {
-		return response(request, systemConfigService.getMempoolData());
+		return successResponse(request, systemConfigService.getMempoolData());
 	}
 
 	public JSONObject ledgerGetLatestProof(JSONObject request) {
-		return response(request, systemConfigService.getLatestProof());
+		return successResponse(request, systemConfigService.getLatestProof());
 	}
 
 	public JSONObject ledgerGetLatestEpochProof(JSONObject request) {
-		return response(request, systemConfigService.getLatestEpochProof());
+		return successResponse(request, systemConfigService.getLatestEpochProof());
 	}
 
 	public JSONObject radixEngineGetConfiguration(JSONObject request) {
-		return response(request, systemConfigService.getRadixEngineConfiguration());
+		return successResponse(request, systemConfigService.getRadixEngineConfiguration());
 	}
 
 	public JSONObject radixEngineGetData(JSONObject request) {
-		return response(request, systemConfigService.getRadixEngineData());
+		return successResponse(request, systemConfigService.getRadixEngineData());
 	}
 
 	public JSONObject syncGetConfiguration(JSONObject request) {
-		return response(request, systemConfigService.getSyncConfig());
+		return successResponse(request, systemConfigService.getSyncConfig());
 	}
 
 	public JSONObject syncGetData(JSONObject request) {
-		return response(request, systemConfigService.getSyncData());
+		return successResponse(request, systemConfigService.getSyncData());
 	}
 
 	public JSONObject networkingGetConfiguration(JSONObject request) {
-		return response(request, systemConfigService.getNetworkingConfiguration());
+		return successResponse(request, systemConfigService.getNetworkingConfiguration());
 	}
 
 	public JSONObject networkingGetPeers(JSONObject request) {
-		return response(request, systemConfigService.getNetworkingPeers());
+		return successResponse(request, wrapArray(systemConfigService.getNetworkingPeers()));
 	}
 
 	public JSONObject networkingGetAddressBook(JSONObject request) {
-		return response(request, systemConfigService.getNetworkingAddressBook());
+		return successResponse(request, wrapArray(systemConfigService.getNetworkingAddressBook()));
 	}
 
 	public JSONObject networkingGetData(JSONObject request) {
-		return response(request, systemConfigService.getNetworkingData());
+		return successResponse(request, systemConfigService.getNetworkingData());
 	}
 
 	public JSONObject checkpointsGetCheckpoints(JSONObject request) {
-		return response(request, systemConfigService.getCheckpoints());
+		return successResponse(request, systemConfigService.getCheckpoints());
 	}
 }
