@@ -67,28 +67,28 @@ package com.radixdlt.api.data;
 import com.radixdlt.utils.functional.Failure;
 
 public enum ApiErrors implements Failure {
-	MISSING_PARAMETER("The parameter {0} is missing"),
-	SYMBOL_DOES_NOT_MATCH("Symbol {0} does not match"),
-	INVALID_PAGE_SIZE("Size {0} must be greater than zero"),
-	MISSING_PARAMS("The 'params' field must be present"),
-	INVALID_NETWORK_ID("Network ID is not an integer"),
-	UNKNOWN_VALIDATOR("Validator {0} not found"),
+	INVALID_ACTION_DATA("Action data are invalid {0}"),
 	INVALID_BLOB("Invalid blob {0}"),
+	INVALID_NETWORK_ID("Network ID is not an integer"),
+	INVALID_PAGE_SIZE("Size {0} must be greater than zero"),
 	INVALID_SIGNATURE_DER("Invalid signature DER {0}"),
 	INVALID_TX_ID("Invalid TX ID {0}"),
-	UNABLE_TO_PREPARE_TX("Unable to prepare transaction {0}"),
-	UNKNOWN_ACTION("Unknown action {0}"),
-	UNSUPPORTED_ACTION("Action type {0} is not supported"),
-	INVALID_ACTION_DATA("Action data are invalid {0}"),
 	MISSING_ACTION_FIELD("Field {0} is missing or invalid"),
-	UNKNOWN_RRI("Unknown RRI {0}"),
-	UNKNOWN_ACCOUNT_ADDRESS("Unknown account address {0}"),
-	UNABLE_TO_RESTORE_CREATOR("Unable to restore creator from transaction {0}"),
-	UNKNOWN_TX_ID("Transaction with id {0} not found"),
-	UNKNOWN_TOKEN_DEFINITION("Unknown token definition {0}"),
+	MISSING_PARAMETER("The parameter {0} is missing"),
+	MISSING_PARAMS("The 'params' field must be present"),
+	MUST_MATCH_TX_ID("Provided txID does not match provided transaction"),
+	SYMBOL_DOES_NOT_MATCH("Symbol {0} does not match"),
+	UNABLE_TO_PREPARE_TX("Unable to prepare transaction {0}"),
 	UNABLE_TO_RESTORE_ACCOUNT_ADDRESS("Unable to restore account address {0} from DB key: {1}"),
+	UNABLE_TO_RESTORE_CREATOR("Unable to restore creator from transaction {0}"),
 	UNABLE_TO_SUBMIT_TX("Transaction submission failed: {0}"),
-	MUST_MATCH_TX_ID("Provided txID does not match provided transaction");
+	UNKNOWN_ACCOUNT_ADDRESS("Unknown account address {0}"),
+	UNKNOWN_ACTION("Unknown action {0}"),
+	UNKNOWN_RRI("Unknown RRI {0}"),
+	UNKNOWN_TOKEN_DEFINITION("Unknown token definition {0}"),
+	UNKNOWN_TX_ID("Transaction with id {0} not found"),
+	UNKNOWN_VALIDATOR("Validator {0} not found"),
+	UNSUPPORTED_ACTION("Action type {0} is not supported");
 
 	private final String message;
 
