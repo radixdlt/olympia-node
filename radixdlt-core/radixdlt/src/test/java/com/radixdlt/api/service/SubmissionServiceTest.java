@@ -93,7 +93,6 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.data.action.TransactionAction;
-import com.radixdlt.api.archive.to_deprecate.ClientApiStore;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.consensus.LedgerProof;
@@ -230,7 +229,6 @@ public class SubmissionServiceTest {
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(NODE);
 				bind(SystemCounters.class).to(SystemCountersImpl.class);
-				bind(ClientApiStore.class).toInstance(mock(ClientApiStore.class));
 			}
 
 			@Provides

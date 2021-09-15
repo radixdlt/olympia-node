@@ -63,7 +63,7 @@
 
 package com.radixdlt.client.lib.api.sync;
 
-import com.radixdlt.client.lib.dto.Transaction2DTO;
+import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionsDTO;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -108,7 +108,7 @@ public class SyncRadixApiTransactionPaginationTest {
 				});
 	}
 
-	private List<String> formatTxns(List<Transaction2DTO> t) {
+	private List<String> formatTxns(List<TransactionDTO> t) {
 		return t.stream()
 			.map(v -> String.format(
 				"%s (%s) - %s (%d:%d), Fee: %s%n",

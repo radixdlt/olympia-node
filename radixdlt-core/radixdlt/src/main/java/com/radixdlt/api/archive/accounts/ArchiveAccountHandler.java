@@ -69,30 +69,21 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.data.TxHistoryEntry;
-import com.radixdlt.api.archive.to_deprecate.ArchiveAccountService;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.functional.Result;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.radixdlt.api.util.JsonRpcUtil.ARRAY;
-import static com.radixdlt.api.util.JsonRpcUtil.fromList;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.util.JsonRpcUtil.safeInteger;
-import static com.radixdlt.api.util.JsonRpcUtil.safeString;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
 
 public final class ArchiveAccountHandler {
-	private final ArchiveAccountService accountService;
 	private final BerkeleyAccountInfoStore store;
 	private final BerkeleyAccountTxHistoryStore txHistoryStore;
 	private final BerkeleyTransactionsByIdStore txByIdStore;
@@ -100,13 +91,11 @@ public final class ArchiveAccountHandler {
 
 	@Inject
 	public ArchiveAccountHandler(
-		ArchiveAccountService accountService,
 		BerkeleyAccountInfoStore store,
 		BerkeleyAccountTxHistoryStore txHistoryStore,
 		BerkeleyTransactionsByIdStore txByIdStore,
 		Addressing addressing
 	) {
-		this.accountService = accountService;
 		this.store = store;
 		this.txHistoryStore = txHistoryStore;
 		this.txByIdStore = txByIdStore;
@@ -152,17 +141,6 @@ public final class ArchiveAccountHandler {
 		);
 	}
 
-	public JSONObject handleAccountGetTransactionHistory(JSONObject request) {
-		return withRequiredParameters(
-			request,
-			List.of("address", "size"),
-			List.of("cursor", "verbose"),
-			params -> allOf(parseAddress(params), parseSize(params), ok(parseInstantCursor(params)), parseVerboseFlag(params))
-				.flatMap(accountService::getTransactionHistory)
-				.map(tuple -> tuple.map(ArchiveAccountHandler::formatHistoryResponse))
-		);
-	}
-
 	public JSONObject handleAccountGetStakePositions(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
@@ -186,50 +164,6 @@ public final class ArchiveAccountHandler {
 	//-----------------------------------------------------------------------------------------------------
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
-
-	private static JSONObject formatHistoryResponse(Optional<Instant> cursor, List<TxHistoryEntry> transactions) {
-		return jsonObject()
-			.put("cursor", cursor.map(ArchiveAccountHandler::asCursor).orElse(""))
-			.put("transactions", fromList(transactions, TxHistoryEntry::asJson));
-	}
-
-	private static String asCursor(Instant instant) {
-		return "" + instant.getEpochSecond() + ":" + instant.getNano();
-	}
-
-	private static Optional<Instant> parseInstantCursor(JSONObject params) {
-		return safeString(params, "cursor")
-			.toOptional()
-			.flatMap(source -> Optional.of(source.split(":"))
-				.filter(v -> v.length == 2)
-				.flatMap(ArchiveAccountHandler::parseInstant));
-	}
-
-	private static Optional<Instant> parseInstant(String[] pair) {
-		return allOf(parseLong(pair[0]).filter(v -> v > 0), parseInt(pair[1]).filter(v -> v >= 0))
-			.map(Instant::ofEpochSecond);
-	}
-
-	private static Optional<Long> parseLong(String input) {
-		try {
-			return Optional.of(Long.parseLong(input));
-		} catch (NumberFormatException e) {
-			return Optional.empty();
-		}
-	}
-
-	private static Optional<Integer> parseInt(String input) {
-		try {
-			return Optional.of(Integer.parseInt(input));
-		} catch (NumberFormatException e) {
-			return Optional.empty();
-		}
-	}
-
-	private static Result<Integer> parseSize(JSONObject params) {
-		return safeInteger(params, "size")
-			.filter(value -> value > 0, INVALID_PAGE_SIZE);
-	}
 
 	private Result<REAddr> parseAddress(JSONObject params) {
 		return addressing.forAccounts().parseFunctional(params.getString("address"));

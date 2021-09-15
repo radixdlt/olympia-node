@@ -63,22 +63,19 @@
  */
 package com.radixdlt.client.lib.api.sync;
 
+import com.radixdlt.utils.PrivateKeys;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -87,7 +84,7 @@ import static org.junit.Assert.fail;
 /*
  * Before running this test, launch in separate console local network (cd radixdlt-core/docker && ./scripts/rundocker.sh 2).
  *
- * Then comment '@Ignore' annotations for both tests.
+ * Then comment out '@Ignore' annotations for both tests.
  *
  * Then run testAddManyTransactions() few times (it generates a number of transfer transactions)
  *
@@ -96,8 +93,8 @@ import static org.junit.Assert.fail;
 //TODO: move to acceptance tests
 public class SyncRadixApiHistoryPaginationTest {
 	private static final String BASE_URL = "http://localhost/";
-	public static final ECKeyPair KEY_PAIR1 = keyPairOf(1);
-	public static final ECKeyPair KEY_PAIR2 = keyPairOf(2);
+	public static final ECKeyPair KEY_PAIR1 = PrivateKeys.ofNumeric(1);
+	public static final ECKeyPair KEY_PAIR2 = PrivateKeys.ofNumeric(2);
 	private static final AccountAddress ACCOUNT_ADDRESS1 = AccountAddress.create(KEY_PAIR1.getPublicKey());
 	private static final AccountAddress ACCOUNT_ADDRESS2 = AccountAddress.create(KEY_PAIR2.getPublicKey());
 
@@ -127,16 +124,16 @@ public class SyncRadixApiHistoryPaginationTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(
 				client -> {
-					var cursorHolder = new AtomicReference<NavigationCursor>();
+					var cursorHolder = new AtomicReference<>(OptionalLong.empty());
 					do {
-						client.account().history(ACCOUNT_ADDRESS1, 5, Optional.ofNullable(cursorHolder.get()))
+						client.account().history(ACCOUNT_ADDRESS1, 50, cursorHolder.get())
 							.onFailure(failure -> fail(failure.toString()))
-							.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
-							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
+							.onSuccess(v -> v.getNextOffset().ifPresent(System.out::println))
+							.onSuccess(v -> cursorHolder.set(v.getNextOffset()))
 							.map(TransactionHistory::getTransactions)
 							.map(this::formatTxns)
 							.onSuccess(System.out::println);
-					} while (cursorHolder.get() != null && !cursorHolder.get().value().isEmpty());
+					} while (cursorHolder.get().isPresent());
 				});
 	}
 
@@ -169,17 +166,5 @@ public class SyncRadixApiHistoryPaginationTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
 			.flatMap(transaction -> client.transaction().finalize(transaction, true));
-	}
-
-	private static ECKeyPair keyPairOf(int pk) {
-		var privateKey = new byte[ECKeyPair.BYTES];
-
-		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
-
-		try {
-			return ECKeyPair.fromPrivateKey(privateKey);
-		} catch (PrivateKeyException | PublicKeyException e) {
-			throw new IllegalArgumentException("Error while generating public key", e);
-		}
 	}
 }

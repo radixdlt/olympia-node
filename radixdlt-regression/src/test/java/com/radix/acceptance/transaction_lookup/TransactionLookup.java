@@ -5,7 +5,6 @@ import com.radix.test.Assertions;
 import com.radix.test.TestFailureException;
 import com.radix.test.TransactionUtils;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatus;
 import io.cucumber.java.en.Given;
@@ -16,6 +15,7 @@ import org.awaitility.Durations;
 
 import java.util.Collections;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -66,7 +66,7 @@ public class TransactionLookup extends AcceptanceTest {
         // wait until 5 transactions are visible in the history
         var history = new AtomicReference<TransactionHistory>();
         await().until(() -> {
-            var historyBuffer = account1.account().history(account1.getAddress(), 100, NavigationCursor.create(""));
+            var historyBuffer = account1.account().history(account1.getAddress(), 100, OptionalLong.empty());
             if (historyBuffer.getTransactions().size() >= 6) {
                 history.set(historyBuffer);
                 return true;

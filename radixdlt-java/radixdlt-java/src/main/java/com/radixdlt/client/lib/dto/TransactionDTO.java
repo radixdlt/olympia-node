@@ -64,12 +64,15 @@
 
 package com.radixdlt.client.lib.dto;
 
+import org.bouncycastle.util.encoders.Hex;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.TxTimestamp;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -78,33 +81,54 @@ import static java.util.Objects.requireNonNull;
 
 public final class TransactionDTO {
 	private final AID txID;
+	private final long stateVersion;
+	private final long size;
 	private final TxTimestamp sentAt;
 	private final UInt256 fee;
 	private final String message;
 	private final List<Action> actions;
+	private final byte[] raw;
 
-	private TransactionDTO(AID txID, TxTimestamp sentAt, UInt256 fee, String message, List<Action> actions) {
+	private TransactionDTO(
+		AID txID,
+		long stateVersion,
+		long size,
+		TxTimestamp sentAt,
+		UInt256 fee,
+		String message,
+		List<Action> actions,
+		byte[] raw
+	) {
 		this.txID = txID;
+		this.stateVersion = stateVersion;
+		this.size = size;
 		this.sentAt = sentAt;
 		this.fee = fee;
 		this.message = message;
 		this.actions = actions;
+		this.raw = raw;
 	}
 
 	@JsonCreator
 	public static TransactionDTO create(
-		@JsonProperty("txID") AID txID,
-		@JsonProperty("sentAt") TxTimestamp sentAt,
-		@JsonProperty("fee") UInt256 fee,
-		@JsonProperty("message") String message,
-		@JsonProperty("actions") List<Action> actions
+		@JsonProperty(value = "size", required = true) long size,
+		@JsonProperty(value = "txID", required = true) AID txID,
+		@JsonProperty(value = "timestamp", required = true) TxTimestamp sentAt,
+		@JsonProperty(value = "fee", required = true) UInt256 fee,
+		@JsonProperty(value = "message", required = false) String message,
+		@JsonProperty(value = "actions", required = true) List<Action> actions,
+		@JsonProperty(value = "raw", required = true) String blob,
+		@JsonProperty(value = "stateVersion", required = true) long stateVersion,
+		@JsonProperty(value = "accountingEntries", required = true) List<Object> entries,
+		@JsonProperty(value = "events", required = true) List<Object> events
 	) {
 		requireNonNull(txID);
 		requireNonNull(sentAt);
 		requireNonNull(fee);
 		requireNonNull(actions);
+		requireNonNull(blob);
 
-		return new TransactionDTO(txID, sentAt, fee, message, actions);
+		return new TransactionDTO(txID, stateVersion, size, sentAt, fee, message, actions, Hex.decode(blob));
 	}
 
 	@Override
@@ -112,31 +136,38 @@ public final class TransactionDTO {
 		if (this == o) {
 			return true;
 		}
+
 		if (!(o instanceof TransactionDTO)) {
 			return false;
 		}
 
 		var that = (TransactionDTO) o;
 		return txID.equals(that.txID)
+			&& size == that.size
+			&& stateVersion == that.stateVersion
 			&& sentAt.equals(that.sentAt)
 			&& fee.equals(that.fee)
 			&& Objects.equals(message, that.message)
+			&& Arrays.equals(raw, that.raw)
 			&& actions.equals(that.actions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(txID, sentAt, fee, message, actions);
+		return Objects.hash(txID, stateVersion, size, sentAt, fee, message, actions, Arrays.hashCode(raw));
 	}
 
 	@Override
 	public String toString() {
 		return "Transaction("
 			+ "txID=" + txID
+			+ ", stateVersion=" + stateVersion
+			+ ", size=" + size
 			+ ", sentAt=" + sentAt
 			+ ", fee=" + fee
 			+ ", message='" + message + '\''
 			+ ", actions=" + actions
+			+ ", raw=" + Hex.toHexString(raw)
 			+ ')';
 	}
 
@@ -158,5 +189,9 @@ public final class TransactionDTO {
 
 	public List<Action> getActions() {
 		return actions;
+	}
+
+	public byte[] getRaw() {
+		return raw;
 	}
 }

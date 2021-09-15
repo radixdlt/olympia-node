@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix DLT Ltd incorporated in England.
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -66,32 +65,33 @@ package com.radixdlt.client.lib.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.lib.api.NavigationCursor;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.OptionalLong;
 
 import static java.util.Objects.requireNonNull;
 
 public final class TransactionHistory {
-	private final NavigationCursor cursor;
+	private final Long nextOffset;
 	private final List<TransactionDTO> transactions;
+	private final long totalCount;
 
-	private TransactionHistory(NavigationCursor cursor, List<TransactionDTO> transactions) {
-		this.cursor = cursor;
+	private TransactionHistory(Long nextOffset, List<TransactionDTO> transactions, long totalCount) {
+		this.nextOffset = nextOffset;
 		this.transactions = transactions;
+		this.totalCount = totalCount;
 	}
 
 	@JsonCreator
 	public static TransactionHistory create(
-		@JsonProperty("cursor") NavigationCursor cursor,
-		@JsonProperty(value = "transactions", required = true) List<TransactionDTO> transactions
+		@JsonProperty("nextOffset") Long nextOffset,
+		@JsonProperty(value = "transactions", required = true) List<TransactionDTO> transactions,
+		@JsonProperty(value = "totalCount", required = true) long totalCount
 	) {
-		requireNonNull(cursor);
 		requireNonNull(transactions);
 
-		return new TransactionHistory(cursor, transactions);
+		return new TransactionHistory(nextOffset, transactions, totalCount);
 	}
 
 	@Override
@@ -99,29 +99,39 @@ public final class TransactionHistory {
 		if (this == o) {
 			return true;
 		}
+
 		if (!(o instanceof TransactionHistory)) {
 			return false;
 		}
 
 		var that = (TransactionHistory) o;
-		return Objects.equals(cursor, that.cursor) && transactions.equals(that.transactions);
+		return totalCount == that.totalCount
+			&& Objects.equals(nextOffset, that.nextOffset)
+			&& transactions.equals(that.transactions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(cursor, transactions);
+		return Objects.hash(nextOffset, transactions, totalCount);
 	}
 
 	@Override
 	public String toString() {
-		return "TransactionHistory(" + "cursor=" + cursor + ", transactions=" + transactions + ')';
+		return "TransactionHistory2("
+			+ "nextOffset=" + nextOffset
+			+ ", transactions=" + transactions
+			+ ", totalCount=" + totalCount + ')';
 	}
 
-	public Optional<NavigationCursor> getCursor() {
-		return Optional.ofNullable(cursor);
+	public OptionalLong getNextOffset() {
+		return nextOffset == null ? OptionalLong.empty() : OptionalLong.of(nextOffset);
 	}
 
 	public List<TransactionDTO> getTransactions() {
 		return transactions;
+	}
+
+	public long getTotalCount() {
+		return totalCount;
 	}
 }

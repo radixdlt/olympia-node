@@ -74,10 +74,10 @@ import static java.util.Objects.requireNonNull;
 
 public final class TransactionsDTO {
 	private final Long nextOffset;
-	private final List<Transaction2DTO> transactions;
+	private final List<TransactionDTO> transactions;
 	private final long totalCount;
 
-	private TransactionsDTO(Long nextOffset, List<Transaction2DTO> transactions, long totalCount) {
+	private TransactionsDTO(Long nextOffset, List<TransactionDTO> transactions, long totalCount) {
 		this.nextOffset = nextOffset;
 		this.transactions = transactions;
 		this.totalCount = totalCount;
@@ -86,7 +86,7 @@ public final class TransactionsDTO {
 	@JsonCreator
 	public static TransactionsDTO create(
 		@JsonProperty("nextOffset") Long nextOffset,
-		@JsonProperty(value = "transactions", required = true) List<Transaction2DTO> transactions,
+		@JsonProperty(value = "transactions", required = true) List<TransactionDTO> transactions,
 		@JsonProperty(value = "count", required = true) long count,
 		@JsonProperty(value = "totalCount", required = true) long totalCount
 	) {
@@ -128,7 +128,7 @@ public final class TransactionsDTO {
 		return nextOffset == null ? OptionalLong.empty() : OptionalLong.of(nextOffset);
 	}
 
-	public List<Transaction2DTO> getTransactions() {
+	public List<TransactionDTO> getTransactions() {
 		return transactions;
 	}
 

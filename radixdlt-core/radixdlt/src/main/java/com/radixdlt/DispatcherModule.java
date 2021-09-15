@@ -93,7 +93,6 @@ import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.api.node.chaos.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.api.node.chaos.messageflooder.MessageFlooderUpdate;
 import com.radixdlt.api.node.chaos.messageflooder.ScheduledMessageFlood;
-import com.radixdlt.api.data.ScheduledQueueFlush;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -207,8 +206,6 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(SyncCheckTrigger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledQueueFlush>>() { })
-			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledQueueFlush.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledStatsCollecting>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledStatsCollecting.class)).in(Scopes.SINGLETON);
 

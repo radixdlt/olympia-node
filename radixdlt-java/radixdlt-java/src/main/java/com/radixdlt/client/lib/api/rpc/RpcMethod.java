@@ -8,7 +8,6 @@ public enum RpcMethod {
 
 	ACCOUNT_BALANCES("account.get_balances", ARCHIVE),
 	ACCOUNT_HISTORY("account.get_transaction_history", ARCHIVE),
-	ACCOUNT_HISTORY2("account.get_transaction_history2", ARCHIVE),
 	ACCOUNT_STAKES("account.get_stake_positions", ARCHIVE),
 	ACCOUNT_UNSTAKES("account.get_unstake_positions", ARCHIVE),
 

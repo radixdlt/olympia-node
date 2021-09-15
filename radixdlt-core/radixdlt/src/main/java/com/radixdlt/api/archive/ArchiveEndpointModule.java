@@ -67,7 +67,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.archive.to_deprecate.BerkeleyClientApiStoreModule;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.archive.accounts.AccountApiModule;
@@ -83,7 +82,6 @@ import java.util.Map;
 public class ArchiveEndpointModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		install(new BerkeleyClientApiStoreModule());
 		install(new AccountApiModule());
 		install(new TokenApiModule());
 		install(new TransactionStatusAndLookupApiModule());
