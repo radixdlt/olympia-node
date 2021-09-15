@@ -93,7 +93,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.data.action.TransactionAction;
-import com.radixdlt.api.store.ClientApiStore;
+import com.radixdlt.api.archive.to_deprecate.ClientApiStore;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.consensus.LedgerProof;

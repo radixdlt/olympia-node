@@ -63,6 +63,7 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.api.util.MovingAverage;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

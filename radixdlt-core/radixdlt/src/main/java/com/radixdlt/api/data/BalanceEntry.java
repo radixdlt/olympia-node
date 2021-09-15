@@ -66,7 +66,7 @@ package com.radixdlt.api.data;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.api.store.ClientApiStore;
+import com.radixdlt.api.archive.to_deprecate.ClientApiStore;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AID;

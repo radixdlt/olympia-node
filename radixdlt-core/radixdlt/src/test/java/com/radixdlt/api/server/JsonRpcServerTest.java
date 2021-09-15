@@ -64,15 +64,16 @@
 
 package com.radixdlt.api.server;
 
+import com.radixdlt.api.util.JsonRpcServer;
 import org.junit.Test;
 
-import com.radixdlt.api.JsonRpcUtil.RpcError;
+import com.radixdlt.api.util.JsonRpcUtil.RpcError;
 
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
 public class JsonRpcServerTest {
 	@Test

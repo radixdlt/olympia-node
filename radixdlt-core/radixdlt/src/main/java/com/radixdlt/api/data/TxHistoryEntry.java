@@ -80,8 +80,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 
-import static com.radixdlt.api.JsonRpcUtil.fromList;
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.fromList;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
 import static java.util.Objects.requireNonNull;
 

@@ -63,6 +63,7 @@
  */
 package com.radixdlt.api.handler;
 
+import com.radixdlt.api.archive.construction.ConstructionHandler;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OutputStream;
@@ -72,7 +73,7 @@ import org.json.JSONObject;
 import org.junit.Test;
 
 import com.radixdlt.api.data.PreparedTransaction;
-import com.radixdlt.api.service.ActionParserService;
+import com.radixdlt.api.util.ActionParser;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECDSASignature;
@@ -97,8 +98,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonArray;
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
 public class ConstructionHandlerTest {
 	private static final ECPublicKey PUB_KEY = ECKeyPair.generateNew().getPublicKey();
@@ -107,7 +108,7 @@ public class ConstructionHandlerTest {
 	private static final String FEE_PAYER = addressing.forAccounts().of(ACCOUNT_ADDR);
 
 	private final SubmissionService submissionService = mock(SubmissionService.class);
-	private final ActionParserService actionParserService = new ActionParserService(addressing);
+	private final ActionParser actionParserService = new ActionParser(addressing);
 	private final ConstructionHandler handler = new ConstructionHandler(submissionService, actionParserService, addressing);
 
 	@Test
