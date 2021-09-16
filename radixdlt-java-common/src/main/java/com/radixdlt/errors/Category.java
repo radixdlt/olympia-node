@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,33 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.errors;
 
-public final class DefaultSignatures {
+/**
+ * General error categories.
+ */
+public enum Category {
+	GENERAL(1),
+	RADIX_ENGINE(2),
+	PROTOCOL(32);
 
-    private DefaultSignatures() {
-        throw new IllegalStateException("Can't construct.");
-    }
+	private final int code;
 
-    private static final Signatures DEFAULT = new ECDSASignatures();
+	Category(int code) {
+		this.code = code;
+	}
 
-    /**
-     * Returns an empty collection of {@link Signature}s, with the default {@link SignatureScheme} used.
-     * @return an empty collection of {@link Signature}s, with the default {@link SignatureScheme} used.
-     */
-    public static Signatures emptySignatures() {
-        return DEFAULT;
-    }
+	public int code() {
+		return code;
+	}
 
-    /**
-     * Returns a collection of {@link Signature}s, with the default {@link SignatureScheme} used, containing the {@code signature},
-     * produced by the signing key corresponding to the {@code publicKey}.
-     * @param publicKey the {@link ECPublicKey} corresponding to the {@link Signing} key which was used to produce the {@code signature}.
-     * @param signature the {@link Signature} produced by the {@link Signing} key corresponding to the {@code publicKey}.
-     * @return an instance of the default {@link SignatureScheme} used, containing the {@code signature},
-     * produced by the signing key corresponding to the {@code publicKey}.
-     */
-    public static Signatures single(ECPublicKey publicKey, Signature signature) {
-        return emptySignatures().concatenate(publicKey, signature);
-    }
+	public int forId(int id) {
+		return -(code * 1000 + id);
+	}
 }

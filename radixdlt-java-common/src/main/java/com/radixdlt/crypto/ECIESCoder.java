@@ -72,11 +72,11 @@ import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.modes.SICBlockCipher;
-import org.bouncycastle.crypto.params.IESWithCipherParameters;
-import org.bouncycastle.crypto.params.ParametersWithIV;
+import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
-import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
+import org.bouncycastle.crypto.params.IESWithCipherParameters;
+import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.math.ec.ECPoint;
 
 import java.io.ByteArrayInputStream;
@@ -134,10 +134,6 @@ public final class ECIESCoder {
 		);
 
 		return iesEngine.processBlock(cipher, 0, cipher.length, macData);
-	}
-
-	public static byte[] encrypt(ECPoint toPub, byte[] plaintext) {
-		return encrypt(toPub, plaintext, null);
 	}
 
 	public static byte[] encrypt(ECPoint toPub, byte[] plaintext, byte[] macData) {

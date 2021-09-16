@@ -75,7 +75,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_UINT;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PARSE_UINT;
 
 /**
  * A 256-bit unsigned integer, with comparison and some basic arithmetic

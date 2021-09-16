@@ -1,4 +1,4 @@
-package com.radix.test.network.client;
+package com.radixdlt.test.network.client;
 
 public class HttpException extends RuntimeException {
 

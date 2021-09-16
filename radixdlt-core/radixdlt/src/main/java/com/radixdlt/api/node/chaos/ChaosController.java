@@ -82,7 +82,7 @@ import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.RestUtils.respond;
 import static com.radixdlt.api.util.RestUtils.sanitizeBaseUrl;
 import static com.radixdlt.api.util.RestUtils.withBody;
-import static com.radixdlt.identifiers.CommonErrors.UNKNOWN_ERROR;
+import static com.radixdlt.errors.RadixErrors.UNKNOWN;
 
 public final class ChaosController implements Controller {
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
@@ -144,8 +144,8 @@ public final class ChaosController implements Controller {
 			} catch (ExecutionException e) {
 				var response = jsonObject()
 					.put("error", jsonObject()
-						.put("code", UNKNOWN_ERROR.code())
-						.put("message", UNKNOWN_ERROR.with(e.getCause().getClass(), e.getCause().getMessage())));
+						.put("code", UNKNOWN.code())
+						.put("message", UNKNOWN.with(e.getCause().getClass(), e.getCause().getMessage())));
 				respond(exchange, response);
 			}
 		});

@@ -74,13 +74,13 @@ import com.radixdlt.utils.functional.Result;
 import java.util.List;
 import java.util.Optional;
 
-import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.safeInteger;
 import static com.radixdlt.api.util.JsonRpcUtil.safeString;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
+import static com.radixdlt.errors.RadixErrors.INVALID_PAGE_SIZE;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
 

@@ -69,7 +69,6 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.data.ApiErrors;
 import com.radixdlt.api.data.PreparedTransaction;
 import com.radixdlt.api.data.action.ResourceAction;
 import com.radixdlt.api.data.action.TransactionAction;
@@ -101,9 +100,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.data.ApiErrors.MUST_MATCH_TX_ID;
-import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_SUBMIT_TX;
-import static com.radixdlt.identifiers.CommonErrors.OPERATION_INTERRUPTED;
+import static com.radixdlt.errors.RadixErrors.ERROR_INTERRUPTED;
+import static com.radixdlt.errors.RadixErrors.MUST_MATCH_TX_ID;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PREPARE_TX;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_SUBMIT_TX;
 
 public final class SubmissionService {
 	private final Logger logger = LogManager.getLogger();
@@ -126,7 +126,7 @@ public final class SubmissionService {
 		REAddr address, List<TransactionAction> steps, Optional<String> message, boolean disableResourceAllocAndDestroy
 	) {
 		return Result.wrap(
-			ApiErrors.UNABLE_TO_PREPARE_TX,
+			UNABLE_TO_PREPARE_TX,
 			() -> radixEngine.construct(toConstructionRequest(address, steps, message, disableResourceAllocAndDestroy))
 				.buildForExternalSign()
 		).map(unsignedTxnData -> toPreparedTx(unsignedTxnData, steps));
@@ -184,7 +184,7 @@ public final class SubmissionService {
 		} catch (InterruptedException e) {
 			logger.warn("Unexpected InterruptedException", e);
 			Thread.currentThread().interrupt();
-			return OPERATION_INTERRUPTED.with("transaction Id", txn.getId()).result();
+			return ERROR_INTERRUPTED.with("transaction Id", txn.getId()).result();
 		}
 	}
 

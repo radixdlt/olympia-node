@@ -78,11 +78,11 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static com.radixdlt.identifiers.CommonErrors.INVALID_HEX_STRING;
-import static com.radixdlt.api.data.ApiErrors.MISSING_PARAMETER;
-import static com.radixdlt.api.data.ApiErrors.MISSING_PARAMS;
-import static com.radixdlt.api.data.ProtocolErrors.INVALID_REQUEST;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
+import static com.radixdlt.errors.ProtocolErrors.INVALID_REQUEST;
+import static com.radixdlt.errors.ProtocolErrors.PARSE_ERROR;
+import static com.radixdlt.errors.RadixErrors.MISSING_PARAMETER;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PARSE_HEX_STRING;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PARSE_INT;
 import static com.radixdlt.utils.functional.Result.fail;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 import static com.radixdlt.utils.functional.Result.ok;
@@ -126,7 +126,7 @@ public final class JsonRpcUtil {
 	}
 
 	public static Result<Integer> safeInteger(JSONObject params, String name) {
-		return wrap(UNABLE_TO_DECODE, () -> params.getInt(name));
+		return wrap(UNABLE_TO_PARSE_INT, () -> params.getInt(name));
 	}
 
 	public static Result<JSONArray> safeArray(JSONObject params, String name) {
@@ -147,7 +147,7 @@ public final class JsonRpcUtil {
 		return safeString(params, name)
 			.flatMap(
 				param -> wrap(
-					() -> INVALID_HEX_STRING.with(param),
+					() -> UNABLE_TO_PARSE_HEX_STRING.with(param),
 					() -> tuple(param, Bytes.fromHexString(param))
 				)
 			);
@@ -246,6 +246,6 @@ public final class JsonRpcUtil {
 	}
 
 	private static Result<Object> params(JSONObject request) {
-		return fromOptional(MISSING_PARAMS, ofNullable(request.opt("params")));
+		return fromOptional(PARSE_ERROR.with("The 'params' field is missing"), ofNullable(request.opt("params")));
 	}
 }
