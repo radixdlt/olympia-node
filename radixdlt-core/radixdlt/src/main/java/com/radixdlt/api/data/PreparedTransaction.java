@@ -68,9 +68,12 @@ import org.json.JSONObject;
 
 import com.radixdlt.utils.UInt256;
 
+import java.util.List;
+
 import static org.bouncycastle.util.encoders.Hex.toHexString;
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+
 import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
 import static java.util.Objects.requireNonNull;
 

@@ -100,7 +100,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.data.ApiErrors.MUST_MATCH_TX_ID;
 import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_SUBMIT_TX;
 import static com.radixdlt.identifiers.CommonErrors.OPERATION_INTERRUPTED;

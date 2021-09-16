@@ -86,7 +86,7 @@ import com.radixdlt.utils.UInt384;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.util.JsonRpcUtil.fromMap;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
 public class AccountInfoService {

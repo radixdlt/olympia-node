@@ -71,7 +71,6 @@ import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.dto.FinalizedTransaction;
-import com.radixdlt.client.lib.dto.Notification;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -85,7 +84,6 @@ import com.radixdlt.utils.functional.Result;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.Assert.assertArrayEquals;

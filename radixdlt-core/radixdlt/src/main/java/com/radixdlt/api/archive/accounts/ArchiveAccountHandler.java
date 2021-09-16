@@ -63,15 +63,17 @@
 
 package com.radixdlt.api.archive.accounts;
 
-import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
-import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.archive.to_deprecate.ArchiveAccountService;
+import com.radixdlt.api.data.BalanceEntry;
+import com.radixdlt.api.data.TxHistoryEntry;
+import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.util.JsonRpcUtil;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
@@ -79,14 +81,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.radixdlt.api.JsonRpcUtil.fromCollection;
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.JsonRpcUtil.safeInteger;
-import static com.radixdlt.api.JsonRpcUtil.safeString;
-import static com.radixdlt.api.JsonRpcUtil.withRequiredParameters;
-import static com.radixdlt.api.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.JsonRpcUtil.wrapArray;
 import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
+import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.safeInteger;
+import static com.radixdlt.api.util.JsonRpcUtil.safeString;
+import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
+import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
+import static com.radixdlt.api.util.JsonRpcUtil.wrapArray;
 import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;

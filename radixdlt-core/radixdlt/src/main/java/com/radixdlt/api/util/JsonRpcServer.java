@@ -75,15 +75,11 @@ import java.util.Map;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
-import static com.radixdlt.api.util.JsonRpcUtil.invalidParamsError;
-import static com.radixdlt.api.util.JsonRpcUtil.methodNotFound;
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.withBody;
+import static com.radixdlt.api.data.ProtocolErrors.INVALID_REQUEST;
+import static com.radixdlt.api.data.ProtocolErrors.METHOD_NOT_FOUND;
 import static com.radixdlt.api.util.JsonRpcUtil.failureResponse;
 import static com.radixdlt.api.util.RestUtils.respond;
 import static com.radixdlt.api.util.RestUtils.withBody;
-import static com.radixdlt.api.data.ProtocolErrors.INVALID_REQUEST;
-import static com.radixdlt.api.data.ProtocolErrors.METHOD_NOT_FOUND;
 
 import static java.util.Optional.ofNullable;
 
