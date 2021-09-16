@@ -67,21 +67,27 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Tuple.Tuple2;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static com.radixdlt.api.data.ApiErrors.INVALID_HEX_STRING;
+import static com.radixdlt.identifiers.CommonErrors.INVALID_HEX_STRING;
 import static com.radixdlt.api.data.ApiErrors.MISSING_PARAMETER;
 import static com.radixdlt.api.data.ApiErrors.MISSING_PARAMS;
+import static com.radixdlt.api.data.ProtocolErrors.INVALID_REQUEST;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
-import static com.radixdlt.utils.functional.Failure.failure;
 import static com.radixdlt.utils.functional.Result.fail;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 import static com.radixdlt.utils.functional.Result.ok;
 import static com.radixdlt.utils.functional.Result.wrap;
+import static com.radixdlt.utils.functional.Tuple.tuple;
 
 import static java.util.Optional.ofNullable;
 
@@ -89,36 +95,10 @@ import static java.util.Optional.ofNullable;
  * A collection of utilities for the Json RPC API
  */
 public final class JsonRpcUtil {
-	public static final String ARRAY = "___array___";
-
-	/**
-	 * The following found at: https://www.jsonrpc.org/specification
-	 */
-	public enum RpcError {
-		INVALID_REQUEST(-32600),
-		INVALID_PARAMS(-32602),
-		METHOD_NOT_FOUND(-32601),
-		REQUEST_TOO_LONG(-32001),
-		SERVER_ERROR(-32000),
-		PARSE_ERROR(-32700);
-
-		private final int code;
-
-		RpcError(int code) {
-			this.code = code;
-		}
-
-		public int code() {
-			return code;
-		}
-	}
+	private static final String ARRAY = "___array___";
 
 	private JsonRpcUtil() {
 		throw new IllegalStateException("Can't construct");
-	}
-
-	public static Result<JSONObject> jsonObject(String data) {
-		return wrap(UNABLE_TO_DECODE, () -> new JSONObject(data));
 	}
 
 	public static JSONObject jsonObject() {
@@ -129,7 +109,17 @@ public final class JsonRpcUtil {
 		return new JSONArray();
 	}
 
-	public static <T> JSONArray fromList(List<T> input, Function<T, Object> mapper) {
+	public static JSONObject wrapArray(JSONArray array) {
+		return jsonObject().put(ARRAY, array);
+	}
+
+	public static <K, V> JSONArray fromMap(Map<K, V> input, BiFunction<K, V, Object> mapper) {
+		var array = jsonArray();
+		input.forEach((key, value) -> array.put(mapper.apply(key, value)));
+		return array;
+	}
+
+	public static <T> JSONArray fromCollection(Collection<T> input, Function<T, Object> mapper) {
 		var array = jsonArray();
 		input.forEach(element -> array.put(mapper.apply(element)));
 		return array;
@@ -140,11 +130,11 @@ public final class JsonRpcUtil {
 	}
 
 	public static Result<JSONArray> safeArray(JSONObject params, String name) {
-		return fromOptional(MISSING_PARAMETER.with(name), ofNullable(params.optJSONArray(name)));
+		return fromOptional(() -> MISSING_PARAMETER.with(name), ofNullable(params.optJSONArray(name)));
 	}
 
 	public static Result<String> safeString(JSONObject params, String name) {
-		return fromOptional(MISSING_PARAMETER.with(name), optString(params, name));
+		return fromOptional(() -> MISSING_PARAMETER.with(name), optString(params, name));
 	}
 
 	public static Optional<String> optString(JSONObject params, String name) {
@@ -153,56 +143,32 @@ public final class JsonRpcUtil {
 			.map(String.class::cast);
 	}
 
-	public static Result<JSONObject> safeObject(JSONObject params, String name) {
-		return fromOptional(MISSING_PARAMETER.with(name), ofNullable(params.optJSONObject(name)));
-	}
-
-	public static Result<byte[]> safeBlob(JSONObject params, String name) {
+	public static Result<Tuple2<String, byte[]>> safeBlob(JSONObject params, String name) {
 		return safeString(params, name)
-			.flatMap(param -> wrap(INVALID_HEX_STRING, () -> Bytes.fromHexString(param)));
+			.flatMap(
+				param -> wrap(
+					() -> INVALID_HEX_STRING.with(param),
+					() -> tuple(param, Bytes.fromHexString(param))
+				)
+			);
 	}
 
-	public static JSONObject methodNotFound(JSONObject request) {
-		var method = request.getString("method");
-		return extendedError(request, RpcError.METHOD_NOT_FOUND.code(), "Method " + method + " not found");
-	}
-
-	public static JSONObject invalidParamsError(JSONObject request, String message) {
-		return extendedError(request, RpcError.INVALID_PARAMS.code(), message);
-	}
-
-	public static JSONObject protocolError(RpcError code, String message) {
-		return commonFields(JSONObject.NULL).put("error", jsonObject()
-			.put("code", code.code())
-			.put("message", message)
+	public static JSONObject toResponse(JSONObject request, Result<JSONObject> result) {
+		return result.fold(
+			failure -> failureResponse(request, failure),
+			response -> successResponse(request, response)
 		);
 	}
 
-	public static JSONObject extendedError(JSONObject request, int code, String message) {
-		var response = jsonObject().put("code", code).put("message", message);
+	public static JSONObject failureResponse(JSONObject request, Failure failure) {
+		return extendedError(request, failure.code(), failure.message());
+	}
 
-		ofNullable(request.opt("params")).ifPresent(params -> response.put("data", params));
-
+	public static JSONObject successResponse(JSONObject request, JSONObject result) {
 		var id = ofNullable(request.opt("id")).orElse(JSONObject.NULL);
+		var value = ofNullable(result.opt(ARRAY)).orElse(result);
 
-		return commonFields(id).put("error", response);
-	}
-
-	private static JSONObject commonFields(Object id) {
-		return jsonObject().put("jsonrpc", "2.0").put("id", id);
-	}
-
-	public static JSONObject response(JSONObject request, Object result) {
-		//FIXME: replace hack with proper solution
-		if (result instanceof JSONObject) {
-			var array = ((JSONObject) result).optJSONArray(ARRAY);
-
-			if (array != null) {
-				return commonFields(request.get("id")).put("result", array);
-			}
-		}
-
-		return commonFields(request.get("id")).put("result", result);
+		return commonFields(id).put("result", value);
 	}
 
 	public static JSONObject withRequiredStringParameter(
@@ -213,7 +179,6 @@ public final class JsonRpcUtil {
 		return withRequiredParameters(
 			request,
 			List.of(name),
-			List.of(),
 			params -> safeString(params, name).flatMap(fn)
 		);
 	}
@@ -232,13 +197,26 @@ public final class JsonRpcUtil {
 		List<String> optional,
 		Function<JSONObject, Result<JSONObject>> fn
 	) {
-		return params(request)
-			.flatMap(params -> sanitizeParams(params, required, optional))
-			.flatMap(fn)
-			.fold(
-				failure -> extendedError(request, failure.code(), failure.message()),
-				response -> response(request, response)
-			);
+		return toResponse(
+			request,
+			params(request)
+				.flatMap(params -> sanitizeParams(params, required, optional))
+				.flatMap(fn)
+		);
+	}
+
+	private static JSONObject commonFields(Object id) {
+		return jsonObject().put("jsonrpc", "2.0").put("id", id);
+	}
+
+	private static JSONObject extendedError(JSONObject request, int code, String message) {
+		var response = jsonObject().put("code", code).put("message", message);
+
+		ofNullable(request.opt("params")).ifPresent(params -> response.put("data", params));
+
+		var id = ofNullable(request.opt("id")).orElse(JSONObject.NULL);
+
+		return commonFields(id).put("error", response);
 	}
 
 	private static Result<JSONObject> sanitizeParams(Object params, List<String> required, List<String> optional) {
@@ -250,7 +228,7 @@ public final class JsonRpcUtil {
 			return ok(toNamed((JSONArray) params, required, optional));
 		}
 
-		return fail(failure(RpcError.INVALID_REQUEST.code(), "Unable to parse request 'params' field"));
+		return fail(INVALID_REQUEST.with("Unable to parse request 'params' field"));
 	}
 
 	private static JSONObject toNamed(JSONArray params, List<String> required, List<String> optional) {

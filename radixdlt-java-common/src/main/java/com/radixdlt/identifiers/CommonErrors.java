@@ -67,28 +67,33 @@ package com.radixdlt.identifiers;
 import com.radixdlt.utils.functional.Failure;
 
 public enum CommonErrors implements Failure {
-	INVALID_VALIDATOR_ADDRESS(2509, "Invalid validator address {0}"),
-	INVALID_ACCOUNT_ADDRESS(2510, "Invalid account address {0}"),
-	INVALID_PUBLIC_KEY(2513, "Invalid public key {0}"),
-	ASYNC_PROCESSING_ERROR(2525, "Async processing error {0}"),
-	AID_IS_NULL(1601, "AID string is 'null'"),
-	INVALID_LENGTH(1602, "AID string has incorrect length {0}"),
-	UNABLE_TO_DECODE(1603, "Unable to decode: {0}"),
-	UNABLE_TO_DESERIALIZE(1604, "Unable to deserialize: {0}"),
-	SSL_KEY_ERROR(1605, "SSL Key error: {0}"),
-	SSL_ALGORITHM_ERROR(1606, "SSL algorithm error: {0}"),
-	SSL_GENERAL_ERROR(1607, "SSL algorithm error: {0}"),
-	VALUE_OUT_OF_RANGE(1608, "Parameter must be between {0} and {1}"),
-	CANT_MAKE_RECOVERABLE(1701, "Unable to convert signature to recoverable {0}"),
-	INVALID_RADIX_ADDRESS(1702, "Invalid RadixAddress {0}"),
-	INVALID_UINT_VALUE(1703, "Invalid UInt256/UInt384 value {0}"),
-	UNKNOWN_ADDRESS_TYPE(1710, "Unknown address type {0}");
+	UNKNOWN_ERROR("Unknown error of type {0} with message {1}"),
 
-	private final int code;
+	AID_STRING_IS_NULL("AID string is 'null'"),
+	ASYNC_PROCESSING_ERROR("Async processing error {0}"),
+	INVALID_ACCOUNT_ADDRESS("Invalid account address {0}"),
+	INVALID_HEX_STRING("The value {0} is not a correct hexadecimal string"),
+	INVALID_LENGTH("AID string has incorrect length {0}"),
+	INVALID_PUBLIC_KEY("Invalid public key {0}"),
+	INVALID_RADIX_ADDRESS("Invalid RadixAddress {0}"),
+	INVALID_UINT_VALUE("Invalid UInt256/UInt384 value {0}"),
+	INVALID_VALIDATOR_ADDRESS("Invalid validator address {0}"),
+	OPERATION_INTERRUPTED("Operation interrupted with InterruptedException. Details: {0} {1}"),
+	SSL_ALGORITHM_ERROR("SSL algorithm error: {0}"),
+	SSL_GENERAL_ERROR("SSL algorithm error: {0}"),
+	SSL_KEY_ERROR("SSL Key error: {0}"),
+	UNABLE_TO_DECODE("Unable to decode: {0}"),
+	UNABLE_TO_DESERIALIZE("Unable to deserialize: {0}"),
+	UNABLE_TO_MAKE_RECOVERABLE("Unable to convert signature to recoverable {0}"),
+	UNABLE_TO_PARSE_BOOLEAN("Unable to parse boolean value: {0}"),
+	UNABLE_TO_PARSE_FLOAT("Unable to parse float number: {0}"),
+	UNABLE_TO_PARSE_UINT("Unable to parse unsigned integer number: {0}"),
+	UNKNOWN_ADDRESS_TYPE("Unknown address type {0}"),
+	VALUE_OUT_OF_RANGE("Parameter must be between {0} and {1}");
+
 	private final String message;
 
-	CommonErrors(int code, String message) {
-		this.code = code;
+	CommonErrors(String message) {
 		this.message = message;
 	}
 
@@ -99,6 +104,6 @@ public enum CommonErrors implements Failure {
 
 	@Override
 	public int code() {
-		return code;
+		return -1000 - ordinal();
 	}
 }

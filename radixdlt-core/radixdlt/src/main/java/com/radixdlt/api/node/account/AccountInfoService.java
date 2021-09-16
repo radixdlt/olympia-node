@@ -86,7 +86,7 @@ import com.radixdlt.utils.UInt384;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.util.JsonRpcUtil.fromMap;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
 public class AccountInfoService {
@@ -148,33 +148,25 @@ public class AccountInfoService {
 	}
 
 	private JSONObject getOwnBalance() {
-		var balances = getMyBalances();
-		var stakedBalance = getMyStakeBalances();
-		var preparedStakes = getMyPreparedStakes();
-
-		var preparedStakesArray = jsonArray();
-		preparedStakes.forEach((publicKey, amount) -> preparedStakesArray.put(constructStakeEntry(publicKey, amount)));
-
-		var stakesArray = jsonArray();
-		stakedBalance.forEach((publicKey, amount) -> stakesArray.put(constructStakeEntry(publicKey, amount)));
-
-		var balancesArray = jsonArray();
-		balances.forEach((rri, amount) -> balancesArray.put(constructBalanceEntry(rri, amount)));
-
 		return jsonObject()
-			.put("tokens", balancesArray)
-			.put("preparedStakes", preparedStakesArray)
-			.put("stakes", stakesArray);
+			.put("tokens", fromMap(getMyBalances(), this::constructBalanceEntry))
+			.put("preparedStakes", fromMap(getMyPreparedStakes(), this::constructStakeEntry))
+			.put("stakes", fromMap(getMyStakeBalances(), this::constructStakeEntry));
 	}
 
 	private JSONObject constructBalanceEntry(REAddr resourceAddress, UInt384 amount) {
 		var mapKey = SystemMapKey.ofResourceData(resourceAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
 		var metadata = (TokenResourceMetadata) radixEngine.get(mapKey).orElseThrow();
 		var rri = addressing.forResources().of(metadata.getSymbol(), resourceAddress);
-		return jsonObject().put("rri", rri).put("amount", amount);
+
+		return jsonObject()
+			.put("rri", rri)
+			.put("amount", amount);
 	}
 
 	private JSONObject constructStakeEntry(ECPublicKey publicKey, UInt384 amount) {
-		return jsonObject().put("delegate", addressing.forValidators().of(publicKey)).put("amount", amount);
+		return jsonObject()
+			.put("delegate", addressing.forValidators().of(publicKey))
+			.put("amount", amount);
 	}
 }

@@ -126,7 +126,8 @@ import io.netty.buffer.Unpooled;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_ACCOUNT_ADDRESS;
+import static com.radixdlt.api.data.ApiErrors.UNABLE_TO_RESTORE_ACCOUNT_ADDRESS;
+import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TOKEN_DEFINITION;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_BYTES_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.COUNT_APIDB_BALANCE_READ;
@@ -151,7 +152,6 @@ import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TOK
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TOKEN_WRITE;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TRANSACTION_READ;
 import static com.radixdlt.counters.SystemCounters.CounterType.ELAPSED_APIDB_TRANSACTION_WRITE;
-import static com.radixdlt.identifiers.CommonErrors.INVALID_ACCOUNT_ADDRESS;
 import static com.radixdlt.serialization.DsonOutput.Output;
 import static com.radixdlt.serialization.SerializationUtils.restore;
 import static com.radixdlt.utils.functional.Result.wrap;
@@ -256,7 +256,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 			);
 
 			if (status != OperationStatus.SUCCESS) {
-				return UNKNOWN_ACCOUNT_ADDRESS.with(addr).result();
+				return UNKNOWN_TOKEN_DEFINITION.with(addr).result();
 			}
 
 			return restore(serialization, data.getData(), TokenDefinitionRecord.class)
@@ -264,6 +264,7 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 		}
 	}
 
+	//TODO: replace with functional solution
 	private String getRriOrFail(REAddr addr) {
 		try {
 			return rriCache.get(addr, () -> getTokenDefinition(addr).toOptional().orElseThrow().rri(addressing));
@@ -385,7 +386,11 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 
 	private Result<REAddr> addrFromKey(DatabaseEntry key) {
 		var buf = Arrays.copyOf(key.getData(), ECPublicKey.COMPRESSED_BYTES + 1);
-		return wrap(INVALID_ACCOUNT_ADDRESS, () -> REAddr.of(buf));
+
+		return wrap(
+			e -> UNABLE_TO_RESTORE_ACCOUNT_ADDRESS.with(Arrays.toString(buf), e.getMessage()),
+			() -> REAddr.of(buf)
+		);
 	}
 
 	private <T> T readBalance(Supplier<T> supplier, DatabaseEntry data) {
@@ -657,8 +662,8 @@ public final class BerkeleyClientApiStore implements ClientApiStore {
 					UInt384.from(i.abs().toByteArray()),
 					i.signum() == -1,
 					(epochUnlock != null && epochUnlock == 0)
-						? (Long) (curEpoch + 1 + rules.getConfig().getUnstakingEpochDelay())
-						: epochUnlock,
+					? (Long) (curEpoch + 1 + rules.getConfig().getUnstakingEpochDelay())
+					: epochUnlock,
 					txId
 				);
 				return entry;

@@ -63,15 +63,17 @@
 
 package com.radixdlt.api.archive.accounts;
 
-import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
-import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.data.TxHistoryEntry;
 import com.radixdlt.api.archive.to_deprecate.ArchiveAccountService;
+import com.radixdlt.api.data.BalanceEntry;
+import com.radixdlt.api.data.TxHistoryEntry;
+import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.util.JsonRpcUtil;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 
 import java.time.Instant;
@@ -79,14 +81,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.radixdlt.api.util.JsonRpcUtil.ARRAY;
-import static com.radixdlt.api.util.JsonRpcUtil.fromList;
+import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
+import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.safeInteger;
 import static com.radixdlt.api.util.JsonRpcUtil.safeString;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
+import static com.radixdlt.api.util.JsonRpcUtil.wrapArray;
 import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
@@ -169,7 +171,7 @@ public final class ArchiveAccountHandler {
 			"address",
 			address -> addressing.forAccounts().parseFunctional(address)
 				.map(store::getAccountStakes)
-				.map(a -> jsonObject().put(ARRAY, a))
+				.map(JsonRpcUtil::wrapArray)
 		);
 	}
 
@@ -179,7 +181,7 @@ public final class ArchiveAccountHandler {
 			"address",
 			address -> addressing.forAccounts().parseFunctional(address)
 				.map(store::getAccountUnstakes)
-				.map(a -> jsonObject().put(ARRAY, a))
+				.map(JsonRpcUtil::wrapArray)
 		);
 	}
 
@@ -187,10 +189,18 @@ public final class ArchiveAccountHandler {
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
 
+	private JSONObject formatStakePositions(List<BalanceEntry> balances) {
+		return wrapArray(fromCollection(balances, balance ->
+			jsonObject()
+				.put("validator", addressing.forValidators().of(balance.getDelegate()))
+				.put("amount", balance.getAmount())
+		));
+	}
+
 	private static JSONObject formatHistoryResponse(Optional<Instant> cursor, List<TxHistoryEntry> transactions) {
 		return jsonObject()
 			.put("cursor", cursor.map(ArchiveAccountHandler::asCursor).orElse(""))
-			.put("transactions", fromList(transactions, TxHistoryEntry::asJson));
+			.put("transactions", fromCollection(transactions, TxHistoryEntry::asJson));
 	}
 
 	private static String asCursor(Instant instant) {

@@ -157,7 +157,7 @@ public class ActionParserTest {
 		var key = ECKeyPair.generateNew().getPublicKey();
 		var validatorAddr = addressing.forValidators().of(key);
 		var accountAddr = addressing.forAccounts().of(from);
-		var source = "[{\"type\":\"UnstakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
+		var source = "[{\"type\":\"UnstakeTokens\", \"to\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, accountAddr, validatorAddr, UInt256.EIGHT));
 
 		actionParserService.parse(actions)
