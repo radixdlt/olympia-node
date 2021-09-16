@@ -154,10 +154,12 @@ public class SyncRadixApiCreationTest {
 		prepareClient(BUILT_TRANSACTION)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.transaction().build(request)
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(dto -> assertEquals(amount(73800).micros(), dto.getFee()))
-				.onSuccess(dto -> assertArrayEquals(hash, dto.getTransaction().getHashToSign())));
+			.onSuccess(
+				client -> client.transaction().build(request)
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(dto -> assertEquals(amount(73800).micros(), dto.getFee()))
+					.onSuccess(dto -> assertArrayEquals(hash, dto.getTransaction().getHashToSign()))
+			);
 	}
 
 	@Test
@@ -168,9 +170,11 @@ public class SyncRadixApiCreationTest {
 		prepareClient(FINALIZE_TRANSACTION)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.transaction().finalize(request, false)
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(dto -> assertEquals(txId, dto.getTxId())));
+			.onSuccess(
+				client -> client.transaction().finalize(request, false)
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(dto -> assertEquals(txId, dto.getTxId()))
+			);
 	}
 
 	@Test
@@ -181,9 +185,11 @@ public class SyncRadixApiCreationTest {
 		prepareClient(SUBMIT_TRANSACTION)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.transaction().submit(request)
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(dto -> assertEquals(txId, dto.getTxId())));
+			.onSuccess(
+				client -> client.transaction().submit(request)
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(dto -> assertEquals(txId, dto.getTxId()))
+			);
 	}
 
 	@Test
@@ -197,12 +203,16 @@ public class SyncRadixApiCreationTest {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.transaction().build(request)
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(builtTransaction -> assertEquals(amount(73800).micros(), builtTransaction.getFee()))
-				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
-				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
-					.onFailure(failure -> fail(failure.toString()))));
+			.onSuccess(
+				client -> client.transaction().build(request)
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(builtTransaction -> assertEquals(amount(73800).micros(), builtTransaction.getFee()))
+					.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
+					.onSuccess(
+						finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
+							.onFailure(failure -> fail(failure.toString()))
+					)
+			);
 	}
 
 	@Test
@@ -212,27 +222,36 @@ public class SyncRadixApiCreationTest {
 			.createFixed(ACCOUNT_ADDRESS1, KEY_PAIR1.getPublicKey(),
 						 "fix", "fix", "fix",
 						 "https://some.host.com/", "https://some.other.host.com",
-						 amount(1000).tokens())
+						 amount(1000).tokens()
+			)
 			.build();
 
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.transaction().build(request)
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(builtTransaction -> {
-					assertEquals(amount(100116600).micros(), builtTransaction.getFee());
+			.onSuccess(
+				client -> client.transaction()
+					.build(request)
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(
+						builtTransaction -> {
+							assertEquals(amount(100116600).micros(), builtTransaction.getFee());
 
-					var notifications = builtTransaction.getTransaction().getNotifications();
-					assertEquals(1, notifications.size());
-					assertEquals("TokenCreate", notifications.get(0).getType());
-					assertEquals("fix", notifications.get(0).getSymbol().orElse(""));
-					assertEquals("fix_dr1qd5ah4xye2svl2smkk06st3q9lkqnkc6wgy0zxrrkmyszlawrz",
-								 notifications.get(0).getRri().orElse(""));
-				})
-				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
-				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
-					.onFailure(failure -> fail(failure.toString()))));
+							var notifications = builtTransaction.getTransaction().getNotifications();
+							assertEquals(1, notifications.size());
+							assertEquals("TokenCreate", notifications.get(0).getType());
+							assertEquals("fix", notifications.get(0).getSymbol().orElse(""));
+							assertEquals(
+								"fix_dr1qd5ah4xye2svl2smkk06st3q9lkqnkc6wgy0zxrrkmyszlawrz",
+								notifications.get(0).getRri().orElse("")
+							);
+						})
+					.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
+					.onSuccess(
+						finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
+							.onFailure(failure -> fail(failure.toString()))
+					)
+			);
 	}
 
 	@Test
@@ -249,12 +268,16 @@ public class SyncRadixApiCreationTest {
 		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.transaction().build(request)
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(builtTransaction -> assertEquals(amount(102600).micros(), builtTransaction.getFee()))
-				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR3))
-				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
-					.onFailure(failure -> fail(failure.toString()))));
+			.onSuccess(
+				client -> client.transaction().build(request)
+					.onFailure(failure -> fail(failure.toString()))
+					.onSuccess(builtTransaction -> assertEquals(amount(102600).micros(), builtTransaction.getFee()))
+					.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR3))
+					.onSuccess(
+						finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true)
+							.onFailure(failure -> fail(failure.toString()))
+					)
+			);
 	}
 
 	private TxBlobDTO buildBlobDto() {
