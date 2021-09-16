@@ -66,6 +66,10 @@ package com.radixdlt.api.data.action;
 
 import com.radixdlt.identifiers.REAddr;
 
+/**
+ * Interface to distinguish resource creation actions (such as {@link CreateMutableTokenAction},
+ * {@link CreateFixedTokenAction}) from remaining actions.
+ */
 public interface ResourceAction {
 	String getSymbol();
 
