@@ -77,6 +77,8 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -229,6 +231,7 @@ public class SubmissionServiceTest {
 					.toInstance(TypedMocks.rmock(EventDispatcher.class));
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(NODE);
 				bind(SystemCounters.class).to(SystemCountersImpl.class);
+				bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
 			}
 
 			@Provides

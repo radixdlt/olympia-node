@@ -71,12 +71,11 @@ import com.google.inject.Singleton;
 import com.radixdlt.networks.NetworkId;
 
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.util.JsonRpcUtil.response;
+import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
 
 @Singleton
 public class ArchiveNetworkHandler {
 	private final NetworkInfoService networkInfoService;
-
 	private final int networkId;
 
 	@Inject
@@ -85,19 +84,18 @@ public class ArchiveNetworkHandler {
 		@NetworkId int networkId
 	) {
 		this.networkInfoService = networkInfoService;
-
 		this.networkId = networkId;
 	}
 
 	public JSONObject handleNetworkGetId(JSONObject request) {
-		return response(request, jsonObject().put("networkId", networkId));
+		return successResponse(request, jsonObject().put("networkId", networkId));
 	}
 
 	public JSONObject handleNetworkGetThroughput(JSONObject request) {
-		return response(request, jsonObject().put("tps", networkInfoService.throughput()));
+		return successResponse(request, jsonObject().put("tps", networkInfoService.throughput()));
 	}
 
 	public JSONObject handleNetworkGetDemand(JSONObject request) {
-		return response(request, jsonObject().put("tps", networkInfoService.demand()));
+		return successResponse(request, jsonObject().put("tps", networkInfoService.demand()));
 	}
 }

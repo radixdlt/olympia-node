@@ -82,6 +82,7 @@ import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.RestUtils.respond;
 import static com.radixdlt.api.util.RestUtils.sanitizeBaseUrl;
 import static com.radixdlt.api.util.RestUtils.withBody;
+import static com.radixdlt.identifiers.CommonErrors.UNKNOWN_ERROR;
 
 public final class ChaosController implements Controller {
 	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
@@ -133,23 +134,29 @@ public final class ChaosController implements Controller {
 	@VisibleForTesting
 	void handleMempoolFill(HttpServerExchange exchange) {
 		withBody(exchange, values -> {
-			MempoolFillerUpdate update;
 			var completableFuture = new CompletableFuture<Void>();
-			var enable = values.getBoolean("enabled");
-			if (enable) {
-				update = MempoolFillerUpdate.enable(100, true, completableFuture);
-			} else {
-				update = MempoolFillerUpdate.disable(completableFuture);
-			}
+			var update = prepareUpdate(completableFuture, values.getBoolean("enabled"));
 			mempoolDispatcher.dispatch(update);
 
 			try {
 				completableFuture.get();
-				respond(exchange, jsonObject().put("result", enable ? "enabled" : "disabled"));
+				respond(exchange, jsonObject().put("result", values.getBoolean("enabled") ? "enabled" : "disabled"));
 			} catch (ExecutionException e) {
-				respond(exchange, jsonObject().put("error", jsonObject().put("message", e.getCause().getMessage())));
+				var response = jsonObject()
+					.put("error", jsonObject()
+						.put("code", UNKNOWN_ERROR.code())
+						.put("message", UNKNOWN_ERROR.with(e.getCause().getClass(), e.getCause().getMessage())));
+				respond(exchange, response);
 			}
 		});
+	}
+
+	private MempoolFillerUpdate prepareUpdate(CompletableFuture<Void> completableFuture, boolean enable) {
+		if (enable) {
+			return MempoolFillerUpdate.enable(100, true, completableFuture);
+		} else {
+			return MempoolFillerUpdate.disable(completableFuture);
+		}
 	}
 
 	private BFTNode createNodeByKey(final String nodeAddress) {

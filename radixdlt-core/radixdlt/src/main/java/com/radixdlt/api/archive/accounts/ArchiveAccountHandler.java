@@ -63,23 +63,21 @@
 
 package com.radixdlt.api.archive.accounts;
 
-import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
-import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.util.JsonRpcUtil;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.radixdlt.api.util.JsonRpcUtil.ARRAY;
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.utils.functional.Optionals.allOf;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
 
@@ -147,7 +145,7 @@ public final class ArchiveAccountHandler {
 			"address",
 			address -> addressing.forAccounts().parseFunctional(address)
 				.map(store::getAccountStakes)
-				.map(a -> jsonObject().put(ARRAY, a))
+				.map(JsonRpcUtil::wrapArray)
 		);
 	}
 
@@ -157,14 +155,13 @@ public final class ArchiveAccountHandler {
 			"address",
 			address -> addressing.forAccounts().parseFunctional(address)
 				.map(store::getAccountUnstakes)
-				.map(a -> jsonObject().put(ARRAY, a))
+				.map(JsonRpcUtil::wrapArray)
 		);
 	}
 
 	//-----------------------------------------------------------------------------------------------------
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
-
 	private Result<REAddr> parseAddress(JSONObject params) {
 		return addressing.forAccounts().parseFunctional(params.getString("address"));
 	}

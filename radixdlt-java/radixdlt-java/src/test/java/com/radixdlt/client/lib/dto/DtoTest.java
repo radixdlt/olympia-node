@@ -291,6 +291,11 @@ public class DtoTest {
 	}
 
 	@Test
+	public void testNotification() {
+		EqualsVerifier.forClass(Notification.class).suppress(Warning.NULL_FIELDS).verify();
+	}
+
+	@Test
 	public void testPerUpSubstateFee() {
 		EqualsVerifier.forClass(PerUpSubstateFee.class).suppress(Warning.NULL_FIELDS).verify();
 	}

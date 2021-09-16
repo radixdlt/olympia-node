@@ -74,7 +74,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-import static com.radixdlt.api.util.JsonRpcUtil.response;
+import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
 import static com.radixdlt.api.data.ApiErrors.UNKNOWN_RRI;
 import static com.radixdlt.utils.functional.Result.fromOptional;
@@ -91,7 +91,7 @@ public final class TokenApiModule extends AbstractModule {
 	@ProvidesIntoMap
 	@StringMapKey("tokens.get_native_token")
 	public JsonRpcHandler tokensGetNativeToken(BerkeleyResourceInfoStore store) {
-		return req -> response(req, store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow());
+		return req -> successResponse(req, store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow());
 	}
 
 	@ArchiveEndpoint

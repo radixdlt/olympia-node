@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,57 +62,68 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.data.action;
+package com.radixdlt.client.lib.dto;
 
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.UInt256;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.stream.Stream;
+import java.util.Objects;
+import java.util.Optional;
 
-class CreateFixedTokenAction implements TransactionAction, ResourceAction {
-	private final REAddr from;
-	private final UInt256 amount;
-	private final REAddr rri;
-	private final String name;
+import static java.util.Objects.requireNonNull;
+
+public final class Notification {
+	private final String type;
 	private final String symbol;
-	private final String iconUrl;
-	private final String tokenUrl;
-	private final String description;
+	private final String rri;
 
-	CreateFixedTokenAction(
-		REAddr from,
-		UInt256 amount,
-		REAddr rri,
-		String name,
-		String symbol,
-		String iconUrl,
-		String tokenUrl,
-		String description
-	) {
-		this.from = from;
-		this.amount = amount;
-		this.rri = rri;
-		this.name = name;
+	private Notification(String type, String symbol, String rri) {
+		this.type = type;
 		this.symbol = symbol;
-		this.iconUrl = iconUrl;
-		this.tokenUrl = tokenUrl;
-		this.description = description;
+		this.rri = rri;
+	}
+
+	@JsonCreator
+	public static Notification create(
+		@JsonProperty(value = "type", required = true) String type,
+		@JsonProperty("symbol") String symbol,
+		@JsonProperty("rri") String rri
+	) {
+		requireNonNull(type);
+
+		return new Notification(type, symbol, rri);
 	}
 
 	@Override
-	public Stream<TxAction> toAction() {
-		return Stream.of(new CreateFixedToken(TransactionAction.rriValue(rri), from, symbol, name, description, iconUrl, tokenUrl, amount));
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof Notification)) {
+			return false;
+		}
+
+		var that = (Notification) o;
+		return type.equals(that.type)
+			&& Objects.equals(symbol, that.symbol)
+			&& Objects.equals(rri, that.rri);
 	}
 
 	@Override
-	public String getSymbol() {
-		return symbol;
+	public int hashCode() {
+		return Objects.hash(type, symbol, rri);
 	}
 
-	@Override
-	public REAddr getAddress() {
-		return rri;
+	public Optional<String> getSymbol() {
+		return Optional.ofNullable(symbol);
+	}
+
+	public Optional<String> getRri() {
+		return Optional.ofNullable(rri);
+	}
+
+	public String getType() {
+		return type;
 	}
 }

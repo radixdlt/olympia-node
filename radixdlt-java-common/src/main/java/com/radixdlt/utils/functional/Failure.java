@@ -99,6 +99,21 @@ public interface Failure {
 	}
 
 	/**
+	 * Create instance of Failure with given message format string and parameters.
+	 * Useful in cases where exact error code is irrelevant.
+	 *
+	 * @param format message format string
+	 * @param values parameters
+	 *
+	 * @return created instance of Failure
+	 *
+	 * @see MessageFormat for supported format string options
+	 */
+	static Failure failure(String format, Object... values) {
+		return failure(-1, MessageFormat.format(format, values));
+	}
+
+	/**
 	 * Create instance of Failure with given message and code.
 	 *
 	 * @param message failure message

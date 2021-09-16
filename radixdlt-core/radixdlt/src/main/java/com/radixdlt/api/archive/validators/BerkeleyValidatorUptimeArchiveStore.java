@@ -162,6 +162,7 @@ public final class BerkeleyValidatorUptimeArchiveStore implements BerkeleyAdditi
 				try {
 					publicKey = ECPublicKey.fromBytes(pubKeyBytes);
 				} catch (PublicKeyException e) {
+					//TODO: fix error reporting
 					throw new IllegalStateException();
 				}
 

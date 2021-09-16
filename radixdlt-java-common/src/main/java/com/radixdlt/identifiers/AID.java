@@ -75,7 +75,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 
-import static com.radixdlt.identifiers.CommonErrors.AID_IS_NULL;
+import static com.radixdlt.identifiers.CommonErrors.AID_STRING_IS_NULL;
 import static com.radixdlt.identifiers.CommonErrors.INVALID_LENGTH;
 import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
 import static com.radixdlt.utils.functional.Result.fromOptional;
@@ -213,7 +213,7 @@ public final class AID implements Comparable<AID> {
 	 * @return Success {@link Result} if value can be successfully parsed and failure {@link Result} otherwise.
 	 */
 	public static Result<AID> fromString(String input) {
-		return fromOptional(AID_IS_NULL, ofNullable(input))
+		return fromOptional(AID_STRING_IS_NULL, ofNullable(input))
 			.filter(bytes -> bytes.length() == BYTES * 2, INVALID_LENGTH)
 			.map(Bytes::fromHexString)
 			.filter(bytes -> bytes.length == HASH_BYTES, INVALID_LENGTH)

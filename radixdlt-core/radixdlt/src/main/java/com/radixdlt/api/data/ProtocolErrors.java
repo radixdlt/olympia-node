@@ -62,57 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.data.action;
+package com.radixdlt.api.data;
 
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.CreateFixedToken;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Failure;
 
-import java.util.stream.Stream;
+public enum ProtocolErrors implements Failure {
+	INVALID_REQUEST(600, "Invalid request: {0}"),
+	INVALID_PARAMETERS(602, "Invalid parameters: {0} {1}"),
+	PARSE_ERROR(700, "Parse error: {0}"),
+	METHOD_NOT_FOUND(601, "Method {0} not found");
 
-class CreateFixedTokenAction implements TransactionAction, ResourceAction {
-	private final REAddr from;
-	private final UInt256 amount;
-	private final REAddr rri;
-	private final String name;
-	private final String symbol;
-	private final String iconUrl;
-	private final String tokenUrl;
-	private final String description;
+	private final int code;
+	private final String message;
 
-	CreateFixedTokenAction(
-		REAddr from,
-		UInt256 amount,
-		REAddr rri,
-		String name,
-		String symbol,
-		String iconUrl,
-		String tokenUrl,
-		String description
-	) {
-		this.from = from;
-		this.amount = amount;
-		this.rri = rri;
-		this.name = name;
-		this.symbol = symbol;
-		this.iconUrl = iconUrl;
-		this.tokenUrl = tokenUrl;
-		this.description = description;
+	ProtocolErrors(int code, String message) {
+		this.code = code;
+		this.message = message;
 	}
 
 	@Override
-	public Stream<TxAction> toAction() {
-		return Stream.of(new CreateFixedToken(TransactionAction.rriValue(rri), from, symbol, name, description, iconUrl, tokenUrl, amount));
+	public String message() {
+		return message;
 	}
 
 	@Override
-	public String getSymbol() {
-		return symbol;
-	}
-
-	@Override
-	public REAddr getAddress() {
-		return rri;
+	public int code() {
+		return -32000 - code;
 	}
 }
