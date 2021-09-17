@@ -134,7 +134,7 @@ public final class ArchiveAccountHandler {
 
 					var result = new JSONObject();
 					if (lastOffset.get() > 0) {
-						result.put("nextOffset", lastOffset.get() - 1);
+						result.put("cursor", lastOffset.get() - 1);
 					}
 
 					return result
