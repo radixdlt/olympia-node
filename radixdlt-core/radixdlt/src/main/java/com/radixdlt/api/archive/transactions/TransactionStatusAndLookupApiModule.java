@@ -82,8 +82,8 @@ public class TransactionStatusAndLookupApiModule extends AbstractModule {
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("transactions.lookup_transaction")
-	public JsonRpcHandler transactionsLookupTransaction(TransactionStatusService transactionStatusService) {
+	@StringMapKey("transactions.get_transaction_status")
+	public JsonRpcHandler transactionsGetTransactionStatus(TransactionStatusService transactionStatusService) {
 		return request -> withRequiredStringParameter(
 			request,
 			"txID",
@@ -94,8 +94,8 @@ public class TransactionStatusAndLookupApiModule extends AbstractModule {
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("transactions.get_transaction_status")
-	public JsonRpcHandler transactionsGetTransactionStatus(TransactionStatusService transactionStatusService) {
+	@StringMapKey("transactions.lookup_transaction")
+	public JsonRpcHandler transactionsLookupTransaction(TransactionStatusService transactionStatusService) {
 		return request -> withRequiredStringParameter(
 			request,
 			"txID",

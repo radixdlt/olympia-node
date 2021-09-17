@@ -97,7 +97,6 @@ import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
-import com.radixdlt.client.lib.dto.TransactionHistory2;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
 import com.radixdlt.client.lib.dto.TransactionsDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
@@ -382,24 +381,12 @@ public interface RadixApi {
 
 		/**
 		 * Get transaction history.
-		 * <p>
-		 * To get full list, pass empty cursor for first request and then just pass cursor received in the response
-		 * back to API until you get empty cursor again.
-		 *
-		 * @param address account address for which information is requested
-		 * @param size batch size
-		 * @param cursor pagination cursor
-		 */
-		Promise<TransactionHistory> history(AccountAddress address, int size, Optional<NavigationCursor> cursor);
-
-		/**
-		 * Get transaction history.
 		 *
 		 * @param address account address for which information is requested
 		 * @param size batch size
 		 * @param offset offset to start retrieval at
 		 */
-		Promise<TransactionHistory2> history2(AccountAddress address, int size, OptionalLong offset);
+		Promise<TransactionHistory> history(AccountAddress address, int size, OptionalLong offset);
 
 		/**
 		 * Get stakes made from given account.

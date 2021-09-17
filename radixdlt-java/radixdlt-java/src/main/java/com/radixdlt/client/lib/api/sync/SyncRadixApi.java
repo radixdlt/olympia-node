@@ -64,7 +64,8 @@
 
 package com.radixdlt.client.lib.api.sync;
 
-import com.radixdlt.client.lib.dto.TransactionHistory2;
+import com.radixdlt.client.lib.dto.TransactionDTO;
+import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionsDTO;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -103,8 +104,6 @@ import com.radixdlt.client.lib.dto.SyncConfiguration;
 import com.radixdlt.client.lib.dto.SyncData;
 import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TokenInfo;
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
@@ -239,19 +238,9 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 
 		@Override
 		public Result<TransactionHistory> history(
-			AccountAddress address, int size, Optional<NavigationCursor> cursor
-		) {
-			var request = request(ACCOUNT_HISTORY, address.toString(networkId()), size);
-			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
-
-			return call(request, new TypeReference<>() {});
-		}
-
-		@Override
-		public Result<TransactionHistory2> history2(
 			AccountAddress address, int size, OptionalLong nextOffset
 		) {
-			var request = request(ACCOUNT_HISTORY2, address.toString(networkId()), size);
+			var request = request(ACCOUNT_HISTORY, address.toString(networkId()), size);
 			nextOffset.ifPresent(request::addParameters);
 
 			return call(request, new TypeReference<>() {});
