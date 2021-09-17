@@ -65,11 +65,10 @@
 package com.radixdlt.network.p2p.test;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.crypto.exception.PublicKeyException;
-
 import com.google.inject.Key;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECKeyOps;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
@@ -78,16 +77,17 @@ import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.Serialization;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.socket.SocketChannel;
 
 import java.security.SecureRandom;
 import java.util.Optional;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.socket.SocketChannel;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
+import static org.mockito.Mockito.when;
 
 final class MockP2PNetwork {
 	private ImmutableList<TestNode> nodes;
