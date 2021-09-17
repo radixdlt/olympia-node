@@ -64,15 +64,21 @@
 package com.radixdlt.api.archive.tokens;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.archive.ArchiveServer;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.JsonRpcController;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.archive.ArchiveEndpoint;
+import com.radixdlt.api.util.JsonRpcServer;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+
+import java.util.Map;
 
 import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
@@ -80,24 +86,43 @@ import static com.radixdlt.api.data.ApiErrors.UNKNOWN_RRI;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
 public final class TokenApiModule extends AbstractModule {
+	private final String path;
+
+	public TokenApiModule(String path) {
+		this.path = path;
+	}
+
 	@Override
 	protected void configure() {
 		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
 			.addBinding().to(BerkeleyResourceInfoStore.class);
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, ArchiveServer.class)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("tokens.get_native_token")
-	public JsonRpcHandler tokensGetNativeToken(BerkeleyResourceInfoStore store) {
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private BerkeleyResourceInfoStore store;
+		@Inject
+		private Addressing addressing;
+
+		@Override
+		public Controller get() {
+			var handlers = Map.of(
+				"tokens.get_native_token", tokensGetNativeToken(store),
+				"tokens.get_info", tokensGetInfo(addressing, store)
+			);
+			return new JsonRpcController(new JsonRpcServer(handlers));
+		}
+	}
+
+	public static JsonRpcHandler tokensGetNativeToken(BerkeleyResourceInfoStore store) {
 		return req -> successResponse(req, store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow());
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("tokens.get_info")
-	public JsonRpcHandler tokensGetInfo(Addressing addressing, BerkeleyResourceInfoStore store) {
+	public static JsonRpcHandler tokensGetInfo(Addressing addressing, BerkeleyResourceInfoStore store) {
 		return req -> withRequiredStringParameter(
 			req,
 			"rri",

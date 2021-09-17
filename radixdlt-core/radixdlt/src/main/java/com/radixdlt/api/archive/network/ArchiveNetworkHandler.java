@@ -67,19 +67,17 @@ import com.radixdlt.api.service.network.NetworkInfoService;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.networks.NetworkId;
 
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
 
-@Singleton
-public class ArchiveNetworkHandler {
+class ArchiveNetworkHandler {
 	private final NetworkInfoService networkInfoService;
 	private final int networkId;
 
 	@Inject
-	public ArchiveNetworkHandler(
+	ArchiveNetworkHandler(
 		NetworkInfoService networkInfoService,
 		@NetworkId int networkId
 	) {

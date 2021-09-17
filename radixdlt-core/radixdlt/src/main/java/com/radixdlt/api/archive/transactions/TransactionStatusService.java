@@ -90,7 +90,7 @@ public class TransactionStatusService {
 	private final BerkeleyTransactionsByIdStore store;
 
 	@Inject
-	public TransactionStatusService(BerkeleyTransactionsByIdStore store) {
+	TransactionStatusService(BerkeleyTransactionsByIdStore store) {
 		this.store = store;
 	}
 

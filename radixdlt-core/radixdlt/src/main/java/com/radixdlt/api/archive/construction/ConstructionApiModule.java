@@ -61,45 +61,48 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive;
+package com.radixdlt.api.archive.construction;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.archive.network.NetworkApiModule;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.archive.accounts.AccountApiModule;
-import com.radixdlt.api.archive.transactions.TransactionStatusAndLookupApiModule;
 import com.radixdlt.api.util.JsonRpcController;
-import com.radixdlt.api.archive.network.ArchiveNetworkHandler;
+import com.radixdlt.api.archive.ArchiveServer;
 import com.radixdlt.api.util.JsonRpcServer;
-import com.radixdlt.api.archive.tokens.TokenApiModule;
-import com.radixdlt.api.archive.validators.ValidatorApiModule;
 
 import java.util.Map;
 
-public class ArchiveEndpointModule extends AbstractModule {
+public class ConstructionApiModule extends AbstractModule {
+	private final String path;
+	public ConstructionApiModule(String path) {
+		this.path = path;
+	}
+
 	@Override
 	protected void configure() {
-		install(new AccountApiModule());
-		install(new TokenApiModule());
-		install(new TransactionStatusAndLookupApiModule());
-		install(new ValidatorApiModule());
-		install(new NetworkApiModule());
+		bind(ConstructionHandler.class).in(Scopes.SINGLETON);
+
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, ArchiveServer.class)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
 	}
 
-	@ArchiveServer
-	@ProvidesIntoMap
-	@StringMapKey("/archive")
-	public Controller archiveController(@ArchiveEndpoint JsonRpcServer jsonRpcServer) {
-		return new JsonRpcController(jsonRpcServer);
-	}
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private ConstructionHandler handler;
 
-	@ArchiveEndpoint
-	@Provides
-	public JsonRpcServer rpcServer(@ArchiveEndpoint Map<String, JsonRpcHandler> additionalHandlers) {
-		return new JsonRpcServer(additionalHandlers);
+		@Override
+		public Controller get() {
+			var handlers = Map.<String, JsonRpcHandler>of(
+				"construction.build_transaction", handler::handleConstructionBuildTransaction,
+				"construction.finalize_transaction", handler::handleConstructionFinalizeTransaction,
+				"construction.submit_transaction", handler::handleConstructionSubmitTransaction
+			);
+			return new JsonRpcController(new JsonRpcServer(handlers));
+		}
 	}
 }

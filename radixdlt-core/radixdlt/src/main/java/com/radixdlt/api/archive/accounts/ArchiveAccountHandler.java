@@ -81,14 +81,14 @@ import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
 
-public final class ArchiveAccountHandler {
+final class ArchiveAccountHandler {
 	private final BerkeleyAccountInfoStore store;
 	private final BerkeleyAccountTxHistoryStore txHistoryStore;
 	private final BerkeleyTransactionsByIdStore txByIdStore;
 	private final Addressing addressing;
 
 	@Inject
-	public ArchiveAccountHandler(
+	ArchiveAccountHandler(
 		BerkeleyAccountInfoStore store,
 		BerkeleyAccountTxHistoryStore txHistoryStore,
 		BerkeleyTransactionsByIdStore txByIdStore,

@@ -64,26 +64,52 @@
 package com.radixdlt.api.archive.transactions;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.api.archive.ArchiveServer;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.JsonRpcController;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.archive.ArchiveEndpoint;
+import com.radixdlt.api.util.JsonRpcServer;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Result;
+
+import java.util.Map;
 
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
 import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
 
 public class TransactionStatusAndLookupApiModule extends AbstractModule {
+	private final String path;
+
+	public TransactionStatusAndLookupApiModule(String path) {
+		this.path = path;
+	}
+
 	@Override
 	public void configure() {
 		install(new TransactionStatusServiceModule());
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, ArchiveServer.class)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.get_transaction_status")
-	public JsonRpcHandler transactionsGetTransactionStatus(TransactionStatusService transactionStatusService) {
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private TransactionStatusService service;
+
+		@Override
+		public Controller get() {
+			var handlers = Map.of(
+				"transactions.get_transaction_status", transactionsGetTransactionStatus(service),
+				"transactions.lookup_transaction", transactionsLookupTransaction(service)
+			);
+			return new JsonRpcController(new JsonRpcServer(handlers));
+		}
+	}
+
+	private static JsonRpcHandler transactionsGetTransactionStatus(TransactionStatusService transactionStatusService) {
 		return request -> withRequiredStringParameter(
 			request,
 			"txID",
@@ -92,10 +118,7 @@ public class TransactionStatusAndLookupApiModule extends AbstractModule {
 		);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("transactions.lookup_transaction")
-	public JsonRpcHandler transactionsLookupTransaction(TransactionStatusService transactionStatusService) {
+	private static JsonRpcHandler transactionsLookupTransaction(TransactionStatusService transactionStatusService) {
 		return request -> withRequiredStringParameter(
 			request,
 			"txID",

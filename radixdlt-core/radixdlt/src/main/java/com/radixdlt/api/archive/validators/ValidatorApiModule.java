@@ -64,36 +64,51 @@
 package com.radixdlt.api.archive.validators;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.archive.ArchiveServer;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.JsonRpcController;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.archive.ArchiveEndpoint;
+import com.radixdlt.api.util.JsonRpcServer;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
+import java.util.Map;
+
 public class ValidatorApiModule extends AbstractModule {
+	private final String path;
+
+	public ValidatorApiModule(String path) {
+		this.path = path;
+	}
+
 	@Override
 	public void configure() {
 		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
 		bind(ArchiveValidationHandler.class).in(Scopes.SINGLETON);
 		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
 		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
+
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, ArchiveServer.class)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
 	}
 
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("validators.get_next_epoch_set")
-	public JsonRpcHandler validatorsGetNextEpochSet(ArchiveValidationHandler archiveValidationHandler) {
-		return archiveValidationHandler::handleValidatorsGetNextEpochSet;
-	}
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private ArchiveValidationHandler handler;
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("validators.lookup_validator")
-	public JsonRpcHandler validatorsLookupValidator(ArchiveValidationHandler archiveValidationHandler) {
-		return archiveValidationHandler::handleValidatorsLookupValidator;
+		@Override
+		public Controller get() {
+			var handlers = Map.<String, JsonRpcHandler>of(
+				"validators.get_next_epoch_set", handler::handleValidatorsGetNextEpochSet,
+				"validators.lookup_validator", handler::handleValidatorsLookupValidator
+			);
+			return new JsonRpcController(new JsonRpcServer(handlers));
+		}
 	}
-
 }

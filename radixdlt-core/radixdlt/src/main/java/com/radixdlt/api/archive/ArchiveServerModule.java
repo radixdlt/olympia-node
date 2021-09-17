@@ -67,9 +67,23 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.api.archive.accounts.AccountApiModule;
+import com.radixdlt.api.archive.construction.ConstructionApiModule;
+import com.radixdlt.api.archive.network.NetworkApiModule;
+import com.radixdlt.api.archive.tokens.TokenApiModule;
+import com.radixdlt.api.archive.transactions.TransactionStatusAndLookupApiModule;
+import com.radixdlt.api.archive.validators.ValidatorApiModule;
 import com.radixdlt.environment.Runners;
 
 public class ArchiveServerModule extends AbstractModule {
+	private final boolean enableArchiveApi;
+	private final boolean enableConstructionApi;
+
+	public ArchiveServerModule(boolean enableArchiveApi, boolean enableConstructionApi) {
+		this.enableArchiveApi = enableArchiveApi;
+		this.enableConstructionApi = enableConstructionApi;
+	}
+
 	@Override
 	public void configure() {
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
@@ -77,5 +91,17 @@ public class ArchiveServerModule extends AbstractModule {
 			.to(ArchiveHttpServer.class);
 
 		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
+
+		if (enableArchiveApi) {
+			install(new AccountApiModule("/accounts"));
+			install(new TokenApiModule("/tokens"));
+			install(new TransactionStatusAndLookupApiModule("/transactions"));
+			install(new ValidatorApiModule("/validators"));
+			install(new NetworkApiModule("/network"));
+		}
+
+		if (enableConstructionApi) {
+			install(new ConstructionApiModule("/construction"));
+		}
 	}
 }

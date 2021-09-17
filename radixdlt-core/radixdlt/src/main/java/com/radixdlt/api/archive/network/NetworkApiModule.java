@@ -64,30 +64,45 @@
 package com.radixdlt.api.archive.network;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.archive.ArchiveEndpoint;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.api.archive.ArchiveServer;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.JsonRpcController;
 import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.api.util.JsonRpcServer;
+
+import java.util.Map;
 
 public class NetworkApiModule extends AbstractModule {
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("network.get_id")
-	public JsonRpcHandler networkGetId(ArchiveNetworkHandler archiveNetworkHandler) {
-		return archiveNetworkHandler::handleNetworkGetId;
+	private final String path;
+
+	public NetworkApiModule(String path) {
+		this.path = path;
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("network.get_throughput")
-	public JsonRpcHandler networkGetThroughput(ArchiveNetworkHandler archiveNetworkHandler) {
-		return archiveNetworkHandler::handleNetworkGetThroughput;
+	@Override
+	public void configure() {
+		bind(ArchiveNetworkHandler.class).in(Scopes.SINGLETON);
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, ArchiveServer.class)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
 	}
 
-	@ArchiveEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("network.get_demand")
-	public JsonRpcHandler networkGetDemand(ArchiveNetworkHandler archiveNetworkHandler) {
-		return archiveNetworkHandler::handleNetworkGetDemand;
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private ArchiveNetworkHandler handler;
+
+		@Override
+		public Controller get() {
+			var handlers = Map.<String, JsonRpcHandler>of(
+				"network.get_id", handler::handleNetworkGetId,
+				"network.get_throughput", handler::handleNetworkGetThroughput,
+				"network.get_demand", handler::handleNetworkGetDemand
+			);
+			return new JsonRpcController(new JsonRpcServer(handlers));
+		}
 	}
 }

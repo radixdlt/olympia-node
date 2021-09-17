@@ -66,8 +66,6 @@ package com.radixdlt.api;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.archive.ArchiveEndpointModule;
-import com.radixdlt.api.archive.construction.ConstructEndpointModule;
 import com.radixdlt.api.node.NodeApiModule;
 import com.radixdlt.api.node.account.AccountEndpointModule;
 import com.radixdlt.api.node.chaos.ChaosEndpointModule;
@@ -104,10 +102,12 @@ public class ApiModule extends AbstractModule {
 		var endpointStatus = new HashMap<String, Boolean>();
 
 		var archiveEnable = properties.get("api.archive.enable", false);
-		if (archiveEnable) {
-			install(new ArchiveEndpointModule());
-		}
 		endpointStatus.put("archive", archiveEnable);
+		var constructionEnable = properties.get("api.construction.enable", false);
+		endpointStatus.put("construction", constructionEnable);
+		if (archiveEnable || constructionEnable) {
+			install(new ArchiveServerModule(archiveEnable, constructionEnable));
+		}
 
 		var transactionsEnable = properties.get("api.transactions.enable", false);
 		if (transactionsEnable) {
@@ -117,15 +117,6 @@ public class ApiModule extends AbstractModule {
 
 		if (archiveEnable || transactionsEnable) {
 			install(new TransactionsByIdStoreModule());
-		}
-
-		var constructionEnable = properties.get("api.construction.enable", false);
-		if (constructionEnable) {
-			install(new ConstructEndpointModule());
-		}
-		endpointStatus.put("construction", constructionEnable);
-		if (archiveEnable || constructionEnable) {
-			install(new ArchiveServerModule());
 		}
 
 		var metricsEnable = properties.get("api.metrics.enable", false);
