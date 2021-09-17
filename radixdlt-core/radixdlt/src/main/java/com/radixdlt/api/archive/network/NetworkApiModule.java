@@ -61,45 +61,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive;
+package com.radixdlt.api.archive.network;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.archive.network.NetworkApiModule;
-import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.archive.ArchiveEndpoint;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.archive.accounts.AccountApiModule;
-import com.radixdlt.api.archive.transactions.TransactionStatusAndLookupApiModule;
-import com.radixdlt.api.util.JsonRpcController;
-import com.radixdlt.api.archive.network.ArchiveNetworkHandler;
-import com.radixdlt.api.util.JsonRpcServer;
-import com.radixdlt.api.archive.tokens.TokenApiModule;
-import com.radixdlt.api.archive.validators.ValidatorApiModule;
 
-import java.util.Map;
-
-public class ArchiveEndpointModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		install(new AccountApiModule());
-		install(new TokenApiModule());
-		install(new TransactionStatusAndLookupApiModule());
-		install(new ValidatorApiModule());
-		install(new NetworkApiModule());
-	}
-
-	@ArchiveServer
+public class NetworkApiModule extends AbstractModule {
+	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("/archive")
-	public Controller archiveController(@ArchiveEndpoint JsonRpcServer jsonRpcServer) {
-		return new JsonRpcController(jsonRpcServer);
+	@StringMapKey("network.get_id")
+	public JsonRpcHandler networkGetId(ArchiveNetworkHandler archiveNetworkHandler) {
+		return archiveNetworkHandler::handleNetworkGetId;
 	}
 
 	@ArchiveEndpoint
-	@Provides
-	public JsonRpcServer rpcServer(@ArchiveEndpoint Map<String, JsonRpcHandler> additionalHandlers) {
-		return new JsonRpcServer(additionalHandlers);
+	@ProvidesIntoMap
+	@StringMapKey("network.get_throughput")
+	public JsonRpcHandler networkGetThroughput(ArchiveNetworkHandler archiveNetworkHandler) {
+		return archiveNetworkHandler::handleNetworkGetThroughput;
+	}
+
+	@ArchiveEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("network.get_demand")
+	public JsonRpcHandler networkGetDemand(ArchiveNetworkHandler archiveNetworkHandler) {
+		return archiveNetworkHandler::handleNetworkGetDemand;
 	}
 }
