@@ -85,7 +85,7 @@ public final class TransactionHistory {
 
 	@JsonCreator
 	public static TransactionHistory create(
-		@JsonProperty("nextOffset") Long nextOffset,
+		@JsonProperty("cursor") Long nextOffset,
 		@JsonProperty(value = "transactions", required = true) List<TransactionDTO> transactions,
 		@JsonProperty(value = "totalCount", required = true) long totalCount
 	) {

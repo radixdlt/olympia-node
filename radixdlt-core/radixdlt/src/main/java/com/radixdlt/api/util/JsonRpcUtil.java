@@ -129,6 +129,10 @@ public final class JsonRpcUtil {
 		return wrap(UNABLE_TO_PARSE_INT, () -> params.getInt(name));
 	}
 
+	public static Result<Long> safeLong(JSONObject params, String name) {
+		return wrap(UNABLE_TO_PARSE_INT, () -> params.getLong(name));
+	}
+
 	public static Result<JSONArray> safeArray(JSONObject params, String name) {
 		return fromOptional(() -> MISSING_PARAMETER.with(name), ofNullable(params.optJSONArray(name)));
 	}

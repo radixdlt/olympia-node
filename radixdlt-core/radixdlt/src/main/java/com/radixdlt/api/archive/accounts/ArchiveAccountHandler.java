@@ -76,6 +76,7 @@ import com.radixdlt.utils.functional.Result;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.radixdlt.api.util.JsonRpcUtil.safeLong;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
 import static com.radixdlt.utils.functional.Result.allOf;
@@ -113,10 +114,14 @@ public final class ArchiveAccountHandler {
 	public JSONObject handleAccountGetTransactionHistoryReverse(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			List.of("address", "limit"),
-			List.of("offset", "verbose"),
-			params -> allOf(parseAddress(params), ok(params.getLong("limit")), ok(params.optLong("offset", -1)), parseVerboseFlag(params))
-				.map((addr, limit, offset, verboseFlag) -> {
+			List.of("address", "size"),
+			List.of("cursor", "verbose"),
+			params -> allOf(
+				parseAddress(params),
+				safeLong(params, "size"),
+				ok(params.optLong("cursor", -1)),
+				parseVerboseFlag(params)
+			).map((addr, limit, offset, verboseFlag) -> {
 					var txnArray = new JSONArray();
 					var lastOffset = new AtomicLong(0);
 					txHistoryStore.getTxnIdsAssociatedWithAccount(addr, offset < 0 ? null : offset)
