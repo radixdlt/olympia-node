@@ -63,7 +63,10 @@
  */
 package com.radixdlt.client.lib.api.sync;
 
+import com.radixdlt.client.lib.dto.TransactionStatus;
+import com.radixdlt.client.lib.dto.TransactionStatusDTO;
 import com.radixdlt.utils.PrivateKeys;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -107,11 +110,6 @@ public class SyncRadixApiHistoryPaginationTest {
 			.onSuccess(client -> {
 				for (int i = 0; i < 20; i++) {
 					addTransaction(client, i);
-					try {
-						Thread.sleep(500);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
 				}
 			});
 	}
@@ -165,6 +163,23 @@ public class SyncRadixApiHistoryPaginationTest {
 		client.transaction().build(request)
 			.onFailure(failure -> fail(failure.toString()))
 			.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
-			.flatMap(transaction -> client.transaction().finalize(transaction, true));
+			.flatMap(transaction -> client.transaction().finalize(transaction, true))
+			.onSuccess(txBlobDTO -> {
+				var status = new AtomicReference<TransactionStatusDTO>();
+				do {
+					safeSleep(125);
+					client.transaction().status(txBlobDTO.getTxId())
+						.onSuccess(System.out::println)
+						.onSuccess(status::set);
+				} while (status.get().getStatus() != TransactionStatus.CONFIRMED);
+			});
+	}
+
+	private static void safeSleep(long millis) {
+		try {
+			Thread.sleep(millis);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 }
