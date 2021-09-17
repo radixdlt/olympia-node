@@ -194,11 +194,11 @@ public enum RadixErrors implements Failure {
 
 	UNKNOWN_ACTION("Unknown action {0}"),
 	UNKNOWN_OPERATION("Unknown {0} instruction {1}"),
+	UNKNOWN_PARTICLE("Unknown particle for key {0}"),
 	UNKNOWN_RRI("Unknown RRI {0}"),
 	UNKNOWN_TOKEN_DEFINITION("Unknown token definition {0}"),
 	UNKNOWN_TX_ID("Transaction with id {0} not found"),
 	UNKNOWN_VIRTUAL_PARENT("Virtual parent {0} does not exist."),
-
 	UNSUPPORTED_ACTION("Action type {0} is not supported");
 
 	private final String message;

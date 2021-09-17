@@ -120,16 +120,19 @@ public class AccountInfoService {
 			Arrays.concatenate(new byte[] {SubstateTypeId.TOKENS.id(), 0}, REAddr.ofPubKeyAccount(bftKey).getBytes()),
 			TokensInAccount.class
 		);
+		//TODO: functional wrapper
 		return radixEngine.reduceResources(index, TokensInAccount::getResourceAddr);
 	}
 
 	public Map<ECPublicKey, UInt384> getMyPreparedStakes() {
 		var index = SubstateIndex.create(SubstateTypeId.PREPARED_STAKE.id(), PreparedStake.class);
+		//TODO: functional wrapper
 		return radixEngine.reduceResources(index, PreparedStake::getDelegateKey, p -> p.getOwner().equals(REAddr.ofPubKeyAccount(bftKey)));
 	}
 
 	public Map<ECPublicKey, UInt384> getMyStakeBalances() {
 		var index = SubstateIndex.create(SubstateTypeId.STAKE_OWNERSHIP.id(), StakeOwnership.class);
+		//TODO: functional wrapper
 		var stakeOwnerships = radixEngine.reduceResources(
 			index,
 			StakeOwnership::getDelegateKey,
@@ -139,6 +142,7 @@ public class AccountInfoService {
 		final Map<ECPublicKey, UInt384> stakes = new HashMap<>();
 		for (var e : stakeOwnerships.entrySet()) {
 			var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), e.getKey().getCompressedBytes());
+			//TODO: functional wrapper
 			var validatorData = (ValidatorStakeData) radixEngine.get(validatorDataKey).orElseThrow();
 			var stake = e.getValue().multiply(validatorData.getTotalStake()).divide(validatorData.getTotalOwnership());
 			stakes.put(e.getKey(), stake);
@@ -156,6 +160,7 @@ public class AccountInfoService {
 
 	private JSONObject constructBalanceEntry(REAddr resourceAddress, UInt384 amount) {
 		var mapKey = SystemMapKey.ofResourceData(resourceAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+		//TODO: functional wrapper
 		var metadata = (TokenResourceMetadata) radixEngine.get(mapKey).orElseThrow();
 		var rri = addressing.forResources().of(metadata.getSymbol(), resourceAddress);
 

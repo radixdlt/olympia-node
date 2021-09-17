@@ -74,6 +74,7 @@ import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.functional.Promise;
 
 import java.io.IOException;
 import java.net.http.HttpClient;

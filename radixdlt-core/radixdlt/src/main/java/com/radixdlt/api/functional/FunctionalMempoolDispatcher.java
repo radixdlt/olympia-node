@@ -62,115 +62,41 @@
  * permissions under this License.
  */
 
-package com.radixdlt.utils.functional;
+package com.radixdlt.api.functional;
+
+import com.google.inject.Inject;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.utils.functional.Promise;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
-import static com.radixdlt.errors.RadixErrors.ERROR_ASYNC;
+public class FunctionalMempoolDispatcher {
+	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 
-public class Promise<T> extends CompletableFuture<Result<T>> {
-	private Promise() {
+	@Inject
+	public FunctionalMempoolDispatcher(EventDispatcher<MempoolAdd> mempoolAddEventDispatcher) {
+		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 	}
 
-	private Promise(Result<T> value) {
-		complete(value);
-	}
+	public Promise<Txn> submit(Txn txn) {
+		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
+		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
 
-	public static <R> Promise<R> promise() {
-		return new Promise<>();
-	}
+		mempoolAddEventDispatcher.dispatch(mempoolAdd);
 
-	public static <R> Promise<R> promise(Function<? super Throwable, ? extends Failure> errorMapper, CompletableFuture<R> future) {
-		var promise = new Promise<R>();
-		future.whenComplete(
-			(value, exception) ->
-				promise.resolve(exception != null ? Result.fail(errorMapper.apply(exception)) : Result.ok(value))
-		);
-		return promise;
-	}
+		var promise = Promise.<Txn>promise();
 
-	public static <R> Promise<R> promise(CompletableFuture<Result<R>> future) {
-		var promise = new Promise<R>();
-		future.thenAccept(promise::resolve);
-		return promise;
-	}
-
-	public static <R> Promise<R> promise(Consumer<Promise<R>> setupLambda) {
-		var promise = new Promise<R>();
-		setupLambda.accept(promise);
-		return promise;
-	}
-
-	public static <R> Promise<R> promise(Result<R> value) {
-		return new Promise<>(value);
-	}
-
-	public static <R> Promise<R> ok(R value) {
-		return promise(Result.ok(value));
-	}
-
-	public static <R> Promise<R> failure(Failure failure) {
-		return promise(Result.fail(failure));
-	}
-
-	public Promise<T> success(T value) {
-		complete(Result.ok(value));
-		return this;
-	}
-
-	public Promise<T> fail(Failure failure) {
-		complete(failure.result());
-		return this;
-	}
-
-	public Promise<T> resolve(Result<T> value) {
-		complete(value);
-		return this;
-	}
-
-	public Promise<T> onResult(Consumer<Result<T>> action) {
-		whenComplete((value, exception) -> {
-			if (exception != null) {
-				action.accept(Result.fail(ERROR_ASYNC.with(exception.getMessage())));
+		completableFuture.whenComplete((success, throwable) -> {
+			if (throwable != null) {
+				promise.fail(ExceptionDecoder.decode(throwable));
 			} else {
-				action.accept(value);
+				promise.success(success.getTxn());
 			}
 		});
-		return this;
-	}
 
-	public Promise<T> onSuccess(Consumer<T> action) {
-		return onResult(result -> result.onSuccess(action));
-	}
-
-	public Promise<T> onFailure(Consumer<? super Failure> action) {
-		return onResult(result -> result.onFailure(action));
-	}
-
-	public <R> Promise<R> map(Function<? super T, R> mapper) {
-		var result = Promise.<R>promise();
-
-		onResult(r -> result.resolve(r.map(mapper)));
-
-		return result;
-	}
-
-	@SuppressWarnings("unchecked")
-	public <R> Promise<R> flatMap(Function<? super T, Promise<R>> mapper) {
-		var resultPromise = Promise.<R>promise();
-
-		onResult(result -> result.fold(
-			failure -> resultPromise.resolve((Result<R>) result),
-			success -> mapper.apply(success).onResult(resultPromise::resolve)
-		));
-
-		return resultPromise;
-	}
-
-	public Promise<T> async(Consumer<Promise<T>> consumer) {
-		runAsync(() -> consumer.accept(this));
-		return this;
+		return promise;
 	}
 }

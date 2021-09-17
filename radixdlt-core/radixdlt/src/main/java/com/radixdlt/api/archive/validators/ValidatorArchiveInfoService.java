@@ -150,6 +150,7 @@ public class ValidatorArchiveInfoService {
 	}
 
 	public List<ValidatorInfoDetails> getAllValidators() {
+		//TODO: functional wrapper, may throw IllegalStateException wrapping DeserializeException
 		var registered = radixEngine.reduce(ValidatorRegisteredCopy.class, new HashSet<ECPublicKey>(), (u, t) -> {
 			if (t.isRegistered()) {
 				u.add(t.getValidatorKey());

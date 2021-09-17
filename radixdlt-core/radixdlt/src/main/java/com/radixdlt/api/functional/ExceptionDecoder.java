@@ -62,115 +62,39 @@
  * permissions under this License.
  */
 
-package com.radixdlt.utils.functional;
+package com.radixdlt.api.functional;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.utils.functional.Failure;
 
-import static com.radixdlt.errors.RadixErrors.ERROR_ASYNC;
+import static com.radixdlt.errors.RadixErrors.UNABLE_TO_SUBMIT_TX;
 
-public class Promise<T> extends CompletableFuture<Result<T>> {
-	private Promise() {
+public final class ExceptionDecoder {
+	private ExceptionDecoder() {
 	}
 
-	private Promise(Result<T> value) {
-		complete(value);
-	}
+	//TODO: try to cover all possible cases
+	public static Failure decode(Throwable e) {
+		var reportedException = e;
 
-	public static <R> Promise<R> promise() {
-		return new Promise<>();
-	}
+		while (reportedException.getCause() instanceof MempoolRejectedException) {
+			reportedException = reportedException.getCause();
+		}
 
-	public static <R> Promise<R> promise(Function<? super Throwable, ? extends Failure> errorMapper, CompletableFuture<R> future) {
-		var promise = new Promise<R>();
-		future.whenComplete(
-			(value, exception) ->
-				promise.resolve(exception != null ? Result.fail(errorMapper.apply(exception)) : Result.ok(value))
-		);
-		return promise;
-	}
+		while (reportedException.getCause() instanceof RadixEngineException) {
+			reportedException = reportedException.getCause();
+		}
 
-	public static <R> Promise<R> promise(CompletableFuture<Result<R>> future) {
-		var promise = new Promise<R>();
-		future.thenAccept(promise::resolve);
-		return promise;
-	}
+		while (reportedException.getCause() instanceof ConstraintMachineException) {
+			reportedException = reportedException.getCause();
+		}
 
-	public static <R> Promise<R> promise(Consumer<Promise<R>> setupLambda) {
-		var promise = new Promise<R>();
-		setupLambda.accept(promise);
-		return promise;
-	}
+		if (reportedException instanceof ConstraintMachineException && reportedException.getCause() != null) {
+			reportedException = reportedException.getCause();
+		}
 
-	public static <R> Promise<R> promise(Result<R> value) {
-		return new Promise<>(value);
-	}
-
-	public static <R> Promise<R> ok(R value) {
-		return promise(Result.ok(value));
-	}
-
-	public static <R> Promise<R> failure(Failure failure) {
-		return promise(Result.fail(failure));
-	}
-
-	public Promise<T> success(T value) {
-		complete(Result.ok(value));
-		return this;
-	}
-
-	public Promise<T> fail(Failure failure) {
-		complete(failure.result());
-		return this;
-	}
-
-	public Promise<T> resolve(Result<T> value) {
-		complete(value);
-		return this;
-	}
-
-	public Promise<T> onResult(Consumer<Result<T>> action) {
-		whenComplete((value, exception) -> {
-			if (exception != null) {
-				action.accept(Result.fail(ERROR_ASYNC.with(exception.getMessage())));
-			} else {
-				action.accept(value);
-			}
-		});
-		return this;
-	}
-
-	public Promise<T> onSuccess(Consumer<T> action) {
-		return onResult(result -> result.onSuccess(action));
-	}
-
-	public Promise<T> onFailure(Consumer<? super Failure> action) {
-		return onResult(result -> result.onFailure(action));
-	}
-
-	public <R> Promise<R> map(Function<? super T, R> mapper) {
-		var result = Promise.<R>promise();
-
-		onResult(r -> result.resolve(r.map(mapper)));
-
-		return result;
-	}
-
-	@SuppressWarnings("unchecked")
-	public <R> Promise<R> flatMap(Function<? super T, Promise<R>> mapper) {
-		var resultPromise = Promise.<R>promise();
-
-		onResult(result -> result.fold(
-			failure -> resultPromise.resolve((Result<R>) result),
-			success -> mapper.apply(success).onResult(resultPromise::resolve)
-		));
-
-		return resultPromise;
-	}
-
-	public Promise<T> async(Consumer<Promise<T>> consumer) {
-		runAsync(() -> consumer.accept(this));
-		return this;
+		return UNABLE_TO_SUBMIT_TX.with(reportedException.getMessage());
 	}
 }

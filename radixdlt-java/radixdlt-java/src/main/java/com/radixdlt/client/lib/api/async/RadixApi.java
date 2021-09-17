@@ -107,6 +107,7 @@ import com.radixdlt.client.lib.dto.ValidatorsResponse;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.utils.functional.Promise;
 
 import java.time.Duration;
 import java.util.List;

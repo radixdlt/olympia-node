@@ -102,16 +102,19 @@ public final class ValidatorInfoService {
 
 	public ValidatorMetaData getMetadata(ECPublicKey validatorKey) {
 		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_META_DATA.id(), validatorKey.getCompressedBytes());
+		//TODO: functional wrapper
 		return (ValidatorMetaData) radixEngine.get(validatorDataKey).orElse(ValidatorMetaData.createVirtual(validatorKey));
 	}
 
 	public AllowDelegationFlag getAllowDelegationFlag(ECPublicKey validatorKey) {
 		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id(), validatorKey.getCompressedBytes());
+		//TODO: functional wrapper
 		return (AllowDelegationFlag) radixEngine.get(validatorDataKey).orElse(AllowDelegationFlag.createVirtual(validatorKey));
 	}
 
 	public ValidatorUptime getUptime(ECPublicKey validatorKey) {
 		var validatorUptimeKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_BFT_DATA.id(), validatorKey.getCompressedBytes());
+		//TODO: functional wrapper
 		return radixEngine.get(validatorUptimeKey)
 			.map(ValidatorBFTData.class::cast)
 			.map(d -> ValidatorUptime.create(d.proposalsCompleted(), d.proposalsMissed()))
@@ -121,16 +124,19 @@ public final class ValidatorInfoService {
 
 	public ValidatorRegisteredCopy getNextEpochRegisteredFlag(ECPublicKey validatorKey) {
 		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(), validatorKey.getCompressedBytes());
+		//TODO: functional wrapper
 		return (ValidatorRegisteredCopy) radixEngine.get(validatorDataKey).orElse(ValidatorRegisteredCopy.createVirtual(validatorKey));
 	}
 
 	public ValidatorFeeCopy getNextValidatorFee(ECPublicKey validatorKey) {
 		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_RAKE_COPY.id(), validatorKey.getCompressedBytes());
+		//TODO: functional wrapper
 		return (ValidatorFeeCopy) radixEngine.get(validatorDataKey).orElse(ValidatorFeeCopy.createVirtual(validatorKey));
 	}
 
 	public ValidatorOwnerCopy getNextEpochValidatorOwner(ECPublicKey validatorKey) {
 		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_OWNER_COPY.id(), validatorKey.getCompressedBytes());
+		//TODO: functional wrapper
 		return (ValidatorOwnerCopy) radixEngine.get(validatorDataKey).orElse(ValidatorOwnerCopy.createVirtual(validatorKey));
 	}
 
@@ -140,6 +146,7 @@ public final class ValidatorInfoService {
 			Arrays.concatenate(new byte[] {SubstateTypeId.PREPARED_STAKE.id(), 0}, validatorKey.getCompressedBytes()),
 			PreparedStake.class
 		);
+		//TODO: functional wrapper
 		return radixEngine.reduceResources(index, PreparedStake::getOwner);
 	}
 
@@ -148,6 +155,7 @@ public final class ValidatorInfoService {
 			Arrays.concatenate(new byte[] {SubstateTypeId.PREPARED_UNSTAKE.id(), 0}, validatorKey.getCompressedBytes()),
 			PreparedUnstakeOwnership.class
 		);
+		//TODO: functional wrapper
 		return radixEngine.reduceResources(index, PreparedUnstakeOwnership::getOwner);
 	}
 
@@ -182,6 +190,7 @@ public final class ValidatorInfoService {
 			Arrays.concatenate(new byte[] {SubstateTypeId.STAKE_OWNERSHIP.id(), 0}, validatorKey.getCompressedBytes()),
 			StakeOwnership.class
 		);
+		//TODO: functional wrapper
 		var stakeReceived = radixEngine.reduceResources(index, StakeOwnership::getOwner);
 		var stakes = new HashMap<REAddr, UInt256>();
 		stakeReceived.forEach((address, amt) -> stakes.put(
@@ -192,6 +201,7 @@ public final class ValidatorInfoService {
 
 	public ValidatorStakeData getValidatorStakeData(ECPublicKey validatorKey) {
 		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), validatorKey.getCompressedBytes());
+		//TODO: functional wrapper
 		return (ValidatorStakeData) radixEngine.get(validatorDataKey).orElse(ValidatorStakeData.createVirtual(validatorKey));
 	}
 }

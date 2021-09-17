@@ -175,6 +175,7 @@ public final class ValidationHandler {
 	}
 
 	public JSONObject handleGetCurrentEpochData(JSONObject request) {
+		//TODO: functional wrapper
 		var validators = radixEngine.reduce(ValidatorStakeData.class, jsonArray(), (json, data) -> {
 			if (!data.isRegistered() || data.getTotalStake().isZero()) {
 				return json;
@@ -186,6 +187,7 @@ public final class ValidationHandler {
 			);
 
 			// TODO: need to surround this with a lock
+			//TODO: functional wrapper
 			var bftData = (ValidatorBFTData) radixEngine.get(bftDataKey).orElseThrow();
 			var uptime = ValidatorUptime.create(bftData.proposalsCompleted(), bftData.proposalsMissed());
 
