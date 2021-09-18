@@ -61,112 +61,63 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive.accounts;
+package com.radixdlt.api.archive.transaction;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
-import com.radixdlt.api.util.JsonRpcUtil;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.utils.functional.Result;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import org.json.JSONObject;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
+import java.time.Duration;
+import java.util.Optional;
 
-import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
-import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.utils.functional.Result.allOf;
-import static com.radixdlt.utils.functional.Result.ok;
+import static com.radixdlt.api.archive.transaction.TransactionStatus.CONFIRMED;
+import static com.radixdlt.api.archive.transaction.TransactionStatus.FAILED;
+import static com.radixdlt.api.archive.transaction.TransactionStatus.PENDING;
+import static com.radixdlt.api.archive.transaction.TransactionStatus.TRANSACTION_NOT_FOUND;
 
-final class ArchiveAccountHandler {
-	private final BerkeleyAccountInfoStore store;
-	private final BerkeleyAccountTxHistoryStore txHistoryStore;
-	private final BerkeleyTransactionsByIdStore txByIdStore;
-	private final Addressing addressing;
+public class TransactionStatusService {
+	private final Cache<AID, TransactionStatus> cache = CacheBuilder.newBuilder()
+		.maximumSize(100000)
+		.expireAfterAccess(Duration.ofMinutes(10))
+		.build();
+	private final BerkeleyTransactionsByIdStore store;
 
 	@Inject
-	ArchiveAccountHandler(
-		BerkeleyAccountInfoStore store,
-		BerkeleyAccountTxHistoryStore txHistoryStore,
-		BerkeleyTransactionsByIdStore txByIdStore,
-		Addressing addressing
-	) {
+	TransactionStatusService(BerkeleyTransactionsByIdStore store) {
 		this.store = store;
-		this.txHistoryStore = txHistoryStore;
-		this.txByIdStore = txByIdStore;
-		this.addressing = addressing;
 	}
 
-	public JSONObject handleAccountGetBalances(JSONObject request) {
-		return withRequiredStringParameter(
-			request,
-			"address",
-			address -> addressing.forAccounts()
-				.parseFunctional(address)
-				.map(store::getAccountInfo)
-		);
+	private void onReject(MempoolAddFailure mempoolAddFailure) {
+		cache.put(mempoolAddFailure.getTxn().getId(), FAILED);
 	}
 
-	public JSONObject handleAccountGetTransactionHistoryReverse(JSONObject request) {
-		return withRequiredParameters(
-			request,
-			List.of("address", "limit"),
-			List.of("offset", "verbose"),
-			params -> allOf(parseAddress(params), ok(params.getLong("limit")), ok(params.optLong("offset", -1)), parseVerboseFlag(params))
-				.map((addr, limit, offset, verboseFlag) -> {
-					var txnArray = new JSONArray();
-					var lastOffset = new AtomicLong(0);
-					txHistoryStore.getTxnIdsAssociatedWithAccount(addr, offset < 0 ? null : offset)
-						.limit(limit)
-						.forEach(pair -> {
-							var json = txByIdStore.getTransactionJSON(pair.getFirst()).orElseThrow();
-							lastOffset.set(pair.getSecond());
-							txnArray.put(json);
-						});
-
-					var result = new JSONObject();
-					if (lastOffset.get() > 0) {
-						result.put("nextOffset", lastOffset.get() - 1);
-					}
-
-					return result
-						.put("totalCount", txnArray.length())
-						.put("transactions", txnArray);
-				})
-		);
+	private void onSuccess(MempoolAddSuccess mempoolAddSuccess) {
+		cache.put(mempoolAddSuccess.getTxn().getId(), PENDING);
 	}
 
-	public JSONObject handleAccountGetStakePositions(JSONObject request) {
-		return withRequiredStringParameter(
-			request,
-			"address",
-			address -> addressing.forAccounts().parseFunctional(address)
-				.map(store::getAccountStakes)
-				.map(JsonRpcUtil::wrapArray)
-		);
+	public EventProcessor<MempoolAddFailure> mempoolAddFailureEventProcessor() {
+		return this::onReject;
 	}
 
-	public JSONObject handleAccountGetUnstakePositions(JSONObject request) {
-		return withRequiredStringParameter(
-			request,
-			"address",
-			address -> addressing.forAccounts().parseFunctional(address)
-				.map(store::getAccountUnstakes)
-				.map(JsonRpcUtil::wrapArray)
-		);
+	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
+		return this::onSuccess;
 	}
 
-	//-----------------------------------------------------------------------------------------------------
-	// internal processing
-	//-----------------------------------------------------------------------------------------------------
-	private Result<REAddr> parseAddress(JSONObject params) {
-		return addressing.forAccounts().parseFunctional(params.getString("address"));
+	public Optional<JSONObject> getTransaction(AID txId) {
+		return store.getTransactionJSON(txId);
 	}
 
-	private Result<Boolean> parseVerboseFlag(JSONObject params) {
-		return ok(params.optBoolean("verbose", false));
+	public TransactionStatus getTransactionStatus(AID txId) {
+		var status = cache.getIfPresent(txId);
+		if (store.contains(txId)) {
+			return CONFIRMED;
+		}
+		return status != null ? status : TRANSACTION_NOT_FOUND;
 	}
 }

@@ -68,13 +68,13 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.archive.accounts.AccountApiModule;
+import com.radixdlt.api.archive.account.AccountApiModule;
 import com.radixdlt.api.archive.construction.ConstructionApiModule;
 import com.radixdlt.api.archive.network.NetworkApiModule;
 import com.radixdlt.api.archive.tokens.TokenApiModule;
-import com.radixdlt.api.archive.transactions.TransactionStatusAndLookupApiModule;
-import com.radixdlt.api.archive.validators.ValidatorApiModule;
-import com.radixdlt.api.util.AbstractHttpServer;
+import com.radixdlt.api.archive.transaction.TransactionStatusAndLookupApiModule;
+import com.radixdlt.api.archive.validator.ValidatorApiModule;
+import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
@@ -90,6 +90,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 public class ArchiveServerModule extends AbstractModule {
 	private static final int DEFAULT_PORT = 8080;
+	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
 
 	private final boolean enableArchiveApi;
 	private final boolean enableConstructionApi;
@@ -131,7 +132,9 @@ public class ArchiveServerModule extends AbstractModule {
 		RuntimeProperties properties,
 		SystemCounters counters
 	) {
-		return new AbstractHttpServer(controllers, properties, "archive", DEFAULT_PORT, counters);
+		int port = properties.get("api.archive.port", DEFAULT_PORT);
+		String bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
+		return new HttpServerRunner(controllers, port, bindAddress, "archive", counters);
 	}
 
 }

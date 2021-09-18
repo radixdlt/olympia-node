@@ -61,64 +61,45 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive.transactions;
+package com.radixdlt.api.node;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.inject.Inject;
-import com.radixdlt.api.data.TransactionStatus;
-import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import org.json.JSONObject;
+import com.google.inject.AbstractModule;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.ModuleRunner;
+import com.radixdlt.api.util.HttpServerRunner;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.properties.RuntimeProperties;
 
-import java.time.Duration;
-import java.util.Optional;
+import java.util.Map;
 
-import static com.radixdlt.api.data.TransactionStatus.CONFIRMED;
-import static com.radixdlt.api.data.TransactionStatus.FAILED;
-import static com.radixdlt.api.data.TransactionStatus.PENDING;
-import static com.radixdlt.api.data.TransactionStatus.TRANSACTION_NOT_FOUND;
+/**
+ * Configures the api including http server setup
+ */
+public final class NodeServerModule extends AbstractModule {
+	private static final int DEFAULT_PORT = 3333;
+	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
 
-public class TransactionStatusService {
-	private final Cache<AID, TransactionStatus> cache = CacheBuilder.newBuilder()
-		.maximumSize(100000)
-		.expireAfterAccess(Duration.ofMinutes(10))
-		.build();
-	private final BerkeleyTransactionsByIdStore store;
-
-	@Inject
-	TransactionStatusService(BerkeleyTransactionsByIdStore store) {
-		this.store = store;
+	@Override
+	public void configure() {
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
 	}
 
-	private void onReject(MempoolAddFailure mempoolAddFailure) {
-		cache.put(mempoolAddFailure.getTxn().getId(), FAILED);
-	}
+	@ProvidesIntoMap
+	@StringMapKey(Runners.NODE_API)
+	@Singleton
+	public ModuleRunner nodeHttpServer(
+		@NodeServer Map<String, Controller> controllers,
+		RuntimeProperties properties,
+		SystemCounters counters
+	) {
+		int port = properties.get("api.node.port", DEFAULT_PORT);
+		var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
 
-	private void onSuccess(MempoolAddSuccess mempoolAddSuccess) {
-		cache.put(mempoolAddSuccess.getTxn().getId(), PENDING);
-	}
-
-	public EventProcessor<MempoolAddFailure> mempoolAddFailureEventProcessor() {
-		return this::onReject;
-	}
-
-	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
-		return this::onSuccess;
-	}
-
-	public Optional<JSONObject> getTransaction(AID txId) {
-		return store.getTransactionJSON(txId);
-	}
-
-	public TransactionStatus getTransactionStatus(AID txId) {
-		var status = cache.getIfPresent(txId);
-		if (store.contains(txId)) {
-			return CONFIRMED;
-		}
-		return status != null ? status : TRANSACTION_NOT_FOUND;
+		return new HttpServerRunner(controllers, port, bindAddress, "node", counters);
 	}
 }

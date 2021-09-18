@@ -61,123 +61,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.util;
+package com.radixdlt.api.archive.account;
 
-import com.radixdlt.api.node.metrics.MetricsHandler;
-import com.radixdlt.counters.SystemCounters;
-import io.undertow.server.handlers.RequestLimitingHandler;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.google.inject.AbstractModule;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.api.util.JsonRpcServer;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.properties.RuntimeProperties;
-import com.stijndewitt.undertow.cors.AllowAll;
-import com.stijndewitt.undertow.cors.Filter;
-
-import java.util.Locale;
+import java.lang.annotation.Annotation;
 import java.util.Map;
-import java.util.Objects;
-import java.util.logging.Level;
 
-import io.undertow.Handlers;
-import io.undertow.Undertow;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
-import io.undertow.util.StatusCodes;
+public class AccountApiModule extends AbstractModule {
+	private final String path;
+	private final Class<? extends Annotation> annotationType;
 
-import static java.util.logging.Logger.getLogger;
-
-public class AbstractHttpServer implements ModuleRunner {
-	private static final Logger log = LogManager.getLogger();
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
-	private static final int MAXIMUM_CONCURRENT_REQUESTS = Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
-	private static final int QUEUE_SIZE = 2000;
-
-	private final Map<String, Controller> controllers;
-	private final String name;
-	private final int port;
-	private final String bindAddress;
-	private final SystemCounters counters;
-
-	private Undertow server;
-
-	public AbstractHttpServer(
-		Map<String, Controller> controllers,
-		RuntimeProperties properties,
-		String name,
-		int defaultPort,
-		SystemCounters counters
-	) {
-		this.controllers = controllers;
-		this.name = name.toLowerCase(Locale.US);
-		this.port = properties.get("api." + name + ".port", defaultPort);
-		this.bindAddress = properties.get("api." + name + ".bind.address", DEFAULT_BIND_ADDRESS);
-		this.counters = Objects.requireNonNull(counters);
-	}
-
-	private static void fallbackHandler(HttpServerExchange exchange) {
-		exchange.setStatusCode(StatusCodes.NOT_FOUND);
-		exchange.getResponseSender().send(
-			"No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
-		);
-	}
-
-	private static void invalidMethodHandler(HttpServerExchange exchange) {
-		exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
-		exchange.getResponseSender().send(
-			"Invalid method, path exists for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
-		);
+	public AccountApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.path = path;
+		this.annotationType = annotationType;
 	}
 
 	@Override
-	public void start() {
-		final var handler = new MetricsHandler(
-			counters,
-			name,
-			new RequestLimitingHandler(
-				MAXIMUM_CONCURRENT_REQUESTS,
-				QUEUE_SIZE,
-				configureRoutes()
-			)
-		);
+	protected void configure() {
+		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
+		bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
+		binder.addBinding().to(BerkeleyAccountInfoStore.class);
+		bind(BerkeleyAccountTxHistoryStore.class).in(Scopes.SINGLETON);
+		binder.addBinding().to(BerkeleyAccountTxHistoryStore.class);
+		bind(ArchiveAccountHandler.class).in(Scopes.SINGLETON);
 
-		server = Undertow.builder()
-			.addHttpListener(port, bindAddress)
-			.setHandler(handler)
-			.build();
-		server.start();
-
-		log.info("Starting {} HTTP Server at {}:{}", name.toUpperCase(Locale.US), bindAddress, port);
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
 	}
 
-	@Override
-	public void stop() {
-		server.stop();
-	}
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private ArchiveAccountHandler handler;
 
-	private HttpHandler configureRoutes() {
-		var handler = Handlers.routing(true); // add path params to query params with this flag
-
-		controllers.forEach((root, controller) -> {
-			log.info("Configuring routes under {}", root);
-			controller.configureRoutes(root, handler);
-		});
-
-		handler.setFallbackHandler(AbstractHttpServer::fallbackHandler);
-		handler.setInvalidMethodHandler(AbstractHttpServer::invalidMethodHandler);
-
-		return wrapWithCorsFilter(handler);
-	}
-
-	private Filter wrapWithCorsFilter(final RoutingHandler handler) {
-		var filter = new Filter(handler);
-
-		// Disable INFO logging for CORS filter, as it's a bit distracting
-		getLogger(filter.getClass().getName()).setLevel(Level.WARNING);
-		filter.setPolicyClass(AllowAll.class.getName());
-		filter.setUrlPattern("^.*$");
-
-		return filter;
+		@Override
+		public Controller get() {
+			var handlers = Map.<String, JsonRpcHandler>of(
+				"account.get_balances", handler::handleAccountGetBalances,
+				"account.get_stake_positions", handler::handleAccountGetStakePositions,
+				"account.get_unstake_positions", handler::handleAccountGetUnstakePositions,
+				"account.get_transaction_history", handler::handleAccountGetTransactionHistoryReverse
+			);
+			return new JsonRpcController(new JsonRpcServer(handlers));
+		}
 	}
 }

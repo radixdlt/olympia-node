@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive.transactions;
+package com.radixdlt.api.archive.transaction;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -72,7 +72,6 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.api.data.TransactionStatus;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;

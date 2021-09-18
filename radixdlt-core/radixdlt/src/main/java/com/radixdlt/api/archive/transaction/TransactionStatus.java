@@ -61,25 +61,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.node;
+package com.radixdlt.api.archive.transaction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.environment.Runners;
+import org.json.JSONObject;
 
-/**
- * Configures the api including http server setup
- */
-public final class NodeApiModule extends AbstractModule {
-	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
-			.addBinding(Runners.NODE_API)
-			.to(NodeHttpServer.class);
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		bind(NodeHttpServer.class).in(Scopes.SINGLETON);
+public enum TransactionStatus {
+	PENDING,
+	CONFIRMED,
+	FAILED,
+	TRANSACTION_NOT_FOUND;
+
+	public JSONObject asJson() {
+		var key = this == TRANSACTION_NOT_FOUND ? "failure" : "status";
+
+		return new JSONObject().put(key, name());
 	}
 }

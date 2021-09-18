@@ -61,71 +61,121 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive.transactions;
+package com.radixdlt.api.util;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.JsonRpcController;
-import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.util.JsonRpcServer;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.utils.functional.Result;
+import com.radixdlt.api.node.metrics.MetricsHandler;
+import com.radixdlt.counters.SystemCounters;
+import io.undertow.server.handlers.RequestLimitingHandler;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.lang.annotation.Annotation;
+import com.radixdlt.ModuleRunner;
+import com.stijndewitt.undertow.cors.AllowAll;
+import com.stijndewitt.undertow.cors.Filter;
+
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.logging.Level;
 
-import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
+import io.undertow.Handlers;
+import io.undertow.Undertow;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RoutingHandler;
+import io.undertow.util.StatusCodes;
 
-public class TransactionStatusAndLookupApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+import static java.util.logging.Logger.getLogger;
 
-	public TransactionStatusAndLookupApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+public final class HttpServerRunner implements ModuleRunner {
+	private static final Logger log = LogManager.getLogger();
+	private static final int MAXIMUM_CONCURRENT_REQUESTS = Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
+	private static final int QUEUE_SIZE = 2000;
+
+	private final Map<String, Controller> controllers;
+	private final String name;
+	private final int port;
+	private final String bindAddress;
+	private final SystemCounters counters;
+
+	private Undertow server;
+
+	public HttpServerRunner(
+		Map<String, Controller> controllers,
+		int port,
+		String bindAddress,
+		String name,
+		SystemCounters counters
+	) {
+		this.controllers = controllers;
+		this.name = name.toLowerCase(Locale.US);
+		this.bindAddress = bindAddress;
+		this.port = port;
+		this.counters = Objects.requireNonNull(counters);
+	}
+
+	private static void fallbackHandler(HttpServerExchange exchange) {
+		exchange.setStatusCode(StatusCodes.NOT_FOUND);
+		exchange.getResponseSender().send(
+			"No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
+		);
+	}
+
+	private static void invalidMethodHandler(HttpServerExchange exchange) {
+		exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
+		exchange.getResponseSender().send(
+			"Invalid method, path exists for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
+		);
 	}
 
 	@Override
-	public void configure() {
-		install(new TransactionStatusServiceModule());
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
-			.addBinding(path)
-			.toProvider(ControllerProvider.class);
-	}
-
-	private static class ControllerProvider implements Provider<Controller> {
-		@Inject
-		private TransactionStatusService service;
-
-		@Override
-		public Controller get() {
-			var handlers = Map.of(
-				"transactions.get_transaction_status", transactionsGetTransactionStatus(service),
-				"transactions.lookup_transaction", transactionsLookupTransaction(service)
-			);
-			return new JsonRpcController(new JsonRpcServer(handlers));
-		}
-	}
-
-	private static JsonRpcHandler transactionsGetTransactionStatus(TransactionStatusService transactionStatusService) {
-		return request -> withRequiredStringParameter(
-			request,
-			"txID",
-			idString -> AID.fromString(idString)
-				.map(txId -> transactionStatusService.getTransactionStatus(txId).asJson().put("txID", txId))
+	public void start() {
+		final var handler = new MetricsHandler(
+			counters,
+			name,
+			new RequestLimitingHandler(
+				MAXIMUM_CONCURRENT_REQUESTS,
+				QUEUE_SIZE,
+				configureRoutes()
+			)
 		);
+
+		server = Undertow.builder()
+			.addHttpListener(port, bindAddress)
+			.setHandler(handler)
+			.build();
+		server.start();
+
+		log.info("Starting {} HTTP Server at {}:{}", name.toUpperCase(Locale.US), bindAddress, port);
 	}
 
-	private static JsonRpcHandler transactionsLookupTransaction(TransactionStatusService transactionStatusService) {
-		return request -> withRequiredStringParameter(
-			request,
-			"txID",
-			idString -> AID.fromString(idString)
-				.flatMap(txId -> Result.fromOptional(UNKNOWN_TX_ID.with(txId), transactionStatusService.getTransaction(txId)))
-		);
+	@Override
+	public void stop() {
+		server.stop();
+	}
+
+	private HttpHandler configureRoutes() {
+		var handler = Handlers.routing(true); // add path params to query params with this flag
+
+		controllers.forEach((root, controller) -> {
+			log.info("Configuring routes under {}", root);
+			controller.configureRoutes(root, handler);
+		});
+
+		handler.setFallbackHandler(HttpServerRunner::fallbackHandler);
+		handler.setInvalidMethodHandler(HttpServerRunner::invalidMethodHandler);
+
+		return wrapWithCorsFilter(handler);
+	}
+
+	private Filter wrapWithCorsFilter(final RoutingHandler handler) {
+		var filter = new Filter(handler);
+
+		// Disable INFO logging for CORS filter, as it's a bit distracting
+		getLogger(filter.getClass().getName()).setLevel(Level.WARNING);
+		filter.setPolicyClass(AllowAll.class.getName());
+		filter.setUrlPattern("^.*$");
+
+		return filter;
 	}
 }

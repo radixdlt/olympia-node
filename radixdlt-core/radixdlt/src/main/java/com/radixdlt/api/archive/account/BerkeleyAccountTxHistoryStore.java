@@ -61,165 +61,170 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive.validators;
+package com.radixdlt.api.archive.account;
 
-import com.radixdlt.api.data.ValidatorUptime;
-import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.application.system.state.ValidatorBFTData;
+import com.google.common.collect.Streams;
+import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.Longs;
+import com.radixdlt.utils.Pair;
+import com.sleepycat.je.Cursor;
+import com.sleepycat.je.CursorConfig;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.Get;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
+import static com.sleepycat.je.OperationStatus.NOTFOUND;
+import static com.sleepycat.je.OperationStatus.SUCCESS;
 
-/**
- * Keeps historical information on uptime of each validator
- */
-public final class BerkeleyValidatorUptimeArchiveStore implements BerkeleyAdditionalStore {
-	private static final String VALIDATOR_UPTME_DB = "radix.validator_uptime_db";
-	private Database validatorUptime;
-	private final AtomicLong curEpoch = new AtomicLong();
-	private static final long NUM_EPOCHS_WINDOW = 500;
-
-	private void downEpoch(Transaction dbTxn, long epoch) {
-		var nextEpoch = epoch + 1;
-		var key = new DatabaseEntry(new byte[0]);
-		var value = new DatabaseEntry(Longs.toByteArray(nextEpoch));
-		validatorUptime.put(dbTxn, key, value);
-		curEpoch.set(nextEpoch);
-	}
-
-	private void store(Transaction dbTxn, ValidatorBFTData validatorBFTData) {
-		var buf = ByteBuffer.allocate(Long.BYTES + ECPublicKey.COMPRESSED_BYTES);
-		var epoch = curEpoch.get();
-		buf.putLong(epoch);
-		buf.put(validatorBFTData.getValidatorKey().getCompressedBytes());
-
-		var valueBuf = ByteBuffer.allocate(Long.BYTES + Long.BYTES);
-		valueBuf.putLong(validatorBFTData.proposalsCompleted());
-		valueBuf.putLong(validatorBFTData.proposalsMissed());
-
-		var key = new DatabaseEntry(buf.array());
-		var value = new DatabaseEntry(valueBuf.array());
-		validatorUptime.put(dbTxn, key, value);
-	}
-
-	public ValidatorUptime getUptimeTwoWeeks(ECPublicKey validatorKey) {
-		var lastEpoch = curEpoch.get();
-		long epochStart = Math.max(curEpoch.get() - NUM_EPOCHS_WINDOW, 0);
-
-		var uptime = ValidatorUptime.empty();
-		for (var epoch = epochStart; epoch <= lastEpoch; epoch++) {
-			var buf = ByteBuffer.allocate(Long.BYTES + ECPublicKey.COMPRESSED_BYTES);
-			buf.putLong(epoch);
-			buf.put(validatorKey.getCompressedBytes());
-			var key = new DatabaseEntry(buf.array());
-			var value = new DatabaseEntry();
-
-			var status = validatorUptime.get(null, key, value, null);
-			if (status == OperationStatus.SUCCESS) {
-				var valueBuf = ByteBuffer.wrap(value.getData());
-				var proposalsCompleted = valueBuf.getLong();
-				var proposalsMissed = valueBuf.getLong();
-				var nextUptime = ValidatorUptime.create(proposalsCompleted, proposalsMissed);
-				uptime = uptime.merge(nextUptime);
-			}
-		}
-
-		return uptime;
-	}
-
-	public Map<ECPublicKey, ValidatorUptime> getUptimeTwoWeeks() {
-		var map = new HashMap<ECPublicKey, ValidatorUptime>();
-		long epochStart = Math.max(curEpoch.get() - NUM_EPOCHS_WINDOW, 0);
-		try (var cursor = validatorUptime.openCursor(null, null)) {
-			var key = new DatabaseEntry(Longs.toByteArray(epochStart));
-			var value = new DatabaseEntry();
-			var status = cursor.getSearchKeyRange(key, value, null);
-			while (status == OperationStatus.SUCCESS && value.getData().length > 0) {
-				var keyBuf = ByteBuffer.wrap(key.getData());
-				var epoch = keyBuf.getLong();
-				var pubKeyBytes = new byte[ECPublicKey.COMPRESSED_BYTES];
-				keyBuf.get(pubKeyBytes);
-				ECPublicKey publicKey;
-				try {
-					publicKey = ECPublicKey.fromBytes(pubKeyBytes);
-				} catch (PublicKeyException e) {
-					//TODO: fix error reporting
-					throw new IllegalStateException();
-				}
-
-				var buf = ByteBuffer.wrap(value.getData());
-				var proposalsCompleted = buf.getLong();
-				var proposalsMissed = buf.getLong();
-				var uptime = ValidatorUptime.create(proposalsCompleted, proposalsMissed);
-				map.merge(publicKey, uptime, ValidatorUptime::merge);
-				status = cursor.getNext(key, value, null);
-			}
-
-			return map;
-		}
-	}
+public class BerkeleyAccountTxHistoryStore implements BerkeleyAdditionalStore {
+	private Database accountTxHistory;
 
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
 		var env = dbEnv.getEnvironment();
-		validatorUptime = env.openDatabase(null, VALIDATOR_UPTME_DB, new DatabaseConfig()
+		this.accountTxHistory = env.openDatabase(null, "radix.account_txn_history", new DatabaseConfig()
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setKeyPrefixing(true)
 			.setBtreeComparator(lexicographicalComparator())
 		);
-		var curEpochEntry = new DatabaseEntry();
-		var result = validatorUptime.get(null, new DatabaseEntry(new byte[0]), curEpochEntry, null);
-		if (result == OperationStatus.SUCCESS) {
-			this.curEpoch.set(Longs.fromByteArray(curEpochEntry.getData()));
-		}
 	}
 
 	@Override
 	public void close() {
-		if (validatorUptime != null) {
-			validatorUptime.close();
+		if (accountTxHistory != null) {
+			accountTxHistory.close();
+		}
+	}
+
+	private Iterator<Pair<AID, Long>> createReverseIteratorFromCursor(REAddr addr, Long offset, Cursor cursor) {
+		return new Iterator<>() {
+			private final DatabaseEntry key;
+			private final DatabaseEntry value = new DatabaseEntry();
+			private OperationStatus status;
+			{
+				if (offset != null) {
+					key = key(addr, offset);
+					status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
+				} else {
+					var maybeLast = lastOffset(cursor, value, addr);
+					if (maybeLast.isPresent()) {
+						key = maybeLast.get();
+						status = SUCCESS;
+					} else {
+						key = new DatabaseEntry();
+						status = NOTFOUND;
+					}
+				}
+			}
+
+			@Override
+			public boolean hasNext() {
+				return status == SUCCESS;
+			}
+
+			@Override
+			public Pair<AID, Long> next() {
+				if (status != SUCCESS) {
+					throw new NoSuchElementException();
+				}
+				var nextOffset = Longs.fromByteArray(key.getData(), REAddr.PUB_KEY_BYTES);
+				var nextValue = AID.from(value.getData());
+				var curStatus = cursor.getPrev(key, value, null);
+				status = curStatus == SUCCESS && keyIsREAddr(key, addr) ? SUCCESS : NOTFOUND;
+				return Pair.of(nextValue, nextOffset);
+			}
+		};
+	}
+
+	public Stream<Pair<AID, Long>> getTxnIdsAssociatedWithAccount(REAddr addr, Long offset) {
+		var cursor = accountTxHistory.openCursor(null, null);
+		var iterator = createReverseIteratorFromCursor(addr, offset, cursor);
+		return Streams.stream(iterator)
+			.onClose(cursor::close);
+	}
+
+	private static Stream<REAddr> getAccountsAssociatedWithTxn(REProcessedTxn txn) {
+		// Only save user transactions
+		if (txn.getSignedBy().isEmpty()) {
+			return Stream.empty();
+		}
+		var accounting = REResourceAccounting.compute(txn.stateUpdates());
+		return accounting.bucketAccounting().keySet().stream()
+			.map(Bucket::getOwner)
+			.filter(Objects::nonNull)
+			.distinct();
+	}
+
+	private DatabaseEntry key(REAddr addr, Long offset) {
+		var addrBytes = addr.getBytes();
+		var buf = ByteBuffer.allocate(addrBytes.length + (offset != null ? Long.BYTES : 0));
+		buf.put(addrBytes);
+		if (offset != null) {
+			buf.putLong(offset);
+		}
+		return new DatabaseEntry(buf.array());
+	}
+
+	private static boolean keyIsREAddr(DatabaseEntry key, REAddr addr) {
+		return Arrays.equals(key.getData(), 0, REAddr.PUB_KEY_BYTES, addr.getBytes(), 0, REAddr.PUB_KEY_BYTES);
+	}
+
+	private Optional<DatabaseEntry> lastOffset(Cursor cursor, DatabaseEntry value, REAddr addr) {
+		var key = key(addr, Long.MAX_VALUE);
+		cursor.getSearchKeyRange(key, null, null);
+		var result = cursor.getPrev(key, value, null);
+		if (result == OperationStatus.NOTFOUND) {
+			return Optional.empty();
+		} else if (result == SUCCESS) {
+			return keyIsREAddr(key, addr) ? Optional.of(key) : Optional.empty();
+		} else {
+			throw new IllegalStateException("Unexpected result " + result);
+		}
+	}
+
+	private long nextOffset(Transaction dbTxn, REAddr addr) {
+		try (var cursor = accountTxHistory.openCursor(dbTxn, CursorConfig.READ_UNCOMMITTED)) {
+			return lastOffset(cursor, null, addr)
+				.map(e -> Longs.fromByteArray(e.getData(), REAddr.PUB_KEY_BYTES) + 1)
+				.orElse(0L);
+		}
+	}
+
+	private void storeTxnForAccount(Transaction dbTxn, REProcessedTxn txn, REAddr addr) {
+		var offset = nextOffset(dbTxn, addr);
+		var key = key(addr, offset);
+		var value = new DatabaseEntry(txn.getTxnId().getBytes());
+		var status = accountTxHistory.putNoOverwrite(dbTxn, key, value);
+		if (status != OperationStatus.SUCCESS) {
+			throw new IllegalStateException("Unable to store account transaction(off: " + offset + "): " + status);
 		}
 	}
 
 	@Override
-	public void process(
-		Transaction dbTxn,
-		REProcessedTxn txn,
-		long stateVersion,
-		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
-	) {
-		for (var groupedUpdates : txn.getGroupedStateUpdates()) {
-			for (var update : groupedUpdates) {
-				if (update.isShutDown() && update.getParsed() instanceof EpochData) {
-					var epochData = (EpochData) update.getParsed();
-					downEpoch(dbTxn, epochData.getEpoch());
-				}
-
-				if (update.isBootUp() && update.getParsed() instanceof ValidatorBFTData) {
-					var validatorBftData = (ValidatorBFTData) update.getParsed();
-					store(dbTxn, validatorBftData);
-				}
-			}
-		}
+	public void process(Transaction dbTxn, REProcessedTxn txn, long stateVersion, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
+		getAccountsAssociatedWithTxn(txn)
+			.forEach(addr -> storeTxnForAccount(dbTxn, txn, addr));
 	}
 }

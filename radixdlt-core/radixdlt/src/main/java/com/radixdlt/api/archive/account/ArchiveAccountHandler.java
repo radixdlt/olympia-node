@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,136 +61,112 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.data;
+package com.radixdlt.api.archive.account;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.google.inject.Inject;
+import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.util.JsonRpcUtil;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Result;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
-import static java.util.Objects.requireNonNull;
+import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
+import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
+import static com.radixdlt.utils.functional.Result.allOf;
+import static com.radixdlt.utils.functional.Result.ok;
 
-public class ValidatorInfoDetails {
-	private final ECPublicKey validator;
-	private final REAddr owner;
-	private final String name;
-	private final String infoUrl;
-	private final UInt256 totalStake;
-	private final UInt256 ownerStake;
-	private final boolean externalStakesAllowed;
-	private final boolean registered;
-	private final int percentage;
-	private final ValidatorUptime uptime;
+final class ArchiveAccountHandler {
+	private final BerkeleyAccountInfoStore store;
+	private final BerkeleyAccountTxHistoryStore txHistoryStore;
+	private final BerkeleyTransactionsByIdStore txByIdStore;
+	private final Addressing addressing;
 
-	private ValidatorInfoDetails(
-		ECPublicKey validator,
-		REAddr owner,
-		String name,
-		String infoUrl,
-		UInt256 totalStake,
-		UInt256 ownerStake,
-		boolean externalStakesAllowed,
-		boolean registered,
-		int percentage,
-		ValidatorUptime uptime
+	@Inject
+	ArchiveAccountHandler(
+		BerkeleyAccountInfoStore store,
+		BerkeleyAccountTxHistoryStore txHistoryStore,
+		BerkeleyTransactionsByIdStore txByIdStore,
+		Addressing addressing
 	) {
-		this.validator = validator;
-		this.owner = owner;
-		this.name = name;
-		this.infoUrl = infoUrl;
-		this.totalStake = totalStake;
-		this.ownerStake = ownerStake;
-		this.externalStakesAllowed = externalStakesAllowed;
-		this.registered = registered;
-		this.percentage = percentage;
-		this.uptime = uptime;
+		this.store = store;
+		this.txHistoryStore = txHistoryStore;
+		this.txByIdStore = txByIdStore;
+		this.addressing = addressing;
 	}
 
-	public static ValidatorInfoDetails create(
-		ECPublicKey validator,
-		REAddr owner,
-		String name,
-		String infoUrl,
-		UInt256 totalStake,
-		UInt256 ownerStake,
-		boolean externalStakesAllowed,
-		boolean registered,
-		int percentage,
-		ValidatorUptime uptime
-	) {
-		requireNonNull(validator);
-		requireNonNull(owner);
-		requireNonNull(name);
-		requireNonNull(totalStake);
-		requireNonNull(ownerStake);
-
-		return new ValidatorInfoDetails(
-			validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed, registered, percentage, uptime
+	public JSONObject handleAccountGetBalances(JSONObject request) {
+		return withRequiredStringParameter(
+			request,
+			"address",
+			address -> addressing.forAccounts()
+				.parseFunctional(address)
+				.map(store::getAccountInfo)
 		);
 	}
 
-	public String getValidatorAddress(Addressing addressing) {
-		return addressing.forValidators().of(validator);
+	public JSONObject handleAccountGetTransactionHistoryReverse(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("address", "limit"),
+			List.of("offset", "verbose"),
+			params -> allOf(parseAddress(params), ok(params.getLong("limit")), ok(params.optLong("offset", -1)), parseVerboseFlag(params))
+				.map((addr, limit, offset, verboseFlag) -> {
+					var txnArray = new JSONArray();
+					var lastOffset = new AtomicLong(0);
+					txHistoryStore.getTxnIdsAssociatedWithAccount(addr, offset < 0 ? null : offset)
+						.limit(limit)
+						.forEach(pair -> {
+							var json = txByIdStore.getTransactionJSON(pair.getFirst()).orElseThrow();
+							lastOffset.set(pair.getSecond());
+							txnArray.put(json);
+						});
+
+					var result = new JSONObject();
+					if (lastOffset.get() > 0) {
+						result.put("nextOffset", lastOffset.get() - 1);
+					}
+
+					return result
+						.put("totalCount", txnArray.length())
+						.put("transactions", txnArray);
+				})
+		);
 	}
 
-	public ECPublicKey getValidatorKey() {
-		return validator;
+	public JSONObject handleAccountGetStakePositions(JSONObject request) {
+		return withRequiredStringParameter(
+			request,
+			"address",
+			address -> addressing.forAccounts().parseFunctional(address)
+				.map(store::getAccountStakes)
+				.map(JsonRpcUtil::wrapArray)
+		);
 	}
 
-	public REAddr getOwner() {
-		return owner;
+	public JSONObject handleAccountGetUnstakePositions(JSONObject request) {
+		return withRequiredStringParameter(
+			request,
+			"address",
+			address -> addressing.forAccounts().parseFunctional(address)
+				.map(store::getAccountUnstakes)
+				.map(JsonRpcUtil::wrapArray)
+		);
 	}
 
-	public UInt256 getTotalStake() {
-		return totalStake;
+	//-----------------------------------------------------------------------------------------------------
+	// internal processing
+	//-----------------------------------------------------------------------------------------------------
+	private Result<REAddr> parseAddress(JSONObject params) {
+		return addressing.forAccounts().parseFunctional(params.getString("address"));
 	}
 
-	public ECPublicKey getValidator() {
-		return validator;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public String getInfoUrl() {
-		return infoUrl;
-	}
-
-	public UInt256 getOwnerStake() {
-		return ownerStake;
-	}
-
-	public boolean isExternalStakesAllowed() {
-		return externalStakesAllowed;
-	}
-
-	public boolean isRegistered() {
-		return registered;
-	}
-
-	public int getPercentage() {
-		return percentage;
-	}
-
-	public JSONObject asJson(Addressing addressing) {
-		return jsonObject()
-			.put("address", addressing.forValidators().of(validator))
-			.put("ownerAddress", addressing.forAccounts().of(owner))
-			.put("name", name)
-			.put("proposalsCompleted", uptime.getProposalsCompleted())
-			.put("proposalsMissed", uptime.getProposalsMissed())
-			.put("uptimePercentage", uptime.toPercentageString())
-			.put("infoURL", infoUrl)
-			.put("totalDelegatedStake", totalStake)
-			.put("ownerDelegation", ownerStake)
-			.put("validatorFee", (double) percentage / (double) RAKE_PERCENTAGE_GRANULARITY + "")
-			.put("registered", registered)
-			.put("isExternalStakeAccepted", externalStakesAllowed);
+	private Result<Boolean> parseVerboseFlag(JSONObject params) {
+		return ok(params.optBoolean("verbose", false));
 	}
 }

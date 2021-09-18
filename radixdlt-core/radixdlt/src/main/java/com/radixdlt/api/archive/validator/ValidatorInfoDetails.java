@@ -61,59 +61,137 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive.accounts;
+package com.radixdlt.api.archive.validator;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.JsonRpcController;
-import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.util.JsonRpcServer;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.api.data.ValidatorUptime;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
-import java.util.Map;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.utils.UInt256;
 
-public class AccountApiModule extends AbstractModule {
-	private final String path;
-	private final Class<? extends Annotation> annotationType;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
 
-	public AccountApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.path = path;
-		this.annotationType = annotationType;
+import static java.util.Objects.requireNonNull;
+
+public class ValidatorInfoDetails {
+	private final ECPublicKey validator;
+	private final REAddr owner;
+	private final String name;
+	private final String infoUrl;
+	private final UInt256 totalStake;
+	private final UInt256 ownerStake;
+	private final boolean externalStakesAllowed;
+	private final boolean registered;
+	private final int percentage;
+	private final ValidatorUptime uptime;
+
+	private ValidatorInfoDetails(
+		ECPublicKey validator,
+		REAddr owner,
+		String name,
+		String infoUrl,
+		UInt256 totalStake,
+		UInt256 ownerStake,
+		boolean externalStakesAllowed,
+		boolean registered,
+		int percentage,
+		ValidatorUptime uptime
+	) {
+		this.validator = validator;
+		this.owner = owner;
+		this.name = name;
+		this.infoUrl = infoUrl;
+		this.totalStake = totalStake;
+		this.ownerStake = ownerStake;
+		this.externalStakesAllowed = externalStakesAllowed;
+		this.registered = registered;
+		this.percentage = percentage;
+		this.uptime = uptime;
 	}
 
-	@Override
-	protected void configure() {
-		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountInfoStore.class);
-		bind(BerkeleyAccountTxHistoryStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountTxHistoryStore.class);
-		bind(ArchiveAccountHandler.class).in(Scopes.SINGLETON);
+	public static ValidatorInfoDetails create(
+		ECPublicKey validator,
+		REAddr owner,
+		String name,
+		String infoUrl,
+		UInt256 totalStake,
+		UInt256 ownerStake,
+		boolean externalStakesAllowed,
+		boolean registered,
+		int percentage,
+		ValidatorUptime uptime
+	) {
+		requireNonNull(validator);
+		requireNonNull(owner);
+		requireNonNull(name);
+		requireNonNull(totalStake);
+		requireNonNull(ownerStake);
 
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
-			.addBinding(path)
-			.toProvider(ControllerProvider.class);
+		return new ValidatorInfoDetails(
+			validator, owner, name, infoUrl, totalStake, ownerStake, externalStakesAllowed, registered, percentage, uptime
+		);
 	}
 
-	private static class ControllerProvider implements Provider<Controller> {
-		@Inject
-		private ArchiveAccountHandler handler;
+	public String getValidatorAddress(Addressing addressing) {
+		return addressing.forValidators().of(validator);
+	}
 
-		@Override
-		public Controller get() {
-			var handlers = Map.<String, JsonRpcHandler>of(
-				"account.get_balances", handler::handleAccountGetBalances,
-				"account.get_stake_positions", handler::handleAccountGetStakePositions,
-				"account.get_unstake_positions", handler::handleAccountGetUnstakePositions,
-				"account.get_transaction_history", handler::handleAccountGetTransactionHistoryReverse
-			);
-			return new JsonRpcController(new JsonRpcServer(handlers));
-		}
+	public ECPublicKey getValidatorKey() {
+		return validator;
+	}
+
+	public REAddr getOwner() {
+		return owner;
+	}
+
+	public UInt256 getTotalStake() {
+		return totalStake;
+	}
+
+	public ECPublicKey getValidator() {
+		return validator;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public String getInfoUrl() {
+		return infoUrl;
+	}
+
+	public UInt256 getOwnerStake() {
+		return ownerStake;
+	}
+
+	public boolean isExternalStakesAllowed() {
+		return externalStakesAllowed;
+	}
+
+	public boolean isRegistered() {
+		return registered;
+	}
+
+	public int getPercentage() {
+		return percentage;
+	}
+
+	public JSONObject asJson(Addressing addressing) {
+		return jsonObject()
+			.put("address", addressing.forValidators().of(validator))
+			.put("ownerAddress", addressing.forAccounts().of(owner))
+			.put("name", name)
+			.put("proposalsCompleted", uptime.getProposalsCompleted())
+			.put("proposalsMissed", uptime.getProposalsMissed())
+			.put("uptimePercentage", uptime.toPercentageString())
+			.put("infoURL", infoUrl)
+			.put("totalDelegatedStake", totalStake)
+			.put("ownerDelegation", ownerStake)
+			.put("validatorFee", (double) percentage / (double) RAKE_PERCENTAGE_GRANULARITY + "")
+			.put("registered", registered)
+			.put("isExternalStakeAccepted", externalStakesAllowed);
 	}
 }

@@ -66,7 +66,7 @@ package com.radixdlt.api;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.node.NodeApiModule;
+import com.radixdlt.api.node.NodeServerModule;
 import com.radixdlt.api.node.account.AccountEndpointModule;
 import com.radixdlt.api.node.chaos.ChaosEndpointModule;
 import com.radixdlt.api.node.developer.DeveloperEndpointModule;
@@ -180,7 +180,7 @@ public class ApiModule extends AbstractModule {
 		}
 		endpointStatus.put("developer", developerEnable);
 
-		install(new NodeApiModule());
+		install(new NodeServerModule());
 		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
 	}
 }

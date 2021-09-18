@@ -61,37 +61,71 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive.transactions;
+package com.radixdlt.api.archive.transaction;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.mempool.MempoolAddSuccess;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.api.util.JsonRpcServer;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.utils.functional.Result;
 
-public class TransactionStatusServiceModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
+import java.lang.annotation.Annotation;
+import java.util.Map;
+
+import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
+import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
+
+public class TransactionStatusAndLookupApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
+	private final String path;
+
+	public TransactionStatusAndLookupApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
+		this.path = path;
 	}
 
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			MempoolAddFailure.class,
-			transactionStatusService.mempoolAddFailureEventProcessor()
+	@Override
+	public void configure() {
+		install(new TransactionStatusServiceModule());
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
+	}
+
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private TransactionStatusService service;
+
+		@Override
+		public Controller get() {
+			var handlers = Map.of(
+				"transactions.get_transaction_status", transactionsGetTransactionStatus(service),
+				"transactions.lookup_transaction", transactionsLookupTransaction(service)
+			);
+			return new JsonRpcController(new JsonRpcServer(handlers));
+		}
+	}
+
+	private static JsonRpcHandler transactionsGetTransactionStatus(TransactionStatusService transactionStatusService) {
+		return request -> withRequiredStringParameter(
+			request,
+			"txID",
+			idString -> AID.fromString(idString)
+				.map(txId -> transactionStatusService.getTransactionStatus(txId).asJson().put("txID", txId))
 		);
 	}
 
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
-		return new EventProcessorOnRunner<>(
-			Runners.APPLICATION,
-			MempoolAddSuccess.class,
-			transactionStatusService.mempoolAddSuccessEventProcessor()
+	private static JsonRpcHandler transactionsLookupTransaction(TransactionStatusService transactionStatusService) {
+		return request -> withRequiredStringParameter(
+			request,
+			"txID",
+			idString -> AID.fromString(idString)
+				.flatMap(txId -> Result.fromOptional(UNKNOWN_TX_ID.with(txId), transactionStatusService.getTransaction(txId)))
 		);
 	}
 }

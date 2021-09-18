@@ -61,56 +61,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive.validators;
+package com.radixdlt.api.archive.transaction;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.JsonRpcController;
-import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.util.JsonRpcServer;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 
-import java.lang.annotation.Annotation;
-import java.util.Map;
-
-public class ValidatorApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
-
-	public ValidatorApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
-	}
-
+public class TransactionStatusServiceModule extends AbstractModule {
 	@Override
 	public void configure() {
-		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		bind(ArchiveValidationHandler.class).in(Scopes.SINGLETON);
-		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
-
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
-			.addBinding(path)
-			.toProvider(ControllerProvider.class);
+		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
 	}
 
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			MempoolAddFailure.class,
+			transactionStatusService.mempoolAddFailureEventProcessor()
+		);
+	}
 
-	private static class ControllerProvider implements Provider<Controller> {
-		@Inject
-		private ArchiveValidationHandler handler;
-
-		@Override
-		public Controller get() {
-			var handlers = Map.<String, JsonRpcHandler>of(
-				"validators.get_next_epoch_set", handler::handleValidatorsGetNextEpochSet,
-				"validators.lookup_validator", handler::handleValidatorsLookupValidator
-			);
-			return new JsonRpcController(new JsonRpcServer(handlers));
-		}
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolAddSuccessEventProcessor(TransactionStatusService transactionStatusService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			MempoolAddSuccess.class,
+			transactionStatusService.mempoolAddSuccessEventProcessor()
+		);
 	}
 }

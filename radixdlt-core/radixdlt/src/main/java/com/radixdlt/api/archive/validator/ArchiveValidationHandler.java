@@ -61,111 +61,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive.validators;
+package com.radixdlt.api.archive.validator;
 
-import com.google.common.base.Suppliers;
+import org.json.JSONObject;
+
 import com.google.inject.Inject;
-import com.radixdlt.api.data.ValidatorInfoDetails;
-import com.radixdlt.api.service.ValidatorInfoService;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt384;
-import com.radixdlt.utils.functional.FunctionalUtils;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
-import com.radixdlt.utils.functional.Result.Mapper2;
 
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-import static com.radixdlt.utils.functional.FunctionalUtils.skipUntil;
-import static com.radixdlt.utils.functional.Tuple.tuple;
+import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
+import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.safeInteger;
+import static com.radixdlt.api.util.JsonRpcUtil.safeString;
+import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
+import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
+import static com.radixdlt.utils.functional.Result.allOf;
+import static com.radixdlt.utils.functional.Result.ok;
 
-public class ValidatorArchiveInfoService {
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final ValidatorInfoService validatorInfoService;
-	private final BerkeleyValidatorUptimeArchiveStore uptimeStore;
-	private final Supplier<List<ValidatorInfoDetails>> infoDetailsCache
-		= Suppliers.memoizeWithExpiration(this::getAllValidators, 60, TimeUnit.SECONDS);
+public class ArchiveValidationHandler {
+	private final ValidatorArchiveInfoService validatorInfoService;
+	private final Addressing addressing;
 
 	@Inject
-	public ValidatorArchiveInfoService(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		BerkeleyValidatorUptimeArchiveStore uptimeStore,
-		ValidatorInfoService validatorInfoService
+	public ArchiveValidationHandler(
+		ValidatorArchiveInfoService validatorInfoService,
+		Addressing addressing
 	) {
-		this.radixEngine = radixEngine;
-		this.uptimeStore = uptimeStore;
 		this.validatorInfoService = validatorInfoService;
+		this.addressing = addressing;
 	}
 
-	public Mapper2<Optional<ECPublicKey>, List<ValidatorInfoDetails>> getValidators(int size, Optional<ECPublicKey> cursor) {
-		var result = infoDetailsCache.get();
-		var paged = cursor
-			.map(key -> skipUntil(result, v -> v.getValidatorKey().equals(key)))
-			.orElse(result);
-
-		var list = paged.stream().limit(size).collect(Collectors.toList());
-		var newCursor = list.stream().reduce(FunctionalUtils::findLast).map(ValidatorInfoDetails::getValidatorKey);
-
-		return () -> Result.ok(tuple(newCursor, list));
-	}
-
-	public ValidatorInfoDetails getNextEpochValidator(ECPublicKey k) {
-		var metadata = validatorInfoService.getMetadata(k);
-		var curData = validatorInfoService.getValidatorStakeData(k);
-		var owner = validatorInfoService.getNextEpochValidatorOwner(k).getOwner();
-		var individualStakes = validatorInfoService.getEstimatedIndividualStakes(curData);
-		var preparedStakes = validatorInfoService.getPreparedStakes(k);
-		var totalPreparedStakes = preparedStakes.values().stream().reduce(UInt384::add).orElse(UInt384.ZERO).getLow();
-		var estimatedUnstakes = validatorInfoService.getEstimatedPreparedUnstakes(curData);
-		var totalEstimatedUnstakes = estimatedUnstakes.values().stream().reduce(UInt256::add).orElse(UInt256.ZERO);
-		var estimatedTotalStake = curData.getTotalStake().add(totalPreparedStakes).subtract(totalEstimatedUnstakes);
-		var ownerStake = individualStakes.getOrDefault(owner, UInt256.ZERO)
-			.add(preparedStakes.getOrDefault(owner, UInt384.ZERO).getLow());
-		var ownerEstimatedUnstake = estimatedUnstakes.getOrDefault(owner, UInt256.ZERO);
-		if (ownerEstimatedUnstake.compareTo(ownerStake) > 0) {
-			ownerStake = UInt256.ZERO;
-		} else {
-			ownerStake = ownerStake.subtract(ownerEstimatedUnstake);
-		}
-		var allowsDelegation = validatorInfoService.getAllowDelegationFlag(k).allowsDelegation();
-		var isRegistered = validatorInfoService.getNextEpochRegisteredFlag(k).isRegistered();
-		var percentage = validatorInfoService.getNextValidatorFee(k).getRakePercentage();
-		var uptime = uptimeStore.getUptimeTwoWeeks(k);
-		return ValidatorInfoDetails.create(
-			k,
-			owner,
-			metadata.getName(),
-			metadata.getUrl(),
-			estimatedTotalStake,
-			ownerStake,
-			allowsDelegation,
-			isRegistered,
-			percentage,
-			uptime
+	public JSONObject handleValidatorsGetNextEpochSet(JSONObject request) {
+		return withRequiredParameters(
+			request,
+			List.of("size"),
+			List.of("cursor"),
+			params -> allOf(parseSize(params), ok(parseAddressCursor(params)))
+				.flatMap((size, cursor) ->
+							 validatorInfoService.getValidators(size, cursor)
+								 .map(this::formatValidatorResponse))
 		);
 	}
 
-	public List<ValidatorInfoDetails> getAllValidators() {
-		var registered = radixEngine.reduce(ValidatorRegisteredCopy.class, new HashSet<ECPublicKey>(), (u, t) -> {
-			if (t.isRegistered()) {
-				u.add(t.getValidatorKey());
-			}
-			return u;
-		});
+	public JSONObject handleValidatorsLookupValidator(JSONObject request) {
+		return withRequiredStringParameter(
+			request,
+			"validatorAddress",
+			address -> addressing.forValidators().fromString(address)
+				.map(validatorInfoService::getNextEpochValidator)
+				.map(d -> d.asJson(addressing))
+		);
+	}
 
-		// TODO: Use NextEpoch action to compute all of this
-		return registered.stream()
-			.map(this::getNextEpochValidator)
-			.sorted(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed())
-			.collect(Collectors.toList());
+	//-----------------------------------------------------------------------------------------------------
+	// internal processing
+	//-----------------------------------------------------------------------------------------------------
+
+	private JSONObject formatValidatorResponse(Optional<ECPublicKey> cursor, List<ValidatorInfoDetails> transactions) {
+		return jsonObject()
+			.put("cursor", cursor.map(addressing.forValidators()::of).orElse(""))
+			.put("validators", fromCollection(transactions, d -> d.asJson(addressing)));
+	}
+
+	private Optional<ECPublicKey> parseAddressCursor(JSONObject params) {
+		return safeString(params, "cursor")
+			.toOptional()
+			.flatMap(this::parsePublicKey);
+	}
+
+	private Optional<ECPublicKey> parsePublicKey(String address) {
+		return addressing.forValidators().fromString(address).toOptional();
+	}
+
+	private static Result<Integer> parseSize(JSONObject params) {
+		return safeInteger(params, "size")
+			.filter(value -> value > 0, INVALID_PAGE_SIZE);
 	}
 }
