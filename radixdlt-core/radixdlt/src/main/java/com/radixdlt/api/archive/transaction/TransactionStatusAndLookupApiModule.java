@@ -104,8 +104,8 @@ public class TransactionStatusAndLookupApiModule extends AbstractModule {
 		@Override
 		public Controller get() {
 			var handlers = Map.of(
-				"transactions.get_transaction_status", transactionsGetTransactionStatus(service),
-				"transactions.lookup_transaction", transactionsLookupTransaction(service)
+				"get_transaction_status", transactionsGetTransactionStatus(service),
+				"lookup_transaction", transactionsLookupTransaction(service)
 			);
 			return new JsonRpcController(new JsonRpcServer(handlers));
 		}

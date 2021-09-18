@@ -76,11 +76,11 @@ import com.radixdlt.api.util.JsonRpcServer;
 import java.lang.annotation.Annotation;
 import java.util.Map;
 
-public class ValidationApiModule extends AbstractModule {
+public class ValidatorApiModule extends AbstractModule {
 	private final Class<? extends Annotation> annotationType;
 	private final String path;
 
-	public ValidationApiModule(Class<? extends Annotation> annotationType, String path) {
+	public ValidatorApiModule(Class<? extends Annotation> annotationType, String path) {
 		this.annotationType = annotationType;
 		this.path = path;
 	}
@@ -100,8 +100,8 @@ public class ValidationApiModule extends AbstractModule {
 		@Override
 		public Controller get() {
 			var handlers = Map.<String, JsonRpcHandler>of(
-				"validation.get_node_info", handler::handleGetNodeInfo,
-				"validation.get_current_epoch_data", handler::handleGetCurrentEpochData
+				"get_node_info", handler::handleGetNodeInfo,
+				"get_current_epoch_data", handler::handleGetCurrentEpochData
 			);
 			return new JsonRpcController(new JsonRpcServer(handlers));
 		}

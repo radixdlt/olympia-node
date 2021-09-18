@@ -100,7 +100,7 @@ public class FaucetApiModule extends AbstractModule {
 		@Override
 		public Controller get() {
 			var handlers = Map.<String, JsonRpcHandler>of(
-				"faucet.request_tokens", handler::requestTokens
+				"request_tokens", handler::requestTokens
 			);
 			return new JsonRpcController(new JsonRpcServer(handlers));
 		}

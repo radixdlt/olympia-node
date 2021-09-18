@@ -113,8 +113,8 @@ public final class TokenApiModule extends AbstractModule {
 		@Override
 		public Controller get() {
 			var handlers = Map.of(
-				"tokens.get_native_token", tokensGetNativeToken(store),
-				"tokens.get_info", tokensGetInfo(addressing, store)
+				"get_native_token", tokensGetNativeToken(store),
+				"get_info", tokensGetInfo(addressing, store)
 			);
 			return new JsonRpcController(new JsonRpcServer(handlers));
 		}

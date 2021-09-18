@@ -3,27 +3,27 @@ package com.radixdlt.client.lib.api.rpc;
 import static com.radixdlt.client.lib.api.rpc.EndPoint.*;
 
 public enum RpcMethod {
-	TOKEN_NATIVE("tokens.get_native_token", TOKENS),
-	TOKEN_INFO("tokens.get_info", TOKENS),
+	TOKEN_NATIVE("get_native_token", TOKENS),
+	TOKEN_INFO("get_info", TOKENS),
 
-	ACCOUNT_BALANCES("account.get_balances", ACCOUNTS),
-	ACCOUNT_HISTORY("account.get_transaction_history", ACCOUNTS),
-	ACCOUNT_STAKES("account.get_stake_positions", ACCOUNTS),
-	ACCOUNT_UNSTAKES("account.get_unstake_positions", ACCOUNTS),
+	ACCOUNT_BALANCES("get_balances", ACCOUNTS),
+	ACCOUNT_HISTORY("get_transaction_history", ACCOUNTS),
+	ACCOUNT_STAKES("get_stake_positions", ACCOUNTS),
+	ACCOUNT_UNSTAKES("get_unstake_positions", ACCOUNTS),
 
-	TRANSACTION_LOOKUP("transactions.lookup_transaction", TRANSACTIONS),
-	TRANSACTION_STATUS("transactions.get_transaction_status", TRANSACTIONS),
+	TRANSACTION_LOOKUP("lookup_transaction", TRANSACTIONS),
+	TRANSACTION_STATUS("get_transaction_status", TRANSACTIONS),
 
-	NETWORK_ID("network.get_id", NETWORK),
-	NETWORK_THROUGHPUT("network.get_throughput", NETWORK),
-	NETWORK_DEMAND("network.get_demand", NETWORK),
+	NETWORK_ID("get_id", NETWORK),
+	NETWORK_THROUGHPUT("get_throughput", NETWORK),
+	NETWORK_DEMAND("get_demand", NETWORK),
 
-	VALIDATORS_LIST("validators.get_next_epoch_set", ACCOUNTS),
-	VALIDATORS_LOOKUP("validators.lookup_validator", ACCOUNTS),
+	VALIDATORS_LIST("get_next_epoch_set", ACCOUNTS),
+	VALIDATORS_LOOKUP("lookup_validator", ACCOUNTS),
 
-	CONSTRUCTION_BUILD("construction.build_transaction", CONSTRUCTION),
-	CONSTRUCTION_FINALIZE("construction.finalize_transaction", CONSTRUCTION),
-	CONSTRUCTION_SUBMIT("construction.submit_transaction", CONSTRUCTION),
+	CONSTRUCTION_BUILD("build_transaction", CONSTRUCTION),
+	CONSTRUCTION_FINALIZE("finalize_transaction", CONSTRUCTION),
+	CONSTRUCTION_SUBMIT("submit_transaction", CONSTRUCTION),
 
 	NETWORK_CONFIG("networking.get_configuration", SYSTEM_NODE),
 	NETWORK_PEERS("networking.get_peers", SYSTEM_NODE),
@@ -51,11 +51,11 @@ public enum RpcMethod {
 	SYNC_CONFIGURATION("sync.get_configuration", SYSTEM_NODE),
 	SYNC_DATA("sync.get_data", SYSTEM_NODE),
 
-	VALIDATION_NODE_INFO("validation.get_node_info", VALIDATION_NODE),
-	VALIDATION_CURRENT_EPOCH("validation.get_current_epoch_data", VALIDATION_NODE),
+	VALIDATION_NODE_INFO("get_node_info", VALIDATION_NODE),
+	VALIDATION_CURRENT_EPOCH("get_current_epoch_data", VALIDATION_NODE),
 
-	ACCOUNT_INFO("account.get_info", ACCOUNT_NODE),
-	ACCOUNT_SUBMIT_SINGLE_STEP("account.submit_transaction_single_step", ACCOUNT_NODE);
+	ACCOUNT_INFO("get_info", ACCOUNT_NODE),
+	ACCOUNT_SUBMIT_SINGLE_STEP("submit_transaction_single_step", ACCOUNT_NODE);
 
 	private final String method;
 	private final EndPoint endPoint;

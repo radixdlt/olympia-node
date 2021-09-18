@@ -77,7 +77,7 @@ import com.radixdlt.api.node.health.HealthApiModule;
 import com.radixdlt.api.node.metrics.MetricsApiModule;
 import com.radixdlt.api.node.system.SystemApiModule;
 import com.radixdlt.api.node.transactions.TransactionIndexApiModule;
-import com.radixdlt.api.node.validation.ValidationApiModule;
+import com.radixdlt.api.node.validation.ValidatorApiModule;
 import com.radixdlt.api.node.version.VersionApiModule;
 import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.api.util.Controller;
@@ -125,7 +125,7 @@ public final class NodeServerModule extends AbstractModule {
 
 		install(new SystemApiModule(NodeServer.class, "/system"));
 		install(new AccountApiModule(NodeServer.class, "/account"));
-		install(new ValidationApiModule(NodeServer.class, "/validation"));
+		install(new ValidatorApiModule(NodeServer.class, "/validator"));
 		install(new HealthApiModule(NodeServer.class, "/health"));
 		install(new VersionApiModule(NodeServer.class, "/version"));
 		install(new DeveloperApiModule(NodeServer.class, "/developer"));

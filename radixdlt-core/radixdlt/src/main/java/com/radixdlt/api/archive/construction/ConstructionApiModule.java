@@ -101,9 +101,9 @@ public class ConstructionApiModule extends AbstractModule {
 		@Override
 		public Controller get() {
 			var handlers = Map.<String, JsonRpcHandler>of(
-				"construction.build_transaction", handler::handleConstructionBuildTransaction,
-				"construction.finalize_transaction", handler::handleConstructionFinalizeTransaction,
-				"construction.submit_transaction", handler::handleConstructionSubmitTransaction
+				"build_transaction", handler::handleConstructionBuildTransaction,
+				"finalize_transaction", handler::handleConstructionFinalizeTransaction,
+				"submit_transaction", handler::handleConstructionSubmitTransaction
 			);
 			return new JsonRpcController(new JsonRpcServer(handlers));
 		}

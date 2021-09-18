@@ -100,15 +100,15 @@ public final class DeveloperApiModule extends AbstractModule {
 		@Override
 		public Controller get() {
 			var handlers = Map.<String, JsonRpcHandler>of(
-				"developer.query_resource_state", handler::handleQueryResourceState,
-				"developer.lookup_mapped_substate", handler::handleLookupMappedSubstate,
-				"developer.scan_substates", handler::handleScanSubstates,
-				"developer.build_genesis", handler::handleGenesisConstruction,
-				"developer.parse_transaction", handler::handleParseTxn,
-				"developer.parse_substate", handler::handleParseSubstate,
-				"developer.parse_address", handler::handleParseAddress,
-				"developer.parse_amount", handler::handleParseAmount,
-				"developer.create_address", handler::handleCreateAddress
+				"query_resource_state", handler::handleQueryResourceState,
+				"lookup_mapped_substate", handler::handleLookupMappedSubstate,
+				"scan_substates", handler::handleScanSubstates,
+				"build_genesis", handler::handleGenesisConstruction,
+				"parse_transaction", handler::handleParseTxn,
+				"parse_substate", handler::handleParseSubstate,
+				"parse_address", handler::handleParseAddress,
+				"parse_amount", handler::handleParseAmount,
+				"create_address", handler::handleCreateAddress
 			);
 			return new JsonRpcController(new JsonRpcServer(handlers));
 		}

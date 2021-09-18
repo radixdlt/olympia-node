@@ -107,8 +107,8 @@ public class ValidatorApiModule extends AbstractModule {
 		@Override
 		public Controller get() {
 			var handlers = Map.<String, JsonRpcHandler>of(
-				"validators.get_next_epoch_set", handler::handleValidatorsGetNextEpochSet,
-				"validators.lookup_validator", handler::handleValidatorsLookupValidator
+				"get_next_epoch_set", handler::handleValidatorsGetNextEpochSet,
+				"lookup_validator", handler::handleValidatorsLookupValidator
 			);
 			return new JsonRpcController(new JsonRpcServer(handlers));
 		}

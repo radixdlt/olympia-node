@@ -13,7 +13,7 @@ public enum EndPoint {
 	TRANSACTIONS_NODE("/transactions", SECONDARY),
 	SYSTEM_NODE("/system", SECONDARY),
 	ACCOUNT_NODE("/account", SECONDARY),
-	VALIDATION_NODE("/validation", SECONDARY);
+	VALIDATION_NODE("/validator", SECONDARY);
 
 	private final String path;
 	private final PortSelector portSelector;

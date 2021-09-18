@@ -100,9 +100,9 @@ public class NetworkApiModule extends AbstractModule {
 		@Override
 		public Controller get() {
 			var handlers = Map.<String, JsonRpcHandler>of(
-				"network.get_id", handler::handleNetworkGetId,
-				"network.get_throughput", handler::handleNetworkGetThroughput,
-				"network.get_demand", handler::handleNetworkGetDemand
+				"get_id", handler::handleNetworkGetId,
+				"get_throughput", handler::handleNetworkGetThroughput,
+				"get_demand", handler::handleNetworkGetDemand
 			);
 			return new JsonRpcController(new JsonRpcServer(handlers));
 		}
