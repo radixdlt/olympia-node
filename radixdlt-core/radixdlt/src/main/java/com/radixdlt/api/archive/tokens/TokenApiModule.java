@@ -69,7 +69,6 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.archive.ArchiveServer;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcController;
 import com.radixdlt.api.util.JsonRpcHandler;
@@ -78,6 +77,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
+import java.lang.annotation.Annotation;
 import java.util.Map;
 
 import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
@@ -87,9 +87,11 @@ import static com.radixdlt.utils.functional.Result.fromOptional;
 
 public final class TokenApiModule extends AbstractModule {
 	private final String path;
+	private final Class<? extends Annotation> annotationType;
 
-	public TokenApiModule(String path) {
+	public TokenApiModule(Class<? extends Annotation> annotationType, String path) {
 		this.path = path;
+		this.annotationType = annotationType;
 	}
 
 	@Override
@@ -97,7 +99,7 @@ public final class TokenApiModule extends AbstractModule {
 		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
 			.addBinding().to(BerkeleyResourceInfoStore.class);
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, ArchiveServer.class)
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
 			.addBinding(path)
 			.toProvider(ControllerProvider.class);
 	}

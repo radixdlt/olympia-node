@@ -71,14 +71,17 @@ import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.util.JsonRpcController;
-import com.radixdlt.api.archive.ArchiveServer;
 import com.radixdlt.api.util.JsonRpcServer;
 
+import java.lang.annotation.Annotation;
 import java.util.Map;
 
 public class ConstructionApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
 	private final String path;
-	public ConstructionApiModule(String path) {
+
+	public ConstructionApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
 		this.path = path;
 	}
 
@@ -86,7 +89,7 @@ public class ConstructionApiModule extends AbstractModule {
 	protected void configure() {
 		bind(ConstructionHandler.class).in(Scopes.SINGLETON);
 
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, ArchiveServer.class)
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
 			.addBinding(path)
 			.toProvider(ControllerProvider.class);
 	}

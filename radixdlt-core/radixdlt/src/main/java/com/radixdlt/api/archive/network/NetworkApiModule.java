@@ -68,25 +68,27 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.archive.ArchiveServer;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcController;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.util.JsonRpcServer;
 
+import java.lang.annotation.Annotation;
 import java.util.Map;
 
 public class NetworkApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
 	private final String path;
 
-	public NetworkApiModule(String path) {
+	public NetworkApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
 		this.path = path;
 	}
 
 	@Override
 	public void configure() {
 		bind(ArchiveNetworkHandler.class).in(Scopes.SINGLETON);
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, ArchiveServer.class)
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
 			.addBinding(path)
 			.toProvider(ControllerProvider.class);
 	}

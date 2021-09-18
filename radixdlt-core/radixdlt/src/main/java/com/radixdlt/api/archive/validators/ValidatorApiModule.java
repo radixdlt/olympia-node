@@ -69,19 +69,21 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.archive.ArchiveServer;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcController;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.util.JsonRpcServer;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
+import java.lang.annotation.Annotation;
 import java.util.Map;
 
 public class ValidatorApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
 	private final String path;
 
-	public ValidatorApiModule(String path) {
+	public ValidatorApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
 		this.path = path;
 	}
 
@@ -92,7 +94,7 @@ public class ValidatorApiModule extends AbstractModule {
 		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
 		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
 
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, ArchiveServer.class)
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
 			.addBinding(path)
 			.toProvider(ControllerProvider.class);
 	}

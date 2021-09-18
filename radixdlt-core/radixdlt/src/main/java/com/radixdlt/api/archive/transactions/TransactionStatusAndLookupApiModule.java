@@ -67,7 +67,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.archive.ArchiveServer;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcController;
 import com.radixdlt.api.util.JsonRpcHandler;
@@ -75,22 +74,25 @@ import com.radixdlt.api.util.JsonRpcServer;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Result;
 
+import java.lang.annotation.Annotation;
 import java.util.Map;
 
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
 import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
 
 public class TransactionStatusAndLookupApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
 	private final String path;
 
-	public TransactionStatusAndLookupApiModule(String path) {
+	public TransactionStatusAndLookupApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
 		this.path = path;
 	}
 
 	@Override
 	public void configure() {
 		install(new TransactionStatusServiceModule());
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, ArchiveServer.class)
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
 			.addBinding(path)
 			.toProvider(ControllerProvider.class);
 	}

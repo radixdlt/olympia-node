@@ -64,8 +64,9 @@
 package com.radixdlt.api.archive;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.archive.accounts.AccountApiModule;
 import com.radixdlt.api.archive.construction.ConstructionApiModule;
@@ -73,9 +74,23 @@ import com.radixdlt.api.archive.network.NetworkApiModule;
 import com.radixdlt.api.archive.tokens.TokenApiModule;
 import com.radixdlt.api.archive.transactions.TransactionStatusAndLookupApiModule;
 import com.radixdlt.api.archive.validators.ValidatorApiModule;
+import com.radixdlt.api.util.AbstractHttpServer;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.properties.RuntimeProperties;
+
+import javax.inject.Qualifier;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import java.util.Map;
+
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 public class ArchiveServerModule extends AbstractModule {
+	private static final int DEFAULT_PORT = 8080;
+
 	private final boolean enableArchiveApi;
 	private final boolean enableConstructionApi;
 
@@ -84,24 +99,39 @@ public class ArchiveServerModule extends AbstractModule {
 		this.enableConstructionApi = enableConstructionApi;
 	}
 
+	/**
+	 * Marks elements which run on Archive server
+	 */
+	@Qualifier
+	@Target({ FIELD, PARAMETER, METHOD })
+	@Retention(RUNTIME)
+	private @interface ArchiveServer {
+	}
+
 	@Override
 	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
-			.addBinding(Runners.ARCHIVE_API)
-			.to(ArchiveHttpServer.class);
-
-		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
-
 		if (enableArchiveApi) {
-			install(new AccountApiModule("/account"));
-			install(new TokenApiModule("/token"));
-			install(new TransactionStatusAndLookupApiModule("/transaction"));
-			install(new ValidatorApiModule("/validator"));
-			install(new NetworkApiModule("/network"));
+			install(new AccountApiModule(ArchiveServer.class, "/account"));
+			install(new TokenApiModule(ArchiveServer.class, "/token"));
+			install(new TransactionStatusAndLookupApiModule(ArchiveServer.class, "/transaction"));
+			install(new ValidatorApiModule(ArchiveServer.class, "/validator"));
+			install(new NetworkApiModule(ArchiveServer.class, "/network"));
 		}
 
 		if (enableConstructionApi) {
-			install(new ConstructionApiModule("/construction"));
+			install(new ConstructionApiModule(ArchiveServer.class, "/construction"));
 		}
 	}
+
+	@ProvidesIntoMap
+	@StringMapKey(Runners.ARCHIVE_API)
+	@Singleton
+	public ModuleRunner archiveHttpServer(
+		@ArchiveServer Map<String, Controller> controllers,
+		RuntimeProperties properties,
+		SystemCounters counters
+	) {
+		return new AbstractHttpServer(controllers, properties, "archive", DEFAULT_PORT, counters);
+	}
+
 }
