@@ -4,12 +4,16 @@ import static com.radixdlt.client.lib.api.rpc.PortSelector.PRIMARY;
 import static com.radixdlt.client.lib.api.rpc.PortSelector.SECONDARY;
 
 public enum EndPoint {
-	ARCHIVE("/archive", PRIMARY),
+	ACCOUNTS("/account", PRIMARY),
+	TOKENS("/token", PRIMARY),
 	CONSTRUCTION("/construction", PRIMARY),
-	TRANSACTIONS("/transactions", SECONDARY),
-	SYSTEM("/system", SECONDARY),
-	ACCOUNT("/account", SECONDARY),
-	VALIDATION("/validation", SECONDARY);
+	TRANSACTIONS("/transaction", PRIMARY),
+	NETWORK("/network", PRIMARY),
+
+	TRANSACTIONS_NODE("/transactions", SECONDARY),
+	SYSTEM_NODE("/system", SECONDARY),
+	ACCOUNT_NODE("/account", SECONDARY),
+	VALIDATION_NODE("/validation", SECONDARY);
 
 	private final String path;
 	private final PortSelector portSelector;

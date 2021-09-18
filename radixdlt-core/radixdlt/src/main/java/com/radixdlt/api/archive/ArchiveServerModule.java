@@ -93,10 +93,10 @@ public class ArchiveServerModule extends AbstractModule {
 		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
 
 		if (enableArchiveApi) {
-			install(new AccountApiModule("/accounts"));
-			install(new TokenApiModule("/tokens"));
-			install(new TransactionStatusAndLookupApiModule("/transactions"));
-			install(new ValidatorApiModule("/validators"));
+			install(new AccountApiModule("/account"));
+			install(new TokenApiModule("/token"));
+			install(new TransactionStatusAndLookupApiModule("/transaction"));
+			install(new ValidatorApiModule("/validator"));
 			install(new NetworkApiModule("/network"));
 		}
 
