@@ -162,6 +162,20 @@ public final class ValidatorInfoService {
 		return unstakes;
 	}
 
+	public UInt256 getEstimatedIndividualStake(ValidatorStakeData curData, REAddr accountAddr) {
+		var validatorKey = curData.getValidatorKey();
+
+		var index = SubstateIndex.create(
+			Arrays.concatenate(new byte[] {SubstateTypeId.STAKE_OWNERSHIP.id(), 0}, validatorKey.getCompressedBytes(), accountAddr.getBytes()),
+			StakeOwnership.class
+		);
+		var stake = radixEngine.reduceResources(index);
+		if (stake.isZero()) {
+			return UInt256.ZERO;
+		}
+		return stake.multiply(curData.getTotalStake()).divide(curData.getTotalOwnership()).getLow();
+	}
+
 	public Map<REAddr, UInt256> getEstimatedIndividualStakes(ValidatorStakeData curData) {
 		var validatorKey = curData.getValidatorKey();
 		var index = SubstateIndex.create(
