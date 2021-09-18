@@ -69,6 +69,16 @@ import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.api.node.account.AccountEndpointModule;
+import com.radixdlt.api.node.chaos.ChaosEndpointModule;
+import com.radixdlt.api.node.developer.DeveloperEndpointModule;
+import com.radixdlt.api.node.faucet.FaucetEndpointModule;
+import com.radixdlt.api.node.health.HealthEndpointModule;
+import com.radixdlt.api.node.metrics.MetricsEndpointModule;
+import com.radixdlt.api.node.system.SystemEndpointModule;
+import com.radixdlt.api.node.transactions.TransactionIndexApiModule;
+import com.radixdlt.api.node.validation.ValidationEndpointModule;
+import com.radixdlt.api.node.version.VersionEndpointModule;
 import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.counters.SystemCounters;
@@ -82,15 +92,50 @@ import java.util.Map;
 public final class NodeServerModule extends AbstractModule {
 	private final int port;
 	private final String bindAddress;
+	private final boolean transactionsEnable;
+	private final boolean metricsEnable;
+	private final boolean faucetEnable;
+	private final boolean chaosEnable;
 
-	public NodeServerModule(int port, String bindAddress) {
+	public NodeServerModule(
+		int port,
+		String bindAddress,
+		boolean transactionsEnable,
+		boolean metricsEnable,
+		boolean faucetEnable,
+		boolean chaosEnable
+	) {
 		this.port = port;
 		this.bindAddress = bindAddress;
+		this.transactionsEnable = transactionsEnable;
+		this.metricsEnable = metricsEnable;
+		this.faucetEnable = faucetEnable;
+		this.chaosEnable = chaosEnable;
 	}
 
 	@Override
 	public void configure() {
 		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
+
+		install(new SystemEndpointModule());
+		install(new AccountEndpointModule());
+		install(new ValidationEndpointModule());
+		install(new HealthEndpointModule());
+		install(new VersionEndpointModule());
+		install(new DeveloperEndpointModule());
+
+		if (transactionsEnable) {
+			install(new TransactionIndexApiModule());
+		}
+		if (metricsEnable) {
+			install(new MetricsEndpointModule());
+		}
+		if (faucetEnable) {
+			install(new FaucetEndpointModule());
+		}
+		if (chaosEnable) {
+			install(new ChaosEndpointModule());
+		}
 	}
 
 	@ProvidesIntoMap

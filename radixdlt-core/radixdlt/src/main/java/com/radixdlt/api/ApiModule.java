@@ -67,21 +67,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.api.archive.ArchiveServerModule;
 import com.radixdlt.api.node.NodeServerModule;
-import com.radixdlt.api.node.account.AccountEndpointModule;
-import com.radixdlt.api.node.chaos.ChaosEndpointModule;
-import com.radixdlt.api.node.developer.DeveloperEndpointModule;
-import com.radixdlt.api.node.faucet.FaucetEndpointModule;
-import com.radixdlt.api.node.health.HealthEndpointModule;
-import com.radixdlt.api.node.metrics.MetricsEndpointModule;
-import com.radixdlt.api.node.system.SystemEndpointModule;
-import com.radixdlt.api.node.universe.UniverseEndpointModule;
-import com.radixdlt.api.node.validation.ValidationEndpointModule;
-import com.radixdlt.api.node.version.VersionEndpointModule;
 import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
 import com.radixdlt.api.service.network.NetworkInfoServiceModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.api.node.transactions.TransactionIndexApiModule;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -101,7 +90,6 @@ public final class ApiModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-
 		install(new NetworkInfoServiceModule());
 
 		var endpointStatus = new HashMap<String, Boolean>();
@@ -115,79 +103,20 @@ public final class ApiModule extends AbstractModule {
 		}
 
 		var transactionsEnable = properties.get("api.transactions.enable", false);
-		if (transactionsEnable) {
-			install(new TransactionIndexApiModule());
-		}
 		endpointStatus.put("transactions", transactionsEnable);
-
 		if (archiveEnable || transactionsEnable) {
 			install(new TransactionsByIdStoreModule());
 		}
 
 		var metricsEnable = properties.get("api.metrics.enable", false);
-		if (metricsEnable) {
-			install(new MetricsEndpointModule());
-		}
 		endpointStatus.put("metrics", metricsEnable);
-
-		var systemEnable = properties.get("api.system.enable", false);
-		if (systemEnable) {
-			install(new SystemEndpointModule());
-		}
-		endpointStatus.put("system", systemEnable);
-
-		var accountEnable = properties.get("api.account.enable", false);
-		if (accountEnable) {
-			install(new AccountEndpointModule());
-		}
-		endpointStatus.put("account", accountEnable);
-
-		var validationEnable = properties.get("api.validation.enable", false);
-		if (validationEnable) {
-			install(new ValidationEndpointModule());
-		}
-		endpointStatus.put("validation", validationEnable);
-
-		// TODO: Remove
-		var universeEnable = properties.get("api.universe.enable", false);
-		if (universeEnable) {
-			install(new UniverseEndpointModule());
-		}
-		endpointStatus.put("universe", universeEnable);
-
 		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		if (faucetEnable) {
-			install(new FaucetEndpointModule());
-		}
 		endpointStatus.put("faucet", faucetEnable);
-
 		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		if (chaosEnable) {
-			install(new ChaosEndpointModule());
-		}
 		endpointStatus.put("chaos", chaosEnable);
-
-		var healthEnable = properties.get("api.health.enable", true);
-		if (healthEnable) {
-			install(new HealthEndpointModule());
-		}
-		endpointStatus.put("health", healthEnable);
-
-		var versionEnable = properties.get("api.version.enable", true);
-		if (versionEnable) {
-			install(new VersionEndpointModule());
-		}
-		endpointStatus.put("version", versionEnable);
-
-		var developerEnable = properties.get("api.developer.enable", true);
-		if (developerEnable) {
-			install(new DeveloperEndpointModule());
-		}
-		endpointStatus.put("developer", developerEnable);
-
 		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
 		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress));
+		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
 		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
 	}
 }
