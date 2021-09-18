@@ -86,9 +86,14 @@ import com.radixdlt.api.node.transactions.TransactionIndexApiModule;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ApiModule extends AbstractModule {
+public final class ApiModule extends AbstractModule {
+	private static final int DEFAULT_ARCHIVE_PORT = 8080;
+	private static final int DEFAULT_NODE_PORT = 3333;
+	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+
 	private final RuntimeProperties properties;
 	private final int networkId;
+
 	public ApiModule(int networkId, RuntimeProperties properties) {
 		this.properties = properties;
 		this.networkId = networkId;
@@ -103,10 +108,10 @@ public class ApiModule extends AbstractModule {
 
 		var archiveEnable = properties.get("api.archive.enable", false);
 		endpointStatus.put("archive", archiveEnable);
-		var constructionEnable = properties.get("api.construction.enable", false);
-		endpointStatus.put("construction", constructionEnable);
-		if (archiveEnable || constructionEnable) {
-			install(new ArchiveServerModule(archiveEnable, constructionEnable));
+		if (archiveEnable) {
+			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
+			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
+			install(new ArchiveServerModule(port, bindAddress));
 		}
 
 		var transactionsEnable = properties.get("api.transactions.enable", false);
@@ -180,7 +185,9 @@ public class ApiModule extends AbstractModule {
 		}
 		endpointStatus.put("developer", developerEnable);
 
-		install(new NodeServerModule());
+		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
+		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
+		install(new NodeServerModule(port, bindAddress));
 		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
 	}
 }

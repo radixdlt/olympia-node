@@ -73,7 +73,6 @@ import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.properties.RuntimeProperties;
 
 import java.util.Map;
 
@@ -81,8 +80,13 @@ import java.util.Map;
  * Configures the api including http server setup
  */
 public final class NodeServerModule extends AbstractModule {
-	private static final int DEFAULT_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+	private final int port;
+	private final String bindAddress;
+
+	public NodeServerModule(int port, String bindAddress) {
+		this.port = port;
+		this.bindAddress = bindAddress;
+	}
 
 	@Override
 	public void configure() {
@@ -94,12 +98,8 @@ public final class NodeServerModule extends AbstractModule {
 	@Singleton
 	public ModuleRunner nodeHttpServer(
 		@NodeServer Map<String, Controller> controllers,
-		RuntimeProperties properties,
 		SystemCounters counters
 	) {
-		int port = properties.get("api.node.port", DEFAULT_PORT);
-		var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-
 		return new HttpServerRunner(controllers, port, bindAddress, "node", counters);
 	}
 }

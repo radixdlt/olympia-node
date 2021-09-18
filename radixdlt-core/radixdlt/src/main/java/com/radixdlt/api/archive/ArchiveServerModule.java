@@ -78,7 +78,6 @@ import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.properties.RuntimeProperties;
 
 import javax.inject.Qualifier;
 import java.lang.annotation.Retention;
@@ -89,15 +88,12 @@ import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 public class ArchiveServerModule extends AbstractModule {
-	private static final int DEFAULT_PORT = 8080;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+	private final int port;
+	private final String bindAddress;
 
-	private final boolean enableArchiveApi;
-	private final boolean enableConstructionApi;
-
-	public ArchiveServerModule(boolean enableArchiveApi, boolean enableConstructionApi) {
-		this.enableArchiveApi = enableArchiveApi;
-		this.enableConstructionApi = enableConstructionApi;
+	public ArchiveServerModule(int port, String bindAddress) {
+		this.port = port;
+		this.bindAddress = bindAddress;
 	}
 
 	/**
@@ -111,17 +107,12 @@ public class ArchiveServerModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		if (enableArchiveApi) {
-			install(new AccountApiModule(ArchiveServer.class, "/account"));
-			install(new TokenApiModule(ArchiveServer.class, "/token"));
-			install(new TransactionStatusAndLookupApiModule(ArchiveServer.class, "/transaction"));
-			install(new ValidatorApiModule(ArchiveServer.class, "/validator"));
-			install(new NetworkApiModule(ArchiveServer.class, "/network"));
-		}
-
-		if (enableConstructionApi) {
-			install(new ConstructionApiModule(ArchiveServer.class, "/construction"));
-		}
+		install(new AccountApiModule(ArchiveServer.class, "/account"));
+		install(new TokenApiModule(ArchiveServer.class, "/token"));
+		install(new TransactionStatusAndLookupApiModule(ArchiveServer.class, "/transaction"));
+		install(new ValidatorApiModule(ArchiveServer.class, "/validator"));
+		install(new NetworkApiModule(ArchiveServer.class, "/network"));
+		install(new ConstructionApiModule(ArchiveServer.class, "/construction"));
 	}
 
 	@ProvidesIntoMap
@@ -129,12 +120,8 @@ public class ArchiveServerModule extends AbstractModule {
 	@Singleton
 	public ModuleRunner archiveHttpServer(
 		@ArchiveServer Map<String, Controller> controllers,
-		RuntimeProperties properties,
 		SystemCounters counters
 	) {
-		int port = properties.get("api.archive.port", DEFAULT_PORT);
-		String bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
 		return new HttpServerRunner(controllers, port, bindAddress, "archive", counters);
 	}
-
 }
