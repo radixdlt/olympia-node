@@ -63,21 +63,61 @@
 
 package com.radixdlt.api.node.system;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.google.inject.AbstractModule;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.util.JsonRpcServer;
 
-import javax.inject.Qualifier;
+import java.lang.annotation.Annotation;
+import java.util.HashMap;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public final class SystemApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
+	private final String path;
 
-/**
- * Marks elements related to /system endpoint
- */
-@Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
-@Retention(RUNTIME)
-public @interface SystemEndpoint {
+	public SystemApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
+		this.path = path;
+	}
+
+	@Override
+	protected void configure() {
+		bind(SystemHandler.class).in(Scopes.SINGLETON);
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
+	}
+
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private SystemHandler handler;
+
+		@Override
+		public Controller get() {
+			var handlers = new HashMap<String, JsonRpcHandler>();
+			handlers.put("api.get_configuration", handler::apiGetConfiguration);
+			handlers.put("api.get_data", handler::apiGetData);
+			handlers.put("bft.get_configuration", handler::bftGetConfiguration);
+			handlers.put("bft.get_data", handler::bftGetData);
+			handlers.put("mempool.get_configuration", handler::mempoolGetConfiguration);
+			handlers.put("mempool.get_data", handler::mempoolGetData);
+			handlers.put("ledger.get_latest_proof", handler::ledgerGetLatestProof);
+			handlers.put("ledger.get_latest_epoch_proof", handler::ledgerGetLatestEpochProof);
+			handlers.put("radix_engine.get_configuration", handler::radixEngineGetConfiguration);
+			handlers.put("radix_engine.get_data", handler::radixEngineGetData);
+			handlers.put("sync.get_configuration", handler::syncGetConfiguration);
+			handlers.put("sync.get_data", handler::syncGetData);
+			handlers.put("networking.get_configuration", handler::networkingGetConfiguration);
+			handlers.put("networking.get_peers", handler::networkingGetPeers);
+			handlers.put("networking.get_address_book", handler::networkingGetAddressBook);
+			handlers.put("networking.get_data", handler::networkingGetData);
+			handlers.put("checkpoints.get_checkpoints", handler::checkpointsGetCheckpoints);
+			return new JsonRpcController(new JsonRpcServer(handlers));
+		}
+	}
 }

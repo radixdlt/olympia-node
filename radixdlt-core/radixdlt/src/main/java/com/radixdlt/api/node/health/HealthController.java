@@ -64,6 +64,7 @@
 package com.radixdlt.api.node.health;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Inject;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.service.network.NetworkInfoService;
 
@@ -74,10 +75,11 @@ import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.RestUtils.respond;
 import static com.radixdlt.api.util.RestUtils.sanitizeBaseUrl;
 
-public class HealthController implements Controller {
+final class HealthController implements Controller {
 	private final NetworkInfoService networkInfoService;
 
-	public HealthController(NetworkInfoService networkInfoService) {
+	@Inject
+	HealthController(NetworkInfoService networkInfoService) {
 		this.networkInfoService = networkInfoService;
 	}
 

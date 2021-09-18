@@ -61,23 +61,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.node.validation;
+package com.radixdlt.api.node.chaos;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.google.inject.AbstractModule;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.api.node.chaos.messageflooder.MessageFlooderModule;
+import com.radixdlt.api.node.chaos.messageflooder.MessageFlooderUpdate;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.networks.Addressing;
 
-import javax.inject.Qualifier;
+import java.lang.annotation.Annotation;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public class ChaosApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
+	private final String path;
 
-/**
- * Marks elements related to /validator endpoint
- */
-@Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
-@Retention(RUNTIME)
-public @interface ValidationEndpoint {
+	public ChaosApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
+		this.path = path;
+	}
+
+	@Override
+	protected void configure() {
+		install(new MessageFlooderModule());
+		install(new MempoolFillerModule());
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
+	}
+
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
+		@Inject
+		private EventDispatcher<MessageFlooderUpdate> messageDispatcher;
+		@Inject
+		private Addressing addressing;
+
+		@Override
+		public Controller get() {
+			return new ChaosController(mempoolDispatcher, messageDispatcher, addressing);
+		}
+	}
 }

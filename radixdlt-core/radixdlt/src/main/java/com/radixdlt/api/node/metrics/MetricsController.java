@@ -64,6 +64,7 @@
 package com.radixdlt.api.node.metrics;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Inject;
 import com.radixdlt.api.util.Controller;
 
 import io.undertow.server.HttpServerExchange;
@@ -78,6 +79,7 @@ public class MetricsController implements Controller {
 
 	private final MetricsService metricsService;
 
+	@Inject
 	public MetricsController(MetricsService metricsService) {
 		this.metricsService = metricsService;
 	}

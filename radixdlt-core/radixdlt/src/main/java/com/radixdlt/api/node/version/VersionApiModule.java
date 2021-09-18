@@ -61,17 +61,45 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.node.transactions;
+package com.radixdlt.api.node.version;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.middleware2.InfoSupplier;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.google.inject.AbstractModule;
+import com.radixdlt.api.util.Controller;
 
-@Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
-@Retention(RUNTIME)
-public @interface TransactionsEndpoint {
+import java.lang.annotation.Annotation;
+
+import static org.radix.Radix.SYSTEM_VERSION_KEY;
+import static org.radix.Radix.VERSION_STRING_KEY;
+
+public final class VersionApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
+	private final String path;
+
+	public VersionApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
+		this.path = path;
+	}
+
+	@Override
+	protected void configure() {
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
+	}
+
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private InfoSupplier infoSupplier;
+
+		@Override
+		public Controller get() {
+			var versionString = (String) infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
+			return new VersionController(versionString);
+		}
+	}
 }

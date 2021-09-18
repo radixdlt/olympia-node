@@ -65,11 +65,11 @@
 package com.radixdlt.api.node.transactions;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.node.NodeServer;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcController;
@@ -80,6 +80,7 @@ import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 import org.json.JSONArray;
 
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 
@@ -87,24 +88,42 @@ import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
 
 public final class TransactionIndexApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
+	private final String path;
+
+	public TransactionIndexApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
+		this.path = path;
+	}
+
 	@Override
-	public void configure() {
+	protected void configure() {
 		bind(BerkeleyTransactionIndexStore.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
 			.addBinding().to(BerkeleyTransactionIndexStore.class);
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
 	}
 
-	@NodeServer
-	@ProvidesIntoMap
-	@StringMapKey("/transactions")
-	public Controller transactionsController(@TransactionsEndpoint Map<String, JsonRpcHandler> handlers) {
-		return new JsonRpcController(new JsonRpcServer(handlers));
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private BerkeleyTransactionIndexStore store;
+
+		@Inject
+		private BerkeleyTransactionsByIdStore txnStore;
+
+		@Override
+		public Controller get() {
+			var handlers = Map.of(
+				"get_transaction_count", indexGetTransactionCount(store),
+				"get_transactions", indexGetTransactions(store, txnStore)
+			);
+			return new JsonRpcController(new JsonRpcServer(handlers));
+		}
 	}
 
-	@TransactionsEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("get_transaction_count")
-	public JsonRpcHandler indexGetTransactionCount(BerkeleyTransactionIndexStore store) {
+	private static JsonRpcHandler indexGetTransactionCount(BerkeleyTransactionIndexStore store) {
 		return request -> withRequiredParameters(
 			request,
 			List.of(),
@@ -119,10 +138,7 @@ public final class TransactionIndexApiModule extends AbstractModule {
 		);
 	}
 
-	@TransactionsEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("get_transactions")
-	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexStore store, BerkeleyTransactionsByIdStore txnStore) {
+	public static JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexStore store, BerkeleyTransactionsByIdStore txnStore) {
 		return request -> withRequiredParameters(
 			request,
 			List.of("limit"),

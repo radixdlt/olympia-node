@@ -61,31 +61,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.node.version;
-
-import com.radixdlt.middleware2.InfoSupplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+package com.radixdlt.api.node.health;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.node.NodeServer;
 
-import static org.radix.Radix.SYSTEM_VERSION_KEY;
-import static org.radix.Radix.VERSION_STRING_KEY;
+import java.lang.annotation.Annotation;
 
-public class VersionEndpointModule extends AbstractModule {
-	private static final Logger log = LogManager.getLogger();
+public final class HealthApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
+	private final String path;
 
-	@NodeServer
-	@ProvidesIntoMap
-	@StringMapKey("/version")
-	public Controller versionController(InfoSupplier infoSupplier) {
-		var versionString = (String) infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
+	public HealthApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
+		this.path = path;
+	}
 
-		log.info("Version string for /version endpoint: {}", versionString);
-		return new VersionController(versionString);
+	@Override
+	protected void configure() {
+		bind(HealthController.class).in(Scopes.SINGLETON);
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
+			.addBinding(path)
+			.to(HealthController.class);
 	}
 }

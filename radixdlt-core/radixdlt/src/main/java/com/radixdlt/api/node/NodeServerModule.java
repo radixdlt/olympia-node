@@ -69,22 +69,28 @@ import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.node.account.AccountEndpointModule;
-import com.radixdlt.api.node.chaos.ChaosEndpointModule;
-import com.radixdlt.api.node.developer.DeveloperEndpointModule;
-import com.radixdlt.api.node.faucet.FaucetEndpointModule;
-import com.radixdlt.api.node.health.HealthEndpointModule;
-import com.radixdlt.api.node.metrics.MetricsEndpointModule;
-import com.radixdlt.api.node.system.SystemEndpointModule;
+import com.radixdlt.api.node.account.AccountApiModule;
+import com.radixdlt.api.node.chaos.ChaosApiModule;
+import com.radixdlt.api.node.developer.DeveloperApiModule;
+import com.radixdlt.api.node.faucet.FaucetApiModule;
+import com.radixdlt.api.node.health.HealthApiModule;
+import com.radixdlt.api.node.metrics.MetricsApiModule;
+import com.radixdlt.api.node.system.SystemApiModule;
 import com.radixdlt.api.node.transactions.TransactionIndexApiModule;
-import com.radixdlt.api.node.validation.ValidationEndpointModule;
-import com.radixdlt.api.node.version.VersionEndpointModule;
+import com.radixdlt.api.node.validation.ValidationApiModule;
+import com.radixdlt.api.node.version.VersionApiModule;
 import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
 
+import javax.inject.Qualifier;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.util.Map;
+
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Configures the api including http server setup
@@ -117,24 +123,24 @@ public final class NodeServerModule extends AbstractModule {
 	public void configure() {
 		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
 
-		install(new SystemEndpointModule());
-		install(new AccountEndpointModule());
-		install(new ValidationEndpointModule());
-		install(new HealthEndpointModule());
-		install(new VersionEndpointModule());
-		install(new DeveloperEndpointModule());
+		install(new SystemApiModule(NodeServer.class, "/system"));
+		install(new AccountApiModule(NodeServer.class, "/account"));
+		install(new ValidationApiModule(NodeServer.class, "/validation"));
+		install(new HealthApiModule(NodeServer.class, "/health"));
+		install(new VersionApiModule(NodeServer.class, "/version"));
+		install(new DeveloperApiModule(NodeServer.class, "/developer"));
 
 		if (transactionsEnable) {
-			install(new TransactionIndexApiModule());
+			install(new TransactionIndexApiModule(NodeServer.class, "/transactions"));
 		}
 		if (metricsEnable) {
-			install(new MetricsEndpointModule());
+			install(new MetricsApiModule(NodeServer.class, "/metrics"));
 		}
 		if (faucetEnable) {
-			install(new FaucetEndpointModule());
+			install(new FaucetApiModule(NodeServer.class, "/faucet"));
 		}
 		if (chaosEnable) {
-			install(new ChaosEndpointModule());
+			install(new ChaosApiModule(NodeServer.class, "/chaos"));
 		}
 	}
 
@@ -146,5 +152,14 @@ public final class NodeServerModule extends AbstractModule {
 		SystemCounters counters
 	) {
 		return new HttpServerRunner(controllers, port, bindAddress, "node", counters);
+	}
+
+	/**
+	 * Marks elements which run on Node server
+	 */
+	@Qualifier
+	@Target({ FIELD, PARAMETER, METHOD })
+	@Retention(RUNTIME)
+	private @interface NodeServer {
 	}
 }

@@ -61,102 +61,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.node.developer;
+package com.radixdlt.api.node.account;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
+import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.util.JsonRpcController;
-import com.radixdlt.api.node.NodeServer;
 import com.radixdlt.api.util.JsonRpcServer;
 
+import java.lang.annotation.Annotation;
 import java.util.Map;
 
-public class DeveloperEndpointModule extends AbstractModule {
+public final class AccountApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
+	private final String path;
+
+	public AccountApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
+		this.path = path;
+	}
+
 	@Override
 	protected void configure() {
-		bind(DeveloperHandler.class).in(Scopes.SINGLETON);
+		bind(LocalAccountHandler.class).in(Scopes.SINGLETON);
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
 	}
 
-	@NodeServer
-	@ProvidesIntoMap
-	@StringMapKey("/developer")
-	public Controller devControllerController(@DeveloperEndpoint JsonRpcServer jsonRpcServer) {
-		return new JsonRpcController(jsonRpcServer);
-	}
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private LocalAccountHandler handler;
 
-	@DeveloperEndpoint
-	@Provides
-	public JsonRpcServer rpcServer(@DeveloperEndpoint Map<String, JsonRpcHandler> additionalHandlers) {
-		return new JsonRpcServer(additionalHandlers);
-	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.query_resource_state")
-	public JsonRpcHandler developerQueryResourceState(DeveloperHandler developerHandler) {
-		return developerHandler::handleQueryResourceState;
-	}
-
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.lookup_mapped_substate")
-	public JsonRpcHandler developerLookupMappedSubstate(DeveloperHandler developerHandler) {
-		return developerHandler::handleLookupMappedSubstate;
-	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.scan_substates")
-	public JsonRpcHandler developerScanSubstates(DeveloperHandler developerHandler) {
-		return developerHandler::handleScanSubstates;
-	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.build_genesis")
-	public JsonRpcHandler developerBuildGenesis(DeveloperHandler developerHandler) {
-		return developerHandler::handleGenesisConstruction;
-	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.parse_transaction")
-	public JsonRpcHandler developerParseTransaction(DeveloperHandler developerHandler) {
-		return developerHandler::handleParseTxn;
-	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.parse_substate")
-	public JsonRpcHandler developerParseSubstate(DeveloperHandler developerHandler) {
-		return developerHandler::handleParseSubstate;
-	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.parse_address")
-	public JsonRpcHandler developerParseAddress(DeveloperHandler developerHandler) {
-		return developerHandler::handleParseAddress;
-	}
-
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.create_address")
-	public JsonRpcHandler developerCreateAddress(DeveloperHandler developerHandler) {
-		return developerHandler::handleCreateAddress;
-	}
-
-	@DeveloperEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("developer.parse_amount")
-	public JsonRpcHandler developerParseAmount(DeveloperHandler developerHandler) {
-		return developerHandler::handleParseAmount;
+		@Override
+		public Controller get() {
+			var handlers = Map.<String, JsonRpcHandler>of(
+				"account.get_info", handler::handleAccountGetInfo,
+				"account.submit_transaction_single_step", handler::handleAccountSubmitTransactionSingleStep
+			);
+			return new JsonRpcController(new JsonRpcServer(handlers));
+		}
 	}
 }

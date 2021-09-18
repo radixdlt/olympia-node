@@ -61,44 +61,56 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.node.faucet;
+package com.radixdlt.api.node.developer;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
+import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.util.JsonRpcController;
-import com.radixdlt.api.node.NodeServer;
 import com.radixdlt.api.util.JsonRpcServer;
 
+import java.lang.annotation.Annotation;
 import java.util.Map;
 
-public class FaucetEndpointModule extends AbstractModule {
+public final class DeveloperApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
+	private final String path;
+
+	public DeveloperApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
+		this.path = path;
+	}
+
 	@Override
 	protected void configure() {
-		bind(FaucetHandler.class).in(Scopes.SINGLETON);
+		bind(DeveloperHandler.class).in(Scopes.SINGLETON);
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
 	}
 
-	@NodeServer
-	@ProvidesIntoMap
-	@StringMapKey("/faucet")
-	public Controller faucetController(@FaucetEndpoint JsonRpcServer jsonRpcServer) {
-		return new JsonRpcController(jsonRpcServer);
-	}
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private DeveloperHandler handler;
 
-	@FaucetEndpoint
-	@Provides
-	public JsonRpcServer jsonRpcServer(@FaucetEndpoint Map<String, JsonRpcHandler> handlers) {
-		return new JsonRpcServer(handlers);
-	}
-
-	@FaucetEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("faucet.request_tokens")
-	public JsonRpcHandler faucetRequestTokens(FaucetHandler faucetHandler) {
-		return faucetHandler::requestTokens;
+		@Override
+		public Controller get() {
+			var handlers = Map.<String, JsonRpcHandler>of(
+				"developer.query_resource_state", handler::handleQueryResourceState,
+				"developer.lookup_mapped_substate", handler::handleLookupMappedSubstate,
+				"developer.scan_substates", handler::handleScanSubstates,
+				"developer.build_genesis", handler::handleGenesisConstruction,
+				"developer.parse_transaction", handler::handleParseTxn,
+				"developer.parse_substate", handler::handleParseSubstate,
+				"developer.parse_address", handler::handleParseAddress,
+				"developer.parse_amount", handler::handleParseAmount,
+				"developer.create_address", handler::handleCreateAddress
+			);
+			return new JsonRpcController(new JsonRpcServer(handlers));
+		}
 	}
 }

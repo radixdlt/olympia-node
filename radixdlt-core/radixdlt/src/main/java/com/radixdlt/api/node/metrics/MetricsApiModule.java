@@ -61,51 +61,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.node.validation;
+package com.radixdlt.api.node.metrics;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
+import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.util.JsonRpcController;
-import com.radixdlt.api.node.NodeServer;
-import com.radixdlt.api.util.JsonRpcServer;
 
-import java.util.Map;
+import java.lang.annotation.Annotation;
 
-public class ValidationEndpointModule extends AbstractModule {
+public final class MetricsApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
+	private final String path;
+
+	public MetricsApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
+		this.path = path;
+	}
+
 	@Override
 	protected void configure() {
-		bind(ValidationHandler.class).in(Scopes.SINGLETON);
-	}
-
-	@NodeServer
-	@ProvidesIntoMap
-	@StringMapKey("/validation")
-	public Controller validationController(@ValidationEndpoint JsonRpcServer jsonRpcServer) {
-		return new JsonRpcController(jsonRpcServer);
-	}
-
-	@ValidationEndpoint
-	@Provides
-	public JsonRpcServer rpcServer(@ValidationEndpoint Map<String, JsonRpcHandler> additionalHandlers) {
-		return new JsonRpcServer(additionalHandlers);
-	}
-
-	@ValidationEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("validation.get_node_info")
-	public JsonRpcHandler getNodeInfo(ValidationHandler validationHandler) {
-		return validationHandler::handleGetNodeInfo;
-	}
-
-	@ValidationEndpoint
-	@ProvidesIntoMap
-	@StringMapKey("validation.get_current_epoch_data")
-	public JsonRpcHandler getCurrentEpochData(ValidationHandler validationHandler) {
-		return validationHandler::handleGetCurrentEpochData;
+		bind(MetricsController.class).in(Scopes.SINGLETON);
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
+			.addBinding(path)
+			.to(MetricsController.class);
 	}
 }

@@ -61,19 +61,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.node.metrics;
+package com.radixdlt.api.node.validation;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.node.NodeServer;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.util.JsonRpcServer;
 
-public class MetricsEndpointModule extends AbstractModule {
-	@NodeServer
-	@ProvidesIntoMap
-	@StringMapKey("/metrics")
-	public Controller metricsController(MetricsService metricsService) {
-		return new MetricsController(metricsService);
+import java.lang.annotation.Annotation;
+import java.util.Map;
+
+public class ValidationApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
+	private final String path;
+
+	public ValidationApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
+		this.path = path;
+	}
+
+	@Override
+	protected void configure() {
+		bind(ValidationHandler.class).in(Scopes.SINGLETON);
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
+			.addBinding(path)
+			.toProvider(ControllerProvider.class);
+	}
+
+	private static class ControllerProvider implements Provider<Controller> {
+		@Inject
+		private ValidationHandler handler;
+
+		@Override
+		public Controller get() {
+			var handlers = Map.<String, JsonRpcHandler>of(
+				"validation.get_node_info", handler::handleGetNodeInfo,
+				"validation.get_current_epoch_data", handler::handleGetCurrentEpochData
+			);
+			return new JsonRpcController(new JsonRpcServer(handlers));
+		}
 	}
 }
