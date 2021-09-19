@@ -83,15 +83,21 @@ import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
 
-public class ArchiveValidationHandler {
+public final class ArchiveValidationHandler {
+	private final BerkeleyValidatorStore validatorStore;
+	private final BerkeleyValidatorUptimeArchiveStore uptimeStore;
 	private final ValidatorArchiveInfoService validatorInfoService;
 	private final Addressing addressing;
 
 	@Inject
 	public ArchiveValidationHandler(
+		BerkeleyValidatorStore validatorStore,
+		BerkeleyValidatorUptimeArchiveStore uptimeStore,
 		ValidatorArchiveInfoService validatorInfoService,
 		Addressing addressing
 	) {
+		this.validatorStore = validatorStore;
+		this.uptimeStore = uptimeStore;
 		this.validatorInfoService = validatorInfoService;
 		this.addressing = addressing;
 	}
@@ -113,8 +119,15 @@ public class ArchiveValidationHandler {
 			request,
 			"validatorAddress",
 			address -> addressing.forValidators().fromString(address)
-				.map(validatorInfoService::getNextEpochValidator)
-				.map(d -> d.asJson(addressing))
+				.map(key -> {
+					var json = validatorStore.getValidatorInfo(key);
+					var uptime = uptimeStore.getUptimeTwoWeeks(key);
+					json
+						.put("proposalsCompleted", uptime.getProposalsCompleted())
+						.put("proposalsMissed", uptime.getProposalsMissed())
+						.put("uptimePercentage", uptime.toPercentageString());
+					return json;
+				})
 		);
 	}
 

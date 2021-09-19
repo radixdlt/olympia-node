@@ -90,9 +90,11 @@ public class ValidatorApiModule extends AbstractModule {
 	@Override
 	public void configure() {
 		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		bind(ArchiveValidationHandler.class).in(Scopes.SINGLETON);
+		bind(BerkeleyValidatorStore.class).in(Scopes.SINGLETON);
+		binder.addBinding().to(BerkeleyValidatorStore.class);
 		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
 		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
+		bind(ArchiveValidationHandler.class).in(Scopes.SINGLETON);
 
 		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
 			.addBinding(path)
