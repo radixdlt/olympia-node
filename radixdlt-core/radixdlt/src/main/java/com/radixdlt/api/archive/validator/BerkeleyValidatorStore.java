@@ -65,6 +65,7 @@ package com.radixdlt.api.archive.validator;
 
 import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.application.system.state.StakeBucket;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.ExittingOwnershipBucket;
@@ -130,29 +131,7 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 	}
 
 	public JSONObject getValidatorInfo(ECPublicKey validatorKey) {
-		var json = getCurrentValidatorInfo(validatorKey, null, null);
-		var stakeJson = json.getJSONObject("stake");
-		var curStake = new BigInteger(stakeJson.getString("currentStake"), 10);
-		var preparedStake = new BigInteger(stakeJson.getString("preparedStake"), 10);
-		var exitingOwnership = new BigInteger(stakeJson.getString("exitingOwnership"), 10);
-		var curOwnership = new BigInteger(stakeJson.getString("currentOwnership"), 10);
-		var nextOwnership = curOwnership.subtract(exitingOwnership);
-
-		var estimatedNextEpochStake = curOwnership.equals(BigInteger.ZERO)
-			? BigInteger.ZERO
-			: nextOwnership.multiply(curStake).divide(curOwnership).add(preparedStake);
-		stakeJson.put("nextEpochEstimatedStake", estimatedNextEpochStake.toString(10));
-
-		var ownerAddress = json.getJSONObject("properties").getString("ownerAddress");
-		var delegators = stakeJson.getJSONObject("delegators");
-		var ownerDelegator = getDelegatorObject(delegators, ownerAddress);
-		var ownerOwnership = new BigInteger(ownerDelegator.optString("exitingOwnership", "0"), 10);
-		var estimatedCurOwnerStake = ownerOwnership.multiply(curStake).divide(curOwnership);
-		var ownerPreparedStake = new BigInteger(ownerDelegator.optString("preparedStake", "0"), 10);
-		var ownerDelegatedStake = estimatedCurOwnerStake.add(ownerPreparedStake);
-		stakeJson.put("nextEpochEstimatedOwnerStake", ownerDelegatedStake.toString(10));
-
-		return json;
+		return getCurrentValidatorInfo(validatorKey, null, null);
 	}
 
 	private JSONObject getCurrentValidatorInfo(ECPublicKey validatorKey, Transaction dbTxn, LockMode lockMode) {
@@ -178,6 +157,8 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 				.put("exitingOwnership", "0")
 				.put("currentStake", "0")
 				.put("currentOwnership", "0")
+				.put("nextEpochEstimatedStake", "0")
+				.put("nextEpochEstimatedOwnerStake", "0")
 			);
 		var p = getData(ValidatorOwnerCopy.createVirtual(validatorKey));
 		updateJson(json, p.getFirst(), p.getSecond());
@@ -186,8 +167,6 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		p = getData(ValidatorFeeCopy.createVirtual(validatorKey));
 		updateJson(json, p.getFirst(), p.getSecond());
 		p = getData(ValidatorMetaData.createVirtual(validatorKey));
-		updateJson(json, p.getFirst(), p.getSecond());
-		p = getData(ValidatorStakeData.createVirtual(validatorKey));
 		updateJson(json, p.getFirst(), p.getSecond());
 		return json;
 	}
@@ -217,15 +196,6 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		} else if (validatorData instanceof ValidatorRegisteredCopy) {
 			var copy = (ValidatorRegisteredCopy) validatorData;
 			return Pair.of("properties", Map.of("registered", copy.isRegistered()));
-		} else if (validatorData instanceof ValidatorStakeData) {
-			var stakeData = (ValidatorStakeData) validatorData;
-			return Pair.of(
-				"stake",
-				Map.of(
-				"currentStake", stakeData.getTotalStake().toString(),
-				"currentOwnership", stakeData.getTotalOwnership().toString()
-				)
-			);
 		}
 		return Pair.of(null, Map.of());
 	}
@@ -283,14 +253,32 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 			var updatedPreparedStake = new BigInteger(delegatorJson.optString("preparedStake", "0"), 10);
 			var curStake = new BigInteger(validatorJson.getJSONObject("stake").getString("currentStake"), 10);
 			var curOwnership = new BigInteger(validatorJson.getJSONObject("stake").getString("currentOwnership"), 10);
-			var nextEpochEstimatedStake = updatedOwnership.subtract(updatedExitingOwnership).multiply(curStake).divide(curOwnership).add(updatedPreparedStake);
+			var stakeFromOwnership = curOwnership.equals(BigInteger.ZERO)
+				? BigInteger.ZERO
+				: updatedOwnership.subtract(updatedExitingOwnership).multiply(curStake).divide(curOwnership);
+			var nextEpochEstimatedStake = stakeFromOwnership.add(updatedPreparedStake);
 			delegatorJson.put("nextEpochEstimatedStake", nextEpochEstimatedStake);
 		}
 		return isEmpty;
 	}
 
+	private void updateStake(Transaction dbTxn, ECPublicKey validatorKey, BigInteger amount) {
+		var json = getCurrentValidatorInfo(validatorKey, dbTxn, LockMode.READ_UNCOMMITTED);
+		var stakeJson = json.getJSONObject("stake");
+		var currentOwnership = new BigInteger(stakeJson.getString("currentStake"), 10);
+		var updateAmount = currentOwnership.add(amount);
+		stakeJson.put("currentStake", updateAmount.toString(10));
+		updateNextEpochEstimates(json);
+		storeValidator(dbTxn, validatorKey, json);
+	}
+
 	private void updateOwnership(Transaction dbTxn, ECPublicKey validatorKey, REAddr owner, BigInteger amount) {
 		var json = getCurrentValidatorInfo(validatorKey, dbTxn, LockMode.READ_UNCOMMITTED);
+		var stakeJson = json.getJSONObject("stake");
+		var currentOwnership = new BigInteger(stakeJson.getString("currentOwnership"), 10);
+		var updateAmount = currentOwnership.add(amount);
+		stakeJson.put("currentOwnership", updateAmount.toString(10));
+
 		var delegators = json.getJSONObject("stake").getJSONObject("delegators");
 		var address = addressing.forAccounts().of(owner);
 		var delegator = getDelegatorObject(delegators, address);
@@ -301,6 +289,7 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		} else {
 			delegators.put(address, delegator);
 		}
+		updateNextEpochEstimates(json);
 		storeValidator(dbTxn, validatorKey, json);
 	}
 
@@ -347,6 +336,7 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 			delegators.put(address, delegator);
 		}
 
+		updateNextEpochEstimates(json);
 		storeValidator(dbTxn, validatorKey, json);
 	}
 
@@ -363,6 +353,27 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		storeValidator(dbTxn, validatorKey, json);
 	}
 
+	private void updateNextEpochEstimates(JSONObject json) {
+		var stakeJson = json.getJSONObject("stake");
+		var curStake = new BigInteger(stakeJson.getString("currentStake"), 10);
+		var preparedStake = new BigInteger(stakeJson.getString("preparedStake"), 10);
+		var exitingOwnership = new BigInteger(stakeJson.getString("exitingOwnership"), 10);
+		var curOwnership = new BigInteger(stakeJson.getString("currentOwnership"), 10);
+		var nextOwnership = curOwnership.subtract(exitingOwnership);
+
+		var curStakeFromOwnership = curOwnership.equals(BigInteger.ZERO)
+			? BigInteger.ZERO
+			: nextOwnership.multiply(curStake).divide(curOwnership);
+		var estimatedNextEpochStake = curStakeFromOwnership.add(preparedStake);
+		stakeJson.put("nextEpochEstimatedStake", estimatedNextEpochStake.toString(10));
+
+		var ownerAddress = json.getJSONObject("properties").getString("ownerAddress");
+		var delegators = stakeJson.getJSONObject("delegators");
+		var ownerDelegator = getDelegatorObject(delegators, ownerAddress);
+		var estimatedOwnerStake = new BigInteger(ownerDelegator.optString("nextEpochEstimatedStake", "0"), 10);
+		stakeJson.put("nextEpochEstimatedOwnerStake", estimatedOwnerStake.toString(10));
+	}
+
 	@Override
 	public void process(Transaction dbTxn, REProcessedTxn txn, long stateVersion, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
 		txn.stateUpdates()
@@ -375,12 +386,15 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		REResourceAccounting.compute(txn.stateUpdates()).bucketAccounting().entrySet().stream()
 			.filter(e -> e.getKey().getValidatorKey() != null)
 			.forEach(e -> {
+				var validatorKey = e.getKey().getValidatorKey();
 				if (e.getKey() instanceof PreparedStakeBucket) {
-					updatePreparedStake(dbTxn, e.getKey().getValidatorKey(), e.getKey().getOwner(), e.getValue());
+					updatePreparedStake(dbTxn, validatorKey, e.getKey().getOwner(), e.getValue());
 				} else if (e.getKey() instanceof ExittingOwnershipBucket) {
-					updateExittingOwnership(dbTxn, e.getKey().getValidatorKey(), e.getKey().getOwner(), e.getValue());
+					updateExittingOwnership(dbTxn, validatorKey, e.getKey().getOwner(), e.getValue());
 				} else if (e.getKey() instanceof StakeOwnershipBucket) {
-					updateOwnership(dbTxn, e.getKey().getValidatorKey(), e.getKey().getOwner(), e.getValue());
+					updateOwnership(dbTxn, validatorKey, e.getKey().getOwner(), e.getValue());
+				} else if (e.getKey() instanceof StakeBucket) {
+					updateStake(dbTxn, validatorKey, e.getValue());
 				}
 			});
 	}
