@@ -63,11 +63,11 @@
 
 package com.radixdlt.api.archive.validator;
 
+import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.application.system.state.StakeBucket;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;
-import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.ExittingOwnershipBucket;
 import com.radixdlt.application.tokens.state.PreparedStakeBucket;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
@@ -86,26 +86,36 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
+import com.sleepycat.je.SecondaryConfig;
+import com.sleepycat.je.SecondaryCursor;
+import com.sleepycat.je.SecondaryDatabase;
 import com.sleepycat.je.Transaction;
 import org.json.JSONObject;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
+import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 	private final Addressing addressing;
 	private Database validatorDatabase;
+	private SecondaryDatabase orderedValidatorsDatabase;
 
 	@Inject
 	public BerkeleyValidatorStore(Addressing addressing) {
@@ -121,6 +131,34 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 			.setKeyPrefixing(true)
 			.setBtreeComparator(lexicographicalComparator())
 		);
+
+		orderedValidatorsDatabase = env.openSecondaryDatabase(
+			null,
+			"radix.ordered_validator_db",
+			validatorDatabase,
+			(SecondaryConfig) new SecondaryConfig()
+				.setKeyCreator(
+					(secondary, key, data, result) -> {
+						var buf = ByteBuffer.allocate(1 + UInt256.BYTES + ECPublicKey.COMPRESSED_BYTES);
+
+						var json = new JSONObject(new String(data.getData(), StandardCharsets.UTF_8));
+						var registered = json.getJSONObject("properties").getBoolean("registered");
+						buf.put((byte) (registered ? 1 : 0));
+
+						var stakeString = json.getJSONObject("stake").getString("nextEpochEstimatedStake");
+						var stake = UInt256.from(stakeString);
+						buf.put(stake.toByteArray());
+
+						var validatorKey = addressing.forValidators().parseNoErr(json.getJSONObject("properties").getString("address"));
+						buf.put(validatorKey.getCompressedBytes());
+
+						result.setData(buf.array());
+						return true;
+					}
+				)
+				.setAllowCreate(true)
+				.setTransactional(true)
+		);
 	}
 
 	@Override
@@ -128,10 +166,62 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		if (validatorDatabase != null) {
 			validatorDatabase.close();
 		}
+		if (orderedValidatorsDatabase != null) {
+			orderedValidatorsDatabase.close();
+		}
 	}
 
 	public JSONObject getValidatorInfo(ECPublicKey validatorKey) {
 		return getCurrentValidatorInfo(validatorKey, null, null);
+	}
+
+	private static class ValidatorsIterator implements Iterator<JSONObject> {
+		private final long skip;
+		private final DatabaseEntry key = new DatabaseEntry();
+		private final DatabaseEntry value = new DatabaseEntry();
+		private final SecondaryDatabase db;
+		private SecondaryCursor cursor;
+		private OperationStatus status;
+
+		ValidatorsIterator(SecondaryDatabase db, long skip) {
+			this.db = db;
+			this.skip = skip;
+		}
+
+		void open() {
+			cursor = db.openCursor(null, null);
+			status = cursor.getLast(null, key, skip == 0 ? value : null, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
+			for (int i = 0; status != SUCCESS && (i < skip); i++) {
+				status = cursor.getPrev(key, (i == skip - 1) ? value : null, null);
+			}
+		}
+
+		void close() {
+			if (cursor != null) {
+				cursor.close();
+			}
+		}
+
+		@Override
+		public boolean hasNext() {
+			return status == SUCCESS;
+		}
+
+		@Override
+		public JSONObject next() {
+			if (status != SUCCESS) {
+				throw new NoSuchElementException();
+			}
+			var next = new JSONObject(new String(value.getData(), StandardCharsets.UTF_8));
+			status = cursor.getPrev(key, value, null);
+			return next;
+		}
+	}
+
+	public Stream<JSONObject> getValidators(long skip) {
+		var iterator = new ValidatorsIterator(orderedValidatorsDatabase, skip);
+		iterator.open();
+		return Streams.stream(iterator).onClose(iterator::close);
 	}
 
 	private JSONObject getCurrentValidatorInfo(ECPublicKey validatorKey, Transaction dbTxn, LockMode lockMode) {

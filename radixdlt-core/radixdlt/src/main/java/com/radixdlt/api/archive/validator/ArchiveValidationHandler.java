@@ -63,54 +63,66 @@
 
 package com.radixdlt.api.archive.validator;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
-import java.util.Optional;
-
-import static com.radixdlt.api.data.ApiErrors.INVALID_PAGE_SIZE;
-import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.util.JsonRpcUtil.safeInteger;
-import static com.radixdlt.api.util.JsonRpcUtil.safeString;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.utils.functional.Result.allOf;
-import static com.radixdlt.utils.functional.Result.ok;
 
 public final class ArchiveValidationHandler {
 	private final BerkeleyValidatorStore validatorStore;
 	private final BerkeleyValidatorUptimeArchiveStore uptimeStore;
-	private final ValidatorArchiveInfoService validatorInfoService;
 	private final Addressing addressing;
 
 	@Inject
 	public ArchiveValidationHandler(
 		BerkeleyValidatorStore validatorStore,
 		BerkeleyValidatorUptimeArchiveStore uptimeStore,
-		ValidatorArchiveInfoService validatorInfoService,
 		Addressing addressing
 	) {
 		this.validatorStore = validatorStore;
 		this.uptimeStore = uptimeStore;
-		this.validatorInfoService = validatorInfoService;
 		this.addressing = addressing;
 	}
 
 	public JSONObject handleValidatorsGetNextEpochSet(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			List.of("size"),
-			List.of("cursor"),
-			params -> allOf(parseSize(params), ok(parseAddressCursor(params)))
-				.flatMap((size, cursor) ->
-							 validatorInfoService.getValidators(size, cursor)
-								 .map(this::formatValidatorResponse))
+			List.of(),
+			params -> {
+				var limit = params.optLong("limit", 100);
+				var offset = params.optLong("offset", 0);
+				var validators = new JSONArray();
+				try (var stream = validatorStore.getValidators(offset)) {
+					stream
+						.limit(limit)
+						.peek(json -> {
+							json.getJSONObject("stake").remove("delegators");
+							var addrString = json.getJSONObject("properties").getString("address");
+							var validatorKey = addressing.forValidators().parseNoErr(addrString);
+							var uptime = uptimeStore.getUptimeTwoWeeks(validatorKey);
+							json.put("uptime", new JSONObject()
+								.put("proposalsCompleted", uptime.getProposalsCompleted())
+								.put("proposalsMissed", uptime.getProposalsMissed())
+								.put("uptimePercentage", uptime.toPercentageString())
+							);
+						})
+						.forEach(validators::put);
+				}
+				var result = new JSONObject()
+					.put("validators", validators);
+
+				if (validators.length() == limit) {
+					result.put("nextOffset", offset + limit);
+				}
+
+				return Result.ok(result);
+			}
 		);
 	}
 
@@ -130,30 +142,5 @@ public final class ArchiveValidationHandler {
 					return json;
 				})
 		);
-	}
-
-	//-----------------------------------------------------------------------------------------------------
-	// internal processing
-	//-----------------------------------------------------------------------------------------------------
-
-	private JSONObject formatValidatorResponse(Optional<ECPublicKey> cursor, List<ValidatorInfoDetails> transactions) {
-		return jsonObject()
-			.put("cursor", cursor.map(addressing.forValidators()::of).orElse(""))
-			.put("validators", fromCollection(transactions, d -> d.asJson(addressing)));
-	}
-
-	private Optional<ECPublicKey> parseAddressCursor(JSONObject params) {
-		return safeString(params, "cursor")
-			.toOptional()
-			.flatMap(this::parsePublicKey);
-	}
-
-	private Optional<ECPublicKey> parsePublicKey(String address) {
-		return addressing.forValidators().fromString(address).toOptional();
-	}
-
-	private static Result<Integer> parseSize(JSONObject params) {
-		return safeInteger(params, "size")
-			.filter(value -> value > 0, INVALID_PAGE_SIZE);
 	}
 }

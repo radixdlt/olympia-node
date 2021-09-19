@@ -110,6 +110,14 @@ public final class ValidatorAddressing {
 		return Bech32.encode(hrp, convert);
 	}
 
+	public ECPublicKey parseNoErr(String v) {
+		try {
+			return parse(v);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Could not deserialize validator: " + v, e);
+		}
+	}
+
 	public ECPublicKey parse(String v) throws DeserializeException {
 		Bech32.Bech32Data bech32Data;
 		try {
