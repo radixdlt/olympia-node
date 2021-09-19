@@ -122,10 +122,11 @@ public final class ArchiveValidationHandler {
 				.map(key -> {
 					var json = validatorStore.getValidatorInfo(key);
 					var uptime = uptimeStore.getUptimeTwoWeeks(key);
-					json
+					json.put("uptime", new JSONObject()
 						.put("proposalsCompleted", uptime.getProposalsCompleted())
 						.put("proposalsMissed", uptime.getProposalsMissed())
-						.put("uptimePercentage", uptime.toPercentageString());
+						.put("uptimePercentage", uptime.toPercentageString())
+					);
 					return json;
 				})
 		);
