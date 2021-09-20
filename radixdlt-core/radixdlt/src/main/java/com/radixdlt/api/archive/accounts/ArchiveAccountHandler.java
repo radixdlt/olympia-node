@@ -119,13 +119,14 @@ public final class ArchiveAccountHandler {
 				.map((addr, limit, offset, verboseFlag) -> {
 					var txnArray = new JSONArray();
 					var lastOffset = new AtomicLong(0);
-					txHistoryStore.getTxnIdsAssociatedWithAccount(addr, offset < 0 ? null : offset)
-						.limit(limit)
-						.forEach(pair -> {
-							var json = txByIdStore.getTransactionJSON(pair.getFirst()).orElseThrow();
-							lastOffset.set(pair.getSecond());
-							txnArray.put(json);
-						});
+					try (var stream = txHistoryStore.getTxnIdsAssociatedWithAccount(addr, offset < 0 ? null : offset)) {
+						stream.limit(limit)
+							.forEach(pair -> {
+								var json = txByIdStore.getTransactionJSON(pair.getFirst()).orElseThrow();
+								lastOffset.set(pair.getSecond());
+								txnArray.put(json);
+							});
+					}
 
 					var result = new JSONObject();
 					if (lastOffset.get() > 0) {

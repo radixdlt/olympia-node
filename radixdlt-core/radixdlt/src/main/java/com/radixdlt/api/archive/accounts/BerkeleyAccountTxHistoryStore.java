@@ -80,9 +80,11 @@ import com.sleepycat.je.CursorConfig;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.Environment;
 import com.sleepycat.je.Get;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
+import com.sleepycat.je.TransactionConfig;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -100,9 +102,11 @@ import static com.sleepycat.je.OperationStatus.SUCCESS;
 public class BerkeleyAccountTxHistoryStore implements BerkeleyAdditionalStore {
 	private Database accountTxHistory;
 
+	private Environment env;
+
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
-		var env = dbEnv.getEnvironment();
+		this.env = dbEnv.getEnvironment();
 		this.accountTxHistory = env.openDatabase(null, "radix.account_txn_history", new DatabaseConfig()
 			.setAllowCreate(true)
 			.setTransactional(true)
@@ -159,7 +163,8 @@ public class BerkeleyAccountTxHistoryStore implements BerkeleyAdditionalStore {
 	}
 
 	public Stream<Pair<AID, Long>> getTxnIdsAssociatedWithAccount(REAddr addr, Long offset) {
-		var cursor = accountTxHistory.openCursor(null, null);
+		var dbTxn = env.beginTransaction(null, new TransactionConfig().setReadOnly(true).setReadCommitted(true));
+		var cursor = accountTxHistory.openCursor(dbTxn, CursorConfig.READ_COMMITTED);
 		var iterator = createReverseIteratorFromCursor(addr, offset, cursor);
 		return Streams.stream(iterator)
 			.onClose(cursor::close);
