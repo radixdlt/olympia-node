@@ -123,9 +123,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
-
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.*;
+import static com.radixdlt.errors.RadixErrors.MISSING_BASE_URL;
+
 import static java.util.Optional.ofNullable;
 
 public class AsyncRadixApi extends RadixApiBase implements RadixApi {
@@ -476,7 +476,7 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 	) {
 		return ofNullable(url)
 			.map(baseUrl -> Result.ok(new AsyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
-			.orElseGet(BASE_URL_IS_MANDATORY::result)
+			.orElseGet(MISSING_BASE_URL::result)
 			.flatMap(asyncRadixApi -> asyncRadixApi.network().id().join()
 				.onSuccess(networkId -> asyncRadixApi.configureSerialization(networkId.getNetworkId()))
 				.map(__ -> asyncRadixApi))

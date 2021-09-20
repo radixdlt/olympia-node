@@ -63,8 +63,11 @@
 
 package com.radixdlt.api.node.validation;
 
-import com.radixdlt.api.service.ValidatorInfoService;
+import org.json.JSONObject;
+
+import com.google.inject.Inject;
 import com.radixdlt.api.data.ValidatorUptime;
+import com.radixdlt.api.service.ValidatorInfoService;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.atom.SubstateTypeId;
@@ -75,11 +78,10 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-import org.json.JSONObject;
-
-import com.google.inject.Inject;
-
-import static com.radixdlt.api.util.JsonRpcUtil.*;
+import static com.radixdlt.api.util.JsonRpcUtil.fromMap;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
 
 public final class ValidationHandler {

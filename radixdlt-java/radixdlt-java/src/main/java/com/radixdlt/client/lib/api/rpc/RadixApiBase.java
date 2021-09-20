@@ -103,9 +103,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import static com.radixdlt.errors.RadixErrors.ERROR_SSL_ALGORITHM;
-import static com.radixdlt.errors.RadixErrors.ERROR_SSL_GENERAL;
-import static com.radixdlt.errors.RadixErrors.ERROR_SSL_KEY;
+import static com.radixdlt.errors.RadixErrors.SSL_ALGORITHM_ERROR;
+import static com.radixdlt.errors.RadixErrors.SSL_GENERAL_ERROR;
+import static com.radixdlt.errors.RadixErrors.SSL_KEY_ERROR;
 import static com.radixdlt.errors.RadixErrors.UNABLE_TO_DESERIALIZE;
 import static com.radixdlt.errors.RadixErrors.UNABLE_TO_SERIALIZE;
 import static com.radixdlt.networks.Network.LOCALNET;
@@ -260,14 +260,14 @@ public abstract class RadixApiBase {
 
 	private static Failure decodeSslExceptions(Throwable throwable) {
 		if (throwable instanceof NoSuchAlgorithmException) {
-			return ERROR_SSL_KEY.with(throwable.getMessage());
+			return SSL_KEY_ERROR.with(throwable.getMessage());
 		}
 
 		if (throwable instanceof KeyException) {
-			return ERROR_SSL_ALGORITHM.with(throwable.getMessage());
+			return SSL_ALGORITHM_ERROR.with(throwable.getMessage());
 		}
 
-		return ERROR_SSL_GENERAL.with(throwable.getMessage());
+		return SSL_GENERAL_ERROR.with(throwable.getMessage());
 	}
 
 	private ObjectMapper objectMapper() {

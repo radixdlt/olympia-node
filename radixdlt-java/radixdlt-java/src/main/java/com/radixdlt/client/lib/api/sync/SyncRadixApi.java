@@ -64,9 +64,6 @@
 
 package com.radixdlt.client.lib.api.sync;
 
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.client.lib.dto.TransactionHistory;
-import com.radixdlt.client.lib.dto.TransactionsDTO;
 import org.bouncycastle.util.encoders.Hex;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -104,7 +101,10 @@ import com.radixdlt.client.lib.dto.SyncConfiguration;
 import com.radixdlt.client.lib.dto.SyncData;
 import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TokenInfo;
+import com.radixdlt.client.lib.dto.TransactionDTO;
+import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TransactionsDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
@@ -123,12 +123,49 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.NETWORK_IO_ERROR;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.OPERATION_INTERRUPTED;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.UNKNOWN_ERROR;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_BALANCES;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_HISTORY;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_INFO;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_STAKES;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_SUBMIT_SINGLE_STEP;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_UNSTAKES;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.API_CONFIGURATION;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.API_DATA;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.BFT_CONFIGURATION;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.BFT_DATA;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.CONSTRUCTION_BUILD;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.CONSTRUCTION_FINALIZE;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.CONSTRUCTION_SUBMIT;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.LEDGER_CHECKPOINTS;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.LEDGER_EPOCH_PROOF;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.LEDGER_PROOF;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.MEMPOOL_CONFIGURATION;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.MEMPOOL_DATA;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_ADDRESS_BOOK;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_CONFIG;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_DATA;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_DEMAND;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_ID;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_PEERS;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_THROUGHPUT;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.RADIX_ENGINE_CONFIGURATION;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.RADIX_ENGINE_DATA;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.SYNC_CONFIGURATION;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.SYNC_DATA;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.TOKEN_INFO;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.TOKEN_NATIVE;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.TRANSACTION_LIST;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.TRANSACTION_LOOKUP;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.TRANSACTION_STATUS;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_CURRENT_EPOCH;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_NODE_INFO;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LIST;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
+import static com.radixdlt.errors.RadixErrors.INTERRUPTED_OPERATION;
+import static com.radixdlt.errors.RadixErrors.IO_ERROR;
+import static com.radixdlt.errors.RadixErrors.MISSING_BASE_URL;
+import static com.radixdlt.errors.RadixErrors.UNKNOWN;
 
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.*;
 import static java.util.Optional.ofNullable;
 
 public class SyncRadixApi extends RadixApiBase implements RadixApi {
@@ -479,7 +516,7 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 	) {
 		return ofNullable(url)
 			.map(baseUrl -> Result.ok(new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
-			.orElseGet(BASE_URL_IS_MANDATORY::result)
+			.orElseGet(MISSING_BASE_URL::result)
 			.flatMap(syncRadixApi -> syncRadixApi.network().id()
 				.onSuccess(networkId -> syncRadixApi.configureSerialization(networkId.getNetworkId()))
 				.map(__ -> syncRadixApi));
@@ -495,14 +532,14 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 
 	private Failure errorMapper(Throwable throwable) {
 		if (throwable instanceof IOException) {
-			return NETWORK_IO_ERROR.with(throwable.getMessage());
+			return IO_ERROR.with(throwable.getMessage());
 		}
 
 		if (throwable instanceof InterruptedException) {
-			return OPERATION_INTERRUPTED.with(throwable.getMessage());
+			return INTERRUPTED_OPERATION.with(throwable.getMessage());
 		}
 
-		return UNKNOWN_ERROR.with(throwable.getClass().getName(), throwable.getMessage());
+		return UNKNOWN.with(throwable.getClass().getName(), throwable.getMessage());
 	}
 
 	private <T> Result<T> bodyHandler(

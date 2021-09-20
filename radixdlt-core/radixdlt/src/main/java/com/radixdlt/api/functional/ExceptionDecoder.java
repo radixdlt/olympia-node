@@ -64,37 +64,159 @@
 
 package com.radixdlt.api.functional;
 
+import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
+import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
+import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
+import com.radixdlt.constraintmachine.exceptions.ExecutionContextDestroyException;
+import com.radixdlt.constraintmachine.exceptions.InvalidDelegationException;
+import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
+import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
+import com.radixdlt.constraintmachine.exceptions.InvalidResourceException;
+import com.radixdlt.constraintmachine.exceptions.InvalidVirtualSubstateException;
+import com.radixdlt.constraintmachine.exceptions.LocalSubstateNotFoundException;
+import com.radixdlt.constraintmachine.exceptions.MinimumStakeException;
+import com.radixdlt.constraintmachine.exceptions.MismatchException;
+import com.radixdlt.constraintmachine.exceptions.MissingProcedureException;
+import com.radixdlt.constraintmachine.exceptions.MultipleFeeReserveDepositException;
+import com.radixdlt.constraintmachine.exceptions.NotAResourceException;
+import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
+import com.radixdlt.constraintmachine.exceptions.ProcedureException;
+import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
+import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
+import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
+import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
+import com.radixdlt.errors.RadixErrors;
+import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.utils.functional.Failure;
 
-import static com.radixdlt.errors.RadixErrors.UNABLE_TO_SUBMIT_TX;
+import static com.fasterxml.jackson.databind.util.ClassUtil.getRootCause;
 
 public final class ExceptionDecoder {
 	private ExceptionDecoder() {
 	}
 
-	//TODO: try to cover all possible cases
 	public static Failure decode(Throwable e) {
-		var reportedException = e;
-
-		while (reportedException.getCause() instanceof MempoolRejectedException) {
-			reportedException = reportedException.getCause();
+		if (e instanceof MempoolFullException) {
+			return RadixErrors.UNABLE_TO_ADD_TO_MEMPOOL;
 		}
 
-		while (reportedException.getCause() instanceof RadixEngineException) {
-			reportedException = reportedException.getCause();
+		var rootCause = getRootCause(e);
+
+		//Last resort (handles the case of standalone IllegalStateException as well)
+		return RadixErrors.UNABLE_TO_SUBMIT_TX.with(extractMessage(rootCause));
+	}
+
+	public static String extractMessage(Throwable throwable) {
+		return throwable.getMessage() == null ? "Unknown error" : throwable.getMessage();
+	}
+
+	//TODO: use switch expression once available
+	private static Failure mapExceptionToFailure(Throwable rootCause) {
+		if (rootCause instanceof CallDataAccessException) {
+			return RadixErrors.ERROR_CALL_DATA;
 		}
 
-		while (reportedException.getCause() instanceof ConstraintMachineException) {
-			reportedException = reportedException.getCause();
+		if (rootCause instanceof ConstraintMachineException) {
+			return RadixErrors.ERROR_CONSTRAINT_VIOLATION;
 		}
 
-		if (reportedException instanceof ConstraintMachineException && reportedException.getCause() != null) {
-			reportedException = reportedException.getCause();
+		if (rootCause instanceof DefaultedSystemLoanException) {
+			return RadixErrors.ERROR_DEFAULT_SYSTEM_LOAN;
 		}
 
-		return UNABLE_TO_SUBMIT_TX.with(reportedException.getMessage());
+		if (rootCause instanceof DepletedFeeReserveException) {
+			return RadixErrors.ERROR_NOT_ENOUGH_RESERVE;
+		}
+
+		if (rootCause instanceof ExecutionContextDestroyException) {
+			return RadixErrors.ERROR_RESERVE_NOT_EMPTY;
+		}
+
+		if (rootCause instanceof InvalidDelegationException) {
+			return RadixErrors.ERROR_DELEGATION_NOT_ALLOWED;
+		}
+
+		if (rootCause instanceof InvalidHashedKeyException) {
+			return RadixErrors.ERROR_INVALID_HASHED_KEY;
+		}
+
+		if (rootCause instanceof InvalidPermissionException) {
+			return RadixErrors.ERROR_INVALID_PERMISSION;
+		}
+
+		if (rootCause instanceof InvalidResourceException) {
+			return RadixErrors.ERROR_INVALID_RESOURCE;
+		}
+
+		if (rootCause instanceof InvalidVirtualSubstateException) {
+			return RadixErrors.ERROR_INVALID_VIRTUAL_SUBSTATE;
+		}
+
+		if (rootCause instanceof LocalSubstateNotFoundException) {
+			return RadixErrors.ERROR_LOCAL_SUBSTATE_NOT_FOUND;
+		}
+
+		if (rootCause instanceof MinimumStakeException) {
+			return RadixErrors.ERROR_MINIMUM_STAKE;
+		}
+
+		if (rootCause instanceof MismatchException) {
+			return RadixErrors.ERROR_MISMATCH;
+		}
+
+		if (rootCause instanceof MissingProcedureException) {
+			return RadixErrors.ERROR_MISSING_PROCEDURE;
+		}
+
+		if (rootCause instanceof MultipleFeeReserveDepositException) {
+			return RadixErrors.ERROR_MULTIPLE_FEE_RESERVE_DEPOSIT;
+		}
+
+		if (rootCause instanceof NotAResourceException) {
+			return RadixErrors.ERROR_NOT_A_RESOURCE;
+		}
+
+		if (rootCause instanceof NotEnoughResourcesException) {
+			return RadixErrors.ERROR_NOT_ENOUGH_RESOURCES;
+		}
+
+		if (rootCause instanceof ProcedureException) {
+			return RadixErrors.ERROR_PROCEDURE;
+		}
+
+		if (rootCause instanceof ReservedSymbolException) {
+			return RadixErrors.ERROR_RESERVED_SYMBOL;
+		}
+
+		if (rootCause instanceof ResourceAllocationAndDestructionException) {
+			return RadixErrors.ERROR_RESOURCE_ALLOCATION_AND_DESTRUCTION;
+		}
+
+		if (rootCause instanceof SignedSystemException) {
+			return RadixErrors.ERROR_SIGNED_SYSTEM;
+		}
+
+		if (rootCause instanceof VirtualSubstateAlreadyDownException) {
+			return RadixErrors.ERROR_VIRTUAL_SUBSTATE_ALREADY_DOWN;
+		}
+
+		if (rootCause instanceof VirtualParentStateDoesNotExist) {
+			return RadixErrors.ERROR_VIRTUAL_PARENT_STATE_DOES_NOT_EXIST;
+		}
+
+		if (rootCause instanceof AuthorizationException) {
+			return RadixErrors.ERROR_NOT_AUTHORIZED;
+		}
+
+		if (rootCause instanceof SubstateNotFoundException) {
+			return RadixErrors.ERROR_SUBSTATE_NOT_FOUND;
+		}
+
+
+		return RadixErrors.UNABLE_TO_SUBMIT_TX;
 	}
 }
