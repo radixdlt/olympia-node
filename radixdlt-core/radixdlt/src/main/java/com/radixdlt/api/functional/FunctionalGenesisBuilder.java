@@ -62,62 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.data;
+package com.radixdlt.api.functional;
 
-import org.json.JSONObject;
-
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Functions;
+import com.google.inject.Inject;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
+import com.radixdlt.utils.functional.Result;
 
 import java.util.List;
 
-import static org.bouncycastle.util.encoders.Hex.toHexString;
+import static com.radixdlt.utils.functional.Result.wrap;
 
-import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+public class FunctionalGenesisBuilder {
+	private final GenesisBuilder genesisBuilder;
 
-import static java.util.Objects.requireNonNull;
-
-public class PreparedTransaction {
-	private final byte[] blob;
-	private final byte[] hashToSign;
-	private final UInt256 fee;
-	private final List<JSONObject> notifications;
-
-	private PreparedTransaction(byte[] blob, byte[] hashToSign, UInt256 fee, List<JSONObject> notifications) {
-		this.blob = blob;
-		this.hashToSign = hashToSign;
-		this.fee = fee;
-		this.notifications = notifications;
+	@Inject
+	public FunctionalGenesisBuilder(GenesisBuilder genesisBuilder) {
+		this.genesisBuilder = genesisBuilder;
 	}
 
-	public static PreparedTransaction create(byte[] blob, byte[] hashToSign, UInt256 fee, List<JSONObject> notifications) {
-		requireNonNull(blob);
-		requireNonNull(hashToSign);
-		requireNonNull(fee);
-		requireNonNull(notifications);
-
-		return new PreparedTransaction(blob, hashToSign, fee, notifications);
+	public Result<Txn> build(String message, long timestamp, List<TxAction> actions) {
+		return wrap(ExceptionDecoder::decode, () -> genesisBuilder.build(message, timestamp, actions));
 	}
 
-	public byte[] getBlob() {
-		return blob;
-	}
-
-	public byte[] getHashToSign() {
-		return hashToSign;
-	}
-
-	public UInt256 getFee() {
-		return fee;
-	}
-
-	public JSONObject asJson() {
-		var transactionDetails = jsonObject()
-			.put("blob", toHexString(blob))
-			.put("hashOfBlobToSign", toHexString(hashToSign))
-			.put("notifications", fromCollection(notifications, Functions::identity));
-
-		return jsonObject().put("transaction", transactionDetails).put("fee", fee.toString());
+	public Result<LedgerProof> generateGenesisProof(Txn txn) {
+		return wrap(ExceptionDecoder::decode, () -> genesisBuilder.generateGenesisProof(txn));
 	}
 }
+

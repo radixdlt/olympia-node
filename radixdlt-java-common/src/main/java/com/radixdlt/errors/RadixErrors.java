@@ -116,6 +116,7 @@ public enum RadixErrors implements Failure {
 	INVALID_TX_ID("Invalid TX ID {0}"),
 	INVALID_VALIDATOR_ADDRESS("Invalid validator address {0}"),
 	INVALID_VALUE_OUT_OF_RANGE("Parameter {0} must be between {1} and {2}"),
+	INVALID_VALUE_TYPE("Invalid value type {0}"),
 
 	IO_ERROR("I/O Error: {0} {1}"),
 

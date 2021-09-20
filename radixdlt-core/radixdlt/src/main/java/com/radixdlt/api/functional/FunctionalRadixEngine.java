@@ -77,11 +77,11 @@ import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.radixdlt.errors.RadixErrors.UNKNOWN_PARTICLE;
 import static com.radixdlt.utils.functional.Result.wrap;
 
 public class FunctionalRadixEngine {
@@ -96,9 +96,12 @@ public class FunctionalRadixEngine {
 		return wrap(ExceptionDecoder::decode, () -> radixEngine.construct(request));
 	}
 
-	public Result<Particle> getParticle(SystemMapKey mapKey) {
-		return wrap(ExceptionDecoder::decode, () -> radixEngine.get(mapKey))
-			.flatMap(optionalParticle -> Result.fromOptional(() -> UNKNOWN_PARTICLE.with(mapKey), optionalParticle));
+	public Result<Optional<Particle>> getParticle(SystemMapKey mapKey) {
+		return wrap(ExceptionDecoder::decode, () -> radixEngine.get(mapKey));
+	}
+
+	public <T extends ResourceInBucket> Result<UInt384> reduceResources(SubstateIndex<T> index) {
+		return wrap(ExceptionDecoder::decode, () -> radixEngine.reduceResources(index));
 	}
 
 	public <K, T extends ResourceInBucket> Result<Map<K, UInt384>> reduceResources(

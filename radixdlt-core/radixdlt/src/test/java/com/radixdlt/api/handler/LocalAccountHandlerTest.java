@@ -67,6 +67,7 @@ package com.radixdlt.api.handler;
 import com.radixdlt.api.node.account.LocalAccountHandler;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
+
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -111,11 +112,11 @@ public class LocalAccountHandlerTest {
 	public void testHandleAccountGetInfo() {
 		when(accountService.getAccountInfo())
 			.thenReturn(
-				jsonObject()
-					.put("address", "some address")
-					.put("balance", jsonObject()
-						.put("tokens", jsonArray())
-						.put("stakes", jsonArray()))
+				Result.ok(jsonObject()
+							  .put("address", "some address")
+							  .put("balance", jsonObject()
+								  .put("tokens", jsonArray())
+								  .put("stakes", jsonArray())))
 			);
 
 		var response = handler.handleAccountGetInfo(requestWith(jsonObject()));

@@ -114,6 +114,7 @@ import static com.radixdlt.api.util.JsonRpcUtil.safeArray;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PREPARE_TX;
 
+//FIXME: rework to avoid throwing exceptions and provide meaningful error codes/messages.
 public final class DeveloperHandler {
 	private final GenesisBuilder genesisBuilder;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
@@ -141,7 +142,6 @@ public final class DeveloperHandler {
 		return Result.wrap(
 			UNABLE_TO_PREPARE_TX,
 			() -> {
-				//TODO: functional wrapper
 				var txn = genesisBuilder.build(message, System.currentTimeMillis(), actions);
 				var proof = genesisBuilder.generateGenesisProof(txn);
 				return VerifiedTxnsAndProof.create(List.of(txn), proof);
@@ -168,7 +168,6 @@ public final class DeveloperHandler {
 		);
 	}
 
-	//TODO: functional wrapper
 	private Function<Bucket, String> getKeyMapper(String groupBy) {
 		switch (groupBy) {
 			case "resource":
@@ -178,7 +177,6 @@ public final class DeveloperHandler {
 					}
 
 					var key = SystemMapKey.ofResourceData(b.resourceAddr(), SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-					//TODO: functional wrapper
 					var meta = (TokenResourceMetadata) radixEngine.get(key).orElseThrow();
 					return addressing.forResources().of(meta.getSymbol(), b.resourceAddr());
 				};
@@ -191,7 +189,6 @@ public final class DeveloperHandler {
 		}
 	}
 
-	//TODO: functional wrapper
 	private Predicate<Bucket> getBucketPredicate(String type, byte[] value) {
 		switch (type) {
 			case "resource":
@@ -205,7 +202,6 @@ public final class DeveloperHandler {
 		}
 	}
 
-	//TODO: functional wrapper
 	public JSONObject handleQueryResourceState(JSONObject request) {
 		return withRequiredParameters(
 			request,
@@ -286,7 +282,6 @@ public final class DeveloperHandler {
 				var found = jsonArray();
 				var totalKeySize = new AtomicLong();
 				var totalValueSize = new AtomicLong();
-				//TODO: functional wrapper?
 				var stream = engineStore.scanner()
 					.map(r -> Pair.of(Bytes.toHexString(r.getId()), Bytes.toHexString(r.getData())))
 					.filter(p -> keyPattern.test(p.getFirst()) && valuePattern.test(p.getSecond()))
@@ -370,7 +365,6 @@ public final class DeveloperHandler {
 		);
 	}
 
-	//TODO: functional wrapper
 	private static Pair<String, ECPublicKey> parseAddress(String type, String address) throws DeserializeException {
 		switch (type) {
 			case "account":
@@ -404,7 +398,6 @@ public final class DeveloperHandler {
 		);
 	}
 
-	//TODO: fix parameter handling
 	public JSONObject handleParseAmount(JSONObject request) {
 		return withRequiredParameters(
 			request,
@@ -421,7 +414,6 @@ public final class DeveloperHandler {
 		);
 	}
 
-	//TODO: functional wrapper
 	private static String createAddress(String type, Network network, ECPublicKey key) {
 		switch (type) {
 			case "account":
@@ -464,7 +456,6 @@ public final class DeveloperHandler {
 		);
 	}
 
-	//FIXME: all errors are reported with same error code
 	private static Failure toFailure(Throwable e) {
 		return Failure.failure(-1, e.getMessage());
 	}

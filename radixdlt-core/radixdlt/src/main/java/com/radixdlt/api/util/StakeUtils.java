@@ -62,62 +62,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.data;
+package com.radixdlt.api.util;
 
-import org.json.JSONObject;
-
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Functions;
+import com.radixdlt.utils.UInt384;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-import static org.bouncycastle.util.encoders.Hex.toHexString;
-
-import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-
-import static java.util.Objects.requireNonNull;
-
-public class PreparedTransaction {
-	private final byte[] blob;
-	private final byte[] hashToSign;
-	private final UInt256 fee;
-	private final List<JSONObject> notifications;
-
-	private PreparedTransaction(byte[] blob, byte[] hashToSign, UInt256 fee, List<JSONObject> notifications) {
-		this.blob = blob;
-		this.hashToSign = hashToSign;
-		this.fee = fee;
-		this.notifications = notifications;
+public final class StakeUtils {
+	private StakeUtils() {
 	}
 
-	public static PreparedTransaction create(byte[] blob, byte[] hashToSign, UInt256 fee, List<JSONObject> notifications) {
-		requireNonNull(blob);
-		requireNonNull(hashToSign);
-		requireNonNull(fee);
-		requireNonNull(notifications);
-
-		return new PreparedTransaction(blob, hashToSign, fee, notifications);
+	public static Map<REAddr, UInt256> toAmountPerAddress(ValidatorStakeData curData, Map<REAddr, UInt384> ownershipData) {
+		var amounts = new HashMap<REAddr, UInt256>();
+		ownershipData.forEach((addr, amount) -> amounts.put(addr, toAmount(curData, amount)));
+		return amounts;
 	}
 
-	public byte[] getBlob() {
-		return blob;
+	public static UInt256 toAmount(ValidatorStakeData curData, UInt384 amount) {
+		return toFullAmount(curData, amount).getLow();
 	}
 
-	public byte[] getHashToSign() {
-		return hashToSign;
-	}
-
-	public UInt256 getFee() {
-		return fee;
-	}
-
-	public JSONObject asJson() {
-		var transactionDetails = jsonObject()
-			.put("blob", toHexString(blob))
-			.put("hashOfBlobToSign", toHexString(hashToSign))
-			.put("notifications", fromCollection(notifications, Functions::identity));
-
-		return jsonObject().put("transaction", transactionDetails).put("fee", fee.toString());
+	public static UInt384 toFullAmount(ValidatorStakeData curData, UInt384 amount) {
+		return amount.multiply(curData.getTotalStake())
+			.divide(curData.getTotalOwnership());
 	}
 }

@@ -77,6 +77,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.radixdlt.errors.ProtocolErrors.INVALID_REQUEST;
 import static com.radixdlt.errors.ProtocolErrors.PARSE_ERROR;
@@ -173,6 +174,10 @@ public final class JsonRpcUtil {
 		var value = ofNullable(result.opt(ARRAY)).orElse(result);
 
 		return commonFields(id).put("result", value);
+	}
+
+	public static JSONObject withoutParameters(JSONObject request, Supplier<Result<JSONObject>> fn) {
+		return withRequiredParameters(request, List.of(), __ -> fn.get());
 	}
 
 	public static JSONObject withRequiredStringParameter(
