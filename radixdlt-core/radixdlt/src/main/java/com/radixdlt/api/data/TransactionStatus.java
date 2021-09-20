@@ -73,8 +73,6 @@ public enum TransactionStatus {
 	TRANSACTION_NOT_FOUND;
 
 	public JSONObject asJson() {
-		var key = this == TRANSACTION_NOT_FOUND ? "failure" : "status";
-
-		return new JSONObject().put(key, name());
+		return new JSONObject().put("status", name());
 	}
 }
