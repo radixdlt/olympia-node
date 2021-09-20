@@ -66,7 +66,6 @@ public class RadixNetworkNodeLocator {
         Set<RadixNode.ServiceType> availableNodeServices = Sets.newHashSet();
 
         var api = ImperativeRadixApi.connect(jsonRpcRootUrl, primaryPort, secondaryPort);
-        api.token().describeNative();
         var networkId = api.network().id().getNetworkId();
         availableNodeServices.add(RadixNode.ServiceType.ARCHIVE);
 
