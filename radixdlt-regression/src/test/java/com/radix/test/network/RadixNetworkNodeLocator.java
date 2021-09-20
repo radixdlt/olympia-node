@@ -2,7 +2,6 @@ package com.radix.test.network;
 
 import com.radix.test.docker.DockerClient;
 import com.radix.test.network.client.RadixHttpClient;
-import com.radixdlt.application.system.construction.FeeReserveNotEnoughBalanceException;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
