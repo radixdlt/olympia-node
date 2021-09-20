@@ -78,7 +78,7 @@ import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import java.lang.annotation.Annotation;
 import java.util.Map;
 
-public class ValidatorApiModule extends AbstractModule {
+public final class ValidatorApiModule extends AbstractModule {
 	private final Class<? extends Annotation> annotationType;
 	private final String path;
 

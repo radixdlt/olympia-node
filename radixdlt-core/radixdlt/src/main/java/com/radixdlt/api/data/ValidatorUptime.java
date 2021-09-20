@@ -63,6 +63,8 @@
 
 package com.radixdlt.api.data;
 
+import org.json.JSONObject;
+
 public final class ValidatorUptime {
 	private final long proposalsCompleted;
 	private final long proposalsMissed;
@@ -102,6 +104,20 @@ public final class ValidatorUptime {
 		var uptimePercentage = proposalsCompleted * 10000 / (proposalsCompleted + proposalsMissed);
 		var uptimeDouble = uptimePercentage / 100.0;
 		return String.format("%.2f", uptimeDouble);
+	}
+
+	public static ValidatorUptime fromJSON(JSONObject json) {
+		return new ValidatorUptime(
+			json.getLong("proposalsCompleted"),
+			json.getLong("proposalsMissed")
+		);
+	}
+
+	public JSONObject toJSON() {
+		return new JSONObject()
+			.put("proposalsCompleted", proposalsCompleted)
+			.put("proposalsMissed", proposalsMissed)
+			.put("uptimePercentage", toPercentageString());
 	}
 
 	@Override

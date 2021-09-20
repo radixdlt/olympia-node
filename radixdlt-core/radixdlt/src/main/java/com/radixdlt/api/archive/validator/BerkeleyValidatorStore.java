@@ -101,6 +101,7 @@ import org.json.JSONObject;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -256,6 +257,8 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		updateJson(json, p.getFirst(), p.getSecond());
 		p = getData(ValidatorFeeCopy.createVirtual(validatorKey));
 		updateJson(json, p.getFirst(), p.getSecond());
+		p = getData(ValidatorRegisteredCopy.createVirtual(validatorKey));
+		updateJson(json, p.getFirst(), p.getSecond());
 		p = getData(ValidatorMetaData.createVirtual(validatorKey));
 		updateJson(json, p.getFirst(), p.getSecond());
 		return json;
@@ -358,7 +361,6 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		var currentOwnership = new BigInteger(stakeJson.getString("currentStake"), 10);
 		var updateAmount = currentOwnership.add(amount);
 		stakeJson.put("currentStake", updateAmount.toString(10));
-		updateNextEpochEstimates(json);
 		storeValidator(dbTxn, validatorKey, json);
 	}
 
@@ -379,7 +381,6 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		} else {
 			delegators.put(address, delegator);
 		}
-		updateNextEpochEstimates(json);
 		storeValidator(dbTxn, validatorKey, json);
 	}
 
@@ -426,7 +427,6 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 			delegators.put(address, delegator);
 		}
 
-		updateNextEpochEstimates(json);
 		storeValidator(dbTxn, validatorKey, json);
 	}
 
@@ -449,11 +449,10 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		var preparedStake = new BigInteger(stakeJson.getString("preparedStake"), 10);
 		var exitingOwnership = new BigInteger(stakeJson.getString("exitingOwnership"), 10);
 		var curOwnership = new BigInteger(stakeJson.getString("currentOwnership"), 10);
-		var nextOwnership = curOwnership.subtract(exitingOwnership);
 
 		var curStakeFromOwnership = curOwnership.equals(BigInteger.ZERO)
 			? BigInteger.ZERO
-			: nextOwnership.multiply(curStake).divide(curOwnership);
+			: curOwnership.multiply(curStake).divide(curOwnership.add(exitingOwnership));
 		var estimatedNextEpochStake = curStakeFromOwnership.add(preparedStake);
 		stakeJson.put("nextEpochEstimatedStake", estimatedNextEpochStake.toString(10));
 
@@ -473,10 +472,13 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 			.map(ValidatorData.class::cast)
 			.forEach(u -> updateData(dbTxn, u));
 
+		var validatorsUpdate = new HashSet<ECPublicKey>();
+
 		REResourceAccounting.compute(txn.stateUpdates()).bucketAccounting().entrySet().stream()
 			.filter(e -> e.getKey().getValidatorKey() != null)
 			.forEach(e -> {
 				var validatorKey = e.getKey().getValidatorKey();
+				validatorsUpdate.add(validatorKey);
 				if (e.getKey() instanceof PreparedStakeBucket) {
 					updatePreparedStake(dbTxn, validatorKey, e.getKey().getOwner(), e.getValue());
 				} else if (e.getKey() instanceof ExittingOwnershipBucket) {
@@ -487,5 +489,11 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 					updateStake(dbTxn, validatorKey, e.getValue());
 				}
 			});
+
+		validatorsUpdate.forEach(k -> {
+			var json = getCurrentValidatorInfo(k, dbTxn, LockMode.READ_UNCOMMITTED);
+			updateNextEpochEstimates(json);
+			storeValidator(dbTxn, k, json);
+		});
 	}
 }

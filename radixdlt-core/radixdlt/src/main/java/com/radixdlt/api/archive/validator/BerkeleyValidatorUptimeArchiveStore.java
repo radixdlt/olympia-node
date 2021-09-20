@@ -70,19 +70,19 @@ import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
+import org.json.JSONObject;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -94,7 +94,9 @@ import static com.google.common.primitives.UnsignedBytes.lexicographicalComparat
  */
 public final class BerkeleyValidatorUptimeArchiveStore implements BerkeleyAdditionalStore {
 	private static final String VALIDATOR_UPTME_DB = "radix.validator_uptime_db";
+	private static final String VALIDATOR_UPTME_BY_VALIDATOR_DB = "radix.validator_uptime_by_validator_db";
 	private Database validatorUptime;
+	private Database validatorUptimeByValidator;
 	private final AtomicLong curEpoch = new AtomicLong();
 	private static final long NUM_EPOCHS_WINDOW = 500;
 
@@ -106,76 +108,72 @@ public final class BerkeleyValidatorUptimeArchiveStore implements BerkeleyAdditi
 		curEpoch.set(nextEpoch);
 	}
 
-	private void store(Transaction dbTxn, ValidatorBFTData validatorBFTData) {
-		var buf = ByteBuffer.allocate(Long.BYTES + ECPublicKey.COMPRESSED_BYTES);
-		var epoch = curEpoch.get();
-		buf.putLong(epoch);
-		buf.put(validatorBFTData.getValidatorKey().getCompressedBytes());
-
-		var valueBuf = ByteBuffer.allocate(Long.BYTES + Long.BYTES);
-		valueBuf.putLong(validatorBFTData.proposalsCompleted());
-		valueBuf.putLong(validatorBFTData.proposalsMissed());
-
-		var key = new DatabaseEntry(buf.array());
-		var value = new DatabaseEntry(valueBuf.array());
-		validatorUptime.put(dbTxn, key, value);
-	}
-
-	public ValidatorUptime getUptimeTwoWeeks(ECPublicKey validatorKey) {
-		var lastEpoch = curEpoch.get();
+	private ValidatorUptime computeWindowPrior(Transaction dbTxn, ECPublicKey validatorKey, long epoch) {
 		long epochStart = Math.max(curEpoch.get() - NUM_EPOCHS_WINDOW, 0);
-
 		var uptime = ValidatorUptime.empty();
-		for (var epoch = epochStart; epoch <= lastEpoch; epoch++) {
+		for (var epochCursor = epochStart; epochCursor < epoch; epochCursor++) {
 			var buf = ByteBuffer.allocate(Long.BYTES + ECPublicKey.COMPRESSED_BYTES);
-			buf.putLong(epoch);
+			buf.putLong(epochCursor);
 			buf.put(validatorKey.getCompressedBytes());
 			var key = new DatabaseEntry(buf.array());
 			var value = new DatabaseEntry();
 
-			var status = validatorUptime.get(null, key, value, null);
+			var status = validatorUptime.get(dbTxn, key, value, null);
 			if (status == OperationStatus.SUCCESS) {
-				var valueBuf = ByteBuffer.wrap(value.getData());
-				var proposalsCompleted = valueBuf.getLong();
-				var proposalsMissed = valueBuf.getLong();
-				var nextUptime = ValidatorUptime.create(proposalsCompleted, proposalsMissed);
+				var uptimeJson = new JSONObject(new String(value.getData(), StandardCharsets.UTF_8));
+				var currentUptimeJson = uptimeJson.getJSONObject("current");
+				var nextUptime = ValidatorUptime.fromJSON(currentUptimeJson);
 				uptime = uptime.merge(nextUptime);
 			}
 		}
-
 		return uptime;
 	}
 
-	public Map<ECPublicKey, ValidatorUptime> getUptimeTwoWeeks() {
-		var map = new HashMap<ECPublicKey, ValidatorUptime>();
-		long epochStart = Math.max(curEpoch.get() - NUM_EPOCHS_WINDOW, 0);
-		try (var cursor = validatorUptime.openCursor(null, null)) {
-			var key = new DatabaseEntry(Longs.toByteArray(epochStart));
-			var value = new DatabaseEntry();
-			var status = cursor.getSearchKeyRange(key, value, null);
-			while (status == OperationStatus.SUCCESS && value.getData().length > 0) {
-				var keyBuf = ByteBuffer.wrap(key.getData());
-				var epoch = keyBuf.getLong();
-				var pubKeyBytes = new byte[ECPublicKey.COMPRESSED_BYTES];
-				keyBuf.get(pubKeyBytes);
-				ECPublicKey publicKey;
-				try {
-					publicKey = ECPublicKey.fromBytes(pubKeyBytes);
-				} catch (PublicKeyException e) {
-					//TODO: fix error reporting
-					throw new IllegalStateException();
-				}
+	private void store(Transaction dbTxn, ValidatorBFTData validatorBFTData) {
+		var buf = ByteBuffer.allocate(Long.BYTES + ECPublicKey.COMPRESSED_BYTES);
+		var epoch = curEpoch.get();
+		var validatorKey = validatorBFTData.getValidatorKey();
+		buf.putLong(epoch);
+		buf.put(validatorKey.getCompressedBytes());
 
-				var buf = ByteBuffer.wrap(value.getData());
-				var proposalsCompleted = buf.getLong();
-				var proposalsMissed = buf.getLong();
-				var uptime = ValidatorUptime.create(proposalsCompleted, proposalsMissed);
-				map.merge(publicKey, uptime, ValidatorUptime::merge);
-				status = cursor.getNext(key, value, null);
-			}
 
-			return map;
+		var key = new DatabaseEntry(buf.array());
+		var value = new DatabaseEntry();
+
+		var thisEpochUptime = ValidatorUptime.create(validatorBFTData.proposalsCompleted(), validatorBFTData.proposalsMissed());
+		var status = validatorUptime.get(dbTxn, key, value, LockMode.READ_UNCOMMITTED);
+		final JSONObject uptimeJson;
+		if (status == OperationStatus.NOTFOUND) {
+			var historic = computeWindowPrior(dbTxn, validatorKey, epoch);
+			uptimeJson = new JSONObject()
+				.put("historic", historic.toJSON());
+		} else if (status == OperationStatus.SUCCESS) {
+			uptimeJson = new JSONObject(new String(value.getData(), StandardCharsets.UTF_8));
+		} else {
+			throw new IllegalStateException("Unexpected status " + status);
 		}
+
+		uptimeJson.put("current", thisEpochUptime.toJSON());
+		value.setData(uptimeJson.toString().getBytes(StandardCharsets.UTF_8));
+		validatorUptime.put(dbTxn, key, value);
+
+		var historic = ValidatorUptime.fromJSON(uptimeJson.getJSONObject("historic"));
+		var currentUptime = thisEpochUptime.merge(historic);
+		key.setData(validatorKey.getCompressedBytes());
+		value.setData(currentUptime.toJSON().toString().getBytes(StandardCharsets.UTF_8));
+		validatorUptimeByValidator.put(dbTxn, key, value);
+	}
+
+	public ValidatorUptime getUptimeTwoWeeks(ECPublicKey validatorKey) {
+		var key = new DatabaseEntry(validatorKey.getCompressedBytes());
+		var value = new DatabaseEntry();
+		var status = validatorUptimeByValidator.get(null, key, value, null);
+		if (status != OperationStatus.SUCCESS) {
+			return ValidatorUptime.empty();
+		}
+
+		var jsonString = new String(value.getData(), StandardCharsets.UTF_8);
+		return ValidatorUptime.fromJSON(new JSONObject(jsonString));
 	}
 
 	@Override
@@ -192,12 +190,21 @@ public final class BerkeleyValidatorUptimeArchiveStore implements BerkeleyAdditi
 		if (result == OperationStatus.SUCCESS) {
 			this.curEpoch.set(Longs.fromByteArray(curEpochEntry.getData()));
 		}
+		validatorUptimeByValidator = env.openDatabase(null, VALIDATOR_UPTME_BY_VALIDATOR_DB, new DatabaseConfig()
+			.setAllowCreate(true)
+			.setTransactional(true)
+			.setKeyPrefixing(true)
+			.setBtreeComparator(lexicographicalComparator())
+		);
 	}
 
 	@Override
 	public void close() {
 		if (validatorUptime != null) {
 			validatorUptime.close();
+		}
+		if (validatorUptimeByValidator != null) {
+			validatorUptimeByValidator.close();
 		}
 	}
 
