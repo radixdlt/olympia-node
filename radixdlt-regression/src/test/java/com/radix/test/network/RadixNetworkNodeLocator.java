@@ -66,6 +66,7 @@ public class RadixNetworkNodeLocator {
         Set<RadixNode.ServiceType> availableNodeServices = Sets.newHashSet();
 
         var api = ImperativeRadixApi.connect(jsonRpcRootUrl, primaryPort, secondaryPort);
+        api.token().describeNative();
         var networkId = api.network().id().getNetworkId();
         availableNodeServices.add(RadixNode.ServiceType.ARCHIVE);
 
@@ -77,7 +78,8 @@ public class RadixNetworkNodeLocator {
             api.transaction().build(TransactionRequest.createBuilder(randomAddress).build());
         } catch (RadixApiException e) {
             // this is expected since the random address has no funds. However, it tells us that /construction is available
-            if (!(e.getMessage().contains(FeeReserveNotEnoughBalanceException.class.getSimpleName()))) {
+            // TODO hacky but we don't get a more fine-grained exception
+            if (!(e.getMessage().toLowerCase().contains("not enough balance to for fee burn"))) {
                 throw e;
             }
         }
