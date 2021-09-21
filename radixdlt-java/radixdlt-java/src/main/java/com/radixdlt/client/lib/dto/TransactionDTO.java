@@ -152,12 +152,13 @@ public final class TransactionDTO {
 			&& fee.equals(that.fee)
 			&& Objects.equals(message, that.message)
 			&& Arrays.equals(raw, that.raw)
+			&& Objects.equals(accountingEntries, that.accountingEntries)
 			&& actions.equals(that.actions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(txID, stateVersion, size, sentAt, fee, message, actions, Arrays.hashCode(raw));
+		return Objects.hash(txID, stateVersion, size, sentAt, fee, message, actions, accountingEntries, Arrays.hashCode(raw));
 	}
 
 	@Override

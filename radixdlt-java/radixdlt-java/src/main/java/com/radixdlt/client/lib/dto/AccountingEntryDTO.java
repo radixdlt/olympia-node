@@ -66,8 +66,6 @@ package com.radixdlt.client.lib.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.AccountAddress;
-import org.bouncycastle.util.BigIntegers;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
 import java.util.Objects;
@@ -95,6 +93,18 @@ public class AccountingEntryDTO {
 		@JsonProperty(value = "validator", required = false) String validator
 	) {
 		return new AccountingEntryDTO(owner, new BigInteger(delta, 10), rri);
+	}
+
+	public AccountAddress getOwner() {
+		return owner;
+	}
+
+	public BigInteger getDelta() {
+		return delta;
+	}
+
+	public String getRri() {
+		return rri;
 	}
 
 	@Override
