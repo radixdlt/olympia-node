@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -64,74 +63,38 @@
 
 package com.radixdlt.client.lib.dto;
 
-import org.bouncycastle.util.encoders.Hex;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.lib.api.TxTimestamp;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.client.lib.api.AccountAddress;
+import org.bouncycastle.util.BigIntegers;
+import org.bouncycastle.util.encoders.Hex;
 
-import java.util.Arrays;
-import java.util.List;
+import java.math.BigInteger;
 import java.util.Objects;
-import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
+public class AccountingEntryDTO {
+	private final AccountAddress owner;
+	private final BigInteger delta;
+	private final String rri;
 
-public final class TransactionDTO {
-	private final AID txID;
-	private final long stateVersion;
-	private final long size;
-	private final TxTimestamp sentAt;
-	private final UInt256 fee;
-	private final String message;
-	private final List<Action> actions;
-	private final List<AccountingEntryDTO> accountingEntries;
-	private final byte[] raw;
-
-	private TransactionDTO(
-		AID txID,
-		long stateVersion,
-		long size,
-		TxTimestamp sentAt,
-		UInt256 fee,
-		String message,
-		List<Action> actions,
-		List<AccountingEntryDTO> accountingEntries,
-		byte[] raw
+	private AccountingEntryDTO(
+		AccountAddress owner,
+		BigInteger delta,
+		String rri
 	) {
-		this.txID = txID;
-		this.stateVersion = stateVersion;
-		this.size = size;
-		this.sentAt = sentAt;
-		this.fee = fee;
-		this.message = message;
-		this.actions = actions;
-		this.accountingEntries = accountingEntries;
-		this.raw = raw;
+		this.owner = owner;
+		this.delta = delta;
+		this.rri = rri;
 	}
 
 	@JsonCreator
-	public static TransactionDTO create(
-		@JsonProperty(value = "size", required = true) long size,
-		@JsonProperty(value = "txID", required = true) AID txID,
-		@JsonProperty(value = "timestamp", required = true) TxTimestamp sentAt,
-		@JsonProperty(value = "fee", required = true) UInt256 fee,
-		@JsonProperty(value = "message", required = false) String message,
-		@JsonProperty(value = "actions", required = true) List<Action> actions,
-		@JsonProperty(value = "raw", required = true) String blob,
-		@JsonProperty(value = "stateVersion", required = true) long stateVersion,
-		@JsonProperty(value = "accountingEntries", required = true) List<AccountingEntryDTO> accountingEntries,
-		@JsonProperty(value = "events", required = true) List<Object> events
+	public static AccountingEntryDTO create(
+		@JsonProperty(value = "owner", required = true) AccountAddress owner,
+		@JsonProperty(value = "delta", required = true) String delta,
+		@JsonProperty(value = "asset", required = true) String rri,
+		@JsonProperty(value = "validator", required = false) String validator
 	) {
-		requireNonNull(txID);
-		requireNonNull(sentAt);
-		requireNonNull(fee);
-		requireNonNull(actions);
-		requireNonNull(blob);
-
-		return new TransactionDTO(txID, stateVersion, size, sentAt, fee, message, actions, accountingEntries, Hex.decode(blob));
+		return new AccountingEntryDTO(owner, new BigInteger(delta, 10), rri);
 	}
 
 	@Override
@@ -140,65 +103,27 @@ public final class TransactionDTO {
 			return true;
 		}
 
-		if (!(o instanceof TransactionDTO)) {
+		if (!(o instanceof AccountingEntryDTO)) {
 			return false;
 		}
 
-		var that = (TransactionDTO) o;
-		return txID.equals(that.txID)
-			&& size == that.size
-			&& stateVersion == that.stateVersion
-			&& sentAt.equals(that.sentAt)
-			&& fee.equals(that.fee)
-			&& Objects.equals(message, that.message)
-			&& Arrays.equals(raw, that.raw)
-			&& actions.equals(that.actions);
+		var that = (AccountingEntryDTO) o;
+		return Objects.equals(this.owner, that.owner)
+			&& Objects.equals(this.delta, that.delta)
+			&& Objects.equals(this.rri, that.rri);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(txID, stateVersion, size, sentAt, fee, message, actions, Arrays.hashCode(raw));
+		return Objects.hash(owner, delta, rri);
 	}
 
 	@Override
 	public String toString() {
-		return "Transaction("
-			+ "txID=" + txID
-			+ ", stateVersion=" + stateVersion
-			+ ", size=" + size
-			+ ", sentAt=" + sentAt
-			+ ", fee=" + fee
-			+ ", message='" + message + '\''
-			+ ", actions=" + actions
-			+ ", raw=" + Hex.toHexString(raw)
+		return "Entry("
+			+ "owner=" + owner
+			+ ", delta=" + delta
+			+ ", rri=" + rri
 			+ ')';
-	}
-
-	public AID getTxID() {
-		return txID;
-	}
-
-	public TxTimestamp getSentAt() {
-		return sentAt;
-	}
-
-	public UInt256 getFee() {
-		return fee;
-	}
-
-	public Optional<String> getMessage() {
-		return Optional.ofNullable(message);
-	}
-
-	public List<Action> getActions() {
-		return actions;
-	}
-
-	public List<AccountingEntryDTO> getAccountingEntries() {
-		return accountingEntries;
-	}
-
-	public byte[] getRaw() {
-		return raw;
 	}
 }
