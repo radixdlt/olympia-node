@@ -68,6 +68,7 @@ import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.application.system.state.StakeBucket;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;
+import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.tokens.state.ExittingOwnershipBucket;
 import com.radixdlt.application.tokens.state.PreparedStakeBucket;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
@@ -437,10 +438,12 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 
 	private void updateData(Transaction dbTxn, ValidatorData validatorData) {
 		var validatorKey = validatorData.getValidatorKey();
-		var json = getCurrentValidatorInfo(validatorKey, dbTxn, LockMode.READ_UNCOMMITTED);
 		var p = getData(validatorData);
-		updateJson(json, p.getFirst(), p.getSecond());
-		storeValidator(dbTxn, validatorKey, json);
+		if (!p.getSecond().isEmpty()) {
+			var json = getCurrentValidatorInfo(validatorKey, dbTxn, LockMode.READ_UNCOMMITTED);
+			updateJson(json, p.getFirst(), p.getSecond());
+			storeValidator(dbTxn, validatorKey, json);
+		}
 	}
 
 	private void updateNextEpochEstimates(JSONObject json) {
