@@ -69,7 +69,6 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -119,7 +118,7 @@ public class NetworkQueryHostIpTest {
 		doReturn(404).when(conn).getResponseCode();
 		URL url = mock(URL.class);
 		doReturn(conn).when(url).openConnection();
-		NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(Arrays.asList(url));
+		NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(List.of(url));
 		Optional<String> host = nqhip.hostIp();
 		assertFalse(host.isPresent());
 	}
@@ -128,7 +127,7 @@ public class NetworkQueryHostIpTest {
 	public void testCollectionNotEmptyQueryFailed2() throws IOException {
 		URL url = mock(URL.class);
 		doThrow(new IOException("test exception")).when(url).openConnection();
-		NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(Arrays.asList(url));
+		NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(List.of(url));
 		Optional<String> host = nqhip.hostIp();
 		assertFalse(host.isPresent());
 	}
@@ -141,7 +140,7 @@ public class NetworkQueryHostIpTest {
 			doReturn(input).when(conn).getInputStream();
 			URL url = mock(URL.class);
 			doReturn(conn).when(url).openConnection();
-			NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(Arrays.asList(url));
+			NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(List.of(url));
 			Optional<String> host = nqhip.hostIp();
 			assertTrue(host.isPresent());
 			assertEquals(data, host.get());
@@ -150,7 +149,7 @@ public class NetworkQueryHostIpTest {
 
 	@Test
 	public void testCollectionAllDifferent() throws IOException {
-		List<URL> urls = Arrays.asList(
+		List<URL> urls = List.of(
 			makeUrl("127.0.0.1"),
 			makeUrl("127.0.0.2"),
 			makeUrl("127.0.0.3"),

@@ -403,7 +403,7 @@ public interface ImperativeRadixApi {
 		/**
 		 * Lookup validator by address.
 		 *
-		 * @param validatorAddress
+		 * @param validatorAddress validator address
 		 */
 		ValidatorDTO lookup(ValidatorAddress validatorAddress);
 	}
