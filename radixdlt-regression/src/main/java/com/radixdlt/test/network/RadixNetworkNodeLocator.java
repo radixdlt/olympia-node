@@ -2,14 +2,13 @@ package com.radixdlt.test.network;
 
 import com.github.dockerjava.api.exception.DockerException;
 import com.google.common.collect.Sets;
-import com.radixdlt.test.network.client.RadixHttpClient;
-import com.radixdlt.test.network.client.docker.DockerClient;
-import com.radixdlt.application.system.construction.FeeReserveNotEnoughBalanceException;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
 import com.radixdlt.client.lib.api.sync.RadixApiException;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.test.network.client.RadixHttpClient;
+import com.radixdlt.test.network.client.docker.DockerClient;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
