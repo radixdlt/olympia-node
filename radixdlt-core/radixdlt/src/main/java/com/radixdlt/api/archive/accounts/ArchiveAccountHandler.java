@@ -83,6 +83,11 @@ import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
 
 public final class ArchiveAccountHandler {
+	private static final String ADDRESS = "address";
+	private static final String SIZE = "size";
+	private static final String CURSOR = "cursor";
+	private static final String VERBOSE = "verbose";
+
 	private final BerkeleyAccountInfoStore store;
 	private final BerkeleyAccountTxHistoryStore txHistoryStore;
 	private final BerkeleyTransactionsByIdStore txByIdStore;
@@ -104,7 +109,7 @@ public final class ArchiveAccountHandler {
 	public JSONObject handleAccountGetBalances(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			"address",
+			ADDRESS,
 			address -> addressing.forAccounts()
 				.parseFunctional(address)
 				.map(store::getAccountInfo)
@@ -114,12 +119,12 @@ public final class ArchiveAccountHandler {
 	public JSONObject handleAccountGetTransactionHistoryReverse(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			List.of("address", "size"),
-			List.of("cursor", "verbose"),
+			List.of(ADDRESS, SIZE),
+			List.of(CURSOR, VERBOSE),
 			params -> allOf(
 				parseAddress(params),
-				safeLong(params, "size"),
-				ok(params.optLong("cursor", -1)),
+				safeLong(params, SIZE),
+				ok(params.optLong(CURSOR, -1)),
 				parseVerboseFlag(params)
 			).map((addr, limit, offset, verboseFlag) -> {
 					var txnArray = new JSONArray();
@@ -134,7 +139,7 @@ public final class ArchiveAccountHandler {
 
 					var result = new JSONObject();
 					if (lastOffset.get() > 0) {
-						result.put("cursor", lastOffset.get() - 1);
+						result.put(CURSOR, lastOffset.get() - 1);
 					}
 
 					return result
@@ -147,7 +152,7 @@ public final class ArchiveAccountHandler {
 	public JSONObject handleAccountGetStakePositions(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			"address",
+			ADDRESS,
 			address -> addressing.forAccounts().parseFunctional(address)
 				.map(store::getAccountStakes)
 				.map(JsonRpcUtil::wrapArray)
@@ -157,7 +162,7 @@ public final class ArchiveAccountHandler {
 	public JSONObject handleAccountGetUnstakePositions(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			"address",
+			ADDRESS,
 			address -> addressing.forAccounts().parseFunctional(address)
 				.map(store::getAccountUnstakes)
 				.map(JsonRpcUtil::wrapArray)
@@ -168,10 +173,10 @@ public final class ArchiveAccountHandler {
 	// internal processing
 	//-----------------------------------------------------------------------------------------------------
 	private Result<REAddr> parseAddress(JSONObject params) {
-		return addressing.forAccounts().parseFunctional(params.getString("address"));
+		return addressing.forAccounts().parseFunctional(params.getString(ADDRESS));
 	}
 
 	private Result<Boolean> parseVerboseFlag(JSONObject params) {
-		return ok(params.optBoolean("verbose", false));
+		return ok(params.optBoolean(VERBOSE, false));
 	}
 }

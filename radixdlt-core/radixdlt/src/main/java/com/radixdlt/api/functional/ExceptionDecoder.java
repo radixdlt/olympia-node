@@ -104,10 +104,8 @@ public final class ExceptionDecoder {
 			return RadixErrors.UNABLE_TO_ADD_TO_MEMPOOL;
 		}
 
-		var rootCause = getRootCause(e);
-
-		//Last resort (handles the case of standalone IllegalStateException as well)
-		return RadixErrors.UNABLE_TO_SUBMIT_TX.with(extractMessage(rootCause));
+		return mapExceptionToFailure(getRootCause(e))
+			.with(extractMessage(getRootCause(e)));
 	}
 
 	public static String extractMessage(Throwable throwable) {
