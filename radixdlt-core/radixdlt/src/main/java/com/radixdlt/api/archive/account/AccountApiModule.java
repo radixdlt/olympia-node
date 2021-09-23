@@ -99,6 +99,8 @@ public class AccountApiModule extends AbstractModule {
 		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
 			.addBinding(path)
 			.toProvider(ControllerProvider.class);
+
+		install(new AccountBalancesApiModule(annotationType, path + "/balances"));
 	}
 
 	private static class ControllerProvider implements Provider<Controller> {
@@ -108,7 +110,6 @@ public class AccountApiModule extends AbstractModule {
 		@Override
 		public Controller get() {
 			var handlers = Map.<String, JsonRpcHandler>of(
-				"get_balances", handler::handleAccountGetBalances,
 				"get_stake_positions", handler::handleAccountGetStakePositions,
 				"get_unstake_positions", handler::handleAccountGetUnstakePositions,
 				"get_transaction_history", handler::handleAccountGetTransactionHistoryReverse
