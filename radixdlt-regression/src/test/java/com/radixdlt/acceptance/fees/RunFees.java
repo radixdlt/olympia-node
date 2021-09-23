@@ -62,54 +62,15 @@
  * permissions under this License.
  */
 
-apply plugin: 'java'
-apply plugin: 'idea'
-apply plugin: 'java-library'
+package com.radixdlt.acceptance.fees;
+import org.junit.runner.RunWith;
 
-dependencies {
-    api project(':radixdlt-regression')
+import io.cucumber.junit.CucumberOptions;
+import io.cucumber.junit.CucumberOptions.SnippetType;
+import io.cucumber.junit.Cucumber;
 
-    testImplementation 'org.awaitility:awaitility'
-    testImplementation 'com.google.guava:guava:29.0-jre'
-    testImplementation 'com.github.mwiede:jsch:0.1.61'
-    testImplementation 'commons-io:commons-io:2.8.0'
-    testImplementation 'org.apache.logging.log4j:log4j-api:2.13.1'
-    testImplementation 'org.apache.logging.log4j:log4j-core:2.13.1'
-
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.2'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
+@RunWith(Cucumber.class)
+@CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
+public class RunFees {
+	// Stub for running cucumber tests
 }
-
-test {
-    enabled false
-    jacoco {
-        enabled false // Don't attempt to include these in code coverage.
-    }
-}
-
-task systemTests(type: Test) {
-    useJUnitPlatform()
-    filter {
-        includeTestsMatching "com.radixdlt.test.system.*"
-    }
-    testLogging.showStandardStreams = true
-    environment "RADIXDLT_DOCKER_INITIALIZE_NETWORK", "true"
-    systemProperties System.getProperties()
-    jacoco {
-        // We don't want these tests included in code coverage.
-        enabled false
-    }
-}
-
-task chaosExperiments(type: Test) {
-    filter {
-        includeTestsMatching "com.radixdlt.test.chaos.*"
-    }
-    testLogging.showStandardStreams = true
-    systemProperties System.getProperties()
-    jacoco {
-        // We don't want these tests included in code coverage.
-        enabled false
-    }
-}
-
