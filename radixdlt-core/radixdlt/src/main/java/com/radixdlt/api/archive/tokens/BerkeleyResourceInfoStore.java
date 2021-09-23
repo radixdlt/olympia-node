@@ -76,6 +76,7 @@ import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.LockMode;
 import com.sleepycat.je.Transaction;
 import org.json.JSONObject;
 
@@ -168,7 +169,7 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 				var resourceAddr = e.getKey();
 				var key = new DatabaseEntry(resourceAddr.getBytes());
 				var value = new DatabaseEntry();
-				var status = resourceInfoDatabase.get(dbTxn, key, value, null);
+				var status = resourceInfoDatabase.get(dbTxn, key, value, LockMode.READ_UNCOMMITTED);
 				if (status != SUCCESS) {
 					throw new IllegalStateException();
 				}

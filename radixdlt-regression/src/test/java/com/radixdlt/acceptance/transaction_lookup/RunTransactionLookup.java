@@ -62,17 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.data;
+package com.radixdlt.acceptance.transaction_lookup;
 
-import org.json.JSONObject;
+import io.cucumber.junit.Cucumber;
+import io.cucumber.junit.CucumberOptions;
+import io.cucumber.junit.CucumberOptions.SnippetType;
+import org.junit.runner.RunWith;
 
-public enum TransactionStatus {
-	PENDING,
-	CONFIRMED,
-	FAILED,
-	TRANSACTION_NOT_FOUND;
-
-	public JSONObject asJson() {
-		return new JSONObject().put("status", name());
-	}
+@RunWith(Cucumber.class)
+@CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
+public class RunTransactionLookup {
+	// Stub for running cucumber tests
 }

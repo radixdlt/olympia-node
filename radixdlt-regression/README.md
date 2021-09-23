@@ -12,8 +12,16 @@ Run the tests:
 ../gradlew clean :radixdlt-regression:acceptanceTest
 ```
 
-By default, an archive node running at localhost:8080 is expected. You can change this with:
+Run a single test via tags:
+
 ```
-RADIX_JSON_RPC_ROOT_URL=http://localhost:1234 \
+../gradlew clean :radixdlt-regression:acceptanceTest -Dcucumber.filter.tags="@single"
+```
+
+By default, an archive node running at localhost is expected. You can change this with:
+```
+RADIXDLT_JSON_RPC_API_ROOT_URL=http://localhost \
+RADIXDLT_JSON_RPC_API_PRIMARY_PORT=8080 \ 
+RADIXDLT_JSON_RPC_API_SECONDARY_PORT=3333 \
 ../gradlew clean :radixdlt-regression:acceptanceTest
 ```

@@ -62,17 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.data;
+package com.radixdlt.acceptance.token_contraints;
+import org.junit.runner.RunWith;
 
-import org.json.JSONObject;
+import io.cucumber.junit.CucumberOptions;
+import io.cucumber.junit.CucumberOptions.SnippetType;
+import io.cucumber.junit.Cucumber;
 
-public enum TransactionStatus {
-	PENDING,
-	CONFIRMED,
-	FAILED,
-	TRANSACTION_NOT_FOUND;
-
-	public JSONObject asJson() {
-		return new JSONObject().put("status", name());
-	}
+@RunWith(Cucumber.class)
+@CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
+public class RunTokenConstraints {
+	// Stub for running cucumber tests
 }
