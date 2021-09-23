@@ -79,6 +79,7 @@ import com.google.common.collect.Iterators;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+//FIXME: test uses reflective access to java.net.NetworkInterface, might cause issues for Java 17 transition
 public class NonroutableInterfaceHostIpTest {
 
 	@Test

@@ -89,13 +89,13 @@ jacocoTestReport {
     }
 }
 
-def networkName = properties.get('networkName', 'testnet')
-def enableAWSSecret = properties.get('enableAWSSecret', false)
-def recreateAWSSecret = properties.get('recreateAWSSecret', false)
-def nodeNumber = properties.get('nodeNumber', 0)
-def nodeNamePrefix = properties.get('nodeNamePrefix', "fullnode")
-def secretPasswordKey = properties.get('secretPasswordKey', "")
-def nodeNames = properties.get('nodeNames', "")
+def networkName = project.getProperties().get('networkName', 'testnet')
+def enableAWSSecret = project.getProperties().get('enableAWSSecret', false)
+def recreateAWSSecret = project.getProperties().get('recreateAWSSecret', false)
+def nodeNumber = project.getProperties().get('nodeNumber', 0)
+def nodeNamePrefix = project.getProperties().get('nodeNamePrefix', "fullnode")
+def secretPasswordKey = project.getProperties().get('secretPasswordKey', "")
+def nodeNames = project.getProperties().get('nodeNames', "")
 
 task generateNodeKey(type: Exec) {
     dependsOn compileJava

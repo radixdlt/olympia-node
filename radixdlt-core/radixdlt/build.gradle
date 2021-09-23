@@ -79,9 +79,9 @@ node {
 }
 
 // Example: ./gradlew run ... -P overrideMainClassName=org.radix.GenerateUniverses
-mainClassName = properties.get('overrideMainClassName', 'org.radix.Radix')
-def validators = properties.get('validators', '0')
-def publicKeys = properties.get('publicKeys', '')
+mainClassName = project.getProperties().get('overrideMainClassName', 'org.radix.Radix')
+def validators = project.getProperties().get('validators', '0')
+def publicKeys = project.getProperties().get('publicKeys', '')
 
 startScripts {
     classpath = files('src/resources') + classpath
