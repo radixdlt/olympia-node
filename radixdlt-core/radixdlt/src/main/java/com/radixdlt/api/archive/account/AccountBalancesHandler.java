@@ -63,36 +63,38 @@
 
 package com.radixdlt.api.archive.account;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.google.inject.Inject;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+import static com.radixdlt.api.util.RestUtils.respond;
+import static com.radixdlt.api.util.RestUtils.withBody;
 
-public class AccountApiModule extends AbstractModule {
-	private final String path;
-	private final Class<? extends Annotation> annotationType;
+class AccountBalancesHandler implements HttpHandler {
+	private final Addressing addressing;
+	private final BerkeleyAccountInfoStore store;
 
-	public AccountApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.path = path;
-		this.annotationType = annotationType;
+	@Inject
+	AccountBalancesHandler(Addressing addressing, BerkeleyAccountInfoStore store) {
+		this.addressing = addressing;
+		this.store = store;
 	}
 
 	@Override
-	protected void configure() {
-		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountInfoStore.class);
-		bind(BerkeleyAccountTxHistoryStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountTxHistoryStore.class);
+	public void handleRequest(HttpServerExchange exchange) {
+		withBody(exchange, request -> respond(exchange, handle(request)));
+	}
 
-		var routeBinder = MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, annotationType);
-		routeBinder.addBinding(path + "/balances").to(AccountBalancesHandler.class);
-		routeBinder.addBinding(path + "/stakes").to(AccountStakesHandler.class);
-		routeBinder.addBinding(path + "/unstakes").to(AccountUnstakesHandler.class);
-		routeBinder.addBinding(path + "/transactions").to(AccountTransactionsHandler.class);
+	private JSONObject handle(JSONObject request) {
+		try {
+			var addressString = request.getString("address");
+			var addr = addressing.forAccounts().parse(addressString);
+			return store.getAccountInfo(addr);
+		} catch (DeserializeException e) {
+			return new JSONObject().put("error", e.getMessage());
+		}
 	}
 }

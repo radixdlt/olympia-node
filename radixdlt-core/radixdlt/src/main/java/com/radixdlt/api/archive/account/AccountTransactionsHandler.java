@@ -63,36 +63,67 @@
 
 package com.radixdlt.api.archive.account;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.google.inject.Inject;
+import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+import java.util.concurrent.atomic.AtomicLong;
 
-public class AccountApiModule extends AbstractModule {
-	private final String path;
-	private final Class<? extends Annotation> annotationType;
+import static com.radixdlt.api.util.RestUtils.respond;
+import static com.radixdlt.api.util.RestUtils.withBody;
 
-	public AccountApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.path = path;
-		this.annotationType = annotationType;
+class AccountTransactionsHandler implements HttpHandler {
+	private final Addressing addressing;
+	private final BerkeleyAccountTxHistoryStore txHistoryStore;
+	private final BerkeleyTransactionsByIdStore txByIdStore;
+
+	@Inject
+	AccountTransactionsHandler(
+		Addressing addressing,
+		BerkeleyAccountTxHistoryStore txHistoryStore,
+		BerkeleyTransactionsByIdStore txByIdStore
+	) {
+		this.addressing = addressing;
+		this.txHistoryStore = txHistoryStore;
+		this.txByIdStore = txByIdStore;
 	}
 
 	@Override
-	protected void configure() {
-		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountInfoStore.class);
-		bind(BerkeleyAccountTxHistoryStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyAccountTxHistoryStore.class);
+	public void handleRequest(HttpServerExchange exchange) {
+		withBody(exchange, request -> respond(exchange, handle(request)));
+	}
 
-		var routeBinder = MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, annotationType);
-		routeBinder.addBinding(path + "/balances").to(AccountBalancesHandler.class);
-		routeBinder.addBinding(path + "/stakes").to(AccountStakesHandler.class);
-		routeBinder.addBinding(path + "/unstakes").to(AccountUnstakesHandler.class);
-		routeBinder.addBinding(path + "/transactions").to(AccountTransactionsHandler.class);
+	private JSONObject handle(JSONObject request) {
+		try {
+			var addressString = request.getString("address");
+			var addr = addressing.forAccounts().parse(addressString);
+			var limit = request.getLong("limit");
+			var offset = request.optLong("offset", -1);
+			var txnArray = new JSONArray();
+			var lastOffset = new AtomicLong(0);
+			txHistoryStore.getTxnIdsAssociatedWithAccount(addr, offset < 0 ? null : offset)
+				.limit(limit)
+				.forEach(pair -> {
+					var json = txByIdStore.getTransactionJSON(pair.getFirst()).orElseThrow();
+					lastOffset.set(pair.getSecond());
+					txnArray.put(json);
+				});
+
+			var result = new JSONObject();
+			if (lastOffset.get() > 0) {
+				result.put("nextOffset", lastOffset.get() - 1);
+			}
+
+			return result
+				.put("totalCount", txnArray.length())
+				.put("transactions", txnArray);
+		} catch (DeserializeException e) {
+			return new JSONObject().put("error", e.getMessage());
+		}
 	}
 }

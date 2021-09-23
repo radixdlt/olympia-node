@@ -93,6 +93,7 @@ public final class HttpServerRunner implements ModuleRunner {
 	private static final int QUEUE_SIZE = 2000;
 
 	private final Map<String, Controller> controllers;
+	private final Map<String, HttpHandler> handlers;
 	private final String name;
 	private final int port;
 	private final String bindAddress;
@@ -102,12 +103,14 @@ public final class HttpServerRunner implements ModuleRunner {
 
 	public HttpServerRunner(
 		Map<String, Controller> controllers,
+		Map<String, HttpHandler> handlers,
 		int port,
 		String bindAddress,
 		String name,
 		SystemCounters counters
 	) {
 		this.controllers = controllers;
+		this.handlers = handlers;
 		this.name = name.toLowerCase(Locale.US);
 		this.bindAddress = bindAddress;
 		this.port = port;
@@ -156,6 +159,8 @@ public final class HttpServerRunner implements ModuleRunner {
 
 	private HttpHandler configureRoutes() {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
+
+		handlers.forEach(handler::post);
 
 		controllers.forEach((root, controller) -> {
 			log.info("Configuring routes under {}", root);

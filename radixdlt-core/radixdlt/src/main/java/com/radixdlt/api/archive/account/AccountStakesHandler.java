@@ -63,100 +63,40 @@
 
 package com.radixdlt.api.archive.account;
 
-import org.json.JSONArray;
+import com.google.inject.Inject;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import org.json.JSONObject;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
-import com.radixdlt.api.util.JsonRpcUtil;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.utils.functional.Result;
+import static com.radixdlt.api.util.RestUtils.respond;
+import static com.radixdlt.api.util.RestUtils.withBody;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
-import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.utils.functional.Result.allOf;
-import static com.radixdlt.utils.functional.Result.ok;
-
-final class ArchiveAccountHandler {
-	private final BerkeleyAccountInfoStore store;
-	private final BerkeleyAccountTxHistoryStore txHistoryStore;
-	private final BerkeleyTransactionsByIdStore txByIdStore;
+class AccountStakesHandler implements HttpHandler {
 	private final Addressing addressing;
+	private final BerkeleyAccountInfoStore store;
 
 	@Inject
-	ArchiveAccountHandler(
-		BerkeleyAccountInfoStore store,
-		BerkeleyAccountTxHistoryStore txHistoryStore,
-		BerkeleyTransactionsByIdStore txByIdStore,
-		Addressing addressing
-	) {
-		this.store = store;
-		this.txHistoryStore = txHistoryStore;
-		this.txByIdStore = txByIdStore;
+	AccountStakesHandler(Addressing addressing, BerkeleyAccountInfoStore store) {
 		this.addressing = addressing;
+		this.store = store;
 	}
 
-	public JSONObject handleAccountGetTransactionHistoryReverse(JSONObject request) {
-		return withRequiredParameters(
-			request,
-			List.of("address", "limit"),
-			List.of("offset", "verbose"),
-			params -> allOf(parseAddress(params), ok(params.getLong("limit")), ok(params.optLong("offset", -1)), parseVerboseFlag(params))
-				.map((addr, limit, offset, verboseFlag) -> {
-					var txnArray = new JSONArray();
-					var lastOffset = new AtomicLong(0);
-					txHistoryStore.getTxnIdsAssociatedWithAccount(addr, offset < 0 ? null : offset)
-						.limit(limit)
-						.forEach(pair -> {
-							var json = txByIdStore.getTransactionJSON(pair.getFirst()).orElseThrow();
-							lastOffset.set(pair.getSecond());
-							txnArray.put(json);
-						});
-
-					var result = new JSONObject();
-					if (lastOffset.get() > 0) {
-						result.put("nextOffset", lastOffset.get() - 1);
-					}
-
-					return result
-						.put("totalCount", txnArray.length())
-						.put("transactions", txnArray);
-				})
-		);
+	@Override
+	public void handleRequest(HttpServerExchange exchange) {
+		withBody(exchange, request -> respond(exchange, handle(request)));
 	}
 
-	public JSONObject handleAccountGetStakePositions(JSONObject request) {
-		return withRequiredStringParameter(
-			request,
-			"address",
-			address -> addressing.forAccounts().parseFunctional(address)
-				.map(store::getAccountStakes)
-				.map(JsonRpcUtil::wrapArray)
-		);
-	}
-
-	public JSONObject handleAccountGetUnstakePositions(JSONObject request) {
-		return withRequiredStringParameter(
-			request,
-			"address",
-			address -> addressing.forAccounts().parseFunctional(address)
-				.map(store::getAccountUnstakes)
-				.map(JsonRpcUtil::wrapArray)
-		);
-	}
-
-	//-----------------------------------------------------------------------------------------------------
-	// internal processing
-	//-----------------------------------------------------------------------------------------------------
-	private Result<REAddr> parseAddress(JSONObject params) {
-		return addressing.forAccounts().parseFunctional(params.getString("address"));
-	}
-
-	private Result<Boolean> parseVerboseFlag(JSONObject params) {
-		return ok(params.optBoolean("verbose", false));
+	private JSONObject handle(JSONObject request) {
+		try {
+			var addressString = request.getString("address");
+			var addr = addressing.forAccounts().parse(addressString);
+			var stakes = store.getAccountStakes(addr);
+			return new JSONObject()
+				.put("stakePositions", stakes);
+		} catch (DeserializeException e) {
+			return new JSONObject().put("error", e.getMessage());
+		}
 	}
 }

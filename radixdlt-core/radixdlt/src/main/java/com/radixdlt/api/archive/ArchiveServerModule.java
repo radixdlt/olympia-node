@@ -78,6 +78,7 @@ import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
+import io.undertow.server.HttpHandler;
 
 import javax.inject.Qualifier;
 import java.lang.annotation.Retention;
@@ -120,8 +121,9 @@ public class ArchiveServerModule extends AbstractModule {
 	@Singleton
 	public ModuleRunner archiveHttpServer(
 		@ArchiveServer Map<String, Controller> controllers,
+		@ArchiveServer Map<String, HttpHandler> handlers,
 		SystemCounters counters
 	) {
-		return new HttpServerRunner(controllers, port, bindAddress, "archive", counters);
+		return new HttpServerRunner(controllers, handlers, port, bindAddress, "archive", counters);
 	}
 }

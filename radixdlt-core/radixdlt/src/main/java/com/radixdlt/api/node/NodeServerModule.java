@@ -151,7 +151,7 @@ public final class NodeServerModule extends AbstractModule {
 		@NodeServer Map<String, Controller> controllers,
 		SystemCounters counters
 	) {
-		return new HttpServerRunner(controllers, port, bindAddress, "node", counters);
+		return new HttpServerRunner(controllers, Map.of(), port, bindAddress, "node", counters);
 	}
 
 	/**

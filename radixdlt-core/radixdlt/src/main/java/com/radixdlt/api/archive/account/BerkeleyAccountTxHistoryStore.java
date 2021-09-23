@@ -97,7 +97,7 @@ import static com.google.common.primitives.UnsignedBytes.lexicographicalComparat
 import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
-public class BerkeleyAccountTxHistoryStore implements BerkeleyAdditionalStore {
+public final class BerkeleyAccountTxHistoryStore implements BerkeleyAdditionalStore {
 	private Database accountTxHistory;
 
 	@Override

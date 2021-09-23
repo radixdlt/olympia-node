@@ -63,68 +63,40 @@
 
 package com.radixdlt.api.archive.account;
 
-import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.RestUtils;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
 import org.json.JSONObject;
-
-import java.lang.annotation.Annotation;
 
 import static com.radixdlt.api.util.RestUtils.respond;
 import static com.radixdlt.api.util.RestUtils.withBody;
 
-public final class AccountBalancesApiModule extends AbstractModule {
-	private final String path;
-	private final Class<? extends Annotation> annotationType;
+class AccountUnstakesHandler implements HttpHandler {
+	private final Addressing addressing;
+	private final BerkeleyAccountInfoStore store;
 
-	public AccountBalancesApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.path = path;
-		this.annotationType = annotationType;
+	@Inject
+	AccountUnstakesHandler(Addressing addressing, BerkeleyAccountInfoStore store) {
+		this.addressing = addressing;
+		this.store = store;
 	}
 
 	@Override
-	protected void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
-			.addBinding(path)
-			.to(AccountBalancesController.class);
+	public void handleRequest(HttpServerExchange exchange) {
+		withBody(exchange, request -> respond(exchange, handle(request)));
 	}
 
-	private static class AccountBalancesController implements Controller, HttpHandler {
-		private final Addressing addressing;
-		private final BerkeleyAccountInfoStore store;
-
-		@Inject
-		AccountBalancesController(Addressing addressing, BerkeleyAccountInfoStore store) {
-			this.addressing = addressing;
-			this.store = store;
-		}
-
-		@Override
-		public void configureRoutes(String root, RoutingHandler handler) {
-			handler.post(RestUtils.sanitizeBaseUrl(root), this);
-		}
-
-		@Override
-		public void handleRequest(HttpServerExchange exchange) {
-			withBody(exchange, request -> respond(exchange, handle(request)));
-		}
-
-		private JSONObject handle(JSONObject request) {
-			try {
-				var addressString = request.getString("address");
-				var addr = addressing.forAccounts().parse(addressString);
-				return store.getAccountInfo(addr);
-			} catch (DeserializeException e) {
-				return new JSONObject().put("error", e.getMessage());
-			}
+	private JSONObject handle(JSONObject request) {
+		try {
+			var addressString = request.getString("address");
+			var addr = addressing.forAccounts().parse(addressString);
+			var stakes = store.getAccountUnstakes(addr);
+			return new JSONObject()
+				.put("unstakePositions", stakes);
+		} catch (DeserializeException e) {
+			return new JSONObject().put("error", e.getMessage());
 		}
 	}
 }
