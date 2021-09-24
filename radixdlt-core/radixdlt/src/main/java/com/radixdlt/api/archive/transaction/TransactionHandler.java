@@ -63,29 +63,32 @@
 
 package com.radixdlt.api.archive.transaction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
+import com.google.inject.Inject;
+import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.identifiers.AID;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+import static com.radixdlt.api.util.RestUtils.respond;
+import static com.radixdlt.api.util.RestUtils.withBody;
 
-public final class TransactionStatusAndLookupApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+final class TransactionHandler implements HttpHandler {
+	private final BerkeleyTransactionsByIdStore store;
 
-	public TransactionStatusAndLookupApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	TransactionHandler(BerkeleyTransactionsByIdStore store) {
+		this.store = store;
 	}
 
 	@Override
-	public void configure() {
-		install(new TransactionStatusServiceModule());
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
+	public void handleRequest(HttpServerExchange exchange) {
+		withBody(exchange, request -> respond(exchange, handle(request)));
+	}
 
-		routeBinder.addBinding(path + "/status").to(TransactionStatusHandler.class);
-		routeBinder.addBinding(path).to(TransactionHandler.class);
+	private JSONObject handle(JSONObject request) {
+		var txnIdString = request.getString("transactionIdentifier");
+		var txnId = AID.from(txnIdString);
+		return store.getTransactionJSON(txnId).orElseThrow();
 	}
 }
