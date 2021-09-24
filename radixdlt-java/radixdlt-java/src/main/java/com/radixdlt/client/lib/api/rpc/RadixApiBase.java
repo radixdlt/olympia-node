@@ -103,9 +103,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import static com.radixdlt.errors.RadixErrors.SSL_ALGORITHM_ERROR;
-import static com.radixdlt.errors.RadixErrors.SSL_GENERAL_ERROR;
-import static com.radixdlt.errors.RadixErrors.SSL_KEY_ERROR;
+import static com.radixdlt.errors.ClientErrors.SSL_ALGORITHM_ERROR;
+import static com.radixdlt.errors.ClientErrors.SSL_GENERAL_ERROR;
+import static com.radixdlt.errors.ClientErrors.SSL_KEY_ERROR;
 import static com.radixdlt.errors.RadixErrors.UNABLE_TO_DESERIALIZE;
 import static com.radixdlt.errors.RadixErrors.UNABLE_TO_SERIALIZE;
 import static com.radixdlt.networks.Network.LOCALNET;

@@ -82,7 +82,7 @@ import java.util.concurrent.ExecutionException;
 
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.errors.RadixErrors.INTERRUPTED_OPERATION;
+import static com.radixdlt.errors.ClientErrors.INTERRUPTED_OPERATION;
 import static com.radixdlt.errors.RadixErrors.UNABLE_TO_SUBMIT_TX;
 
 public class FaucetHandler {

@@ -68,7 +68,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.radixdlt.errors.RadixErrors.ASYNC_PROCESSING_ERROR;
+import static com.radixdlt.errors.InternalErrors.ASYNC_PROCESSING_ERROR;
 
 public class Promise<T> extends CompletableFuture<Result<T>> {
 	private Promise() {

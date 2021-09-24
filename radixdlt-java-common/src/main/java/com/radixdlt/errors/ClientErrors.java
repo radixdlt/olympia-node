@@ -1,5 +1,4 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -65,25 +64,40 @@
 
 package com.radixdlt.errors;
 
+import com.radixdlt.utils.functional.Failure;
+
 /**
- * General error categories.
+ * Full list of Java client error codes.
+ * <p>
+ * <b>WARNING: New errors should be added between markers (see below) to preserve error codes.</b>
  */
-public enum Category {
-	API(1),
-	INTERNAL(2),
-	PROTOCOL(32);
+public enum ClientErrors implements Failure {
+	MISSING_BASE_URL("Base URL is mandatory"),
+	IO_ERROR("I/O Error: {0} {1}"),
+	INTERRUPTED_OPERATION("Operation interrupted with InterruptedException. Details: {0} {1}"),
+	SSL_ALGORITHM_ERROR("SSL algorithm error: {0}"),
+	SSL_GENERAL_ERROR("SSL algorithm error: {0}"),
+	SSL_KEY_ERROR("SSL Key error: {0}"),
 
-	private final int code;
+	// WARNING: Add new errors below this line
 
-	Category(int code) {
-		this.code = code;
+	// WARNING: Add new errors above this line
+
+	LAST_ERROR("Last known error");
+
+	private final String message;
+
+	ClientErrors(String message) {
+		this.message = message;
 	}
 
+	@Override
+	public String message() {
+		return message;
+	}
+
+	@Override
 	public int code() {
-		return code;
-	}
-
-	public int forId(int id) {
-		return -(code * 1000 + id);
+		return Category.INTERNAL.forId(ordinal());
 	}
 }

@@ -68,16 +68,11 @@ package com.radixdlt.errors;
 import com.radixdlt.utils.functional.Failure;
 
 /**
- * Full list of internal error codes.
+ * Full list of API error codes.
  * <p>
- * <b>WARNING: New errors should be added to the end of the list to preserve error codes.</b>
+ * <b>WARNING: New errors should be added between markers (see below) to preserve error codes.</b>
  */
 public enum RadixErrors implements Failure {
-	GENERAL("General error (used for testing only)"),
-	UNKNOWN("Unknown error of type {0} with message {1}"),
-
-	ASYNC_PROCESSING_ERROR("Async processing error {0}"),
-
 	ERROR_CALL_DATA("{0}"),
 	ERROR_CONSTRAINT_VIOLATION("{0}"),
 	ERROR_DEFAULT_SYSTEM_LOAN("{0}"),
@@ -104,8 +99,6 @@ public enum RadixErrors implements Failure {
 	ERROR_VIRTUAL_PARENT_STATE_DOES_NOT_EXIST("{0}"),
 	ERROR_VIRTUAL_SUBSTATE_ALREADY_DOWN("{0}"),
 
-	INTERRUPTED_OPERATION("Operation interrupted with InterruptedException. Details: {0} {1}"),
-
 	INVALID_ACCOUNT_ADDRESS("Invalid account address {0}"),
 	INVALID_ACTION_DATA("Invalid action data {0}"),
 	INVALID_AID_LENGTH("AID string has incorrect length {0}"),
@@ -119,25 +112,15 @@ public enum RadixErrors implements Failure {
 	INVALID_VALUE_OUT_OF_RANGE("Parameter {0} must be between {1} and {2}"),
 	INVALID_VALUE_TYPE("Invalid value type {0}"),
 
-	IO_ERROR("I/O Error: {0} {1}"),
-
 	MISSING_ACTION_FIELD("Required field {0} is not present in action definition"),
-	MISSING_BASE_URL("Base URL is mandatory"),
-	MISSING_KEYSTORE_FILE("keystore file '{0}' does not exist or is not accessible"),
 	MISSING_PARAMETER("The parameter {0} is missing"),
 
 	MUST_MATCH_TX_ID("Provided txID does not match provided transaction"),
 
-	SSL_ALGORITHM_ERROR("SSL algorithm error: {0}"),
-	SSL_GENERAL_ERROR("SSL algorithm error: {0}"),
-	SSL_KEY_ERROR("SSL Key error: {0}"),
-
 	UNABLE_TO_ADD_TO_MEMPOOL("Unable to add transaction to mempool: mempool is full"),
 	UNABLE_TO_DESERIALIZE("Unable to deserialize: {0}"),
-	UNABLE_TO_LOAD_KEYSTORE("Unable to load keystore: {0}"),
 	UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE("Unable to convert signature to recoverable {0}"),
 	UNABLE_TO_PARSE_BOOLEAN("Unable to parse boolean value: {0}"),
-	UNABLE_TO_PARSE_COMMAND_LINE("Error parsing command line parameters: {0}"),
 	UNABLE_TO_PARSE_FLOAT("Unable to parse float number: {0}"),
 	UNABLE_TO_PARSE_HEX_STRING("The value {0} is not a correct hexadecimal string"),
 	UNABLE_TO_PARSE_INT("Unable to parse integer number: {0}"),
@@ -149,7 +132,13 @@ public enum RadixErrors implements Failure {
 	UNKNOWN_PARTICLE("Unknown particle for key {0}"),
 	UNKNOWN_RRI("Unknown RRI {0}"),
 	UNKNOWN_TX_ID("Transaction with id {0} not found"),
-	UNSUPPORTED_ACTION("Action type {0} is not supported");
+	UNSUPPORTED_ACTION("Action type {0} is not supported"),
+
+	// WARNING: Add new errors below this line
+
+	// WARNING: Add new errors above this line
+
+	LAST_ERROR("Last known error");
 
 	private final String message;
 
@@ -164,6 +153,6 @@ public enum RadixErrors implements Failure {
 
 	@Override
 	public int code() {
-		return Category.GENERAL.forId(ordinal());
+		return Category.API.forId(ordinal());
 	}
 }

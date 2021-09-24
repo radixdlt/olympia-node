@@ -124,7 +124,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.*;
-import static com.radixdlt.errors.RadixErrors.MISSING_BASE_URL;
+import static com.radixdlt.errors.ClientErrors.MISSING_BASE_URL;
 
 import static java.util.Optional.ofNullable;
 

@@ -161,10 +161,10 @@ import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_CURRENT_EPOCH
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_NODE_INFO;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LIST;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
-import static com.radixdlt.errors.RadixErrors.INTERRUPTED_OPERATION;
-import static com.radixdlt.errors.RadixErrors.IO_ERROR;
-import static com.radixdlt.errors.RadixErrors.MISSING_BASE_URL;
-import static com.radixdlt.errors.RadixErrors.UNKNOWN;
+import static com.radixdlt.errors.ClientErrors.INTERRUPTED_OPERATION;
+import static com.radixdlt.errors.ClientErrors.IO_ERROR;
+import static com.radixdlt.errors.ClientErrors.MISSING_BASE_URL;
+import static com.radixdlt.errors.InternalErrors.UNKNOWN;
 
 import static java.util.Optional.ofNullable;
 

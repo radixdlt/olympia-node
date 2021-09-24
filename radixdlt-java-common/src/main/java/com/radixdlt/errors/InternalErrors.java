@@ -1,5 +1,4 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -65,25 +64,43 @@
 
 package com.radixdlt.errors;
 
+import com.radixdlt.utils.functional.Failure;
+
 /**
- * General error categories.
+ * Full list of internal error codes.
+ * <p>
+ * <b>WARNING: New errors should be added between markers (see below) to preserve error codes.</b>
  */
-public enum Category {
-	API(1),
-	INTERNAL(2),
-	PROTOCOL(32);
+public enum InternalErrors  implements Failure {
+	GENERAL("General error (used for testing only)"),
+	UNKNOWN("Unknown error of type {0} with message {1}"),
 
-	private final int code;
+	ASYNC_PROCESSING_ERROR("Async processing error {0}"),
 
-	Category(int code) {
-		this.code = code;
+	MISSING_KEYSTORE_FILE("keystore file '{0}' does not exist or is not accessible"),
+
+	UNABLE_TO_LOAD_KEYSTORE("Unable to load keystore: {0}"),
+	UNABLE_TO_PARSE_COMMAND_LINE("Error parsing command line parameters: {0}"),
+
+	// WARNING: Add new errors below this line
+
+	// WARNING: Add new errors above this line
+
+	LAST_ERROR("Last known error");
+
+	private final String message;
+
+	InternalErrors(String message) {
+		this.message = message;
 	}
 
+	@Override
+	public String message() {
+		return message;
+	}
+
+	@Override
 	public int code() {
-		return code;
-	}
-
-	public int forId(int id) {
-		return -(code * 1000 + id);
+		return Category.INTERNAL.forId(ordinal());
 	}
 }
