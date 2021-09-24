@@ -89,7 +89,7 @@ import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
-import com.radixdlt.errors.RadixErrors;
+import com.radixdlt.errors.ApiErrors;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.utils.functional.Failure;
 
@@ -101,7 +101,7 @@ public final class ExceptionDecoder {
 
 	public static Failure decode(Throwable e) {
 		if (e instanceof MempoolFullException) {
-			return RadixErrors.UNABLE_TO_ADD_TO_MEMPOOL;
+			return ApiErrors.UNABLE_TO_ADD_TO_MEMPOOL;
 		}
 
 		return mapExceptionToFailure(getRootCause(e))
@@ -115,106 +115,106 @@ public final class ExceptionDecoder {
 	//TODO: use switch expression once available
 	private static Failure mapExceptionToFailure(Throwable rootCause) {
 		if (rootCause instanceof CallDataAccessException) {
-			return RadixErrors.ERROR_CALL_DATA;
+			return ApiErrors.ERROR_CALL_DATA;
 		}
 
 		if (rootCause instanceof ConstraintMachineException) {
-			return RadixErrors.ERROR_CONSTRAINT_VIOLATION;
+			return ApiErrors.ERROR_CONSTRAINT_VIOLATION;
 		}
 
 		if (rootCause instanceof DefaultedSystemLoanException) {
-			return RadixErrors.ERROR_DEFAULT_SYSTEM_LOAN;
+			return ApiErrors.ERROR_DEFAULT_SYSTEM_LOAN;
 		}
 
 		if (rootCause instanceof DepletedFeeReserveException) {
-			return RadixErrors.ERROR_NOT_ENOUGH_RESERVE;
+			return ApiErrors.ERROR_NOT_ENOUGH_RESERVE;
 		}
 
 		if (rootCause instanceof ExecutionContextDestroyException) {
-			return RadixErrors.ERROR_RESERVE_NOT_EMPTY;
+			return ApiErrors.ERROR_RESERVE_NOT_EMPTY;
 		}
 
 		if (rootCause instanceof InvalidDelegationException) {
-			return RadixErrors.ERROR_DELEGATION_NOT_ALLOWED;
+			return ApiErrors.ERROR_DELEGATION_NOT_ALLOWED;
 		}
 
 		if (rootCause instanceof InvalidHashedKeyException) {
-			return RadixErrors.ERROR_INVALID_HASHED_KEY;
+			return ApiErrors.ERROR_INVALID_HASHED_KEY;
 		}
 
 		if (rootCause instanceof InvalidPermissionException) {
-			return RadixErrors.ERROR_INVALID_PERMISSION;
+			return ApiErrors.ERROR_INVALID_PERMISSION;
 		}
 
 		if (rootCause instanceof InvalidResourceException) {
-			return RadixErrors.ERROR_INVALID_RESOURCE;
+			return ApiErrors.ERROR_INVALID_RESOURCE;
 		}
 
 		if (rootCause instanceof InvalidVirtualSubstateException) {
-			return RadixErrors.ERROR_INVALID_VIRTUAL_SUBSTATE;
+			return ApiErrors.ERROR_INVALID_VIRTUAL_SUBSTATE;
 		}
 
 		if (rootCause instanceof LocalSubstateNotFoundException) {
-			return RadixErrors.ERROR_LOCAL_SUBSTATE_NOT_FOUND;
+			return ApiErrors.ERROR_LOCAL_SUBSTATE_NOT_FOUND;
 		}
 
 		if (rootCause instanceof MinimumStakeException) {
-			return RadixErrors.ERROR_MINIMUM_STAKE;
+			return ApiErrors.ERROR_MINIMUM_STAKE;
 		}
 
 		if (rootCause instanceof MismatchException) {
-			return RadixErrors.ERROR_MISMATCH;
+			return ApiErrors.ERROR_MISMATCH;
 		}
 
 		if (rootCause instanceof MissingProcedureException) {
-			return RadixErrors.ERROR_MISSING_PROCEDURE;
+			return ApiErrors.ERROR_MISSING_PROCEDURE;
 		}
 
 		if (rootCause instanceof MultipleFeeReserveDepositException) {
-			return RadixErrors.ERROR_MULTIPLE_FEE_RESERVE_DEPOSIT;
+			return ApiErrors.ERROR_MULTIPLE_FEE_RESERVE_DEPOSIT;
 		}
 
 		if (rootCause instanceof NotAResourceException) {
-			return RadixErrors.ERROR_NOT_A_RESOURCE;
+			return ApiErrors.ERROR_NOT_A_RESOURCE;
 		}
 
 		if (rootCause instanceof NotEnoughResourcesException) {
-			return RadixErrors.ERROR_NOT_ENOUGH_RESOURCES;
+			return ApiErrors.ERROR_NOT_ENOUGH_RESOURCES;
 		}
 
 		if (rootCause instanceof ProcedureException) {
-			return RadixErrors.ERROR_PROCEDURE;
+			return ApiErrors.ERROR_PROCEDURE;
 		}
 
 		if (rootCause instanceof ReservedSymbolException) {
-			return RadixErrors.ERROR_RESERVED_SYMBOL;
+			return ApiErrors.ERROR_RESERVED_SYMBOL;
 		}
 
 		if (rootCause instanceof ResourceAllocationAndDestructionException) {
-			return RadixErrors.ERROR_RESOURCE_ALLOCATION_AND_DESTRUCTION;
+			return ApiErrors.ERROR_RESOURCE_ALLOCATION_AND_DESTRUCTION;
 		}
 
 		if (rootCause instanceof SignedSystemException) {
-			return RadixErrors.ERROR_SIGNED_SYSTEM;
+			return ApiErrors.ERROR_SIGNED_SYSTEM;
 		}
 
 		if (rootCause instanceof VirtualSubstateAlreadyDownException) {
-			return RadixErrors.ERROR_VIRTUAL_SUBSTATE_ALREADY_DOWN;
+			return ApiErrors.ERROR_VIRTUAL_SUBSTATE_ALREADY_DOWN;
 		}
 
 		if (rootCause instanceof VirtualParentStateDoesNotExist) {
-			return RadixErrors.ERROR_VIRTUAL_PARENT_STATE_DOES_NOT_EXIST;
+			return ApiErrors.ERROR_VIRTUAL_PARENT_STATE_DOES_NOT_EXIST;
 		}
 
 		if (rootCause instanceof AuthorizationException) {
-			return RadixErrors.ERROR_NOT_AUTHORIZED;
+			return ApiErrors.ERROR_NOT_AUTHORIZED;
 		}
 
 		if (rootCause instanceof SubstateNotFoundException) {
-			return RadixErrors.ERROR_SUBSTATE_NOT_FOUND;
+			return ApiErrors.ERROR_SUBSTATE_NOT_FOUND;
 		}
 
 
-		return RadixErrors.UNABLE_TO_SUBMIT_TX;
+		return ApiErrors.UNABLE_TO_SUBMIT_TX;
 	}
 }

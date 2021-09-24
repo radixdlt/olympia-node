@@ -72,7 +72,7 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Result;
 
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.errors.RadixErrors.UNKNOWN_TX_ID;
+import static com.radixdlt.errors.ApiErrors.UNKNOWN_TX_ID;
 
 public class TransactionStatusAndLookupApiModule extends AbstractModule {
 	@Override

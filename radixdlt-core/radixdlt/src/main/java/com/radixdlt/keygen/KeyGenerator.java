@@ -82,7 +82,7 @@ import static com.radixdlt.errors.InternalErrors.GENERAL;
 import static com.radixdlt.errors.InternalErrors.MISSING_KEYSTORE_FILE;
 import static com.radixdlt.errors.InternalErrors.UNABLE_TO_LOAD_KEYSTORE;
 import static com.radixdlt.errors.InternalErrors.UNABLE_TO_PARSE_COMMAND_LINE;
-import static com.radixdlt.errors.RadixErrors.MISSING_PARAMETER;
+import static com.radixdlt.errors.ApiErrors.MISSING_PARAMETER;
 import static com.radixdlt.utils.functional.Failure.failure;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.fromOptional;

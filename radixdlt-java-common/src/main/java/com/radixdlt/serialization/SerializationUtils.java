@@ -71,7 +71,7 @@ import com.radixdlt.utils.functional.Result;
 
 import java.nio.charset.StandardCharsets;
 
-import static com.radixdlt.errors.RadixErrors.UNABLE_TO_DESERIALIZE;
+import static com.radixdlt.errors.ApiErrors.UNABLE_TO_DESERIALIZE;
 
 /**
  * Collection of Serialization-related utilities

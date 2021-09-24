@@ -68,29 +68,23 @@ import com.radixdlt.utils.functional.Failure;
 
 /**
  * Full list of internal error codes.
- * <p>
- * <b>WARNING: New errors should be added between markers (see below) to preserve error codes.</b>
  */
-public enum InternalErrors  implements Failure {
-	GENERAL("General error (used for testing only)"),
-	UNKNOWN("Unknown error of type {0} with message {1}"),
+public enum InternalErrors implements Failure {
+	GENERAL(0, "General error (used for testing only)"),
+	UNKNOWN(100, "Unknown error of type {0} with message {1}"),
 
-	ASYNC_PROCESSING_ERROR("Async processing error {0}"),
+	ASYNC_PROCESSING_ERROR(200, "Async processing error {0}"),
 
-	MISSING_KEYSTORE_FILE("keystore file '{0}' does not exist or is not accessible"),
+	MISSING_KEYSTORE_FILE(300, "keystore file '{0}' does not exist or is not accessible"),
 
-	UNABLE_TO_LOAD_KEYSTORE("Unable to load keystore: {0}"),
-	UNABLE_TO_PARSE_COMMAND_LINE("Error parsing command line parameters: {0}"),
+	UNABLE_TO_LOAD_KEYSTORE(400, "Unable to load keystore: {0}"),
+	UNABLE_TO_PARSE_COMMAND_LINE(401, "Error parsing command line parameters: {0}");
 
-	// WARNING: Add new errors below this line
-
-	// WARNING: Add new errors above this line
-
-	LAST_ERROR("Last known error");
-
+	private final int code;
 	private final String message;
 
-	InternalErrors(String message) {
+	InternalErrors(int code, String message) {
+		this.code = code;
 		this.message = message;
 	}
 
@@ -101,6 +95,6 @@ public enum InternalErrors  implements Failure {
 
 	@Override
 	public int code() {
-		return Category.INTERNAL.forId(ordinal());
+		return Category.INTERNAL.forId(code);
 	}
 }

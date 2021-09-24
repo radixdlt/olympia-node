@@ -112,7 +112,7 @@ import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.safeArray;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
-import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PREPARE_TX;
+import static com.radixdlt.errors.ApiErrors.UNABLE_TO_PREPARE_TX;
 
 //FIXME: rework to avoid throwing exceptions and provide meaningful error codes/messages.
 public final class DeveloperHandler {

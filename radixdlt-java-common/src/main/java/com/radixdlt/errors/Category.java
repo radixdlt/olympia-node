@@ -71,6 +71,7 @@ package com.radixdlt.errors;
 public enum Category {
 	API(1),
 	INTERNAL(2),
+	CLIENT(3),
 	PROTOCOL(32);
 
 	private final int code;

@@ -76,7 +76,7 @@ import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
 
-import static com.radixdlt.errors.RadixErrors.INVALID_VALIDATOR_ADDRESS;
+import static com.radixdlt.errors.ApiErrors.INVALID_VALIDATOR_ADDRESS;
 
 /**
  * Bech-32 encoding/decoding of validators. Validators are represented as 33-byte

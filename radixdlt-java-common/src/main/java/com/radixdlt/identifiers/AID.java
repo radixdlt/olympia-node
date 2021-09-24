@@ -75,8 +75,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 
-import static com.radixdlt.errors.RadixErrors.INVALID_AID_LENGTH;
-import static com.radixdlt.errors.RadixErrors.INVALID_AID_STRING;
+import static com.radixdlt.errors.ApiErrors.INVALID_AID_LENGTH;
+import static com.radixdlt.errors.ApiErrors.INVALID_AID_STRING;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
 import static java.util.Optional.ofNullable;

@@ -92,7 +92,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.errors.RadixErrors.MUST_MATCH_TX_ID;
+import static com.radixdlt.errors.ApiErrors.MUST_MATCH_TX_ID;
 
 public final class SubmissionService {
 	private final Logger logger = LogManager.getLogger();

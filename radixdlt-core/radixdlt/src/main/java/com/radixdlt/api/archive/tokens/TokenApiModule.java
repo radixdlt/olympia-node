@@ -76,7 +76,7 @@ import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
 import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.errors.RadixErrors.UNKNOWN_RRI;
+import static com.radixdlt.errors.ApiErrors.UNKNOWN_RRI;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
 public final class TokenApiModule extends AbstractModule {

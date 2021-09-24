@@ -68,26 +68,23 @@ import com.radixdlt.utils.functional.Failure;
 
 /**
  * Full list of Java client error codes.
- * <p>
- * <b>WARNING: New errors should be added between markers (see below) to preserve error codes.</b>
  */
 public enum ClientErrors implements Failure {
-	MISSING_BASE_URL("Base URL is mandatory"),
-	IO_ERROR("I/O Error: {0} {1}"),
-	INTERRUPTED_OPERATION("Operation interrupted with InterruptedException. Details: {0} {1}"),
-	SSL_ALGORITHM_ERROR("SSL algorithm error: {0}"),
-	SSL_GENERAL_ERROR("SSL algorithm error: {0}"),
-	SSL_KEY_ERROR("SSL Key error: {0}"),
+	INTERRUPTED_OPERATION(200, "Operation interrupted with InterruptedException. Details: {0} {1}"),
 
-	// WARNING: Add new errors below this line
+	IO_ERROR(300, "I/O Error: {0} {1}"),
 
-	// WARNING: Add new errors above this line
+	MISSING_BASE_URL(400, "Base URL is mandatory"),
 
-	LAST_ERROR("Last known error");
+	SSL_ALGORITHM_ERROR(500, "SSL algorithm error: {0}"),
+	SSL_GENERAL_ERROR(501, "SSL algorithm error: {0}"),
+	SSL_KEY_ERROR(502, "SSL Key error: {0}");
 
+	private final int code;
 	private final String message;
 
-	ClientErrors(String message) {
+	ClientErrors(int code, String message) {
+		this.code = code;
 		this.message = message;
 	}
 
@@ -98,6 +95,6 @@ public enum ClientErrors implements Failure {
 
 	@Override
 	public int code() {
-		return Category.INTERNAL.forId(ordinal());
+		return Category.CLIENT.forId(code);
 	}
 }

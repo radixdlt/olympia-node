@@ -71,7 +71,7 @@ import com.radixdlt.utils.functional.Result;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PARSE_UINT;
+import static com.radixdlt.errors.ApiErrors.UNABLE_TO_PARSE_UINT;
 
 /**
  * A 384-bit unsigned integer, with comparison and some basic arithmetic

@@ -81,9 +81,9 @@ import java.util.function.Supplier;
 
 import static com.radixdlt.errors.ProtocolErrors.INVALID_REQUEST;
 import static com.radixdlt.errors.ProtocolErrors.PARSE_ERROR;
-import static com.radixdlt.errors.RadixErrors.MISSING_PARAMETER;
-import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PARSE_HEX_STRING;
-import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PARSE_INT;
+import static com.radixdlt.errors.ApiErrors.MISSING_PARAMETER;
+import static com.radixdlt.errors.ApiErrors.UNABLE_TO_PARSE_HEX_STRING;
+import static com.radixdlt.errors.ApiErrors.UNABLE_TO_PARSE_INT;
 import static com.radixdlt.utils.functional.Result.fail;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 import static com.radixdlt.utils.functional.Result.ok;

@@ -62,79 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.identifiers;
+package com.radixdlt.errors;
 
-import org.bitcoinj.core.AddressFormatException;
-import org.bitcoinj.core.Bech32;
+import org.junit.Test;
 
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.Bits;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Functions;
 
-import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static com.radixdlt.errors.ApiErrors.INVALID_ACCOUNT_ADDRESS;
-
-/**
- * Bech-32 encoding/decoding of account addresses.
- * <p>
- * The human-readable part is "rdx" for mainnet, "brx" for betanet.
- * <p>
- * The data part is a conversion of the 1-34 byte Radix Engine address
- * {@link com.radixdlt.identifiers.REAddr} to Base32 similar to specification described
- * in BIP_0173 for converting witness programs.
- */
-public final class AccountAddressing {
-	private final String hrp;
-
-	private AccountAddressing(String hrp) {
-		this.hrp = hrp;
-	}
-
-	public static AccountAddressing bech32(String hrp) {
-		Objects.requireNonNull(hrp);
-		return new AccountAddressing(hrp);
-	}
-
-	public static Pair<String, REAddr> parseUnknownHrp(String v) throws DeserializeException {
-		Bech32.Bech32Data bech32Data;
-		try {
-			bech32Data = Bech32.decode(v);
-		} catch (AddressFormatException e) {
-			throw new DeserializeException("Could not decode string: " + v, e);
-		}
-
-		try {
-			var addrBytes = fromBech32Data(bech32Data.data);
-			return Pair.of(bech32Data.hrp, REAddr.of(addrBytes));
-		} catch (IllegalArgumentException e) {
-			throw new DeserializeException("Invalid address", e);
-		}
-	}
-
-	private static byte[] toBech32Data(byte[] bytes) {
-		return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
-	}
-
-	private static byte[] fromBech32Data(byte[] bytes) {
-		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
-	}
-
-	public String of(REAddr addr) {
-		var convert = toBech32Data(addr.getBytes());
-		return Bech32.encode(hrp, convert);
-	}
-
-	public REAddr parse(String v) throws DeserializeException {
-		var p = parseUnknownHrp(v);
-		if (!p.getFirst().equals(hrp)) {
-			throw new DeserializeException("hrp must be " + hrp + " but was " + p.getFirst());
-		}
-		return p.getSecond();
-	}
-
-	public Result<REAddr> parseFunctional(String addr) {
-		return Result.wrap(() -> INVALID_ACCOUNT_ADDRESS.with(addr), () -> parse(addr));
+public class ApiErrorsTest {
+	@Test
+	public void ensureUniqueCodes() {
+		//noinspection ResultOfMethodCallIgnored
+		Stream.of(ApiErrors.values())
+			.collect(Collectors.toMap(ApiErrors::code, Functions::identity));
 	}
 }

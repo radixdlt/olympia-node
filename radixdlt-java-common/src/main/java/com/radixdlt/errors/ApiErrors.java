@@ -69,80 +69,74 @@ import com.radixdlt.utils.functional.Failure;
 
 /**
  * Full list of API error codes.
- * <p>
- * <b>WARNING: New errors should be added between markers (see below) to preserve error codes.</b>
  */
-public enum RadixErrors implements Failure {
-	ERROR_CALL_DATA("{0}"),
-	ERROR_CONSTRAINT_VIOLATION("{0}"),
-	ERROR_DEFAULT_SYSTEM_LOAN("{0}"),
-	ERROR_DELEGATION_NOT_ALLOWED("{0}"),
-	ERROR_INVALID_HASHED_KEY("{0}"),
-	ERROR_INVALID_PERMISSION("{0}"),
-	ERROR_INVALID_RESOURCE("{0}"),
-	ERROR_INVALID_VIRTUAL_SUBSTATE("{0}"),
-	ERROR_LOCAL_SUBSTATE_NOT_FOUND("{0}"),
-	ERROR_MINIMUM_STAKE("{0}"),
-	ERROR_MISMATCH("{0}"),
-	ERROR_MISSING_PROCEDURE("{0}"),
-	ERROR_MULTIPLE_FEE_RESERVE_DEPOSIT("Multiple fee reserve deposit"),
-	ERROR_NOT_AUTHORIZED("{0}"),
-	ERROR_NOT_A_RESOURCE("{0}"),
-	ERROR_NOT_ENOUGH_RESERVE("{0}"),
-	ERROR_NOT_ENOUGH_RESOURCES("{0}"),
-	ERROR_PROCEDURE("{0}"),
-	ERROR_RESERVED_SYMBOL("{0}"),
-	ERROR_RESERVE_NOT_EMPTY("{0}"),
-	ERROR_RESOURCE_ALLOCATION_AND_DESTRUCTION("{0}"),
-	ERROR_SIGNED_SYSTEM("{0}"),
-	ERROR_SUBSTATE_NOT_FOUND("{0}"),
-	ERROR_VIRTUAL_PARENT_STATE_DOES_NOT_EXIST("{0}"),
-	ERROR_VIRTUAL_SUBSTATE_ALREADY_DOWN("{0}"),
+public enum ApiErrors implements Failure {
+	ERROR_CALL_DATA(100, "{0}"),
+	ERROR_CONSTRAINT_VIOLATION(101, "{0}"),
+	ERROR_DEFAULT_SYSTEM_LOAN(102, "{0}"),
+	ERROR_DELEGATION_NOT_ALLOWED(103, "{0}"),
+	ERROR_INVALID_HASHED_KEY(104, "{0}"),
+	ERROR_INVALID_PERMISSION(105, "{0}"),
+	ERROR_INVALID_RESOURCE(106, "{0}"),
+	ERROR_INVALID_VIRTUAL_SUBSTATE(107, "{0}"),
+	ERROR_LOCAL_SUBSTATE_NOT_FOUND(108, "{0}"),
+	ERROR_MINIMUM_STAKE(109, "{0}"),
+	ERROR_MISMATCH(110, "{0}"),
+	ERROR_MISSING_PROCEDURE(111, "{0}"),
+	ERROR_MULTIPLE_FEE_RESERVE_DEPOSIT(112, "Multiple fee reserve deposit"),
+	ERROR_NOT_AUTHORIZED(113, "{0}"),
+	ERROR_NOT_A_RESOURCE(114, "{0}"),
+	ERROR_NOT_ENOUGH_RESERVE(115, "{0}"),
+	ERROR_NOT_ENOUGH_RESOURCES(116, "{0}"),
+	ERROR_PROCEDURE(117, "{0}"),
+	ERROR_RESERVED_SYMBOL(118, "{0}"),
+	ERROR_RESERVE_NOT_EMPTY(119, "{0}"),
+	ERROR_RESOURCE_ALLOCATION_AND_DESTRUCTION(120, "{0}"),
+	ERROR_SIGNED_SYSTEM(121, "{0}"),
+	ERROR_SUBSTATE_NOT_FOUND(122, "{0}"),
+	ERROR_VIRTUAL_PARENT_STATE_DOES_NOT_EXIST(123, "{0}"),
+	ERROR_VIRTUAL_SUBSTATE_ALREADY_DOWN(124, "{0}"),
 
-	INVALID_ACCOUNT_ADDRESS("Invalid account address {0}"),
-	INVALID_ACTION_DATA("Invalid action data {0}"),
-	INVALID_AID_LENGTH("AID string has incorrect length {0}"),
-	INVALID_AID_STRING("AID string is 'null'"),
-	INVALID_PAGE_SIZE("Size {0} must be > 0"),
-	INVALID_PUBLIC_KEY("Invalid public key {0}"),
-	INVALID_RESOURCE_ADDRESS("Invalid resource address {0}"),
-	INVALID_SIGNATURE_DER("Invalid signature DER {0}"),
-	INVALID_TX_ID("Invalid TX ID {0}"),
-	INVALID_VALIDATOR_ADDRESS("Invalid validator address {0}"),
-	INVALID_VALUE_OUT_OF_RANGE("Parameter {0} must be between {1} and {2}"),
-	INVALID_VALUE_TYPE("Invalid value type {0}"),
+	INVALID_ACCOUNT_ADDRESS(200, "Invalid account address {0}"),
+	INVALID_ACTION_DATA(201, "Invalid action data {0}"),
+	INVALID_AID_LENGTH(202, "AID string has incorrect length {0}"),
+	INVALID_AID_STRING(203, "AID string is 'null'"),
+	INVALID_PAGE_SIZE(204, "Size {0} must be > 0"),
+	INVALID_PUBLIC_KEY(205, "Invalid public key {0}"),
+	INVALID_RESOURCE_ADDRESS(206, "Invalid resource address {0}"),
+	INVALID_SIGNATURE_DER(207, "Invalid signature DER {0}"),
+	INVALID_TX_ID(208, "Invalid TX ID {0}"),
+	INVALID_VALIDATOR_ADDRESS(209, "Invalid validator address {0}"),
+	INVALID_VALUE_OUT_OF_RANGE(210, "Parameter {0} must be between {1} and {2}"),
+	INVALID_VALUE_TYPE(211, "Invalid value type {0}"),
 
-	MISSING_ACTION_FIELD("Required field {0} is not present in action definition"),
-	MISSING_PARAMETER("The parameter {0} is missing"),
+	MISSING_ACTION_FIELD(300, "Required field {0} is not present in action definition"),
+	MISSING_PARAMETER(301, "The parameter {0} is missing"),
 
-	MUST_MATCH_TX_ID("Provided txID does not match provided transaction"),
+	MUST_MATCH_TX_ID(400, "Provided txID does not match provided transaction"),
 
-	UNABLE_TO_ADD_TO_MEMPOOL("Unable to add transaction to mempool: mempool is full"),
-	UNABLE_TO_DESERIALIZE("Unable to deserialize: {0}"),
-	UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE("Unable to convert signature to recoverable {0}"),
-	UNABLE_TO_PARSE_BOOLEAN("Unable to parse boolean value: {0}"),
-	UNABLE_TO_PARSE_FLOAT("Unable to parse float number: {0}"),
-	UNABLE_TO_PARSE_HEX_STRING("The value {0} is not a correct hexadecimal string"),
-	UNABLE_TO_PARSE_INT("Unable to parse integer number: {0}"),
-	UNABLE_TO_PARSE_UINT("Unable to parse unsigned integer number: {0}"),
-	UNABLE_TO_PREPARE_TX("Unable to prepare transaction"),
-	UNABLE_TO_SERIALIZE("Unable to serialize: {0}"),
-	UNABLE_TO_SUBMIT_TX("Transaction submission failed: {0}"),
-	UNKNOWN_ACTION("Unknown action {0}"),
-	UNKNOWN_PARTICLE("Unknown particle for key {0}"),
-	UNKNOWN_RRI("Unknown RRI {0}"),
-	UNKNOWN_TX_ID("Transaction with id {0} not found"),
-	UNSUPPORTED_ACTION("Action type {0} is not supported"),
+	UNABLE_TO_ADD_TO_MEMPOOL(500, "Unable to add transaction to mempool: mempool is full"),
+	UNABLE_TO_DESERIALIZE(501, "Unable to deserialize: {0}"),
+	UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE(502, "Unable to convert signature to recoverable {0}"),
+	UNABLE_TO_PARSE_BOOLEAN(503, "Unable to parse boolean value: {0}"),
+	UNABLE_TO_PARSE_FLOAT(504, "Unable to parse float number: {0}"),
+	UNABLE_TO_PARSE_HEX_STRING(505, "The value {0} is not a correct hexadecimal string"),
+	UNABLE_TO_PARSE_INT(506, "Unable to parse integer number: {0}"),
+	UNABLE_TO_PARSE_UINT(507, "Unable to parse unsigned integer number: {0}"),
+	UNABLE_TO_PREPARE_TX(508, "Unable to prepare transaction"),
+	UNABLE_TO_SERIALIZE(509, "Unable to serialize: {0}"),
+	UNABLE_TO_SUBMIT_TX(510, "Transaction submission failed: {0}"),
+	UNKNOWN_ACTION(511, "Unknown action {0}"),
+	UNKNOWN_PARTICLE(512, "Unknown particle for key {0}"),
+	UNKNOWN_RRI(513, "Unknown RRI {0}"),
+	UNKNOWN_TX_ID(514, "Transaction with id {0} not found"),
+	UNSUPPORTED_ACTION(515, "Action type {0} is not supported");
 
-	// WARNING: Add new errors below this line
-
-	// WARNING: Add new errors above this line
-
-	LAST_ERROR("Last known error");
-
+	private final int code;
 	private final String message;
 
-	RadixErrors(String message) {
+	ApiErrors(int code, String message) {
+		this.code = code;
 		this.message = message;
 	}
 
@@ -153,6 +147,6 @@ public enum RadixErrors implements Failure {
 
 	@Override
 	public int code() {
-		return Category.API.forId(ordinal());
+		return Category.API.forId(code);
 	}
 }

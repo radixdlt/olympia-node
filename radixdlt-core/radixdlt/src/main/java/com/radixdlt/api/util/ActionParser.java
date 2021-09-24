@@ -84,12 +84,12 @@ import java.util.stream.Stream;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MIN;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
-import static com.radixdlt.errors.RadixErrors.INVALID_ACTION_DATA;
-import static com.radixdlt.errors.RadixErrors.INVALID_VALUE_OUT_OF_RANGE;
-import static com.radixdlt.errors.RadixErrors.MISSING_ACTION_FIELD;
-import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PARSE_BOOLEAN;
-import static com.radixdlt.errors.RadixErrors.UNABLE_TO_PARSE_FLOAT;
-import static com.radixdlt.errors.RadixErrors.UNSUPPORTED_ACTION;
+import static com.radixdlt.errors.ApiErrors.INVALID_ACTION_DATA;
+import static com.radixdlt.errors.ApiErrors.INVALID_VALUE_OUT_OF_RANGE;
+import static com.radixdlt.errors.ApiErrors.MISSING_ACTION_FIELD;
+import static com.radixdlt.errors.ApiErrors.UNABLE_TO_PARSE_BOOLEAN;
+import static com.radixdlt.errors.ApiErrors.UNABLE_TO_PARSE_FLOAT;
+import static com.radixdlt.errors.ApiErrors.UNSUPPORTED_ACTION;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.wrap;
 
