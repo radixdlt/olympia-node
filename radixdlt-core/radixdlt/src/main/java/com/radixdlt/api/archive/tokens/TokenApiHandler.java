@@ -63,34 +63,33 @@
 
 package com.radixdlt.api.archive.tokens;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.google.inject.Inject;
+import com.radixdlt.networks.Addressing;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+import static com.radixdlt.api.util.RestUtils.respond;
+import static com.radixdlt.api.util.RestUtils.withBody;
 
-public final class TokenApiModule extends AbstractModule {
-	private final String path;
-	private final Class<? extends Annotation> annotationType;
+class TokenApiHandler implements HttpHandler {
+	private final Addressing addressing;
+	private final BerkeleyResourceInfoStore store;
 
-	public TokenApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.path = path;
-		this.annotationType = annotationType;
+	@Inject
+	TokenApiHandler(Addressing addressing, BerkeleyResourceInfoStore store) {
+		this.addressing = addressing;
+		this.store = store;
 	}
 
 	@Override
-	protected void configure() {
-		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-			.addBinding().to(BerkeleyResourceInfoStore.class);
+	public void handleRequest(HttpServerExchange exchange) {
+		withBody(exchange, request -> respond(exchange, handle(request)));
+	}
 
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path + "/native").to(TokenNativeApiHandler.class);
-		routeBinder.addBinding(path).to(TokenApiHandler.class);
+	private JSONObject handle(JSONObject request) {
+		var rriString = request.getString("rri");
+		var addr = addressing.forResources().parse(rriString).last();
+		return store.getResourceInfo(addr).orElseThrow();
 	}
 }

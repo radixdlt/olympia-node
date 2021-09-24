@@ -89,7 +89,9 @@ public class AccountApiModule extends AbstractModule {
 		bind(BerkeleyAccountTxHistoryStore.class).in(Scopes.SINGLETON);
 		binder.addBinding().to(BerkeleyAccountTxHistoryStore.class);
 
-		var routeBinder = MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, annotationType);
+		var routeBinder = MapBinder.newMapBinder(
+			binder(), String.class, HttpHandler.class, annotationType
+		);
 		routeBinder.addBinding(path + "/balances").to(AccountBalancesHandler.class);
 		routeBinder.addBinding(path + "/stakes").to(AccountStakesHandler.class);
 		routeBinder.addBinding(path + "/unstakes").to(AccountUnstakesHandler.class);
