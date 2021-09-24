@@ -68,7 +68,7 @@ import com.google.common.collect.ClassToInstanceMap;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.archive.account.BerkeleyAccountInfoStore;
-import com.radixdlt.api.archive.validator.BerkeleyValidatorUptimeArchiveStore;
+import com.radixdlt.api.archive.validator.BerkeleyValidatorUptimeStore;
 import com.radixdlt.api.archive.tokens.BerkeleyResourceInfoStore;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.consensus.LedgerProof;
@@ -295,9 +295,9 @@ public class StakingUnstakingValidatorsTest {
 					bind(Environment.class).toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
-					bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
+					bind(BerkeleyValidatorUptimeStore.class).in(Scopes.SINGLETON);
 					var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-					binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
+					binder.addBinding().to(BerkeleyValidatorUptimeStore.class);
 					bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
 					binder.addBinding().to(BerkeleyResourceInfoStore.class);
 					bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
@@ -319,7 +319,7 @@ public class StakingUnstakingValidatorsTest {
 		private final LedgerProof lastLedgerProof;
 		private final RadixEngine<LedgerAndBFTProof> radixEngine;
 		private final ClassToInstanceMap<Object> lastEvents;
-		private final BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore;
+		private final BerkeleyValidatorUptimeStore uptimeArchiveStore;
 		private final BerkeleyResourceInfoStore resourceInfoStore;
 		private final BerkeleyAccountInfoStore accountInfoStore;
 		private final Forks forks;
@@ -330,7 +330,7 @@ public class StakingUnstakingValidatorsTest {
 			ClassToInstanceMap<Object> lastEvents,
 			@LastProof LedgerProof lastLedgerProof,
 			RadixEngine<LedgerAndBFTProof> radixEngine,
-			BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore,
+			BerkeleyValidatorUptimeStore uptimeArchiveStore,
 			BerkeleyResourceInfoStore resourceInfoStore,
 			BerkeleyAccountInfoStore accountInfoStore,
 			Forks forks

@@ -92,7 +92,7 @@ import static com.google.common.primitives.UnsignedBytes.lexicographicalComparat
 /**
  * Keeps historical information on uptime of each validator
  */
-public final class BerkeleyValidatorUptimeArchiveStore implements BerkeleyAdditionalStore {
+public final class BerkeleyValidatorUptimeStore implements BerkeleyAdditionalStore {
 	private static final String VALIDATOR_UPTME_DB = "radix.validator_uptime_db";
 	private static final String VALIDATOR_UPTME_BY_VALIDATOR_DB = "radix.validator_uptime_by_validator_db";
 	private Database validatorUptime;

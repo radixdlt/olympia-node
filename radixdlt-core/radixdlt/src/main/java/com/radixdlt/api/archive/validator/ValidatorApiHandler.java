@@ -63,36 +63,51 @@
 
 package com.radixdlt.api.archive.validator;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.google.inject.Inject;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+import static com.radixdlt.api.util.RestUtils.respond;
+import static com.radixdlt.api.util.RestUtils.withBody;
 
-public final class ValidatorApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+class ValidatorApiHandler implements HttpHandler {
+	private final Addressing addressing;
+	private final BerkeleyValidatorStore validatorStore;
+	private final BerkeleyValidatorUptimeStore uptimeStore;
 
-	public ValidatorApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	ValidatorApiHandler(
+		Addressing addressing,
+		BerkeleyValidatorStore validatorStore,
+		BerkeleyValidatorUptimeStore uptimeStore
+	) {
+		this.addressing = addressing;
+		this.validatorStore = validatorStore;
+		this.uptimeStore = uptimeStore;
 	}
 
 	@Override
-	public void configure() {
-		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		bind(BerkeleyValidatorStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyValidatorStore.class);
-		bind(BerkeleyValidatorUptimeStore.class).in(Scopes.SINGLETON);
-		binder.addBinding().to(BerkeleyValidatorUptimeStore.class);
+	public void handleRequest(HttpServerExchange exchange) {
+		withBody(exchange, request -> respond(exchange, handle(request)));
+	}
 
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path).to(ValidatorApiHandler.class);
-		routeBinder.addBinding(path + "s").to(ValidatorsApiHandler.class);
+	private JSONObject handle(JSONObject request) {
+		try {
+			var validatorAddressString = request.getString("validatorAddress");
+			var key = addressing.forValidators().parse(validatorAddressString);
+			var json = validatorStore.getValidatorInfo(key);
+			var uptime = uptimeStore.getUptimeTwoWeeks(key);
+			json.put("uptime", new JSONObject()
+				.put("proposalsCompleted", uptime.getProposalsCompleted())
+				.put("proposalsMissed", uptime.getProposalsMissed())
+				.put("uptimePercentage", uptime.toPercentageString())
+			);
+			return json;
+		} catch (DeserializeException e) {
+			return new JSONObject().put("error", e.getMessage());
+		}
 	}
 }

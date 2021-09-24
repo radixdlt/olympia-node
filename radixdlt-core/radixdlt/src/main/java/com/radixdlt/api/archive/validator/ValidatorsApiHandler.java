@@ -63,31 +63,50 @@
 
 package com.radixdlt.api.archive.validator;
 
+import com.google.inject.Inject;
+import com.radixdlt.networks.Addressing;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.google.inject.Inject;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.utils.functional.Result;
+import static com.radixdlt.api.util.RestUtils.respond;
+import static com.radixdlt.api.util.RestUtils.withBody;
 
-import java.util.List;
-import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
-import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-
-public final class ArchiveValidationHandler {
-	private final BerkeleyValidatorStore validatorStore;
-	private final BerkeleyValidatorUptimeArchiveStore uptimeStore;
+class ValidatorsApiHandler implements HttpHandler {
 	private final Addressing addressing;
+	private final BerkeleyValidatorStore validatorStore;
+	private final BerkeleyValidatorUptimeStore uptimeStore;
 
 	@Inject
-	public ArchiveValidationHandler(
+	ValidatorsApiHandler(
+		Addressing addressing,
 		BerkeleyValidatorStore validatorStore,
-		BerkeleyValidatorUptimeArchiveStore uptimeStore,
-		Addressing addressing
+		BerkeleyValidatorUptimeStore uptimeStore
 	) {
+		this.addressing = addressing;
 		this.validatorStore = validatorStore;
 		this.uptimeStore = uptimeStore;
-		this.addressing = addressing;
+	}
+
+	@Override
+	public void handleRequest(HttpServerExchange exchange) {
+		withBody(exchange, request -> respond(exchange, handle(request)));
+	}
+
+	private JSONObject handle(JSONObject request) {
+		var limit = request.optLong("limit", 100);
+		var offset = request.optLong("offset", 0);
+		var validatorsJson = fetchValidators(offset, limit);
+
+		var result = new JSONObject()
+			.put("validators", validatorsJson);
+
+		if (validatorsJson.length() == limit) {
+			result.put("nextOffset", offset + limit);
+		}
+
+		return result;
 	}
 
 	private JSONArray fetchValidators(long offset, long limit) {
@@ -109,44 +128,5 @@ public final class ArchiveValidationHandler {
 				.forEach(validators::put);
 		}
 		return validators;
-	}
-
-	public JSONObject handleValidatorsGetNextEpochSet(JSONObject request) {
-		return withRequiredParameters(
-			request,
-			List.of(),
-			params -> {
-				var limit = params.optLong("limit", 100);
-				var offset = params.optLong("offset", 0);
-				var validatorsJson = fetchValidators(offset, limit);
-
-				var result = new JSONObject()
-					.put("validators", validatorsJson);
-
-				if (validatorsJson.length() == limit) {
-					result.put("nextOffset", offset + limit);
-				}
-
-				return Result.ok(result);
-			}
-		);
-	}
-
-	public JSONObject handleValidatorsLookupValidator(JSONObject request) {
-		return withRequiredStringParameter(
-			request,
-			"validatorAddress",
-			address -> addressing.forValidators().fromString(address)
-				.map(key -> {
-					var json = validatorStore.getValidatorInfo(key);
-					var uptime = uptimeStore.getUptimeTwoWeeks(key);
-					json.put("uptime", new JSONObject()
-						.put("proposalsCompleted", uptime.getProposalsCompleted())
-						.put("proposalsMissed", uptime.getProposalsMissed())
-						.put("uptimePercentage", uptime.toPercentageString())
-					);
-					return json;
-				})
-		);
 	}
 }
