@@ -78,7 +78,10 @@ public enum ClientErrors implements Failure {
 
 	SSL_ALGORITHM_ERROR(500, "SSL algorithm error: {0}"),
 	SSL_GENERAL_ERROR(501, "SSL algorithm error: {0}"),
-	SSL_KEY_ERROR(502, "SSL Key error: {0}");
+	SSL_KEY_ERROR(502, "SSL Key error: {0}"),
+
+	UNABLE_TO_DESERIALIZE(600, "Unable to deserialize: {0}"),
+	UNABLE_TO_SERIALIZE(601, "Unable to serialize: {0}");
 
 	private final int code;
 	private final String message;

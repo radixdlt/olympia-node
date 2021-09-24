@@ -67,11 +67,8 @@ package com.radixdlt.serialization;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.utils.functional.Result;
 
 import java.nio.charset.StandardCharsets;
-
-import static com.radixdlt.errors.ApiErrors.UNABLE_TO_DESERIALIZE;
 
 /**
  * Collection of Serialization-related utilities
@@ -86,9 +83,5 @@ public class SerializationUtils {
 	public static EUID stringToNumericID(String id) {
 		var h = murmur3_128.hashBytes(id.getBytes(StandardCharsets.UTF_8));
 		return new EUID(h.asBytes());
-	}
-
-	public static <T> Result<T> restore(Serialization serialization, byte[] data, Class<T> clazz) {
-		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> serialization.fromDson(data, clazz));
 	}
 }

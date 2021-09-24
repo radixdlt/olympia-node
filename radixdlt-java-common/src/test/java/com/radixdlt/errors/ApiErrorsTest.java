@@ -64,6 +64,7 @@
 
 package com.radixdlt.errors;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.radixdlt.utils.functional.Functions;
@@ -77,5 +78,12 @@ public class ApiErrorsTest {
 		//noinspection ResultOfMethodCallIgnored
 		Stream.of(ApiErrors.values())
 			.collect(Collectors.toMap(ApiErrors::code, Functions::identity));
+	}
+
+	@Test
+	//@Ignore("Used only to generate list of error codes for the spec")
+	public void listErrors() {
+		Stream.of(ApiErrors.values())
+			.forEach(error -> System.out.printf("{\n\t\"code\": %d,\n\t\"message\": \"%s\",\n\t\"data\": \"%s\"\n},\n", error.code(), error.name(), error.message()));
 	}
 }

@@ -108,7 +108,6 @@ public enum ApiErrors implements Failure {
 	INVALID_TX_ID(208, "Invalid TX ID {0}"),
 	INVALID_VALIDATOR_ADDRESS(209, "Invalid validator address {0}"),
 	INVALID_VALUE_OUT_OF_RANGE(210, "Parameter {0} must be between {1} and {2}"),
-	INVALID_VALUE_TYPE(211, "Invalid value type {0}"),
 
 	MISSING_ACTION_FIELD(300, "Required field {0} is not present in action definition"),
 	MISSING_PARAMETER(301, "The parameter {0} is missing"),
@@ -116,7 +115,6 @@ public enum ApiErrors implements Failure {
 	MUST_MATCH_TX_ID(400, "Provided txID does not match provided transaction"),
 
 	UNABLE_TO_ADD_TO_MEMPOOL(500, "Unable to add transaction to mempool: mempool is full"),
-	UNABLE_TO_DESERIALIZE(501, "Unable to deserialize: {0}"),
 	UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE(502, "Unable to convert signature to recoverable {0}"),
 	UNABLE_TO_PARSE_BOOLEAN(503, "Unable to parse boolean value: {0}"),
 	UNABLE_TO_PARSE_FLOAT(504, "Unable to parse float number: {0}"),
@@ -124,10 +122,9 @@ public enum ApiErrors implements Failure {
 	UNABLE_TO_PARSE_INT(506, "Unable to parse integer number: {0}"),
 	UNABLE_TO_PARSE_UINT(507, "Unable to parse unsigned integer number: {0}"),
 	UNABLE_TO_PREPARE_TX(508, "Unable to prepare transaction"),
-	UNABLE_TO_SERIALIZE(509, "Unable to serialize: {0}"),
 	UNABLE_TO_SUBMIT_TX(510, "Transaction submission failed: {0}"),
+
 	UNKNOWN_ACTION(511, "Unknown action {0}"),
-	UNKNOWN_PARTICLE(512, "Unknown particle for key {0}"),
 	UNKNOWN_RRI(513, "Unknown RRI {0}"),
 	UNKNOWN_TX_ID(514, "Transaction with id {0} not found"),
 	UNSUPPORTED_ACTION(515, "Action type {0} is not supported");
