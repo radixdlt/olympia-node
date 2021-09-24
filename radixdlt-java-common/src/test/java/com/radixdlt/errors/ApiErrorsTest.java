@@ -88,8 +88,8 @@ public class ApiErrorsTest {
 			.forEach(ApiErrorsTest::printError);
 	}
 
-	private static PrintStream printError(ApiErrors error) {
-		return System.out.printf(
+	private static void printError(ApiErrors error) {
+		System.out.printf(
 			"{\n\t\"code\": %d,\n\t\"message\": \"%s\",\n\t\"data\": \"%s\"\n},\n",
 			error.code(),
 			error.name(),
