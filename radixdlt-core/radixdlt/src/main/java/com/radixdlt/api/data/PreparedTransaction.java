@@ -112,11 +112,10 @@ public class PreparedTransaction {
 	}
 
 	public JSONObject asJson() {
-		var transactionDetails = jsonObject()
-			.put("blob", toHexString(blob))
-			.put("hashOfBlobToSign", toHexString(hashToSign))
+		return jsonObject()
+			.put("fee", fee.toString())
+			.put("unsignedTransaction", toHexString(blob))
+			.put("payloadToSign", toHexString(hashToSign))
 			.put("notifications", fromCollection(notifications, v -> v));
-
-		return jsonObject().put("transaction", transactionDetails).put("fee", fee.toString());
 	}
 }

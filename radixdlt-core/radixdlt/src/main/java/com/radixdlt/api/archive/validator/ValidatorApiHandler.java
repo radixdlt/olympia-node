@@ -98,14 +98,15 @@ class ValidatorApiHandler implements HttpHandler {
 		try {
 			var validatorAddressString = request.getString("validatorAddress");
 			var key = addressing.forValidators().parse(validatorAddressString);
-			var json = validatorStore.getValidatorInfo(key);
+			var validatorJson = validatorStore.getValidatorInfo(key);
 			var uptime = uptimeStore.getUptimeTwoWeeks(key);
-			json.put("uptime", new JSONObject()
+			validatorJson.getJSONObject("stake").remove("delegators");
+			validatorJson.put("uptime", new JSONObject()
 				.put("proposalsCompleted", uptime.getProposalsCompleted())
 				.put("proposalsMissed", uptime.getProposalsMissed())
 				.put("uptimePercentage", uptime.toPercentageString())
 			);
-			return json;
+			return new JSONObject().put("validator", validatorJson);
 		} catch (DeserializeException e) {
 			return new JSONObject().put("error", e.getMessage());
 		}

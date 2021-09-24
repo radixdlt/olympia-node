@@ -150,7 +150,7 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 						var stake = UInt256.from(stakeString);
 						buf.put(stake.toByteArray());
 
-						var validatorKey = addressing.forValidators().parseNoErr(json.getJSONObject("properties").getString("address"));
+						var validatorKey = addressing.forValidators().parseNoErr(json.getJSONObject("properties").getString("validatorAddress"));
 						buf.put(validatorKey.getCompressedBytes());
 
 						result.setData(buf.array());
@@ -241,7 +241,7 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 
 	private JSONObject createValidatorInfoDefault(ECPublicKey validatorKey) {
 		var json = new JSONObject()
-			.put("properties", new JSONObject().put("address", addressing.forValidators().of(validatorKey)))
+			.put("properties", new JSONObject().put("validatorAddress", addressing.forValidators().of(validatorKey)))
 			.put("stake", new JSONObject()
 				.put("delegators", new JSONObject())
 				.put("preparedStake", "0")
@@ -285,7 +285,7 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 			);
 		} else if (validatorData instanceof ValidatorMetaData) {
 			var meta = (ValidatorMetaData) validatorData;
-			return Pair.of("properties", Map.of("name", meta.getName(), "infoURL", meta.getUrl()));
+			return Pair.of("properties", Map.of("name", meta.getName(), "url", meta.getUrl()));
 		} else if (validatorData instanceof ValidatorRegisteredCopy) {
 			var copy = (ValidatorRegisteredCopy) validatorData;
 			return Pair.of("properties", Map.of("registered", copy.isRegistered()));

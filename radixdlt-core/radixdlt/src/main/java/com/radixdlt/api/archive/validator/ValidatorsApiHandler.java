@@ -116,7 +116,7 @@ class ValidatorsApiHandler implements HttpHandler {
 				.limit(limit)
 				.peek(json -> {
 					json.getJSONObject("stake").remove("delegators");
-					var addrString = json.getJSONObject("properties").getString("address");
+					var addrString = json.getJSONObject("properties").getString("validatorAddress");
 					var validatorKey = addressing.forValidators().parseNoErr(addrString);
 					var uptime = uptimeStore.getUptimeTwoWeeks(validatorKey);
 					json.put("uptime", new JSONObject()
