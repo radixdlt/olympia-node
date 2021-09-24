@@ -69,6 +69,7 @@ import org.junit.Test;
 
 import com.radixdlt.utils.functional.Functions;
 
+import java.io.PrintStream;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -81,9 +82,18 @@ public class ApiErrorsTest {
 	}
 
 	@Test
-	//@Ignore("Used only to generate list of error codes for the spec")
+	@Ignore("Used only to generate list of error codes for the spec")
 	public void listErrors() {
 		Stream.of(ApiErrors.values())
-			.forEach(error -> System.out.printf("{\n\t\"code\": %d,\n\t\"message\": \"%s\",\n\t\"data\": \"%s\"\n},\n", error.code(), error.name(), error.message()));
+			.forEach(ApiErrorsTest::printError);
+	}
+
+	private static PrintStream printError(ApiErrors error) {
+		return System.out.printf(
+			"{\n\t\"code\": %d,\n\t\"message\": \"%s\",\n\t\"data\": \"%s\"\n},\n",
+			error.code(),
+			error.name(),
+			error.message()
+		);
 	}
 }
