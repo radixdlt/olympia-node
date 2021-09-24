@@ -333,7 +333,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		var message = txn.getMsg()
 			.map(bytes -> new String(bytes, RadixConstants.STANDARD_CHARSET));
 		var jsonString = new JSONObject()
-			.put("txID", txn.getTxnId())
+			.put("transactionIdentifier", txn.getTxnId())
 			.put("stateVersion", stateVersion)
 			.put("raw", Bytes.toHexString(txn.getTxn().getPayload()))
 			.put("accountingEntries", accountingJson)

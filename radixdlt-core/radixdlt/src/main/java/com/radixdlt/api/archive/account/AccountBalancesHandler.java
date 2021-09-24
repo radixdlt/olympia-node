@@ -90,7 +90,7 @@ class AccountBalancesHandler implements HttpHandler {
 
 	private JSONObject handle(JSONObject request) {
 		try {
-			var addressString = request.getString("address");
+			var addressString = request.getString("accountAddress");
 			var addr = addressing.forAccounts().parse(addressString);
 			return store.getAccountInfo(addr);
 		} catch (DeserializeException e) {

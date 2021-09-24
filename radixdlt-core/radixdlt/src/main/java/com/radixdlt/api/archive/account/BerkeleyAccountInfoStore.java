@@ -150,7 +150,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			var jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
 			for (int i = 0; i < jsonArray.length(); i++) {
 				var json = jsonArray.getJSONObject(i);
-				stakes.put(json.getString("validator"), json);
+				stakes.put(json.getString("validatorAddress"), json);
 			}
 		}
 
@@ -161,16 +161,16 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 				var ownership = new BigInteger(json.getString("amount"), 10);
 				ECPublicKey validatorKey;
 				try {
-					validatorKey = addressing.forValidators().parse(json.getString("validator"));
+					validatorKey = addressing.forValidators().parse(json.getString("validatorAddress"));
 				} catch (DeserializeException e) {
 					throw new IllegalStateException("Unable to deserialize", e);
 				}
 				var estimatedStake = computeEstimatedStake(validatorKey, ownership);
-				stakes.compute(json.getString("validator"), (v, obj) -> {
+				stakes.compute(json.getString("validatorAddress"), (v, obj) -> {
 					if (obj == null) {
 						return new JSONObject()
 							.put("amount", estimatedStake.toString())
-							.put("validator", json.getString("validator"));
+							.put("validatorAddress", json.getString("validatorAddress"));
 					} else {
 						var cur = new BigInteger(obj.getString("amount"), 10);
 						obj.put("amount", cur.add(estimatedStake).toString());
@@ -224,8 +224,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		var key = new DatabaseEntry(addr.getBytes());
 		var value = new DatabaseEntry();
 
-		var json = new JSONObject()
-			.put("owner", addressing.forAccounts().of(addr));
+		var json = new JSONObject();
 
 		if (databases.get(ResourceType.TOKEN_BALANCES).get(null, key, value, DEFAULT) == SUCCESS) {
 			var jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
@@ -329,13 +328,13 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 
 			@Override
 			Object jsonToKey(JSONObject json) {
-				return json.getString("validator");
+				return json.getString("validatorAddress");
 			}
 
 			@Override
 			JSONObject toJSON(BerkeleyAccountInfoStore parent, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper, Object o) {
 				var validator = (String) o;
-				return new JSONObject().put("validator", validator);
+				return new JSONObject().put("validatorAddress", validator);
 			}
 		},
 		STAKED_OWNERSHIP {
@@ -358,7 +357,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 
 			@Override
 			Object jsonToKey(JSONObject json) {
-				return json.getString("validator");
+				return json.getString("validatorAddress");
 			}
 
 			@Override
@@ -371,7 +370,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 					);
 					var stakeData = (ValidatorStakeData) parent.deserialize(mapper.apply(validatorDataKey).orElseThrow().getData());
 					return new JSONObject()
-						.put("validator", o)
+						.put("validatorAddress", o)
 						.put("validatorTotalStake", stakeData.getTotalStake())
 						.put("validatorTotalOwnership", stakeData.getTotalOwnership());
 				} catch (DeserializeException e) {
@@ -398,7 +397,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			}
 
 			Object jsonToKey(JSONObject json) {
-				return json.getString("validator");
+				return json.getString("validatorAddress");
 			}
 
 			@Override
@@ -411,7 +410,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 					);
 					var stakeData = (ValidatorStakeData) parent.deserialize(mapper.apply(validatorDataKey).orElseThrow().getData());
 					return new JSONObject()
-						.put("validator", o)
+						.put("validatorAddress", o)
 						.put("validatorTotalStake", stakeData.getTotalStake())
 						.put("validatorTotalOwnership", stakeData.getTotalOwnership());
 				} catch (DeserializeException e) {
@@ -440,7 +439,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			@Override
 			Object jsonToKey(JSONObject json) {
 				return Pair.of(
-					json.getString("validator"),
+					json.getString("validatorAddress"),
 					json.getLong("epochUnlocked")
 				);
 			}
@@ -449,7 +448,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			JSONObject toJSON(BerkeleyAccountInfoStore parent, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper, Object o) {
 				var validatorAndEpoch = (Pair<String, Long>) o;
 				return new JSONObject()
-					.put("validator", validatorAndEpoch.getFirst())
+					.put("validatorAddress", validatorAndEpoch.getFirst())
 					.put("epochUnlocked", validatorAndEpoch.getSecond());
 			}
 		};

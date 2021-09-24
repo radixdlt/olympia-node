@@ -90,11 +90,11 @@ class AccountStakesHandler implements HttpHandler {
 
 	private JSONObject handle(JSONObject request) {
 		try {
-			var addressString = request.getString("address");
+			var addressString = request.getString("accountAddress");
 			var addr = addressing.forAccounts().parse(addressString);
 			var stakes = store.getAccountStakes(addr);
 			return new JSONObject()
-				.put("stakePositions", stakes);
+				.put("stakes", stakes);
 		} catch (DeserializeException e) {
 			return new JSONObject().put("error", e.getMessage());
 		}

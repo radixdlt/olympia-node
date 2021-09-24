@@ -100,7 +100,7 @@ class AccountTransactionsHandler implements HttpHandler {
 
 	private JSONObject handle(JSONObject request) {
 		try {
-			var addressString = request.getString("address");
+			var addressString = request.getString("accountAddress");
 			var addr = addressing.forAccounts().parse(addressString);
 			var limit = request.getLong("limit");
 			var offset = request.optLong("offset", -1);
