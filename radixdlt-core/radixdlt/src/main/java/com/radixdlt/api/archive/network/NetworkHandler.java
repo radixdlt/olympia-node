@@ -63,29 +63,30 @@
 
 package com.radixdlt.api.archive.network;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
+import com.google.inject.Inject;
+import com.radixdlt.networks.NetworkId;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.RestUtils.respond;
+import static com.radixdlt.api.util.RestUtils.withBody;
 
-public class NetworkApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+class NetworkHandler implements HttpHandler {
+	private final int networkId;
 
-	public NetworkApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	NetworkHandler(@NetworkId int networkId) {
+		this.networkId = networkId;
 	}
 
 	@Override
-	public void configure() {
-		bind(ArchiveNetworkHandler.class).in(Scopes.SINGLETON);
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path).to(NetworkHandler.class);
-		routeBinder.addBinding(path + "/metrics").to(NetworkMetricsHandler.class);
+	public void handleRequest(HttpServerExchange exchange) {
+		withBody(exchange, request -> respond(exchange, handle()));
+	}
+
+	private JSONObject handle() {
+		return jsonObject().put("networkId", networkId);
 	}
 }
