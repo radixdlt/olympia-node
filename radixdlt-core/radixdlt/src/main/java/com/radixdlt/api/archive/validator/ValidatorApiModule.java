@@ -78,7 +78,7 @@ import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import java.lang.annotation.Annotation;
 import java.util.Map;
 
-public class ValidatorApiModule extends AbstractModule {
+public final class ValidatorApiModule extends AbstractModule {
 	private final Class<? extends Annotation> annotationType;
 	private final String path;
 
@@ -90,9 +90,11 @@ public class ValidatorApiModule extends AbstractModule {
 	@Override
 	public void configure() {
 		var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-		bind(ArchiveValidationHandler.class).in(Scopes.SINGLETON);
+		bind(BerkeleyValidatorStore.class).in(Scopes.SINGLETON);
+		binder.addBinding().to(BerkeleyValidatorStore.class);
 		bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
 		binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
+		bind(ArchiveValidationHandler.class).in(Scopes.SINGLETON);
 
 		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
 			.addBinding(path)
