@@ -68,7 +68,6 @@ import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.application.system.state.StakeBucket;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;
-import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.tokens.state.ExittingOwnershipBucket;
 import com.radixdlt.application.tokens.state.PreparedStakeBucket;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;

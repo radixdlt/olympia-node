@@ -90,6 +90,27 @@ public final class ArchiveValidationHandler {
 		this.addressing = addressing;
 	}
 
+	private JSONArray fetchValidators(long offset, long limit) {
+		var validators = new JSONArray();
+		try (var stream = validatorStore.getValidators(offset)) {
+			stream
+				.limit(limit)
+				.peek(json -> {
+					json.getJSONObject("stake").remove("delegators");
+					var addrString = json.getJSONObject("properties").getString("address");
+					var validatorKey = addressing.forValidators().parseNoErr(addrString);
+					var uptime = uptimeStore.getUptimeTwoWeeks(validatorKey);
+					json.put("uptime", new JSONObject()
+						.put("proposalsCompleted", uptime.getProposalsCompleted())
+						.put("proposalsMissed", uptime.getProposalsMissed())
+						.put("uptimePercentage", uptime.toPercentageString())
+					);
+				})
+				.forEach(validators::put);
+		}
+		return validators;
+	}
+
 	public JSONObject handleValidatorsGetNextEpochSet(JSONObject request) {
 		return withRequiredParameters(
 			request,
@@ -97,27 +118,12 @@ public final class ArchiveValidationHandler {
 			params -> {
 				var limit = params.optLong("limit", 100);
 				var offset = params.optLong("offset", 0);
-				var validators = new JSONArray();
-				try (var stream = validatorStore.getValidators(offset)) {
-					stream
-						.limit(limit)
-						.peek(json -> {
-							json.getJSONObject("stake").remove("delegators");
-							var addrString = json.getJSONObject("properties").getString("address");
-							var validatorKey = addressing.forValidators().parseNoErr(addrString);
-							var uptime = uptimeStore.getUptimeTwoWeeks(validatorKey);
-							json.put("uptime", new JSONObject()
-								.put("proposalsCompleted", uptime.getProposalsCompleted())
-								.put("proposalsMissed", uptime.getProposalsMissed())
-								.put("uptimePercentage", uptime.toPercentageString())
-							);
-						})
-						.forEach(validators::put);
-				}
-				var result = new JSONObject()
-					.put("validators", validators);
+				var validatorsJson = fetchValidators(offset, limit);
 
-				if (validators.length() == limit) {
+				var result = new JSONObject()
+					.put("validators", validatorsJson);
+
+				if (validatorsJson.length() == limit) {
 					result.put("nextOffset", offset + limit);
 				}
 
