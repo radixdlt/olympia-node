@@ -68,7 +68,6 @@ import com.google.common.collect.ClassToInstanceMap;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.archive.account.BerkeleyAccountInfoStore;
-import com.radixdlt.api.data.ValidatorUptime;
 import com.radixdlt.api.archive.validator.BerkeleyValidatorUptimeArchiveStore;
 import com.radixdlt.api.archive.tokens.BerkeleyResourceInfoStore;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
@@ -76,7 +75,6 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.Environment;
@@ -405,10 +403,6 @@ public class StakingUnstakingValidatorsTest {
 			return map;
 		}
 
-		public Map<ECPublicKey, ValidatorUptime> getUptime() {
-			return uptimeArchiveStore.getUptimeTwoWeeks();
-		}
-
 		public JSONObject getNativeToken() {
 			return resourceInfoStore.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
 		}
@@ -533,10 +527,6 @@ public class StakingUnstakingValidatorsTest {
 		var diff = finalCount.subtract(initialCount);
 		logger.info("Difference {}", Amount.ofSubunits(diff));
 		assertThat(diff).isLessThanOrEqualTo(maxEmissions);
-		var totalUptime = nodeState.getUptime().values().stream().reduce(ValidatorUptime::merge).orElse(ValidatorUptime.empty());
-		logger.info("Total uptime {}", totalUptime);
-		assertThat(totalUptime.getProposalsCompleted() + totalUptime.getProposalsMissed())
-			.isEqualTo(totalRounds);
 		var json = nodeState.getNativeToken();
 		logger.info("json {}", json.toString(4));
 		var supplyStringFromJson = json.getString("currentSupply");
