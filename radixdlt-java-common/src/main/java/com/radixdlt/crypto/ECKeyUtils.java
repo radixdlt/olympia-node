@@ -277,6 +277,11 @@ public class ECKeyUtils {
 		);
 	}
 
+	public static ECDSASignature toRecoverableSig(ECDSASignature signature, byte[] hash, ECPublicKey publicKey) {
+		var v = calculateV(signature.getR(), signature.getS(), publicKey.getBytes(), hash);
+		return ECDSASignature.create(signature.getR(), signature.getS(), v);
+	}
+
 	static Optional<ECPoint> recoverFromSignature(int v, BigInteger r, BigInteger s, byte[] hash) {
 		var curveN = curve().getN();
 		var point = r.add(BigInteger.valueOf((long) v / 2).multiply(curveN));

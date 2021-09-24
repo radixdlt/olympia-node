@@ -63,28 +63,53 @@
 
 package com.radixdlt.api.archive.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
+import com.google.inject.Inject;
+import com.radixdlt.api.service.SubmissionService;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECKeyUtils;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.utils.Bytes;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+import static com.radixdlt.api.util.RestUtils.respond;
+import static com.radixdlt.api.util.RestUtils.withBody;
 
-public final class ConstructionApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+final class FinalizeTransactionHandler implements HttpHandler {
+	private final SubmissionService submissionService;
 
-	public ConstructionApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	FinalizeTransactionHandler(SubmissionService submissionService) {
+		this.submissionService = submissionService;
 	}
 
 	@Override
-	protected void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path + "/build").to(BuildTransactionHandler.class);
-		routeBinder.addBinding(path + "/finalize").to(FinalizeTransactionHandler.class);
-		routeBinder.addBinding(path + "/submit").to(SubmitTransactionHandler.class);
+	public void handleRequest(HttpServerExchange exchange) {
+		withBody(exchange, request -> respond(exchange, handle(request)));
+	}
+
+	private JSONObject handle(JSONObject request) {
+		try {
+			var blobString = request.getString("blob");
+			var blob = Bytes.fromHexString(blobString);
+			var derString = request.getString("signatureDER");
+			var der = Bytes.fromHexString(derString);
+			var signature = ECDSASignature.decodeFromDER(der);
+			var pubKeyString = request.getString("publicKeyOfSigner");
+			var pubKey = ECPublicKey.fromHex(pubKeyString);
+			var recoverable = ECKeyUtils.toRecoverableSig(signature, HashUtils.sha256(blob).asBytes(), pubKey);
+			return submissionService.finalizeTxn(blob, recoverable, false)
+				.fold(
+					f -> new JSONObject(),
+					txn -> new JSONObject()
+						.put("blob", Bytes.toHexString(txn.getPayload()))
+						.put("transactionIdentifier", txn.getId())
+				);
+		} catch (PublicKeyException e) {
+			return new JSONObject();
+		}
 	}
 }

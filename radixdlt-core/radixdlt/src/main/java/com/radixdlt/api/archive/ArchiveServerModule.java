@@ -75,7 +75,6 @@ import com.radixdlt.api.archive.tokens.TokenApiModule;
 import com.radixdlt.api.archive.transaction.TransactionStatusAndLookupApiModule;
 import com.radixdlt.api.archive.validator.ValidatorApiModule;
 import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
 import io.undertow.server.HttpHandler;
@@ -120,10 +119,9 @@ public class ArchiveServerModule extends AbstractModule {
 	@StringMapKey(Runners.ARCHIVE_API)
 	@Singleton
 	public ModuleRunner archiveHttpServer(
-		@ArchiveServer Map<String, Controller> controllers,
 		@ArchiveServer Map<String, HttpHandler> handlers,
 		SystemCounters counters
 	) {
-		return new HttpServerRunner(controllers, handlers, port, bindAddress, "archive", counters);
+		return new HttpServerRunner(Map.of(), handlers, port, bindAddress, "archive", counters);
 	}
 }
