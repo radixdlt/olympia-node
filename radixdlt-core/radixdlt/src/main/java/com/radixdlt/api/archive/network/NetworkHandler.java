@@ -64,6 +64,7 @@
 package com.radixdlt.api.archive.network;
 
 import com.google.inject.Inject;
+import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -73,12 +74,14 @@ import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.RestUtils.respond;
 import static com.radixdlt.api.util.RestUtils.withBody;
 
-class NetworkHandler implements HttpHandler {
+final class NetworkHandler implements HttpHandler {
 	private final int networkId;
+	private final String networkName;
 
 	@Inject
 	NetworkHandler(@NetworkId int networkId) {
 		this.networkId = networkId;
+		this.networkName = Network.ofId(networkId).map(n -> n.name().toLowerCase()).orElse("unknown");
 	}
 
 	@Override
@@ -87,6 +90,9 @@ class NetworkHandler implements HttpHandler {
 	}
 
 	private JSONObject handle() {
-		return jsonObject().put("networkId", networkId);
+		return jsonObject()
+			.put("network", new JSONObject()
+				.put("id", networkId)
+				.put("name", networkName));
 	}
 }

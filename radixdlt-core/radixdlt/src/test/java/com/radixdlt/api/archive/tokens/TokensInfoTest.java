@@ -204,8 +204,9 @@ public class TokensInfoTest {
 
 		// Assert
 		var json = store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
-		assertThat(json.getString("currentSupply")).isEqualTo(totalTokenAmount.toSubunits().toString());
-		assertThat(json.getString("totalMinted")).isEqualTo(totalTokenAmount.toSubunits().toString());
-		assertThat(json.getString("totalBurned")).isEqualTo(UInt256.ZERO.toString());
+		var accountingJson = json.getJSONObject("accounting");
+		assertThat(accountingJson.getString("currentSupply")).isEqualTo(totalTokenAmount.toSubunits().toString());
+		assertThat(accountingJson.getString("totalMinted")).isEqualTo(totalTokenAmount.toSubunits().toString());
+		assertThat(accountingJson.getString("totalBurned")).isEqualTo(UInt256.ZERO.toString());
 	}
 }

@@ -317,12 +317,8 @@ public class SubmissionServiceTest {
 
 				assertTrue(json.has("fee"));
 				assertEquals("404", json.get("fee"));
-
-				assertTrue(json.has("transaction"));
-
-				var transaction = json.getJSONObject("transaction");
-				assertTrue(transaction.has("blob"));
-				assertTrue(transaction.has("hashOfBlobToSign"));
+				assertTrue(json.has("unsignedTransaction"));
+				assertTrue(json.has("payloadToSign"));
 			});
 	}
 
