@@ -93,15 +93,16 @@ final class FinalizeTransactionHandler implements HttpHandler {
 
 	private JSONObject handle(JSONObject request) {
 		try {
-			var blobString = request.getString("blob");
-			var blob = Bytes.fromHexString(blobString);
-			var derString = request.getString("signatureDER");
-			var der = Bytes.fromHexString(derString);
+			var unsignedTransactionHex = request.getString("unsignedTransaction");
+			var unsignedTransaction = Bytes.fromHexString(unsignedTransactionHex);
+			var signatureJson = request.getJSONObject("signature");
+			var signatureHex = signatureJson.getString("bytes");
+			var der = Bytes.fromHexString(signatureHex);
 			var signature = ECDSASignature.decodeFromDER(der);
-			var pubKeyString = request.getString("publicKeyOfSigner");
+			var pubKeyString = signatureJson.getString("publicKey");
 			var pubKey = ECPublicKey.fromHex(pubKeyString);
-			var recoverable = ECKeyUtils.toRecoverableSig(signature, HashUtils.sha256(blob).asBytes(), pubKey);
-			return submissionService.finalizeTxn(blob, recoverable, false)
+			var recoverable = ECKeyUtils.toRecoverableSig(signature, HashUtils.sha256(unsignedTransaction).asBytes(), pubKey);
+			return submissionService.finalizeTxn(unsignedTransaction, recoverable, false)
 				.fold(
 					f -> new JSONObject(),
 					txn -> new JSONObject()

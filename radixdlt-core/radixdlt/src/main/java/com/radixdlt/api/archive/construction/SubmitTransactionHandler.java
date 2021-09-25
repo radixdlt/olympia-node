@@ -89,7 +89,7 @@ final class SubmitTransactionHandler implements HttpHandler {
 	}
 
 	private JSONObject handle(JSONObject request) {
-		var blobString = request.getString("blob");
+		var blobString = request.getString("signedTransaction");
 		var blob = Bytes.fromHexString(blobString);
 		return submissionService.submitTx(blob, Optional.empty())
 			.fold(f -> new JSONObject(), txn -> new JSONObject().put("transactionIdentifier", txn.getId()));

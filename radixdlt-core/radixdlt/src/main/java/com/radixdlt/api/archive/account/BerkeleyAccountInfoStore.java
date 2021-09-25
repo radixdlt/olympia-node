@@ -228,9 +228,9 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 
 		if (databases.get(ResourceType.TOKEN_BALANCES).get(null, key, value, DEFAULT) == SUCCESS) {
 			var jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
-			json.put("tokenBalances", jsonArray);
+			json.put("balances", jsonArray);
 		} else {
-			json.put("tokenBalances", new JSONArray());
+			json.put("balances", new JSONArray());
 		}
 
 		return json;

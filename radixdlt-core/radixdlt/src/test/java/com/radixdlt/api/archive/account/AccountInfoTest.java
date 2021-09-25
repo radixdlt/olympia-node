@@ -204,7 +204,7 @@ public class AccountInfoTest {
 
 		// Assert
 		var json = store.getAccountInfo(acct);
-		var balances = json.getJSONArray("tokenBalances");
+		var balances = json.getJSONArray("balances");
 		assertThat(balances.length()).isEqualTo(0);
 	}
 
@@ -237,7 +237,7 @@ public class AccountInfoTest {
 
 		// Assert
 		var json = store.getAccountInfo(acct);
-		var balances = json.getJSONArray("tokenBalances");
+		var balances = json.getJSONArray("balances");
 		var amtString = balances.getJSONObject(0).getString("amount");
 		assertThat(amtString).isEqualTo(Amount.ofTokens(10).toSubunits().toString());
 	}
