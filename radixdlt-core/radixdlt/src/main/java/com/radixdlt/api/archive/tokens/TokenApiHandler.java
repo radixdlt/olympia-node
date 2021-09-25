@@ -64,6 +64,7 @@
 package com.radixdlt.api.archive.tokens;
 
 import com.google.inject.Inject;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -88,8 +89,15 @@ class TokenApiHandler implements HttpHandler {
 	}
 
 	private JSONObject handle(JSONObject request) {
-		var rriString = request.getString("rri");
-		var addr = addressing.forResources().parse(rriString).last();
-		return store.getResourceInfo(addr).orElseThrow();
+		final REAddr addr;
+		if (request.has("rri")) {
+			var rriString = request.getString("rri");
+			addr = addressing.forResources().parse(rriString).last();
+		} else {
+			addr = REAddr.ofNativeToken();
+		}
+		var tokenJson = store.getResourceInfo(addr).orElseThrow();
+		return new JSONObject()
+			.put("token", tokenJson);
 	}
 }

@@ -70,7 +70,7 @@ import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
 
-public class NetworkApiModule extends AbstractModule {
+public final class NetworkApiModule extends AbstractModule {
 	private final Class<? extends Annotation> annotationType;
 	private final String path;
 
@@ -86,6 +86,5 @@ public class NetworkApiModule extends AbstractModule {
 			binder(), String.class, HttpHandler.class, annotationType
 		);
 		routeBinder.addBinding(path).to(NetworkHandler.class);
-		routeBinder.addBinding(path + "/metrics").to(NetworkMetricsHandler.class);
 	}
 }

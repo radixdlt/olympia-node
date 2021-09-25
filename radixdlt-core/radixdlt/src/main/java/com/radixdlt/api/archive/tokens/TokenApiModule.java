@@ -90,7 +90,6 @@ public final class TokenApiModule extends AbstractModule {
 		var routeBinder = MapBinder.newMapBinder(
 			binder(), String.class, HttpHandler.class, annotationType
 		);
-		routeBinder.addBinding(path + "/native").to(TokenNativeApiHandler.class);
 		routeBinder.addBinding(path).to(TokenApiHandler.class);
 	}
 }

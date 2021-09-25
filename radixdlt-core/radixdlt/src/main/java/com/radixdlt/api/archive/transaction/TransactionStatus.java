@@ -66,13 +66,13 @@ package com.radixdlt.api.archive.transaction;
 import org.json.JSONObject;
 
 public enum TransactionStatus {
-	PENDING,
-	CONFIRMED,
+	MEMPOOL,
+	COMMITTED,
 	FAILED,
-	TRANSACTION_NOT_FOUND;
+	NOT_FOUND;
 
 	public JSONObject asJson() {
-		var key = this == TRANSACTION_NOT_FOUND ? "failure" : "status";
+		var key = this == NOT_FOUND ? "failure" : "status";
 
 		return new JSONObject().put(key, name());
 	}

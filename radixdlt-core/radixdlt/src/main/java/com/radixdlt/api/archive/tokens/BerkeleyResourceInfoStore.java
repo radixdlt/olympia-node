@@ -76,6 +76,7 @@ import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.LockMode;
 import com.sleepycat.je.Transaction;
 import org.json.JSONObject;
 
@@ -138,18 +139,23 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 			if (event instanceof ResourceCreatedEvent) {
 				var resourceCreated = (ResourceCreatedEvent) event;
 				var rri = addressing.forResources().of(resourceCreated.getSymbol(), resourceCreated.getTokenResource().getAddr());
-				var json = new JSONObject()
+				var properties = new JSONObject()
 					.put("name", resourceCreated.getMetadata().getName())
 					.put("rri", rri)
 					.put("symbol", resourceCreated.getSymbol())
 					.put("description", resourceCreated.getMetadata().getDescription())
-					.put("iconURL", resourceCreated.getMetadata().getIconUrl())
-					.put("tokenInfoURL", resourceCreated.getMetadata().getUrl())
+					.put("iconUrl", resourceCreated.getMetadata().getIconUrl())
+					.put("url", resourceCreated.getMetadata().getUrl())
 					.put("granularity", resourceCreated.getTokenResource().getGranularity())
+					.put("isSupplyMutable", resourceCreated.getTokenResource().isMutable());
+				var accounting = new JSONObject()
 					.put("currentSupply", BigInteger.ZERO.toString())
 					.put("totalBurned", BigInteger.ZERO.toString())
-					.put("totalMinted", BigInteger.ZERO.toString())
-					.put("isSupplyMutable", resourceCreated.getTokenResource().isMutable());
+					.put("totalMinted", BigInteger.ZERO.toString());
+
+				var json = new JSONObject()
+					.put("properties", properties)
+					.put("accounting", accounting);
 
 				var key = new DatabaseEntry(resourceCreated.getTokenResource().getAddr().getBytes());
 				var value = new DatabaseEntry(json.toString().getBytes(StandardCharsets.UTF_8));
@@ -168,24 +174,25 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 				var resourceAddr = e.getKey();
 				var key = new DatabaseEntry(resourceAddr.getBytes());
 				var value = new DatabaseEntry();
-				var status = resourceInfoDatabase.get(dbTxn, key, value, null);
+				var status = resourceInfoDatabase.get(dbTxn, key, value, LockMode.READ_UNCOMMITTED);
 				if (status != SUCCESS) {
 					throw new IllegalStateException();
 				}
 				var jsonString = new String(value.getData(), StandardCharsets.UTF_8);
 				var json = new JSONObject(jsonString);
-				var supply = new BigInteger(json.getString("currentSupply"), 10);
+				var accountingJson = json.getJSONObject("accounting");
+				var supply = new BigInteger(accountingJson.getString("currentSupply"), 10);
 				var change = e.getValue();
 				var newSupply = supply.add(change);
-				json.put("currentSupply", newSupply);
+				accountingJson.put("currentSupply", newSupply);
 				if (change.signum() > 0) {
-					var minted = new BigInteger(json.getString("totalMinted"), 10);
+					var minted = new BigInteger(accountingJson.getString("totalMinted"), 10);
 					var newMinted = minted.add(change);
-					json.put("totalMinted", newMinted.toString());
+					accountingJson.put("totalMinted", newMinted.toString());
 				} else {
-					var burned = new BigInteger(json.getString("totalBurned"), 10);
+					var burned = new BigInteger(accountingJson.getString("totalBurned"), 10);
 					var newBurned = burned.subtract(change);
-					json.put("totalBurned", newBurned.toString());
+					accountingJson.put("totalBurned", newBurned.toString());
 				}
 				var newVal = new DatabaseEntry(json.toString().getBytes(StandardCharsets.UTF_8));
 				status = resourceInfoDatabase.put(dbTxn, key, newVal);

@@ -71,15 +71,13 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import org.json.JSONObject;
 
 import java.time.Duration;
-import java.util.Optional;
 
-import static com.radixdlt.api.archive.transaction.TransactionStatus.CONFIRMED;
+import static com.radixdlt.api.archive.transaction.TransactionStatus.COMMITTED;
 import static com.radixdlt.api.archive.transaction.TransactionStatus.FAILED;
-import static com.radixdlt.api.archive.transaction.TransactionStatus.PENDING;
-import static com.radixdlt.api.archive.transaction.TransactionStatus.TRANSACTION_NOT_FOUND;
+import static com.radixdlt.api.archive.transaction.TransactionStatus.MEMPOOL;
+import static com.radixdlt.api.archive.transaction.TransactionStatus.NOT_FOUND;
 
 public class TransactionStatusService {
 	private final Cache<AID, TransactionStatus> cache = CacheBuilder.newBuilder()
@@ -98,7 +96,7 @@ public class TransactionStatusService {
 	}
 
 	private void onSuccess(MempoolAddSuccess mempoolAddSuccess) {
-		cache.put(mempoolAddSuccess.getTxn().getId(), PENDING);
+		cache.put(mempoolAddSuccess.getTxn().getId(), MEMPOOL);
 	}
 
 	public EventProcessor<MempoolAddFailure> mempoolAddFailureEventProcessor() {
@@ -109,15 +107,11 @@ public class TransactionStatusService {
 		return this::onSuccess;
 	}
 
-	public Optional<JSONObject> getTransaction(AID txId) {
-		return store.getTransactionJSON(txId);
-	}
-
 	public TransactionStatus getTransactionStatus(AID txId) {
 		var status = cache.getIfPresent(txId);
 		if (store.contains(txId)) {
-			return CONFIRMED;
+			return COMMITTED;
 		}
-		return status != null ? status : TRANSACTION_NOT_FOUND;
+		return status != null ? status : NOT_FOUND;
 	}
 }

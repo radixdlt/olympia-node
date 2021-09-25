@@ -120,7 +120,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.api.archive.transaction.TransactionStatus.TRANSACTION_NOT_FOUND;
+import static com.radixdlt.api.archive.transaction.TransactionStatus.NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
@@ -222,7 +222,7 @@ public class TransactionStatusTest {
 		var txBuilder = radixEngine.construct(request);
 		var txn = txBuilder.signAndBuild(nodeKeys.get(0)::sign);
 		var service = deterministicRunner.getNode(0).getInstance(TransactionStatusService.class);
-		assertEquals(TRANSACTION_NOT_FOUND, service.getTransactionStatus(txn.getId()));
+		assertEquals(NOT_FOUND, service.getTransactionStatus(txn.getId()));
 
 		var dispatcher = this.deterministicRunner.getNode(0)
 			.getInstance(Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() { }));
@@ -235,8 +235,8 @@ public class TransactionStatusTest {
 				deterministicRunner.processNext();
 				// Check that once confirmed, status does not change
 				var status = service.getTransactionStatus(txn.getId());
-				if (status != TransactionStatus.CONFIRMED) {
-					assertThat(lastStatus).isNotEqualTo(TransactionStatus.CONFIRMED);
+				if (status != TransactionStatus.COMMITTED) {
+					assertThat(lastStatus).isNotEqualTo(TransactionStatus.COMMITTED);
 				}
 				lastStatus = status;
 			}

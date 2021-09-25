@@ -221,9 +221,7 @@ public class TransactionStatusServiceTest {
 
 		// Assert
 		var status = transactionStatusService.getTransactionStatus(transfer.getId());
-		assertThat(status).isEqualTo(TransactionStatus.PENDING);
-		var json = transactionStatusService.getTransaction(transfer.getId());
-		assertThat(json).isNotPresent();
+		assertThat(status).isEqualTo(TransactionStatus.MEMPOOL);
 	}
 
 	@Test
@@ -251,8 +249,6 @@ public class TransactionStatusServiceTest {
 
 		// Assert
 		var status = transactionStatusService.getTransactionStatus(transfer.getId());
-		assertThat(status).isEqualTo(TransactionStatus.CONFIRMED);
-		var json = transactionStatusService.getTransaction(transfer.getId());
-		assertThat(json).isPresent();
+		assertThat(status).isEqualTo(TransactionStatus.COMMITTED);
 	}
 }

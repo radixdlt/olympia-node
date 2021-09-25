@@ -88,7 +88,6 @@ final class TransactionStatusHandler implements HttpHandler {
 	private JSONObject handle(JSONObject request) {
 		var txnIdString = request.getString("transactionIdentifier");
 		var txnId = AID.from(txnIdString);
-		return transactionStatusService.getTransactionStatus(txnId).asJson()
-			.put("transactionIdentifier", txnIdString);
+		return transactionStatusService.getTransactionStatus(txnId).asJson();
 	}
 }
