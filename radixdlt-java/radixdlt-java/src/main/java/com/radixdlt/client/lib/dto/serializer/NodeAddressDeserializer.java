@@ -77,9 +77,9 @@ import java.io.IOException;
 public class NodeAddressDeserializer extends StdDeserializer<NodeAddress> {
 	private final NodeAddressing addressing;
 
-	public NodeAddressDeserializer(int networkId) {
+	public NodeAddressDeserializer(Addressing networkAddressing) {
 		super(NodeAddress.class);
-		addressing = Addressing.ofNetworkId(networkId).forNodes();
+		addressing = networkAddressing.forNodes();
 	}
 
 	@Override

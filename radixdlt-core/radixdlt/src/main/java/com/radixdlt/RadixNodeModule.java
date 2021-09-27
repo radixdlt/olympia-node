@@ -64,7 +64,7 @@
 
 package com.radixdlt;
 
-import com.radixdlt.api.module.ApiModule;
+import com.radixdlt.api.ApiModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.StokenetForkConfigsModule;
 import org.apache.logging.log4j.LogManager;

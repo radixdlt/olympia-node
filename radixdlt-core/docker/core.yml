@@ -21,6 +21,7 @@ services:
       RADIXDLT_VALIDATION_API_ENABLE: "true"
       RADIXDLT_VERSION_API_ENABLE: "true"
       RADIXDLT_UNIVERSE_API_ENABLE: "true"
+      RADIXDLT_TRANSACTIONS_API_ENABLE: "true"
       RADIXDLT_GENESIS_TXN: ${RADIXDLT_GENESIS_TXN}
       JAVA_OPTS: -server -Xmx512m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:+AlwaysPreTouch -Dguice_bytecode_gen_option=DISABLED -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom -Dcom.sun.management.jmxremote.port=9011 -Dcom.sun.management.jmxremote.rmi.port=9011 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=core -agentlib:jdwp=transport=dt_socket,address=50505,suspend=n,server=y
     image: radixdlt/radixdlt-core:develop

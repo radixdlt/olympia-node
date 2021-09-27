@@ -1,262 +1,116 @@
 # radixdlt-java
 
-[![](https://jitpack.io/v/com.radixdlt/radixdlt-java.svg)](https://jitpack.io/#com.radixdlt/radixdlt-java) [![Build Status](https://api.travis-ci.com/radixdlt/radixdlt-java.svg?branch=master)](https://travis-ci.org/radixdlt/radixdlt-java) [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=com.radixdlt%3Aradixdlt-java&metric=alert_status)](https://sonarcloud.io/dashboard?id=com.radixdlt%3Aradixdlt-java) [![Reliability](https://sonarcloud.io/api/project_badges/measure?project=com.radixdlt%3Aradixdlt-java&metric=reliability_rating)](https://sonarcloud.io/component_measures?id=com.radixdlt%3Aradixdlt-java&metric=reliability_rating) [![Security](https://sonarcloud.io/api/project_badges/measure?project=com.radixdlt%3Aradixdlt-java&metric=security_rating)](https://sonarcloud.io/component_measures?id=com.radixdlt%3Aradixdlt-java&metric=security_rating) [![Code Corevage](https://sonarcloud.io/api/project_badges/measure?project=com.radixdlt%3Aradixdlt-java&metric=coverage)](https://sonarcloud.io/component_measures?id=com.radixdlt%3Aradixdlt-java&metric=Coverage)
-
-radixdlt-java is a Java/Android Client library for interacting with a [Radix](https://www.radixdlt.com) Distributed Ledger.
+radixdlt-java is a Java Client library for interacting with a [Radix](https://www.radixdlt.com) Distributed Ledger.
 
 ## Table of contents
-
-- [Changelog](CHANGELOG.md)
-- [Features](#features)
-- [Installation](#installation)
-- [Getting started](#getting-started)
-- [Radix Application API](#radix-application-api)
-- [Code examples](#code-examples)
-- [Contribute](#contribute)
+- [General Overview](#general-overview)
 - [Links](#links)
 - [License](#license)
 
-## Features
-* Connection to the Betanet test network 
-* Fee-less transactions for testnets
-* Public Key Identity Creation
-* Token Creation (ERC-777 style)
-* Message sending
-* RXJava 2 based
-* Utilizes JSON-RPC over Websockets
+## General Overview
+The Java Client library consists of 3 [implementations](#implementations) but API structure is identical regardless from the 
+implementation. 
 
-## Getting Started
+## Client API structure
+In order to keep API maintainable, it is split into following groups:
 
-### Identities
-An Identity is the user's credentials (or more technically the manager of the
-public/private key pair) into the ledger, allowing a user to own tokens and send tokens
-as well as decrypt data.
+| Group | Description |
+|---|---|
+| __Network__| General information about network: ID, configuration, nodes, etc.
+| __Transaction__| General purpose API for building and sending transactions, checking status, etc.
+| __Token__| Information about tokens
+| __Local__| Information about the node as well as single step transaction submission
+| __SingleAccount__| Information related to single account: balances, transaction history, etc.
+| __Validator__| List and lookup information about validators known to network
+| __Api__| API configuration and metric counters
+| __Consensus__| Consensus configuration and metric counters
+| __Mempool__| Mempool configuration and metric counters
+| __RadixEngine__| Radix Engine configuration and metric counters
+| __Sync__| Node synchronization configuration and metric counters
+| __Ledger__| Ledger proofs and checkpoints information
 
-To create/load an identity from a file:
+Note, that for various reasons Radix API spread across several endpoints split into two large groups
+accessible at different ports. These results need to provide two ports while configuring the client. 
+
+## Implementations
+- [Asynchronous client with functional API](#asynchronous-client)
+- [Synchronous client with functional API](#synchronous-client)
+- [Synchronous client with imperative API](#imperative-client)
+
+### Asynchronous Client
+The class `com.radixdlt.client.lib.api.async.RadixApi` is a high-level Radix client with asynchronous functional API.
+The API uses `Promise<T>` monad as a return value, which enables functional composition and transparent error handling
+without involving `null` values and exceptions.
+
+### Synchronous Client
+The class `com.radixdlt.client.lib.api.sync.RadixApi` is a high-level Radix client with synchronous functional API.
+Similar to the asynchronous API, synchronous API uses `Result<T>` monad as a return value, which enables functional composition and transparent error handling
+without involving `null` values and exceptions.
+
+### Imperative Client
+The class `com.radixdlt.client.lib.api.sync.ImperativeRadixApi` is a high-level Radix client with
+imperative API. It provides a wrapper around [synchronous client](#synchronous-client) with API structured 
+in a more traditional style - it returns results of the execution directly and throws an exception in case of error.
+
+## API Usage
+
+Very brief introduction provided below should give a basic overview of the client library.
+
+### Creating the client
+In order to start using the client it should be created. In order to create client following information is necessary:
+- URL, the base URL (without path) to the host where resides node we want to connect.
+- Primary and secondary ports - two ports necessary to access different parts of the Radix Node API.
+- (optional) login/password to access endpoints protected by the HTTP Basic authentication
+
+Note: examples below may use parameters which not necessarily correspond to real ones.
+
+Async client:
 ```java
-RadixIdentity identity = RadixIdentities.loadOrCreateEncryptedFile("filename.key", "password123", "key_name");
-```
-This will either create or load a file with a public/private key and encrypted with the given password.
-
-### Universes
-A Universe is an instance of a Radix Distributed Ledger which is defined by a genesis atom and
-a dynamic set of unpermissioned nodes forming a network.
-
-A predefined configuration to bootstrap into the betanet network is available:
-```java
-BootstrapConfig config = Bootstrap.BETANET;
-```
-
-## Radix Application API
-The Radix Application API is a client side API exposing high level abstractions to make
-DAPP creation easier.
-
-To initialize the API:
-```java
-RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.BETANET, identity);
-```
-
-To continually sync and pull from the network ledger on your account:
-```java
-Disposable d = api.pull();
-```
-
-To stop syncing:
-```java
-d.dispose();
-```
-
-### Addresses
-An address is a reference to an account and allows a user to receive tokens and/or data from other users.
-
-You can get your own address by:
-```java
-RadixAddress myAddress = api.getAddress();
-```
-
-Or from a base58 string:
-```java
-RadixAddress anotherAddress = RadixAddress.fromString("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ");
-```
-
-## Code Examples
-
-### Sending Messages
-Immutable data can be stored on the ledger. The data can be encrypted so that only
-selected identities can read the data.
-
-To send the encrypted string `Hello` which only the sender and recipient can read:
-```java
-Result result = api.sendMessage(<to-address>, "Hello".getBytes(StandardCharsets.UTF_8), true);
-result.blockUntilComplete();
+import com.radixdlt.client.lib.api.async;
+...
+var client = RadixApi.connect("https://rcnet.radixdlt.com/system", 443, 443);
 ```
 
-To send the unencrypted string `Hello`:
+Sync client:
 ```java
-Result result = api.sendMessage(<to-address>, "Hello".getBytes(StandardCharsets.UTF_8), false);
-result.blockUntilComplete();
+import com.radixdlt.client.lib.api.sync;
+...
+var client = RadixApi.connect("https://rcnet.radixdlt.com/system", 443, 443);
 ```
 
-Or equivalently,
+Imperative client:
 ```java
-SendMessageAction msgAction = SendMessageAction.create(api.getAddress(), <to-address>, "Hello".getBytes(StandardCharset.UTF_8), false);
-Result result = api.execute(msgAction);
-result.blockUntilComplete();
+import com.radixdlt.client.lib.api.sync;
+...
+var client = ImperativeRadixApi.connect("https://rcnet.radixdlt.com/system", 443, 443);
 ```
 
-### Receiving Messages
+### Simple API Call
 
-To then read (and decrypt if necessary) all the readable data sent to you:
+Sync/Async client:
 ```java
-Observable<DecryptedMessage> readable = api.observeMessages();
-readable.subscribe(data -> { ... });
+import com.radixdlt.client.lib.api.async;
+...
+    RadixApi.connect("https://rcnet.radixdlt.com/system", 443, 443)
+        .onSuccess(client -> client.network().id()
+                       .onSuccess(System.out::println));
 ```
 
-### Creating Tokens
-To create a token, an RRI or radix resource identifier must first be constructed:
+Imperative client:
 ```java
-RRI tokenRRI = RRI.of(api.getAddress(), "NEW");
+import com.radixdlt.client.lib.api.sync;
+...
+    var client = ImperativeRadixApi.connect("https://rcnet.radixdlt.com/system", 443, 443);
+    var networkId = client.network().id();
+    System.out.println(networkId);
 ```
-
-To create a fixed-supply token:
-```java
-Result result = api.createFixedSupplyToken(tokenRRI, "New Token", "The Best Token", BigDecimal.valueOf(1000.0));
-result.blockUntilComplete();
-```
-
-To create a multi-issuance token:
-```java
-Result result = api.createMultiIssuance(tokenRRI, "New Token", "The Best Token");
-result.blockUntilComplete();
-```
-
-Or equivalently,
-```java
-CreateTokenAction createAction = CreateTokenAction.create(
-  tokenRRI,
-  "New Token",
-  "The Best Token",
-  BigDecimal.ZERO,
-  TokenUnitConversions.getMinimumGranularity(),
-  TokenSupplyType.MUTABLE
-); 
-Result result = api.execute(createAction);
-result.blockUntilComplete();
-```
-
-### Minting Tokens
-To mint 1000 tokens (must be multi-issuance) in your account:
-```java
-Result result = api.mintTokens(tokenRRI, BigDecimal.valueOf(1000.0));
-result.blockUntilComplete();
-```
-
-Or equivalently,
-```java
-MintTokensAction mintAction = MintTokensAction.create(tokenRRI, api.getAddress(), BigDecimal.valueOf(1000.0));
-Result result = api.execute(mintAction);
-result.blockUntilComplete();
-```
-
-### Burning Tokens
-To burn 1000 tokens (must be multi-issuance) in your account:
-```java
-Result result = api.burnTokens(tokenRRI, BigDecimal.valueOf(1000.0));
-result.blockUntilComplete();
-```
-
-Or equivalently,
-```java
-BurnTokensAction burnAction = BurnTokensAction.create(tokenRRI, api.getAddress(), BigDecimal.valueOf(1000.0));
-Result result = api.execute(burnAction);
-result.blockUntilComplete();
-```
-
-### Sending Tokens
-To send an amount from my address to another address:
-```java
-Result result = api.sendTokens(tokenRRI, BigDecimal.valueOf(10.99), <to-address>);
-result.blockUntilComplete();
-```
-
-Or equivalently,
-```java
-TransferTokensAction sendAction = TransferTokensAction.create(
-  tokenRRI,
-  api.getAddress(),
-  <to-address>,
-  BigDecimal.valueOf(10.00),
-  null
-);
-Result result = api.execute(sendAction);
-result.blockUntilComplete();
-```
-
-### Retrieving Tokens
-To retrieve all of the token transfers which have occurred in my account:
-```java
-Observable<TokenTransfer> transfers = api.observeTokenTransfers();
-transfers.subscribe(tx -> { ... });
-```
-
-To get a stream of the balance of tokens in my account:
-```java
-Observable<BigDecimal> balance = api.observeBalance(tokenRRI);
-balance.subscribe(bal -> { ... });
-```
-
-### Executing Atomic Transactions
-To execute an atomic transaction of creating a token, minting, then sending:
-```java
-CreateTokensAction createAction = CreateTokenAction.create(
-  tokenRRI,
-  "Joshy Token",
-  "The Best Coin Ever",
-  BigDecimal.ZERO,
-  TokenUnitConversions.getMinimumGranularity(),
-  TokenSupplyType.MUTABLE
-);
-MintTokensAction mintAction = MintTokensAction.create(
-  tokenRRI,
-  api.getAddress(),
-  BigDecimal.valueOf(1000000.0)
-);
-TransferTokensAction transferAction =  TransferTokensAction.create(
-  tokenRRI,
-  api.getAddress(),
-  <to-address>,
-  BigDecimal.valueOf(1000000.0),
-  null
-);
-
-Transaction tx = api.createTransaction();
-tx.stage(createAction);
-tx.stage(mintAction);
-tx.stage(transferAction);
-Result result = tx.commitAndPush();
-result.blockUntilComplete();
-
-```
-
-## Contribute
-
-[Contributions](../CONTRIBUTING.md) are welcome, we simply ask to:
-
-* Fork the codebase
-* Make changes
-* Submit a pull request for review
-
-When contributing to this repository, we recommend discussing with the development team the change you wish to make using a [GitHub issue](https://github.com/radixdlt/radixdlt/issues) before making changes.
-
-Please follow our [Code of Conduct](../CODE_OF_CONDUCT.md) in all your interactions with the project.
 
 ## Links
 
 | Link | Description |
-| :----- | :------ |
+| ----- | ------ |
 [radixdlt.com](https://radixdlt.com/) | Radix DLT Homepage
-[documentation](https://docs.radixdlt.com/) | Radix Knowledge Base
-[forum](https://forum.radixdlt.com/) | Radix Technical Forum
+[documentation](https://docs.radixdlt.com/) | Radix Tech Docs
 [@radixdlt](https://twitter.com/radixdlt) | Follow Radix DLT on Twitter
 
 ## License

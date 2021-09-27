@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -73,7 +72,7 @@ import org.json.JSONObject;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.api.qualifier.Endpoints;
+import com.radixdlt.api.Endpoints;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
@@ -96,10 +95,12 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.api.JsonRpcUtil.ARRAY;
-import static com.radixdlt.api.JsonRpcUtil.fromList;
-import static com.radixdlt.api.JsonRpcUtil.jsonArray;
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
+import static com.radixdlt.api.util.JsonRpcUtil.fromMap;
+import static com.radixdlt.api.util.JsonRpcUtil.wrapArray;
+
 
 public class SystemConfigService {
 	@VisibleForTesting
@@ -390,15 +391,13 @@ public class SystemConfigService {
 
 		return jsonObject().put(
 			"endpoints",
-			fromList(enabled, endpoint -> "/" + endpoint)
+			fromCollection(enabled, endpoint -> "/" + endpoint)
 		);
 	}
 
 	@VisibleForTesting
 	static JSONObject prepareRadixEngineConfiguration(TreeMap<Long, ForkConfig> forksConfigs) {
-		var forks = jsonArray();
-		forksConfigs.forEach((e, config) -> forks.put(config.asJson()));
-		return jsonObject().put(ARRAY, forks);
+		return wrapArray(fromMap(forksConfigs, (key, config) -> config.asJson()));
 	}
 
 	@VisibleForTesting
@@ -418,7 +417,7 @@ public class SystemConfigService {
 	@VisibleForTesting
 	JSONObject prepareCheckpointsConfiguration(VerifiedTxnsAndProof genesis) {
 		return jsonObject()
-			.put("txn", fromList(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
+			.put("txn", fromCollection(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
 			.put("proof", genesis.getProof().asJSON(addressing));
 	}
 
@@ -435,7 +434,7 @@ public class SystemConfigService {
 			.put("channelBufferSize", p2PConfig.channelBufferSize())
 			.put("peerLivenessCheckInterval", p2PConfig.peerLivenessCheckInterval())
 			.put("pingTimeout", p2PConfig.pingTimeout())
-			.put("seedNodes", fromList(p2PConfig.seedNodes(), seedNode -> seedNode))
+			.put("seedNodes", fromCollection(p2PConfig.seedNodes(), seedNode -> seedNode))
 			.put("nodeAddress", addressing.forNodes().of(self));
 	}
 

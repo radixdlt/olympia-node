@@ -18,7 +18,5 @@ services:
       - "10000:10000/tcp"
       - "20000:20000/tcp"
       - "30000:30000/tcp"
-    networks:
-      - single_node
 networks:
   single_node:

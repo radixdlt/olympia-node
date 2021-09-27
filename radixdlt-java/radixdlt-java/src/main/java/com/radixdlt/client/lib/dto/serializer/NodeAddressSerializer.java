@@ -76,9 +76,9 @@ import java.io.IOException;
 public class NodeAddressSerializer extends StdSerializer<NodeAddress> {
 	private final NodeAddressing addressing;
 
-	public NodeAddressSerializer(int networkId) {
+	public NodeAddressSerializer(Addressing networkAddressing) {
 		super(NodeAddress.class);
-		addressing = Addressing.ofNetworkId(networkId).forNodes();
+		addressing = networkAddressing.forNodes();
 	}
 
 	@Override

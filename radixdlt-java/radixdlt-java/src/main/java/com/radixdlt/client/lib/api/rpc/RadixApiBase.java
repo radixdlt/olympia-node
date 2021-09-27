@@ -83,6 +83,7 @@ import com.radixdlt.client.lib.dto.serializer.NodeAddressSerializer;
 import com.radixdlt.client.lib.dto.serializer.ValidatorAddressDeserializer;
 import com.radixdlt.client.lib.dto.serializer.ValidatorAddressSerializer;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
@@ -128,6 +129,7 @@ public abstract class RadixApiBase {
 	private boolean doTrace = false;
 	private ObjectMapper objectMapper;
 	private int networkId = LOCALNET.getId();
+	private Addressing networkAddressing;
 
 	protected RadixApiBase(
 		String baseUrl,
@@ -186,6 +188,10 @@ public abstract class RadixApiBase {
 		return networkId;
 	}
 
+	protected Addressing networkAddressing() {
+		return networkAddressing;
+	}
+
 	protected HttpClient client() {
 		return client;
 	}
@@ -228,14 +234,16 @@ public abstract class RadixApiBase {
 	}
 
 	protected void configureSerialization(int networkId) {
+		this.networkId = networkId;
+		this.networkAddressing = Addressing.ofNetworkId(networkId);
 		var module = new SimpleModule()
-			.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkId))
-			.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkId))
-			.addSerializer(NodeAddress.class, new NodeAddressSerializer(networkId))
+			.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkAddressing))
+			.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkAddressing))
+			.addSerializer(NodeAddress.class, new NodeAddressSerializer(networkAddressing))
 			.addSerializer(ECPublicKey.class, new ECPublicKeySerializer())
-			.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkId))
-			.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(networkId))
-			.addDeserializer(NodeAddress.class, new NodeAddressDeserializer(networkId))
+			.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkAddressing))
+			.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(networkAddressing))
+			.addDeserializer(NodeAddress.class, new NodeAddressDeserializer(networkAddressing))
 			.addDeserializer(ECPublicKey.class, new ECPublicKeyDeserializer());
 		objectMapper = createDefaultMapper().registerModule(module);
 	}

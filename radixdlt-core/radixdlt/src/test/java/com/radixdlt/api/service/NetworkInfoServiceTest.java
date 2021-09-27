@@ -63,6 +63,8 @@
  */
 package com.radixdlt.api.service;
 
+import com.radixdlt.api.service.network.NetworkInfoService;
+import com.radixdlt.api.service.network.ScheduledStatsCollecting;
 import org.junit.Test;
 
 import com.radixdlt.counters.SystemCounters;
@@ -78,10 +80,10 @@ import static com.radixdlt.api.data.NodeStatus.BOOTING;
 import static com.radixdlt.api.data.NodeStatus.STALLED;
 import static com.radixdlt.api.data.NodeStatus.SYNCING;
 import static com.radixdlt.api.data.NodeStatus.UP;
-import static com.radixdlt.api.service.NetworkInfoService.DEMAND_KEY;
-import static com.radixdlt.api.service.NetworkInfoService.LEDGER_KEY;
-import static com.radixdlt.api.service.NetworkInfoService.TARGET_KEY;
-import static com.radixdlt.api.service.NetworkInfoService.THROUGHPUT_KEY;
+import static com.radixdlt.api.service.network.NetworkInfoService.DEMAND_KEY;
+import static com.radixdlt.api.service.network.NetworkInfoService.LEDGER_KEY;
+import static com.radixdlt.api.service.network.NetworkInfoService.TARGET_KEY;
+import static com.radixdlt.api.service.network.NetworkInfoService.THROUGHPUT_KEY;
 import static com.radixdlt.counters.SystemCounters.CounterType;
 
 public class NetworkInfoServiceTest {

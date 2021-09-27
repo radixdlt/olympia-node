@@ -67,8 +67,10 @@ package com.radixdlt.integration.staking;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.store.ValidatorUptime;
-import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
+import com.radixdlt.api.archive.accounts.BerkeleyAccountInfoStore;
+import com.radixdlt.api.data.ValidatorUptime;
+import com.radixdlt.api.archive.validators.BerkeleyValidatorUptimeArchiveStore;
+import com.radixdlt.api.archive.tokens.BerkeleyResourceInfoStore;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
@@ -91,6 +93,8 @@ import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.util.Throwables;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -155,6 +159,7 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.UInt256;
 
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -293,8 +298,12 @@ public class StakingUnstakingValidatorsTest {
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 					bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
-					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class).addBinding()
-						.to(BerkeleyValidatorUptimeArchiveStore.class);
+					var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
+					binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
+					bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
+					binder.addBinding().to(BerkeleyResourceInfoStore.class);
+					bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
+					binder.addBinding().to(BerkeleyAccountInfoStore.class);
 				}
 
 				@Provides
@@ -313,6 +322,8 @@ public class StakingUnstakingValidatorsTest {
 		private final RadixEngine<LedgerAndBFTProof> radixEngine;
 		private final ClassToInstanceMap<Object> lastEvents;
 		private final BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore;
+		private final BerkeleyResourceInfoStore resourceInfoStore;
+		private final BerkeleyAccountInfoStore accountInfoStore;
 		private final Forks forks;
 
 		@Inject
@@ -322,6 +333,8 @@ public class StakingUnstakingValidatorsTest {
 			@LastProof LedgerProof lastLedgerProof,
 			RadixEngine<LedgerAndBFTProof> radixEngine,
 			BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore,
+			BerkeleyResourceInfoStore resourceInfoStore,
+			BerkeleyAccountInfoStore accountInfoStore,
 			Forks forks
 		) {
 			this.self = self;
@@ -329,6 +342,8 @@ public class StakingUnstakingValidatorsTest {
 			this.lastLedgerProof = lastLedgerProof;
 			this.radixEngine = radixEngine;
 			this.uptimeArchiveStore = uptimeArchiveStore;
+			this.resourceInfoStore = resourceInfoStore;
+			this.accountInfoStore = accountInfoStore;
 			this.forks = forks;
 		}
 
@@ -392,6 +407,28 @@ public class StakingUnstakingValidatorsTest {
 
 		public Map<ECPublicKey, ValidatorUptime> getUptime() {
 			return uptimeArchiveStore.getUptimeTwoWeeks();
+		}
+
+		public JSONObject getNativeToken() {
+			return resourceInfoStore.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
+		}
+
+		public JSONObject getAccountInfo(REAddr addr) {
+			return accountInfoStore.getAccountInfo(addr);
+		}
+
+		public JSONArray getAccountUnstakes(REAddr addr) {
+			return accountInfoStore.getAccountUnstakes(addr);
+		}
+
+		public BigInteger getTotalExittingStake() {
+			var totalStakeExitting = radixEngine.reduce(ExittingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			return new BigInteger(1, totalStakeExitting.toByteArray());
+		}
+
+		public BigInteger getTotalTokensInAccounts() {
+			var totalTokens = radixEngine.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			return new BigInteger(1, totalTokens.toByteArray());
 		}
 
 		public UInt256 getTotalNativeTokens() {
@@ -500,6 +537,48 @@ public class StakingUnstakingValidatorsTest {
 		logger.info("Total uptime {}", totalUptime);
 		assertThat(totalUptime.getProposalsCompleted() + totalUptime.getProposalsMissed())
 			.isEqualTo(totalRounds);
+		var json = nodeState.getNativeToken();
+		logger.info("json {}", json.toString(4));
+		var supplyStringFromJson = json.getString("currentSupply");
+		assertThat(finalCount.toString()).isLessThanOrEqualTo(supplyStringFromJson);
+		var supplyFromJson = new BigInteger(supplyStringFromJson, 10);
+		var totalMinted = new BigInteger(json.getString("totalMinted"), 10);
+		var totalBurned = new BigInteger(json.getString("totalBurned"), 10);
+		assertThat(supplyFromJson).isEqualTo(totalMinted.subtract(totalBurned));
+
+		var totalTokenBalance = PrivateKeys.numeric(1).limit(20)
+			.map(ECKeyPair::getPublicKey)
+			.map(REAddr::ofPubKeyAccount)
+			.map(nodeState::getAccountInfo)
+			.map(jsonAccount -> {
+				var jsonArray = jsonAccount.getJSONArray("tokenBalances");
+				if (jsonArray.length() == 1) {
+					return new BigInteger(jsonArray.getJSONObject(0).getString("amount"), 10);
+				} else if (jsonArray.isEmpty()) {
+					return BigInteger.ZERO;
+				} else {
+					throw new IllegalStateException();
+				}
+			})
+			.reduce(BigInteger.ZERO, BigInteger::add);
+		assertThat(totalTokenBalance).isEqualTo(nodeState.getTotalTokensInAccounts());
+
+		var totalUnstakingBalance = PrivateKeys.numeric(1).limit(20)
+			.map(ECKeyPair::getPublicKey)
+			.map(REAddr::ofPubKeyAccount)
+			.map(nodeState::getAccountUnstakes)
+			.map(jsonUnstakes -> {
+				BigInteger sum = BigInteger.ZERO;
+				for (int i = 0; i < jsonUnstakes.length(); i++) {
+					if (jsonUnstakes.getJSONObject(i).getLong("epochsUntil") != 500) {
+						var amt = new BigInteger(jsonUnstakes.getJSONObject(i).getString("amount"), 10);
+						sum = sum.add(amt);
+					}
+				}
+				return sum;
+			})
+			.reduce(BigInteger.ZERO, BigInteger::add);
+		assertThat(totalUnstakingBalance).isEqualTo(nodeState.getTotalExittingStake());
 
 		for (var e : nodeState.getValidators().entrySet()) {
 			logger.info("{} {}", e.getKey(), e.getValue());

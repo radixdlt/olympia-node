@@ -67,6 +67,7 @@ import org.apache.tools.ant.taskdefs.condition.Os
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'com.adarshr.test-logger'
+apply plugin: 'java-library'
 
 configurations {
     acceptanceTestImplementation.extendsFrom testImplementation
@@ -78,6 +79,7 @@ sourceSets {
             compileClasspath += main.output + test.output
             runtimeClasspath += main.output + test.output
             srcDir file('src/test/java')
+            srcDir file('src/main/java')
         }
         resources.srcDir file('src/test/resources')
     }
@@ -120,23 +122,26 @@ checkstyleAcceptanceTest {
 }
 
 dependencies {
-    implementation project(':radixdlt-java')
+    api project(':radixdlt-java')
+    api project(':radixdlt')
 
-    implementation 'io.reactivex.rxjava2:rxjava'
     implementation 'com.google.guava:guava'
-
-    implementation 'com.squareup.okhttp3:okhttp'
-    implementation 'com.squareup.okhttp3:logging-interceptor'
-
     implementation 'org.slf4j:slf4j-simple:2.0.0-alpha2'
+    implementation 'com.github.docker-java:docker-java:3.2.11'
+    implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.11'
+    implementation 'com.konghq:unirest-java:3.11.09:standalone'
+    implementation 'org.buildobjects:jproc:2.6.2'
+    implementation 'org.awaitility:awaitility:4.0.3'
+
+    // the project lobmok dependencies.
+    // Normally the lombok plugin is used, but for some reason it doesn't work so the deps are added manually
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
+    testCompileOnly 'org.projectlombok:lombok:1.18.20'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
 
     testImplementation 'junit:junit'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'io.cucumber:cucumber-java:6.10.3'
     testImplementation 'io.cucumber:cucumber-junit:6.10.3'
-    testImplementation 'org.awaitility:awaitility:4.0.3'
-    testImplementation 'com.github.docker-java:docker-java:3.2.8'
-    testImplementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.8'
-    testImplementation 'com.konghq:unirest-java:3.11.09:standalone'
-
 }

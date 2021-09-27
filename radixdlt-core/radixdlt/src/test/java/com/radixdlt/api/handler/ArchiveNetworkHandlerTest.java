@@ -63,17 +63,18 @@
  */
 package com.radixdlt.api.handler;
 
+import com.radixdlt.api.archive.network.ArchiveNetworkHandler;
 import org.json.JSONObject;
 import org.junit.Test;
 
-import com.radixdlt.api.service.NetworkInfoService;
+import com.radixdlt.api.service.network.NetworkInfoService;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
 public class ArchiveNetworkHandlerTest {
 	private static final JSONObject EMPTY_REQUEST = jsonObject().put("id", "1");
