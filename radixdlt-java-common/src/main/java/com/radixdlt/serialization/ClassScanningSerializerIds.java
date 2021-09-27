@@ -124,14 +124,6 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 				continue;
 			}
 
-//			if (Modifier.isAbstract(cls.getModifiers())) {
-//				// Abstract classes should not be marked with @SerializerId
-//				// There may be a need to implement this to satisfy some of the Indexable stuff.
-//				log.warn(String.format("Skipping abstract class %s with unexpected %s annotation",
-//						cls.getName(), SERIALIZER_ID_ANNOTATION.getSimpleName()));
-//				continue;
-//			}
-
 			String id = sid.value();
 
 			if (Polymorphic.class.isAssignableFrom(cls)) {

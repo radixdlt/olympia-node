@@ -67,34 +67,20 @@ package com.radixdlt.crypto;
 import com.google.common.hash.HashCode;
 
 /**
- * An entity capable of producing a {@link Signature} of type {@code <T>} using some {@link SignatureScheme}.
- * @param <T>
+ * An entity capable of producing a signature of type {@code <T>}.
  */
-public interface Signing<T extends Signature> extends ECMultiplicationScalar {
-
+public interface Signing<T> extends ECMultiplicationScalar {
     /**
-     * Produces a {@link Signature} of type {@code <T>} of {@code hash}.
+     * Produces a signature of type {@code <T>} of {@code hash}.
      * @param hash A hash of some message to sign as a byte array.
-     * @return A {@link Signature} of type {@code <T>} of {@code hash}.
+     * @return A signature of type {@code <T>} of {@code hash}.
      */
     T sign(byte[] hash);
 
-	/**
-	 * Checks if signing entity is capable of producing a {@link Signature} matching
-	 * the specified {@code signatureScheme)
-	 *
-	 * @param signatureScheme the {@link SignatureScheme} for the {@link Signature}
-	 * we want to check if this signing entity can produce.
-	 *
-	 * @return Checks if signing entity is capable of producing a {@link Signature}
-	 *         matching the type {@code} signatureType
-	 */
-    boolean canProduceSignatureForScheme(SignatureScheme signatureType);
-
     /**
-     * Produces a {@link Signature} of type {@code <T>} of {@code hash}.
+     * Produces a signature of type {@code <T>} of {@code hash}.
      * @param hash A hash of some message to sign.
-     * @return A {@link Signature} of type {@code <T>} of {@code hash}.
+     * @return A signature of type {@code <T>} of {@code hash}.
      */
     default T sign(HashCode hash) {
         return sign(hash.asBytes());

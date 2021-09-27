@@ -103,10 +103,11 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import static com.radixdlt.identifiers.CommonErrors.SSL_ALGORITHM_ERROR;
-import static com.radixdlt.identifiers.CommonErrors.SSL_GENERAL_ERROR;
-import static com.radixdlt.identifiers.CommonErrors.SSL_KEY_ERROR;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DESERIALIZE;
+import static com.radixdlt.errors.ClientErrors.SSL_ALGORITHM_ERROR;
+import static com.radixdlt.errors.ClientErrors.SSL_GENERAL_ERROR;
+import static com.radixdlt.errors.ClientErrors.SSL_KEY_ERROR;
+import static com.radixdlt.errors.ClientErrors.UNABLE_TO_DESERIALIZE;
+import static com.radixdlt.errors.ClientErrors.UNABLE_TO_SERIALIZE;
 import static com.radixdlt.networks.Network.LOCALNET;
 
 public abstract class RadixApiBase {
@@ -197,7 +198,7 @@ public abstract class RadixApiBase {
 	}
 
 	protected Result<String> serialize(JsonRpcRequest request) {
-		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper().writeValueAsString(request));
+		return Result.wrap(UNABLE_TO_SERIALIZE, () -> objectMapper().writeValueAsString(request));
 	}
 
 	protected <T> Result<JsonRpcResponse<T>> deserialize(String body, TypeReference<JsonRpcResponse<T>> typeReference) {

@@ -70,15 +70,10 @@ apply plugin: 'maven-publish'
 dependencies {
     api project(':radixdlt-engine')
 
-    api 'com.squareup.okhttp3:okhttp'
-    api 'com.squareup.okhttp3:logging-interceptor'
-    api 'io.reactivex.rxjava2:rxjava'
-
     testImplementation 'junit:junit'
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'nl.jqno.equalsverifier:equalsverifier'
-    testImplementation 'com.flipkart.zjsonpatch:zjsonpatch'
 }
 
 jar {

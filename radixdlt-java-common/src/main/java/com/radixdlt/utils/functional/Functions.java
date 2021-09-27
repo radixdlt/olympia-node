@@ -69,6 +69,12 @@ package com.radixdlt.utils.functional;
  * Note that these functions are not supposed to throw any exceptions
  */
 public interface Functions {
+
+	static <T> T identity(T t) {
+		return t;
+	}
+
+
 	@FunctionalInterface
 	interface FN0<R> {
 		R apply();

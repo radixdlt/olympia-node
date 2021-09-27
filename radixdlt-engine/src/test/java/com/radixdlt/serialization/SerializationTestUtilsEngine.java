@@ -64,12 +64,10 @@
 
 package com.radixdlt.serialization;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.flipkart.zjsonpatch.JsonDiff;
 
 import java.io.IOException;
 
@@ -96,11 +94,6 @@ final class SerializationTestUtilsEngine {
 		compareJson(json1, json2);
 	}
 
-	static void compareJson(String s1Json, String s2aJson, String s2bJson) throws IOException {
-		compareJson(s1Json, s2aJson);
-		compareJson(s2aJson, s2bJson);
-	}
-
 	static void compareJson(String s1Json, String s2Json) throws IOException {
 		ObjectMapper om = new ObjectMapper();
 		om.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
@@ -108,16 +101,7 @@ final class SerializationTestUtilsEngine {
 		JsonNode s1Tree = om.readTree(s1Json);
 		JsonNode s2Tree = om.readTree(s2Json);
 		if (!s1Tree.equals(s2Tree)) {
-			JsonNode patch12 = JsonDiff.asJson(s1Tree, s2Tree);
-			JsonNode patch21 = JsonDiff.asJson(s2Tree, s1Tree);
-			fail(String.format("Not equivalent JSON:%n%s%n%s%n%s%n%s",
-					toSortedString(om, s1Tree), toSortedString(om, s2Tree),
-					patch12.toString(), patch21.toString()));
+			fail("Not equivalent JSON");
 		}
-	}
-
-	static String toSortedString(ObjectMapper om, JsonNode node) throws JsonProcessingException {
-		final Object obj = om.treeToValue(node, Object.class);
-		return om.writeValueAsString(obj);
 	}
 }
