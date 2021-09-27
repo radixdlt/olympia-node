@@ -75,6 +75,7 @@ import com.radixdlt.network.p2p.transport.logging.LogSink;
 import com.radixdlt.network.p2p.transport.logging.LoggingHandler;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.SocketChannel;
@@ -147,6 +148,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		config.setSendBufferSize(MAX_PACKET_LENGTH);
 		config.setOption(ChannelOption.SO_RCVBUF, 1024 * 1024);
 		config.setOption(ChannelOption.SO_BACKLOG, 1024);
+		config.setAllocator(new PooledByteBufAllocator(false));
 
 		if (log.isDebugEnabled()) {
 			socketChannel.pipeline().addLast(new LoggingHandler(LogSink.using(log), false));
