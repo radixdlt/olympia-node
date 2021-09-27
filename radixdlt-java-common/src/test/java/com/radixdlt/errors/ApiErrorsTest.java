@@ -69,7 +69,6 @@ import org.junit.Test;
 
 import com.radixdlt.utils.functional.Functions;
 
-import java.io.PrintStream;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
