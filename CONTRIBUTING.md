@@ -38,68 +38,62 @@ Please report unacceptable behavior to [hello@radixdlt.com](mailto:hello@radixdl
 
 ## Branching strategy
 
-Our branching strategy is based on [this article](https://medium.com/@matt.dekrey/a-better-git-branching-model-b3bc8b73e472).
+This branching scheme is a combination of GitHub flow and git-flow where there’s the develop branch, feature branches and then release branches.
+
 
 ### Rebasing
 
-Rebasing should be avoided. Rebases cause potential conflicts with other people's work on the same branches, overwrite history of the project and ruin any GPG signed commits from other developers. The only time it is OK to rebase is when there is a local branch that hasn't been pushed to any remotes yet.
+Rebasing in develop should be avoided. Rebases cause potential conflicts with other people's work on the same branches, overwrite the history of the project and ruin any GPG signed commits from other developers. On feature branches, especially if only one developer is working on it, it’s ok to do rebasing.
+
 
 ### Main flow
 
-* Create a feature branch off the previous release, release candidate or dependency feature branch
-* Feature branches get merged into the next release candidate branch
-* When QA approves, release candidate branch is renamed to release, all merged feature branches are deleted, release becomes the new base
-* Hotfixes come off the lowest affected version, then get merged downstream into every next release branch
-* Feature fixes go on feature branches, then again into release candidate
+* Create feature branches using develop as a starting point to start new work
+
+When the release process starts:
+
+* Create a release branch
+* Tag the commit with a release candidate tag, e.g. rc/1.0.3
+* Once a release branch is created, only add serious bug fixes to the branch.
+* Once a release branch (release or hotfix) is released, merge back to develop
+
+
 
 ### Branch types and naming
 
-* Release candidate  - `rc/1.0`
-* Release - `release/1.0`
+* Development  - `develop`
+* Release - `release/1.0.0`
 * Feature - `feature/cool-bananas`
-* Hotfix - `hotfix/bananas-too-hot`
+* Hotfix - `release/1.0.1`
 
 
 ### Features
 
-Feature branches are where the main work happens. The goal is to keep them as independent from each other as possible. 
+Feature branches are where the main work happens. The goal is to keep them as independent from each other as possible. They can be based on a previous release or from develop.
 
-They can be based off a previous release, a previous release candidate if they depend on an upcoming release or another feature branch if it depends directly on another feature. If it has multiple dependencies, first create an integration branch with all the dependencies merged together.
+> develop branch is not a place to dump WIP features
 
-They get merged into release candidates, or if there is a complex merge with another feature, it is recommended to create an integration branch for merging these features before merging that into the release candidate.
+It’s important to remark that feature branches should only be merged to develop once they are complete and ideally tested in a test network.
 
-Feature branches get deleted only when they become a part of a full release.
+### Develop
 
-If a bug is discovered, it is fixed in the feature branch and merged into the release candidate again - this way if a feature needs to be removed from a release, nothing is lost.
+This branch acts as staging for new releases, and are where most of QA should happen.
 
-### Release candidates
-
-These branches act as staging for new releases, and are where most of QA should happen.
-
-When QA gives the green light, they are merged into a new release branch and then deleted.
-
-If QA discovers a bug with any of the features, it is fixed in the feature branch and then merged into the release candidate again.
-
-If there are any downstream release candidates based on this release candidate, when a feature is merged into the release candidate, it should immediately be propagated to the dependent release candidates.
-
-The biggest advantage of the release candidate branches is that if it's decided that a feature needs to be removed from a release (because it is either incomplete, or cancelled) it is possible to delete and recreate the release candidate from scratch without the offending feature. This is a bit of work but could be a lifesaver.
+When QA gives the green light, a new release branch is created
 
 ### Releases
 
 These branches will stay alive forever, or at least while we support the release, thereby allowing us to release security hotfixes for older versions.
 
-Only hotfixes can be merged directly into these, everything else goes through release candidates.
+If QA discovers a bug with any of the features before a release happens, it is fixed in the feature branch taken from the release branch and then merged into the release again. 
 
-We should also add tags here to each commit that is a published release.
+These changes should immediately be propagated to the current release candidate branch.
 
 ### Hotfixes
 
-Hotfix branches are for providing emergency security fixes to older versions. 
+Hotfix branches are for providing emergency security fixes to older versions and should be treated like release branches.
 
-The hotifx should be created for the oldest affected release, merged into that release, and then the release merged downstream into the next release or release candidate, repeated until up to date. The reason for doing this, instead of cherry-picking the commit, is that git remembers merge history, and any future hotfixes will be trivial to propagate downstream.
-
-Once the hotfix branch is ready, it should be treated basically as a release candidate and handed off to QA, deleted when merged into the release branch.
-
+The hotifx should be created for the oldest affected release, and then merged downstream into the next release or release candidate, repeated until up to date.
 
 ## Contribute
 
