@@ -64,11 +64,12 @@
 
 package com.radixdlt.crypto;
 
+import org.bouncycastle.crypto.digests.KeccakDigest;
+
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
-import org.bouncycastle.crypto.digests.KeccakDigest;
 
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
@@ -80,9 +81,7 @@ import java.util.Comparator;
  */
 @SecurityCritical(SecurityKind.HASHING)
 public final class HashUtils {
-
-	private static final Comparator<HashCode> hashComparator = new Comparator<HashCode>() {
-
+	private static final Comparator<HashCode> hashComparator = new Comparator<>() {
 		private final Comparator<byte[]> bytesComparator = UnsignedBytes.lexicographicalComparator();
 
 		@Override

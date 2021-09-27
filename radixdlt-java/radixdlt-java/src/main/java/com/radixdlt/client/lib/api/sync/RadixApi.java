@@ -424,7 +424,7 @@ public interface RadixApi {
 		/**
 		 * Lookup validator by address.
 		 *
-		 * @param validatorAddress
+		 * @param validatorAddress validator address
 		 */
 		Result<ValidatorDTO> lookup(ValidatorAddress validatorAddress);
 	}

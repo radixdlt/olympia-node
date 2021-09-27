@@ -88,7 +88,7 @@ import java.util.Objects;
  * a tuple of {@link BigInteger}s {@code (R, S)}/
  */
 @SerializerId2("sig")
-public final class ECDSASignature implements Signature {
+public final class ECDSASignature {
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
@@ -189,11 +189,6 @@ public final class ECDSASignature implements Signature {
 	@Override
 	public int hashCode() {
 		return Objects.hash(r, s, v);
-	}
-
-	@Override
-	public SignatureScheme signatureScheme() {
-		return SignatureScheme.ECDSA;
 	}
 
 	//WARNING: Never ever use this method to restore recoverable signature! It misses 'v' bit necessary for recovery.

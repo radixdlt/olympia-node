@@ -1,7 +1,5 @@
 package com.radixdlt.cloud;
 
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.identifiers.ValidatorAddressing;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -9,14 +7,10 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import com.radixdlt.cli.OutputCapture;
-import com.radixdlt.cli.RadixCLI;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.RadixKeyStore;
-import com.radixdlt.crypto.exception.KeyStoreException;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.NodeAddressing;
+import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
@@ -24,7 +18,9 @@ import com.radixdlt.utils.AWSSecretsOutputOptions;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.SecureRandom;
 import java.security.Security;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,7 +30,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.security.SecureRandom;
 
 public class AWSSecrets {
 	private static final Boolean DEFAULT_ENABLE_AWS_SECRETS = false;
@@ -145,6 +140,8 @@ public class AWSSecrets {
 		List<String> nodes,
 		Boolean isStaker
 	) {
+		Security.insertProviderAt(new BouncyCastleProvider(), 1);
+
 		for (var nodeName : nodes) {
 			var keyStoreName = String.format("%s.ks", nodeName);
 			var keyStoreSecretName = String.format("%s.ks", nodeName);
@@ -168,37 +165,21 @@ public class AWSSecrets {
 			final var keyFileSecretName = String.format("%s/%s/%s", networkName, nodeName, keyStoreSecretName);
 			final var passwordSecretName = String.format("%s/%s/%s", networkName, nodeName, passwordName);
 			final var password = generatePassword(defaultKeyPassword);
-			try (var capture = OutputCapture.startStdout()) {
-				var cmdArgs = new String[]{"generate-validator-key", "-k=" + keyStoreName, "-p=" + password};
-				System.out.println(Arrays.toString(cmdArgs));
-				Security.insertProviderAt(new BouncyCastleProvider(), 1);
-				RadixCLI.execute(cmdArgs);
 
-				final var output = capture.stop();
-				System.out.println(output);
-
-				if (output.contains("Unable to generate keypair")) {
-					throw new Exception(output);
-				}
-
+			try {
 				var keyFilePath = Paths.get(keyStoreName);
 				var keystoreFile = new File(keyFilePath.toString());
+				var keyPair = ECKeyPair.generateNew();
+
+				RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), !keystoreFile.canWrite())
+					.writeKeyPair(KEYPAIR_NAME, keyPair);
+
 				var keyFileAwsSecret = new HashMap<String, Object>();
 				var publicKeyFileAwsSecret = new HashMap<String, Object>();
-				final NodeAddressing nodeAddressing = NodeAddressing.bech32(network.getNodeHrp());
-				final ValidatorAddressing validatorAddressing = ValidatorAddressing.bech32(network.getValidatorHrp());
-				try {
-					var data = Files.readAllBytes(keyFilePath);
-					keyFileAwsSecret.put("key", data);
-					var pubKey = returnPublicKey(keystoreFile, password);
-					publicKeyFileAwsSecret.put("bech32", nodeAddressing.of(pubKey));
-					publicKeyFileAwsSecret.put("hex", pubKey.toHex());
-					publicKeyFileAwsSecret.put("validator_address", validatorAddressing.of(pubKey));
-					System.out.println(nodeAddressing.of(pubKey));
-					System.out.println(pubKey.toHex());
-				} catch (IOException e) {
-					throw new IllegalStateException("While reading validator keys", e);
-				}
+
+				putKeyBytes(keyFilePath, keyFileAwsSecret);
+				printAddresses(network, keyPair, publicKeyFileAwsSecret);
+
 				var keyPasswordAwsSecret = new HashMap<String, Object>();
 				keyPasswordAwsSecret.put("key", password);
 
@@ -211,20 +192,26 @@ public class AWSSecrets {
 		}
 	}
 
-	private static ECPublicKey returnPublicKey(File keystoreFile, String password) {
-		if (!keystoreFile.exists() || !keystoreFile.canRead()) {
-			System.out.format("keystore file %s does not exist or is not accessible\n", keystoreFile.toString());
-			System.exit(1);
-		}
-		ECKeyPair keyPair = null;
-		try {
-			keyPair = RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), true)
-				.readKeyPair(KEYPAIR_NAME, false);
-		} catch (KeyStoreException | PrivateKeyException | PublicKeyException | IOException e) {
-			e.printStackTrace();
-		}
+	private static void printAddresses(Network network, ECKeyPair keyPair, HashMap<String, Object> publicKeyFileAwsSecret) {
+		var pubKey = keyPair.getPublicKey();
+		var nodeAddressing = NodeAddressing.bech32(network.getNodeHrp());
+		var validatorAddressing = ValidatorAddressing.bech32(network.getValidatorHrp());
 
-		return keyPair.getPublicKey();
+		publicKeyFileAwsSecret.put("bech32", nodeAddressing.of(pubKey));
+		publicKeyFileAwsSecret.put("hex", pubKey.toHex());
+		publicKeyFileAwsSecret.put("validator_address", validatorAddressing.of(pubKey));
+
+		System.out.println(nodeAddressing.of(pubKey));
+		System.out.println(pubKey.toHex());
+	}
+
+	private static void putKeyBytes(Path keyFilePath, HashMap<String, Object> keyFileAwsSecret) {
+		try {
+			var data = Files.readAllBytes(keyFilePath);
+			keyFileAwsSecret.put("key", data);
+		} catch (IOException e) {
+			throw new IllegalStateException("While reading validator keys", e);
+		}
 	}
 
 	private static String generatePassword(String password) {

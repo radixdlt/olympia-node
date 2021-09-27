@@ -92,7 +92,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_MAKE_RECOVERABLE;
+import static com.radixdlt.errors.ApiErrors.UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE;
 
 /**
  * Utilities used by both {@link ECPublicKey} and {@link ECKeyPair}.
@@ -269,7 +269,7 @@ public class ECKeyUtils {
 	 */
 	public static Result<ECDSASignature> toRecoverable(ECDSASignature signature, byte[] hash, ECPublicKey publicKey) {
 		return Result.wrap(
-			UNABLE_TO_MAKE_RECOVERABLE,
+			UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE,
 			() -> {
 				var v = calculateV(signature.getR(), signature.getS(), publicKey.getBytes(), hash);
 				return ECDSASignature.create(signature.getR(), signature.getS(), v);

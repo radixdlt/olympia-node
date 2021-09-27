@@ -141,6 +141,6 @@ public class PairTest {
 		String s = this.testPair.toString();
 		assertTrue(s.startsWith(Pair.class.getSimpleName()));
 		assertTrue(s.contains(this.testPair.getFirst().toString()));
-		assertTrue(s.contains(this.testPair.getSecond().toString()));
+		assertTrue(s.contains(this.testPair.getSecond()));
 	}
 }

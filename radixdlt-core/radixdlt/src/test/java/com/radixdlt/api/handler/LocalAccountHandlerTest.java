@@ -67,6 +67,7 @@ package com.radixdlt.api.handler;
 import com.radixdlt.api.node.account.LocalAccountHandler;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
+
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -87,7 +88,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
+import static org.mockito.Mockito.when;
 
 import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
@@ -111,11 +112,11 @@ public class LocalAccountHandlerTest {
 	public void testHandleAccountGetInfo() {
 		when(accountService.getAccountInfo())
 			.thenReturn(
-				jsonObject()
-					.put("address", "some address")
-					.put("balance", jsonObject()
-						.put("tokens", jsonArray())
-						.put("stakes", jsonArray()))
+				Result.ok(jsonObject()
+							  .put("address", "some address")
+							  .put("balance", jsonObject()
+								  .put("tokens", jsonArray())
+								  .put("stakes", jsonArray())))
 			);
 
 		var response = handler.handleAccountGetInfo(requestWith(jsonObject()));

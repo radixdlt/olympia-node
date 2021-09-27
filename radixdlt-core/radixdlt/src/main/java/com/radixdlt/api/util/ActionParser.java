@@ -81,15 +81,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static com.radixdlt.api.data.ApiErrors.INVALID_ACTION_DATA;
-import static com.radixdlt.api.data.ApiErrors.MISSING_ACTION_FIELD;
-import static com.radixdlt.api.data.ApiErrors.UNSUPPORTED_ACTION;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MIN;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
-import static com.radixdlt.identifiers.CommonErrors.VALUE_OUT_OF_RANGE;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_BOOLEAN;
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_PARSE_FLOAT;
+import static com.radixdlt.errors.ApiErrors.INVALID_ACTION_DATA;
+import static com.radixdlt.errors.ApiErrors.INVALID_VALUE_OUT_OF_RANGE;
+import static com.radixdlt.errors.ApiErrors.MISSING_ACTION_FIELD;
+import static com.radixdlt.errors.ApiErrors.UNABLE_TO_PARSE_BOOLEAN;
+import static com.radixdlt.errors.ApiErrors.UNABLE_TO_PARSE_FLOAT;
+import static com.radixdlt.errors.ApiErrors.UNSUPPORTED_ACTION;
 import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.wrap;
 
@@ -243,7 +243,7 @@ public final class ActionParser {
 			.flatMap(p -> addressing.forResources().parseToAddr(p));
 	}
 
-	private static final Failure FEE_BOUNDS_FAILURE = VALUE_OUT_OF_RANGE.with(
+	private static final Failure FEE_BOUNDS_FAILURE = INVALID_VALUE_OUT_OF_RANGE.with(
 		(double) RAKE_MIN / (double) RAKE_PERCENTAGE_GRANULARITY + "",
 		(double) RAKE_MAX / (double) RAKE_PERCENTAGE_GRANULARITY + ""
 	);

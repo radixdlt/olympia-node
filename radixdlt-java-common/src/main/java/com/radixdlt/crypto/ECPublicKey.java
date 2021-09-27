@@ -70,8 +70,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.encryption.ECIES;
-import com.radixdlt.crypto.exception.ECIESException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
@@ -83,7 +81,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.radixdlt.identifiers.CommonErrors.INVALID_PUBLIC_KEY;
+import static com.radixdlt.errors.ApiErrors.INVALID_PUBLIC_KEY;
 
 /**
  * Asymmetric EC public key provider fixed to curve 'secp256k1'
@@ -158,10 +156,6 @@ public final class ECPublicKey {
 
 	public boolean verify(byte[] hash, ECDSASignature signature) {
 		return signature != null && ECKeyUtils.keyHandler.verify(hash, signature, ecPoint);
-	}
-
-	public byte[] encrypt(byte[] data) throws ECIESException {
-		return ECIES.encrypt(data, this);
 	}
 
 	public String toHex() {

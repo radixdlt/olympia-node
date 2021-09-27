@@ -70,7 +70,6 @@ import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import org.junit.Test;
-import org.powermock.reflect.Whitebox;
 import org.radix.serialization.SerializeObject;
 
 import java.util.Optional;
@@ -99,7 +98,7 @@ public class HighQCTest extends SerializeObject<HighQC> {
 	public void when_created_with_equal_qcs__highest_committed_is_elided() {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		HighQC highQC = HighQC.from(qc, qc, Optional.empty());
-		QuorumCertificate storedCommitQC = Whitebox.getInternalState(highQC, "highestCommittedQC");
+		QuorumCertificate storedCommitQC = highQC.rawHighestCommittedQC();
 		assertThat(storedCommitQC).isNull();
 		assertThat(highQC.highestQC()).isEqualTo(qc);
 		assertThat(highQC.highestCommittedQC()).isEqualTo(qc);
@@ -110,7 +109,7 @@ public class HighQCTest extends SerializeObject<HighQC> {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		QuorumCertificate cqc = mock(QuorumCertificate.class);
 		HighQC highQC = HighQC.from(qc, cqc, Optional.empty());
-		QuorumCertificate storedCommitQC = Whitebox.getInternalState(highQC, "highestCommittedQC");
+		QuorumCertificate storedCommitQC = highQC.rawHighestCommittedQC();
 		assertThat(storedCommitQC).isEqualTo(cqc);
 		assertThat(highQC.highestQC()).isEqualTo(qc);
 		assertThat(highQC.highestCommittedQC()).isEqualTo(cqc);

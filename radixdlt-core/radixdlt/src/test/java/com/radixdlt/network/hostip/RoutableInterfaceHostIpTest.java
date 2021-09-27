@@ -67,8 +67,8 @@ package com.radixdlt.network.hostip;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.Vector;
 
@@ -92,7 +92,7 @@ public class RoutableInterfaceHostIpTest {
 		RoutableInterfaceHostIp rihip = make();
 
 		InetAddress loopback = InetAddress.getByName("127.0.0.1");
-		Vector<InetAddress> addresses = new Vector<>(Arrays.asList(loopback));
+		Vector<InetAddress> addresses = new Vector<>(List.of(loopback));
 
 		NetworkInterface ni = mock(NetworkInterface.class);
 		when(ni.getInetAddresses()).thenReturn(addresses.elements());
@@ -105,7 +105,7 @@ public class RoutableInterfaceHostIpTest {
 		RoutableInterfaceHostIp rihip = make();
 
 		InetAddress linklocal = InetAddress.getByName("169.254.0.0");
-		Vector<InetAddress> addresses = new Vector<>(Arrays.asList(linklocal));
+		Vector<InetAddress> addresses = new Vector<>(List.of(linklocal));
 
 		NetworkInterface ni = mock(NetworkInterface.class);
 		when(ni.getInetAddresses()).thenReturn(addresses.elements());
@@ -118,7 +118,7 @@ public class RoutableInterfaceHostIpTest {
 		RoutableInterfaceHostIp rihip = make();
 
 		InetAddress linklocal = InetAddress.getByName("224.0.0.1");
-		Vector<InetAddress> addresses = new Vector<>(Arrays.asList(linklocal));
+		Vector<InetAddress> addresses = new Vector<>(List.of(linklocal));
 
 		NetworkInterface ni = mock(NetworkInterface.class);
 		when(ni.getInetAddresses()).thenReturn(addresses.elements());
@@ -131,7 +131,7 @@ public class RoutableInterfaceHostIpTest {
 		RoutableInterfaceHostIp rihip = make();
 
 		InetAddress nonroutable = InetAddress.getByName("192.168.0.1");
-		Vector<InetAddress> addresses = new Vector<>(Arrays.asList(nonroutable));
+		Vector<InetAddress> addresses = new Vector<>(List.of(nonroutable));
 
 		NetworkInterface ni = mock(NetworkInterface.class);
 		when(ni.getInetAddresses()).thenReturn(addresses.elements());
@@ -145,7 +145,7 @@ public class RoutableInterfaceHostIpTest {
 		RoutableInterfaceHostIp rihip = make();
 
 		InetAddress routable = InetAddress.getByName("8.8.8.8");
-		Vector<InetAddress> addresses = new Vector<>(Arrays.asList(routable));
+		Vector<InetAddress> addresses = new Vector<>(List.of(routable));
 
 		NetworkInterface ni = mock(NetworkInterface.class);
 		when(ni.getInetAddresses()).thenReturn(addresses.elements());
@@ -161,7 +161,7 @@ public class RoutableInterfaceHostIpTest {
 
 		InetAddress addr1 = InetAddress.getByName("8.8.8.8");
 		InetAddress addr2 = InetAddress.getByName("8.8.4.4");
-		Vector<InetAddress> addresses = new Vector<>(Arrays.asList(addr1, addr2));
+		Vector<InetAddress> addresses = new Vector<>(List.of(addr1, addr2));
 
 		NetworkInterface ni = mock(NetworkInterface.class);
 		when(ni.getInetAddresses()).thenReturn(addresses.elements());
@@ -177,7 +177,7 @@ public class RoutableInterfaceHostIpTest {
 
 		InetAddress badAddr = mock(InetAddress.class);
 		when(badAddr.getHostAddress()).thenReturn("a:b");
-		Vector<InetAddress> addresses = new Vector<>(Arrays.asList(badAddr));
+		Vector<InetAddress> addresses = new Vector<>(List.of(badAddr));
 
 		NetworkInterface ni = mock(NetworkInterface.class);
 		when(ni.getInetAddresses()).thenReturn(addresses.elements());

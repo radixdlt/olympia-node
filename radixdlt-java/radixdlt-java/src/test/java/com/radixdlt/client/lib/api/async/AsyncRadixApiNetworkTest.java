@@ -65,6 +65,8 @@ package com.radixdlt.client.lib.api.async;
 
 import org.junit.Test;
 
+import com.radixdlt.utils.functional.Promise;
+
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;

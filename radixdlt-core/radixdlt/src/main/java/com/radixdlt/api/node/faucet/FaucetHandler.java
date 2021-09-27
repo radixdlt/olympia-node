@@ -63,18 +63,18 @@
 
 package com.radixdlt.api.node.faucet;
 
-import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.FaucetTokensTransfer;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.functional.ExceptionDecoder;
+import com.radixdlt.application.NodeApplicationRequest;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.FaucetTokensTransfer;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.concurrent.CompletableFuture;
@@ -82,8 +82,8 @@ import java.util.concurrent.ExecutionException;
 
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-
-import static com.radixdlt.atom.actions.ActionErrors.UNABLE_TO_SUBMIT_TX;
+import static com.radixdlt.errors.ClientErrors.INTERRUPTED_OPERATION;
+import static com.radixdlt.errors.ApiErrors.UNABLE_TO_SUBMIT_TX;
 
 public class FaucetHandler {
 	private final REAddr account;
@@ -117,16 +117,12 @@ public class FaucetHandler {
 		dispatcher.dispatch(accountRequest);
 		try {
 			var success = completableFuture.get();
-			return Result.ok(FaucetHandler.formatTxId(success.getTxn().getId()));
+			return Result.ok(jsonObject().put("txID", success.getTxn().getId()));
 		} catch (ExecutionException e) {
 			return UNABLE_TO_SUBMIT_TX.with(e.getCause().getMessage()).result();
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			throw new IllegalStateException(e);
+			return INTERRUPTED_OPERATION.with("Send tokens", ExceptionDecoder.extractMessage(e)).result();
 		}
-	}
-
-	private static JSONObject formatTxId(AID txId) {
-		return jsonObject().put("txID", txId);
 	}
 }
