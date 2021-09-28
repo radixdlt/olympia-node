@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:21.04
 MAINTAINER radixdlt <devops@radixdlt.com>
 
 RUN apt-get -y update > /dev/null && \
@@ -9,7 +9,7 @@ RUN apt-get -y update > /dev/null && \
 COPY scripts/fix-vulnerabilities.sh /tmp
 RUN /tmp/fix-vulnerabilities.sh
 
-RUN apt-get -y --no-install-recommends install openjdk-11-jdk
+RUN apt-get -y --no-install-recommends install openjdk-17-jdk
 
 # set entrypoint and default command
 ENTRYPOINT [ "/opt/radixdlt/config_radixdlt.sh" ]
