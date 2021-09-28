@@ -83,6 +83,11 @@ jobs:
         with:
           ref: ${{ steps.set_environment.outputs.git_ref }}
           fetch-depth: 0
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '17'
       - name: Cache Gradle packages
         uses: actions/cache@v2
         with:
