@@ -64,6 +64,8 @@
 
 package com.radixdlt.sync;
 
+import org.junit.Ignore;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
@@ -177,6 +179,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 		}
 	}
 
+	@Ignore
 	private enum ReadType {
 		GOOD {
 			@Override
