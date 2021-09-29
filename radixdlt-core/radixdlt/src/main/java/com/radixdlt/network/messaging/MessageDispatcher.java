@@ -135,7 +135,6 @@ class MessageDispatcher {
 	}
 
 	private Result<Object> send(PeerChannel channel, byte[] bytes) {
-		this.counters.add(CounterType.NETWORKING_SENT_BYTES, bytes.length);
 		return channel.send(bytes);
 	}
 

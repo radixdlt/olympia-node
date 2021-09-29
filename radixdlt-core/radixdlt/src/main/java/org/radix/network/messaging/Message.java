@@ -84,7 +84,6 @@ public abstract class Message extends BasicContainer {
 	}
 
 	private static final AtomicLong instances = new AtomicLong();
-	public static final int MAX_MESSAGE_SIZE = (4096 * 1024);
 
 	private long instance = Message.instances.incrementAndGet();
 

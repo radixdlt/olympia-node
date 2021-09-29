@@ -65,7 +65,9 @@
 package com.radixdlt.network.p2p.transport;
 
 import com.google.common.util.concurrent.RateLimiter;
+import com.radixdlt.api.util.MovingAverage;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
@@ -121,6 +123,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	private final Object lock = new Object();
 	private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
+	private final MovingAverage avgReceivedMsgSize = MovingAverage.create(10);
+	private final MovingAverage avgSentMsgSize = MovingAverage.create(10);
 	private final PublishProcessor<InboundMessage> inboundMessageSink = PublishProcessor.create();
 	private final Flowable<InboundMessage> inboundMessages;
 
@@ -164,7 +168,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 			.onBackpressureBuffer(
 				config.channelBufferSize(),
 				() -> {
-					this.counters.increment(SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
+					this.counters.increment(CounterType.NETWORKING_P2P_DROPPED_MESSAGES);
 					final var logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
 					log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this.toString());
 				},
@@ -233,6 +237,10 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	@Override
 	public void channelRead0(ChannelHandlerContext ctx, byte[] buf) throws Exception {
+		this.counters.add(CounterType.NETWORKING_P2P_RECEIVED_BYTES, buf.length);
+		this.avgReceivedMsgSize.update(buf.length);
+		this.counters.set(CounterType.NETWORKING_P2P_AVG_RECEIVED_MSG_SIZE, this.avgReceivedMsgSize.asLong());
+
 		switch (this.state) {
 			case INACTIVE:
 				throw new RuntimeException("Unexpected read on inactive channel");
@@ -248,6 +256,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) {
 		log.info("Closed: {}", this.toString());
+
+		counters.increment(CounterType.NETWORKING_P2P_CHANNELS_CLOSED);
 
 		final var prevState = this.state;
 		this.state = ChannelState.INACTIVE;
@@ -266,6 +276,9 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	}
 
 	private void write(byte[] data) {
+		this.counters.add(CounterType.NETWORKING_P2P_SENT_BYTES, data.length);
+		this.avgSentMsgSize.update(data.length);
+		this.counters.set(CounterType.NETWORKING_P2P_AVG_SENT_MSG_SIZE, this.avgSentMsgSize.asLong());
 		this.nettyChannel.writeAndFlush(data);
 	}
 
