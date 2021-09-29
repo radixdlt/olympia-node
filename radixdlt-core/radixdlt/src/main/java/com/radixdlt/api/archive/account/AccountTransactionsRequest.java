@@ -63,34 +63,34 @@
 
 package com.radixdlt.api.archive.account;
 
-import com.google.inject.Inject;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
-import org.json.JSONObject;
 
-final class AccountStakesHandler implements ApiHandler<REAddr> {
-	private final Addressing addressing;
-	private final BerkeleyAccountInfoStore store;
+import java.util.OptionalLong;
 
-	@Inject
-	AccountStakesHandler(Addressing addressing, BerkeleyAccountInfoStore store) {
-		this.addressing = addressing;
-		this.store = store;
+public class AccountTransactionsRequest {
+	private final REAddr accountAddr;
+	private final long limit;
+	private final OptionalLong cursor;
+
+	public AccountTransactionsRequest(
+		REAddr accountAddr,
+		long limit,
+		OptionalLong cursor
+	) {
+		this.accountAddr = accountAddr;
+		this.limit = limit;
+		this.cursor = cursor;
 	}
 
-	@Override
-	public Addressing addressing() {
-		return addressing;
+	public REAddr getAccountAddr() {
+		return accountAddr;
 	}
 
-	@Override
-	public REAddr parseRequest(JSONObject request) throws InvalidParametersException {
-		return parseAccountAddress(request, "accountAddress");
+	public long getLimit() {
+		return limit;
 	}
 
-	@Override
-	public JSONObject handleRequest(REAddr addr) {
-		var stakes = store.getAccountStakes(addr);
-		return new JSONObject().put("stakes", stakes);
+	public OptionalLong getCursor() {
+		return cursor;
 	}
 }

@@ -63,8 +63,11 @@
 
 package com.radixdlt.api.util;
 
+import com.radixdlt.api.archive.account.InvalidParametersException;
+import com.radixdlt.api.archive.account.JsonParseException;
 import com.radixdlt.api.node.metrics.MetricsHandler;
 import com.radixdlt.counters.SystemCounters;
+import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.server.handlers.RequestLimitingHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -82,8 +85,8 @@ import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
 import io.undertow.util.StatusCodes;
+import org.json.JSONObject;
 
 import static java.util.logging.Logger.getLogger;
 
@@ -140,6 +143,7 @@ public final class HttpServerRunner implements ModuleRunner {
 				MAXIMUM_CONCURRENT_REQUESTS,
 				QUEUE_SIZE,
 				configureRoutes()
+
 			)
 		);
 
@@ -157,6 +161,32 @@ public final class HttpServerRunner implements ModuleRunner {
 		server.stop();
 	}
 
+	public static void handleInvalidRequestFormat(HttpServerExchange exchange) {
+		var ex = (InvalidParametersException) exchange.getAttachment(ExceptionHandler.THROWABLE);
+		exchange.setStatusCode(500);
+		exchange.getResponseSender().send(new JSONObject()
+			.put("code", 1)
+			.put("message", "Invalid Parameters")
+			.put("details", new JSONObject()
+				.put(ex.getJsonPointer(), ex.getCause().getMessage())
+			)
+			.toString()
+		);
+	}
+
+	public static void handleParseException(HttpServerExchange exchange) {
+		var ex = (JsonParseException) exchange.getAttachment(ExceptionHandler.THROWABLE);
+		exchange.setStatusCode(500);
+		exchange.getResponseSender().send(new JSONObject()
+			.put("code", 1)
+			.put("message", "JSON Parse exception")
+			.put("details", new JSONObject()
+				.put("cause", ex.getCause().getMessage())
+			)
+			.toString()
+		);
+	}
+
 	private HttpHandler configureRoutes() {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
 
@@ -170,10 +200,12 @@ public final class HttpServerRunner implements ModuleRunner {
 		handler.setFallbackHandler(HttpServerRunner::fallbackHandler);
 		handler.setInvalidMethodHandler(HttpServerRunner::invalidMethodHandler);
 
-		return wrapWithCorsFilter(handler);
+		return wrapWithCorsFilter(Handlers.exceptionHandler(handler)
+			.addExceptionHandler(InvalidParametersException.class, HttpServerRunner::handleInvalidRequestFormat)
+			.addExceptionHandler(JsonParseException.class, HttpServerRunner::handleParseException));
 	}
 
-	private Filter wrapWithCorsFilter(final RoutingHandler handler) {
+	private Filter wrapWithCorsFilter(final HttpHandler handler) {
 		var filter = new Filter(handler);
 
 		// Disable INFO logging for CORS filter, as it's a bit distracting

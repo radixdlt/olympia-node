@@ -64,16 +64,11 @@
 package com.radixdlt.api.archive.account;
 
 import com.google.inject.Inject;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.withBody;
-
-class AccountUnstakesHandler implements HttpHandler {
+final class AccountUnstakesHandler implements ApiHandler<REAddr> {
 	private final Addressing addressing;
 	private final BerkeleyAccountInfoStore store;
 
@@ -84,19 +79,19 @@ class AccountUnstakesHandler implements HttpHandler {
 	}
 
 	@Override
-	public void handleRequest(HttpServerExchange exchange) {
-		withBody(exchange, request -> respond(exchange, handle(request)));
+	public Addressing addressing() {
+		return addressing;
 	}
 
-	private JSONObject handle(JSONObject request) {
-		try {
-			var addressString = request.getString("accountAddress");
-			var addr = addressing.forAccounts().parse(addressString);
-			var stakes = store.getAccountUnstakes(addr);
-			return new JSONObject()
-				.put("unstakes", stakes);
-		} catch (DeserializeException e) {
-			return new JSONObject().put("error", e.getMessage());
-		}
+	@Override
+	public REAddr parseRequest(JSONObject request) throws InvalidParametersException {
+		return parseAccountAddress(request, "accountAddress");
+	}
+
+	@Override
+	public JSONObject handleRequest(REAddr addr) {
+		var stakes = store.getAccountUnstakes(addr);
+		return new JSONObject()
+			.put("unstakes", stakes);
 	}
 }

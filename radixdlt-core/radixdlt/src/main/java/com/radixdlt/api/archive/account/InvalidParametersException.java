@@ -63,34 +63,15 @@
 
 package com.radixdlt.api.archive.account;
 
-import com.google.inject.Inject;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
-import org.json.JSONObject;
+public final class InvalidParametersException extends Exception {
+	private final String jsonPointer;
 
-final class AccountStakesHandler implements ApiHandler<REAddr> {
-	private final Addressing addressing;
-	private final BerkeleyAccountInfoStore store;
-
-	@Inject
-	AccountStakesHandler(Addressing addressing, BerkeleyAccountInfoStore store) {
-		this.addressing = addressing;
-		this.store = store;
+	public InvalidParametersException(String jsonPointer, Exception cause) {
+		super("Error at: " + jsonPointer, cause);
+		this.jsonPointer = jsonPointer;
 	}
 
-	@Override
-	public Addressing addressing() {
-		return addressing;
-	}
-
-	@Override
-	public REAddr parseRequest(JSONObject request) throws InvalidParametersException {
-		return parseAccountAddress(request, "accountAddress");
-	}
-
-	@Override
-	public JSONObject handleRequest(REAddr addr) {
-		var stakes = store.getAccountStakes(addr);
-		return new JSONObject().put("stakes", stakes);
+	public String getJsonPointer() {
+		return jsonPointer;
 	}
 }

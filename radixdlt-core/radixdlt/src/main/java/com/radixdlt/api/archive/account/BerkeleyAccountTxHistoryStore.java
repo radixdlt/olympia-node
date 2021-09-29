@@ -90,6 +90,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -118,14 +119,14 @@ public final class BerkeleyAccountTxHistoryStore implements BerkeleyAdditionalSt
 		}
 	}
 
-	private Iterator<Pair<AID, Long>> createReverseIteratorFromCursor(REAddr addr, Long offset, Cursor cursor) {
+	private Iterator<Pair<AID, Long>> createReverseIteratorFromCursor(REAddr addr, OptionalLong index, Cursor cursor) {
 		return new Iterator<>() {
 			private final DatabaseEntry key;
 			private final DatabaseEntry value = new DatabaseEntry();
 			private OperationStatus status;
 			{
-				if (offset != null) {
-					key = key(addr, offset);
+				if (index.isPresent()) {
+					key = key(addr, index.getAsLong());
 					status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
 				} else {
 					var maybeLast = lastOffset(cursor, value, addr);
@@ -158,9 +159,9 @@ public final class BerkeleyAccountTxHistoryStore implements BerkeleyAdditionalSt
 		};
 	}
 
-	public Stream<Pair<AID, Long>> getTxnIdsAssociatedWithAccount(REAddr addr, Long offset) {
+	public Stream<Pair<AID, Long>> getTxnIdsAssociatedWithAccount(REAddr addr, OptionalLong index) {
 		var cursor = accountTxHistory.openCursor(null, null);
-		var iterator = createReverseIteratorFromCursor(addr, offset, cursor);
+		var iterator = createReverseIteratorFromCursor(addr, index, cursor);
 		return Streams.stream(iterator)
 			.onClose(cursor::close);
 	}

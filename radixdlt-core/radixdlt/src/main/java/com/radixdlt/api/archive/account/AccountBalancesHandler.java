@@ -64,16 +64,11 @@
 package com.radixdlt.api.archive.account;
 
 import com.google.inject.Inject;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.withBody;
-
-class AccountBalancesHandler implements HttpHandler {
+final class AccountBalancesHandler implements ApiHandler<REAddr> {
 	private final Addressing addressing;
 	private final BerkeleyAccountInfoStore store;
 
@@ -84,17 +79,17 @@ class AccountBalancesHandler implements HttpHandler {
 	}
 
 	@Override
-	public void handleRequest(HttpServerExchange exchange) {
-		withBody(exchange, request -> respond(exchange, handle(request)));
+	public Addressing addressing() {
+		return addressing;
 	}
 
-	private JSONObject handle(JSONObject request) {
-		try {
-			var addressString = request.getString("accountAddress");
-			var addr = addressing.forAccounts().parse(addressString);
-			return store.getAccountInfo(addr);
-		} catch (DeserializeException e) {
-			return new JSONObject().put("error", e.getMessage());
-		}
+	@Override
+	public REAddr parseRequest(JSONObject request) throws InvalidParametersException {
+		return parseAccountAddress(request, "accountAddress");
+	}
+
+	@Override
+	public JSONObject handleRequest(REAddr addr) {
+		return store.getAccountInfo(addr);
 	}
 }

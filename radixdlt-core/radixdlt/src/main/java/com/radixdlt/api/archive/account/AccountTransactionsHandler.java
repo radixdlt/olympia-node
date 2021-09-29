@@ -66,18 +66,12 @@ package com.radixdlt.api.archive.account;
 import com.google.inject.Inject;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.withBody;
-
-class AccountTransactionsHandler implements HttpHandler {
+class AccountTransactionsHandler implements ApiHandler<AccountTransactionsRequest> {
 	private final Addressing addressing;
 	private final BerkeleyAccountTxHistoryStore txHistoryStore;
 	private final BerkeleyTransactionsByIdStore txByIdStore;
@@ -94,36 +88,38 @@ class AccountTransactionsHandler implements HttpHandler {
 	}
 
 	@Override
-	public void handleRequest(HttpServerExchange exchange) {
-		withBody(exchange, request -> respond(exchange, handle(request)));
+	public Addressing addressing() {
+		return addressing;
 	}
 
-	private JSONObject handle(JSONObject request) {
-		try {
-			var addressString = request.getString("accountAddress");
-			var addr = addressing.forAccounts().parse(addressString);
-			var limit = request.getLong("limit");
-			var offset = request.optLong("offset", -1);
-			var txnArray = new JSONArray();
-			var lastOffset = new AtomicLong(0);
-			txHistoryStore.getTxnIdsAssociatedWithAccount(addr, offset < 0 ? null : offset)
-				.limit(limit)
-				.forEach(pair -> {
-					var json = txByIdStore.getTransactionJSON(pair.getFirst()).orElseThrow();
-					lastOffset.set(pair.getSecond());
-					txnArray.put(json);
-				});
+	@Override
+	public AccountTransactionsRequest parseRequest(JSONObject request) throws InvalidParametersException {
+		var addr = parseAccountAddress(request, "accountAddress");
+		var limit = parseOptionalLong(request, "limit").orElse(10);
+		var cursor = parseOptionalLong(request, "cursor");
 
-			var result = new JSONObject();
-			if (lastOffset.get() > 0) {
-				result.put("nextOffset", lastOffset.get() - 1);
-			}
+		return new AccountTransactionsRequest(addr, limit, cursor);
+	}
 
-			return result
-				.put("totalCount", txnArray.length())
-				.put("transactions", txnArray);
-		} catch (DeserializeException e) {
-			return new JSONObject().put("error", e.getMessage());
+	@Override
+	public JSONObject handleRequest(AccountTransactionsRequest request) {
+		var txnArray = new JSONArray();
+		var lastOffset = new AtomicLong(0);
+		txHistoryStore.getTxnIdsAssociatedWithAccount(request.getAccountAddr(), request.getCursor())
+			.limit(request.getLimit())
+			.forEach(pair -> {
+				var json = txByIdStore.getTransactionJSON(pair.getFirst()).orElseThrow();
+				lastOffset.set(pair.getSecond());
+				txnArray.put(json);
+			});
+
+		var result = new JSONObject();
+		if (lastOffset.get() > 0) {
+			result.put("nextCursor", lastOffset.get() - 1);
 		}
+
+		return result
+			.put("totalCount", txnArray.length())
+			.put("transactions", txnArray);
 	}
 }
