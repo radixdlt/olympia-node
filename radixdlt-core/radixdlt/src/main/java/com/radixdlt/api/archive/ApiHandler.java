@@ -77,7 +77,7 @@ import static com.radixdlt.api.util.RestUtils.CONTENT_TYPE_JSON;
 public interface ApiHandler<T> extends HttpHandler {
 	long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
-	T parseRequest(JsonRequestReader requestReader) throws InvalidParametersException;
+	T parseRequest(JsonObjectReader requestReader) throws InvalidParametersException;
 
 	JSONObject handleRequest(T request);
 
@@ -99,7 +99,7 @@ public interface ApiHandler<T> extends HttpHandler {
 			throw new JsonParseException(e);
 		}
 
-		var requestReader = JsonRequestReader.create(jsonRequest, addressing());
+		var requestReader = JsonObjectReader.create(jsonRequest, addressing());
 		var request = parseRequest(requestReader);
 		var jsonResponse = handleRequest(request);
 		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);

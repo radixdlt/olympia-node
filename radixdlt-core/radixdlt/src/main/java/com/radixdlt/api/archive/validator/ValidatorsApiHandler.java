@@ -66,7 +66,7 @@ package com.radixdlt.api.archive.validator;
 import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
-import com.radixdlt.api.archive.JsonRequestReader;
+import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.Pair;
 import org.json.JSONArray;
@@ -89,7 +89,7 @@ class ValidatorsApiHandler implements ApiHandler<Pair<Long, Long>> {
 	}
 
 	@Override
-	public Pair<Long, Long> parseRequest(JsonRequestReader reader) throws InvalidParametersException {
+	public Pair<Long, Long> parseRequest(JsonObjectReader reader) throws InvalidParametersException {
 		var limit = reader.getOptLong("limit").orElse(10);
 		var offset = reader.getOptLong("offset").orElse(0);
 		return Pair.of(limit, offset);

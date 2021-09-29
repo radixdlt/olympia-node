@@ -67,7 +67,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
-import com.radixdlt.api.data.ActionType;
+import com.radixdlt.api.archive.construction.ActionType;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;

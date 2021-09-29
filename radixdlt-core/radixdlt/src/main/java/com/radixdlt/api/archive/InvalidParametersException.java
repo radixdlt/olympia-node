@@ -66,8 +66,13 @@ package com.radixdlt.api.archive;
 public final class InvalidParametersException extends Exception {
 	private final String jsonPointer;
 
+	public InvalidParametersException(String jsonPointer, String message) {
+		super("Error at: " + jsonPointer + ": " + message);
+		this.jsonPointer = jsonPointer;
+	}
+
 	public InvalidParametersException(String jsonPointer, Exception cause) {
-		super("Error at: " + jsonPointer, cause);
+		super("Error at " + jsonPointer + ": " + cause.getMessage(), cause);
 		this.jsonPointer = jsonPointer;
 	}
 

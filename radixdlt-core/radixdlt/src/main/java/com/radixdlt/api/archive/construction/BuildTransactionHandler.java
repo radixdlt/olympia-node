@@ -64,61 +64,69 @@
 package com.radixdlt.api.archive.construction;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.data.PreparedTransaction;
-import com.radixdlt.api.service.SubmissionService;
-import com.radixdlt.api.util.ActionParser;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.Bytes;
 import org.json.JSONObject;
 
-import java.util.Optional;
+import java.nio.charset.StandardCharsets;
 
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.withBody;
-
-final class BuildTransactionHandler implements HttpHandler {
-	private final SubmissionService submissionService;
-	private final ActionParser actionParserService;
+final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest> {
 	private final Addressing addressing;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	@Inject
 	BuildTransactionHandler(
-		SubmissionService submissionService,
-		ActionParser actionParserService,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		Addressing addressing
 	) {
-		this.submissionService = submissionService;
-		this.actionParserService = actionParserService;
+		this.radixEngine = radixEngine;
 		this.addressing = addressing;
 	}
 
 	@Override
-	public void handleRequest(HttpServerExchange exchange) {
-		withBody(exchange, request -> respond(exchange, handle(request)));
+	public Addressing addressing() {
+		return addressing;
 	}
 
-	private JSONObject handle(JSONObject request) {
+	@Override
+	public TxnConstructionRequest parseRequest(JsonObjectReader reader) throws InvalidParametersException {
+		var constructionRequest = TxnConstructionRequest.create();
+		var feePayer = reader.getAccountAddress("feePayer");
+		constructionRequest.feePayer(feePayer);
+		if (reader.getOptBoolean("disableResourceAllocationAndDestroy", false)) {
+			constructionRequest.disableResourceAllocAndDestroy();
+		}
+		var message = reader.getOptString("message");
+		message.ifPresent(msg -> constructionRequest.msg(msg.getBytes(StandardCharsets.UTF_8)));
+
+		var actions = reader.getList("actions", r -> {
+			var typeString = r.getString("type");
+			var type = ActionType.parse(typeString);
+			return type.parseAction(r);
+		});
+		constructionRequest.actions(actions);
+
+		return constructionRequest;
+	}
+
+	@Override
+	public JSONObject handleRequest(TxnConstructionRequest request) {
 		try {
-			var actionsJson = request.getJSONArray("actions");
-			var feePayerString = request.getString("feePayer");
-			var message = request.has("message")
-				? Optional.of(request.getString("message"))
-				: Optional.<String>empty();
-			var disableResourceAllocationAndDestroy = request.optBoolean("disableResourceAllocationAndDestroy");
-			var feePayer = addressing.forAccounts().parse(feePayerString);
-			return actionParserService.parse(actionsJson)
-				.flatMap(steps -> submissionService.prepareTransaction(
-					feePayer,
-					steps,
-					message,
-					disableResourceAllocationAndDestroy
-				))
-				.map(PreparedTransaction::asJson)
-				.fold(i -> new JSONObject(), u -> u);
-		} catch (DeserializeException e) {
-			return new JSONObject();
+			var builder = radixEngine.construct(request);
+			var unsignedTransaction = builder.buildForExternalSign();
+			return new JSONObject()
+				.put("fee", unsignedTransaction.feesPaid().toString())
+				.put("unsignedTransaction", Bytes.toHexString(unsignedTransaction.blob()))
+				.put("payloadToSign", Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
+		} catch (TxBuilderException e) {
+			throw new RuntimeException(e);
 		}
 	}
 }

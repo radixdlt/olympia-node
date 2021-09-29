@@ -66,7 +66,7 @@ package com.radixdlt.api.archive.account;
 import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
-import com.radixdlt.api.archive.JsonRequestReader;
+import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
@@ -96,7 +96,7 @@ class AccountTransactionsHandler implements ApiHandler<AccountTransactionsReques
 	}
 
 	@Override
-	public AccountTransactionsRequest parseRequest(JsonRequestReader reader) throws InvalidParametersException {
+	public AccountTransactionsRequest parseRequest(JsonObjectReader reader) throws InvalidParametersException {
 		var addr = reader.getAccountAddress("accountAddress");
 		var limit = reader.getOptLong("limit").orElse(10);
 		var cursor = reader.getOptLong("cursor");

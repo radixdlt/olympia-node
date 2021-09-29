@@ -65,7 +65,7 @@ package com.radixdlt.api.archive.network;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
-import com.radixdlt.api.archive.JsonRequestReader;
+import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import org.json.JSONObject;
@@ -83,7 +83,7 @@ final class NetworkHandler implements ApiHandler<Void> {
 	}
 
 	@Override
-	public Void parseRequest(JsonRequestReader reader) {
+	public Void parseRequest(JsonObjectReader reader) {
 		return null;
 	}
 

@@ -66,7 +66,7 @@ package com.radixdlt.api.archive.transaction;
 import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
-import com.radixdlt.api.archive.JsonRequestReader;
+import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.identifiers.AID;
 import org.json.JSONObject;
@@ -80,7 +80,7 @@ final class TransactionHandler implements ApiHandler<AID> {
 	}
 
 	@Override
-	public AID parseRequest(JsonRequestReader reader) throws InvalidParametersException {
+	public AID parseRequest(JsonObjectReader reader) throws InvalidParametersException {
 		return reader.getTransactionIdentifier("transactionIdentifier");
 	}
 

@@ -64,65 +64,152 @@
 package com.radixdlt.api.archive;
 
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.UInt256;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
-public final class JsonRequestReader {
-	private final JSONObject request;
+public final class JsonObjectReader {
+	private final JSONObject jsonObject;
 	private final Addressing addressing;
 
-	private JsonRequestReader(JSONObject request, Addressing addressing) {
-		this.request = request;
+	private JsonObjectReader(JSONObject jsonObject, Addressing addressing) {
+		this.jsonObject = jsonObject;
 		this.addressing = addressing;
 	}
 
-	public static JsonRequestReader create(JSONObject request, Addressing addressing) {
-		return new JsonRequestReader(request, addressing);
+	public static JsonObjectReader create(JSONObject jsonObject, Addressing addressing) {
+		return new JsonObjectReader(jsonObject, addressing);
 	}
 
 	public OptionalLong getOptLong(String key) throws InvalidParametersException {
 		try {
-			if (!request.has(key)) {
+			if (!jsonObject.has(key)) {
 				return OptionalLong.empty();
 			}
 
-			return OptionalLong.of(request.getLong(key));
+			return OptionalLong.of(jsonObject.getLong(key));
 		} catch (JSONException e) {
 			throw new InvalidParametersException("/" + key, e);
 		}
 	}
 
+	public UInt256 getAmount(String key) throws InvalidParametersException {
+		try {
+			var amountString = jsonObject.getString(key);
+			return UInt256.from(amountString);
+		} catch (NumberFormatException | JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
+	public ECPublicKey getPubKey(String key) throws InvalidParametersException {
+		try {
+			return ECPublicKey.fromHex(jsonObject.getString(key));
+		} catch (PublicKeyException | JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
+
 	public REAddr getAccountAddress(String key) throws InvalidParametersException {
 		try {
-			var addressString = request.getString(key);
+			var addressString = jsonObject.getString(key);
 			return addressing.forAccounts().parse(addressString);
 		} catch (DeserializeException | JSONException e) {
 			throw new InvalidParametersException("/" + key, e);
 		}
 	}
 
-	public Optional<REAddr> getOptResource(String key) throws InvalidParametersException {
+	public String getString(String key) throws InvalidParametersException {
 		try {
-			if (!request.has(key)) {
-				return Optional.empty();
+			return jsonObject.getString(key);
+		} catch (JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
+	public Optional<String> getOptString(String key) throws InvalidParametersException {
+		try {
+			return !jsonObject.has(key) ? Optional.empty() : Optional.of(jsonObject.getString(key));
+		} catch (JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
+	public boolean getBoolean(String key) throws InvalidParametersException {
+		try {
+			return jsonObject.getBoolean(key);
+		} catch (JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
+	public boolean getOptBoolean(String key, boolean defaultValue) throws InvalidParametersException {
+		try {
+			return !jsonObject.has(key) ? defaultValue : jsonObject.getBoolean(key);
+		} catch (JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
+	public interface JsonObjectMapper<T> {
+		T map(JsonObjectReader reader) throws InvalidParametersException;
+	}
+
+	public <T> List<T> getList(String key, JsonObjectMapper<T> mapper) throws InvalidParametersException {
+		JSONArray array;
+		try {
+			array = jsonObject.getJSONArray(key);
+		} catch (JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+
+		var list = new ArrayList<T>();
+
+		for (int i = 0; i < array.length(); i++) {
+			try {
+				var json = array.getJSONObject(i);
+				var reader = JsonObjectReader.create(json, addressing);
+				var t = mapper.map(reader);
+				list.add(t);
+			} catch (JSONException e) {
+				throw new InvalidParametersException("/" + key + "/" + i, e);
 			}
-			var rriString = request.getString(key);
-			return Optional.of(addressing.forResources().parse2(rriString).getSecond());
+		}
+
+		return list;
+	}
+
+	public REAddr getResource(String key) throws InvalidParametersException {
+		try {
+			var rriString = jsonObject.getString(key);
+			return addressing.forResources().parse2(rriString).getSecond();
 		} catch (DeserializeException | JSONException e) {
 			throw new InvalidParametersException("/" + key, e);
 		}
 	}
 
+	public Optional<REAddr> getOptResource(String key) throws InvalidParametersException {
+		if (!jsonObject.has(key)) {
+			return Optional.empty();
+		}
+		return Optional.of(getResource(key));
+	}
+
 	public ECPublicKey getValidatorIdentifier(String key) throws InvalidParametersException {
 		try {
-			var validatorIdentifier = request.getString(key);
+			var validatorIdentifier = jsonObject.getString(key);
 			return addressing.forValidators().parse(validatorIdentifier);
 		} catch (DeserializeException | JSONException e) {
 			throw new InvalidParametersException("/" + key, e);
@@ -131,7 +218,7 @@ public final class JsonRequestReader {
 
 	public AID getTransactionIdentifier(String key) throws InvalidParametersException {
 		try {
-			var txnIdString = request.getString(key);
+			var txnIdString = jsonObject.getString(key);
 			return AID.from(txnIdString);
 		} catch (IllegalArgumentException | JSONException e) {
 			throw new InvalidParametersException("/" + key, e);

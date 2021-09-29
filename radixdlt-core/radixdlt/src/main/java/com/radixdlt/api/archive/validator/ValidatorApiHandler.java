@@ -66,7 +66,7 @@ package com.radixdlt.api.archive.validator;
 import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
-import com.radixdlt.api.archive.JsonRequestReader;
+import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
@@ -88,7 +88,7 @@ final class ValidatorApiHandler implements ApiHandler<ECPublicKey> {
 	}
 
 	@Override
-	public ECPublicKey parseRequest(JsonRequestReader reader) throws InvalidParametersException {
+	public ECPublicKey parseRequest(JsonObjectReader reader) throws InvalidParametersException {
 		return reader.getValidatorIdentifier("validatorIdentifier");
 	}
 
