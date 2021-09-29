@@ -77,6 +77,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.NettyRuntime;
 
 import java.security.SecureRandom;
 import java.util.Objects;
@@ -117,7 +118,7 @@ public final class PeerServerBootstrap {
 
 	public void start() throws InterruptedException {
 		final var serverGroup = new NioEventLoopGroup(1);
-		final var workerGroup = new NioEventLoopGroup();
+		final var workerGroup = new NioEventLoopGroup(NettyRuntime.availableProcessors());
 
 		final var serverBootstrap = new ServerBootstrap();
 		serverBootstrap.group(serverGroup, workerGroup)

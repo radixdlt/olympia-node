@@ -84,6 +84,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
 import io.netty.handler.codec.bytes.ByteArrayEncoder;
+import io.netty.util.NettyRuntime;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -128,7 +129,19 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 		this.uri = Objects.requireNonNull(uri);
-		this.byteBufAllocator = new PooledByteBufAllocator(false);
+
+		final var availProcs = NettyRuntime.availableProcessors();
+		this.byteBufAllocator = new PooledByteBufAllocator(
+			false,
+			availProcs,
+			availProcs,
+			PooledByteBufAllocator.defaultPageSize(),
+			PooledByteBufAllocator.defaultMaxOrder(),
+			PooledByteBufAllocator.defaultTinyCacheSize(),
+			PooledByteBufAllocator.defaultSmallCacheSize(),
+			PooledByteBufAllocator.defaultNormalCacheSize(),
+			false
+		);
 	}
 
 	@Override

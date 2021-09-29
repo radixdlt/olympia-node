@@ -78,6 +78,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.NettyRuntime;
 
 import java.security.SecureRandom;
 import java.util.Objects;
@@ -115,7 +116,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
 		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 
-		this.clientWorkerGroup = new NioEventLoopGroup();
+		this.clientWorkerGroup = new NioEventLoopGroup(NettyRuntime.availableProcessors());
 	}
 
 	@Override
