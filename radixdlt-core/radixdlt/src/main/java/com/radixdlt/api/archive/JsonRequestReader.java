@@ -61,30 +61,81 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive.transaction;
+package com.radixdlt.api.archive;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.archive.ApiHandler;
-import com.radixdlt.api.archive.InvalidParametersException;
-import com.radixdlt.api.archive.JsonRequestReader;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
+import org.json.JSONException;
 import org.json.JSONObject;
 
-final class TransactionStatusHandler implements ApiHandler<AID> {
-	private final TransactionStatusService transactionStatusService;
+import java.util.Optional;
+import java.util.OptionalLong;
 
-	@Inject
-	TransactionStatusHandler(TransactionStatusService transactionStatusService) {
-		this.transactionStatusService = transactionStatusService;
+public final class JsonRequestReader {
+	private final JSONObject request;
+	private final Addressing addressing;
+
+	private JsonRequestReader(JSONObject request, Addressing addressing) {
+		this.request = request;
+		this.addressing = addressing;
 	}
 
-	@Override
-	public AID parseRequest(JsonRequestReader reader) throws InvalidParametersException {
-		return reader.getTransactionIdentifier("transactionIdentifier");
+	public static JsonRequestReader create(JSONObject request, Addressing addressing) {
+		return new JsonRequestReader(request, addressing);
 	}
 
-	@Override
-	public JSONObject handleRequest(AID txnId) {
-		return transactionStatusService.getTransactionStatus(txnId).asJson();
+	public OptionalLong getOptLong(String key) throws InvalidParametersException {
+		try {
+			if (!request.has(key)) {
+				return OptionalLong.empty();
+			}
+
+			return OptionalLong.of(request.getLong(key));
+		} catch (JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
 	}
+
+	public REAddr getAccountAddress(String key) throws InvalidParametersException {
+		try {
+			var addressString = request.getString(key);
+			return addressing.forAccounts().parse(addressString);
+		} catch (DeserializeException | JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
+	public Optional<REAddr> getOptResource(String key) throws InvalidParametersException {
+		try {
+			if (!request.has(key)) {
+				return Optional.empty();
+			}
+			var rriString = request.getString(key);
+			return Optional.of(addressing.forResources().parse2(rriString).getSecond());
+		} catch (DeserializeException | JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
+	public ECPublicKey getValidatorIdentifier(String key) throws InvalidParametersException {
+		try {
+			var validatorIdentifier = request.getString(key);
+			return addressing.forValidators().parse(validatorIdentifier);
+		} catch (DeserializeException | JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
+	public AID getTransactionIdentifier(String key) throws InvalidParametersException {
+		try {
+			var txnIdString = request.getString(key);
+			return AID.from(txnIdString);
+		} catch (IllegalArgumentException | JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
 }

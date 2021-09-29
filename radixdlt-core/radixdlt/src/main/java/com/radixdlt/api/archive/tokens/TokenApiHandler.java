@@ -66,6 +66,7 @@ package com.radixdlt.api.archive.tokens;
 import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonRequestReader;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
@@ -86,8 +87,8 @@ final class TokenApiHandler implements ApiHandler<REAddr> {
 	}
 
 	@Override
-	public REAddr parseRequest(JSONObject request) throws InvalidParametersException {
-		return parseOptionalRri(request, "rri").orElse(REAddr.ofNativeToken());
+	public REAddr parseRequest(JsonRequestReader reader) throws InvalidParametersException {
+		return reader.getOptResource("rri").orElse(REAddr.ofNativeToken());
 	}
 
 	@Override

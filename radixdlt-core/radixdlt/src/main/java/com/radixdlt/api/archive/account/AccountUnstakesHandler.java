@@ -66,6 +66,7 @@ package com.radixdlt.api.archive.account;
 import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonRequestReader;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
@@ -86,8 +87,8 @@ final class AccountUnstakesHandler implements ApiHandler<REAddr> {
 	}
 
 	@Override
-	public REAddr parseRequest(JSONObject request) throws InvalidParametersException {
-		return parseAccountAddress(request, "accountAddress");
+	public REAddr parseRequest(JsonRequestReader reader) throws InvalidParametersException {
+		return reader.getAccountAddress("accountAddress");
 	}
 
 	@Override

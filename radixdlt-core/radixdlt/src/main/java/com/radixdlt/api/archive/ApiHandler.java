@@ -63,11 +63,7 @@
 
 package com.radixdlt.api.archive;
 
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -75,15 +71,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
-import java.util.OptionalLong;
 
 import static com.radixdlt.api.util.RestUtils.CONTENT_TYPE_JSON;
 
 public interface ApiHandler<T> extends HttpHandler {
 	long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
-	T parseRequest(JSONObject request) throws InvalidParametersException;
+	T parseRequest(JsonRequestReader requestReader) throws InvalidParametersException;
 
 	JSONObject handleRequest(T request);
 
@@ -105,65 +99,15 @@ public interface ApiHandler<T> extends HttpHandler {
 			throw new JsonParseException(e);
 		}
 
-		var request = parseRequest(jsonRequest);
+		var requestReader = JsonRequestReader.create(jsonRequest, addressing());
+		var request = parseRequest(requestReader);
 		var jsonResponse = handleRequest(request);
 		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
 		exchange.setStatusCode(200);
 		exchange.getResponseSender().send(jsonResponse.toString());
 	}
 
-	default OptionalLong parseOptionalLong(JSONObject json, String key) throws InvalidParametersException {
-		try {
-			if (!json.has(key)) {
-				return OptionalLong.empty();
-			}
-
-			return OptionalLong.of(json.getLong(key));
-		} catch (JSONException e) {
-			throw new InvalidParametersException("/" + key, e);
-		}
-	}
-
 	default Addressing addressing() {
 		throw new UnsupportedOperationException("Addressing not supported.");
-	}
-
-	default REAddr parseAccountAddress(JSONObject json, String key) throws InvalidParametersException {
-		try {
-			var addressString = json.getString(key);
-			return addressing().forAccounts().parse(addressString);
-		} catch (DeserializeException | JSONException e) {
-			throw new InvalidParametersException("/" + key, e);
-		}
-	}
-
-	default Optional<REAddr> parseOptionalRri(JSONObject json, String key) throws InvalidParametersException {
-		try {
-			if (!json.has(key)) {
-				return Optional.empty();
-			}
-			var rriString = json.getString(key);
-			return Optional.of(addressing().forResources().parse2(rriString).getSecond());
-		} catch (DeserializeException | JSONException e) {
-			throw new InvalidParametersException("/" + key, e);
-		}
-	}
-
-	default ECPublicKey parseValidatorIdentifier(JSONObject json, String key) throws InvalidParametersException {
-		try {
-			var validatorIdentifier = json.getString(key);
-			return addressing().forValidators().parse(validatorIdentifier);
-		} catch (DeserializeException | JSONException e) {
-			throw new InvalidParametersException("/" + key, e);
-		}
-	}
-
-	default AID parseTransactionIdentifier(JSONObject json, String key) throws InvalidParametersException {
-		try {
-			var txnIdString = json.getString(key);
-			return AID.from(txnIdString);
-		} catch (IllegalArgumentException | JSONException e) {
-			throw new InvalidParametersException("/" + key, e);
-		}
 	}
 }
