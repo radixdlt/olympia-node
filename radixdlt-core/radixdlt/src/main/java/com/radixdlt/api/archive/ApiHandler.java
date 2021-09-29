@@ -63,6 +63,8 @@
 
 package com.radixdlt.api.archive;
 
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
@@ -122,7 +124,9 @@ public interface ApiHandler<T> extends HttpHandler {
 		}
 	}
 
-	Addressing addressing();
+	default Addressing addressing() {
+		throw new UnsupportedOperationException("Addressing not supported.");
+	}
 
 	default REAddr parseAccountAddress(JSONObject json, String key) throws InvalidParametersException {
 		try {
@@ -141,6 +145,24 @@ public interface ApiHandler<T> extends HttpHandler {
 			var rriString = json.getString(key);
 			return Optional.of(addressing().forResources().parse2(rriString).getSecond());
 		} catch (DeserializeException | JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
+	default ECPublicKey parseValidatorIdentifier(JSONObject json, String key) throws InvalidParametersException {
+		try {
+			var validatorIdentifier = json.getString(key);
+			return addressing().forValidators().parse(validatorIdentifier);
+		} catch (DeserializeException | JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
+	default AID parseTransactionIdentifier(JSONObject json, String key) throws InvalidParametersException {
+		try {
+			var txnIdString = json.getString(key);
+			return AID.from(txnIdString);
+		} catch (IllegalArgumentException | JSONException e) {
 			throw new InvalidParametersException("/" + key, e);
 		}
 	}

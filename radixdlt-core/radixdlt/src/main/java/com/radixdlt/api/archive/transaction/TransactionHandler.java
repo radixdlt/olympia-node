@@ -64,16 +64,13 @@
 package com.radixdlt.api.archive.transaction;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.identifiers.AID;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.withBody;
-
-final class TransactionHandler implements HttpHandler {
+final class TransactionHandler implements ApiHandler<AID> {
 	private final BerkeleyTransactionsByIdStore store;
 
 	@Inject
@@ -82,13 +79,12 @@ final class TransactionHandler implements HttpHandler {
 	}
 
 	@Override
-	public void handleRequest(HttpServerExchange exchange) {
-		withBody(exchange, request -> respond(exchange, handle(request)));
+	public AID parseRequest(JSONObject request) throws InvalidParametersException {
+		return parseTransactionIdentifier(request, "transactionIdentifier");
 	}
 
-	private JSONObject handle(JSONObject request) {
-		var txnIdString = request.getString("transactionIdentifier");
-		var txnId = AID.from(txnIdString);
+	@Override
+	public JSONObject handleRequest(AID txnId) {
 		var transactionJson = store.getTransactionJSON(txnId).orElseThrow();
 		return new JSONObject()
 			.put("transaction", transactionJson);

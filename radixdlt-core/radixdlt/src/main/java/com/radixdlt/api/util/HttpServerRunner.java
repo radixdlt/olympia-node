@@ -69,6 +69,7 @@ import com.radixdlt.api.node.metrics.MetricsHandler;
 import com.radixdlt.counters.SystemCounters;
 import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.server.handlers.RequestLimitingHandler;
+import io.undertow.util.Headers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -88,6 +89,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.StatusCodes;
 import org.json.JSONObject;
 
+import static com.radixdlt.api.util.RestUtils.CONTENT_TYPE_JSON;
 import static java.util.logging.Logger.getLogger;
 
 public final class HttpServerRunner implements ModuleRunner {
@@ -163,6 +165,7 @@ public final class HttpServerRunner implements ModuleRunner {
 
 	public static void handleInvalidRequestFormat(HttpServerExchange exchange) {
 		var ex = (InvalidParametersException) exchange.getAttachment(ExceptionHandler.THROWABLE);
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
 		exchange.setStatusCode(500);
 		exchange.getResponseSender().send(new JSONObject()
 			.put("code", 1)
@@ -176,15 +179,34 @@ public final class HttpServerRunner implements ModuleRunner {
 
 	public static void handleParseException(HttpServerExchange exchange) {
 		var ex = (JsonParseException) exchange.getAttachment(ExceptionHandler.THROWABLE);
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
 		exchange.setStatusCode(500);
 		exchange.getResponseSender().send(new JSONObject()
 			.put("code", 1)
-			.put("message", "JSON Parse exception")
+			.put("message", "JSON Parse Error")
 			.put("details", new JSONObject()
 				.put("cause", ex.getCause().getMessage())
 			)
 			.toString()
 		);
+	}
+
+	public static void handleUnexpectedException(HttpServerExchange exchange) {
+		var ex = exchange.getAttachment(ExceptionHandler.THROWABLE);
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+		exchange.setStatusCode(500);
+		exchange.getResponseSender().send(new JSONObject()
+			.put("code", 1)
+			.put("message", "Unexpected Error")
+			.put("details", new JSONObject()
+				.put("exception", ex.toString())
+				.put("cause", ex.getMessage())
+			)
+			.toString()
+		);
+
+		// TODO: Move this to a more suitable monitor
+		ex.printStackTrace();
 	}
 
 	private HttpHandler configureRoutes() {
@@ -202,7 +224,9 @@ public final class HttpServerRunner implements ModuleRunner {
 
 		return wrapWithCorsFilter(Handlers.exceptionHandler(handler)
 			.addExceptionHandler(InvalidParametersException.class, HttpServerRunner::handleInvalidRequestFormat)
-			.addExceptionHandler(JsonParseException.class, HttpServerRunner::handleParseException));
+			.addExceptionHandler(JsonParseException.class, HttpServerRunner::handleParseException)
+			.addExceptionHandler(Throwable.class, HttpServerRunner::handleUnexpectedException)
+		);
 	}
 
 	private Filter wrapWithCorsFilter(final HttpHandler handler) {

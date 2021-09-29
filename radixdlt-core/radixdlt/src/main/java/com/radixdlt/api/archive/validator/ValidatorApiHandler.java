@@ -64,16 +64,13 @@
 package com.radixdlt.api.archive.validator;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.withBody;
-
-class ValidatorApiHandler implements HttpHandler {
+final class ValidatorApiHandler implements ApiHandler<ECPublicKey> {
 	private final Addressing addressing;
 	private final BerkeleyValidatorStore validatorStore;
 	private final BerkeleyValidatorUptimeStore uptimeStore;
@@ -90,25 +87,25 @@ class ValidatorApiHandler implements HttpHandler {
 	}
 
 	@Override
-	public void handleRequest(HttpServerExchange exchange) {
-		withBody(exchange, request -> respond(exchange, handle(request)));
+	public ECPublicKey parseRequest(JSONObject request) throws InvalidParametersException {
+		return parseValidatorIdentifier(request, "validatorIdentifier");
 	}
 
-	private JSONObject handle(JSONObject request) {
-		try {
-			var validatorAddressString = request.getString("validatorAddress");
-			var key = addressing.forValidators().parse(validatorAddressString);
-			var validatorJson = validatorStore.getValidatorInfo(key);
-			var uptime = uptimeStore.getUptimeTwoWeeks(key);
-			validatorJson.getJSONObject("stake").remove("delegators");
-			validatorJson.put("uptime", new JSONObject()
-				.put("proposalsCompleted", uptime.getProposalsCompleted())
-				.put("proposalsMissed", uptime.getProposalsMissed())
-				.put("uptimePercentage", uptime.toPercentageString())
-			);
-			return new JSONObject().put("validator", validatorJson);
-		} catch (DeserializeException e) {
-			return new JSONObject().put("error", e.getMessage());
-		}
+	@Override
+	public JSONObject handleRequest(ECPublicKey key) {
+		var validatorJson = validatorStore.getValidatorInfo(key);
+		var uptime = uptimeStore.getUptimeTwoWeeks(key);
+		validatorJson.getJSONObject("stake").remove("delegators");
+		validatorJson.put("uptime", new JSONObject()
+			.put("proposalsCompleted", uptime.getProposalsCompleted())
+			.put("proposalsMissed", uptime.getProposalsMissed())
+			.put("uptimePercentage", uptime.toPercentageString())
+		);
+		return new JSONObject().put("validator", validatorJson);
+	}
+
+	@Override
+	public Addressing addressing() {
+		return addressing;
 	}
 }

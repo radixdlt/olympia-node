@@ -64,16 +64,14 @@
 package com.radixdlt.api.archive.validator;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
+import com.radixdlt.utils.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.withBody;
-
-class ValidatorsApiHandler implements HttpHandler {
+class ValidatorsApiHandler implements ApiHandler<Pair<Long, Long>> {
 	private final Addressing addressing;
 	private final BerkeleyValidatorStore validatorStore;
 	private final BerkeleyValidatorUptimeStore uptimeStore;
@@ -90,13 +88,16 @@ class ValidatorsApiHandler implements HttpHandler {
 	}
 
 	@Override
-	public void handleRequest(HttpServerExchange exchange) {
-		withBody(exchange, request -> respond(exchange, handle(request)));
+	public Pair<Long, Long> parseRequest(JSONObject request) throws InvalidParametersException {
+		var limit = parseOptionalLong(request, "limit").orElse(10);
+		var offset = parseOptionalLong(request, "offset").orElse(0);
+		return Pair.of(limit, offset);
 	}
 
-	private JSONObject handle(JSONObject request) {
-		var limit = request.optLong("limit", 100);
-		var offset = request.optLong("offset", 0);
+	@Override
+	public JSONObject handleRequest(Pair<Long, Long> request) {
+		var limit = request.getFirst();
+		var offset = request.getSecond();
 		var validatorsJson = fetchValidators(offset, limit);
 
 		var result = new JSONObject()
@@ -107,6 +108,11 @@ class ValidatorsApiHandler implements HttpHandler {
 		}
 
 		return result;
+	}
+
+	@Override
+	public Addressing addressing() {
+		return addressing;
 	}
 
 	private JSONArray fetchValidators(long offset, long limit) {

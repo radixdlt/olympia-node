@@ -65,7 +65,6 @@ package com.radixdlt.api.archive.network;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import org.json.JSONObject;
@@ -93,10 +92,5 @@ final class NetworkHandler implements ApiHandler<Void> {
 			.put("network", new JSONObject()
 				.put("id", networkId)
 				.put("name", networkName));
-	}
-
-	@Override
-	public Addressing addressing() {
-		return null;
 	}
 }
