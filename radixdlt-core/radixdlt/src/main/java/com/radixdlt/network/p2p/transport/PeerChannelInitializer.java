@@ -76,7 +76,7 @@ import com.radixdlt.network.p2p.transport.logging.LoggingHandler;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.SocketChannel;
@@ -84,7 +84,6 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
 import io.netty.handler.codec.bytes.ByteArrayEncoder;
-import io.netty.util.NettyRuntime;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -130,18 +129,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 		this.uri = Objects.requireNonNull(uri);
 
-		final var availProcs = NettyRuntime.availableProcessors();
-		this.byteBufAllocator = new PooledByteBufAllocator(
-			false,
-			availProcs,
-			availProcs,
-			PooledByteBufAllocator.defaultPageSize(),
-			PooledByteBufAllocator.defaultMaxOrder(),
-			PooledByteBufAllocator.defaultTinyCacheSize(),
-			PooledByteBufAllocator.defaultSmallCacheSize(),
-			PooledByteBufAllocator.defaultNormalCacheSize(),
-			false
-		);
+		this.byteBufAllocator = new UnpooledByteBufAllocator(true);
 	}
 
 	@Override
