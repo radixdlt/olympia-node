@@ -61,39 +61,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive.network;
+package com.radixdlt.api.archive;
 
-import com.radixdlt.api.service.network.NetworkInfoService;
-import org.json.JSONObject;
-
-import com.google.inject.Inject;
-import com.radixdlt.networks.NetworkId;
-
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
-
-class ArchiveNetworkHandler {
-	private final NetworkInfoService networkInfoService;
-	private final int networkId;
-
-	@Inject
-	ArchiveNetworkHandler(
-		NetworkInfoService networkInfoService,
-		@NetworkId int networkId
-	) {
-		this.networkInfoService = networkInfoService;
-		this.networkId = networkId;
-	}
-
-	public JSONObject handleNetworkGetId(JSONObject request) {
-		return successResponse(request, jsonObject().put("networkId", networkId));
-	}
-
-	public JSONObject handleNetworkGetThroughput(JSONObject request) {
-		return successResponse(request, jsonObject().put("tps", networkInfoService.throughput()));
-	}
-
-	public JSONObject handleNetworkGetDemand(JSONObject request) {
-		return successResponse(request, jsonObject().put("tps", networkInfoService.demand()));
+public class JsonParseException extends Exception {
+	public JsonParseException(Exception cause) {
+		super(cause);
 	}
 }

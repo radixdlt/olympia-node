@@ -63,8 +63,8 @@
 
 package com.radixdlt.api.util;
 
-import com.radixdlt.api.archive.account.InvalidParametersException;
-import com.radixdlt.api.archive.account.JsonParseException;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonParseException;
 import com.radixdlt.api.node.metrics.MetricsHandler;
 import com.radixdlt.counters.SystemCounters;
 import io.undertow.server.handlers.ExceptionHandler;

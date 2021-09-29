@@ -64,7 +64,6 @@
 package com.radixdlt.api.archive.network;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import io.undertow.server.HttpHandler;
 
@@ -81,7 +80,6 @@ public final class NetworkApiModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		bind(ArchiveNetworkHandler.class).in(Scopes.SINGLETON);
 		var routeBinder = MapBinder.newMapBinder(
 			binder(), String.class, HttpHandler.class, annotationType
 		);

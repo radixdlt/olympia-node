@@ -64,17 +64,15 @@
 package com.radixdlt.api.archive.network;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 import org.json.JSONObject;
 
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.withBody;
 
-final class NetworkHandler implements HttpHandler {
+final class NetworkHandler implements ApiHandler<Void> {
 	private final int networkId;
 	private final String networkName;
 
@@ -85,14 +83,20 @@ final class NetworkHandler implements HttpHandler {
 	}
 
 	@Override
-	public void handleRequest(HttpServerExchange exchange) {
-		withBody(exchange, request -> respond(exchange, handle()));
+	public Void parseRequest(JSONObject request) {
+		return null;
 	}
 
-	private JSONObject handle() {
+	@Override
+	public JSONObject handleRequest(Void request) {
 		return jsonObject()
 			.put("network", new JSONObject()
 				.put("id", networkId)
 				.put("name", networkName));
+	}
+
+	@Override
+	public Addressing addressing() {
+		return null;
 	}
 }

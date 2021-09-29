@@ -64,16 +64,13 @@
 package com.radixdlt.api.archive.tokens;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.withBody;
-
-class TokenApiHandler implements HttpHandler {
+final class TokenApiHandler implements ApiHandler<REAddr> {
 	private final Addressing addressing;
 	private final BerkeleyResourceInfoStore store;
 
@@ -84,19 +81,18 @@ class TokenApiHandler implements HttpHandler {
 	}
 
 	@Override
-	public void handleRequest(HttpServerExchange exchange) {
-		withBody(exchange, request -> respond(exchange, handle(request)));
+	public Addressing addressing() {
+		return addressing;
 	}
 
-	private JSONObject handle(JSONObject request) {
-		final REAddr addr;
-		if (request.has("rri")) {
-			var rriString = request.getString("rri");
-			addr = addressing.forResources().parse(rriString).last();
-		} else {
-			addr = REAddr.ofNativeToken();
-		}
-		var tokenJson = store.getResourceInfo(addr).orElseThrow();
+	@Override
+	public REAddr parseRequest(JSONObject request) throws InvalidParametersException {
+		return parseOptionalRri(request, "rri").orElse(REAddr.ofNativeToken());
+	}
+
+	@Override
+	public JSONObject handleRequest(REAddr request) {
+		var tokenJson = store.getResourceInfo(request).orElseThrow();
 		return new JSONObject()
 			.put("token", tokenJson);
 	}

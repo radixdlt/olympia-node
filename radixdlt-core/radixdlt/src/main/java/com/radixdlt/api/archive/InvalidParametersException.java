@@ -61,74 +61,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive.account;
+package com.radixdlt.api.archive;
 
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import org.json.JSONException;
-import org.json.JSONObject;
+public final class InvalidParametersException extends Exception {
+	private final String jsonPointer;
 
-import java.nio.charset.StandardCharsets;
-import java.util.OptionalLong;
-
-import static com.radixdlt.api.util.RestUtils.CONTENT_TYPE_JSON;
-
-public interface ApiHandler<T> extends HttpHandler {
-	long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
-
-	T parseRequest(JSONObject request) throws InvalidParametersException;
-
-	JSONObject handleRequest(T request);
-
-	@Override
-	default void handleRequest(HttpServerExchange exchange) throws Exception {
-		if (exchange.isInIoThread()) {
-			exchange.dispatch(this);
-			return;
-		}
-
-		exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
-		exchange.startBlocking();
-
-		JSONObject jsonRequest;
-		try {
-			var input = new String(exchange.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-			jsonRequest = new JSONObject(input);
-		} catch (JSONException e) {
-			throw new JsonParseException(e);
-		}
-
-		var request = parseRequest(jsonRequest);
-		var jsonResponse = handleRequest(request);
-		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-		exchange.setStatusCode(200);
-		exchange.getResponseSender().send(jsonResponse.toString());
+	public InvalidParametersException(String jsonPointer, Exception cause) {
+		super("Error at: " + jsonPointer, cause);
+		this.jsonPointer = jsonPointer;
 	}
 
-	default OptionalLong parseOptionalLong(JSONObject json, String key) throws InvalidParametersException {
-		try {
-			if (!json.has(key)) {
-				return OptionalLong.empty();
-			}
-
-			return OptionalLong.of(json.getLong(key));
-		} catch (JSONException e) {
-			throw new InvalidParametersException("/" + key, e);
-		}
-	}
-
-	Addressing addressing();
-
-	default REAddr parseAccountAddress(JSONObject json, String key) throws InvalidParametersException {
-		try {
-			var addressString = json.getString(key);
-			return addressing().forAccounts().parse(addressString);
-		} catch (DeserializeException | JSONException e) {
-			throw new InvalidParametersException("/" + key, e);
-		}
+	public String getJsonPointer() {
+		return jsonPointer;
 	}
 }
