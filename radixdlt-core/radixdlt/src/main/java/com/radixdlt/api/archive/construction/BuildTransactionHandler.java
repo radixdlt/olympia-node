@@ -117,16 +117,12 @@ final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest
 	}
 
 	@Override
-	public JSONObject handleRequest(TxnConstructionRequest request) {
-		try {
-			var builder = radixEngine.construct(request);
-			var unsignedTransaction = builder.buildForExternalSign();
-			return new JSONObject()
-				.put("fee", unsignedTransaction.feesPaid().toString())
-				.put("unsignedTransaction", Bytes.toHexString(unsignedTransaction.blob()))
-				.put("payloadToSign", Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
-		} catch (TxBuilderException e) {
-			throw new RuntimeException(e);
-		}
+	public JSONObject handleRequest(TxnConstructionRequest request) throws TxBuilderException {
+		var builder = radixEngine.construct(request);
+		var unsignedTransaction = builder.buildForExternalSign();
+		return new JSONObject()
+			.put("fee", unsignedTransaction.feesPaid().toString())
+			.put("unsignedTransaction", Bytes.toHexString(unsignedTransaction.blob()))
+			.put("payloadToSign", Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
 	}
 }

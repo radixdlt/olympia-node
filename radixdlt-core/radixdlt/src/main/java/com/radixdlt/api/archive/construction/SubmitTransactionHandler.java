@@ -64,34 +64,48 @@
 package com.radixdlt.api.archive.construction;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.service.SubmissionService;
-import com.radixdlt.utils.Bytes;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolRejectedException;
 import org.json.JSONObject;
 
-import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.withBody;
-
-final class SubmitTransactionHandler implements HttpHandler {
-	private final SubmissionService submissionService;
+final class SubmitTransactionHandler implements ApiHandler<Txn> {
+	private final EventDispatcher<MempoolAdd> dispatcher;
 
 	@Inject
-	SubmitTransactionHandler(SubmissionService submissionService) {
-		this.submissionService = submissionService;
+	SubmitTransactionHandler(EventDispatcher<MempoolAdd> mempoolAddEventDispatcher) {
+		this.dispatcher = mempoolAddEventDispatcher;
 	}
 
 	@Override
-	public void handleRequest(HttpServerExchange exchange) {
-		withBody(exchange, request -> respond(exchange, handle(request)));
+	public Txn parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		var bytes = requestReader.getHexBytes("signedTransaction");
+		return Txn.create(bytes);
 	}
 
-	private JSONObject handle(JSONObject request) {
-		var blobString = request.getString("signedTransaction");
-		var blob = Bytes.fromHexString(blobString);
-		return submissionService.submitTx(blob, Optional.empty())
-			.fold(f -> new JSONObject(), txn -> new JSONObject().put("transactionIdentifier", txn.getId()));
+	@Override
+	public JSONObject handleRequest(Txn txn) throws Exception {
+		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
+		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
+
+		dispatcher.dispatch(mempoolAdd);
+		try {
+			// We need to block here as we need to complete the request in the same thread
+			var success = completableFuture.get();
+			return new JSONObject().put("transactionIdentifier", success.getTxn().getId());
+		} catch (ExecutionException e) {
+			if (e.getCause() instanceof MempoolRejectedException) {
+				throw (MempoolRejectedException) e.getCause();
+			}
+			throw e;
+		}
 	}
 }

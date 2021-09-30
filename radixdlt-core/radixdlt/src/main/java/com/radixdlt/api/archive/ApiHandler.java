@@ -79,7 +79,7 @@ public interface ApiHandler<T> extends HttpHandler {
 
 	T parseRequest(JsonObjectReader requestReader) throws InvalidParametersException;
 
-	JSONObject handleRequest(T request);
+	JSONObject handleRequest(T request) throws Exception;
 
 	@Override
 	default void handleRequest(HttpServerExchange exchange) throws Exception {
