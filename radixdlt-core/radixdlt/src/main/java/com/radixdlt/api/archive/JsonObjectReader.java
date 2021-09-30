@@ -69,6 +69,7 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -131,6 +132,15 @@ public final class JsonObjectReader {
 		}
 	}
 
+	public byte[] getHexBytes(String key) throws InvalidParametersException {
+		try {
+			var hex = jsonObject.getString(key);
+			return Bytes.fromHexString(hex);
+		} catch (JSONException | IllegalArgumentException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
 	public String getString(String key) throws InvalidParametersException {
 		try {
 			return jsonObject.getString(key);
@@ -189,6 +199,16 @@ public final class JsonObjectReader {
 		}
 
 		return list;
+	}
+
+	public JsonObjectReader getJsonObject(String key) throws InvalidParametersException {
+		try {
+			var json = jsonObject.getJSONObject(key);
+			// TODO: add parent
+			return new JsonObjectReader(json, addressing);
+		} catch (JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
 	}
 
 	public REAddr getResource(String key) throws InvalidParametersException {

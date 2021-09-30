@@ -63,42 +63,40 @@
 
 package com.radixdlt.api.archive.construction;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.archive.ApiHandler;
-import com.radixdlt.api.archive.InvalidParametersException;
-import com.radixdlt.api.archive.JsonObjectReader;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyUtils;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.utils.Bytes;
-import org.json.JSONObject;
+import com.radixdlt.crypto.ECPublicKey;
 
-final class FinalizeTransactionHandler implements ApiHandler<FinalizeTransactionRequest> {
+final class FinalizeTransactionRequest {
+	private final byte[] unsignedTransaction;
+	private final byte[] signature;
+	private final ECPublicKey pubKey;
 
-	@Inject
-	FinalizeTransactionHandler() {
+	private FinalizeTransactionRequest(
+		byte[] unsignedTransaction,
+		byte[] signature,
+		ECPublicKey pubKey
+	) {
+		this.unsignedTransaction = unsignedTransaction;
+		this.signature = signature;
+		this.pubKey = pubKey;
 	}
 
-	@Override
-	public FinalizeTransactionRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		var unsignedTransaction = requestReader.getHexBytes("unsignedTransaction");
-		var signatureReader = requestReader.getJsonObject("signature");
-		var signature = signatureReader.getHexBytes("bytes");
-		var pubKey = signatureReader.getPubKey("publicKey");
-		return FinalizeTransactionRequest.create(unsignedTransaction, signature, pubKey);
+	public static FinalizeTransactionRequest create(
+		byte[] unsignedTransaction,
+		byte[] signature,
+		ECPublicKey pubKey
+	) {
+		return new FinalizeTransactionRequest(unsignedTransaction, signature, pubKey);
 	}
 
-	@Override
-	public JSONObject handleRequest(FinalizeTransactionRequest request) {
-		var unsignedTransaction = request.getUnsignedTransaction();
-		var signature = ECDSASignature.decodeFromDER(request.getSignature());
-		var recoverable = ECKeyUtils.toRecoverableSig(
-			signature, HashUtils.sha256(unsignedTransaction).asBytes(), request.getPubKey());
+	public byte[] getUnsignedTransaction() {
+		return unsignedTransaction;
+	}
 
-		var txn = TxLowLevelBuilder.newBuilder(unsignedTransaction).sig(recoverable).build();
-		return new JSONObject()
-			.put("signedTransaction", Bytes.toHexString(txn.getPayload()))
-			.put("transactionIdentifier", txn.getId());
+	public byte[] getSignature() {
+		return signature;
+	}
+
+	public ECPublicKey getPubKey() {
+		return pubKey;
 	}
 }
