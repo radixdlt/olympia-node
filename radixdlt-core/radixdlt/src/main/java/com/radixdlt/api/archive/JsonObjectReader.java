@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.archive;
 
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AID;
@@ -131,6 +132,16 @@ public final class JsonObjectReader {
 			throw new InvalidParametersException("/" + key, e);
 		}
 	}
+
+	public ECDSASignature getDERSignature(String key) throws InvalidParametersException {
+		try {
+			var hex = jsonObject.getString(key);
+			return ECDSASignature.decodeFromHexDer(hex);
+		} catch (JSONException | IllegalArgumentException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
 
 	public byte[] getHexBytes(String key) throws InvalidParametersException {
 		try {

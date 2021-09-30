@@ -63,16 +63,17 @@
 
 package com.radixdlt.api.archive.construction;
 
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 
 final class FinalizeTransactionRequest {
 	private final byte[] unsignedTransaction;
-	private final byte[] signature;
+	private final ECDSASignature signature;
 	private final ECPublicKey pubKey;
 
 	private FinalizeTransactionRequest(
 		byte[] unsignedTransaction,
-		byte[] signature,
+		ECDSASignature signature,
 		ECPublicKey pubKey
 	) {
 		this.unsignedTransaction = unsignedTransaction;
@@ -82,7 +83,7 @@ final class FinalizeTransactionRequest {
 
 	public static FinalizeTransactionRequest create(
 		byte[] unsignedTransaction,
-		byte[] signature,
+		ECDSASignature signature,
 		ECPublicKey pubKey
 	) {
 		return new FinalizeTransactionRequest(unsignedTransaction, signature, pubKey);
@@ -92,7 +93,7 @@ final class FinalizeTransactionRequest {
 		return unsignedTransaction;
 	}
 
-	public byte[] getSignature() {
+	public ECDSASignature getSignature() {
 		return signature;
 	}
 

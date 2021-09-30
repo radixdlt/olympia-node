@@ -68,7 +68,6 @@ import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.Bytes;
@@ -84,7 +83,7 @@ final class FinalizeTransactionHandler implements ApiHandler<FinalizeTransaction
 	public FinalizeTransactionRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
 		var unsignedTransaction = requestReader.getHexBytes("unsignedTransaction");
 		var signatureReader = requestReader.getJsonObject("signature");
-		var signature = signatureReader.getHexBytes("bytes");
+		var signature = signatureReader.getDERSignature("bytes");
 		var pubKey = signatureReader.getPubKey("publicKey");
 		return FinalizeTransactionRequest.create(unsignedTransaction, signature, pubKey);
 	}
@@ -92,7 +91,7 @@ final class FinalizeTransactionHandler implements ApiHandler<FinalizeTransaction
 	@Override
 	public JSONObject handleRequest(FinalizeTransactionRequest request) {
 		var unsignedTransaction = request.getUnsignedTransaction();
-		var signature = ECDSASignature.decodeFromDER(request.getSignature());
+		var signature = request.getSignature();
 		var recoverable = ECKeyUtils.toRecoverableSig(
 			signature, HashUtils.sha256(unsignedTransaction).asBytes(), request.getPubKey());
 

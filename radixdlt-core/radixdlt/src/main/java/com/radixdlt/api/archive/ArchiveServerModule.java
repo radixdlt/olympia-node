@@ -82,6 +82,7 @@ import io.undertow.server.HttpHandler;
 import javax.inject.Qualifier;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.List;
 import java.util.Map;
 
 import static java.lang.annotation.ElementType.*;
@@ -122,6 +123,10 @@ public class ArchiveServerModule extends AbstractModule {
 		@ArchiveServer Map<String, HttpHandler> handlers,
 		SystemCounters counters
 	) {
-		return new HttpServerRunner(Map.of(), handlers, port, bindAddress, "archive", counters);
+		var errorCodes = List.of(
+			ApiErrorCode.TXBUILDER_EXCEPTION,
+			ApiErrorCode.REJECTED_FROM_MEMPOOL
+		);
+		return new HttpServerRunner(Map.of(), handlers, errorCodes, port, bindAddress, "archive", counters);
 	}
 }

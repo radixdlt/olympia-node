@@ -61,106 +61,78 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.node;
+package com.radixdlt.api.archive;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.node.account.AccountApiModule;
-import com.radixdlt.api.node.chaos.ChaosApiModule;
-import com.radixdlt.api.node.developer.DeveloperApiModule;
-import com.radixdlt.api.node.faucet.FaucetApiModule;
-import com.radixdlt.api.node.health.HealthApiModule;
-import com.radixdlt.api.node.metrics.MetricsApiModule;
-import com.radixdlt.api.node.system.SystemApiModule;
-import com.radixdlt.api.node.transactions.TransactionIndexApiModule;
-import com.radixdlt.api.node.validation.ValidatorApiModule;
-import com.radixdlt.api.node.version.VersionApiModule;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.mempool.MempoolRejectedException;
+import org.json.JSONObject;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+public enum ApiErrorCode {
+	UNEXPECTED_ERROR(Throwable.class, 1, "Unexpected Error") {
+		@Override
+		public JSONObject getDetails(Throwable e) {
+			var ex = (JsonParseException) e;
+			return new JSONObject()
+				.put("exception", ex.toString())
+				.put("cause", ex.getMessage());
+		}
+	},
+	INVALID_JSON(JsonParseException.class, 2, "Invalid JSON") {
+		@Override
+		public JSONObject getDetails(Throwable e) {
+			var ex = (JsonParseException) e;
+			return new JSONObject()
+				.put("cause", ex.getCause().getMessage());
+		}
+	},
+	INVALID_REQUEST(InvalidParametersException.class, 3, "Invalid Request") {
+		@Override
+		public JSONObject getDetails(Throwable e) {
+			var ex = (InvalidParametersException) e;
+			return new JSONObject()
+				.put(ex.getJsonPointer(), ex.getCause().getMessage());
+		}
+	},
+	TXBUILDER_EXCEPTION(TxBuilderException.class, 4, "Failed to build transaction") {
+		@Override
+		public JSONObject getDetails(Throwable e) {
+			var ex = (TxBuilderException) e;
+			// TODO: elaborate
+			return new JSONObject()
+				.put("message", ex.getMessage());
+		}
+	},
+	REJECTED_FROM_MEMPOOL(MempoolRejectedException.class, 5, "Transaction rejected from mempool") {
+		@Override
+		public JSONObject getDetails(Throwable e) {
+			var ex = (MempoolRejectedException) e;
+			// TODO: elaborate
+			return new JSONObject()
+				.put("message", ex.getMessage());
+		}
+	};
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+	private final Class<? extends Throwable> exceptionClass;
+	private final int code;
+	private final String message;
 
-/**
- * Configures the api including http server setup
- */
-public final class NodeServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-	private final boolean metricsEnable;
-	private final boolean faucetEnable;
-	private final boolean chaosEnable;
-
-	public NodeServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable,
-		boolean metricsEnable,
-		boolean faucetEnable,
-		boolean chaosEnable
-	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
-		this.metricsEnable = metricsEnable;
-		this.faucetEnable = faucetEnable;
-		this.chaosEnable = chaosEnable;
+	ApiErrorCode(Class<? extends Throwable> exceptionClass, int code, String message) {
+		this.exceptionClass = exceptionClass;
+		this.code = code;
+		this.message = message;
 	}
 
-	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class, "/system"));
-		install(new AccountApiModule(NodeServer.class, "/account"));
-		install(new ValidatorApiModule(NodeServer.class, "/validator"));
-		install(new HealthApiModule(NodeServer.class, "/health"));
-		install(new VersionApiModule(NodeServer.class, "/version"));
-		install(new DeveloperApiModule(NodeServer.class, "/developer"));
-
-		if (transactionsEnable) {
-			install(new TransactionIndexApiModule(NodeServer.class, "/transactions"));
-		}
-		if (metricsEnable) {
-			install(new MetricsApiModule(NodeServer.class, "/metrics"));
-		}
-		if (faucetEnable) {
-			install(new FaucetApiModule(NodeServer.class, "/faucet"));
-		}
-		if (chaosEnable) {
-			install(new ChaosApiModule(NodeServer.class, "/chaos"));
-		}
+	public Class<? extends Throwable> getExceptionClass() {
+		return exceptionClass;
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, Map.of(), List.of(), port, bindAddress, "node", counters);
+	public int getCode() {
+		return code;
 	}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	public String getMessage() {
+		return message;
 	}
+
+	public abstract JSONObject getDetails(Throwable e);
 }
