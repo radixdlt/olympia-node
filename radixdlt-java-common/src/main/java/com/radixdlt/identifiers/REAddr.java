@@ -233,6 +233,7 @@ public final class REAddr {
 	}
 
 	// FIXME: Should use AuthorizationException instead but packages a bit of a mess at the moment
+	// TODO: move AuthorizationException to radixdlt-java-common
 	public static class BucketWithdrawAuthorizationException extends Exception {
 		private BucketWithdrawAuthorizationException(String msg) {
 			super(msg);

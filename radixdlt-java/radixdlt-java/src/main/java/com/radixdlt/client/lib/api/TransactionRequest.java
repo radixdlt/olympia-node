@@ -65,6 +65,7 @@
 package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.hash.HashCode;
 import com.radixdlt.client.lib.api.action.Action;
 import com.radixdlt.client.lib.api.action.BurnAction;
 import com.radixdlt.client.lib.api.action.CreateFixedTokenAction;
@@ -170,8 +171,13 @@ public class TransactionRequest {
 			return this;
 		}
 
-		public TransactionRequestBuilder updateValidatorMetadata(ValidatorAddress validator, Optional<String> name, Optional<String> url) {
-			actions.add(new UpdateValidatorMetadataAction(validator, name.orElse(null), url.orElse(null)));
+		public TransactionRequestBuilder updateValidatorMetadata(
+			ValidatorAddress validator,
+			Optional<String> name,
+			Optional<String> url,
+			Optional<HashCode> forkVoteHash
+		) {
+			actions.add(new UpdateValidatorMetadataAction(validator, name.orElse(null), url.orElse(null), forkVoteHash.orElse(null)));
 			return this;
 		}
 

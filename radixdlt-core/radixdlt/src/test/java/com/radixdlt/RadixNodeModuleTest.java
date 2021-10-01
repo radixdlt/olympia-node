@@ -65,7 +65,6 @@
 package com.radixdlt;
 
 import com.radixdlt.networks.NetworkId;
-import org.assertj.core.util.Files;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.serialization.TestSetupUtils;
@@ -104,7 +103,7 @@ public class RadixNodeModuleTest {
 		final var properties = mock(RuntimeProperties.class);
 		doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
 		var keyStore = new File("nonesuch.ks");
-		Files.delete(keyStore);
+		keyStore.delete();
 		generateKeystore(keyStore);
 
 		when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");

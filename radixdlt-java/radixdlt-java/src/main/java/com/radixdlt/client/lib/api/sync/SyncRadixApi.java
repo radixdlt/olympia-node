@@ -222,30 +222,30 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 		@Override
 		public Result<BuiltTransaction> build(TransactionRequest request) {
 			return call(
-				request(
-					CONSTRUCTION_BUILD, request.getActions(), request.getFeePayer(),
-					request.getMessage(), request.disableResourceAllocationAndDestroy()
-				),
-				new TypeReference<>() {}
+					request(
+							CONSTRUCTION_BUILD, request.getActions(), request.getFeePayer(),
+							request.getMessage(), request.disableResourceAllocationAndDestroy()
+					),
+					new TypeReference<>() {}
 			);
 		}
 
 		@Override
 		public Result<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit) {
 			return call(
-				request(
-					CONSTRUCTION_FINALIZE,
-					Hex.toHexString(request.getRawBlob()), request.getSignature(), request.getPublicKey(), Boolean.toString(immediateSubmit)
-				),
-				new TypeReference<>() {}
+					request(
+							CONSTRUCTION_FINALIZE,
+							Hex.toHexString(request.getRawBlob()), request.getSignature(), request.getPublicKey(), Boolean.toString(immediateSubmit)
+					),
+					new TypeReference<>() {}
 			);
 		}
 
 		@Override
 		public Result<TxDTO> submit(TxBlobDTO request) {
 			return call(
-				request(CONSTRUCTION_SUBMIT, Hex.toHexString(request.getBlob()), request.getTxId()),
-				new TypeReference<>() {}
+					request(CONSTRUCTION_SUBMIT, Hex.toHexString(request.getBlob()), request.getTxId()),
+					new TypeReference<>() {}
 			);
 		}
 
@@ -275,7 +275,7 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 
 		@Override
 		public Result<TransactionHistory> history(
-			AccountAddress address, int size, OptionalLong nextOffset
+				AccountAddress address, int size, OptionalLong nextOffset
 		) {
 			var request = request(ACCOUNT_HISTORY, address.toString(networkId()), size);
 			nextOffset.ifPresent(request::addParameters);
@@ -318,8 +318,8 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 		@Override
 		public Result<TxDTO> submitTxSingleStep(TransactionRequest request) {
 			return call(
-				request(ACCOUNT_SUBMIT_SINGLE_STEP, request.getActions(), request.getMessage()),
-				new TypeReference<>() {}
+					request(ACCOUNT_SUBMIT_SINGLE_STEP, request.getActions(), request.getMessage()),
+					new TypeReference<>() {}
 			);
 		}
 
@@ -489,45 +489,45 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 	}
 
 	private SyncRadixApi(
-		String baseUrl,
-		int primaryPort,
-		int secondaryPort,
-		HttpClient client,
-		Optional<BasicAuth> authentication
+			String baseUrl,
+			int primaryPort,
+			int secondaryPort,
+			HttpClient client,
+			Optional<BasicAuth> authentication
 	) {
 		super(baseUrl, primaryPort, secondaryPort, client, authentication);
 	}
 
 	static Result<RadixApi> connect(
-		String url,
-		int primaryPort,
-		int secondaryPort,
-		Optional<BasicAuth> authentication
+			String url,
+			int primaryPort,
+			int secondaryPort,
+			Optional<BasicAuth> authentication
 	) {
 		return buildHttpClient().flatMap(client -> connect(url, primaryPort, secondaryPort, client, authentication));
 	}
 
 	static Result<RadixApi> connect(
-		String url,
-		int primaryPort,
-		int secondaryPort,
-		HttpClient client,
-		Optional<BasicAuth> authentication
+			String url,
+			int primaryPort,
+			int secondaryPort,
+			HttpClient client,
+			Optional<BasicAuth> authentication
 	) {
 		return ofNullable(url)
-			.map(baseUrl -> Result.ok(new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
-			.orElseGet(MISSING_BASE_URL::result)
-			.flatMap(syncRadixApi -> syncRadixApi.network().id()
-				.onSuccess(networkId -> syncRadixApi.configureSerialization(networkId.getNetworkId()))
-				.map(__ -> syncRadixApi));
+				.map(baseUrl -> Result.ok(new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
+				.orElseGet(MISSING_BASE_URL::result)
+				.flatMap(syncRadixApi -> syncRadixApi.network().id()
+						.onSuccess(networkId -> syncRadixApi.configureSerialization(networkId.getNetworkId()))
+						.map(__ -> syncRadixApi));
 	}
 
 	private <T> Result<T> call(JsonRpcRequest request, TypeReference<JsonRpcResponse<T>> typeReference) {
 		return serialize(request)
-			.onSuccess(this::trace)
-			.map(value -> buildRequest(request, value))
-			.flatMap(httpRequest -> Result.wrap(this::errorMapper, () -> client().send(httpRequest, HttpResponse.BodyHandlers.ofString())))
-			.flatMap(body -> bodyHandler(body, typeReference));
+				.onSuccess(this::trace)
+				.map(value -> buildRequest(request, value))
+				.flatMap(httpRequest -> Result.wrap(this::errorMapper, () -> client().send(httpRequest, HttpResponse.BodyHandlers.ofString())))
+				.flatMap(body -> bodyHandler(body, typeReference));
 	}
 
 	private Failure errorMapper(Throwable throwable) {
@@ -543,12 +543,12 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 	}
 
 	private <T> Result<T> bodyHandler(
-		HttpResponse<String> body,
-		TypeReference<JsonRpcResponse<T>> reference
+			HttpResponse<String> body,
+			TypeReference<JsonRpcResponse<T>> reference
 	) {
 		return deserialize(trace(body.body()), reference)
-			.flatMap(response -> response.rawError() == null
-								 ? Result.ok(response.rawResult())
-								 : Result.fail(response.rawError().toFailure()));
+				.flatMap(response -> response.rawError() == null
+						? Result.ok(response.rawResult())
+						: Result.fail(response.rawError().toFailure()));
 	}
 }

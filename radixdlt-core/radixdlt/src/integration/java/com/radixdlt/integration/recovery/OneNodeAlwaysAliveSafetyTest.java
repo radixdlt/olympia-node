@@ -71,7 +71,7 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.utils.KeyComparator;
@@ -227,7 +227,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 				Amount.ofTokens(10000)
 			),
 			MempoolConfig.asModule(10, 10),
-			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					Set.of("xrd"),
@@ -244,6 +243,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 					10
 				)),
 			new ForksModule(),
+			new MainnetForksModule(),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override

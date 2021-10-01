@@ -78,17 +78,21 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ResourceAddressing;
 import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.discovery.DiscoverPeers;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
@@ -120,18 +124,27 @@ public final class DeveloperHandler {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final BerkeleyLedgerEntryStore engineStore;
 	private final Addressing addressing;
+	private final AddressBook addressBook;
+	private final EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher;
+	private final Forks forks;
 
 	@Inject
 	public DeveloperHandler(
 		GenesisBuilder genesisBuilder,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		BerkeleyLedgerEntryStore engineStore,
-		Addressing addressing
+		Addressing addressing,
+		AddressBook addressBook,
+		EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher,
+		Forks forks
 	) {
 		this.genesisBuilder = genesisBuilder;
 		this.radixEngine = radixEngine;
 		this.addressing = addressing;
 		this.engineStore = engineStore;
+		this.addressBook = addressBook;
+		this.discoverPeersEventDispatcher = discoverPeersEventDispatcher;
+		this.forks = forks;
 	}
 
 	private Result<VerifiedTxnsAndProof> build(String message, List<TransactionAction> steps) {
@@ -156,7 +169,7 @@ public final class DeveloperHandler {
 			params -> {
 				var message = params.getString("message");
 				var addressing = Addressing.ofNetworkId(params.getInt("networkId"));
-				var actionParserService = new ActionParser(addressing);
+				var actionParserService = new ActionParser(addressing, forks);
 
 				return safeArray(params, "actions")
 					.flatMap(actions ->
@@ -454,6 +467,12 @@ public final class DeveloperHandler {
 				}
 			)
 		);
+	}
+
+	public JSONObject clearAddressBook(JSONObject request) {
+		this.addressBook.clear();
+		this.discoverPeersEventDispatcher.dispatch(DiscoverPeers.create());
+		return jsonObject();
 	}
 
 	private static Failure toFailure(Throwable e) {

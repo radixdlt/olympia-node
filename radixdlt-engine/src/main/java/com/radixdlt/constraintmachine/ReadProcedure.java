@@ -91,11 +91,13 @@ public final class ReadProcedure<D extends Particle, S extends ReducerState> imp
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Authorization authorization(Object o) {
 		return authorization.apply((D) o);
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,

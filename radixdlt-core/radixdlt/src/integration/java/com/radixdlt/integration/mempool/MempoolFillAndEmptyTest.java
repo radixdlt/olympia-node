@@ -67,7 +67,7 @@ package com.radixdlt.integration.mempool;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.PrivateKeys;
 import org.junit.Rule;
@@ -107,18 +107,18 @@ public final class MempoolFillAndEmptyTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-    @Inject private DeterministicProcessor processor;
-    @Inject private DeterministicNetwork network;
-    @Inject private EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
-    @Inject private EventDispatcher<ScheduledMempoolFill> scheduledMempoolFillEventDispatcher;
-    @Inject private SystemCounters systemCounters;
+	@Inject private DeterministicProcessor processor;
+	@Inject private DeterministicNetwork network;
+	@Inject private EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
+	@Inject private EventDispatcher<ScheduledMempoolFill> scheduledMempoolFillEventDispatcher;
+	@Inject private SystemCounters systemCounters;
 
 	private Injector createInjector() {
 		return Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new ForksModule(),
+			new MainnetForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
 			new MockedGenesisModule(
 				Set.of(TEST_KEY.getPublicKey()),
@@ -136,37 +136,37 @@ public final class MempoolFillAndEmptyTest {
 		);
 	}
 
-    private void fillAndEmptyMempool() {
-        while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) < 1000) {
-            ControlledMessage msg = network.nextMessage().value();
-            processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-            if (msg.message() instanceof EpochViewUpdate) {
-                scheduledMempoolFillEventDispatcher.dispatch(ScheduledMempoolFill.create());
-            }
-        }
+	private void fillAndEmptyMempool() {
+		while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) < 1000) {
+			ControlledMessage msg = network.nextMessage().value();
+			processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+			if (msg.message() instanceof EpochViewUpdate) {
+				scheduledMempoolFillEventDispatcher.dispatch(ScheduledMempoolFill.create());
+			}
+		}
 
-        for (int i = 0; i < 10000; i++) {
-            ControlledMessage msg = network.nextMessage().value();
-            processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-            if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) == 0) {
-                break;
-            }
-        }
+		for (int i = 0; i < 10000; i++) {
+			ControlledMessage msg = network.nextMessage().value();
+			processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+			if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) == 0) {
+				break;
+			}
+		}
 
-        assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isZero();
-    }
+		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isZero();
+	}
 
-    @Test
-    public void check_that_full_mempool_empties_itself() {
-        createInjector().injectMembers(this);
-        processor.start();
+	@Test
+	public void check_that_full_mempool_empties_itself() {
+		createInjector().injectMembers(this);
+		processor.start();
 
-        mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.enable(50, true));
+		mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.enable(50, true));
 
-        for (int i = 0; i < 10; i++) {
-            fillAndEmptyMempool();
-        }
+		for (int i = 0; i < 10; i++) {
+			fillAndEmptyMempool();
+		}
 
-        assertThat(systemCounters.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS)).isZero();
-    }
+		assertThat(systemCounters.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS)).isZero();
+	}
 }

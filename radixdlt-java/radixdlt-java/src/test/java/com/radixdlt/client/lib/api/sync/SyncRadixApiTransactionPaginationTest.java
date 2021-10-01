@@ -92,33 +92,33 @@ public class SyncRadixApiTransactionPaginationTest {
 	@Ignore("Online test")
 	public void testTransactionHistoryInPages() {
 		RadixApi.connect(BASE_URL)
-			.map(RadixApi::withTrace)
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(
-				client -> {
-					var cursorHolder = new AtomicReference<>(OptionalLong.empty());
-					do {
-						client.transaction().list(100, cursorHolder.get())
-							.onFailure(failure -> fail(failure.toString()))
-							.onSuccess(v -> cursorHolder.set(v.getNextOffset()))
-							.map(TransactionsDTO::getTransactions)
-							.map(this::formatTxns)
-							.onSuccess(System.out::println);
-					} while (cursorHolder.get().isPresent());
-				});
+				.map(RadixApi::withTrace)
+				.onFailure(failure -> fail(failure.toString()))
+				.onSuccess(
+						client -> {
+							var cursorHolder = new AtomicReference<>(OptionalLong.empty());
+							do {
+								client.transaction().list(100, cursorHolder.get())
+										.onFailure(failure -> fail(failure.toString()))
+										.onSuccess(v -> cursorHolder.set(v.getNextOffset()))
+										.map(TransactionsDTO::getTransactions)
+										.map(this::formatTxns)
+										.onSuccess(System.out::println);
+							} while (cursorHolder.get().isPresent());
+						});
 	}
 
 	private List<String> formatTxns(List<TransactionDTO> t) {
 		return t.stream()
-			.map(v -> String.format(
-				"%s (%s) - %s (%d:%d), Fee: %s%n",
-				v.getTxID(),
-				v.getMessage().orElse("<none>"),
-				v.getSentAt().getInstant(),
-				v.getSentAt().getInstant().getEpochSecond(),
-				v.getSentAt().getInstant().getNano(),
-				v.getFee()
-			))
-			.collect(Collectors.toList());
+				.map(v -> String.format(
+						"%s (%s) - %s (%d:%d), Fee: %s%n",
+						v.getTxID(),
+						v.getMessage().orElse("<none>"),
+						v.getSentAt().getInstant(),
+						v.getSentAt().getInstant().getEpochSecond(),
+						v.getSentAt().getInstant().getNano(),
+						v.getFee()
+				))
+				.collect(Collectors.toList());
 	}
 }

@@ -66,11 +66,14 @@ package com.radixdlt.api.service;
 
 import com.radixdlt.api.util.ActionParser;
 import com.radixdlt.atom.actions.UpdateValidatorFee;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.RERules;
 import org.json.JSONArray;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.atom.actions.BurnToken;
@@ -88,15 +91,27 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 
+import java.util.Optional;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ActionParserTest {
 	private final REAddr from = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 	private final REAddr to = REAddr.ofPubKeyAccount(ECKeyPair.generateNew().getPublicKey());
 	private final REAddr rri = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "ckee");
 	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
-	private final ActionParser actionParserService = new ActionParser(addressing);
+	private final Forks forks = mock(Forks.class);
+	private final ActionParser actionParser = new ActionParser(addressing, forks);
+
+	@Before
+	public void setup() {
+		final var reRules = mock(RERules.class);
+		when(reRules.getMaxRounds()).thenReturn(View.of(10L));
+		when(forks.getCandidateFork()).thenReturn(Optional.empty());
+	}
 
 	@Test
 	public void transferActionIsParsedCorrectly() {
@@ -105,7 +120,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, toAddr, UInt256.SIX, addressing.forResources().of("ckee", rri)));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -133,7 +148,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"StakeTokens\", \"from\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, validatorAddr, UInt256.NINE));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -160,7 +175,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"UnstakeTokens\", \"to\":\"%s\", \"validator\":\"%s\", \"amount\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, accountAddr, validatorAddr, UInt256.EIGHT));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -186,7 +201,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"MintTokens\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, toAccount, UInt256.NINE, addressing.forResources().of("ckee", rri)));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -212,7 +227,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"BurnTokens\", \"from\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, UInt256.FIVE, addressing.forResources().of("ckee", rri)));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -239,7 +254,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -264,7 +279,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -289,7 +304,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"RegisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -314,7 +329,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"UpdateValidatorMetadata\", \"validator\":\"%s\", \"name\":\"%s\", \"url\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr, "validator 1", "http://localhost/"));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -341,7 +356,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"UpdateValidatorMetadata\", \"validator\":\"%s\", \"url\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr, "http://localhost/"));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -368,7 +383,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"UpdateValidatorMetadata\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -395,7 +410,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"UpdateValidatorFee\", \"validator\":\"%s\", \"validatorFee\":\"1.2345\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -421,7 +436,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"UpdateValidatorFee\", \"validator\":\"%s\", \"validatorFee\":\"100.1\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onSuccessDo(this::failureExpected);
 	}
 
@@ -433,7 +448,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"UpdateValidatorFee\", \"validator\":\"%s\", \"validatorFee\":\"-0.01\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onSuccessDo(this::failureExpected);
 	}
 
@@ -445,7 +460,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -470,7 +485,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -495,7 +510,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"UnregisterValidator\", \"validator\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, validatorAddr));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -523,7 +538,7 @@ public class ActionParserTest {
 											  "name", "description", "http://icon.url/", "http://token.url/", UInt256.TEN
 		));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -557,7 +572,7 @@ public class ActionParserTest {
 											  "description", "http://icon.url/", "http://token.url/", publicKey.toHex()
 		));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -585,7 +600,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"CreateMutableSupplyToken\", \"from\":\"%s\",  \"symbol\":\"%s\", \"name\":\"%s\", \"publicKeyOfSigner\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, fromAddr, "symbol", "name", publicKey.toHex()));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(this::fail)
 			.onSuccess(parsed -> {
 				assertEquals(1, parsed.size());
@@ -611,7 +626,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"CreateTokens\", \"from\":\"%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(System.out::println)
 			.onSuccess(v -> Assert.fail("Operation succeeded, while failure is expected"));
 	}
@@ -621,7 +636,7 @@ public class ActionParserTest {
 		var source = "[{\"type\":\"TokenTransfer\", \"from\":\"abc%s\", \"to\":\"%s\", \"amount\":\"%s\", \"rri\":\"%s\"}]";
 		var actions = jsonArray(String.format(source, from, to, UInt256.NINE, rri));
 
-		actionParserService.parse(actions)
+		actionParser.parse(actions)
 			.onFailure(System.out::println)
 			.onSuccess(v -> Assert.fail("Operation succeeded, while failure is expected"));
 	}

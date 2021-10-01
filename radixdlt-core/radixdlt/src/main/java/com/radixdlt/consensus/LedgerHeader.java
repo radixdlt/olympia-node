@@ -194,7 +194,6 @@ public final class LedgerHeader {
 		return json;
 	}
 
-
 	public static LedgerHeader mocked() {
 		return new LedgerHeader(0, View.genesis(), new AccumulatorState(0,  HashUtils.zero256()), 0, null);
 	}
@@ -222,7 +221,13 @@ public final class LedgerHeader {
 		long timestamp,
 		BFTValidatorSet validatorSet
 	) {
-		return new LedgerHeader(epoch, view, accumulatorState, timestamp, validatorSet == null ? null : validatorSet.getValidators());
+		return new LedgerHeader(
+			epoch,
+			view,
+			accumulatorState,
+			timestamp,
+			validatorSet == null ? null : validatorSet.getValidators()
+		);
 	}
 
 	public LedgerHeader updateViewAndTimestamp(View view, long timestamp) {
@@ -276,7 +281,7 @@ public final class LedgerHeader {
 			return true;
 		}
 		if (o instanceof LedgerHeader) {
-			LedgerHeader other = (LedgerHeader) o;
+			final var other = (LedgerHeader) o;
 			return this.timestamp == other.timestamp
 				&& Objects.equals(this.accumulatorState, other.accumulatorState)
 				&& this.epoch == other.epoch

@@ -182,30 +182,30 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 		@Override
 		public Promise<BuiltTransaction> build(TransactionRequest request) {
 			return call(
-				request(
-					CONSTRUCTION_BUILD, request.getActions(), request.getFeePayer(),
-					request.getMessage(), request.disableResourceAllocationAndDestroy()
-				),
-				new TypeReference<>() {}
+					request(
+							CONSTRUCTION_BUILD, request.getActions(), request.getFeePayer(),
+							request.getMessage(), request.disableResourceAllocationAndDestroy()
+					),
+					new TypeReference<>() {}
 			);
 		}
 
 		@Override
 		public Promise<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit) {
 			return call(
-				request(
-					CONSTRUCTION_FINALIZE,
-					Hex.toHexString(request.getRawBlob()), request.getSignature(), request.getPublicKey(), Boolean.toString(immediateSubmit)
-				),
-				new TypeReference<>() {}
+					request(
+							CONSTRUCTION_FINALIZE,
+							Hex.toHexString(request.getRawBlob()), request.getSignature(), request.getPublicKey(), Boolean.toString(immediateSubmit)
+					),
+					new TypeReference<>() {}
 			);
 		}
 
 		@Override
 		public Promise<TxDTO> submit(TxBlobDTO request) {
 			return call(
-				request(CONSTRUCTION_SUBMIT, Hex.toHexString(request.getBlob()), request.getTxId()),
-				new TypeReference<>() {}
+					request(CONSTRUCTION_SUBMIT, Hex.toHexString(request.getBlob()), request.getTxId()),
+					new TypeReference<>() {}
 			);
 		}
 
@@ -235,7 +235,7 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 
 		@Override
 		public Promise<TransactionHistory> history(
-			AccountAddress address, int size, OptionalLong nextOffset
+				AccountAddress address, int size, OptionalLong nextOffset
 		) {
 			var request = request(ACCOUNT_HISTORY, address.toString(networkId()), size);
 			nextOffset.ifPresent(request::addParameters);
@@ -278,8 +278,8 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 		@Override
 		public Promise<TxDTO> submitTxSingleStep(TransactionRequest request) {
 			return call(
-				request(ACCOUNT_SUBMIT_SINGLE_STEP, request.getActions(), request.getMessage()),
-				new TypeReference<>() {}
+					request(ACCOUNT_SUBMIT_SINGLE_STEP, request.getActions(), request.getMessage()),
+					new TypeReference<>() {}
 			);
 		}
 
@@ -449,20 +449,20 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 	}
 
 	private AsyncRadixApi(
-		String baseUrl,
-		int primaryPort,
-		int secondaryPort,
-		HttpClient client,
-		Optional<BasicAuth> authentication
+			String baseUrl,
+			int primaryPort,
+			int secondaryPort,
+			HttpClient client,
+			Optional<BasicAuth> authentication
 	) {
 		super(baseUrl, primaryPort, secondaryPort, client, authentication);
 	}
 
 	static Promise<RadixApi> connect(
-		String url,
-		int primaryPort,
-		int secondaryPort,
-		Optional<BasicAuth> authentication
+			String url,
+			int primaryPort,
+			int secondaryPort,
+			Optional<BasicAuth> authentication
 	) {
 		return buildHttpClient().fold(Promise::failure, client -> connect(url, primaryPort, secondaryPort, client, authentication));
 	}
@@ -493,13 +493,13 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 	}
 
 	private <T> void bodyHandler(
-		HttpResponse<String> body,
-		Promise<T> promise,
-		TypeReference<JsonRpcResponse<T>> reference
+			HttpResponse<String> body,
+			Promise<T> promise,
+			TypeReference<JsonRpcResponse<T>> reference
 	) {
 		promise.resolve(deserialize(trace(body.body()), reference)
-							.flatMap(response -> response.rawError() == null
-												 ? Result.ok(response.rawResult())
-												 : Result.fail(response.rawError().toFailure())));
+			.flatMap(response -> response.rawError() == null
+				? Result.ok(response.rawResult())
+				: Result.fail(response.rawError().toFailure())));
 	}
 }

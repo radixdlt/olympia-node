@@ -64,10 +64,10 @@
 
 package com.radixdlt.identifiers;
 
+import com.radixdlt.utils.Pair;
 import org.bitcoinj.core.Bech32;
 
 import com.radixdlt.utils.Bits;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Result.Mapper2;
 import com.radixdlt.utils.functional.Tuple.Tuple2;

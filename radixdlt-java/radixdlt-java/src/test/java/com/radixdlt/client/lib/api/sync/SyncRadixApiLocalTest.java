@@ -203,9 +203,9 @@ public class SyncRadixApiLocalTest {
 
 		client.transaction().build(request)
 			.onFailure(failure -> fail(failure.toString()))
-			.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
+			.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
 			.flatMap(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, true))
-			.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()));
+			.onSuccess(tx -> assertNotNull(tx.getTxId()));
 	}
 
 	private Result<RadixApi> prepareClient(String... responseBodies) throws Exception {

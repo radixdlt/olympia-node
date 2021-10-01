@@ -65,6 +65,11 @@
 package com.radixdlt.store.berkeley;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import com.sleepycat.je.LockMode;
 import com.google.common.collect.Streams;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
@@ -73,7 +78,6 @@ import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
@@ -144,7 +148,7 @@ import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, ResourceStore,
-	CommittedReader, PersistentVertexStore {
+	CommittedReader, PersistentVertexStore, ForksEpochStore {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Serialization serialization;
@@ -165,9 +169,15 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	// Metadata databases
 	private static final String VERTEX_STORE_DB_NAME = "radix.vertex_store";
 	private static final String TXN_DB_NAME = "radix.txn_db";
+	private static final String FORK_CONFIG_DB = "radix.fork_config_db";
+	private static final String VALIDATORS_SYSTEM_METADATA_DB = "radix.validators_system_metadata_db";
+	private static final int VALIDATORS_SYSTEM_METADATA_DB_MAX_EPOCHS = 1000;
+
 	private Database vertexStoreDatabase; // Write/Delete
 	private Database proofDatabase; // Write/Delete
 	private SecondaryDatabase epochProofDatabase;
+	private Database forkConfigDatabase;
+	private Database validatorsSystemMetadataDatabase;
 
 	// Syncing Ledger databases
 	private static final String PROOF_DB_NAME = "radix.proof_db";
@@ -207,6 +217,10 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		safeClose(proofDatabase);
 
 		safeClose(vertexStoreDatabase);
+
+		safeClose(forkConfigDatabase);
+
+		safeClose(validatorsSystemMetadataDatabase);
 
 		additionalStores.forEach(BerkeleyAdditionalStore::close);
 
@@ -384,6 +398,95 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 
 		ledgerAndBFTProof.vertexStoreState().ifPresent(v -> doSave(dbTxn, v));
+
+		final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
+
+		ledgerAndBFTProof.getValidatorsSystemMetadata().ifPresent(validatorSystemMetadata ->
+			storeEpochValidatorsSystemMetadata(dbTxn, nextEpoch, validatorSystemMetadata));
+
+		ledgerAndBFTProof.getNextForkHash().ifPresent(nextForkHash ->
+			this.storeEpochForkHash(dbTxn, nextEpoch, nextForkHash));
+	}
+
+	private void storeEpochValidatorsSystemMetadata(
+		Transaction dbTxn,
+		long epoch,
+		ImmutableList<RawSubstateBytes> validatorSystemMetadata
+	) {
+		removeOldEpochValidatorsSystemMetadataEntries(dbTxn, epoch);
+		final var key = new DatabaseEntry(Longs.toByteArray(epoch));
+		validatorSystemMetadata.forEach(data ->
+			validatorsSystemMetadataDatabase.put(dbTxn, key, new DatabaseEntry(data.getData()))
+		);
+	}
+
+	private void removeOldEpochValidatorsSystemMetadataEntries(Transaction dbTxn, long epoch) {
+		try (var cursor = validatorsSystemMetadataDatabase.openCursor(dbTxn, null)) {
+			final var deleteUpToEpoch = epoch - VALIDATORS_SYSTEM_METADATA_DB_MAX_EPOCHS;
+			final var key = new DatabaseEntry();
+			while (cursor.getNext(key, null, DEFAULT) == SUCCESS && Longs.fromByteArray(key.getData()) < deleteUpToEpoch) {
+				cursor.delete();
+			}
+		}
+	}
+
+	@Override
+	public CloseableCursor<HashCode> validatorsSystemMetadataCursor(long epoch) {
+		return new CloseableCursor<>() {
+			private final DatabaseEntry value = new DatabaseEntry();
+			private final Cursor underlyingCursor = validatorsSystemMetadataDatabase.openCursor(null, null);
+			private OperationStatus cursorStatus =
+				underlyingCursor.getSearchKey(new DatabaseEntry(Longs.toByteArray(epoch)), value, DEFAULT);
+
+			@Override
+			public boolean hasNext() {
+				return cursorStatus == SUCCESS;
+			}
+
+			@Override
+			public HashCode next() {
+				if (!hasNext()) {
+					throw new NoSuchElementException();
+				}
+
+				final var result = value.getData();
+				cursorStatus = underlyingCursor.getNextDup(null, value, DEFAULT);
+				return HashCode.fromBytes(result);
+			}
+
+			@Override
+			public void close() {
+				underlyingCursor.close();
+			}
+		};
+	}
+
+	private void storeEpochForkHash(Transaction dbTxn, long epoch, HashCode forkHash) {
+		final var key = new DatabaseEntry(Longs.toByteArray(epoch));
+		final var entry = new DatabaseEntry(forkHash.asBytes());
+		if (forkConfigDatabase.putNoOverwrite(dbTxn, key, entry) != SUCCESS) {
+			throw new BerkeleyStoreException("Duplicate fork hash store for epoch " + epoch);
+		}
+	}
+
+	@Override
+	public void storeEpochForkHash(long epoch, HashCode forkHash) {
+		final var tx = beginTransaction();
+		storeEpochForkHash(tx, epoch, forkHash);
+		tx.commit();
+	}
+
+	@Override
+	public ImmutableMap<Long, HashCode> getEpochsForkHashes() {
+		final var builder = ImmutableMap.<Long, HashCode>builder();
+		try (var cursor = forkConfigDatabase.openCursor(null, null)) {
+			var key = entry();
+			var value = entry();
+			while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+				builder.put(Longs.fromByteArray(key.getData()), HashCode.fromBytes(value.getData()));
+			}
+		}
+		return builder.build();
 	}
 
 	public Optional<SerializedVertexStoreState> loadLastVertexStoreState() {
@@ -523,6 +626,9 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			proofDatabase = env.openDatabase(null, PROOF_DB_NAME, primaryConfig);
 			vertexStoreDatabase = env.openDatabase(null, VERTEX_STORE_DB_NAME, pendingConfig);
 			epochProofDatabase = env.openSecondaryDatabase(null, EPOCH_PROOF_DB_NAME, proofDatabase, buildEpochProofConfig());
+
+			forkConfigDatabase = env.openDatabase(null, FORK_CONFIG_DB, primaryConfig);
+			validatorsSystemMetadataDatabase = env.openDatabase(null, VALIDATORS_SYSTEM_METADATA_DB, primaryConfig.setSortedDuplicates(true));
 
 			txnLog = AppendLog.openCompressed(new File(env.getHome(), LEDGER_NAME).getAbsolutePath(), systemCounters);
 		} catch (Exception e) {

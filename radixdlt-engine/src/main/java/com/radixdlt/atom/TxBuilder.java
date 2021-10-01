@@ -104,8 +104,11 @@ import java.util.stream.StreamSupport;
 /**
  * Creates a transaction from high level user actions
  */
+@SuppressWarnings("unchecked")
 public final class TxBuilder {
+	//TODO: remove if unused
 	private static final Logger logger = LogManager.getLogger();
+
 	private final TxLowLevelBuilder lowLevelBuilder;
 	private final SubstateStore remoteSubstate;
 	private final SubstateDeserialization deserialization;

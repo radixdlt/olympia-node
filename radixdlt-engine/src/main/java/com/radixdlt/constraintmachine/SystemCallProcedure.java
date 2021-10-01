@@ -98,6 +98,7 @@ public class SystemCallProcedure<S extends ReducerState> implements Procedure {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,

@@ -69,7 +69,6 @@ import com.radixdlt.network.p2p.transport.PeerChannel;
 public interface PeerEvent {
 
 	final class PeerConnected implements PeerEvent {
-
 		private final PeerChannel channel;
 
 		public static PeerConnected create(PeerChannel channel) {
@@ -86,7 +85,6 @@ public interface PeerEvent {
 	}
 
 	final class PeerDisconnected implements PeerEvent {
-
 		private final PeerChannel channel;
 
 		public static PeerDisconnected create(PeerChannel channel) {
@@ -103,7 +101,6 @@ public interface PeerEvent {
 	}
 
 	final class PeerLostLiveness implements PeerEvent {
-
 		private final NodeId nodeId;
 
 		public static PeerLostLiveness create(NodeId nodeId) {
@@ -120,7 +117,6 @@ public interface PeerEvent {
 	}
 
 	final class PeerBanned implements PeerEvent {
-
 		private final NodeId nodeId;
 
 		public static PeerBanned create(NodeId nodeId) {
@@ -136,8 +132,23 @@ public interface PeerEvent {
 		}
 	}
 
-	final class PeerHandshakeFailed implements PeerEvent {
+	final class PeerConnectionTimeout implements PeerEvent {
+		private final RadixNodeUri uri;
 
+		public static PeerConnectionTimeout create(RadixNodeUri uri) {
+			return new PeerConnectionTimeout(uri);
+		}
+
+		private PeerConnectionTimeout(RadixNodeUri uri) {
+			this.uri = uri;
+		}
+
+		public RadixNodeUri getUri() {
+			return this.uri;
+		}
+	}
+
+	final class PeerHandshakeFailed implements PeerEvent {
 		private final PeerChannel channel;
 
 		public static PeerHandshakeFailed create(PeerChannel channel) {

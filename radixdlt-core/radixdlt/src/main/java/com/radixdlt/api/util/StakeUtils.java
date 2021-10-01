@@ -88,6 +88,6 @@ public final class StakeUtils {
 
 	public static UInt384 toFullAmount(ValidatorStakeData curData, UInt384 amount) {
 		return amount.multiply(curData.getTotalStake())
-			.divide(curData.getTotalOwnership());
+				.divide(curData.getTotalOwnership());
 	}
 }

@@ -110,13 +110,13 @@ public class SyncRadixApiTest {
 			.onFailure(SyncRadixApiTest::reportFailure)
 			.onSuccess(client -> client.transaction().build(request)
 				.onFailure(SyncRadixApiTest::reportFailure)
-				.onSuccess(builtTransactionDTO -> assertEquals(UInt256.from(100000000000000000L), builtTransactionDTO.getFee()))
-				.map(builtTransactionDTO -> builtTransactionDTO.toFinalized(KEY_PAIR1))
+				.onSuccess(builtTransaction -> assertEquals(UInt256.from(100000000000000000L), builtTransaction.getFee()))
+				.map(builtTransaction -> builtTransaction.toFinalized(KEY_PAIR1))
 				.onSuccess(finalizedTransaction -> client.transaction().finalize(finalizedTransaction, false)
-					.onSuccess(txDTO -> assertNotNull(txDTO.getTxId()))
+					.onSuccess(tx -> assertNotNull(tx.getTxId()))
 					.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction)
 						.onFailure(SyncRadixApiTest::reportFailure)
-						.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId())))));
+						.onSuccess(tx -> assertEquals(submittableTransaction.getTxId(), tx.getTxId())))));
 	}
 
 	@Test

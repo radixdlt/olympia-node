@@ -97,6 +97,7 @@ public class ReadIndexProcedure<D extends Particle, S extends ReducerState> impl
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,

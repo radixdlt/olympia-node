@@ -164,15 +164,14 @@ public class EpochManagerTest {
 	@Inject
 	private Hasher hasher;
 
-	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-
-	private NextTxnsGenerator nextTxnsGenerator = mock(NextTxnsGenerator.class);
-	private ScheduledEventDispatcher<GetVerticesRequest> timeoutScheduler = rmock(ScheduledEventDispatcher.class);
-	private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
-	private RemoteEventDispatcher<Proposal> proposalDispatcher = rmock(RemoteEventDispatcher.class);
-	private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
-	private Mempool mempool = mock(Mempool.class);
-	private StateComputer stateComputer = new StateComputer() {
+	private final ECKeyPair ecKeyPair = ECKeyPair.generateNew();
+	private final NextTxnsGenerator nextTxnsGenerator = mock(NextTxnsGenerator.class);
+	private final ScheduledEventDispatcher<GetVerticesRequest> timeoutScheduler = rmock(ScheduledEventDispatcher.class);
+	private final EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
+	private final RemoteEventDispatcher<Proposal> proposalDispatcher = rmock(RemoteEventDispatcher.class);
+	private final RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
+	private final Mempool<?> mempool = mock(Mempool.class);
+	private final StateComputer stateComputer = new StateComputer() {
 		@Override
 		public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
 			// No-op
@@ -307,6 +306,7 @@ public class EpochManagerTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void should_not_send_consensus_messages_if_not_part_of_new_epoch() {
 		// Arrange
 		epochManager.start();

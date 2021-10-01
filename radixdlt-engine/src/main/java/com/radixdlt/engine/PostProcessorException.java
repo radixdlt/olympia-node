@@ -64,9 +64,8 @@
 
 package com.radixdlt.engine;
 
-// TODO: Change to Exception
-public class MetadataException extends RuntimeException {
-	public MetadataException(String msg) {
+public final class PostProcessorException extends RuntimeException {
+	public PostProcessorException(String msg) {
 		super(msg);
 	}
 }
