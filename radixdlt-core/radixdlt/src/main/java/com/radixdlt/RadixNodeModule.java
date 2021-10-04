@@ -251,13 +251,12 @@ public final class RadixNodeModule extends AbstractModule {
 		// State Computer
 		install(new ForksModule());
 
-		// TODO: Refactor
-		if (properties.get("testing_forks.enable", false)) {
-			log.info("Using testing forks");
-			install(new TestingForksModule());
-		} else if (networkId == Network.MAINNET.getId()) {
+		if (networkId == Network.MAINNET.getId()) {
 			log.info("Using mainnet forks");
 			install(new MainnetForksModule());
+		} else if (properties.get("testing_forks.enable", false)) {
+			log.info("Using testing forks");
+			install(new TestingForksModule());
 		} else {
 			log.info("Using stokenet forks");
 			install(new StokenetForksModule());

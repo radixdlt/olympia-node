@@ -96,10 +96,10 @@ public class ForkVoteStatusService {
 
 	@Inject
 	public ForkVoteStatusService(
-			@Self BFTNode self,
-			EngineStore<LedgerAndBFTProof> engineStore,
-			Forks forks,
-			@InitialForkConfig ForkConfig initialForkConfig
+		@Self BFTNode self,
+		EngineStore<LedgerAndBFTProof> engineStore,
+		Forks forks,
+		@InitialForkConfig ForkConfig initialForkConfig
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.engineStore = Objects.requireNonNull(engineStore);
@@ -120,7 +120,7 @@ public class ForkVoteStatusService {
 		}
 
 		final var expectedCandidateForkVoteHash =
-				ForkConfig.voteHash(self.getKey(), forks.getCandidateFork().get());
+			ForkConfig.voteHash(self.getKey(), forks.getCandidateFork().get());
 
 		final var substateDeserialization = currentFork.engineRules().getParser().getSubstateDeserialization();
 
@@ -129,20 +129,20 @@ public class ForkVoteStatusService {
 				SubstateIndex.create(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))) {
 
 			final var maybeSelfForkVoteHash = Streams.stream(validatorMetadataCursor)
-					.map(s -> {
-						try {
-							return (ValidatorSystemMetadata) substateDeserialization.deserialize(s.getData());
-						} catch (DeserializeException e) {
-							throw new IllegalStateException("Failed to deserialize ValidatorMetaData substate");
-						}
-					})
-					.filter(vm -> vm.getValidatorKey().equals(self.getKey()))
-					.findAny()
-					.map(ValidatorSystemMetadata::getAsHash);
+				.map(s -> {
+					try {
+						return (ValidatorSystemMetadata) substateDeserialization.deserialize(s.getData());
+					} catch (DeserializeException e) {
+						throw new IllegalStateException("Failed to deserialize ValidatorMetaData substate");
+					}
+				})
+				.filter(vm -> vm.getValidatorKey().equals(self.getKey()))
+				.findAny()
+				.map(ValidatorSystemMetadata::getAsHash);
 
 			return maybeSelfForkVoteHash.filter(expectedCandidateForkVoteHash::equals).isPresent()
-					? ForkVoteStatus.NO_ACTION_NEEDED
-					: ForkVoteStatus.VOTE_REQUIRED;
+				? ForkVoteStatus.NO_ACTION_NEEDED
+				: ForkVoteStatus.VOTE_REQUIRED;
 		}
 	}
 
@@ -150,8 +150,8 @@ public class ForkVoteStatusService {
 		return ledgerUpdate -> {
 			final var ledgerAndBftProof = (LedgerAndBFTProof) ledgerUpdate.getStateComputerOutput().get(LedgerAndBFTProof.class);
 			ledgerAndBftProof.getNextForkHash()
-					.flatMap(forks::getByHash)
-					.ifPresent(nextFork -> currentForkConfig = nextFork);
+				.flatMap(forks::getByHash)
+				.ifPresent(nextFork -> currentForkConfig = nextFork);
 		};
 	}
 }
