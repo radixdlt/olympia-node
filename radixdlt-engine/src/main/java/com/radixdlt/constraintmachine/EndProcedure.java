@@ -89,13 +89,11 @@ public class EndProcedure<S extends ReducerState> implements Procedure {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Authorization authorization(Object o) {
 		return authorization.apply((S) o);
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,

@@ -92,13 +92,11 @@ public final class UpProcedure<S extends ReducerState, U extends Particle> imple
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Authorization authorization(Object o) {
 		return authorization.apply((U) o);
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,

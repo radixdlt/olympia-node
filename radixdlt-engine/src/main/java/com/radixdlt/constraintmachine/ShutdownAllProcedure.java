@@ -97,7 +97,6 @@ public class ShutdownAllProcedure<D extends Particle, S extends ReducerState> im
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public ReducerResult call(
 		Object o,
 		ReducerState reducerState,

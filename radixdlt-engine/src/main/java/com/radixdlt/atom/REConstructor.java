@@ -113,7 +113,6 @@ public final class REConstructor {
 	}
 
 	public <T extends TxAction> void construct(T action, TxBuilder txBuilder) throws TxBuilderException {
-		@SuppressWarnings("unchecked")
 		var actionConstructor = (ActionConstructor<T>) constructors.get(action.getClass());
 		if (actionConstructor == null) {
 			throw new IllegalArgumentException("Constructor not found for " + action);

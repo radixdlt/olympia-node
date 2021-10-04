@@ -195,12 +195,7 @@ public final class RadixNodeModule extends AbstractModule {
 		bindConstant().annotatedWith(NetworkId.class).to(networkId);
 		var genesis = loadGenesis(networkId);
 		bind(Txn.class).annotatedWith(Genesis.class).toInstance(genesis);
-		// TODO: Refactor
-		if (networkId == Network.MAINNET.getId()) {
-			install(new MainnetForksModule());
-		} else {
-			install(new StokenetForksModule());
-		}
+
 		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
 		bind(RuntimeProperties.class).toInstance(properties);
 
