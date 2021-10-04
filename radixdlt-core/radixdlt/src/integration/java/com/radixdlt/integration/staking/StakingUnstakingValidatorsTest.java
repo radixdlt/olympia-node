@@ -362,8 +362,8 @@ public class StakingUnstakingValidatorsTest {
 				forks.getCurrentFork(forksEpochStore.getEpochsForkHashes());
 
 			return LongStream.range(1, curEpoch)
-					.map(i -> currentFork.engineRules().getMaxRounds().number())
-					.sum() + epochView.getView().number();
+				.map(i -> currentFork.engineRules().getMaxRounds().number())
+				.sum() + epochView.getView().number();
 		}
 
 		public EpochView getEpochView() {

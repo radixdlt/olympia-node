@@ -62,25 +62,39 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.statecomputer.forks;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.OptionalBinder;
 
-public class MockedRadixEngineStoreModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-		bind(InMemoryEngineStore.Store.class).toInstance(new InMemoryEngineStore.Store());
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.UnaryOperator;
+
+/**
+ * For testing only, only tests the genesis state computer configuration
+ */
+public class RadixEngineForksGenesisOnlyModule extends AbstractModule {
+	private final Optional<RERulesConfig> configOverride;
+
+	public RadixEngineForksGenesisOnlyModule() {
+		this.configOverride = Optional.empty();
 	}
 
-	@Provides
-	@Singleton
-	private EngineStore<LedgerAndBFTProof> engineStore(InMemoryEngineStore.Store store) {
-		return new InMemoryEngineStore<>(store);
+	public RadixEngineForksGenesisOnlyModule(RERulesConfig config) {
+		this.configOverride = Optional.of(config);
+	}
+
+	@Override
+	protected void configure() {
+		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() { })
+			.setBinding()
+			.toInstance(m -> {
+				final var genesisFork = m.stream()
+					.min((a, b) -> (int) (a.epoch() - b.epoch()));
+				final var baseFork = genesisFork.get().atFixedEpoch(0L);
+				return Set.of(configOverride.map(baseFork::withEngineRulesConfig).orElse(baseFork));
+			});
 	}
 }

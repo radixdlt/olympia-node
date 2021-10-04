@@ -65,11 +65,12 @@
 package com.radixdlt.integration.distributed.simulation.tests.full_function_forks;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.atom.TxnConstructionRequest;
+import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -77,12 +78,11 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.ForkBuilder;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RadixEngineForksGenesisOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -91,19 +91,24 @@ import org.junit.Test;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
+import static java.util.function.Predicate.not;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public final class CoordinatedForkSanityTest {
+public final class OutdatedNodeForksTest {
 	private final Builder bftTestBuilder;
 
 	private final int numValidators = 4;
 
-	public CoordinatedForkSanityTest() {
+	private BFTNode nodeUnderTest;
+
+	public OutdatedNodeForksTest() {
 		bftTestBuilder = SimulationTest.builder()
 			.numNodes(numValidators, Collections.nCopies(numValidators, UInt256.ONE))
 			.networkModules(
@@ -112,14 +117,22 @@ public final class CoordinatedForkSanityTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
-				new MockedForksModule(2),
+				new MockedForksModule(2L),
 				new ForksModule()
+			)
+			.addNodesOverrideModule(
+				nodes -> {
+					final var node = nodes.get(0).getPublicKey();
+					// a little hack to set the node under test key
+					nodeUnderTest = BFTNode.create(node);
+					return ImmutableList.of(node);
+				},
+				new RadixEngineForksGenesisOnlyModule() // the node under test starts with just the genesis fork
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))
 			.addTestModules(
 				ConsensusMonitors.safety(),
 				ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-				ConsensusMonitors.noTimeouts(),
 				ConsensusMonitors.directParents(),
 				LedgerMonitors.consensusToLedger(),
 				LedgerMonitors.ordered(),
@@ -128,15 +141,13 @@ public final class CoordinatedForkSanityTest {
 	}
 
 	@Test
-	public void sanity_tests_should_pass() {
+	public void outdated_node_should_recover_when_restarted_with_missing_forks() {
 		final var simulationTest = bftTestBuilder.build();
 		final var runningTest = simulationTest.run(Duration.ofSeconds(30));
 		final var network = runningTest.getNetwork();
-		final var nodes = ImmutableList.copyOf(network.getNodes());
-		final var halfOfTheNodes = nodes.subList(0, nodes.size() / 2);
-		final var oneMoreNode = nodes.get(nodes.size() / 2);
-
-		final var forks = network.getInstance(Forks.class, nodes.get(0)).forkConfigs();
+		final var correctNodes = network.getNodes().stream()
+			.filter(not(node -> node.equals(nodeUnderTest)))
+			.collect(ImmutableList.toImmutableList());
 
 		final var firstError = new AtomicReference<String>();
 		final Consumer<String> reportError = err -> {
@@ -149,79 +160,60 @@ public final class CoordinatedForkSanityTest {
 		final var testErrorsDisposable = network.latestEpochChanges()
 			.subscribe(epochChange -> {
 				latestEpochChange.set(epochChange);
+				if (epochChange.getEpoch() == 11L) {
+					// verify that the correct nodes have executed fork1 and fork2 at correct epochs
+					final var maybeInvalidNode = correctNodes.stream()
+						.filter(node -> {
+							final var storedForks = network.getInstance(ForksEpochStore.class, node);
+							return storedForks.getEpochsForkHashes().containsKey(5)
+								&& storedForks.getEpochsForkHashes().containsKey(10);
+						})
+						.findAny();
 
-				// just a sanity check that all validators have the same power (this test depends on this assumption)
-				final var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
-				final var validatorPower = validatorSet.getValidators().iterator().next().getPower();
-				final var allValidatorsHaveTheSamePower = validatorSet.getValidators().stream()
-					.allMatch(v -> v.getPower().equals(validatorPower));
+					maybeInvalidNode.ifPresent(invalidNode ->
+						reportError.accept(String.format(
+							"Node %s should have executed forks at epoch 5 and 10 but it hasn't",
+							maybeInvalidNode.get()
+						))
+					);
 
-				if (!allValidatorsHaveTheSamePower) {
-					reportError.accept("Expected all validators to have the same power");
-				}
+					final var nodeUnderTestForks =
+						network.getInstance(ForksEpochStore.class, nodeUnderTest).getEpochsForkHashes();
 
-				if (epochChange.getEpoch() == 10L) {
-					// half nodes vote in epoch 10
-					halfOfTheNodes.forEach(node -> updateValidatorWithLatestFork(network, node));
-				} else if (epochChange.getEpoch() == 11L) {
-					// verify that at epoch 11 the network is still at fork idx 2
-					if (!verifyCurrentFork(network, forks.get(2))) {
-						reportError.accept("Expected to be at a different fork (2) at epoch 11");
+					if (nodeUnderTestForks.containsKey(5L) || nodeUnderTestForks.containsKey(10L)) {
+						reportError.accept("Expected test node to miss forks at epoch 5 and 10, but they've been executed");
 					}
 				} else if (epochChange.getEpoch() == 12L) {
-					// verify that at epoch 12 the network is still at fork idx 2
-					if (!verifyCurrentFork(network, forks.get(2))) {
-						reportError.accept("Expected to be at a different fork (2) at epoch 12");
-					}
+					// restart the test node at epoch 12 with the correct fork configuration
+					final var keyPair = runningTest.getNetwork().getInstance(ECKeyPair.class, nodeUnderTest);
+					runningTest.getNetwork().addOrOverrideNode(keyPair, new AbstractModule() {
+						@Override
+						protected void configure() {
+							// just override the fork config modifier module with a no-op (identity)
+							OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() { })
+								.setBinding()
+								.toInstance(m -> m);
+						}
+					});
+				} else if (epochChange.getEpoch() == 13L) {
+					final var nodeUnderTestForks =
+						network.getInstance(ForksEpochStore.class, nodeUnderTest).getEpochsForkHashes();
 
-					// one more node votes in epoch 12
-					updateValidatorWithLatestFork(network, oneMoreNode);
-				} else if (epochChange.getEpoch() == 19L) {
-					// still no change at epoch 19 (min epoch is 20)
-					if (!verifyCurrentFork(network, forks.get(2))) {
-						reportError.accept("Expected to be at a different fork (2) at epoch 19");
-					}
-				} else if (epochChange.getEpoch() == 21L) {
-					// verify that at epoch 21 we've successfully switched to the fork with voting (idx 3)
-					if (!verifyCurrentFork(network, forks.get(3))) {
-						reportError.accept("Expected to be at a different fork (3) at epoch 20");
+					if (!nodeUnderTestForks.containsKey(5L) || !nodeUnderTestForks.containsKey(10L)) {
+						reportError.accept("Expected test node to execute missed forks at epoch 5 and 10");
 					}
 				}
 			});
 
 		final var results = runningTest.awaitCompletion();
+		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 
 		if (firstError.get() != null) {
 			Assert.fail(firstError.get());
 		}
 		testErrorsDisposable.dispose();
 
-		// make sure that at least 20 epochs have passed (fork min epoch)
-		assertTrue(latestEpochChange.get().getEpoch() > 20);
-
-		// verify that at the end of test all nodes are at fork idx 3
-		if (!verifyCurrentFork(network, forks.get(3))) {
-			throw new IllegalStateException("Expected to be at a different fork (3) at the end of test");
-		}
-
-		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-	}
-
-	private void updateValidatorWithLatestFork(RunningNetwork network, BFTNode node) {
-		final var forks = network.getInstance(Forks.class, node);
-		final var maybeForkVoteHash =
-			forks.getCandidateFork().map(f -> ForkConfig.voteHash(node.getKey(), f));
-		final var txRequest = TxnConstructionRequest.create()
-			.updateValidatorSystemMetadata(node.getKey(), maybeForkVoteHash.orElseGet(HashUtils::zero256));
-		network.getDispatcher(NodeApplicationRequest.class, node)
-			.dispatch(NodeApplicationRequest.create(txRequest));
-	}
-
-	private boolean verifyCurrentFork(RunningNetwork network, ForkConfig forkConfig) {
-		return network.getNodes().stream().allMatch(node -> {
-			final var forks = network.getInstance(Forks.class, node);
-			final var epochsForks = network.getInstance(ForksEpochStore.class, node).getEpochsForkHashes();
-			return forks.getCurrentFork(epochsForks).hash().equals(forkConfig.hash());
-		});
+		// just a sanity check to make sure that at least 14 epochs have passed
+		assertTrue(latestEpochChange.get().getEpoch() > 14);
 	}
 }

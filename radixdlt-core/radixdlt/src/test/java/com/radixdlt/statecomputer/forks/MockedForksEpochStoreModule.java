@@ -10,15 +10,16 @@ import com.radixdlt.ledger.LedgerUpdate;
 public final class MockedForksEpochStoreModule extends AbstractModule {
 	@Override
 	public void configure() {
+		bind(InMemoryForksEpochStore.Store.class).toInstance(new InMemoryForksEpochStore.Store());
 		bind(ForksEpochStore.class).to(InMemoryForksEpochStore.class).in(Scopes.SINGLETON);
 	}
 
 	@Singleton
 	@ProvidesIntoSet
-	public EventProcessorOnDispatch<?> eventProcessor(InMemoryForksEpochStore reader) {
+	public EventProcessorOnDispatch<?> eventProcessor(InMemoryForksEpochStore inMemoryForksEpochStore) {
 		return new EventProcessorOnDispatch<>(
 			LedgerUpdate.class,
-			reader.ledgerUpdateEventProcessor()
+			inMemoryForksEpochStore.ledgerUpdateEventProcessor()
 		);
 	}
 }

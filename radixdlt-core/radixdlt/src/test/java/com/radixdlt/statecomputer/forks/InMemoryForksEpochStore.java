@@ -66,7 +66,7 @@ package com.radixdlt.statecomputer.forks;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
-import com.google.inject.Singleton;
+import com.google.inject.Inject;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -74,10 +74,18 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.util.TreeMap;
 
-@Singleton
-final class InMemoryForksEpochStore implements ForksEpochStore {
+public final class InMemoryForksEpochStore implements ForksEpochStore {
+	public static final class Store {
+		final TreeMap<Long, HashCode> epochsForkHashes = new TreeMap<>();
+	}
+
 	private final Object lock = new Object();
-	private final TreeMap<Long, HashCode> epochsForkHashes = new TreeMap<>();
+	private final Store store;
+
+	@Inject
+	public InMemoryForksEpochStore(Store store) {
+		this.store = store;
+	}
 
 	public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
 		return update -> {
@@ -86,7 +94,7 @@ final class InMemoryForksEpochStore implements ForksEpochStore {
 				if  (ledgerAndBftProof != null) {
 					final var nextEpoch = update.getTail().getEpoch() + 1;
 					ledgerAndBftProof.getNextForkHash()
-						.ifPresent(nextForkHash -> this.epochsForkHashes.put(nextEpoch, nextForkHash));
+						.ifPresent(nextForkHash -> this.store.epochsForkHashes.put(nextEpoch, nextForkHash));
 				}
 			}
 		};
@@ -95,19 +103,23 @@ final class InMemoryForksEpochStore implements ForksEpochStore {
 	@Override
 	public ImmutableMap<Long, HashCode> getEpochsForkHashes() {
 		synchronized (lock) {
-			return ImmutableMap.copyOf(epochsForkHashes);
+			return ImmutableMap.copyOf(store.epochsForkHashes);
 		}
 	}
 
 	@Override
 	public void storeEpochForkHash(long epoch, HashCode forkHash) {
 		synchronized (lock) {
-			this.epochsForkHashes.put(epoch, forkHash);
+			this.store.epochsForkHashes.put(epoch, forkHash);
 		}
 	}
 
 	@Override
 	public CloseableCursor<HashCode> validatorsSystemMetadataCursor(long epoch) {
 		return CloseableCursor.empty();
+	}
+
+	public Store getStore() {
+		return store;
 	}
 }
