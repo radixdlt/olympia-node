@@ -67,22 +67,13 @@ package com.radixdlt.client.lib.api.rpc;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.NodeAddress;
-import com.radixdlt.client.lib.api.ValidatorAddress;
-import com.radixdlt.client.lib.dto.serializer.AccountAddressDeserializer;
-import com.radixdlt.client.lib.dto.serializer.AccountAddressSerializer;
-import com.radixdlt.client.lib.dto.serializer.ECPublicKeyDeserializer;
-import com.radixdlt.client.lib.dto.serializer.ECPublicKeySerializer;
-import com.radixdlt.client.lib.dto.serializer.NodeAddressDeserializer;
-import com.radixdlt.client.lib.dto.serializer.NodeAddressSerializer;
-import com.radixdlt.client.lib.dto.serializer.ValidatorAddressDeserializer;
-import com.radixdlt.client.lib.dto.serializer.ValidatorAddressSerializer;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.api.rpc.JsonRpcRequest;
+import com.radixdlt.api.rpc.JsonRpcResponse;
+import com.radixdlt.api.rpc.PortSelector;
+import com.radixdlt.api.rpc.RpcMethod;
+import com.radixdlt.api.rpc.parameter.MethodParameters;
+import com.radixdlt.api.serializer.ApiSerializer;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -106,8 +97,6 @@ import javax.net.ssl.X509TrustManager;
 import static com.radixdlt.errors.ClientErrors.SSL_ALGORITHM_ERROR;
 import static com.radixdlt.errors.ClientErrors.SSL_GENERAL_ERROR;
 import static com.radixdlt.errors.ClientErrors.SSL_KEY_ERROR;
-import static com.radixdlt.errors.ClientErrors.UNABLE_TO_DESERIALIZE;
-import static com.radixdlt.errors.ClientErrors.UNABLE_TO_SERIALIZE;
 import static com.radixdlt.networks.Network.LOCALNET;
 
 public abstract class RadixApiBase {
@@ -117,7 +106,6 @@ public abstract class RadixApiBase {
 	private static final String CONTENT_TYPE = "Content-Type";
 	private static final String APPLICATION_JSON = "application/json";
 	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
-	private static final ObjectMapper DEFAULT_OBJECT_MAPPER = createDefaultMapper();
 
 	private final AtomicLong idCounter = new AtomicLong();
 	private final String baseUrl;
@@ -125,12 +113,11 @@ public abstract class RadixApiBase {
 	private final int secondaryPort;
 	private final HttpClient client;
 	private final Optional<String> authHeader;
+	private final ApiSerializer serializer = new ApiSerializer();
 
 	private Duration timeout = DEFAULT_TIMEOUT;
 	private boolean doTrace = false;
-	private ObjectMapper objectMapper;
 	private int networkId = LOCALNET.getId();
-	private Addressing networkAddressing;
 
 	protected RadixApiBase(
 		String baseUrl,
@@ -160,13 +147,20 @@ public abstract class RadixApiBase {
 		this.timeout = timeout;
 	}
 
-	protected JsonRpcRequest request(RpcMethod rpcMethod, Object... parameters) {
-		return JsonRpcRequest.create(rpcMethod, idCounter.incrementAndGet(), parameters);
+	protected <T extends MethodParameters> JsonRpcRequest<T> request(RpcMethod rpcMethod, T parameters) {
+		return JsonRpcRequest.create(rpcMethod, nextId(), parameters);
 	}
 
-	protected HttpRequest buildRequest(JsonRpcRequest request, String value) {
+	protected long nextId() {
+		return idCounter.incrementAndGet();
+	}
+
+	protected HttpRequest buildRequest(JsonRpcRequest<?> request, String value) {
+		var method = request.rpcDetails()
+			.orElseThrow(() -> new IllegalStateException("Attempt to build request for unknown method"));
+
 		var requestBuilder = HttpRequest.newBuilder()
-			.uri(buildUrl(request.rpcDetails()))
+			.uri(buildUrl(method))
 			.timeout(timeout)
 			.header(CONTENT_TYPE, APPLICATION_JSON);
 
@@ -190,7 +184,7 @@ public abstract class RadixApiBase {
 	}
 
 	protected Addressing networkAddressing() {
-		return networkAddressing;
+		return serializer.getAddressing();
 	}
 
 	protected HttpClient client() {
@@ -198,11 +192,11 @@ public abstract class RadixApiBase {
 	}
 
 	protected Result<String> serialize(JsonRpcRequest request) {
-		return Result.wrap(UNABLE_TO_SERIALIZE, () -> objectMapper().writeValueAsString(request));
+		return serializer.serialize(request);
 	}
 
 	protected <T> Result<JsonRpcResponse<T>> deserialize(String body, TypeReference<JsonRpcResponse<T>> typeReference) {
-		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper().readValue(body, typeReference));
+		return serializer.deserialize(body, typeReference);
 	}
 
 	protected static Result<HttpClient> buildHttpClient() {
@@ -236,17 +230,7 @@ public abstract class RadixApiBase {
 
 	protected void configureSerialization(int networkId) {
 		this.networkId = networkId;
-		this.networkAddressing = Addressing.ofNetworkId(networkId);
-		var module = new SimpleModule()
-			.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(networkAddressing))
-			.addSerializer(AccountAddress.class, new AccountAddressSerializer(networkAddressing))
-			.addSerializer(NodeAddress.class, new NodeAddressSerializer(networkAddressing))
-			.addSerializer(ECPublicKey.class, new ECPublicKeySerializer())
-			.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(networkAddressing))
-			.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(networkAddressing))
-			.addDeserializer(NodeAddress.class, new NodeAddressDeserializer(networkAddressing))
-			.addDeserializer(ECPublicKey.class, new ECPublicKeyDeserializer());
-		objectMapper = createDefaultMapper().registerModule(module);
+		serializer.setAddressing(Addressing.ofNetworkId(networkId));
 	}
 
 	private URI buildUrl(RpcMethod rpcMethod) {
@@ -268,13 +252,5 @@ public abstract class RadixApiBase {
 		}
 
 		return SSL_GENERAL_ERROR.with(throwable.getMessage());
-	}
-
-	private ObjectMapper objectMapper() {
-		return objectMapper == null ? DEFAULT_OBJECT_MAPPER : objectMapper;
-	}
-
-	private static ObjectMapper createDefaultMapper() {
-		return new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
 	}
 }

@@ -67,11 +67,11 @@ import org.bouncycastle.util.encoders.Hex;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.TransactionRequest;
-import com.radixdlt.client.lib.api.ValidatorAddress;
-import com.radixdlt.client.lib.dto.FinalizedTransaction;
-import com.radixdlt.client.lib.dto.TxBlobDTO;
+import com.radixdlt.api.rpc.dto.FinalizedTransaction;
+import com.radixdlt.api.rpc.dto.TxBlobDTO;
+import com.radixdlt.api.types.AccountAddress;
+import com.radixdlt.api.types.TransactionRequest;
+import com.radixdlt.api.types.ValidatorAddress;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;

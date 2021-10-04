@@ -66,10 +66,10 @@ package com.radixdlt.client.lib.api.async;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.TransactionRequest;
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.client.lib.dto.TransactionHistory;
+import com.radixdlt.api.rpc.dto.TransactionDTO;
+import com.radixdlt.api.rpc.dto.TransactionHistory;
+import com.radixdlt.api.types.AccountAddress;
+import com.radixdlt.api.types.TransactionRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;

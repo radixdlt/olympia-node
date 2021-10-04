@@ -63,10 +63,11 @@
 
 package com.radixdlt.client.lib.api.sync;
 
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.client.lib.dto.TransactionsDTO;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import com.radixdlt.api.rpc.dto.TransactionDTO;
+import com.radixdlt.api.rpc.dto.TransactionsDTO;
 
 import java.util.List;
 import java.util.OptionalLong;

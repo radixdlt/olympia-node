@@ -63,18 +63,17 @@
  */
 package com.radixdlt.client.lib.api.sync;
 
-import com.radixdlt.client.lib.dto.TransactionStatus;
-import com.radixdlt.client.lib.dto.TransactionStatusDTO;
-import com.radixdlt.utils.PrivateKeys;
-
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.TransactionRequest;
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.client.lib.dto.TransactionHistory;
+import com.radixdlt.api.rpc.dto.TransactionDTO;
+import com.radixdlt.api.rpc.dto.TransactionHistory;
+import com.radixdlt.api.rpc.dto.TransactionStatus;
+import com.radixdlt.api.rpc.dto.TransactionStatusDTO;
+import com.radixdlt.api.types.AccountAddress;
+import com.radixdlt.api.types.TransactionRequest;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;

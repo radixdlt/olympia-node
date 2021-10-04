@@ -1,14 +1,15 @@
 package com.radixdlt.test.network;
 
-import com.radixdlt.client.lib.api.AccountAddress;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.radixdlt.api.types.AccountAddress;
 import com.radixdlt.test.account.Account;
 import com.radixdlt.test.network.client.RadixHttpClient;
 import com.radixdlt.test.network.client.docker.DockerClient;
 import com.radixdlt.test.network.client.docker.LocalDockerClient;
 import com.radixdlt.test.network.client.docker.LocalDockerNetworkCreator;
 import com.radixdlt.test.utils.universe.UniverseVariables;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.stream.Collectors;

@@ -1,13 +1,15 @@
 package com.radixdlt.acceptance.fixed_supply_tokens;
 
-import com.radixdlt.test.RadixNetworkTest;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.radixdlt.api.rpc.dto.TransactionDTO;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.dto.TransactionDTO;
+import com.radixdlt.test.RadixNetworkTest;
+
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class FixedSupplyTokens extends RadixNetworkTest {
 

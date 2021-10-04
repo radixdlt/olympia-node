@@ -1,18 +1,22 @@
 package com.radixdlt.acceptance.messaging;
 
-import com.radixdlt.test.RadixNetworkTest;
-import com.radixdlt.test.utils.TestFailureException;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.api.sync.RadixApiException;
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.radixdlt.api.rpc.dto.TransactionDTO;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.client.lib.api.sync.RadixApiException;
+import com.radixdlt.test.RadixNetworkTest;
+import com.radixdlt.test.utils.TestFailureException;
+
 import java.util.Optional;
 
-import static org.junit.Assert.*;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class Messaging extends RadixNetworkTest {
 

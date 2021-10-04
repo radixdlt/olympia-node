@@ -65,7 +65,7 @@ package com.radixdlt.client.lib.api.sync;
 
 import org.junit.Test;
 
-import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.api.types.ValidatorAddress;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Result;
 

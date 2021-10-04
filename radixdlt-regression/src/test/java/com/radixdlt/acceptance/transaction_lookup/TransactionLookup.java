@@ -1,17 +1,16 @@
 package com.radixdlt.acceptance.transaction_lookup;
 
-import com.radixdlt.test.RadixNetworkTest;
-import com.radixdlt.assertions.Assertions;
-import com.radixdlt.test.utils.TestFailureException;
-import com.radixdlt.test.utils.TransactionUtils;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.dto.TransactionHistory;
-import com.radixdlt.client.lib.dto.TransactionStatus;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.Durations;
+
+import com.radixdlt.api.rpc.dto.TransactionHistory;
+import com.radixdlt.api.rpc.dto.TransactionStatus;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.assertions.Assertions;
+import com.radixdlt.test.RadixNetworkTest;
+import com.radixdlt.test.utils.TestFailureException;
+import com.radixdlt.test.utils.TransactionUtils;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -19,6 +18,9 @@ import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;

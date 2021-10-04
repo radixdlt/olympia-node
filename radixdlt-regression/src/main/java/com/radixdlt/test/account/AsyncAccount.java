@@ -1,17 +1,18 @@
 package com.radixdlt.test.account;
 
-import com.radixdlt.test.utils.TestingUtils;
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.sync.RadixApi;
-import com.radixdlt.client.lib.dto.Balance;
-import com.radixdlt.client.lib.dto.TokenBalances;
-import com.radixdlt.client.lib.dto.TokenInfo;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.radixdlt.api.rpc.dto.Balance;
+import com.radixdlt.api.rpc.dto.TokenBalances;
+import com.radixdlt.api.rpc.dto.TokenInfo;
+import com.radixdlt.api.types.AccountAddress;
+import com.radixdlt.client.lib.api.sync.RadixApi;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.test.utils.TestingUtils;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Result;
 
 import java.time.Duration;
 import java.util.stream.Collectors;

@@ -64,19 +64,21 @@
 
 package com.radixdlt.acceptance.staking;
 
-import com.radixdlt.test.RadixNetworkTest;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.dto.ValidatorDTO;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
-import io.cucumber.java.en.When;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.util.Lists;
 import org.junit.Assert;
 
+import com.radixdlt.api.rpc.dto.ValidatorDTO;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.test.RadixNetworkTest;
+
 import java.util.List;
 import java.util.Optional;
+
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
