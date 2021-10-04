@@ -290,8 +290,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 					return BerkeleyLedgerEntryStore.this.loadAddr(dbTxn, addr);
 				}
 			});
+			txnLog.flush();
 			dbTxn.commit();
 			return result;
+		} catch (IOException e) {
+			dbTxn.abort();
+			throw new RuntimeException(e);
 		} catch (Exception e) {
 			dbTxn.abort();
 			throw e;
