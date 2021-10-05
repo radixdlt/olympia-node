@@ -75,9 +75,6 @@ import com.radixdlt.network.p2p.transport.logging.LogSink;
 import com.radixdlt.network.p2p.transport.logging.LoggingHandler;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.SocketChannel;
@@ -107,7 +104,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 	private final ECKeyOps ecKeyOps;
 	private final EventDispatcher<PeerEvent> peerEventDispatcher;
 	private final Optional<RadixNodeUri> uri;
-	private final ByteBufAllocator byteBufAllocator;
 
 	public PeerChannelInitializer(
 		P2PConfig config,
@@ -129,8 +125,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 		this.uri = Objects.requireNonNull(uri);
-
-		this.byteBufAllocator = new PooledByteBufAllocator(true);
 	}
 
 	@Override
@@ -153,7 +147,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		config.setSendBufferSize(MAX_PACKET_LENGTH);
 		config.setOption(ChannelOption.SO_RCVBUF, 1024 * 1024);
 		config.setOption(ChannelOption.SO_BACKLOG, 1024);
-		config.setAllocator(byteBufAllocator);
 
 		if (log.isDebugEnabled()) {
 			socketChannel.pipeline().addLast(new LoggingHandler(LogSink.using(log), false));
