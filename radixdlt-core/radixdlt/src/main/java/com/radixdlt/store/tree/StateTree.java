@@ -12,11 +12,10 @@ public class StateTree {
 	// How to re-use existing up/down?
 	public enum Value  {
 		UP,
-		DONW
+		DOWN
 	}
 
 	private PMT pmt;
-	private byte[] root;
 
 	public StateTree() {
 		pmt = new PMT();
@@ -34,15 +33,18 @@ public class StateTree {
 	// StateTree() - new
 	// StateTree(Root) - existing in db
 
-	public byte[] put(SubstateId key, Value value) {
+	public Boolean put(SubstateId key, Value value) {
 		var val = new byte[1];
 
 		switch (value) {
 			case UP: val[0] = 0;
-			case DONW: val[0] = 1;
+			case DOWN: val[0] = 1;
 		}
 
-		return pmt.put(key.asBytes(), val);
+		var PMTResult = pmt.add(key.asBytes(), val);
+
+		// how to evaluate result?
+		return true;
 	}
 
 }
