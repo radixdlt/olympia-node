@@ -73,6 +73,8 @@ import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.util.JsonRpcController;
 import com.radixdlt.api.node.NodeServer;
 import com.radixdlt.api.util.JsonRpcServer;
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import org.json.JSONObject;
 
 import java.util.Map;
 
@@ -158,5 +160,67 @@ public class DeveloperEndpointModule extends AbstractModule {
 	@StringMapKey("developer.parse_amount")
 	public JsonRpcHandler developerParseAmount(DeveloperHandler developerHandler) {
 		return developerHandler::handleParseAmount;
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.disable_network_in")
+	public JsonRpcHandler disableNetworkIn(DeveloperHandler developerHandler) {
+		return unused -> {
+			PeerChannel.inNetworkDisabled = true;
+			return new JSONObject();
+		};
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.disable_network_out")
+	public JsonRpcHandler disableNetworkOut(DeveloperHandler developerHandler) {
+		return unused -> {
+			PeerChannel.outNetworkDisabled = true;
+			return new JSONObject();
+		};
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.disable_network")
+	public JsonRpcHandler disableNetwork(DeveloperHandler developerHandler) {
+		return unused -> {
+			PeerChannel.inNetworkDisabled = true;
+			PeerChannel.outNetworkDisabled = true;
+			return new JSONObject();
+		};
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.enable_network")
+	public JsonRpcHandler enableNetwork(DeveloperHandler developerHandler) {
+		return unused -> {
+			PeerChannel.inNetworkDisabled = false;
+			PeerChannel.outNetworkDisabled = false;
+			return new JSONObject();
+		};
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.enable_network_in")
+	public JsonRpcHandler enableNetworkIn(DeveloperHandler developerHandler) {
+		return unused -> {
+			PeerChannel.inNetworkDisabled = false;
+			return new JSONObject();
+		};
+	}
+
+	@DeveloperEndpoint
+	@ProvidesIntoMap
+	@StringMapKey("developer.enable_network_out")
+	public JsonRpcHandler enableNetworkOut(DeveloperHandler developerHandler) {
+		return unused -> {
+			PeerChannel.outNetworkDisabled = false;
+			return new JSONObject();
+		};
 	}
 }

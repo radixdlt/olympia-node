@@ -115,6 +115,10 @@ import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
  * and forwarding the messages to MessageCentral.
  */
 public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
+
+	public static boolean inNetworkDisabled = false;
+	public static boolean outNetworkDisabled = false;
+
 	private static final Logger log = LogManager.getLogger();
 
 	enum ChannelState {
@@ -237,6 +241,9 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	@Override
 	public void channelRead0(ChannelHandlerContext ctx, byte[] buf) throws Exception {
+		if (inNetworkDisabled) {
+			return;
+		}
 		this.counters.add(CounterType.NETWORKING_P2P_RECEIVED_BYTES, buf.length);
 		this.avgReceivedMsgSize.update(buf.length);
 		this.counters.set(CounterType.NETWORKING_P2P_AVG_RECEIVED_MSG_SIZE, this.avgReceivedMsgSize.asLong());
@@ -276,6 +283,9 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	}
 
 	private void write(byte[] data) {
+		if (outNetworkDisabled) {
+			return;
+		}
 		this.counters.add(CounterType.NETWORKING_P2P_SENT_BYTES, data.length);
 		this.avgSentMsgSize.update(data.length);
 		this.counters.set(CounterType.NETWORKING_P2P_AVG_SENT_MSG_SIZE, this.avgSentMsgSize.asLong());
