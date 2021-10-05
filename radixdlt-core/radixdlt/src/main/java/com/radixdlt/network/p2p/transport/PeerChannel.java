@@ -242,7 +242,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	@Override
 	public void channelRead0(ChannelHandlerContext ctx, byte[] buf) throws Exception {
 		if (inNetworkDisabled) {
-			return;
+			Thread.sleep(1000L);
 		}
 		this.counters.add(CounterType.NETWORKING_P2P_RECEIVED_BYTES, buf.length);
 		this.avgReceivedMsgSize.update(buf.length);
