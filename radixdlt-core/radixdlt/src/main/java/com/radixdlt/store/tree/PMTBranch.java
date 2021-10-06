@@ -1,5 +1,7 @@
 package com.radixdlt.store.tree;
 
+import java.util.Arrays;
+
 public class PMTBranch extends PMTNode {
 
 	int NUMBER_OF_NIBBLES = 16;
@@ -7,31 +9,35 @@ public class PMTBranch extends PMTNode {
 	private byte[][] slices;
 	private int slicesCounter = 0;
 
-	PMTBranch(PMTLeaf leaf, byte[] value) {
+
+
+	PMTBranch(byte[] value, PMTNode... nextNode) {
 		this.slices = new byte[NUMBER_OF_NIBBLES][];
-		setNibble(leaf);
+		Arrays.stream(nextNode).forEach(l -> setNibble(l));
+		if (value != null) {
+			this.value = value;
+		}
 	}
 
-	public PMTBranch setNibble(PMTLeaf leaf) {
-		var nibble = leaf.getFirstNibble();
+	public byte[] getNextHash(PMTKey key) {
+		var nib = this.getFirstNibble(key.toByte());
+		var nibInt = nibbleToInteger(nib);
+		return slices[nibInt];
+	}
+
+	public PMTBranch setNibble(PMTNode nextNode) {
+		var nibble = nextNode.getFirstNibble();
 		var sliceKey = this.nibbleToInteger(nibble);
-		this.slices[sliceKey] = leaf.getHash();
-		slicesCounter++;
+		if (this.slices[sliceKey] == null) {
+			slicesCounter++;
+		}
+		this.slices[sliceKey] = nextNode.getHash();
 		return this;
 	}
 
-
-	private PMTBranch serialize() {
-
-		// array RLP serialization. How to serialize nulls?
-
-		applyPrefix();
-		this.serialized = new byte[0];
-		return this;
+	public byte[] serialize() {
+		// TODO: serilize, RLP? Array RLP serialization. How to serialize nulls?
+		return this.serialized = new byte[0];
 	}
 
-	private PMTBranch applyPrefix() {
-		// TODO the 1,2,3,4 nimbles
-		return this;
-	}
 }

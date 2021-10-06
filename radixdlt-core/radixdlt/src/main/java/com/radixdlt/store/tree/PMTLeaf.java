@@ -9,10 +9,9 @@ public class PMTLeaf extends PMTNode {
 	public PMTKey key;        // key-end
 	public byte[] value;      // universal byte array
 
-	private byte[] serialized;
-
 	private int EVEN_PREFIX = 2;
 	private int ODD_PREFIX = 3;
+	private byte[] prefixedKey;
 
 	byte[] getEvenPrefix() {
 		return ByteBuffer.allocate(8).putInt(EVEN_PREFIX).array();
@@ -28,11 +27,9 @@ public class PMTLeaf extends PMTNode {
 		hash();
 	}
 
-	private PMTLeaf serialize() {
-		var prefixedKey = applyPrefix(key, getOddPrefix(), getEvenPrefix());
-		// TODO: serialize
-		this.serialized = new byte[0];
-		return this;
+	public byte[] serialize() {
+		this.prefixedKey = applyPrefix(key, getOddPrefix(), getEvenPrefix());
+		// TODO: serialize, RLP?
+		return this.serialized = new byte[0];
 	}
-
 }

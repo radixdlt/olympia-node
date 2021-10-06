@@ -8,7 +8,7 @@ import java.util.List;
 
 public class PMTResult {
 
-	private byte[] tip;
+	private PMTNode tip;
 	private PMTKey commonPrefix;
 	private HashMap<Subtree, PMTKey> rem = new HashMap<>();
 
@@ -30,9 +30,13 @@ public class PMTResult {
 		return commonPrefix;
 	}
 
-	public PMTResult setTip(byte[] newTip) {
+	public PMTResult setTip(PMTNode newTip) {
 		tip = newTip;
 		return this;
+	}
+
+	public PMTNode getTip () {
+		return this.tip;   /// TODO: trigger cleanup for recursive calls?
 	}
 
 	// what about concurrent access?

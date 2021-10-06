@@ -3,8 +3,6 @@ package com.radixdlt.store.tree;
 import com.radixdlt.crypto.HashUtils;
 
 import java.nio.ByteBuffer;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public abstract class PMTNode {
 
@@ -15,7 +13,7 @@ public abstract class PMTNode {
 		EMPTY
 	}
 
-	private final int HASH_COND = 32;
+	public final static int HASH_COND = 32;
 
 	protected final int EVEN_SIZE = 8;
 	protected final int ODD_SIZE = 4;
@@ -26,16 +24,20 @@ public abstract class PMTNode {
 	protected byte[] value;
 
 	protected PMTNode hash() {
-		if (this.serialized.length >= HASH_COND) {
+		var ser = serialize();
+		if (ser.length >= HASH_COND) {
 			// TODO: what's the best hashing variant? Consider tree size
-			this.hash = HashUtils.sha512(this.serialized).asBytes();
+			//       Ethereum uses sha3 which is keccak-256
+			this.hash = HashUtils.sha512(ser).asBytes();
 		} else {
-			this.hash = this.serialized;
+			this.hash = ser;
 		}
 		return this;
 	}
 
 	public byte[] getHash() {
+		// TODO: optimize. Introduce isDirty/null-on-write to avoid hashing and serialization
+		this.hash();
 		return this.hash;
 	}
 
@@ -47,15 +49,34 @@ public abstract class PMTNode {
 		return value;
 	}
 
+	public PMTNode setValue(byte[] value) {
+		this.value = value;
+		return this;
+	}
+
 	public byte[] getFirstNibble() {
+		return getFirstNibble(this.hash);
+	}
+
+	public byte[] getFirstNibble(byte[] hash) {
 		byte[] nibble = new byte[4];
 		for(int i=0;i<=4;++i) {
-			nibble[i] = this.hash[i];
+			nibble[i] = hash[i];
 		}
-		// should we set it in a field for re-use?
+		// should we set it in a cache field for re-use?
 		return nibble;
 	}
 
+	public abstract byte[] serialize();
+
+	public static PMTNode deserialize(byte[] node){
+		// 1. use deserialization protocol e.g. RLP
+		// 2. classify a node (leaf, branch, ext)
+		//    ...Branch vs Leaf/Exp
+		//    ...use Prefix for Leaf vs Exp
+		// 3. instantiate with arguments
+		return null;
+	}
 	protected byte[] applyPrefix(PMTKey key, byte[] oddPrefix, byte[] evenPrefix) {
 		var rawKey = key.toByte();
 		var keyLength = rawKey.length;
@@ -77,13 +98,6 @@ public abstract class PMTNode {
 		}
 		return prefixed;
 	}
-
-	public String toHexString(byte[] byteBuffer) {
-		return IntStream.range(0, byteBuffer.length)
-			.map(i -> byteBuffer[i] & 0xff)
-			.mapToObj(b -> String.format("%02x", b))
-			.collect(Collectors.joining());
-		}
 
 	public Integer nibbleToInteger(byte[] nibble) {
 		return ByteBuffer.wrap(nibble).getInt();

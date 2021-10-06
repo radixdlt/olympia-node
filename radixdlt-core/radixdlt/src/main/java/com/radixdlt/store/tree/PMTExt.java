@@ -6,16 +6,17 @@ public class PMTExt extends PMTNode {
 	public PMTKey key;        // key-part
 	public byte[] value;      // universal byte array for hash pointer to branch
 
-	private byte[] serialized;
-
-	// flag to handle:
+	// Flag to handle:
 	// * leaf vs ext
-	// * not full byte paths
+	// * partial byte paths
 	// TODO: Java Endianess???
 
 
 	private int EVEN_PREFIX = 0;
 	private int ODD_PREFIX = 1;
+	private byte[] prefixedKey;
+
+	// TODO: explicit test for Nibble prefix!!!
 
 	byte[] getEvenPrefix() {
 		return ByteBuffer.allocate(EVEN_SIZE).putInt(EVEN_PREFIX).array();
@@ -31,11 +32,9 @@ public class PMTExt extends PMTNode {
 		hash();
 	}
 
-	private PMTExt serialize() {
-		var prefixedKey = applyPrefix(key, getOddPrefix(), getEvenPrefix());
+	public byte[] serialize() {
+		this.prefixedKey = applyPrefix(key, getOddPrefix(), getEvenPrefix());
 		// TODO: serialize, RLP?
-		this.serialized = new byte[0];
-		return this;
+		return this.serialized = new byte[0];
 	}
-
 }
