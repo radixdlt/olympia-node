@@ -71,4 +71,10 @@ public class PMTResult {
 		return this.suffix;
 	}
 
+	public PMTResult cleanup() {
+		this.commonPrefix = null;
+		this.rem = null;
+		this.suffix = null;
+		return this;
+	}
 }

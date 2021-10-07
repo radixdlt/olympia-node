@@ -21,7 +21,6 @@ public class PMT {
 
 	// NEXT:
 	// check overlap logic after recursive call
-	// setTip + cleanup of pmtResult
 	// branch if else
 	// common path method
 	// serialization
@@ -139,7 +138,7 @@ public class PMT {
 				}
 				break;
 		}
-		return pmtResult;
+		return pmtResult.cleanup();
 	}
 
 	PMTLeaf insertFirst(PMTKey pmtKey, byte[] value) {
