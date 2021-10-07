@@ -64,6 +64,14 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import org.bouncycastle.util.encoders.Hex;
+
+import com.radixdlt.api.rpc.dto.TxBlobDTO;
+
 public class ConstructionSubmitTransaction implements MethodParameters {
 	public static final String METHOD_NAME = "construction.submit_transaction";
+
+	public static ConstructionSubmitTransaction fromTxBlob(TxBlobDTO request) {
+		return new ConstructionSubmitTransaction(request.getBlob(), request.getTxId());
+	}
 }

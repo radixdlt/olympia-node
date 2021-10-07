@@ -106,6 +106,7 @@ import com.radixdlt.api.rpc.dto.ValidatorDTO;
 import com.radixdlt.api.rpc.dto.ValidatorsResponse;
 import com.radixdlt.api.rpc.parameter.ConstructionBuildTransaction;
 import com.radixdlt.api.rpc.parameter.ConstructionFinalizeTransaction;
+import com.radixdlt.api.rpc.parameter.ConstructionSubmitTransaction;
 import com.radixdlt.api.rpc.parameter.NetworkGetDemand;
 import com.radixdlt.api.rpc.parameter.NetworkGetId;
 import com.radixdlt.api.rpc.parameter.NetworkGetThroughput;
@@ -247,7 +248,7 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 		@Override
 		public Promise<TxDTO> submit(TxBlobDTO request) {
 			return call(
-				request(CONSTRUCTION_SUBMIT, Hex.toHexString(request.getBlob()), request.getTxId()),
+				request(CONSTRUCTION_SUBMIT, ConstructionSubmitTransaction.fromTxBlob(request)),
 				new TypeReference<>() {}
 			);
 		}
