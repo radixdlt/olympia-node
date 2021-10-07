@@ -8,18 +8,18 @@ import java.util.List;
 
 public class PMTResult {
 
-	private PMTNode tip;
-	private PMTKey commonPrefix;
-	private HashMap<Subtree, PMTKey> rem = new HashMap<>();
-
-	private Subtree suffix;
-
 	enum Subtree {
 		OLD,
 		NEW,
 		BOTH,
 		NONE
 	}
+
+	private PMTNode tip;
+	private PMTKey commonPrefix;
+	private HashMap<Subtree, PMTKey> rem = new HashMap<>();
+	private Subtree suffix;
+
 
 	// handle null in rem?
 	public PMTKey getRemainder(Subtree subtree) {
@@ -39,7 +39,6 @@ public class PMTResult {
 		return this.tip;   /// TODO: trigger cleanup for recursive calls?
 	}
 
-	// what about concurrent access?
 	public PMTResult setRemainder(PMTKey existing, PMTKey incoming, PMTKey common) {
 
 		this.rem.put(Subtree.OLD, existing);

@@ -1,40 +1,43 @@
 package com.radixdlt.store.tree;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+
+import static com.radixdlt.store.tree.TreeUtils.applyPrefix;
 
 public class PMTExt extends PMTNode {
-	public PMTKey key;        // key-part
-	public byte[] value;      // universal byte array for hash pointer to branch
 
-	// Flag to handle:
-	// * leaf vs ext
-	// * partial byte paths
-	// TODO: Java Endianess???
-
-
-	private int EVEN_PREFIX = 0;
-	private int ODD_PREFIX = 1;
+	final private int EVEN_PREFIX = 0;
+	final private int ODD_PREFIX = 1;
 	private byte[] prefixedKey;
+	private Boolean overlap;
 
-	// TODO: explicit test for Nibble prefix!!!
+	// TODO: explicit test for Nibble prefix! Check java Endianness
 
 	byte[] getEvenPrefix() {
-		return ByteBuffer.allocate(EVEN_SIZE).putInt(EVEN_PREFIX).array();
+		return ByteBuffer.allocate(8).putInt(EVEN_PREFIX).array();
 	}
 
 	byte[] getOddPrefix() {
-		return ByteBuffer.allocate(ODD_SIZE).putInt(ODD_PREFIX).array();
+		return ByteBuffer.allocate(4).putInt(ODD_PREFIX).array();
 	}
 
-	PMTExt(PMTKey newKey, byte[] newHashPointer) {
-		nodeType = NodeType.EXTENSION;
-		serialize();
-		hash();
+	PMTExt(PMTKey newKey, byte[] newHashPointer, Boolean overlap) {
+		nodeType = NodeType.EXTENSION; // refactor to casting or pattern
+		this.key = newKey;
+		this.value = newHashPointer;
+		this.overlap = overlap;
 	}
 
 	public byte[] serialize() {
-		this.prefixedKey = applyPrefix(key, getOddPrefix(), getEvenPrefix());
+		// INFO: Skip overlap nibble encoded in branch position
+		if (overlap) {
+			var subkey = Arrays.copyOfRange(this.key.toByte(), 4, this.key.toByte().length);
+			this.prefixedKey = applyPrefix(subkey, getOddPrefix(), getEvenPrefix());
+		} else {
+			this.prefixedKey = applyPrefix(this.key.toByte(), getOddPrefix(), getEvenPrefix());
+		}
 		// TODO: serialize, RLP?
-		return this.serialized = new byte[0];
+		return this.serialized = "Ext serialized".getBytes();
 	}
 }

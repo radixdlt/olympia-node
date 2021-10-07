@@ -7,9 +7,7 @@ public class PMTBranch extends PMTNode {
 	int NUMBER_OF_NIBBLES = 16;
 
 	private byte[][] slices;
-	private int slicesCounter = 0;
-
-
+	private int slicesCounter = 0; // INFO: for removal
 
 	PMTBranch(byte[] value, PMTNode... nextNode) {
 		this.slices = new byte[NUMBER_OF_NIBBLES][];
@@ -20,14 +18,14 @@ public class PMTBranch extends PMTNode {
 	}
 
 	public byte[] getNextHash(PMTKey key) {
-		var nib = this.getFirstNibble(key.toByte());
-		var nibInt = nibbleToInteger(nib);
+		var nib = TreeUtils.getFirstNibble(key.toByte());
+		var nibInt = TreeUtils.nibbleToInteger(nib);
 		return slices[nibInt];
 	}
 
 	public PMTBranch setNibble(PMTNode nextNode) {
-		var nibble = nextNode.getFirstNibble();
-		var sliceKey = this.nibbleToInteger(nibble);
+		var nibble = TreeUtils.getFirstNibble(nextNode.key.toByte());
+		var sliceKey = TreeUtils.nibbleToInteger(nibble);
 		if (this.slices[sliceKey] == null) {
 			slicesCounter++;
 		}
@@ -37,7 +35,7 @@ public class PMTBranch extends PMTNode {
 
 	public byte[] serialize() {
 		// TODO: serilize, RLP? Array RLP serialization. How to serialize nulls?
-		return this.serialized = new byte[0];
+		return this.serialized = "Branch serialized".getBytes();
 	}
 
 }

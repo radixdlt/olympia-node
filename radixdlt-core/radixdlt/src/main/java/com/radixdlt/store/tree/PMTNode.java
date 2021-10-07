@@ -13,19 +13,22 @@ public abstract class PMTNode {
 		EMPTY
 	}
 
-	public final static int HASH_COND = 32;
+	public final static Boolean AFTER_BRANCH = true;
+	public final static Boolean BEFORE_BRANCH = false;
 
-	protected final int EVEN_SIZE = 8;
-	protected final int ODD_SIZE = 4;
+	public final static int DB_SIZE_COND = 32;
 
 	protected byte[] hash;
 	protected byte[] serialized;
 	protected NodeType nodeType;
+	protected PMTKey key;
+	protected byte[] firstNibble;
 	protected byte[] value;
 
 	protected PMTNode hash() {
+		// TODO: use a dirty flag or wrapper to avoid re-serializing
 		var ser = serialize();
-		if (ser.length >= HASH_COND) {
+		if (ser.length >= DB_SIZE_COND) {
 			// TODO: what's the best hashing variant? Consider tree size
 			//       Ethereum uses sha3 which is keccak-256
 			this.hash = HashUtils.sha512(ser).asBytes();
@@ -36,7 +39,7 @@ public abstract class PMTNode {
 	}
 
 	public byte[] getHash() {
-		// TODO: optimize. Introduce isDirty/null-on-write to avoid hashing and serialization
+		// TODO: introduce isDirty/null-on-write to avoid hashing and serialization
 		this.hash();
 		return this.hash;
 	}
@@ -54,19 +57,7 @@ public abstract class PMTNode {
 		return this;
 	}
 
-	public byte[] getFirstNibble() {
-		return getFirstNibble(this.hash);
-	}
-
-	public byte[] getFirstNibble(byte[] hash) {
-		byte[] nibble = new byte[4];
-		for(int i=0;i<=4;++i) {
-			nibble[i] = hash[i];
-		}
-		// should we set it in a cache field for re-use?
-		return nibble;
-	}
-
+	// INFO: Ext and Leaf may have overlap nibble encoded in branch position
 	public abstract byte[] serialize();
 
 	public static PMTNode deserialize(byte[] node){
@@ -76,34 +67,5 @@ public abstract class PMTNode {
 		//    ...use Prefix for Leaf vs Exp
 		// 3. instantiate with arguments
 		return null;
-	}
-	protected byte[] applyPrefix(PMTKey key, byte[] oddPrefix, byte[] evenPrefix) {
-		var rawKey = key.toByte();
-		var keyLength = rawKey.length;
-		byte[] prefixed;
-
-		if (keyLength % 8 == 0) {
-			ByteBuffer bb = ByteBuffer.allocate(EVEN_SIZE + keyLength);
-			bb.put(evenPrefix);
-			bb.put(rawKey);
-			prefixed = bb.array();
-		} else if (keyLength % 4 == 0) {
-			ByteBuffer bb = ByteBuffer.allocate(ODD_SIZE + keyLength);
-			bb.put(oddPrefix);
-			bb.put(rawKey);
-			prefixed = bb.array();
-		} else {
-			// TODO: throw exception here.
-			prefixed = null;
-		}
-		return prefixed;
-	}
-
-	public Integer nibbleToInteger(byte[] nibble) {
-		return ByteBuffer.wrap(nibble).getInt();
-	}
-
-	public String toByteString(Integer keyNibble) {
-		return Integer.toBinaryString(keyNibble);
 	}
 }

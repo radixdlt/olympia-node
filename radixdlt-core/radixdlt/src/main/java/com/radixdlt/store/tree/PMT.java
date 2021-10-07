@@ -19,28 +19,12 @@ public class PMT {
 	//get_proof
 	//verify_proof
 
-	// MAIN IMPLEMENTATION TODOs
-	// 1. What to do with serialization for hashing? RLP? What about node serialization for db.
-	// 2. Use Optional, Result through out the stack
-	// 3. What's concurrency approach
-	// 4. Compression of UP/DOWN, tree split for different kinds
-	// 5. Config matrix and background sync
-	// 6. array copy issue
-
-	// INTEGRATION PLAN:
-	// 1. Run it in parallel to db saves
-	// 2. Introduce config for enable/disable
-	// 3. Introduce strategy for GC (no GC = null DOWN, GC DOWN, GC DOWN after N)
-	// 3.1. ^^ this would require an N going along serialized node to the db
-	// 4. Measure growth, io and latency
-	// 5. Write consistency tests
-	// 6. Take over storage of UPs and DOWNs
-
-	// XXX For retired nodes put the epoch number when they were valid (for precise GC)
-	// XXX Make it configurable -- deletion of old nodes
-	// XXX epoch number -> epoch when it becomes DOWN
-	// XXX What will be strategy for DOWN vs UP? Shall we keep both vs deleting DOWN? Config...
-
+	// NEXT:
+	// check overlap logic after recursive call
+	// setTip + cleanup of pmtResult
+	// branch if else
+	// common path method
+	// serialization
 
 	private HashMap<byte[], byte[]> localDb = new HashMap<>(); // mock for final persistent DB API
 	private PMTNode root;
@@ -50,12 +34,13 @@ public class PMT {
 		try {
 			var pmtKey = new PMTKey(key);
 
-			// TODO: consider adding val = null -> remove
+			// TODO: consider API: adding null -> remove
 			if (this.root != null) {
 				var newResult = insertNode(this.root, pmtKey, val);
 				this.root = newResult.getTip();
 			} else {
-				PMTNode nodeRoot = insertLeaf(pmtKey, val);
+				// TODO: move to big case when it can handle nulls
+				PMTNode nodeRoot = insertFirst(pmtKey, val);
 				this.root = nodeRoot;
 			}
 		}
@@ -129,42 +114,42 @@ public class PMT {
 				}
 				break;
 			case EXTENSION:
-				pmtResult = this.findCommonPath(pmtResult, current, pmtKey);
 				switch (pmtResult.whichRemainderIsLeft()) {
 					case OLD:
-
-						// change extension (shorten)
-						// create a branch
-						// extension check
+						var newShorter = splitExtension(pmtResult, current);
+						var newBranch = insertBranch(val, newShorter);
+						var newExt = insertExtension(pmtResult, newBranch);
+						pmtResult.setTip(newExt == null ? newBranch : newExt);
 						break;
 					case NEW:
-
-						// insertNode with next Node (with new key)
-						// extension update  (as branch below changes hash)
+					case NONE:
+						var nextHash = current.getValue();
+						var nextNode = read(nextHash);
+						var pmtResultNext = insertNode(nextNode, pmtResult.getRemainder(PMTResult.Subtree.NEW), val, pmtResult);
+						pmtResult.setTip(insertExtension(pmtResult, (PMTBranch) pmtResultNext.getTip()));
 						break;
 					case BOTH:
-
-						// change extension (shorten)
-						// create a branch
-						// extension check
-						break;
-					case NONE:
-						// just like NEW, but going to branch as the new Val will be set to branch Val
-						// so:
-						// insertNode (^^)
-						// extension update (as branch below changes hash)
+						var remainder = pmtResult.getRemainder(PMTResult.Subtree.NEW);
+						var newLeaf = insertLeaf(remainder, val);
+						newShorter = splitExtension(pmtResult, current);
+						newBranch = insertBranch(newLeaf, newShorter);
+						newExt = insertExtension(pmtResult, newBranch);
+						pmtResult.setTip(newExt == null ? newBranch : newExt);
 						break;
 				}
-				break;
-			case EMPTY:
-				// leaf
 				break;
 		}
 		return pmtResult;
 	}
 
+	PMTLeaf insertFirst(PMTKey pmtKey, byte[] value) {
+		var newNode = new PMTLeaf(pmtKey, value, PMTNode.BEFORE_BRANCH);
+		save(newNode);
+		return newNode;
+	}
+
 	PMTLeaf insertLeaf(PMTKey pmtKey, byte[] value) {
-		var newNode = new PMTLeaf(pmtKey, value);
+		var newNode = new PMTLeaf(pmtKey, value, PMTNode.AFTER_BRANCH);
 		save(newNode);
 		return newNode;
 	}
@@ -185,22 +170,42 @@ public class PMT {
 		return newBranch;
 	}
 
+	// INFO: After branch
+	PMTExt splitExtension(PMTResult pmtResult, PMTNode current) {
+		var remainder = pmtResult.getRemainder(PMTResult.Subtree.OLD);
+		if (remainder.isNibble()) {
+			// INFO: The key will be position in the branch only
+			//       * it's not necessarily a leaf as it has hash pointer to another branch
+			//       * hash pointer will be rewritten to nibble position in a branch
+			return new PMTExt(remainder, current.getValue(), PMTNode.AFTER_BRANCH);
+		} else {
+			var newExtension = new PMTExt(remainder, current.getValue(), PMTNode.AFTER_BRANCH);
+			save(newExtension);
+			return newExtension;
+		}
+	}
+
+	// INFO: before branch
 	PMTExt insertExtension(PMTResult pmtResult, PMTBranch branch) {
 		if (pmtResult.getCommonPrefix().isEmpty()) {
+			// TODO: meh...
 			return null;
 		} else {
-			var newExtension = new PMTExt(pmtResult.getCommonPrefix(), branch.getHash());
+			var newExtension = new PMTExt(pmtResult.getCommonPrefix(), branch.getHash(), PMTNode.BEFORE_BRANCH);
 			save(newExtension);
 			return newExtension;
 		}
 	}
 
 	private void save(PMTNode node) {
-		this.localDb.put(node.getHash(), node.serialize());
+		var ser = node.serialize();
+		if (ser.length >= PMTNode.DB_SIZE_COND) {
+			this.localDb.put(node.getHash(), ser);
+		}
 	}
 
 	private PMTNode read(byte[] hash) {
-		if (hash.length < PMTNode.HASH_COND) {
+		if (hash.length < PMTNode.DB_SIZE_COND) {
 			return PMTNode.deserialize(hash);
 		} else {
 			var node = this.localDb.get(hash);
@@ -210,14 +215,10 @@ public class PMT {
 		}
 	}
 
-
-
-
 	PMTResult findCommonPath(PMTResult result, PMTNode top, PMTKey key) {
 		// move to PMTKEY?
 		return result;
 	}
-
 
 	PMTResult remove(PMTKey pmtKey) {
 		// TODO
@@ -235,11 +236,6 @@ public class PMT {
 	}
 
 	PMTResult removeBranchNode(PMTNode pmtNode) {
-		// TODO
-		return null;
-	}
-
-	PMTResult applyRules(PMTResult inProgress) {
 		// TODO
 		return null;
 	}
