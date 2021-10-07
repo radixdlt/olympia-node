@@ -1,6 +1,9 @@
 FROM ubuntu:21.10
 MAINTAINER radixdlt <devops@radixdlt.com>
 
+COPY apt-config/sources.list /etc/apt/
+COPY apt-config/99own /etc/apt/apt.conf.d/
+
 RUN apt-get -y update > /dev/null && \
     apt-get -y --no-install-recommends install net-tools iptables iproute2 gettext-base curl tcpdump strace attr software-properties-common > /dev/null && \
     apt-get clean > /dev/null && \
