@@ -43,8 +43,12 @@ public class PMT {
 				this.root = nodeRoot;
 			}
 		}
-		catch (IllegalArgumentException e) {
-			log.error("Add failure: {} {}", TreeUtils.toHexString(key), e.getMessage());
+		catch (Exception e) {
+			log.error("Add failure: {} for: {} {} {}",
+				e.getMessage(),
+				TreeUtils.toHexString(key),
+				TreeUtils.toHexString(val),
+				TreeUtils.toHexString(root.getHash()));
 		}
 		// TODO: need a protocol for exceptions
 		return this.root.getHash();
@@ -93,23 +97,22 @@ public class PMT {
 			}
 			break;
 			case BRANCH:
-				// extract to pmtRESULT and use enum for clarity
+				// INFO: Branch has empty key and remainder
 				var currentBranch = (PMTBranch) current;
-				if (pmtKey.isEmpty()) {
-					if (currentBranch.getValue() == val) {
-						throw new IllegalArgumentException("Nothing changed");
-					} else {
+				switch (pmtResult.whichRemainderIsLeft()) {
+					case NONE:
 						var modifiedBranch = currentBranch.setValue(val);
 						var savedBranch = insertBranch(modifiedBranch);
 						pmtResult.setTip(savedBranch);
-					}
-				} else {
-					var nextHash = currentBranch.getNextHash(pmtKey);
-					var nextNode = read(nextHash);
-					var pmtResultNext = insertNode(nextNode, pmtResult.getRemainder(PMTResult.Subtree.NEW), val, pmtResult);
-					var branchWithNext = currentBranch.setNibble(pmtResultNext.getTip());
-					var savedBranch = insertBranch(branchWithNext);
-					pmtResult.setTip(savedBranch);
+						break;
+					case NEW:
+						var nextHash = currentBranch.getNextHash(pmtKey);
+						var nextNode = read(nextHash);
+						var pmtResultNext = insertNode(nextNode, pmtResult.getRemainder(PMTResult.Subtree.NEW), val, pmtResult);
+						var branchWithNext = currentBranch.setNibble(pmtResultNext.getTip());
+						savedBranch = insertBranch(branchWithNext);
+						pmtResult.setTip(savedBranch);
+						break;
 				}
 				break;
 			case EXTENSION:

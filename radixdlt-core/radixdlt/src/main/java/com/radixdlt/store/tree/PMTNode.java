@@ -52,8 +52,13 @@ public abstract class PMTNode {
 		return value;
 	}
 
+	// TODO: allow to setValue? or always instantiate and copy?
 	public PMTNode setValue(byte[] value) {
-		this.value = value;
+		if (this.value == value) {
+			throw new IllegalArgumentException("Nothing changed");
+		} else {
+			this.value = value;
+		}
 		return this;
 	}
 

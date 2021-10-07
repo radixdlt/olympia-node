@@ -39,6 +39,7 @@ public class PMTResult {
 		return this.tip;   /// TODO: trigger cleanup for recursive calls?
 	}
 
+	// INFO: Branch has empty key and remainder
 	public PMTResult setRemainder(PMTKey existing, PMTKey incoming, PMTKey common) {
 
 		this.rem.put(Subtree.OLD, existing);
