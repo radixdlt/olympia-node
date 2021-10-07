@@ -20,8 +20,7 @@ public class PMT {
 	//verify_proof
 
 	// NEXT:
-	// check overlap logic after recursive call
-	// branch if else
+	// re-check overlap logic after recursive call
 	// common path method
 	// serialization
 
