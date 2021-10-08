@@ -38,7 +38,7 @@ public class PMT {
 				this.root = newResult.getTip();
 			} else {
 				// TODO: move to big case when it can handle nulls
-				PMTNode nodeRoot = insertFirst(pmtKey, val);
+				PMTNode nodeRoot = insertLeaf(pmtKey, val);
 				this.root = nodeRoot;
 			}
 		}
@@ -64,14 +64,14 @@ public class PMT {
 			 	switch (pmtResult.whichRemainderIsLeft()) {
 			 		case OLD:
 			 			var remainder = pmtResult.getRemainder(PMTResult.Subtree.OLD);
-			 			var newLeaf = insertLeaf(remainder, val);
+			 			var newLeaf = insertSubLeaf(remainder.getFirstNibble(), remainder.getTailNibbles(), val);
 						var newBranch = insertBranch(current.getValue(), newLeaf);
 						var newExt = insertExtension(pmtResult, newBranch);
 						pmtResult.setTip(newExt == null ? newBranch : newExt);
 						break;
 					case NEW:
 						remainder = pmtResult.getRemainder(PMTResult.Subtree.NEW);
-						newLeaf = insertLeaf(remainder, current.value);
+						newLeaf = insertSubLeaf(remainder.getFirstNibble(), remainder.getTailNibbles(), current.value);
 						newBranch = insertBranch(val, newLeaf);
 						newExt = insertExtension(pmtResult, newBranch);
 						pmtResult.setTip(newExt == null ? newBranch : newExt);
@@ -79,8 +79,8 @@ public class PMT {
 					case BOTH:
 						var remainderNew = pmtResult.getRemainder(PMTResult.Subtree.NEW);
 						var remainderOld = pmtResult.getRemainder(PMTResult.Subtree.OLD);
-						var newLeafNew = insertLeaf(remainderNew, val);
-						var newLeafOld = insertLeaf(remainderOld, current.value);
+						var newLeafNew = insertSubLeaf(remainderNew.getFirstNibble(), remainderNew.getTailNibbles(), val);
+						var newLeafOld = insertSubLeaf(remainderOld.getFirstNibble(), remainderOld.getTailNibbles(), current.value);
 						newBranch = insertBranch(newLeafNew, newLeafOld);
 						newExt = insertExtension(pmtResult, newBranch);
 						pmtResult.setTip(newExt == null ? newBranch : newExt);
@@ -89,6 +89,7 @@ public class PMT {
 					    if (val == current.getValue()) {
 					    	throw new IllegalArgumentException("Nothing changed");
 						} else {
+					    	// INFO: we preserve whole key-end as there are no branches
 					    	newLeaf = insertLeaf(pmtKey, val);
 							pmtResult.setTip(newLeaf);
 						}
@@ -96,7 +97,7 @@ public class PMT {
 			}
 			break;
 			case BRANCH:
-				// INFO: Branch has empty key and remainder
+				// INFO: Existing branch has empty key and remainder
 				var currentBranch = (PMTBranch) current;
 				switch (pmtResult.whichRemainderIsLeft()) {
 					case NONE:
@@ -106,9 +107,18 @@ public class PMT {
 						break;
 					case NEW:
 						var nextHash = currentBranch.getNextHash(pmtKey);
-						var nextNode = read(nextHash);
-						var pmtResultNext = insertNode(nextNode, pmtResult.getRemainder(PMTResult.Subtree.NEW), val, pmtResult);
-						var branchWithNext = currentBranch.setNibble(pmtResultNext.getTip());
+						var remainder = pmtResult.getRemainder(PMTResult.Subtree.NEW);
+						PMTNode nextTip;
+						if (nextHash == null) {
+							nextTip = insertSubLeaf(pmtKey.getFirstNibble(), pmtKey.getTailNibbles(), val);
+						} else {
+							var nextNode = read(nextHash);
+							var pmtResultNext = insertNode(nextNode, remainder.getTailNibbles(), val, pmtResult);
+							nextTip = pmtResultNext.getTip();
+							// INTO: Only here we have a context of a position-nibble
+							nextTip.setFirstNibble(remainder.getFirstNibble());
+						}
+						var branchWithNext = currentBranch.setNibble(nextTip);
 						savedBranch = insertBranch(branchWithNext);
 						pmtResult.setTip(savedBranch);
 						break;
@@ -117,7 +127,8 @@ public class PMT {
 			case EXTENSION:
 				switch (pmtResult.whichRemainderIsLeft()) {
 					case OLD:
-						var newShorter = splitExtension(pmtResult, current);
+						var remainder = pmtResult.getRemainder(PMTResult.Subtree.OLD);
+						var newShorter = splitExtension(remainder, current);
 						var newBranch = insertBranch(val, newShorter);
 						var newExt = insertExtension(pmtResult, newBranch);
 						pmtResult.setTip(newExt == null ? newBranch : newExt);
@@ -126,13 +137,15 @@ public class PMT {
 					case NONE:
 						var nextHash = current.getValue();
 						var nextNode = read(nextHash);
+						// INFO: for NONE, the NEW will be empty
 						var pmtResultNext = insertNode(nextNode, pmtResult.getRemainder(PMTResult.Subtree.NEW), val, pmtResult);
 						pmtResult.setTip(insertExtension(pmtResult, (PMTBranch) pmtResultNext.getTip()));
 						break;
 					case BOTH:
-						var remainder = pmtResult.getRemainder(PMTResult.Subtree.NEW);
-						var newLeaf = insertLeaf(remainder, val);
-						newShorter = splitExtension(pmtResult, current);
+						var remainderNew = pmtResult.getRemainder(PMTResult.Subtree.NEW);
+						var remainderOld = pmtResult.getRemainder(PMTResult.Subtree.OLD);
+						var newLeaf = insertSubLeaf(remainderNew.getFirstNibble(), remainderNew.getTailNibbles(), val);
+						newShorter = splitExtension(remainderOld, current);
 						newBranch = insertBranch(newLeaf, newShorter);
 						newExt = insertExtension(pmtResult, newBranch);
 						pmtResult.setTip(newExt == null ? newBranch : newExt);
@@ -143,14 +156,15 @@ public class PMT {
 		return pmtResult.cleanup();
 	}
 
-	PMTLeaf insertFirst(PMTKey pmtKey, byte[] value) {
-		var newNode = new PMTLeaf(pmtKey, value, PMTNode.BEFORE_BRANCH);
+	// INFO: the only case when leaf has full key in key-end
+	PMTLeaf insertLeaf(PMTKey key, byte[] value) {
+		var newNode = new PMTLeaf(key, value);
 		save(newNode);
 		return newNode;
 	}
 
-	PMTLeaf insertLeaf(PMTKey pmtKey, byte[] value) {
-		var newNode = new PMTLeaf(pmtKey, value, PMTNode.AFTER_BRANCH);
+	PMTLeaf insertSubLeaf(PMTKey first, PMTKey tail, byte[] value) {
+		var newNode = new PMTLeaf(first, tail, value);
 		save(newNode);
 		return newNode;
 	}
@@ -172,15 +186,15 @@ public class PMT {
 	}
 
 	// INFO: After branch
-	PMTExt splitExtension(PMTResult pmtResult, PMTNode current) {
-		var remainder = pmtResult.getRemainder(PMTResult.Subtree.OLD);
+	PMTExt splitExtension(PMTKey remainder, PMTNode current) {
 		if (remainder.isNibble()) {
-			// INFO: The key will be position in the branch only
+			// INFO: The remainder will be expressed as position in the branch only
 			//       * it's not necessarily a leaf as it has hash pointer to another branch
 			//       * hash pointer will be rewritten to nibble position in a branch
-			return new PMTExt(remainder, current.getValue(), PMTNode.AFTER_BRANCH);
+			//       * this is why we dont save it as it's only container to pass the first nibble to branch
+			return new PMTExt(remainder.getFirstNibble(), remainder.getTailNibbles(), current.getValue());
 		} else {
-			var newExtension = new PMTExt(remainder, current.getValue(), PMTNode.AFTER_BRANCH);
+			var newExtension = new PMTExt(remainder.getFirstNibble(), remainder.getTailNibbles(), current.getValue());
 			save(newExtension);
 			return newExtension;
 		}
@@ -189,10 +203,9 @@ public class PMT {
 	// INFO: before branch
 	PMTExt insertExtension(PMTResult pmtResult, PMTBranch branch) {
 		if (pmtResult.getCommonPrefix().isEmpty()) {
-			// TODO: meh...
 			return null;
 		} else {
-			var newExtension = new PMTExt(pmtResult.getCommonPrefix(), branch.getHash(), PMTNode.BEFORE_BRANCH);
+			var newExtension = new PMTExt(pmtResult.getCommonPrefix(), branch.getHash());
 			save(newExtension);
 			return newExtension;
 		}

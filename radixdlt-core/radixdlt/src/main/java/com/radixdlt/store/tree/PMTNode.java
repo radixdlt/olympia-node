@@ -21,9 +21,18 @@ public abstract class PMTNode {
 	protected byte[] hash;
 	protected byte[] serialized;
 	protected NodeType nodeType;
-	protected PMTKey key;
-	protected byte[] firstNibble;
+	protected PMTKey firstNibble;
+	protected PMTKey tailNibbles;
 	protected byte[] value;
+
+	protected PMTKey getFirstNibble() {
+		return firstNibble;
+	}
+
+	protected PMTNode setFirstNibble(PMTKey contextNibble) {
+		firstNibble = contextNibble;
+		return this;
+	}
 
 	protected PMTNode hash() {
 		// TODO: use a dirty flag or wrapper to avoid re-serializing

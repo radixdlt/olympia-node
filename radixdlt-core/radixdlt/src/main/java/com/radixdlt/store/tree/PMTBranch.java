@@ -18,13 +18,13 @@ public class PMTBranch extends PMTNode {
 	}
 
 	public byte[] getNextHash(PMTKey key) {
-		var nib = TreeUtils.getFirstNibble(key.toByte());
+		var nib = key.getFirstNibble().toByte();
 		var nibInt = TreeUtils.nibbleToInteger(nib);
 		return slices[nibInt];
 	}
 
 	public PMTBranch setNibble(PMTNode nextNode) {
-		var nibble = TreeUtils.getFirstNibble(nextNode.key.toByte());
+		var nibble = nextNode.getFirstNibble().toByte();
 		var sliceKey = TreeUtils.nibbleToInteger(nibble);
 		if (this.slices[sliceKey] == null) {
 			slicesCounter++;

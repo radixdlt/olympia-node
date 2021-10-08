@@ -10,7 +10,6 @@ public class PMTLeaf extends PMTNode {
 	final private int EVEN_PREFIX = 2;
 	final private int ODD_PREFIX = 3;
 	private byte[] prefixedKey;
-	private Boolean overlap;
 
 	byte[] getEvenPrefix() {
 		return ByteBuffer.allocate(8).putInt(EVEN_PREFIX).array();
@@ -20,21 +19,19 @@ public class PMTLeaf extends PMTNode {
 		return ByteBuffer.allocate(4).putInt(ODD_PREFIX).array();
 	}
 
-	PMTLeaf(PMTKey newKey, byte[] newValue, Boolean overlap) {
+	PMTLeaf(PMTKey allNibbles, byte[] newValue) {
+		this(null, allNibbles, newValue);
+	}
+	PMTLeaf(PMTKey firstNibble, PMTKey tailNibbles, byte[] newValue) {
 		this.nodeType = NodeType.LEAF; // refactor to casting or pattern
-		this.key = newKey;
+		this.firstNibble = firstNibble;
+		this.tailNibbles = tailNibbles;
 		this.value = newValue;
-		this.overlap = overlap;
 	}
 
 	public byte[] serialize() {
-		// INFO: Skip overlap nibble encoded in branch position
-		if (overlap) {
-			var subkey = Arrays.copyOfRange(this.key.toByte(), 4, this.key.toByte().length);
-			this.prefixedKey = applyPrefix(subkey, getOddPrefix(), getEvenPrefix());
-		} else {
-			this.prefixedKey = applyPrefix(this.key.toByte(), getOddPrefix(), getEvenPrefix());
-		}
+		// INFO: leaf can have empty key. It's because value may not fit branches' hash pointer field
+		this.prefixedKey = applyPrefix(this.tailNibbles.toByte(), getOddPrefix(), getEvenPrefix());
 		// TODO: serialize, RLP?
 		return this.serialized = "Leaf serialized".getBytes();
 	}

@@ -10,7 +10,6 @@ public class PMTExt extends PMTNode {
 	final private int EVEN_PREFIX = 0;
 	final private int ODD_PREFIX = 1;
 	private byte[] prefixedKey;
-	private Boolean overlap;
 
 	// TODO: explicit test for Nibble prefix! Check java Endianness
 
@@ -22,22 +21,27 @@ public class PMTExt extends PMTNode {
 		return ByteBuffer.allocate(4).putInt(ODD_PREFIX).array();
 	}
 
-	PMTExt(PMTKey newKey, byte[] newHashPointer, Boolean overlap) {
+	PMTExt(PMTKey allNibbles, byte[] newHashPointer) {
+		this(null, allNibbles, newHashPointer);
+	}
+
+	PMTExt(PMTKey firstNibble, PMTKey tailNibbles, byte[] newHashPointer) {
 		nodeType = NodeType.EXTENSION; // refactor to casting or pattern
-		this.key = newKey;
+		this.firstNibble = firstNibble;
+		this.tailNibbles = tailNibbles;
 		this.value = newHashPointer;
-		this.overlap = overlap;
 	}
 
 	public byte[] serialize() {
-		// INFO: Skip overlap nibble encoded in branch position
-		if (overlap) {
-			var subkey = Arrays.copyOfRange(this.key.toByte(), 4, this.key.toByte().length);
-			this.prefixedKey = applyPrefix(subkey, getOddPrefix(), getEvenPrefix());
+		// INFO: It doesn't make sense for Extension to have empty key-part.
+		//       We rewrite hash pointer to Branches' nibble position
+		if (tailNibbles.isEmpty()) {
+			return this.getValue();
 		} else {
-			this.prefixedKey = applyPrefix(this.key.toByte(), getOddPrefix(), getEvenPrefix());
+			this.prefixedKey = applyPrefix(this.tailNibbles.toByte(), getOddPrefix(), getEvenPrefix());
+
+			// TODO: serialize, RLP?
+			return this.serialized = "Ext serialized".getBytes();
 		}
-		// TODO: serialize, RLP?
-		return this.serialized = "Ext serialized".getBytes();
 	}
 }
