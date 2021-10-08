@@ -123,7 +123,7 @@ public final class ValidatorMetaData implements ValidatorData {
 	@Override
 	public String toString() {
 		return String.format(
-			"%s[%s, %s, %s]",
+			"%s[%s, %s]",
 			getClass().getSimpleName(), getValidatorKey(), getUrl()
 		);
 	}
