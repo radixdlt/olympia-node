@@ -11,6 +11,16 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
+  testpr:
+    name: Check merge commit
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
+      - name: Unit tests and Sonar analisys
+        run: cat -n radixdlt-core/radixdlt/src/main/java/com/radixdlt/utils/Compress.java
   build:
     name: Unit tests and sonarqube
     runs-on: ubuntu-20.04
