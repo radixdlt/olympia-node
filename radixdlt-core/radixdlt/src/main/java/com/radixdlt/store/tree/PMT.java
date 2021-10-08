@@ -20,7 +20,6 @@ public class PMT {
 	//verify_proof
 
 	// NEXT:
-	// re-check overlap logic after recursive call
 	// common path method
 	// serialization
 
@@ -57,8 +56,8 @@ public class PMT {
 		return insertNode(above, pmtKey, val, new PMTResult());
 	}
 
-	PMTResult insertNode(PMTNode current, PMTKey pmtKey, byte[] val, PMTResult pmtResult) {
-		pmtResult = this.findCommonPath(pmtResult, current, pmtKey);
+	PMTResult insertNode(PMTNode current, PMTKey key, byte[] val, PMTResult pmtResult) {
+		pmtResult = this.findCommonPath(pmtResult, current, key);
 		switch (current.getNodeType()) {
 			case LEAF:
 			 	switch (pmtResult.whichRemainderIsLeft()) {
@@ -90,7 +89,7 @@ public class PMT {
 					    	throw new IllegalArgumentException("Nothing changed");
 						} else {
 					    	// INFO: we preserve whole key-end as there are no branches
-					    	newLeaf = insertLeaf(pmtKey, val);
+					    	newLeaf = insertLeaf(key, val);
 							pmtResult.setTip(newLeaf);
 						}
 						break;
@@ -106,17 +105,16 @@ public class PMT {
 						pmtResult.setTip(savedBranch);
 						break;
 					case NEW:
-						var nextHash = currentBranch.getNextHash(pmtKey);
-						var remainder = pmtResult.getRemainder(PMTResult.Subtree.NEW);
+						var nextHash = currentBranch.getNextHash(key);
 						PMTNode nextTip;
 						if (nextHash == null) {
-							nextTip = insertSubLeaf(pmtKey.getFirstNibble(), pmtKey.getTailNibbles(), val);
+							nextTip = insertSubLeaf(key.getFirstNibble(), key.getTailNibbles(), val);
 						} else {
 							var nextNode = read(nextHash);
-							var pmtResultNext = insertNode(nextNode, remainder.getTailNibbles(), val, pmtResult);
+							var pmtResultNext = insertNode(nextNode, key.getTailNibbles(), val, pmtResult);
 							nextTip = pmtResultNext.getTip();
 							// INTO: Only here we have a context of a position-nibble
-							nextTip.setFirstNibble(remainder.getFirstNibble());
+							nextTip.setFirstNibble(key.getFirstNibble());
 						}
 						var branchWithNext = currentBranch.setNibble(nextTip);
 						savedBranch = insertBranch(branchWithNext);
