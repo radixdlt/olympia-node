@@ -85,6 +85,11 @@ import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Result.ok;
 
 public class ArchiveValidationHandler {
+	private static final String SIZE = "size";
+	private static final String CURSOR = "cursor";
+	private static final String VALIDATOR_ADDRESS = "validatorAddress";
+	private static final String VALIDATORS = "validators";
+
 	private final ValidatorArchiveInfoService validatorInfoService;
 	private final Addressing addressing;
 
@@ -100,8 +105,8 @@ public class ArchiveValidationHandler {
 	public JSONObject handleValidatorsGetNextEpochSet(JSONObject request) {
 		return withRequiredParameters(
 			request,
-			List.of("size"),
-			List.of("cursor"),
+			List.of(SIZE),
+			List.of(CURSOR),
 			params -> allOf(parseSize(params), ok(parseAddressCursor(params)))
 				.flatMap((size, cursor) ->
 							 validatorInfoService.getValidators(size, cursor)
@@ -112,7 +117,7 @@ public class ArchiveValidationHandler {
 	public JSONObject handleValidatorsLookupValidator(JSONObject request) {
 		return withRequiredStringParameter(
 			request,
-			"validatorAddress",
+			VALIDATOR_ADDRESS,
 			address -> addressing.forValidators().fromString(address)
 				.flatMap(validatorInfoService::getNextEpochValidator)
 				.map(d -> d.asJson(addressing))
@@ -125,12 +130,12 @@ public class ArchiveValidationHandler {
 
 	private JSONObject formatValidatorResponse(Optional<ECPublicKey> cursor, List<ValidatorInfoDetails> transactions) {
 		return jsonObject()
-			.put("cursor", cursor.map(addressing.forValidators()::of).orElse(""))
-			.put("validators", fromCollection(transactions, d -> d.asJson(addressing)));
+			.put(CURSOR, cursor.map(addressing.forValidators()::of).orElse(""))
+			.put(VALIDATORS, fromCollection(transactions, d -> d.asJson(addressing)));
 	}
 
 	private Optional<ECPublicKey> parseAddressCursor(JSONObject params) {
-		return safeString(params, "cursor")
+		return safeString(params, CURSOR)
 			.toOptional()
 			.flatMap(this::parsePublicKey);
 	}
@@ -140,7 +145,7 @@ public class ArchiveValidationHandler {
 	}
 
 	private static Result<Integer> parseSize(JSONObject params) {
-		return safeInteger(params, "size")
+		return safeInteger(params, SIZE)
 			.filter(value -> value > 0, INVALID_PAGE_SIZE);
 	}
 }

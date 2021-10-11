@@ -52,19 +52,17 @@ import static com.radixdlt.api.rpc.EndPoint.SYSTEM;
 import static com.radixdlt.api.rpc.EndPoint.TRANSACTIONS;
 import static com.radixdlt.api.rpc.EndPoint.VALIDATION;
 
-//TODO: move request creation here
+//TODO: move request creation here?
+//TODO: consider reworking it into RpcMethod<Request, Response>???
 public enum RpcMethod {
 	TOKEN_NATIVE(TokensGetNativeToken.METHOD_NAME, ARCHIVE),
 	TOKEN_INFO(TokensGetInfo.METHOD_NAME, ARCHIVE),
-
 	ACCOUNT_BALANCES(AccountGetBalances.METHOD_NAME, ARCHIVE),
 	ACCOUNT_HISTORY(AccountGetTransactionHistory.METHOD_NAME, ARCHIVE),
 	ACCOUNT_STAKES(AccountGetStakePositions.METHOD_NAME, ARCHIVE),
 	ACCOUNT_UNSTAKES(AccountGetUnstakePositions.METHOD_NAME, ARCHIVE),
-
 	TRANSACTION_LOOKUP(TransactionsLookupTransaction.METHOD_NAME, ARCHIVE),
 	TRANSACTION_STATUS(TransactionsGetTransactionStatus.METHOD_NAME, ARCHIVE),
-
 	NETWORK_ID(NetworkGetId.METHOD_NAME, ARCHIVE),
 	NETWORK_THROUGHPUT(NetworkGetThroughput.METHOD_NAME, ARCHIVE),
 	NETWORK_DEMAND(NetworkGetDemand.METHOD_NAME, ARCHIVE),
@@ -72,38 +70,27 @@ public enum RpcMethod {
 	NETWORK_PEERS(NetworkingGetPeers.METHOD_NAME, SYSTEM),
 	NETWORK_DATA(NetworkingGetData.METHOD_NAME, SYSTEM),
 	NETWORK_ADDRESS_BOOK(NetworkingGetAddressBook.METHOD_NAME, SYSTEM),
-
 	VALIDATORS_LIST(ValidatorsGetNextEpochSet.METHOD_NAME, ARCHIVE),
 	VALIDATORS_LOOKUP(ValidatorsLookupValidator.METHOD_NAME, ARCHIVE),
-
 	CONSTRUCTION_BUILD(ConstructionBuildTransaction.METHOD_NAME, CONSTRUCTION),
 	CONSTRUCTION_FINALIZE(ConstructionFinalizeTransaction.METHOD_NAME, CONSTRUCTION),
 	CONSTRUCTION_SUBMIT(ConstructionSubmitTransaction.METHOD_NAME, CONSTRUCTION),
-
 	TRANSACTION_LIST(GetTransactions.METHOD_NAME, TRANSACTIONS),
-
 	API_CONFIGURATION(ApiGetConfiguration.METHOD_NAME, SYSTEM),
 	API_DATA(ApiGetData.METHOD_NAME, SYSTEM),
-
 	BFT_CONFIGURATION(BftGetConfiguration.METHOD_NAME, SYSTEM),
 	BFT_DATA(BftGetData.METHOD_NAME, SYSTEM),
-
 	MEMPOOL_CONFIGURATION(MempoolGetConfiguration.METHOD_NAME, SYSTEM),
 	MEMPOOL_DATA(MempoolGetData.METHOD_NAME, SYSTEM),
-
 	LEDGER_PROOF(LedgerGetLatestProof.METHOD_NAME, SYSTEM),
 	LEDGER_EPOCH_PROOF(LedgerGetLatestEpochProof.METHOD_NAME, SYSTEM),
 	LEDGER_CHECKPOINTS(CheckpointsGetCheckpoints.METHOD_NAME, SYSTEM),
-
 	RADIX_ENGINE_CONFIGURATION(RadixEngineGetConfiguration.METHOD_NAME, SYSTEM),
 	RADIX_ENGINE_DATA(RadixEngineGetData.METHOD_NAME, SYSTEM),
-
 	SYNC_CONFIGURATION(SyncGetConfiguration.METHOD_NAME, SYSTEM),
 	SYNC_DATA(SyncGetData.METHOD_NAME, SYSTEM),
-
 	VALIDATION_NODE_INFO(ValidationGetNodeInfo.METHOD_NAME, VALIDATION),
 	VALIDATION_CURRENT_EPOCH(ValidationGetCurrentEpochData.METHOD_NAME, VALIDATION),
-
 	ACCOUNT_INFO(AccountGetInfo.METHOD_NAME, ACCOUNT),
 	ACCOUNT_SUBMIT_SINGLE_STEP(AccountSubmitTransactionSingleStep.METHOD_NAME, ACCOUNT);
 

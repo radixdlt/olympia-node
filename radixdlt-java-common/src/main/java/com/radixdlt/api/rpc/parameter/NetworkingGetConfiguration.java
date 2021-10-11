@@ -64,6 +64,9 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class NetworkingGetConfiguration implements MethodParameters {
 	public static final String METHOD_NAME = "networking.get_configuration";
 	public static final NetworkingGetConfiguration INSTANCE = new NetworkingGetConfiguration();

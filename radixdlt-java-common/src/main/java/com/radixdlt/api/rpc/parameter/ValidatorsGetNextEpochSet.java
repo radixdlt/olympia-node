@@ -64,6 +64,61 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.api.types.NavigationCursor;
+
+import java.util.Objects;
+import java.util.Optional;
+
 public class ValidatorsGetNextEpochSet implements MethodParameters {
 	public static final String METHOD_NAME = "validators.get_next_epoch_set";
+
+	private final long size;
+	private final Optional<NavigationCursor> cursor;
+
+	private ValidatorsGetNextEpochSet(long size, Optional<NavigationCursor> cursor) {
+		this.size = size;
+		this.cursor = cursor;
+	}
+
+	public static ValidatorsGetNextEpochSet create(
+		@JsonProperty(value = "size", required = true) long size,
+		@JsonProperty(value = "cursor", required = true) Optional<NavigationCursor> cursor
+	) {
+		return new ValidatorsGetNextEpochSet(size, cursor);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof ValidatorsGetNextEpochSet)) {
+			return false;
+		}
+
+		var that = (ValidatorsGetNextEpochSet) o;
+		return size == that.size && cursor.equals(that.cursor);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(size, cursor);
+	}
+
+	@Override
+	public String toString() {
+		return "ValidatorsGetNextEpochSet(" + "size=" + size + ", cursor=" + cursor + ')';
+	}
+
+	@JsonProperty("size")
+	public long getSize() {
+		return size;
+	}
+
+	@JsonProperty("cursor")
+	public Optional<NavigationCursor> getCursor() {
+		return cursor;
+	}
 }

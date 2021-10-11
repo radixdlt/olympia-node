@@ -382,12 +382,12 @@ public interface RadixApi {
 
 		/**
 		 * Get transaction history.
-		 *
-		 * @param address account address for which information is requested
+		 *  @param address account address for which information is requested
 		 * @param size batch size
 		 * @param offset offset to start retrieval at
+		 * @param verbose
 		 */
-		Promise<TransactionHistory> history(AccountAddress address, int size, OptionalLong offset);
+		Promise<TransactionHistory> history(AccountAddress address, int size, OptionalLong offset, boolean verbose);
 
 		/**
 		 * Get stakes made from given account.
@@ -415,11 +415,10 @@ public interface RadixApi {
 		 * <p>
 		 * To get full list, pass empty cursor for first request and then just pass cursor received in the response
 		 * back to API until you get empty cursor again.
-		 *
-		 * @param size batch size
+		 *  @param size batch size
 		 * @param cursor pagination cursor
 		 */
-		Promise<ValidatorsResponse> list(int size, Optional<NavigationCursor> cursor);
+		Promise<ValidatorsResponse> list(long size, Optional<NavigationCursor> cursor);
 
 		/**
 		 * Lookup validator by address.

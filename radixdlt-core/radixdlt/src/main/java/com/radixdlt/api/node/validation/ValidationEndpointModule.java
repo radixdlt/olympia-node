@@ -68,6 +68,8 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.rpc.parameter.ValidationGetCurrentEpochData;
+import com.radixdlt.api.rpc.parameter.ValidationGetNodeInfo;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.util.JsonRpcController;
@@ -97,14 +99,14 @@ public class ValidationEndpointModule extends AbstractModule {
 
 	@ValidationEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("validation.get_node_info")
+	@StringMapKey(ValidationGetNodeInfo.METHOD_NAME)
 	public JsonRpcHandler getNodeInfo(ValidationHandler validationHandler) {
 		return validationHandler::handleGetNodeInfo;
 	}
 
 	@ValidationEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("validation.get_current_epoch_data")
+	@StringMapKey(ValidationGetCurrentEpochData.METHOD_NAME)
 	public JsonRpcHandler getCurrentEpochData(ValidationHandler validationHandler) {
 		return validationHandler::handleGetCurrentEpochData;
 	}

@@ -64,6 +64,10 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class BftGetConfiguration implements MethodParameters {
 	public static final String METHOD_NAME = "bft.get_configuration";
+	public static final BftGetConfiguration INSTANCE = new BftGetConfiguration();
 }

@@ -365,8 +365,9 @@ public interface ImperativeRadixApi {
 		 * @param address account address for which information is requested
 		 * @param size batch size
 		 * @param offset offset to start retrieval at
+		 * @param verbose provide extended information about transactions
 		 */
-		TransactionHistory history(AccountAddress address, int size, OptionalLong offset);
+		TransactionHistory history(AccountAddress address, int size, OptionalLong offset, boolean verbose);
 
 		/**
 		 * Get stakes made from given account.
@@ -652,8 +653,8 @@ public interface ImperativeRadixApi {
 					}
 
 					@Override
-					public TransactionHistory history(AccountAddress address, int size, OptionalLong offset) {
-						return unwrap(api.account().history(address, size, offset));
+					public TransactionHistory history(AccountAddress address, int size, OptionalLong offset, boolean verbose) {
+						return unwrap(api.account().history(address, size, offset, verbose));
 					}
 
 					@Override

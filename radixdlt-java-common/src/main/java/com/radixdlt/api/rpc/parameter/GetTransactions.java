@@ -64,6 +64,67 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.Objects;
+import java.util.OptionalLong;
+
 public class GetTransactions implements MethodParameters {
 	public static final String METHOD_NAME = "get_transactions";
+	public static final long DEFAULT_OFFSET = 1L;
+
+	private final long limit;
+	private final long offset;
+
+	private GetTransactions(long limit, long offset) {
+		this.limit = limit;
+		this.offset = offset;
+	}
+
+	@JsonCreator
+	public static GetTransactions create(
+		@JsonProperty(value = "limit", required = true) long limit,
+		@JsonProperty(value = "offset") Long offset
+	) {
+		return new GetTransactions(limit, offset == null ? DEFAULT_OFFSET : offset);
+	}
+
+	public static GetTransactions from(long limit, OptionalLong offset) {
+		return new GetTransactions(limit, offset.orElse(DEFAULT_OFFSET));
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof GetTransactions)) {
+			return false;
+		}
+
+		var that = (GetTransactions) o;
+		return limit == that.limit && offset == that.offset;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(limit, offset);
+	}
+
+	@Override
+	public String toString() {
+		return "GetTransactions(" + "limit=" + limit + ", offset=" + offset + ')';
+	}
+
+	@JsonProperty("limit")
+	private long getLimit() {
+		return limit;
+	}
+
+	@JsonProperty("offset")
+	private long getOffset() {
+		return offset;
+	}
 }

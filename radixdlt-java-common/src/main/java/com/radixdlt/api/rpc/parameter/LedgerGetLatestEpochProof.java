@@ -64,6 +64,10 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class LedgerGetLatestEpochProof implements MethodParameters {
 	public static final String METHOD_NAME = "ledger.get_latest_epoch_proof";
+	public static final LedgerGetLatestEpochProof INSTANCE = new LedgerGetLatestEpochProof();
 }

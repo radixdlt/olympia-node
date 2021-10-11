@@ -64,6 +64,10 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class ValidationGetCurrentEpochData implements MethodParameters {
 	public static final String METHOD_NAME = "validation.get_current_epoch_data";
+	public static final ValidationGetCurrentEpochData INSTANCE = new ValidationGetCurrentEpochData();
 }

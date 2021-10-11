@@ -127,7 +127,8 @@ public class SyncRadixApiNetworkTest {
 
 	@Test
 	public void testNetworkId() throws Exception {
-		prepareClient(NETWORK_ID)
+		//prepareClient(NETWORK_ID)
+		RadixApi.connect(BASE_URL)
 			.map(RadixApi::withTrace)
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.network().id()

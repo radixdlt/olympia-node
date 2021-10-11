@@ -64,6 +64,9 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class TokensGetNativeToken implements MethodParameters {
 	public static final String METHOD_NAME = "tokens.get_native_token";
 	public static final TokensGetNativeToken INSTANCE = new TokensGetNativeToken();

@@ -66,12 +66,81 @@ package com.radixdlt.api.rpc.parameter;
 
 import org.bouncycastle.util.encoders.Hex;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.api.rpc.dto.TxBlobDTO;
+import com.radixdlt.identifiers.AID;
+
+import java.util.Arrays;
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 public class ConstructionSubmitTransaction implements MethodParameters {
 	public static final String METHOD_NAME = "construction.submit_transaction";
+	private final byte[] blob;
+	private final AID txId;
 
-	public static ConstructionSubmitTransaction fromTxBlob(TxBlobDTO request) {
+	private ConstructionSubmitTransaction(byte[] blob, AID txId) {
+		this.blob = blob;
+		this.txId = txId;
+	}
+
+	public static ConstructionSubmitTransaction from(TxBlobDTO request) {
 		return new ConstructionSubmitTransaction(request.getBlob(), request.getTxId());
+	}
+
+	@JsonCreator
+	public static ConstructionSubmitTransaction create(
+		@JsonProperty(value = "blob", required = true) String blob,
+		@JsonProperty(value = "txID", required = true) AID aid
+	) {
+		requireNonNull(blob);
+
+		return new ConstructionSubmitTransaction(Hex.decode(blob), aid);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof ConstructionSubmitTransaction)) {
+			return false;
+		}
+
+		var that = (ConstructionSubmitTransaction) o;
+		return Arrays.equals(blob, that.blob) && txId.equals(that.txId);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hash(txId);
+		result = 31 * result + Arrays.hashCode(blob);
+		return result;
+	}
+
+	@Override
+	public String toString() {
+		return "ConstructionSubmitTransaction("
+			+ "blob=" + Arrays.toString(blob)
+			+ ", txId=" + txId + ')';
+	}
+
+	@JsonIgnore
+	public byte[] getRawBlob() {
+		return blob;
+	}
+
+	@JsonProperty("blob")
+	public String getBlob() {
+		return Hex.toHexString(blob);
+	}
+
+	@JsonProperty("txID")
+	public AID getTxId() {
+		return txId;
 	}
 }

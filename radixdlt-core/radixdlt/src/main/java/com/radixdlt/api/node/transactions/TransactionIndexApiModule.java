@@ -70,6 +70,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.node.NodeServer;
+import com.radixdlt.api.rpc.parameter.GetTransactions;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcController;
@@ -103,7 +104,7 @@ public final class TransactionIndexApiModule extends AbstractModule {
 
 	@TransactionsEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("get_transaction_count")
+	@StringMapKey("get_transaction_count")	//TODO: add missing method to list
 	public JsonRpcHandler indexGetTransactionCount(BerkeleyTransactionIndexStore store) {
 		return request -> withRequiredParameters(
 			request,
@@ -121,13 +122,14 @@ public final class TransactionIndexApiModule extends AbstractModule {
 
 	@TransactionsEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("get_transactions")
+	@StringMapKey(GetTransactions.METHOD_NAME)
 	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexStore store, BerkeleyTransactionsByIdStore txnStore) {
 		return request -> withRequiredParameters(
 			request,
 			List.of("limit"),
 			List.of("offset"),
 			params -> Result.wrap(
+				//TODO: fix error handling
 				e -> Failure.failure(-1, e.getMessage()),
 				() -> {
 					var limit = params.getLong("limit");

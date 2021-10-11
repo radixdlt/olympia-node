@@ -64,6 +64,10 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class SyncGetData implements MethodParameters {
 	public static final String METHOD_NAME = "sync.get_data";
+	public static final SyncGetData INSTANCE = new SyncGetData();
 }

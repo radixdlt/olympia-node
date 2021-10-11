@@ -66,24 +66,120 @@ package com.radixdlt.api.rpc.parameter;
 
 import org.bouncycastle.util.encoders.Hex;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.api.rpc.dto.FinalizedTransaction;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
+
+import java.util.Arrays;
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 public class ConstructionFinalizeTransaction implements MethodParameters {
 	public static final String METHOD_NAME = "construction.finalize_transaction";
-	private final String blob;
-	private final String signature;
-	private final String publicKey;
+	private final byte[] rawBlob;
+	private final ECDSASignature rawSignature;
+	private final ECPublicKey publicKey;
 	private final boolean immediateSubmit;
 
-	//TODO: finish it
-	private ConstructionFinalizeTransaction(String blob, String signature, String publicKey, boolean immediateSubmit) {
-		this.blob = blob;
-		this.signature = signature;
+	private ConstructionFinalizeTransaction(byte[] rawBlob, ECDSASignature rawSignature, ECPublicKey publicKey, boolean immediateSubmit) {
+		this.rawBlob = rawBlob;
+		this.rawSignature = rawSignature;
 		this.publicKey = publicKey;
 		this.immediateSubmit = immediateSubmit;
 	}
 
-	public static ConstructionFinalizeTransaction fromFinalizeRequest(FinalizedTransaction request, boolean immediateSubmit) {
-		return new ConstructionFinalizeTransaction(Hex.toHexString(request.getRawBlob()), request.getSignature(), request.getPublicKey(), immediateSubmit);
+	@JsonCreator
+	public static ConstructionFinalizeTransaction create(
+		@JsonProperty(value = "blob", required = true) String blob,
+		@JsonProperty(value = "signatureDER", required = true) String signature,
+		@JsonProperty(value = "publicKeyOfSigner", required = true) ECPublicKey publicKey,
+		@JsonProperty("immediateSubmit") Boolean immediateSubmit
+	) {
+		requireNonNull(blob);
+		requireNonNull(signature);
+
+		return new ConstructionFinalizeTransaction(
+			Hex.decode(blob),
+			ECDSASignature.decodeFromDER(Hex.decode(signature)),
+			publicKey,
+			immediateSubmit != null && immediateSubmit
+		);
+	}
+
+	public static ConstructionFinalizeTransaction from(FinalizedTransaction request, boolean immediateSubmit) {
+		return new ConstructionFinalizeTransaction(
+			request.getRawBlob(),
+			request.getRawSignature(),
+			request.getRawPublicKey(),
+			immediateSubmit
+		);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof ConstructionFinalizeTransaction)) {
+			return false;
+		}
+
+		var that = (ConstructionFinalizeTransaction) o;
+		return immediateSubmit == that.immediateSubmit
+			&& Arrays.equals(rawBlob, that.rawBlob)
+			&& rawSignature.equals(that.rawSignature)
+			&& publicKey.equals(that.publicKey);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hash(rawSignature, publicKey, immediateSubmit);
+		result = 31 * result + Arrays.hashCode(rawBlob);
+		return result;
+	}
+
+	@Override
+	public String toString() {
+		return "ConstructionFinalizeTransaction("
+			+ "rawBlob=" + Arrays.toString(rawBlob)
+			+ ", rawSignature=" + rawSignature
+			+ ", rawPublicKey=" + publicKey
+			+ ", immediateSubmit=" + immediateSubmit
+			+ ')';
+	}
+
+	@JsonIgnore
+	public byte[] getRawBlob() {
+		return rawBlob;
+	}
+
+	@JsonProperty("blob")
+	public String getBlob() {
+		return Hex.toHexString(rawBlob);
+	}
+
+	@JsonIgnore
+	public ECDSASignature getRawSignature() {
+		return rawSignature;
+	}
+
+	@JsonProperty("signatureDER")
+	public String getSignature() {
+		return rawSignature.toHexString();
+	}
+
+	@JsonProperty("publicKeyOfSigner")
+	public ECPublicKey getPublicKey() {
+		return publicKey;
+	}
+
+	@JsonProperty("immediateSubmit")
+	public boolean isImmediateSubmit() {
+		return immediateSubmit;
 	}
 }

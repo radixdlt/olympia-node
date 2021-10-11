@@ -64,6 +64,94 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.api.types.AccountAddress;
+
+import java.util.Objects;
+import java.util.OptionalLong;
+
 public class AccountGetTransactionHistory implements MethodParameters {
 	public static final String METHOD_NAME = "account.get_transaction_history";
+
+	public static final int DEFAULT_OFFSET = -1;
+
+	private final AccountAddress address;
+	private final long size;
+	private final long nextOffset;
+	private final boolean verbose;
+
+	private AccountGetTransactionHistory(AccountAddress address, long size, long nextOffset, boolean verbose) {
+		this.address = address;
+		this.size = size;
+		this.nextOffset = nextOffset;
+		this.verbose = verbose;
+	}
+
+	@JsonCreator
+	public static AccountGetTransactionHistory create(
+		@JsonProperty(value = "address", required = true) AccountAddress address,
+		@JsonProperty(value = "size", required = true) long size,
+		@JsonProperty("cursor") Long nextOffset,
+		@JsonProperty("verbose") Boolean verbose
+	) {
+		return new AccountGetTransactionHistory(
+			address,
+			size,
+			nextOffset == null ? DEFAULT_OFFSET : nextOffset,
+			verbose != null && verbose
+		);
+	}
+
+	public static AccountGetTransactionHistory from(AccountAddress address, long size, OptionalLong nextOffset, boolean verbose) {
+		return new AccountGetTransactionHistory(address, size, nextOffset.orElse(DEFAULT_OFFSET), verbose);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof AccountGetTransactionHistory)) {
+			return false;
+		}
+
+		var that = (AccountGetTransactionHistory) o;
+		return size == that.size && nextOffset == that.nextOffset && verbose == that.verbose && address.equals(that.address);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(address, size, nextOffset, verbose);
+	}
+
+	@Override
+	public String toString() {
+		return "AccountGetTransactionHistory("
+			+ "address=" + address
+			+ ", size=" + size
+			+ ", nextOffset=" + nextOffset
+			+ ", verbose=" + verbose + ')';
+	}
+
+	@JsonProperty("address")
+	public AccountAddress getAddress() {
+		return address;
+	}
+
+	@JsonProperty("size")
+	public long getSize() {
+		return size;
+	}
+
+	@JsonProperty("cursor")
+	public long getNextOffset() {
+		return nextOffset;
+	}
+
+	@JsonProperty("verbose")
+	public boolean isVerbose() {
+		return verbose;
+	}
 }

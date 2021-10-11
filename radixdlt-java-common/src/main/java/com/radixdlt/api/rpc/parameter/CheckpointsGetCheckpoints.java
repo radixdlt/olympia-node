@@ -64,6 +64,10 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class CheckpointsGetCheckpoints implements MethodParameters {
 	public static final String METHOD_NAME = "checkpoints.get_checkpoints";
+	public static final CheckpointsGetCheckpoints INSTANCE = new CheckpointsGetCheckpoints();
 }

@@ -64,6 +64,52 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.api.types.AccountAddress;
+
+import java.util.Objects;
+
 public class AccountGetBalances implements MethodParameters {
 	public static final String METHOD_NAME = "account.get_balances";
+
+	private final AccountAddress address;
+
+	private AccountGetBalances(AccountAddress address) {
+		this.address = address;
+	}
+
+	@JsonCreator
+	public static AccountGetBalances create(@JsonProperty(value = "address", required = true) AccountAddress address) {
+		return new AccountGetBalances(address);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof AccountGetBalances)) {
+			return false;
+		}
+
+		var that = (AccountGetBalances) o;
+		return address.equals(that.address);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(address);
+	}
+
+	@Override
+	public String toString() {
+		return "AccountGetBalances(" + "address=" + address + ')';
+	}
+
+	@JsonProperty("address")
+	public AccountAddress getAddress() {
+		return address;
+	}
 }

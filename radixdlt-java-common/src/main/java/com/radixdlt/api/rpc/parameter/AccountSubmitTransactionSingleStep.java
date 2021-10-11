@@ -64,6 +64,70 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.api.rpc.action.Action;
+import com.radixdlt.api.types.TransactionRequest;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
 public class AccountSubmitTransactionSingleStep implements MethodParameters {
 	public static final String METHOD_NAME = "account.submit_transaction_single_step";
+
+	private final List<Action> actions;
+	private final String message;
+
+	public AccountSubmitTransactionSingleStep(List<Action> actions, String message) {
+		this.actions = actions;
+		this.message = message;
+	}
+
+	public static AccountSubmitTransactionSingleStep create(
+		@JsonProperty(value = "actions", required = true) List<Action> actions,
+		@JsonProperty("message") String message
+	) {
+		return new AccountSubmitTransactionSingleStep(actions, message);
+	}
+
+	public static AccountSubmitTransactionSingleStep from(TransactionRequest request) {
+		return new AccountSubmitTransactionSingleStep(request.getActions(), request.getMessage());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof AccountSubmitTransactionSingleStep)) {
+			return false;
+		}
+
+		var that = (AccountSubmitTransactionSingleStep) o;
+
+		return actions.equals(that.actions) && Objects.equals(message, that.message);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(actions, message);
+	}
+
+	@Override
+	public String toString() {
+		return "AccountSubmitTransactionSingleStep("
+			+ "actions=" + actions
+			+ ", message='" + message + '\'' + ')';
+	}
+
+	@JsonProperty("actions")
+	public List<Action> getActions() {
+		return actions;
+	}
+
+	@JsonProperty("message")
+	public Optional<String> getMessage() {
+		return Optional.ofNullable(message);
+	}
 }

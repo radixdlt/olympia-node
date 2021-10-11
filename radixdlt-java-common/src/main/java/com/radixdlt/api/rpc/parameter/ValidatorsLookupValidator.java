@@ -64,6 +64,52 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.api.types.ValidatorAddress;
+
+import java.util.Objects;
+
 public class ValidatorsLookupValidator implements MethodParameters {
 	public static final String METHOD_NAME = "validators.lookup_validator";
+
+	private final ValidatorAddress address;
+
+	private ValidatorsLookupValidator(ValidatorAddress address) {
+		this.address = address;
+	}
+
+	public static ValidatorsLookupValidator create(
+		@JsonProperty(value = "validatorAddress", required = true) ValidatorAddress address
+	) {
+		return new ValidatorsLookupValidator(address);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof ValidatorsLookupValidator)) {
+			return false;
+		}
+
+		var that = (ValidatorsLookupValidator) o;
+		return address.equals(that.address);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(address);
+	}
+
+	@Override
+	public String toString() {
+		return "ValidatorsLookupValidator(" + "address=" + address + ')';
+	}
+
+	@JsonProperty("validatorAddress")
+	public ValidatorAddress getAddress() {
+		return address;
+	}
 }

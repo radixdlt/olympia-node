@@ -64,6 +64,52 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.api.types.AccountAddress;
+
+import java.util.Objects;
+
 public class AccountGetUnstakePositions implements MethodParameters {
 	public static final String METHOD_NAME = "account.get_unstake_positions";
+
+	private final AccountAddress address;
+
+	private AccountGetUnstakePositions(AccountAddress address) {
+		this.address = address;
+	}
+
+	@JsonCreator
+	public static AccountGetUnstakePositions create(@JsonProperty(value = "address", required = true) AccountAddress address) {
+		return new AccountGetUnstakePositions(address);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof AccountGetUnstakePositions)) {
+			return false;
+		}
+
+		var that = (AccountGetUnstakePositions) o;
+		return address.equals(that.address);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(address);
+	}
+
+	@Override
+	public String toString() {
+		return "AccountGetUnstakePositions(" + "address=" + address + ')';
+	}
+
+	@JsonProperty("address")
+	public AccountAddress getAddress() {
+		return address;
+	}
 }

@@ -64,8 +64,6 @@
 
 package com.radixdlt.client.lib.api.sync;
 
-import org.bouncycastle.util.encoders.Hex;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.radixdlt.api.rpc.JsonRpcRequest;
 import com.radixdlt.api.rpc.JsonRpcResponse;
@@ -104,6 +102,44 @@ import com.radixdlt.api.rpc.dto.TxDTO;
 import com.radixdlt.api.rpc.dto.UnstakePositions;
 import com.radixdlt.api.rpc.dto.ValidatorDTO;
 import com.radixdlt.api.rpc.dto.ValidatorsResponse;
+import com.radixdlt.api.rpc.parameter.AccountGetBalances;
+import com.radixdlt.api.rpc.parameter.AccountGetInfo;
+import com.radixdlt.api.rpc.parameter.AccountGetStakePositions;
+import com.radixdlt.api.rpc.parameter.AccountGetTransactionHistory;
+import com.radixdlt.api.rpc.parameter.AccountGetUnstakePositions;
+import com.radixdlt.api.rpc.parameter.AccountSubmitTransactionSingleStep;
+import com.radixdlt.api.rpc.parameter.ApiGetConfiguration;
+import com.radixdlt.api.rpc.parameter.ApiGetData;
+import com.radixdlt.api.rpc.parameter.BftGetConfiguration;
+import com.radixdlt.api.rpc.parameter.BftGetData;
+import com.radixdlt.api.rpc.parameter.CheckpointsGetCheckpoints;
+import com.radixdlt.api.rpc.parameter.ConstructionBuildTransaction;
+import com.radixdlt.api.rpc.parameter.ConstructionFinalizeTransaction;
+import com.radixdlt.api.rpc.parameter.ConstructionSubmitTransaction;
+import com.radixdlt.api.rpc.parameter.GetTransactions;
+import com.radixdlt.api.rpc.parameter.LedgerGetLatestEpochProof;
+import com.radixdlt.api.rpc.parameter.LedgerGetLatestProof;
+import com.radixdlt.api.rpc.parameter.MempoolGetConfiguration;
+import com.radixdlt.api.rpc.parameter.MempoolGetData;
+import com.radixdlt.api.rpc.parameter.NetworkGetDemand;
+import com.radixdlt.api.rpc.parameter.NetworkGetId;
+import com.radixdlt.api.rpc.parameter.NetworkGetThroughput;
+import com.radixdlt.api.rpc.parameter.NetworkingGetAddressBook;
+import com.radixdlt.api.rpc.parameter.NetworkingGetConfiguration;
+import com.radixdlt.api.rpc.parameter.NetworkingGetData;
+import com.radixdlt.api.rpc.parameter.NetworkingGetPeers;
+import com.radixdlt.api.rpc.parameter.RadixEngineGetConfiguration;
+import com.radixdlt.api.rpc.parameter.RadixEngineGetData;
+import com.radixdlt.api.rpc.parameter.SyncGetConfiguration;
+import com.radixdlt.api.rpc.parameter.SyncGetData;
+import com.radixdlt.api.rpc.parameter.TokensGetInfo;
+import com.radixdlt.api.rpc.parameter.TokensGetNativeToken;
+import com.radixdlt.api.rpc.parameter.TransactionsGetTransactionStatus;
+import com.radixdlt.api.rpc.parameter.TransactionsLookupTransaction;
+import com.radixdlt.api.rpc.parameter.ValidationGetCurrentEpochData;
+import com.radixdlt.api.rpc.parameter.ValidationGetNodeInfo;
+import com.radixdlt.api.rpc.parameter.ValidatorsGetNextEpochSet;
+import com.radixdlt.api.rpc.parameter.ValidatorsLookupValidator;
 import com.radixdlt.api.types.AccountAddress;
 import com.radixdlt.api.types.NavigationCursor;
 import com.radixdlt.api.types.TransactionRequest;
@@ -172,243 +208,216 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 	private final Network network = new Network() {
 		@Override
 		public Result<NetworkId> id() {
-			return call(request(NETWORK_ID), new TypeReference<>() {});
+			return call(request(NETWORK_ID, NetworkGetId.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<NetworkStats> throughput() {
-			return call(request(NETWORK_THROUGHPUT), new TypeReference<>() {});
+			return call(request(NETWORK_THROUGHPUT, NetworkGetThroughput.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<NetworkStats> demand() {
-			return call(request(NETWORK_DEMAND), new TypeReference<>() {});
+			return call(request(NETWORK_DEMAND, NetworkGetDemand.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<NetworkConfiguration> configuration() {
-			return call(request(NETWORK_CONFIG), new TypeReference<>() {});
+			return call(request(NETWORK_CONFIG, NetworkingGetConfiguration.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<NetworkData> data() {
-			return call(request(NETWORK_DATA), new TypeReference<>() {});
+			return call(request(NETWORK_DATA, NetworkingGetData.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<List<NetworkPeer>> peers() {
-			return call(request(NETWORK_PEERS), new TypeReference<>() {});
+			return call(request(NETWORK_PEERS, NetworkingGetPeers.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<List<AddressBookEntry>> addressBook() {
-			return call(request(NETWORK_ADDRESS_BOOK), new TypeReference<>() {});
+			return call(request(NETWORK_ADDRESS_BOOK, NetworkingGetAddressBook.INSTANCE), new TypeReference<>() {});
 		}
 	};
 
 	private final Token token = new Token() {
 		@Override
 		public Result<TokenInfo> describeNative() {
-			return call(request(TOKEN_NATIVE), new TypeReference<>() {});
+			return call(request(TOKEN_NATIVE, TokensGetNativeToken.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<TokenInfo> describe(String rri) {
-			return call(request(TOKEN_INFO, rri), new TypeReference<>() {});
+			return call(request(TOKEN_INFO, TokensGetInfo.create(rri)), new TypeReference<>() {});
 		}
 	};
 
 	private final Transaction transaction = new Transaction() {
 		@Override
 		public Result<BuiltTransaction> build(TransactionRequest request) {
-			return call(
-				request(
-					CONSTRUCTION_BUILD, request.getActions(), request.getFeePayer(),
-					request.getMessage(), request.disableResourceAllocationAndDestroy()
-				),
-				new TypeReference<>() {}
-			);
+			return call(request(CONSTRUCTION_BUILD, ConstructionBuildTransaction.from(request)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit) {
-			return call(
-				request(
-					CONSTRUCTION_FINALIZE,
-					Hex.toHexString(request.getRawBlob()), request.getSignature(), request.getPublicKey(), Boolean.toString(immediateSubmit)
-				),
-				new TypeReference<>() {}
-			);
+			return call(request(CONSTRUCTION_FINALIZE, ConstructionFinalizeTransaction.from(request, immediateSubmit)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<TxDTO> submit(TxBlobDTO request) {
-			return call(
-				request(CONSTRUCTION_SUBMIT, Hex.toHexString(request.getBlob()), request.getTxId()),
-				new TypeReference<>() {}
-			);
+			return call(request(CONSTRUCTION_SUBMIT, ConstructionSubmitTransaction.from(request)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<TransactionDTO> lookup(AID txId) {
-			return call(request(TRANSACTION_LOOKUP, txId.toString()), new TypeReference<>() {});
+			return call(request(TRANSACTION_LOOKUP, TransactionsLookupTransaction.create(txId)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<TransactionStatusDTO> status(AID txId) {
-			return call(request(TRANSACTION_STATUS, txId.toString()), new TypeReference<>() {});
+			return call(request(TRANSACTION_STATUS, TransactionsGetTransactionStatus.create(txId)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<TransactionsDTO> list(long limit, OptionalLong offset) {
-			var request = request(TRANSACTION_LIST, limit);
-			offset.ifPresent(request::addParameters);
-
-			return call(request, new TypeReference<>() {});
+			return call(request(TRANSACTION_LIST, GetTransactions.from(limit, offset)), new TypeReference<>() {});
 		}
 	};
 
 	private final SingleAccount account = new SingleAccount() {
 		@Override
 		public Result<TokenBalances> balances(AccountAddress address) {
-			return call(request(ACCOUNT_BALANCES, address.toString(networkId())), new TypeReference<>() {});
+			return call(request(ACCOUNT_BALANCES, AccountGetBalances.create(address)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<TransactionHistory> history(
-			AccountAddress address, int size, OptionalLong nextOffset
+			AccountAddress address, int size, OptionalLong nextOffset, boolean verbose
 		) {
-			var request = request(ACCOUNT_HISTORY, address.toString(networkId()), size);
-			nextOffset.ifPresent(request::addParameters);
-
-			return call(request, new TypeReference<>() {});
+			return call(request(ACCOUNT_HISTORY, AccountGetTransactionHistory.from(address, size, nextOffset, verbose)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<List<StakePositions>> stakes(AccountAddress address) {
-			return call(request(ACCOUNT_STAKES, address.toString(networkId())), new TypeReference<>() {});
+			return call(request(ACCOUNT_STAKES, AccountGetStakePositions.create(address)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<List<UnstakePositions>> unstakes(AccountAddress address) {
-			return call(request(ACCOUNT_UNSTAKES, address.toString(networkId())), new TypeReference<>() {});
+			return call(request(ACCOUNT_UNSTAKES, AccountGetUnstakePositions.create(address)), new TypeReference<>() {});
 		}
 	};
 
 	private final Validator validator = new Validator() {
 		@Override
-		public Result<ValidatorsResponse> list(int size, Optional<NavigationCursor> cursor) {
-			var request = request(VALIDATORS_LIST, size);
-			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
-
-			return call(request, new TypeReference<>() {});
+		public Result<ValidatorsResponse> list(long size, Optional<NavigationCursor> cursor) {
+			return call(request(VALIDATORS_LIST, ValidatorsGetNextEpochSet.create(size, cursor)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<ValidatorDTO> lookup(ValidatorAddress validatorAddress) {
-			return call(request(VALIDATORS_LOOKUP, validatorAddress.toString(networkId())), new TypeReference<>() {});
+			return call(request(VALIDATORS_LOOKUP, ValidatorsLookupValidator.create(validatorAddress)), new TypeReference<>() {});
 		}
 	};
 
 	private final Local local = new Local() {
 		@Override
 		public Result<LocalAccount> accountInfo() {
-			return call(request(ACCOUNT_INFO), new TypeReference<>() {});
+			return call(request(ACCOUNT_INFO, AccountGetInfo.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<TxDTO> submitTxSingleStep(TransactionRequest request) {
-			return call(
-				request(ACCOUNT_SUBMIT_SINGLE_STEP, request.getActions(), request.getMessage()),
-				new TypeReference<>() {}
-			);
+			return call(request(ACCOUNT_SUBMIT_SINGLE_STEP, AccountSubmitTransactionSingleStep.from(request)), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<LocalValidatorInfo> validatorInfo() {
-			return call(request(VALIDATION_NODE_INFO), new TypeReference<>() {});
+			return call(request(VALIDATION_NODE_INFO, ValidationGetNodeInfo.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<EpochData> currentEpoch() {
-			return call(request(VALIDATION_CURRENT_EPOCH), new TypeReference<>() {});
+			return call(request(VALIDATION_CURRENT_EPOCH, ValidationGetCurrentEpochData.INSTANCE), new TypeReference<>() {});
 		}
 	};
 
 	private final Api api = new Api() {
 		@Override
 		public Result<ApiConfiguration> configuration() {
-			return call(request(API_CONFIGURATION), new TypeReference<>() {});
+			return call(request(API_CONFIGURATION, ApiGetConfiguration.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<ApiData> data() {
-			return call(request(API_DATA), new TypeReference<>() {});
+			return call(request(API_DATA, ApiGetData.INSTANCE), new TypeReference<>() {});
 		}
 	};
 
 	private final Consensus consensus = new Consensus() {
 		@Override
 		public Result<ConsensusConfiguration> configuration() {
-			return call(request(BFT_CONFIGURATION), new TypeReference<>() {});
+			return call(request(BFT_CONFIGURATION, BftGetConfiguration.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<ConsensusData> data() {
-			return call(request(BFT_DATA), new TypeReference<>() {});
+			return call(request(BFT_DATA, BftGetData.INSTANCE), new TypeReference<>() {});
 		}
 	};
 
 	private final Mempool mempool = new Mempool() {
 		@Override
 		public Result<MempoolConfiguration> configuration() {
-			return call(request(MEMPOOL_CONFIGURATION), new TypeReference<>() {});
+			return call(request(MEMPOOL_CONFIGURATION, MempoolGetConfiguration.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<MempoolData> data() {
-			return call(request(MEMPOOL_DATA), new TypeReference<>() {});
+			return call(request(MEMPOOL_DATA, MempoolGetData.INSTANCE), new TypeReference<>() {});
 		}
 	};
 
 	private final RadixEngine radixEngine = new RadixEngine() {
 		@Override
 		public Result<List<ForkDetails>> configuration() {
-			return call(request(RADIX_ENGINE_CONFIGURATION), new TypeReference<>() {});
+			return call(request(RADIX_ENGINE_CONFIGURATION, RadixEngineGetConfiguration.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<RadixEngineData> data() {
-			return call(request(RADIX_ENGINE_DATA), new TypeReference<>() {});
+			return call(request(RADIX_ENGINE_DATA, RadixEngineGetData.INSTANCE), new TypeReference<>() {});
 		}
 	};
 
 	private final Sync sync = new Sync() {
 		@Override
 		public Result<SyncConfiguration> configuration() {
-			return call(request(SYNC_CONFIGURATION), new TypeReference<>() {});
+			return call(request(SYNC_CONFIGURATION, SyncGetConfiguration.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<SyncData> data() {
-			return call(request(SYNC_DATA), new TypeReference<>() {});
+			return call(request(SYNC_DATA, SyncGetData.INSTANCE), new TypeReference<>() {});
 		}
 	};
 
 	private final Ledger ledger = new Ledger() {
 		@Override
 		public Result<Proof> latest() {
-			return call(request(LEDGER_PROOF), new TypeReference<>() {});
+			return call(request(LEDGER_PROOF, LedgerGetLatestProof.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<Proof> epoch() {
-			return call(request(LEDGER_EPOCH_PROOF), new TypeReference<>() {});
+			return call(request(LEDGER_EPOCH_PROOF, LedgerGetLatestEpochProof.INSTANCE), new TypeReference<>() {});
 		}
 
 		@Override
 		public Result<Checkpoint> checkpoints() {
-			return call(request(LEDGER_CHECKPOINTS), new TypeReference<>() {});
+			return call(request(LEDGER_CHECKPOINTS, CheckpointsGetCheckpoints.INSTANCE), new TypeReference<>() {});
 		}
 	};
 
@@ -523,7 +532,7 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 				.map(__ -> syncRadixApi));
 	}
 
-	private <T> Result<T> call(JsonRpcRequest request, TypeReference<JsonRpcResponse<T>> typeReference) {
+	private <T> Result<T> call(JsonRpcRequest<?> request, TypeReference<JsonRpcResponse<T>> typeReference) {
 		return serialize(request)
 			.onSuccess(this::trace)
 			.map(value -> buildRequest(request, value))

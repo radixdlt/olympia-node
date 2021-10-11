@@ -68,6 +68,8 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.rpc.parameter.AccountGetInfo;
+import com.radixdlt.api.rpc.parameter.AccountSubmitTransactionSingleStep;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.util.JsonRpcController;
@@ -97,14 +99,14 @@ public class AccountEndpointModule extends AbstractModule {
 
 	@AccountEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("account.get_info")
+	@StringMapKey(AccountGetInfo.METHOD_NAME)
 	public JsonRpcHandler accountGetInfo(LocalAccountHandler accountHandler) {
 		return accountHandler::handleAccountGetInfo;
 	}
 
 	@AccountEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("account.submit_transaction_single_step")
+	@StringMapKey(AccountSubmitTransactionSingleStep.METHOD_NAME)
 	public JsonRpcHandler accountSubmitTransactionSingleStep(LocalAccountHandler accountHandler) {
 		return accountHandler::handleAccountSubmitTransactionSingleStep;
 	}

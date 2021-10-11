@@ -64,6 +64,10 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class MempoolGetData implements MethodParameters {
 	public static final String METHOD_NAME = "mempool.get_data";
+	public static final MempoolGetData INSTANCE = new MempoolGetData();
 }

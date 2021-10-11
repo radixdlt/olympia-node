@@ -64,6 +64,9 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class NetworkGetId implements MethodParameters {
 	public static final String METHOD_NAME = "network.get_id";
 	public static final NetworkGetId INSTANCE = new NetworkGetId();

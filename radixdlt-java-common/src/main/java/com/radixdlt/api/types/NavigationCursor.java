@@ -65,6 +65,7 @@
 package com.radixdlt.api.types;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.Objects;
 
@@ -84,6 +85,7 @@ public class NavigationCursor {
 		return new NavigationCursor(content);
 	}
 
+	@JsonValue
 	public String value() {
 		return content;
 	}

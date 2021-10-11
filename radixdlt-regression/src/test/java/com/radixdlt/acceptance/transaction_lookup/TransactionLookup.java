@@ -68,7 +68,7 @@ public class TransactionLookup extends RadixNetworkTest {
         // wait until 5 transactions are visible in the history
         var history = new AtomicReference<TransactionHistory>();
         await().until(() -> {
-            var historyBuffer = account1.account().history(account1.getAddress(), 100, OptionalLong.empty());
+            var historyBuffer = account1.account().history(account1.getAddress(), 100, OptionalLong.empty(), false);
             if (historyBuffer.getTransactions().size() >= 6) {
                 history.set(historyBuffer);
                 return true;

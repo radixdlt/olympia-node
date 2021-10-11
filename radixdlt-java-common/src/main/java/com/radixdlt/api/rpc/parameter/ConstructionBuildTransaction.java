@@ -102,7 +102,7 @@ public class ConstructionBuildTransaction implements MethodParameters {
 		return new ConstructionBuildTransaction(actions, feePayer, message, disableResourceAllocationAndDestroy);
 	}
 
-	public static ConstructionBuildTransaction fromTxRequest(TransactionRequest request) {
+	public static ConstructionBuildTransaction from(TransactionRequest request) {
 		return new ConstructionBuildTransaction(
 			request.getActions(),
 			request.getFeePayer(),

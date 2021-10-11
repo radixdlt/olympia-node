@@ -167,9 +167,19 @@ public final class FinalizedTransaction {
 		return encodeToDer(signature);
 	}
 
+	@JsonIgnore
+	public ECDSASignature getRawSignature() {
+		return signature;
+	}
+
 	@JsonProperty("publicKeyOfSigner")
 	public String getPublicKey() {
 		return publicKey.toHex();
+	}
+
+	@JsonIgnore
+	public ECPublicKey getRawPublicKey() {
+		return publicKey;
 	}
 
 	@JsonProperty("txID")

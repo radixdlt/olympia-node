@@ -68,6 +68,8 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.rpc.parameter.ValidatorsGetNextEpochSet;
+import com.radixdlt.api.rpc.parameter.ValidatorsLookupValidator;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.archive.ArchiveEndpoint;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
@@ -84,14 +86,14 @@ public class ValidatorApiModule extends AbstractModule {
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("validators.get_next_epoch_set")
+	@StringMapKey(ValidatorsGetNextEpochSet.METHOD_NAME)
 	public JsonRpcHandler validatorsGetNextEpochSet(ArchiveValidationHandler archiveValidationHandler) {
 		return archiveValidationHandler::handleValidatorsGetNextEpochSet;
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("validators.lookup_validator")
+	@StringMapKey(ValidatorsLookupValidator.METHOD_NAME)
 	public JsonRpcHandler validatorsLookupValidator(ArchiveValidationHandler archiveValidationHandler) {
 		return archiveValidationHandler::handleValidatorsLookupValidator;
 	}

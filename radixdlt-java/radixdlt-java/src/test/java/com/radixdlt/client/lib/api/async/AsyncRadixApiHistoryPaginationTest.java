@@ -130,7 +130,7 @@ public class AsyncRadixApiHistoryPaginationTest {
 				client -> {
 					var cursorHolder = new AtomicReference<>(OptionalLong.empty());
 					do {
-						client.account().history(ACCOUNT_ADDRESS1, 50, cursorHolder.get()).join()
+						client.account().history(ACCOUNT_ADDRESS1, 50, cursorHolder.get(), false).join()
 							.onFailure(failure -> fail(failure.toString()))
 							.onSuccess(v -> v.getNextOffset().ifPresent(System.out::println))
 							.onSuccess(v -> cursorHolder.set(v.getNextOffset()))

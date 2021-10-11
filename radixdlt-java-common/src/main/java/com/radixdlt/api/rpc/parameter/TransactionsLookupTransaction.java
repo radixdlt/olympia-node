@@ -64,6 +64,52 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.identifiers.AID;
+
+import java.util.Objects;
+
 public class TransactionsLookupTransaction implements MethodParameters {
 	public static final String METHOD_NAME = "transactions.lookup_transaction";
+
+	private final AID txId;
+
+	private TransactionsLookupTransaction(AID txId) {
+		this.txId = txId;
+	}
+
+	@JsonCreator
+	public static TransactionsLookupTransaction create(@JsonProperty(value = "txID", required = true) AID txId) {
+		return new TransactionsLookupTransaction(txId);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (!(o instanceof TransactionsLookupTransaction)) {
+			return false;
+		}
+
+		var that = (TransactionsLookupTransaction) o;
+		return txId.equals(that.txId);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(txId);
+	}
+
+	@Override
+	public String toString() {
+		return "TransactionsLookupTransaction(" + "txId=" + txId + ')';
+	}
+
+	@JsonProperty("txID")
+	public AID getTxId() {
+		return txId;
+	}
 }

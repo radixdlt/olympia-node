@@ -386,8 +386,9 @@ public interface RadixApi {
 		 * @param address account address for which information is requested
 		 * @param limit batch size
 		 * @param offset offset to start retrieval at
+		 * @param verbose provide extended information about transaction
 		 */
-		Result<TransactionHistory> history(AccountAddress address, int limit, OptionalLong offset);
+		Result<TransactionHistory> history(AccountAddress address, int limit, OptionalLong offset, boolean verbose);
 
 		/**
 		 * Get stakes made from given account.
@@ -415,11 +416,10 @@ public interface RadixApi {
 		 * <p>
 		 * To get full list, pass empty cursor for first request and then just pass cursor received in the response
 		 * back to API until you get empty cursor again.
-		 *
-		 * @param size batch size
+		 *  @param size batch size
 		 * @param cursor pagination cursor
 		 */
-		Result<ValidatorsResponse> list(int size, Optional<NavigationCursor> cursor);
+		Result<ValidatorsResponse> list(long size, Optional<NavigationCursor> cursor);
 
 		/**
 		 * Lookup validator by address.

@@ -64,6 +64,10 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class RadixEngineGetData implements MethodParameters {
 	public static final String METHOD_NAME = "radix_engine.get_data";
+	public static final RadixEngineGetData INSTANCE = new RadixEngineGetData();
 }

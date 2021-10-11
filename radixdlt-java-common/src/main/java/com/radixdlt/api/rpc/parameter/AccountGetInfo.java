@@ -64,6 +64,10 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class AccountGetInfo implements MethodParameters {
 	public static final String METHOD_NAME = "account.get_info";
+	public static final AccountGetInfo INSTANCE = new AccountGetInfo();
 }

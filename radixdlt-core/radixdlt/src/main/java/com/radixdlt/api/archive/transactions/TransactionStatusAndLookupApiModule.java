@@ -67,6 +67,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.archive.ArchiveEndpoint;
+import com.radixdlt.api.rpc.parameter.TransactionsGetTransactionStatus;
+import com.radixdlt.api.rpc.parameter.TransactionsLookupTransaction;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Result;
@@ -82,7 +84,7 @@ public class TransactionStatusAndLookupApiModule extends AbstractModule {
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("transactions.get_transaction_status")
+	@StringMapKey(TransactionsGetTransactionStatus.METHOD_NAME)
 	public JsonRpcHandler transactionsGetTransactionStatus(TransactionStatusService transactionStatusService) {
 		return request -> withRequiredStringParameter(
 			request,
@@ -94,7 +96,7 @@ public class TransactionStatusAndLookupApiModule extends AbstractModule {
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey("transactions.lookup_transaction")
+	@StringMapKey(TransactionsLookupTransaction.METHOD_NAME)
 	public JsonRpcHandler transactionsLookupTransaction(TransactionStatusService transactionStatusService) {
 		return request -> withRequiredStringParameter(
 			request,

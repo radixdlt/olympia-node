@@ -64,6 +64,10 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class ValidationGetNodeInfo implements MethodParameters {
 	public static final String METHOD_NAME = "validation.get_node_info";
+	public static final ValidationGetNodeInfo INSTANCE = new ValidationGetNodeInfo();
 }

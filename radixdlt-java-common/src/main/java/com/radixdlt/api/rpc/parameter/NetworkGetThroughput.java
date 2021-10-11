@@ -64,6 +64,9 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class NetworkGetThroughput implements MethodParameters {
 	public static final String METHOD_NAME = "network.get_throughput";
 	public static final NetworkGetThroughput INSTANCE = new NetworkGetThroughput();
