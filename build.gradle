@@ -278,6 +278,8 @@ subprojects {
             dependency 'commons-cli:commons-cli:1.4'
             dependency 'org.openjdk.jmh:jmh-core:1.32'
             dependency 'org.openjdk.jmh:jmh-generator-annprocess:1.32'
+
+            dependency 'com.puppycrawl.tools:checkstyle:9.0.1'
         }
     }
 }

@@ -63,13 +63,13 @@
 
 package com.radixdlt.api.util;
 
-import com.radixdlt.api.node.metrics.MetricsHandler;
-import com.radixdlt.counters.SystemCounters;
-import io.undertow.server.handlers.RequestLimitingHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.api.node.metrics.MetricsHandler;
+import com.radixdlt.api.rpc.EndPoint;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.properties.RuntimeProperties;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
@@ -84,6 +84,7 @@ import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.util.StatusCodes;
 
 import static java.util.logging.Logger.getLogger;
@@ -94,7 +95,7 @@ public class AbstractHttpServer implements ModuleRunner {
 	private static final int MAXIMUM_CONCURRENT_REQUESTS = Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
 	private static final int QUEUE_SIZE = 2000;
 
-	private final Map<String, Controller> controllers;
+	private final Map<EndPoint, Controller> controllers;
 	private final String name;
 	private final int port;
 	private final String bindAddress;
@@ -103,7 +104,7 @@ public class AbstractHttpServer implements ModuleRunner {
 	private Undertow server;
 
 	public AbstractHttpServer(
-		Map<String, Controller> controllers,
+		Map<EndPoint, Controller> controllers,
 		RuntimeProperties properties,
 		String name,
 		int defaultPort,
@@ -161,7 +162,7 @@ public class AbstractHttpServer implements ModuleRunner {
 
 		controllers.forEach((root, controller) -> {
 			log.info("Configuring routes under {}", root);
-			controller.configureRoutes(root, handler);
+			controller.configureRoutes(root.path(), handler);
 		});
 
 		handler.setFallbackHandler(AbstractHttpServer::fallbackHandler);

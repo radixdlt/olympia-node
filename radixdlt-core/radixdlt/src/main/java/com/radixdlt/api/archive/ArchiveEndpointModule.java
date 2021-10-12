@@ -67,18 +67,18 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.rpc.parameter.NetworkGetDemand;
-import com.radixdlt.api.rpc.parameter.NetworkGetId;
-import com.radixdlt.api.rpc.parameter.NetworkGetThroughput;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.api.EndPointKey;
 import com.radixdlt.api.archive.accounts.AccountApiModule;
-import com.radixdlt.api.archive.transactions.TransactionStatusAndLookupApiModule;
-import com.radixdlt.api.util.JsonRpcController;
 import com.radixdlt.api.archive.network.ArchiveNetworkHandler;
-import com.radixdlt.api.util.JsonRpcServer;
 import com.radixdlt.api.archive.tokens.TokenApiModule;
+import com.radixdlt.api.archive.transactions.TransactionStatusAndLookupApiModule;
 import com.radixdlt.api.archive.validators.ValidatorApiModule;
+import com.radixdlt.api.rpc.EndPoint;
+import com.radixdlt.api.rpc.RpcMethodDescriptor;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.api.util.JsonRpcServer;
 
 import java.util.Map;
 
@@ -93,7 +93,7 @@ public class ArchiveEndpointModule extends AbstractModule {
 
 	@ArchiveServer
 	@ProvidesIntoMap
-	@StringMapKey("/archive")	//TODO: use custom map key annotation
+	@EndPointKey(EndPoint.ARCHIVE)
 	public Controller archiveController(@ArchiveEndpoint JsonRpcServer jsonRpcServer) {
 		return new JsonRpcController(jsonRpcServer);
 	}
@@ -104,24 +104,23 @@ public class ArchiveEndpointModule extends AbstractModule {
 		return new JsonRpcServer(additionalHandlers);
 	}
 
-
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(NetworkGetId.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.NetworkGetIdMethod.METHOD_NAME)
 	public JsonRpcHandler networkGetId(ArchiveNetworkHandler archiveNetworkHandler) {
 		return archiveNetworkHandler::handleNetworkGetId;
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(NetworkGetThroughput.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.NetworkGetThroughputMethod.METHOD_NAME)
 	public JsonRpcHandler networkGetThroughput(ArchiveNetworkHandler archiveNetworkHandler) {
 		return archiveNetworkHandler::handleNetworkGetThroughput;
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(NetworkGetDemand.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.NetworkGetDemandMethod.METHOD_NAME)
 	public JsonRpcHandler networkGetDemand(ArchiveNetworkHandler archiveNetworkHandler) {
 		return archiveNetworkHandler::handleNetworkGetDemand;
 	}

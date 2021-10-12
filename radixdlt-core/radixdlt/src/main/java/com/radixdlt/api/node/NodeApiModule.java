@@ -67,6 +67,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.api.rpc.EndPoint;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.environment.Runners;
 
@@ -79,7 +80,7 @@ public final class NodeApiModule extends AbstractModule {
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
 			.addBinding(Runners.NODE_API)
 			.to(NodeHttpServer.class);
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
+		MapBinder.newMapBinder(binder(), EndPoint.class, Controller.class, NodeServer.class);
 		bind(NodeHttpServer.class).in(Scopes.SINGLETON);
 	}
 }

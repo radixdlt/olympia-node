@@ -68,47 +68,46 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.radixdlt.api.rpc.parameter.AccountGetBalances;
-import com.radixdlt.api.rpc.parameter.AccountGetInfo;
-import com.radixdlt.api.rpc.parameter.AccountGetStakePositions;
-import com.radixdlt.api.rpc.parameter.AccountGetTransactionHistory;
-import com.radixdlt.api.rpc.parameter.AccountGetUnstakePositions;
-import com.radixdlt.api.rpc.parameter.AccountSubmitTransactionSingleStep;
-import com.radixdlt.api.rpc.parameter.ApiGetConfiguration;
-import com.radixdlt.api.rpc.parameter.ApiGetData;
-import com.radixdlt.api.rpc.parameter.BftGetConfiguration;
-import com.radixdlt.api.rpc.parameter.BftGetData;
-import com.radixdlt.api.rpc.parameter.CheckpointsGetCheckpoints;
-import com.radixdlt.api.rpc.parameter.ConstructionBuildTransaction;
-import com.radixdlt.api.rpc.parameter.ConstructionFinalizeTransaction;
-import com.radixdlt.api.rpc.parameter.ConstructionSubmitTransaction;
-import com.radixdlt.api.rpc.parameter.GetTransactions;
-import com.radixdlt.api.rpc.parameter.LedgerGetLatestEpochProof;
-import com.radixdlt.api.rpc.parameter.LedgerGetLatestProof;
-import com.radixdlt.api.rpc.parameter.MempoolGetConfiguration;
-import com.radixdlt.api.rpc.parameter.MempoolGetData;
+import com.radixdlt.api.rpc.RpcMethodDescriptor.*;
+import com.radixdlt.api.rpc.parameter.AccountGetBalancesRequest;
+import com.radixdlt.api.rpc.parameter.AccountGetInfoRequest;
+import com.radixdlt.api.rpc.parameter.AccountGetStakePositionsRequest;
+import com.radixdlt.api.rpc.parameter.AccountGetTransactionHistoryRequest;
+import com.radixdlt.api.rpc.parameter.AccountGetUnstakePositionsRequest;
+import com.radixdlt.api.rpc.parameter.AccountSubmitTransactionSingleStepRequest;
+import com.radixdlt.api.rpc.parameter.ApiGetConfigurationRequest;
+import com.radixdlt.api.rpc.parameter.ApiGetDataRequest;
+import com.radixdlt.api.rpc.parameter.BftGetConfigurationRequest;
+import com.radixdlt.api.rpc.parameter.BftGetDataRequest;
+import com.radixdlt.api.rpc.parameter.CheckpointsGetCheckpointsRequest;
+import com.radixdlt.api.rpc.parameter.ConstructionBuildTransactionRequest;
+import com.radixdlt.api.rpc.parameter.ConstructionFinalizeTransactionRequest;
+import com.radixdlt.api.rpc.parameter.ConstructionSubmitTransactionRequest;
+import com.radixdlt.api.rpc.parameter.GetTransactionsRequest;
+import com.radixdlt.api.rpc.parameter.LedgerGetLatestEpochProofRequest;
+import com.radixdlt.api.rpc.parameter.LedgerGetLatestProofRequest;
+import com.radixdlt.api.rpc.parameter.MempoolGetConfigurationRequest;
+import com.radixdlt.api.rpc.parameter.MempoolGetDataRequest;
 import com.radixdlt.api.rpc.parameter.MethodParameters;
-import com.radixdlt.api.rpc.parameter.NetworkGetDemand;
-import com.radixdlt.api.rpc.parameter.NetworkGetId;
-import com.radixdlt.api.rpc.parameter.NetworkGetThroughput;
-import com.radixdlt.api.rpc.parameter.NetworkingGetAddressBook;
-import com.radixdlt.api.rpc.parameter.NetworkingGetConfiguration;
-import com.radixdlt.api.rpc.parameter.NetworkingGetData;
-import com.radixdlt.api.rpc.parameter.NetworkingGetPeers;
-import com.radixdlt.api.rpc.parameter.RadixEngineGetConfiguration;
-import com.radixdlt.api.rpc.parameter.RadixEngineGetData;
-import com.radixdlt.api.rpc.parameter.SyncGetConfiguration;
-import com.radixdlt.api.rpc.parameter.SyncGetData;
-import com.radixdlt.api.rpc.parameter.TokensGetInfo;
-import com.radixdlt.api.rpc.parameter.TokensGetNativeToken;
-import com.radixdlt.api.rpc.parameter.TransactionsGetTransactionStatus;
-import com.radixdlt.api.rpc.parameter.TransactionsLookupTransaction;
-import com.radixdlt.api.rpc.parameter.ValidationGetCurrentEpochData;
-import com.radixdlt.api.rpc.parameter.ValidationGetNodeInfo;
-import com.radixdlt.api.rpc.parameter.ValidatorsGetNextEpochSet;
-import com.radixdlt.api.rpc.parameter.ValidatorsLookupValidator;
-
-import java.util.Optional;
+import com.radixdlt.api.rpc.parameter.NetworkGetDemandRequest;
+import com.radixdlt.api.rpc.parameter.NetworkGetIdRequest;
+import com.radixdlt.api.rpc.parameter.NetworkGetThroughputRequest;
+import com.radixdlt.api.rpc.parameter.NetworkingGetAddressBookRequest;
+import com.radixdlt.api.rpc.parameter.NetworkingGetConfigurationRequest;
+import com.radixdlt.api.rpc.parameter.NetworkingGetDataRequest;
+import com.radixdlt.api.rpc.parameter.NetworkingGetPeersRequest;
+import com.radixdlt.api.rpc.parameter.RadixEngineGetConfigurationRequest;
+import com.radixdlt.api.rpc.parameter.RadixEngineGetDataRequest;
+import com.radixdlt.api.rpc.parameter.SyncGetConfigurationRequest;
+import com.radixdlt.api.rpc.parameter.SyncGetDataRequest;
+import com.radixdlt.api.rpc.parameter.TokensGetInfoRequest;
+import com.radixdlt.api.rpc.parameter.TokensGetNativeTokenRequest;
+import com.radixdlt.api.rpc.parameter.TransactionsGetTransactionStatusRequest;
+import com.radixdlt.api.rpc.parameter.TransactionsLookupTransactionRequest;
+import com.radixdlt.api.rpc.parameter.ValidationGetCurrentEpochDataRequest;
+import com.radixdlt.api.rpc.parameter.ValidationGetNodeInfoRequest;
+import com.radixdlt.api.rpc.parameter.ValidatorsGetNextEpochSetRequest;
+import com.radixdlt.api.rpc.parameter.ValidatorsLookupValidatorRequest;
 
 public class JsonRpcRequest<T extends MethodParameters> {
 	private static final String VERSION = "2.0";
@@ -131,53 +130,56 @@ public class JsonRpcRequest<T extends MethodParameters> {
 		@JsonProperty(value = "id", required = true) String id,
 		@JsonProperty(value = "version", required = true) String version,
 		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "method")
-		@JsonSubTypes({
-						  @JsonSubTypes.Type(value = TokensGetNativeToken.class, name = TokensGetNativeToken.METHOD_NAME),
-						  @JsonSubTypes.Type(value = TokensGetInfo.class, name = TokensGetInfo.METHOD_NAME),
-						  @JsonSubTypes.Type(value = AccountGetBalances.class, name = AccountGetBalances.METHOD_NAME),
-						  @JsonSubTypes.Type(value = AccountGetTransactionHistory.class, name = AccountGetTransactionHistory.METHOD_NAME),
-						  @JsonSubTypes.Type(value = AccountGetStakePositions.class, name = AccountGetStakePositions.METHOD_NAME),
-						  @JsonSubTypes.Type(value = AccountGetUnstakePositions.class, name = AccountGetUnstakePositions.METHOD_NAME),
-						  @JsonSubTypes.Type(value = TransactionsLookupTransaction.class, name = TransactionsLookupTransaction.METHOD_NAME),
-						  @JsonSubTypes.Type(value = TransactionsGetTransactionStatus.class, name = TransactionsGetTransactionStatus.METHOD_NAME),
-						  @JsonSubTypes.Type(value = NetworkGetId.class, name = NetworkGetId.METHOD_NAME),
-						  @JsonSubTypes.Type(value = NetworkGetThroughput.class, name = NetworkGetThroughput.METHOD_NAME),
-						  @JsonSubTypes.Type(value = NetworkGetDemand.class, name = NetworkGetDemand.METHOD_NAME),
-						  @JsonSubTypes.Type(value = NetworkingGetConfiguration.class, name = NetworkingGetConfiguration.METHOD_NAME),
-						  @JsonSubTypes.Type(value = NetworkingGetPeers.class, name = NetworkingGetPeers.METHOD_NAME),
-						  @JsonSubTypes.Type(value = NetworkingGetData.class, name = NetworkingGetData.METHOD_NAME),
-						  @JsonSubTypes.Type(value = NetworkingGetAddressBook.class, name = NetworkingGetAddressBook.METHOD_NAME),
-						  @JsonSubTypes.Type(value = ValidatorsGetNextEpochSet.class, name = ValidatorsGetNextEpochSet.METHOD_NAME),
-						  @JsonSubTypes.Type(value = ValidatorsLookupValidator.class, name = ValidatorsLookupValidator.METHOD_NAME),
-						  @JsonSubTypes.Type(value = ConstructionBuildTransaction.class, name = ConstructionBuildTransaction.METHOD_NAME),
-						  @JsonSubTypes.Type(value = ConstructionFinalizeTransaction.class, name = ConstructionFinalizeTransaction.METHOD_NAME),
-						  @JsonSubTypes.Type(value = ConstructionSubmitTransaction.class, name = ConstructionSubmitTransaction.METHOD_NAME),
-						  @JsonSubTypes.Type(value = GetTransactions.class, name = GetTransactions.METHOD_NAME),
-						  @JsonSubTypes.Type(value = ApiGetConfiguration.class, name = ApiGetConfiguration.METHOD_NAME),
-						  @JsonSubTypes.Type(value = ApiGetData.class, name = ApiGetData.METHOD_NAME),
-						  @JsonSubTypes.Type(value = BftGetConfiguration.class, name = BftGetConfiguration.METHOD_NAME),
-						  @JsonSubTypes.Type(value = BftGetData.class, name = BftGetData.METHOD_NAME),
-						  @JsonSubTypes.Type(value = MempoolGetConfiguration.class, name = MempoolGetConfiguration.METHOD_NAME),
-						  @JsonSubTypes.Type(value = MempoolGetData.class, name = MempoolGetData.METHOD_NAME),
-						  @JsonSubTypes.Type(value = LedgerGetLatestProof.class, name = LedgerGetLatestProof.METHOD_NAME),
-						  @JsonSubTypes.Type(value = LedgerGetLatestEpochProof.class, name = LedgerGetLatestEpochProof.METHOD_NAME),
-						  @JsonSubTypes.Type(value = CheckpointsGetCheckpoints.class, name = CheckpointsGetCheckpoints.METHOD_NAME),
-						  @JsonSubTypes.Type(value = RadixEngineGetConfiguration.class, name = RadixEngineGetConfiguration.METHOD_NAME),
-						  @JsonSubTypes.Type(value = RadixEngineGetData.class, name = RadixEngineGetData.METHOD_NAME),
-						  @JsonSubTypes.Type(value = SyncGetConfiguration.class, name = SyncGetConfiguration.METHOD_NAME),
-						  @JsonSubTypes.Type(value = SyncGetData.class, name = SyncGetData.METHOD_NAME),
-						  @JsonSubTypes.Type(value = ValidationGetNodeInfo.class, name = ValidationGetNodeInfo.METHOD_NAME),
-						  @JsonSubTypes.Type(value = ValidationGetCurrentEpochData.class, name = ValidationGetCurrentEpochData.METHOD_NAME),
-						  @JsonSubTypes.Type(value = AccountGetInfo.class, name = AccountGetInfo.METHOD_NAME),
-						  @JsonSubTypes.Type(value = AccountSubmitTransactionSingleStep.class, name = AccountSubmitTransactionSingleStep.METHOD_NAME),
-					  })
+		@JsonSubTypes(
+			{
+				@JsonSubTypes.Type(value = TokensGetNativeTokenRequest.class, name = TokensGetNativeTokenMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = TokensGetInfoRequest.class, name = TokensGetInfoMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = AccountGetBalancesRequest.class, name = AccountGetBalancesMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = AccountGetTransactionHistoryRequest.class, name = AccountGetTransactionHistoryMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = AccountGetStakePositionsRequest.class, name = AccountGetStakePositionsMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = AccountGetUnstakePositionsRequest.class, name = AccountGetUnstakePositionsMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = TransactionsLookupTransactionRequest.class, name = TransactionsLookupTransactionMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = TransactionsGetTransactionStatusRequest.class, name = TransactionsGetTransactionStatusMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = NetworkGetIdRequest.class, name = NetworkGetIdMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = NetworkGetThroughputRequest.class, name = NetworkGetThroughputMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = NetworkGetDemandRequest.class, name = NetworkGetDemandMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = NetworkingGetConfigurationRequest.class, name = NetworkingGetConfigurationMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = NetworkingGetPeersRequest.class, name = NetworkingGetPeersMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = NetworkingGetDataRequest.class, name = NetworkingGetDataMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = NetworkingGetAddressBookRequest.class, name = NetworkingGetAddressBookMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = ValidatorsGetNextEpochSetRequest.class, name = ValidatorsGetNextEpochSetMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = ValidatorsLookupValidatorRequest.class, name = ValidatorsLookupValidatorMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = ConstructionBuildTransactionRequest.class, name = ConstructionBuildTransactionMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = ConstructionFinalizeTransactionRequest.class, name = ConstructionFinalizeTransactionMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = ConstructionSubmitTransactionRequest.class, name = ConstructionSubmitTransactionMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = GetTransactionsRequest.class, name = GetTransactionsMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = ApiGetConfigurationRequest.class, name = ApiGetConfigurationMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = ApiGetDataRequest.class, name = ApiGetDataMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = BftGetConfigurationRequest.class, name = BftGetConfigurationMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = BftGetDataRequest.class, name = BftGetDataMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = MempoolGetConfigurationRequest.class, name = MempoolGetConfigurationMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = MempoolGetDataRequest.class, name = MempoolGetDataMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = LedgerGetLatestProofRequest.class, name = LedgerGetLatestProofMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = LedgerGetLatestEpochProofRequest.class, name = LedgerGetLatestEpochProofMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = CheckpointsGetCheckpointsRequest.class, name = CheckpointsGetCheckpointsMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = RadixEngineGetConfigurationRequest.class, name = RadixEngineGetConfigurationMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = RadixEngineGetDataRequest.class, name = RadixEngineGetDataMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = SyncGetConfigurationRequest.class, name = SyncGetConfigurationMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = SyncGetDataRequest.class, name = SyncGetDataMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = ValidationGetNodeInfoRequest.class, name = ValidationGetNodeInfoMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = ValidationGetCurrentEpochDataRequest.class, name = ValidationGetCurrentEpochDataMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = AccountGetInfoRequest.class, name = AccountGetInfoMethod.METHOD_NAME),
+				@JsonSubTypes.Type(value = AccountSubmitTransactionSingleStepRequest.class,
+								   name = AccountSubmitTransactionSingleStepMethod.METHOD_NAME),
+			}
+		)
 		@JsonProperty(value = "params", required = true) T parameters
 	) {
 		return new JsonRpcRequest<>(version, id, method, parameters);
 	}
 
-	public static <T extends MethodParameters> JsonRpcRequest<T> create(RpcMethod method, long id, T parameters) {
-		return new JsonRpcRequest<>(VERSION, Long.toString(id), method.method(), parameters);
+	public static <T extends MethodParameters> JsonRpcRequest<T> create(String methodName, long id, T parameters) {
+		return new JsonRpcRequest<>(VERSION, Long.toString(id), methodName, parameters);
 	}
 
 	@JsonProperty("jsonrpc")
@@ -198,9 +200,5 @@ public class JsonRpcRequest<T extends MethodParameters> {
 	@JsonProperty("method")
 	public String getMethod() {
 		return method;
-	}
-
-	public Optional<RpcMethod> rpcDetails() {
-		return RpcMethod.fromString(method);
 	}
 }

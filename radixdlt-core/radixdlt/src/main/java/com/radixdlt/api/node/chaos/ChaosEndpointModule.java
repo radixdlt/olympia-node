@@ -65,13 +65,14 @@ package com.radixdlt.api.node.chaos;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.EndPointKey;
+import com.radixdlt.api.node.NodeServer;
 import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.api.node.chaos.messageflooder.MessageFlooderModule;
 import com.radixdlt.api.node.chaos.messageflooder.MessageFlooderUpdate;
-import com.radixdlt.api.node.NodeServer;
+import com.radixdlt.api.rpc.EndPoint;
+import com.radixdlt.api.util.Controller;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.networks.Addressing;
 
@@ -84,7 +85,7 @@ public class ChaosEndpointModule extends AbstractModule {
 
 	@NodeServer
 	@ProvidesIntoMap
-	@StringMapKey("/chaos")
+	@EndPointKey(EndPoint.CHAOS)
 	public Controller chaosController(
 		EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
 		EventDispatcher<MessageFlooderUpdate> messageDispatcher,

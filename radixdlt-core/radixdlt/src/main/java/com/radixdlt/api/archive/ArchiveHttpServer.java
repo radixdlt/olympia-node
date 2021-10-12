@@ -64,8 +64,9 @@
 package com.radixdlt.api.archive;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.rpc.EndPoint;
 import com.radixdlt.api.util.AbstractHttpServer;
+import com.radixdlt.api.util.Controller;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.properties.RuntimeProperties;
 
@@ -76,7 +77,7 @@ public final class ArchiveHttpServer extends AbstractHttpServer {
 
 	@Inject
 	public ArchiveHttpServer(
-		@ArchiveServer Map<String, Controller> controllers,
+		@ArchiveServer Map<EndPoint, Controller> controllers,
 		RuntimeProperties properties,
 		SystemCounters counters
 	) {

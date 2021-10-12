@@ -69,8 +69,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.api.archive.ArchiveEndpoint;
-import com.radixdlt.api.rpc.parameter.TokensGetInfo;
-import com.radixdlt.api.rpc.parameter.TokensGetNativeToken;
+import com.radixdlt.api.rpc.RpcMethodDescriptor;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
@@ -91,14 +90,14 @@ public final class TokenApiModule extends AbstractModule {
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(TokensGetNativeToken.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.TokensGetNativeTokenMethod.METHOD_NAME)
 	public JsonRpcHandler tokensGetNativeToken(BerkeleyResourceInfoStore store) {
 		return req -> successResponse(req, store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow());
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(TokensGetInfo.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.TokensGetInfoMethod.METHOD_NAME)
 	public JsonRpcHandler tokensGetInfo(Addressing addressing, BerkeleyResourceInfoStore store) {
 		return req -> withRequiredStringParameter(
 			req,

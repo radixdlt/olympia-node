@@ -68,10 +68,12 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.EndPointKey;
 import com.radixdlt.api.node.NodeServer;
+import com.radixdlt.api.rpc.EndPoint;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.util.JsonRpcServer;
 
 import java.util.Map;
@@ -84,7 +86,7 @@ public class FaucetEndpointModule extends AbstractModule {
 
 	@NodeServer
 	@ProvidesIntoMap
-	@StringMapKey("/faucet")
+	@EndPointKey(EndPoint.FAUCET)
 	public Controller faucetController(@FaucetEndpoint JsonRpcServer jsonRpcServer) {
 		return new JsonRpcController(jsonRpcServer);
 	}

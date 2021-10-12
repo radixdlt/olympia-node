@@ -68,10 +68,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.rpc.parameter.AccountGetBalances;
-import com.radixdlt.api.rpc.parameter.AccountGetStakePositions;
-import com.radixdlt.api.rpc.parameter.AccountGetTransactionHistory;
-import com.radixdlt.api.rpc.parameter.AccountGetUnstakePositions;
+import com.radixdlt.api.rpc.RpcMethodDescriptor;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.archive.ArchiveEndpoint;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
@@ -89,28 +86,28 @@ public class AccountApiModule extends AbstractModule {
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(AccountGetBalances.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.AccountGetBalancesMethod.METHOD_NAME)
 	public JsonRpcHandler accountGetBalances(ArchiveAccountHandler archiveAccountHandler) {
 		return archiveAccountHandler::handleAccountGetBalances;
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(AccountGetStakePositions.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.AccountGetStakePositionsMethod.METHOD_NAME)
 	public JsonRpcHandler accountGetStakePositions(ArchiveAccountHandler archiveAccountHandler) {
 		return archiveAccountHandler::handleAccountGetStakePositions;
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(AccountGetUnstakePositions.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.AccountGetUnstakePositionsMethod.METHOD_NAME)
 	public JsonRpcHandler accountGetUnstakePositions(ArchiveAccountHandler archiveAccountHandler) {
 		return archiveAccountHandler::handleAccountGetUnstakePositions;
 	}
 
 	@ArchiveEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(AccountGetTransactionHistory.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.AccountGetTransactionHistoryMethod.METHOD_NAME)
 	public JsonRpcHandler accountGetTransactionHistoryReverse(ArchiveAccountHandler archiveAccountHandler) {
 		return archiveAccountHandler::handleAccountGetTransactionHistoryReverse;
 	}

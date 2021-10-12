@@ -68,13 +68,13 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.rpc.parameter.ConstructionBuildTransaction;
-import com.radixdlt.api.rpc.parameter.ConstructionFinalizeTransaction;
-import com.radixdlt.api.rpc.parameter.ConstructionSubmitTransaction;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.EndPointKey;
 import com.radixdlt.api.archive.ArchiveServer;
+import com.radixdlt.api.rpc.EndPoint;
+import com.radixdlt.api.rpc.RpcMethodDescriptor;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.util.JsonRpcServer;
 
 import java.util.Map;
@@ -87,7 +87,7 @@ public class ConstructEndpointModule extends AbstractModule {
 
 	@ArchiveServer
 	@ProvidesIntoMap
-	@StringMapKey("/construction")
+	@EndPointKey(EndPoint.CONSTRUCTION)
 	public Controller constructController(@ConstructionEndpoint JsonRpcServer jsonRpcServer) {
 		return new JsonRpcController(jsonRpcServer);
 	}
@@ -100,21 +100,21 @@ public class ConstructEndpointModule extends AbstractModule {
 
 	@ConstructionEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(ConstructionBuildTransaction.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.ConstructionBuildTransactionMethod.METHOD_NAME)
 	public JsonRpcHandler constructionBuildTransaction(ConstructionHandler constructionHandler) {
 		return constructionHandler::handleConstructionBuildTransaction;
 	}
 
 	@ConstructionEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(ConstructionFinalizeTransaction.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.ConstructionFinalizeTransactionMethod.METHOD_NAME)
 	public JsonRpcHandler constructionFinalizeTransaction(ConstructionHandler constructionHandler) {
 		return constructionHandler::handleConstructionFinalizeTransaction;
 	}
 
 	@ConstructionEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(ConstructionSubmitTransaction.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.ConstructionSubmitTransactionMethod.METHOD_NAME)
 	public JsonRpcHandler constructionSubmitTransaction(ConstructionHandler constructionHandler) {
 		return constructionHandler::handleConstructionSubmitTransaction;
 	}

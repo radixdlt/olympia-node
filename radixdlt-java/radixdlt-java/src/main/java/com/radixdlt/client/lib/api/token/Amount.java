@@ -66,6 +66,13 @@ package com.radixdlt.client.lib.api.token;
 
 import com.radixdlt.utils.UInt256;
 
+/**
+ * Utility methods for token amount calculation.
+ * <br>
+ * This implementation focuses on providing natural reading of the amounts:
+ * {@code amount(10).tokens()} -> "Amount is 10 tokens",
+ * {@code amount(10).nanos()} -> "Amount is 10 nanos of token", etc.
+ */
 public interface Amount {
 	int SUB_UNITS_POW_10 = 18;
 

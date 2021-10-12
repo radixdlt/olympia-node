@@ -68,12 +68,13 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.rpc.parameter.AccountGetInfo;
-import com.radixdlt.api.rpc.parameter.AccountSubmitTransactionSingleStep;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.EndPointKey;
 import com.radixdlt.api.node.NodeServer;
+import com.radixdlt.api.rpc.EndPoint;
+import com.radixdlt.api.rpc.RpcMethodDescriptor;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.util.JsonRpcServer;
 
 import java.util.Map;
@@ -86,7 +87,7 @@ public class AccountEndpointModule extends AbstractModule {
 
 	@NodeServer
 	@ProvidesIntoMap
-	@StringMapKey("/account")
+	@EndPointKey(EndPoint.ACCOUNT)
 	public Controller accountController(@AccountEndpoint JsonRpcServer jsonRpcServer) {
 		return new JsonRpcController(jsonRpcServer);
 	}
@@ -99,14 +100,14 @@ public class AccountEndpointModule extends AbstractModule {
 
 	@AccountEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(AccountGetInfo.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.AccountGetInfoMethod.METHOD_NAME)
 	public JsonRpcHandler accountGetInfo(LocalAccountHandler accountHandler) {
 		return accountHandler::handleAccountGetInfo;
 	}
 
 	@AccountEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(AccountSubmitTransactionSingleStep.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.AccountSubmitTransactionSingleStepMethod.METHOD_NAME)
 	public JsonRpcHandler accountSubmitTransactionSingleStep(LocalAccountHandler accountHandler) {
 		return accountHandler::handleAccountSubmitTransactionSingleStep;
 	}

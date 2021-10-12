@@ -141,6 +141,10 @@ test {
         outputs.upToDateWhen { false }
         showStandardStreams true
     }
+
+    // Gradle for some reason tries to run inner class (private enum!) as a unit test and fails
+    exclude "com/radixdlt/sync/SometimesByzantineCommittedReader**"
+
     systemProperty "java.security.egd", "file:/dev/urandom"
 }
 

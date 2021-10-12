@@ -116,16 +116,16 @@ import java.util.OptionalLong;
 
 /**
  * <h2>Asynchronous Radix JSON RPC client.</h2>
- * <p>
+ *
  * The Radix Web API consists of several endpoints which are assigned to two large groups. Each group served by
  * dedicated embedded HTTP server hence full configuration of the client requires base URL and two ports.
- * <p>
+ * <br>
  * Each endpoint can be individually enabled or disabled, so even if client is successfully connected, it does not
  * mean that all API's are available. This should be kept in mind while using client with particular node.
- * <p>
+ * <br>
  * <h3>Client API structure</h3>
  * API is split into following groups:
- * <p>
+ * <br>
  * <table>
  * <caption style="display:none">apiGroups</caption>
  * <tbody>

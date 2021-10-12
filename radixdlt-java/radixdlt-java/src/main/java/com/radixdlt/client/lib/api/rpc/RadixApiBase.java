@@ -71,8 +71,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.radixdlt.api.rpc.JsonRpcRequest;
 import com.radixdlt.api.rpc.JsonRpcResponse;
 import com.radixdlt.api.rpc.PortSelector;
-import com.radixdlt.api.rpc.RpcMethod;
-import com.radixdlt.api.rpc.parameter.MethodParameters;
+import com.radixdlt.api.rpc.RpcMethodDescriptor;
 import com.radixdlt.api.serializer.ApiSerializer;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Failure;
@@ -147,18 +146,11 @@ public abstract class RadixApiBase {
 		this.timeout = timeout;
 	}
 
-	protected <T extends MethodParameters> JsonRpcRequest<T> request(RpcMethod rpcMethod, T parameters) {
-		return JsonRpcRequest.create(rpcMethod, nextId(), parameters);
-	}
-
 	protected long nextId() {
 		return idCounter.incrementAndGet();
 	}
 
-	protected HttpRequest buildRequest(JsonRpcRequest<?> request, String value) {
-		var method = request.rpcDetails()
-			.orElseThrow(() -> new IllegalStateException("Attempt to build request for unknown method"));
-
+	protected HttpRequest buildRequest(RpcMethodDescriptor<?, ?> method, String value) {
 		var requestBuilder = HttpRequest.newBuilder()
 			.uri(buildUrl(method))
 			.timeout(timeout)
@@ -170,6 +162,7 @@ public abstract class RadixApiBase {
 			.POST(BodyPublishers.ofString(value))
 			.build();
 	}
+
 
 	protected  <T> T trace(T value) {
 		if (doTrace) {
@@ -233,7 +226,7 @@ public abstract class RadixApiBase {
 		serializer.setAddressing(Addressing.ofNetworkId(networkId));
 	}
 
-	private URI buildUrl(RpcMethod rpcMethod) {
+	private URI buildUrl(RpcMethodDescriptor<?, ?> rpcMethod) {
 		var endPoint = rpcMethod.endPoint();
 		var port = endPoint.portSelector() == PortSelector.PRIMARY
 				   ? primaryPort

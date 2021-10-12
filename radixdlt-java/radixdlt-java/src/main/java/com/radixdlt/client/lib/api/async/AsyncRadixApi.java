@@ -67,6 +67,7 @@ package com.radixdlt.client.lib.api.async;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.radixdlt.api.rpc.JsonRpcRequest;
 import com.radixdlt.api.rpc.JsonRpcResponse;
+import com.radixdlt.api.rpc.RpcMethodDescriptor;
 import com.radixdlt.api.rpc.dto.AddressBookEntry;
 import com.radixdlt.api.rpc.dto.ApiConfiguration;
 import com.radixdlt.api.rpc.dto.ApiData;
@@ -102,44 +103,7 @@ import com.radixdlt.api.rpc.dto.TxDTO;
 import com.radixdlt.api.rpc.dto.UnstakePositions;
 import com.radixdlt.api.rpc.dto.ValidatorDTO;
 import com.radixdlt.api.rpc.dto.ValidatorsResponse;
-import com.radixdlt.api.rpc.parameter.AccountGetBalances;
-import com.radixdlt.api.rpc.parameter.AccountGetInfo;
-import com.radixdlt.api.rpc.parameter.AccountGetStakePositions;
-import com.radixdlt.api.rpc.parameter.AccountGetTransactionHistory;
-import com.radixdlt.api.rpc.parameter.AccountGetUnstakePositions;
-import com.radixdlt.api.rpc.parameter.AccountSubmitTransactionSingleStep;
-import com.radixdlt.api.rpc.parameter.ApiGetConfiguration;
-import com.radixdlt.api.rpc.parameter.ApiGetData;
-import com.radixdlt.api.rpc.parameter.BftGetConfiguration;
-import com.radixdlt.api.rpc.parameter.BftGetData;
-import com.radixdlt.api.rpc.parameter.CheckpointsGetCheckpoints;
-import com.radixdlt.api.rpc.parameter.ConstructionBuildTransaction;
-import com.radixdlt.api.rpc.parameter.ConstructionFinalizeTransaction;
-import com.radixdlt.api.rpc.parameter.ConstructionSubmitTransaction;
-import com.radixdlt.api.rpc.parameter.GetTransactions;
-import com.radixdlt.api.rpc.parameter.LedgerGetLatestEpochProof;
-import com.radixdlt.api.rpc.parameter.LedgerGetLatestProof;
-import com.radixdlt.api.rpc.parameter.MempoolGetConfiguration;
-import com.radixdlt.api.rpc.parameter.MempoolGetData;
-import com.radixdlt.api.rpc.parameter.NetworkGetDemand;
-import com.radixdlt.api.rpc.parameter.NetworkGetId;
-import com.radixdlt.api.rpc.parameter.NetworkGetThroughput;
-import com.radixdlt.api.rpc.parameter.NetworkingGetAddressBook;
-import com.radixdlt.api.rpc.parameter.NetworkingGetConfiguration;
-import com.radixdlt.api.rpc.parameter.NetworkingGetData;
-import com.radixdlt.api.rpc.parameter.NetworkingGetPeers;
-import com.radixdlt.api.rpc.parameter.RadixEngineGetConfiguration;
-import com.radixdlt.api.rpc.parameter.RadixEngineGetData;
-import com.radixdlt.api.rpc.parameter.SyncGetConfiguration;
-import com.radixdlt.api.rpc.parameter.SyncGetData;
-import com.radixdlt.api.rpc.parameter.TokensGetInfo;
-import com.radixdlt.api.rpc.parameter.TokensGetNativeToken;
-import com.radixdlt.api.rpc.parameter.TransactionsGetTransactionStatus;
-import com.radixdlt.api.rpc.parameter.TransactionsLookupTransaction;
-import com.radixdlt.api.rpc.parameter.ValidationGetCurrentEpochData;
-import com.radixdlt.api.rpc.parameter.ValidationGetNodeInfo;
-import com.radixdlt.api.rpc.parameter.ValidatorsGetNextEpochSet;
-import com.radixdlt.api.rpc.parameter.ValidatorsLookupValidator;
+import com.radixdlt.api.rpc.parameter.MethodParameters;
 import com.radixdlt.api.types.AccountAddress;
 import com.radixdlt.api.types.NavigationCursor;
 import com.radixdlt.api.types.TransactionRequest;
@@ -151,7 +115,6 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Promise;
 import com.radixdlt.utils.functional.Result;
 
-import java.lang.reflect.Type;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -159,44 +122,44 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
-import static com.radixdlt.api.rpc.RpcMethod.ACCOUNT_BALANCES;
-import static com.radixdlt.api.rpc.RpcMethod.ACCOUNT_HISTORY;
-import static com.radixdlt.api.rpc.RpcMethod.ACCOUNT_INFO;
-import static com.radixdlt.api.rpc.RpcMethod.ACCOUNT_STAKES;
-import static com.radixdlt.api.rpc.RpcMethod.ACCOUNT_SUBMIT_SINGLE_STEP;
-import static com.radixdlt.api.rpc.RpcMethod.ACCOUNT_UNSTAKES;
-import static com.radixdlt.api.rpc.RpcMethod.API_CONFIGURATION;
-import static com.radixdlt.api.rpc.RpcMethod.API_DATA;
-import static com.radixdlt.api.rpc.RpcMethod.BFT_CONFIGURATION;
-import static com.radixdlt.api.rpc.RpcMethod.BFT_DATA;
-import static com.radixdlt.api.rpc.RpcMethod.CONSTRUCTION_BUILD;
-import static com.radixdlt.api.rpc.RpcMethod.CONSTRUCTION_FINALIZE;
-import static com.radixdlt.api.rpc.RpcMethod.CONSTRUCTION_SUBMIT;
-import static com.radixdlt.api.rpc.RpcMethod.LEDGER_CHECKPOINTS;
-import static com.radixdlt.api.rpc.RpcMethod.LEDGER_EPOCH_PROOF;
-import static com.radixdlt.api.rpc.RpcMethod.LEDGER_PROOF;
-import static com.radixdlt.api.rpc.RpcMethod.MEMPOOL_CONFIGURATION;
-import static com.radixdlt.api.rpc.RpcMethod.MEMPOOL_DATA;
-import static com.radixdlt.api.rpc.RpcMethod.NETWORK_ADDRESS_BOOK;
-import static com.radixdlt.api.rpc.RpcMethod.NETWORK_CONFIG;
-import static com.radixdlt.api.rpc.RpcMethod.NETWORK_DATA;
-import static com.radixdlt.api.rpc.RpcMethod.NETWORK_DEMAND;
-import static com.radixdlt.api.rpc.RpcMethod.NETWORK_ID;
-import static com.radixdlt.api.rpc.RpcMethod.NETWORK_PEERS;
-import static com.radixdlt.api.rpc.RpcMethod.NETWORK_THROUGHPUT;
-import static com.radixdlt.api.rpc.RpcMethod.RADIX_ENGINE_CONFIGURATION;
-import static com.radixdlt.api.rpc.RpcMethod.RADIX_ENGINE_DATA;
-import static com.radixdlt.api.rpc.RpcMethod.SYNC_CONFIGURATION;
-import static com.radixdlt.api.rpc.RpcMethod.SYNC_DATA;
-import static com.radixdlt.api.rpc.RpcMethod.TOKEN_INFO;
-import static com.radixdlt.api.rpc.RpcMethod.TOKEN_NATIVE;
-import static com.radixdlt.api.rpc.RpcMethod.TRANSACTION_LIST;
-import static com.radixdlt.api.rpc.RpcMethod.TRANSACTION_LOOKUP;
-import static com.radixdlt.api.rpc.RpcMethod.TRANSACTION_STATUS;
-import static com.radixdlt.api.rpc.RpcMethod.VALIDATION_CURRENT_EPOCH;
-import static com.radixdlt.api.rpc.RpcMethod.VALIDATION_NODE_INFO;
-import static com.radixdlt.api.rpc.RpcMethod.VALIDATORS_LIST;
-import static com.radixdlt.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.AccountGetBalancesMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.AccountGetTransactionHistoryMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.AccountGetInfoMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.AccountGetStakePositionsMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.AccountSubmitTransactionSingleStepMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.AccountGetUnstakePositionsMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.ApiGetConfigurationMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.ApiGetDataMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.BftGetConfigurationMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.BftGetDataMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.ConstructionBuildTransactionMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.ConstructionFinalizeTransactionMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.ConstructionSubmitTransactionMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.CheckpointsGetCheckpointsMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.LedgerGetLatestEpochProofMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.LedgerGetLatestProofMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.MempoolGetConfigurationMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.MempoolGetDataMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.NetworkingGetAddressBookMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.NetworkingGetConfigurationMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.NetworkingGetDataMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.NetworkGetDemandMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.NetworkGetIdMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.NetworkingGetPeersMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.NetworkGetThroughputMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.RadixEngineGetConfigurationMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.RadixEngineGetDataMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.SyncGetConfigurationMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.SyncGetDataMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.TokensGetInfoMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.TokensGetNativeTokenMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.GetTransactionsMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.TransactionsLookupTransactionMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.TransactionsGetTransactionStatusMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.ValidationGetCurrentEpochDataMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.ValidationGetNodeInfoMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.ValidatorsGetNextEpochSetMethod;
+import static com.radixdlt.api.rpc.RpcMethodDescriptor.ValidatorsLookupValidatorMethod;
 import static com.radixdlt.errors.ClientErrors.MISSING_BASE_URL;
 
 import static java.util.Optional.ofNullable;
@@ -205,216 +168,219 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 	private final Network network = new Network() {
 		@Override
 		public Promise<NetworkId> id() {
-			return call(request(NETWORK_ID, NetworkGetId.INSTANCE));
+			return call(NetworkGetIdMethod.INSTANCE, NetworkGetIdMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<NetworkStats> throughput() {
-			return call(request(NETWORK_THROUGHPUT, NetworkGetThroughput.INSTANCE), new TypeReference<>() {});
+			return call(NetworkGetThroughputMethod.INSTANCE, NetworkGetThroughputMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<NetworkStats> demand() {
-			return call(request(NETWORK_DEMAND, NetworkGetDemand.INSTANCE), new TypeReference<>() {});
+			return call(NetworkGetDemandMethod.INSTANCE, NetworkGetDemandMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<NetworkConfiguration> configuration() {
-			return call(request(NETWORK_CONFIG, NetworkingGetConfiguration.INSTANCE), new TypeReference<>() {});
+			return call(NetworkingGetConfigurationMethod.INSTANCE, NetworkingGetConfigurationMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<NetworkData> data() {
-			return call(request(NETWORK_DATA, NetworkingGetData.INSTANCE), new TypeReference<>() {});
+			return call(NetworkingGetDataMethod.INSTANCE, NetworkingGetDataMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<List<NetworkPeer>> peers() {
-			return call(request(NETWORK_PEERS, NetworkingGetPeers.INSTANCE), new TypeReference<>() {});
+			return call(NetworkingGetPeersMethod.INSTANCE, NetworkingGetPeersMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<List<AddressBookEntry>> addressBook() {
-			return call(request(NETWORK_ADDRESS_BOOK, NetworkingGetAddressBook.INSTANCE), new TypeReference<>() {});
+			return call(NetworkingGetAddressBookMethod.INSTANCE, NetworkingGetAddressBookMethod.INSTANCE.create(nextId()));
 		}
 	};
 
 	private final Token token = new Token() {
 		@Override
 		public Promise<TokenInfo> describeNative() {
-			return call(request(TOKEN_NATIVE, TokensGetNativeToken.INSTANCE), new TypeReference<>() {});
+			return call(TokensGetNativeTokenMethod.INSTANCE, TokensGetNativeTokenMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<TokenInfo> describe(String rri) {
-			return call(request(TOKEN_INFO, TokensGetInfo.create(rri)), new TypeReference<>() {});
+			return call(TokensGetInfoMethod.INSTANCE, TokensGetInfoMethod.INSTANCE.create(nextId(), rri));
 		}
 	};
 
 	private final Transaction transaction = new Transaction() {
 		@Override
 		public Promise<BuiltTransaction> build(TransactionRequest request) {
-			return call(request(CONSTRUCTION_BUILD, ConstructionBuildTransaction.from(request)), new TypeReference<>() {});
+			return call(ConstructionBuildTransactionMethod.INSTANCE, ConstructionBuildTransactionMethod.INSTANCE.create(nextId(), request));
 		}
 
 		@Override
 		public Promise<TxBlobDTO> finalize(FinalizedTransaction request, boolean immediateSubmit) {
-			return call(request(CONSTRUCTION_FINALIZE, ConstructionFinalizeTransaction.from(request, immediateSubmit)), new TypeReference<>() {});
+			return call(ConstructionFinalizeTransactionMethod.INSTANCE,
+						ConstructionFinalizeTransactionMethod.INSTANCE.create(nextId(), request, immediateSubmit));
 		}
 
 		@Override
 		public Promise<TxDTO> submit(TxBlobDTO request) {
-			return call(request(CONSTRUCTION_SUBMIT, ConstructionSubmitTransaction.from(request)), new TypeReference<>() {});
+			return call(ConstructionSubmitTransactionMethod.INSTANCE, ConstructionSubmitTransactionMethod.INSTANCE.create(nextId(), request));
 		}
 
 		@Override
 		public Promise<TransactionDTO> lookup(AID txId) {
-			return call(request(TRANSACTION_LOOKUP, TransactionsLookupTransaction.create(txId)), new TypeReference<>() {});
+			return call(TransactionsLookupTransactionMethod.INSTANCE, TransactionsLookupTransactionMethod.INSTANCE.create(nextId(), txId));
 		}
 
 		@Override
 		public Promise<TransactionStatusDTO> status(AID txId) {
-			return call(request(TRANSACTION_STATUS, TransactionsGetTransactionStatus.create(txId)), new TypeReference<>() {});
+			return call(TransactionsGetTransactionStatusMethod.INSTANCE, TransactionsGetTransactionStatusMethod.INSTANCE.create(nextId(), txId));
 		}
 
 		@Override
 		public Promise<TransactionsDTO> list(long limit, OptionalLong offset) {
-			return call(request(TRANSACTION_LIST, GetTransactions.from(limit, offset)), new TypeReference<>() {});
+			return call(GetTransactionsMethod.INSTANCE, GetTransactionsMethod.INSTANCE.create(nextId(), limit, offset));
 		}
 	};
 
 	private final SingleAccount account = new SingleAccount() {
 		@Override
 		public Promise<TokenBalances> balances(AccountAddress address) {
-			return call(request(ACCOUNT_BALANCES, AccountGetBalances.create(address)), new TypeReference<>() {});
+			return call(AccountGetBalancesMethod.INSTANCE, AccountGetBalancesMethod.INSTANCE.create(nextId(), address));
 		}
 
 		@Override
 		public Promise<TransactionHistory> history(
 			AccountAddress address, int size, OptionalLong nextOffset, boolean verbose
 		) {
-			return call(request(ACCOUNT_HISTORY, AccountGetTransactionHistory.from(address, size, nextOffset, verbose)), new TypeReference<>() {});
+			return call(AccountGetTransactionHistoryMethod.INSTANCE,
+						AccountGetTransactionHistoryMethod.INSTANCE.create(nextId(), address, size, nextOffset, verbose));
 		}
 
 		@Override
 		public Promise<List<StakePositions>> stakes(AccountAddress address) {
-			return call(request(ACCOUNT_STAKES, AccountGetStakePositions.create(address)), new TypeReference<>() {});
+			return call(AccountGetStakePositionsMethod.INSTANCE, AccountGetStakePositionsMethod.INSTANCE.create(nextId(), address));
 		}
 
 		@Override
 		public Promise<List<UnstakePositions>> unstakes(AccountAddress address) {
-			return call(request(ACCOUNT_UNSTAKES, AccountGetUnstakePositions.create(address)), new TypeReference<>() {});
+			return call(AccountGetUnstakePositionsMethod.INSTANCE, AccountGetUnstakePositionsMethod.INSTANCE.create(nextId(), address));
 		}
 	};
 
 	private final Validator validator = new Validator() {
 		@Override
 		public Promise<ValidatorsResponse> list(long size, Optional<NavigationCursor> cursor) {
-			return call(request(VALIDATORS_LIST, ValidatorsGetNextEpochSet.create(size, cursor)), new TypeReference<>() {});
+			return call(ValidatorsGetNextEpochSetMethod.INSTANCE, ValidatorsGetNextEpochSetMethod.INSTANCE.create(nextId(), size, cursor));
 		}
 
 		@Override
-		public Promise<ValidatorDTO> lookup(ValidatorAddress validatorAddress) {
-			return call(request(VALIDATORS_LOOKUP, ValidatorsLookupValidator.create(validatorAddress)), new TypeReference<>() {});
+		public Promise<ValidatorDTO> lookup(ValidatorAddress address) {
+			return call(ValidatorsLookupValidatorMethod.INSTANCE, ValidatorsLookupValidatorMethod.INSTANCE.create(nextId(), address));
 		}
 	};
 
 	private final Local local = new Local() {
 		@Override
 		public Promise<LocalAccount> accountInfo() {
-			return call(request(ACCOUNT_INFO, AccountGetInfo.INSTANCE), new TypeReference<>() {});
+			return call(AccountGetInfoMethod.INSTANCE, AccountGetInfoMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<TxDTO> submitTxSingleStep(TransactionRequest request) {
-			return call(request(ACCOUNT_SUBMIT_SINGLE_STEP, AccountSubmitTransactionSingleStep.from(request)), new TypeReference<>() {});
+			return call(AccountSubmitTransactionSingleStepMethod.INSTANCE,
+						AccountSubmitTransactionSingleStepMethod.INSTANCE.create(nextId(), request));
 		}
 
 		@Override
 		public Promise<LocalValidatorInfo> validatorInfo() {
-			return call(request(VALIDATION_NODE_INFO, ValidationGetNodeInfo.INSTANCE), new TypeReference<>() {});
+			return call(ValidationGetNodeInfoMethod.INSTANCE, ValidationGetNodeInfoMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<EpochData> currentEpoch() {
-			return call(request(VALIDATION_CURRENT_EPOCH, ValidationGetCurrentEpochData.INSTANCE), new TypeReference<>() {});
+			return call(ValidationGetCurrentEpochDataMethod.INSTANCE, ValidationGetCurrentEpochDataMethod.INSTANCE.create(nextId()));
 		}
 	};
 
 	private final Api api = new Api() {
 		@Override
 		public Promise<ApiConfiguration> configuration() {
-			return call(request(API_CONFIGURATION, ApiGetConfiguration.INSTANCE), new TypeReference<>() {});
+			return call(ApiGetConfigurationMethod.INSTANCE, ApiGetConfigurationMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<ApiData> data() {
-			return call(request(API_DATA, ApiGetData.INSTANCE), new TypeReference<>() {});
+			return call(ApiGetDataMethod.INSTANCE, ApiGetDataMethod.INSTANCE.create(nextId()));
 		}
 	};
 
 	private final Consensus consensus = new Consensus() {
 		@Override
 		public Promise<ConsensusConfiguration> configuration() {
-			return call(request(BFT_CONFIGURATION, BftGetConfiguration.INSTANCE), new TypeReference<>() {});
+			return call(BftGetConfigurationMethod.INSTANCE, BftGetConfigurationMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<ConsensusData> data() {
-			return call(request(BFT_DATA, BftGetData.INSTANCE), new TypeReference<>() {});
+			return call(BftGetDataMethod.INSTANCE, BftGetDataMethod.INSTANCE.create(nextId()));
 		}
 	};
 
 	private final Mempool mempool = new Mempool() {
 		@Override
 		public Promise<MempoolConfiguration> configuration() {
-			return call(request(MEMPOOL_CONFIGURATION, MempoolGetConfiguration.INSTANCE), new TypeReference<>() {});
+			return call(MempoolGetConfigurationMethod.INSTANCE, MempoolGetConfigurationMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<MempoolData> data() {
-			return call(request(MEMPOOL_DATA, MempoolGetData.INSTANCE), new TypeReference<>() {});
+			return call(MempoolGetDataMethod.INSTANCE, MempoolGetDataMethod.INSTANCE.create(nextId()));
 		}
 	};
 
 	private final RadixEngine radixEngine = new RadixEngine() {
 		@Override
 		public Promise<List<ForkDetails>> configuration() {
-			return call(request(RADIX_ENGINE_CONFIGURATION, RadixEngineGetConfiguration.INSTANCE), new TypeReference<>() {});
+			return call(RadixEngineGetConfigurationMethod.INSTANCE, RadixEngineGetConfigurationMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<RadixEngineData> data() {
-			return call(request(RADIX_ENGINE_DATA, RadixEngineGetData.INSTANCE), new TypeReference<>() {});
+			return call(RadixEngineGetDataMethod.INSTANCE, RadixEngineGetDataMethod.INSTANCE.create(nextId()));
 		}
 	};
 
 	private final Sync sync = new Sync() {
 		@Override
 		public Promise<SyncConfiguration> configuration() {
-			return call(request(SYNC_CONFIGURATION, SyncGetConfiguration.INSTANCE), new TypeReference<>() {});
+			return call(SyncGetConfigurationMethod.INSTANCE, SyncGetConfigurationMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<SyncData> data() {
-			return call(request(SYNC_DATA, SyncGetData.INSTANCE), new TypeReference<>() {});
+			return call(SyncGetDataMethod.INSTANCE, SyncGetDataMethod.INSTANCE.create(nextId()));
 		}
 	};
 
 	private final Ledger ledger = new Ledger() {
 		@Override
 		public Promise<Proof> latest() {
-			return call(request(LEDGER_PROOF, LedgerGetLatestProof.INSTANCE), new TypeReference<>() {});
+			return call(LedgerGetLatestProofMethod.INSTANCE, LedgerGetLatestProofMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<Proof> epoch() {
-			return call(request(LEDGER_EPOCH_PROOF, LedgerGetLatestEpochProof.INSTANCE), new TypeReference<>() {});
+			return call(LedgerGetLatestEpochProofMethod.INSTANCE, LedgerGetLatestEpochProofMethod.INSTANCE.create(nextId()));
 		}
 
 		@Override
 		public Promise<Checkpoint> checkpoints() {
-			return call(request(LEDGER_CHECKPOINTS, CheckpointsGetCheckpoints.INSTANCE), new TypeReference<>() {});
+			return call(CheckpointsGetCheckpointsMethod.INSTANCE, CheckpointsGetCheckpointsMethod.INSTANCE.create(nextId()));
 		}
 	};
 
@@ -530,16 +496,12 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 			.fold(Promise::failure, Promise::ok);
 	}
 
-	private <T> Promise<T> call(JsonRpcRequest<?> request) {
-		return call(request, new TypeReference<>() {});
-	}
-
-	private <T> Promise<T> call(JsonRpcRequest<?> request, TypeReference<JsonRpcResponse<T>> typeReference) {
+	private <R extends MethodParameters, T> Promise<T> call(RpcMethodDescriptor<R, T> method, JsonRpcRequest<R> request) {
 		return serialize(request)
 			.onSuccess(this::trace)
-			.map(value -> buildRequest(request, value))
+			.map(value -> buildRequest(method, value))
 			.map(httpRequest -> client().sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString()))
-			.map(future -> Promise.<T>promise(promise -> future.thenAccept(body -> bodyHandler(body, promise, typeReference))))
+			.map(future -> Promise.<T>promise(promise -> future.thenAccept(body -> bodyHandler(body, promise, method.getResponseType()))))
 			.fold(Promise::failure, promise -> promise);
 	}
 

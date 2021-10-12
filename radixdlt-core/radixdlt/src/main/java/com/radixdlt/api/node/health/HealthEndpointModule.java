@@ -65,15 +65,16 @@ package com.radixdlt.api.node.health;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.EndPointKey;
 import com.radixdlt.api.node.NodeServer;
+import com.radixdlt.api.rpc.EndPoint;
 import com.radixdlt.api.service.network.NetworkInfoService;
+import com.radixdlt.api.util.Controller;
 
 public class HealthEndpointModule extends AbstractModule {
 	@NodeServer
 	@ProvidesIntoMap
-	@StringMapKey("/health")
+	@EndPointKey(EndPoint.HEALTH)
 	public Controller healthController(NetworkInfoService networkInfoService) {
 		return new HealthController(networkInfoService);
 	}

@@ -68,27 +68,13 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.rpc.parameter.ApiGetConfiguration;
-import com.radixdlt.api.rpc.parameter.ApiGetData;
-import com.radixdlt.api.rpc.parameter.BftGetConfiguration;
-import com.radixdlt.api.rpc.parameter.BftGetData;
-import com.radixdlt.api.rpc.parameter.CheckpointsGetCheckpoints;
-import com.radixdlt.api.rpc.parameter.LedgerGetLatestEpochProof;
-import com.radixdlt.api.rpc.parameter.LedgerGetLatestProof;
-import com.radixdlt.api.rpc.parameter.MempoolGetConfiguration;
-import com.radixdlt.api.rpc.parameter.MempoolGetData;
-import com.radixdlt.api.rpc.parameter.NetworkingGetAddressBook;
-import com.radixdlt.api.rpc.parameter.NetworkingGetConfiguration;
-import com.radixdlt.api.rpc.parameter.NetworkingGetData;
-import com.radixdlt.api.rpc.parameter.NetworkingGetPeers;
-import com.radixdlt.api.rpc.parameter.RadixEngineGetConfiguration;
-import com.radixdlt.api.rpc.parameter.RadixEngineGetData;
-import com.radixdlt.api.rpc.parameter.SyncGetConfiguration;
-import com.radixdlt.api.rpc.parameter.SyncGetData;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.EndPointKey;
 import com.radixdlt.api.node.NodeServer;
+import com.radixdlt.api.rpc.EndPoint;
+import com.radixdlt.api.rpc.RpcMethodDescriptor;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.util.JsonRpcServer;
 
 import java.util.Map;
@@ -107,126 +93,126 @@ public class SystemEndpointModule extends AbstractModule {
 
 	@NodeServer
 	@ProvidesIntoMap
-	@StringMapKey("/system")
+	@EndPointKey(EndPoint.SYSTEM)
 	public Controller systemController(@SystemEndpoint JsonRpcServer jsonRpcServer) {
 		return new JsonRpcController(jsonRpcServer);
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(ApiGetConfiguration.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.ApiGetConfigurationMethod.METHOD_NAME)
 	public JsonRpcHandler apiGetConfiguration(SystemHandler systemHandler) {
 		return systemHandler::apiGetConfiguration;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(ApiGetData.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.ApiGetDataMethod.METHOD_NAME)
 	public JsonRpcHandler apiGetData(SystemHandler systemHandler) {
 		return systemHandler::apiGetData;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(BftGetConfiguration.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.BftGetConfigurationMethod.METHOD_NAME)
 	public JsonRpcHandler bftGetConfiguration(SystemHandler systemHandler) {
 		return systemHandler::bftGetConfiguration;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(BftGetData.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.BftGetDataMethod.METHOD_NAME)
 	public JsonRpcHandler bftGetData(SystemHandler systemHandler) {
 		return systemHandler::bftGetData;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(MempoolGetConfiguration.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.MempoolGetConfigurationMethod.METHOD_NAME)
 	public JsonRpcHandler mempoolGetConfiguration(SystemHandler systemHandler) {
 		return systemHandler::mempoolGetConfiguration;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(MempoolGetData.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.MempoolGetDataMethod.METHOD_NAME)
 	public JsonRpcHandler mempoolGetData(SystemHandler systemHandler) {
 		return systemHandler::mempoolGetData;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(LedgerGetLatestProof.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.LedgerGetLatestProofMethod.METHOD_NAME)
 	public JsonRpcHandler ledgerGetLatestProof(SystemHandler systemHandler) {
 		return systemHandler::ledgerGetLatestProof;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(LedgerGetLatestEpochProof.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.LedgerGetLatestEpochProofMethod.METHOD_NAME)
 	public JsonRpcHandler ledgerGetLatestEpochProof(SystemHandler systemHandler) {
 		return systemHandler::ledgerGetLatestEpochProof;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(RadixEngineGetConfiguration.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.RadixEngineGetConfigurationMethod.METHOD_NAME)
 	public JsonRpcHandler radixEngineGetConfiguration(SystemHandler systemHandler) {
 		return systemHandler::radixEngineGetConfiguration;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(RadixEngineGetData.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.RadixEngineGetDataMethod.METHOD_NAME)
 	public JsonRpcHandler radixEngineGetData(SystemHandler systemHandler) {
 		return systemHandler::radixEngineGetData;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(SyncGetConfiguration.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.SyncGetConfigurationMethod.METHOD_NAME)
 	public JsonRpcHandler syncGetConfiguration(SystemHandler systemHandler) {
 		return systemHandler::syncGetConfiguration;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(SyncGetData.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.SyncGetDataMethod.METHOD_NAME)
 	public JsonRpcHandler syncGetData(SystemHandler systemHandler) {
 		return systemHandler::syncGetData;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(NetworkingGetConfiguration.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.NetworkingGetConfigurationMethod.METHOD_NAME)
 	public JsonRpcHandler networkingGetConfiguration(SystemHandler systemHandler) {
 		return systemHandler::networkingGetConfiguration;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(NetworkingGetPeers.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.NetworkingGetPeersMethod.METHOD_NAME)
 	public JsonRpcHandler networkingGetPeers(SystemHandler systemHandler) {
 		return systemHandler::networkingGetPeers;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(NetworkingGetAddressBook.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.NetworkingGetAddressBookMethod.METHOD_NAME)
 	public JsonRpcHandler networkingGetAddressBook(SystemHandler systemHandler) {
 		return systemHandler::networkingGetAddressBook;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(NetworkingGetData.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.NetworkingGetDataMethod.METHOD_NAME)
 	public JsonRpcHandler networkingGetData(SystemHandler systemHandler) {
 		return systemHandler::networkingGetData;
 	}
 
 	@SystemEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(CheckpointsGetCheckpoints.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.CheckpointsGetCheckpointsMethod.METHOD_NAME)
 	public JsonRpcHandler checkpointsGetCheckpoints(SystemHandler systemHandler) {
 		return systemHandler::checkpointsGetCheckpoints;
 	}

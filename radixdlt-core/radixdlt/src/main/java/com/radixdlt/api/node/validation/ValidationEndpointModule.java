@@ -68,12 +68,13 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.rpc.parameter.ValidationGetCurrentEpochData;
-import com.radixdlt.api.rpc.parameter.ValidationGetNodeInfo;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.EndPointKey;
 import com.radixdlt.api.node.NodeServer;
+import com.radixdlt.api.rpc.EndPoint;
+import com.radixdlt.api.rpc.RpcMethodDescriptor;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.JsonRpcController;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.util.JsonRpcServer;
 
 import java.util.Map;
@@ -86,7 +87,7 @@ public class ValidationEndpointModule extends AbstractModule {
 
 	@NodeServer
 	@ProvidesIntoMap
-	@StringMapKey("/validation")
+	@EndPointKey(EndPoint.VALIDATION)
 	public Controller validationController(@ValidationEndpoint JsonRpcServer jsonRpcServer) {
 		return new JsonRpcController(jsonRpcServer);
 	}
@@ -99,14 +100,14 @@ public class ValidationEndpointModule extends AbstractModule {
 
 	@ValidationEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(ValidationGetNodeInfo.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.ValidationGetNodeInfoMethod.METHOD_NAME)
 	public JsonRpcHandler getNodeInfo(ValidationHandler validationHandler) {
 		return validationHandler::handleGetNodeInfo;
 	}
 
 	@ValidationEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(ValidationGetCurrentEpochData.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.ValidationGetCurrentEpochDataMethod.METHOD_NAME)
 	public JsonRpcHandler getCurrentEpochData(ValidationHandler validationHandler) {
 		return validationHandler::handleGetCurrentEpochData;
 	}

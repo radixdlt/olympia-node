@@ -64,13 +64,17 @@
 
 package com.radixdlt.api.node.transactions;
 
+import org.json.JSONArray;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.api.EndPointKey;
 import com.radixdlt.api.node.NodeServer;
-import com.radixdlt.api.rpc.parameter.GetTransactions;
+import com.radixdlt.api.rpc.EndPoint;
+import com.radixdlt.api.rpc.RpcMethodDescriptor;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.api.util.JsonRpcController;
@@ -79,7 +83,6 @@ import com.radixdlt.api.util.JsonRpcServer;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
-import org.json.JSONArray;
 
 import java.util.List;
 import java.util.Map;
@@ -97,7 +100,7 @@ public final class TransactionIndexApiModule extends AbstractModule {
 
 	@NodeServer
 	@ProvidesIntoMap
-	@StringMapKey("/transactions")
+	@EndPointKey(EndPoint.TRANSACTIONS)
 	public Controller transactionsController(@TransactionsEndpoint Map<String, JsonRpcHandler> handlers) {
 		return new JsonRpcController(new JsonRpcServer(handlers));
 	}
@@ -122,7 +125,7 @@ public final class TransactionIndexApiModule extends AbstractModule {
 
 	@TransactionsEndpoint
 	@ProvidesIntoMap
-	@StringMapKey(GetTransactions.METHOD_NAME)
+	@StringMapKey(RpcMethodDescriptor.GetTransactionsMethod.METHOD_NAME)
 	public JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexStore store, BerkeleyTransactionsByIdStore txnStore) {
 		return request -> withRequiredParameters(
 			request,
