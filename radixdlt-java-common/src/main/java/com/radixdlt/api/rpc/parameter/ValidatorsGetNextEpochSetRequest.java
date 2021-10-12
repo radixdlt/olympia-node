@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.api.types.NavigationCursor;
 
@@ -79,6 +80,7 @@ public class ValidatorsGetNextEpochSetRequest implements MethodParameters {
 		this.cursor = cursor;
 	}
 
+	@JsonCreator
 	public static ValidatorsGetNextEpochSetRequest create(
 		@JsonProperty(value = "size", required = true) long size,
 		@JsonProperty(value = "cursor", required = true) Optional<NavigationCursor> cursor

@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.api.rpc.action.Action;
 import com.radixdlt.api.types.TransactionRequest;
@@ -81,6 +82,7 @@ public class AccountSubmitTransactionSingleStepRequest implements MethodParamete
 		this.message = message;
 	}
 
+	@JsonCreator
 	public static AccountSubmitTransactionSingleStepRequest create(
 		@JsonProperty(value = "actions", required = true) List<Action> actions,
 		@JsonProperty("message") String message

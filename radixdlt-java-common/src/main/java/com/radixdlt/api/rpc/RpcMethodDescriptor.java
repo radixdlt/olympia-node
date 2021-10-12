@@ -148,11 +148,7 @@ public sealed class RpcMethodDescriptor<Request, Response> {
 		}
 
 		public JsonRpcRequest<AccountGetTransactionHistoryRequest> create(
-			long id,
-			AccountAddress address,
-			long size,
-			OptionalLong nextOffset,
-			boolean verbose
+			long id, AccountAddress address, long size, OptionalLong nextOffset, boolean verbose
 		) {
 			return JsonRpcRequest.create(method(), id, AccountGetTransactionHistoryRequest.from(address, size, nextOffset, verbose));
 		}
@@ -628,4 +624,3 @@ public sealed class RpcMethodDescriptor<Request, Response> {
 		}
 	}
 }
-

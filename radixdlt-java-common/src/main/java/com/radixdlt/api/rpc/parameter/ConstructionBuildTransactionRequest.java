@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.api.rpc.action.Action;
 import com.radixdlt.api.types.AccountAddress;
@@ -91,6 +92,7 @@ public class ConstructionBuildTransactionRequest implements MethodParameters {
 		this.disableResourceAllocationAndDestroy = disableResourceAllocationAndDestroy;
 	}
 
+	@JsonCreator
 	public static ConstructionBuildTransactionRequest create(
 		@JsonProperty(value = "actions", required = true) List<Action> actions,
 		@JsonProperty(value = "feePayer", required = true) AccountAddress feePayer,

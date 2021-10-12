@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.rpc.parameter;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.api.types.ValidatorAddress;
 
@@ -77,6 +78,7 @@ public class ValidatorsLookupValidatorRequest implements MethodParameters {
 		this.address = address;
 	}
 
+	@JsonCreator
 	public static ValidatorsLookupValidatorRequest create(
 		@JsonProperty(value = "validatorAddress", required = true) ValidatorAddress address
 	) {
