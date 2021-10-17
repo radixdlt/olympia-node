@@ -308,9 +308,11 @@ public final class PeerManager {
 	}
 
 	public ImmutableSet<PeerChannel> activeChannels() {
-		return this.activeChannels.values().stream()
-			.flatMap(Collection::stream)
-			.collect(ImmutableSet.toImmutableSet());
+		synchronized (lock) {
+			return this.activeChannels.values().stream()
+					.flatMap(Collection::stream)
+					.collect(ImmutableSet.toImmutableSet());
+		}
 	}
 
 	public boolean isPeerConnected(NodeId nodeId) {
