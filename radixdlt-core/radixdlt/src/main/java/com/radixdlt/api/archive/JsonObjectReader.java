@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.archive;
 
+import com.google.common.base.Throwables;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -95,16 +96,22 @@ public final class JsonObjectReader {
 		return new JsonObjectReader(jsonObject, addressing);
 	}
 
-	public OptionalLong getOptLong(String key) throws InvalidParametersException {
+	public OptionalLong getOptUnsignedLong(String key) throws InvalidParametersException {
+		long l;
 		try {
 			if (!jsonObject.has(key)) {
 				return OptionalLong.empty();
 			}
-
-			return OptionalLong.of(jsonObject.getLong(key));
+			l = jsonObject.getLong(key);
 		} catch (JSONException e) {
 			throw new InvalidParametersException("/" + key, e);
 		}
+
+		if (l < 0) {
+			throw new InvalidParametersException("/" + key, "Number cannot be negative.");
+		}
+
+		return OptionalLong.of(l);
 	}
 
 	public UInt256 getAmount(String key) throws InvalidParametersException {
@@ -124,13 +131,12 @@ public final class JsonObjectReader {
 		}
 	}
 
-
 	public REAddr getAccountAddress(String key) throws InvalidParametersException {
 		try {
 			var addressString = jsonObject.getString(key);
 			return addressing.get().forAccounts().parse(addressString);
 		} catch (DeserializeException | JSONException e) {
-			throw new InvalidParametersException("/" + key, e);
+			throw new InvalidParametersException("/" + key, Throwables.getRootCause(e));
 		}
 	}
 
@@ -228,7 +234,7 @@ public final class JsonObjectReader {
 			var rriString = jsonObject.getString(key);
 			return addressing.get().forResources().parse2(rriString).getSecond();
 		} catch (DeserializeException | JSONException e) {
-			throw new InvalidParametersException("/" + key, e);
+			throw new InvalidParametersException("/" + key, Throwables.getRootCause(e));
 		}
 	}
 
@@ -244,7 +250,7 @@ public final class JsonObjectReader {
 			var validatorIdentifier = jsonObject.getString(key);
 			return addressing.get().forValidators().parse(validatorIdentifier);
 		} catch (DeserializeException | JSONException e) {
-			throw new InvalidParametersException("/" + key, e);
+			throw new InvalidParametersException("/" + key, Throwables.getRootCause(e));
 		}
 	}
 

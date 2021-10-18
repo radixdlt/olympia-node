@@ -92,8 +92,9 @@ final class TokenApiHandler implements ApiHandler<REAddr> {
 	}
 
 	@Override
-	public JSONObject handleRequest(REAddr request) {
-		var tokenJson = store.getResourceInfo(request).orElseThrow();
+	public JSONObject handleRequest(REAddr addr) throws ResourceNotFoundException {
+		var tokenJson = store.getResourceInfo(addr)
+			.orElseThrow(() -> new ResourceNotFoundException(addr));
 		return new JSONObject()
 			.put("token", tokenJson);
 	}

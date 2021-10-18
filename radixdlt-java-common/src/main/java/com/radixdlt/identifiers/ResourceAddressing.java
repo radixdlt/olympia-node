@@ -65,6 +65,7 @@
 package com.radixdlt.identifiers;
 
 import com.radixdlt.serialization.DeserializeException;
+import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
 import com.radixdlt.utils.Bits;
@@ -112,12 +113,18 @@ public final class ResourceAddressing {
 	}
 
 	public Pair<String, REAddr> parse2(String rri) throws DeserializeException {
-		var data = Bech32.decode(rri);
-		if (!data.hrp.endsWith(hrpSuffix)) {
+		Bech32.Bech32Data bech32Data;
+		try {
+			bech32Data = Bech32.decode(rri);
+		} catch (AddressFormatException e) {
+			throw new DeserializeException("Could not decode string: " + rri, e);
+		}
+
+		if (!bech32Data.hrp.endsWith(hrpSuffix)) {
 			throw new DeserializeException("Address hrp suffix must be " + hrpSuffix + "(" + rri + ")");
 		}
-		var symbol = data.hrp.substring(0, data.hrp.length() - hrpSuffix.length());
-		var addrBytes = fromBech32Data(data.data);
+		var symbol = bech32Data.hrp.substring(0, bech32Data.hrp.length() - hrpSuffix.length());
+		var addrBytes = fromBech32Data(bech32Data.data);
 		return Pair.of(symbol, REAddr.of(addrBytes));
 	}
 

@@ -61,22 +61,18 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive;
+package com.radixdlt.api.archive.transaction;
 
-public final class InvalidParametersException extends Exception {
-	private final String jsonPointer;
+import com.radixdlt.identifiers.AID;
 
-	public InvalidParametersException(String jsonPointer, String message) {
-		super(message);
-		this.jsonPointer = jsonPointer;
+public final class TransactionNotFoundException extends Exception {
+	private final AID txnId;
+
+	public TransactionNotFoundException(AID txnId) {
+		this.txnId = txnId;
 	}
 
-	public InvalidParametersException(String jsonPointer, Throwable cause) {
-		super(cause.getMessage(), cause);
-		this.jsonPointer = jsonPointer;
-	}
-
-	public String getJsonPointer() {
-		return jsonPointer;
+	public AID getTxnId() {
+		return txnId;
 	}
 }

@@ -98,8 +98,8 @@ class AccountTransactionsHandler implements ApiHandler<AccountTransactionsReques
 	@Override
 	public AccountTransactionsRequest parseRequest(JsonObjectReader reader) throws InvalidParametersException {
 		var addr = reader.getAccountAddress("accountAddress");
-		var limit = reader.getOptLong("limit").orElse(10);
-		var cursor = reader.getOptLong("cursor");
+		var limit = reader.getOptUnsignedLong("limit").orElse(10);
+		var cursor = reader.getOptUnsignedLong("cursor");
 
 		return new AccountTransactionsRequest(addr, limit, cursor);
 	}

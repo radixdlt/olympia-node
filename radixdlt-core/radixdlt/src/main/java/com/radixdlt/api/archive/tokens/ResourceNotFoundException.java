@@ -61,22 +61,18 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive;
+package com.radixdlt.api.archive.tokens;
 
-public final class InvalidParametersException extends Exception {
-	private final String jsonPointer;
+import com.radixdlt.identifiers.REAddr;
 
-	public InvalidParametersException(String jsonPointer, String message) {
-		super(message);
-		this.jsonPointer = jsonPointer;
+public final class ResourceNotFoundException extends Exception {
+	private final REAddr resourceAddr;
+
+	public ResourceNotFoundException(REAddr resourceAddr) {
+		this.resourceAddr = resourceAddr;
 	}
 
-	public InvalidParametersException(String jsonPointer, Throwable cause) {
-		super(cause.getMessage(), cause);
-		this.jsonPointer = jsonPointer;
-	}
-
-	public String getJsonPointer() {
-		return jsonPointer;
+	public REAddr getResourceAddr() {
+		return resourceAddr;
 	}
 }

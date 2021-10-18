@@ -63,6 +63,8 @@
 
 package com.radixdlt.api.archive;
 
+import com.radixdlt.api.archive.tokens.ResourceNotFoundException;
+import com.radixdlt.api.archive.transaction.TransactionNotFoundException;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolDuplicateException;
@@ -87,15 +89,32 @@ public enum ApiErrorCode {
 				.put("cause", ex.getCause().getMessage());
 		}
 	},
-	INVALID_REQUEST(InvalidParametersException.class, 3, "Invalid Request") {
+	INVALID_REQUEST(InvalidParametersException.class, 3, "Invalid Request Object") {
 		@Override
 		public JSONObject getDetails(Throwable e) {
 			var ex = (InvalidParametersException) e;
 			return new JSONObject()
-				.put(ex.getJsonPointer(), ex.getCause().getMessage());
+				.put("pointer", ex.getJsonPointer())
+				.put("cause", ex.getCause() == null ? ex.getMessage() : ex.getCause().getMessage());
 		}
 	},
-	TXBUILDER_EXCEPTION(TxBuilderException.class, 4, "Failed to build transaction") {
+	TRANSACTION_NOT_FOUND(TransactionNotFoundException.class, 4, "Transaction Not Found") {
+		@Override
+		public JSONObject getDetails(Throwable e) {
+			var ex = (TransactionNotFoundException) e;
+			return new JSONObject()
+				.put("transactionIdentifier", ex.getTxnId());
+		}
+	},
+	TOKEN_NOT_FOUND(ResourceNotFoundException.class, 5, "Token Not Found") {
+		@Override
+		public JSONObject getDetails(Throwable e) {
+			var ex = (ResourceNotFoundException) e;
+			return new JSONObject()
+				.put("resourceAddress", ex.getResourceAddr());
+		}
+	},
+	TXBUILDER_EXCEPTION(TxBuilderException.class, 6, "Failed to build transaction") {
 		@Override
 		public JSONObject getDetails(Throwable e) {
 			var ex = (TxBuilderException) e;
@@ -104,19 +123,19 @@ public enum ApiErrorCode {
 				.put("message", ex.getMessage());
 		}
 	},
-	MEMPOOL_FULL(MempoolFullException.class, 5, "Mempool is full") {
+	MEMPOOL_FULL(MempoolFullException.class, 7, "Mempool is full") {
 		@Override
 		public JSONObject getDetails(Throwable e) {
 			return new JSONObject();
 		}
 	},
-	MEMPOOL_DUPLICATE(MempoolDuplicateException.class, 6, "Mempool already contains transaction") {
+	MEMPOOL_DUPLICATE(MempoolDuplicateException.class, 8, "Mempool already contains transaction") {
 		@Override
 		public JSONObject getDetails(Throwable e) {
 			return new JSONObject();
 		}
 	},
-	MEMPOOL_REJECTED(MempoolRejectedException.class, 7, "Transaction rejected from mempool") {
+	MEMPOOL_REJECTED(MempoolRejectedException.class, 9, "Transaction rejected from mempool") {
 		@Override
 		public JSONObject getDetails(Throwable e) {
 			var ex = (MempoolRejectedException) e;

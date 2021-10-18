@@ -85,8 +85,9 @@ final class TransactionHandler implements ApiHandler<AID> {
 	}
 
 	@Override
-	public JSONObject handleRequest(AID txnId) {
-		var transactionJson = store.getTransactionJSON(txnId).orElseThrow();
+	public JSONObject handleRequest(AID txnId) throws TransactionNotFoundException {
+		var transactionJson = store.getTransactionJSON(txnId)
+			.orElseThrow(() -> new TransactionNotFoundException(txnId));
 		return new JSONObject()
 			.put("transaction", transactionJson);
 	}

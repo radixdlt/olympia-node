@@ -90,8 +90,8 @@ class ValidatorsApiHandler implements ApiHandler<Pair<Long, Long>> {
 
 	@Override
 	public Pair<Long, Long> parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		var limit = reader.getOptLong("limit").orElse(10);
-		var offset = reader.getOptLong("offset").orElse(0);
+		var limit = reader.getOptUnsignedLong("limit").orElse(10);
+		var offset = reader.getOptUnsignedLong("offset").orElse(0);
 		return Pair.of(limit, offset);
 	}
 
