@@ -88,7 +88,6 @@ import java.util.Map;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -360,7 +359,7 @@ public final class LocalSyncService {
 			return currentState; // we're already waiting for a response from peer
 		}
 
-		final Optional<BFTNode> peerToUse = currentState.candidatePeers().stream()
+		final var peerToUse = currentState.candidatePeersQueue().stream()
 			.filter(peersView::hasPeer)
 			.findFirst();
 
@@ -384,7 +383,7 @@ public final class LocalSyncService {
 			this.syncConfig.syncRequestTimeout()
 		);
 
-		return currentState.withPendingRequest(peer, requestId);
+		return currentState.withPendingRequestAndUpdatedQueue(peer, requestId);
 	}
 
 	private boolean isFullySynced(SyncState.SyncingState syncingState) {
@@ -512,7 +511,7 @@ public final class LocalSyncService {
 		if (isNewerState) {
 			final var newState = currentState
 				.withTargetHeader(header)
-				.withCandidatePeers(peers);
+				.addCandidatePeers(peers);
 			return this.updateSyncTargetDiffCounter(newState);
 		} else {
 			log.trace("LocalSync: skipping as already targeted {}", currentState.getTargetHeader());
