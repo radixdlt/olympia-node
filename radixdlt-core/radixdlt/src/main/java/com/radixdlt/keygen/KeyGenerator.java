@@ -112,11 +112,12 @@ public class KeyGenerator {
 	}
 
 	public static void main(String[] args) {
-		new KeyGenerator().run(args);
+		var rc = new KeyGenerator().run(args).fold(Failure::code, __ -> 0);
+		System.exit(rc);
 	}
 
-	private void run(String[] args) {
-		parseParameters(args)
+	private Result<Void> run(String[] args) {
+		return parseParameters(args)
 			.filter(commandLine -> !commandLine.hasOption("h"), irrelevant())
 			.filter(commandLine -> commandLine.getOptions().length != 0, irrelevant())
 			.flatMap(cli -> allOf(parseKeystore(cli), parsePassword(cli), parseKeypair(cli), parseShowPk(cli))
