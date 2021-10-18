@@ -93,6 +93,8 @@ import java.util.EnumSet;
 import java.util.LinkedList;
 
 public final class SystemConstraintScrypt implements ConstraintScrypt {
+	public static final int MAX_SYMBOL_LENGTH = 32;
+
 	private static class AllocatingSystem implements ReducerState {
 	}
 
@@ -251,7 +253,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 						return ReducerResult.incomplete(new TokenHoldingBucket(tokens));
 					} else if (syscall == Syscall.READDR_CLAIM) {
 						var bytes = d.getRemainingBytes(1);
-						if (bytes.length > 32) {
+						if (bytes.length > MAX_SYMBOL_LENGTH) {
 							throw new ProcedureException("Address claim too large.");
 						}
 						return ReducerResult.incomplete(new REAddrClaimStart(bytes));

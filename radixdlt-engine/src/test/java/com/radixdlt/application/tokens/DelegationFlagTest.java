@@ -188,7 +188,7 @@ public class DelegationFlagTest {
 			serialization,
 			REConstructor.newBuilder()
 				.put(StakeTokens.class, stakeTokensConstructor)
-				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+				.put(CreateMutableToken.class, new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(UpdateAllowDelegationFlag.class, new UpdateAllowDelegationFlagConstructor())
 				.put(UpdateValidatorOwner.class, new UpdateValidatorOwnerConstructor())

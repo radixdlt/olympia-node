@@ -175,8 +175,8 @@ public enum RERulesVersion {
 				.perByteFee(perByteFee)
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(BurnToken.class, new BurnTokenConstructor())
-				.put(CreateFixedToken.class, new CreateFixedTokenConstructor())
-				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+				.put(CreateFixedToken.class, new CreateFixedTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
+				.put(CreateMutableToken.class, new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(NextEpoch.class, new NextEpochConstructorV3(
 					config.getRewardsPerProposal().toSubunits(),

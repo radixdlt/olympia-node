@@ -67,7 +67,6 @@ package com.radixdlt.application.system.scrypt;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.ExittingStake;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
@@ -129,7 +128,7 @@ public final class ValidatorScratchPad {
 		return verifyNoOverflow(i).getLow();
 	}
 
-	public StakeOwnership stake(REAddr owner, UInt256 stake) throws ProcedureException {
+	public StakeOwnership stake(REAddr owner, UInt256 stake) {
 		if (totalStake.isZero()) {
 			this.totalStake = UInt384.from(stake);
 			this.totalOwnership = this.totalStake;

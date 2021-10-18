@@ -256,7 +256,7 @@ public class UnstakeTokensV2Test {
 				))
 				.put(StakeTokens.class, stakeTokensConstructor)
 				.put(UnstakeOwnership.class, unstakeTokensConstructor)
-				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+				.put(CreateMutableToken.class, new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
 				.put(MintToken.class, new MintTokenConstructor())
 				.put(TransferToken.class, new TransferTokensConstructorV2())
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())

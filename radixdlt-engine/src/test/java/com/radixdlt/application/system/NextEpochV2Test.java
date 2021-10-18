@@ -142,7 +142,7 @@ public class NextEpochV2Test {
 						Amount.ofTokens(10).toSubunits(), 9800, 1, 10
 					))
 					.put(CreateSystem.class, new CreateSystemConstructorV2())
-					.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+					.put(CreateMutableToken.class, new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
 					.put(MintToken.class, new MintTokenConstructor())
 					.put(StakeTokens.class, new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()))
 					.put(RegisterValidator.class, new RegisterValidatorConstructor())

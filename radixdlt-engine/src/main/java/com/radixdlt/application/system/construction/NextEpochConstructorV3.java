@@ -85,7 +85,6 @@ import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.KeyComparator;
@@ -274,13 +273,8 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 			for (var entry : stakes.entrySet()) {
 				var addr = entry.getKey();
 				var amt = entry.getValue();
-
-				try {
-					var stakeOwnership = curValidator.stake(addr, amt);
-					txBuilder.up(stakeOwnership);
-				} catch (ProcedureException ex) {
-					throw new TxBuilderException(ex);
-				}
+				var stakeOwnership = curValidator.stake(addr, amt);
+				txBuilder.up(stakeOwnership);
 			}
 			validatorsToUpdate.put(k, curValidator);
 		}

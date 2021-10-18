@@ -76,11 +76,21 @@ import com.radixdlt.identifiers.REAddr;
 import java.nio.charset.StandardCharsets;
 
 public final class CreateMutableTokenConstructor implements ActionConstructor<CreateMutableToken> {
+	private final int maxSymbolLength;
+
+	public CreateMutableTokenConstructor(int maxSymbolLength) {
+		this.maxSymbolLength = maxSymbolLength;
+	}
+
 	@Override
 	public void construct(CreateMutableToken action, TxBuilder txBuilder) throws TxBuilderException {
 		final var reAddress = action.getKey() == null
 			? REAddr.ofNativeToken()
 			: REAddr.ofHashedKey(action.getKey(), action.getSymbol());
+
+		if (action.getSymbol().length() > maxSymbolLength) {
+			throw new TxBuilderException("Symbol must have a length <= " + maxSymbolLength);
+		}
 
 		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
 		txBuilder.downREAddr(reAddress);

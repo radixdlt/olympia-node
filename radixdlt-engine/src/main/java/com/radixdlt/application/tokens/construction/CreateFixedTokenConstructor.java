@@ -76,8 +76,17 @@ import com.radixdlt.application.tokens.state.TokensInAccount;
 import java.nio.charset.StandardCharsets;
 
 public final class CreateFixedTokenConstructor implements ActionConstructor<CreateFixedToken> {
+	private final int maxSymbolLength;
+
+	public CreateFixedTokenConstructor(int maxSymbolLength) {
+		this.maxSymbolLength = maxSymbolLength;
+	}
+
 	@Override
 	public void construct(CreateFixedToken action, TxBuilder txBuilder) throws TxBuilderException {
+		if (action.getSymbol().length() > maxSymbolLength) {
+			throw new TxBuilderException("Symbol must have a length <= " + maxSymbolLength);
+		}
 		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
 		txBuilder.downREAddr(action.getResourceAddr());
 		txBuilder.up(TokenResource.createFixedSupplyResource(action.getResourceAddr()));

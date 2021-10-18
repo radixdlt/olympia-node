@@ -153,7 +153,7 @@ public class TransferTokensTest {
 			REConstructor.newBuilder()
 				.put(CreateSystem.class, new CreateSystemConstructorV2())
 				.put(TransferToken.class, transferTokensConstructor)
-				.put(CreateMutableToken.class, new CreateMutableTokenConstructor())
+				.put(CreateMutableToken.class, new CreateMutableTokenConstructor(SystemConstraintScrypt.MAX_SYMBOL_LENGTH))
 				.put(MintToken.class, new MintTokenConstructor())
 				.build(),
 			cm,
