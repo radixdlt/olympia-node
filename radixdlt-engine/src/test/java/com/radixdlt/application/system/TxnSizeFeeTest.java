@@ -79,7 +79,6 @@ import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
@@ -233,8 +232,7 @@ public class TxnSizeFeeTest {
 			var remainder = txBuilder.downFungible(
 				index,
 				p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(accountAddr),
-				fee,
-				() -> new TxBuilderException("Oops")
+				fee
 			);
 			txBuilder.toLowLevelBuilder().syscall(Syscall.FEE_RESERVE_PUT, fee.toByteArray());
 			if (!remainder.isZero()) {
@@ -264,8 +262,7 @@ public class TxnSizeFeeTest {
 			var remainder = txBuilder.downFungible(
 				index,
 				p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(accountAddr),
-				fee,
-				() -> new TxBuilderException("Oops")
+				fee
 			);
 
 			var data = new byte[Short.BYTES + 1 + UInt256.BYTES + 1];

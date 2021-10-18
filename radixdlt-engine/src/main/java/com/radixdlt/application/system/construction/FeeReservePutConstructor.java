@@ -75,7 +75,7 @@ public class FeeReservePutConstructor implements ActionConstructor<FeeReservePut
 		if (action.amount().isZero()) {
 			return;
 		}
-		txBuilder.putFeeReserve(action.from(), action.amount(), FeeReserveNotEnoughBalanceException::new);
+		txBuilder.putFeeReserve(action.from(), action.amount());
 		txBuilder.end();
 	}
 }

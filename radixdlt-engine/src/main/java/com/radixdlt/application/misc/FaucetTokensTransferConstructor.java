@@ -105,8 +105,7 @@ public class FaucetTokensTransferConstructor implements ActionConstructor<Faucet
 			var change = txBuilder.downFungible(
 				index,
 				p -> p.getResourceAddr().equals(e.getKey()) && p.getHoldingAddr().equals(action.from()),
-				AMOUNT_TO_TRANSFER.toSubunits(),
-				() -> new TxBuilderException("Not enough balance for transfer.")
+				AMOUNT_TO_TRANSFER.toSubunits()
 			);
 			if (!change.isZero()) {
 				txBuilder.up(new TokensInAccount(action.from(), e.getKey(), change));

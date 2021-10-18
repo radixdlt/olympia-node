@@ -93,8 +93,7 @@ public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwn
 		var change = txBuilder.downFungible(
 			index,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
-			action.amount(),
-			() -> new TxBuilderException("Not enough balance for transfer.")
+			action.amount()
 		);
 		if (!change.isZero()) {
 			txBuilder.up(new StakeOwnership(action.from(), action.accountAddr(), change));

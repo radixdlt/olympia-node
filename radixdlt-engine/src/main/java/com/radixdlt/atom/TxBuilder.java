@@ -97,7 +97,6 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -460,9 +459,8 @@ public final class TxBuilder {
 	public <T extends ResourceInBucket> UInt256 downFungible(
 		SubstateIndex<T> index,
 		Predicate<T> particlePredicate,
-		UInt256 amount,
-		Supplier<TxBuilderException> exceptionSupplier
-	) throws TxBuilderException {
+		UInt256 amount
+	) throws NotEnoughResourcesException {
 		var spent = UInt256.ZERO;
 		for (var l : lowLevelBuilder.localUpSubstate()) {
 			var p = l.getParticle();
@@ -499,7 +497,7 @@ public final class TxBuilder {
 			}
 		}
 
-		throw exceptionSupplier.get();
+		throw new NotEnoughResourcesException(amount, spent);
 	}
 
 	public UInt256 getFeeReserve() {
@@ -508,9 +506,8 @@ public final class TxBuilder {
 
 	public <T extends ResourceInBucket> void putFeeReserve(
 		REAddr feePayer,
-		UInt256 amount,
-		Supplier<TxBuilderException> exceptionSupplier
-	) throws TxBuilderException {
+		UInt256 amount
+	) throws NotEnoughResourcesException {
 		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
 		buf.put(SubstateTypeId.TOKENS.id());
 		buf.put((byte) 0);
@@ -520,8 +517,7 @@ public final class TxBuilder {
 		var remainder = downFungible(
 			index,
 			p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(feePayer),
-			amount,
-			exceptionSupplier
+			amount
 		);
 		lowLevelBuilder.syscall(Syscall.FEE_RESERVE_PUT, amount);
 		if (!remainder.isZero()) {

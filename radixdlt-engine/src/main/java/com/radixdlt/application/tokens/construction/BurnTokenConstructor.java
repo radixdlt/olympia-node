@@ -89,8 +89,7 @@ public final class BurnTokenConstructor implements ActionConstructor<BurnToken> 
 			index,
 			p -> p.getResourceAddr().equals(action.resourceAddr())
 				&& p.getHoldingAddr().equals(action.from()),
-			action.amount(),
-			() -> new TxBuilderException("Not enough balance for transfer.")
+			action.amount()
 		);
 		if (!change.isZero()) {
 			txBuilder.up(new TokensInAccount(action.from(), action.resourceAddr(), change));

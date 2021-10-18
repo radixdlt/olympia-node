@@ -104,8 +104,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 			index,
 			p -> p.getResourceAddr().isNativeToken()
 				&& p.getHoldingAddr().equals(action.from()),
-			action.amount(),
-			() -> new TxBuilderException("Not enough balance for transfer.")
+			action.amount()
 		);
 		if (!change.isZero()) {
 			builder.up(new TokensInAccount(action.from(), REAddr.ofNativeToken(), change));
