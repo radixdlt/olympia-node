@@ -67,6 +67,7 @@ package com.radixdlt.sync;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.mock;
@@ -457,10 +458,29 @@ public class LocalSyncServiceTest {
 		this.setupSyncServiceWithState(syncState);
 
 		this.localSyncService.syncLedgerUpdateTimeoutProcessor().process(
-			SyncLedgerUpdateTimeout.create()
+			SyncLedgerUpdateTimeout.create(currentHeader.getStateVersion())
 		);
 
 		verify(syncRequestDispatcher, times(1)).dispatch(eq(peer1), any());
+	}
+
+	@Test
+	public void when_obsolete_ledger_update_timeout__then_should_ignore() {
+		final var currentHeader = createHeaderAtStateVersion(19L);
+		final var targetHeader = createHeaderAtStateVersion(21L);
+
+		final var peer1 = createPeer();
+		when(peersView.hasPeer(peer1)).thenReturn(true);
+
+		final var syncState = SyncState.SyncingState.init(
+			currentHeader, ImmutableList.of(peer1), targetHeader);
+		this.setupSyncServiceWithState(syncState);
+
+		this.localSyncService.syncLedgerUpdateTimeoutProcessor().process(
+			SyncLedgerUpdateTimeout.create(currentHeader.getStateVersion() - 1) // timeout event for a past state version
+		);
+
+		verifyNoInteractions(syncRequestDispatcher);
 	}
 
 	@Test
