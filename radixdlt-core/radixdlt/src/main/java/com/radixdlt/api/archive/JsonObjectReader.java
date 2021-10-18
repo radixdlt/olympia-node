@@ -80,17 +80,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.function.Supplier;
 
 public final class JsonObjectReader {
 	private final JSONObject jsonObject;
-	private final Addressing addressing;
+	private final Supplier<Addressing> addressing;
 
-	private JsonObjectReader(JSONObject jsonObject, Addressing addressing) {
+	private JsonObjectReader(JSONObject jsonObject, Supplier<Addressing> addressing) {
 		this.jsonObject = jsonObject;
 		this.addressing = addressing;
 	}
 
-	public static JsonObjectReader create(JSONObject jsonObject, Addressing addressing) {
+	public static JsonObjectReader create(JSONObject jsonObject, Supplier<Addressing> addressing) {
 		return new JsonObjectReader(jsonObject, addressing);
 	}
 
@@ -127,7 +128,7 @@ public final class JsonObjectReader {
 	public REAddr getAccountAddress(String key) throws InvalidParametersException {
 		try {
 			var addressString = jsonObject.getString(key);
-			return addressing.forAccounts().parse(addressString);
+			return addressing.get().forAccounts().parse(addressString);
 		} catch (DeserializeException | JSONException e) {
 			throw new InvalidParametersException("/" + key, e);
 		}
@@ -225,7 +226,7 @@ public final class JsonObjectReader {
 	public REAddr getResource(String key) throws InvalidParametersException {
 		try {
 			var rriString = jsonObject.getString(key);
-			return addressing.forResources().parse2(rriString).getSecond();
+			return addressing.get().forResources().parse2(rriString).getSecond();
 		} catch (DeserializeException | JSONException e) {
 			throw new InvalidParametersException("/" + key, e);
 		}
@@ -241,7 +242,7 @@ public final class JsonObjectReader {
 	public ECPublicKey getValidatorIdentifier(String key) throws InvalidParametersException {
 		try {
 			var validatorIdentifier = jsonObject.getString(key);
-			return addressing.forValidators().parse(validatorIdentifier);
+			return addressing.get().forValidators().parse(validatorIdentifier);
 		} catch (DeserializeException | JSONException e) {
 			throw new InvalidParametersException("/" + key, e);
 		}

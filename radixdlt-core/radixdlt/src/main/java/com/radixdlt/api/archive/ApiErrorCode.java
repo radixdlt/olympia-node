@@ -74,10 +74,9 @@ public enum ApiErrorCode {
 	UNEXPECTED_ERROR(Throwable.class, 1, "Unexpected Error") {
 		@Override
 		public JSONObject getDetails(Throwable e) {
-			var ex = (JsonParseException) e;
 			return new JSONObject()
-				.put("exception", ex.toString())
-				.put("cause", ex.getMessage());
+				.put("exception", e.toString())
+				.put("cause", e.getMessage());
 		}
 	},
 	INVALID_JSON(JsonParseException.class, 2, "Invalid JSON") {

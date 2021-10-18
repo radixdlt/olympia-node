@@ -99,7 +99,7 @@ public interface ApiHandler<T> extends HttpHandler {
 			throw new JsonParseException(e);
 		}
 
-		var requestReader = JsonObjectReader.create(jsonRequest, addressing());
+		var requestReader = JsonObjectReader.create(jsonRequest, this::addressing);
 		var request = parseRequest(requestReader);
 		var jsonResponse = handleRequest(request);
 		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
