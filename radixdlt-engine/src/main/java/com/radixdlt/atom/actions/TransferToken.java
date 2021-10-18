@@ -75,6 +75,10 @@ public final class TransferToken implements TxAction {
 	private final UInt256 amount;
 
 	public TransferToken(REAddr resourceAddr, REAddr from, REAddr to, UInt256 amount) {
+		if (amount.isZero()) {
+			throw new IllegalArgumentException("Must transfer > 0.");
+		}
+
 		this.resourceAddr = resourceAddr;
 		this.from = from;
 		this.to = to;

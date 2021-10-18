@@ -75,6 +75,9 @@ public class UnstakeTokens implements TxAction {
 	private final UInt256 amount;
 
 	public UnstakeTokens(REAddr accountAddr, ECPublicKey delegateAddress, UInt256 amount) {
+		if (amount.isZero()) {
+			throw new IllegalArgumentException("Amount must be > 0.");
+		}
 		this.accountAddr = accountAddr;
 		this.delegateAddress = delegateAddress;
 		this.amount = amount;

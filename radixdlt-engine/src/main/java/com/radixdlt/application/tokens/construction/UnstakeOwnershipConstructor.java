@@ -79,10 +79,6 @@ import java.nio.ByteBuffer;
 public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwnership> {
 	@Override
 	public void construct(UnstakeOwnership action, TxBuilder txBuilder) throws TxBuilderException {
-		if (action.amount().isZero()) {
-			throw new TxBuilderException("Must transfer > 0.");
-		}
-
 		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES));
 		buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
 		buf.put((byte) 0);

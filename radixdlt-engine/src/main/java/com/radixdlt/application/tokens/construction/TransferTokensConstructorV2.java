@@ -78,10 +78,6 @@ import java.nio.ByteBuffer;
 public class TransferTokensConstructorV2 implements ActionConstructor<TransferToken> {
 	@Override
 	public void construct(TransferToken action, TxBuilder txBuilder) throws TxBuilderException {
-		if (action.amount().isZero()) {
-			throw new TxBuilderException("Must transfer > 0.");
-		}
-
 		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
 		buf.put(SubstateTypeId.TOKENS.id());
 		buf.put((byte) 0);

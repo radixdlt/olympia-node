@@ -74,6 +74,9 @@ public final class MintToken implements TxAction {
 	private final UInt256 amount;
 
 	public MintToken(REAddr resourceAddr, REAddr to, UInt256 amount) {
+		if (amount.isZero()) {
+			throw new IllegalArgumentException("Amount must be > 0.");
+		}
 		this.resourceAddr = resourceAddr;
 		this.to = to;
 		this.amount = amount;

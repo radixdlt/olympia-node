@@ -74,6 +74,10 @@ public final class BurnToken implements TxAction {
 	private final UInt256 amount;
 
 	public BurnToken(REAddr resourceAddr, REAddr accountAddr, UInt256 amount) {
+		if (amount.isZero()) {
+			throw new IllegalArgumentException("Amount must be > 0.");
+		}
+
 		this.resourceAddr = resourceAddr;
 		this.accountAddr = accountAddr;
 		this.amount = amount;

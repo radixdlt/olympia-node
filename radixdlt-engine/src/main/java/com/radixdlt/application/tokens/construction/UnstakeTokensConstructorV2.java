@@ -81,10 +81,6 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 	@Override
 	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
 		var validatorStake = txBuilder.find(ValidatorStakeData.class, action.from());
-		if (action.amount().isZero()) {
-			throw new TxBuilderException("Unstake amount can't be zero.");
-		}
-
 		var ownershipAmt = action.amount()
 			.multiply(validatorStake.getTotalOwnership())
 			.divide(validatorStake.getAmount());

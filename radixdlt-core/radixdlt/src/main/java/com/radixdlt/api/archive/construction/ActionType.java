@@ -103,7 +103,7 @@ public enum ActionType {
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
 			var from = reader.getAccountAddress("from");
 			var to = reader.getAccountAddress("to");
-			var amount = reader.getAmount("amount");
+			var amount = reader.getNonZeroAmount("amount");
 			var resourceAddr = reader.getResource("rri");
 			return new TransferToken(resourceAddr, from, to, amount);
 		}
@@ -113,7 +113,7 @@ public enum ActionType {
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
 			var from = reader.getAccountAddress("from");
 			var validator = reader.getValidatorIdentifier("validator");
-			var amount = reader.getAmount("amount");
+			var amount = reader.getNonZeroAmount("amount");
 			return new StakeTokens(from, validator, amount);
 		}
 	},
@@ -122,7 +122,7 @@ public enum ActionType {
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
 			var from = reader.getAccountAddress("from");
 			var validator = reader.getValidatorIdentifier("validator");
-			var amount = reader.getAmount("amount");
+			var amount = reader.getNonZeroAmount("amount");
 			return new UnstakeTokens(from, validator, amount);
 		}
 	},
@@ -131,7 +131,7 @@ public enum ActionType {
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
 			var resourceAddr = reader.getResource("rri");
 			var from = reader.getAccountAddress("from");
-			var amount = reader.getAmount("amount");
+			var amount = reader.getNonZeroAmount("amount");
 			return new BurnToken(resourceAddr, from, amount);
 		}
 	},
@@ -140,7 +140,7 @@ public enum ActionType {
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
 			var resourceAddr = reader.getResource("rri");
 			var to = reader.getAccountAddress("to");
-			var amount = reader.getAmount("amount");
+			var amount = reader.getNonZeroAmount("amount");
 			return new MintToken(resourceAddr, to, amount);
 		}
 	},
@@ -213,7 +213,7 @@ public enum ActionType {
 			var description = reader.getOptString("description").orElse("");
 			var iconUrl = reader.getOptString("iconUrl").orElse("");
 			var url = reader.getOptString("url").orElse("");
-			var supply = reader.getAmount("supply");
+			var supply = reader.getNonZeroAmount("supply");
 			return new CreateFixedToken(resourceAddress, to, symbol, name, description, iconUrl, url, supply);
 		}
 	},

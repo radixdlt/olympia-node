@@ -75,6 +75,9 @@ public final class StakeTokens implements TxAction {
 	private final UInt256 amount;
 
 	public StakeTokens(REAddr fromAcct, ECPublicKey delegateKey, UInt256 amount) {
+		if (amount.isZero()) {
+			throw new IllegalArgumentException("Amount must be > 0.");
+		}
 		this.fromAcct = fromAcct;
 		this.delegateKey = delegateKey;
 		this.amount = amount;

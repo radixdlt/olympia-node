@@ -79,10 +79,6 @@ public final class BurnTokenConstructor implements ActionConstructor<BurnToken> 
 
 	@Override
 	public void construct(BurnToken action, TxBuilder txBuilder) throws TxBuilderException {
-		if (action.amount().isZero()) {
-			throw new TxBuilderException("Must transfer > 0.");
-		}
-
 		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
 		buf.put(SubstateTypeId.TOKENS.id());
 		buf.put((byte) 0);

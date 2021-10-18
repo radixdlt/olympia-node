@@ -123,6 +123,15 @@ public final class JsonObjectReader {
 		}
 	}
 
+	public UInt256 getNonZeroAmount(String key) throws InvalidParametersException {
+		var amount = getAmount(key);
+		if (amount.isZero()) {
+			throw new InvalidParametersException("/" + key, "Amount cannot be zero.");
+		}
+		return amount;
+	}
+
+
 	public ECPublicKey getPubKey(String key) throws InvalidParametersException {
 		try {
 			return ECPublicKey.fromHex(jsonObject.getString(key));
