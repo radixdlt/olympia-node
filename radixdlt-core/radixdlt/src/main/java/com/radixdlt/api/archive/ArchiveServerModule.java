@@ -125,7 +125,9 @@ public class ArchiveServerModule extends AbstractModule {
 	) {
 		var errorCodes = List.of(
 			ApiErrorCode.TXBUILDER_EXCEPTION,
-			ApiErrorCode.REJECTED_FROM_MEMPOOL
+			ApiErrorCode.MEMPOOL_FULL,
+			ApiErrorCode.MEMPOOL_DUPLICATE,
+			ApiErrorCode.MEMPOOL_REJECTED
 		);
 		return new HttpServerRunner(Map.of(), handlers, errorCodes, port, bindAddress, "archive", counters);
 	}

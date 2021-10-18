@@ -64,6 +64,9 @@
 package com.radixdlt.api.archive;
 
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import org.json.JSONObject;
 
@@ -102,10 +105,23 @@ public enum ApiErrorCode {
 				.put("message", ex.getMessage());
 		}
 	},
-	REJECTED_FROM_MEMPOOL(MempoolRejectedException.class, 5, "Transaction rejected from mempool") {
+	MEMPOOL_FULL(MempoolFullException.class, 5, "Mempool is full") {
+		@Override
+		public JSONObject getDetails(Throwable e) {
+			return new JSONObject();
+		}
+	},
+	MEMPOOL_DUPLICATE(MempoolDuplicateException.class, 6, "Mempool already contains transaction") {
+		@Override
+		public JSONObject getDetails(Throwable e) {
+			return new JSONObject();
+		}
+	},
+	MEMPOOL_REJECTED(MempoolRejectedException.class, 7, "Transaction rejected from mempool") {
 		@Override
 		public JSONObject getDetails(Throwable e) {
 			var ex = (MempoolRejectedException) e;
+			var reException = (RadixEngineException) ex.getCause();
 			// TODO: elaborate
 			return new JSONObject()
 				.put("message", ex.getMessage());
