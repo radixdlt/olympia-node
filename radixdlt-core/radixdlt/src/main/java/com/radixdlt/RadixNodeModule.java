@@ -65,8 +65,7 @@
 package com.radixdlt;
 
 import com.radixdlt.api.ApiModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.StokenetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.TestingForksModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
@@ -104,8 +103,10 @@ import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.StokenetForksModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
@@ -194,12 +195,7 @@ public final class RadixNodeModule extends AbstractModule {
 		bindConstant().annotatedWith(NetworkId.class).to(networkId);
 		var genesis = loadGenesis(networkId);
 		bind(Txn.class).annotatedWith(Genesis.class).toInstance(genesis);
-		// TODO: Refactor
-		if (networkId == Network.MAINNET.getId()) {
-			install(new MainnetForkConfigsModule());
-		} else {
-			install(new StokenetForkConfigsModule());
-		}
+
 		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
 		bind(RuntimeProperties.class).toInstance(properties);
 
@@ -254,6 +250,18 @@ public final class RadixNodeModule extends AbstractModule {
 
 		// State Computer
 		install(new ForksModule());
+
+		if (networkId == Network.MAINNET.getId()) {
+			log.info("Using mainnet forks");
+			install(new MainnetForksModule());
+		} else if (properties.get("testing_forks.enable", false)) {
+			log.info("Using testing forks");
+			install(new TestingForksModule());
+		} else {
+			log.info("Using stokenet forks");
+			install(new StokenetForksModule());
+		}
+
 		if (properties.get("overwrite_forks.enable", false)) {
 			log.info("Enabling fork overwrites");
 			install(new ForkOverwritesFromPropertiesModule());

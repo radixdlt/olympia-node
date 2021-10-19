@@ -132,7 +132,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 			throw new MempoolDuplicateException(String.format("Mempool already has command %s", txn.getId()));
 		}
 
-		final RadixEngineResult result;
+		final RadixEngineResult<LedgerAndBFTProof> result;
 		try {
 			RadixEngine.RadixEngineBranch<LedgerAndBFTProof> checker = radixEngine.transientBranch();
 			result = checker.execute(List.of(txn));

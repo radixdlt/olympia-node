@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.p2p.transport;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyOps;
@@ -98,6 +99,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 	private final P2PConfig config;
 	private final Addressing addressing;
 	private final int networkId;
+	private final HashCode latestForkHash;
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
@@ -109,6 +111,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		P2PConfig config,
 		Addressing addressing,
 		int networkId,
+		HashCode latestForkHash,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -119,6 +122,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		this.config = Objects.requireNonNull(config);
 		this.addressing = Objects.requireNonNull(addressing);
 		this.networkId = networkId;
+		this.latestForkHash = latestForkHash;
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -134,6 +138,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 			config,
 			addressing,
 			networkId,
+			latestForkHash,
 			counters,
 			serialization,
 			secureRandom,

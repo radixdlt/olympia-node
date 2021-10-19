@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.p2p;
 
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.p2p.transport.PeerChannel;
@@ -80,6 +81,7 @@ public final class PendingOutboundChannelsManager {
 	private final P2PConfig config;
 	private final PeerOutboundBootstrap peerOutboundBootstrap;
 	private final ScheduledEventDispatcher<PeerOutboundConnectionTimeout> timeoutEventDispatcher;
+	private final EventDispatcher<PeerEvent> peerEventDispatcher;
 
 	private final Object lock = new Object();
 	private Map<NodeId, CompletableFuture<PeerChannel>> pendingChannels = new HashMap<>();
@@ -88,11 +90,13 @@ public final class PendingOutboundChannelsManager {
 	public PendingOutboundChannelsManager(
 		P2PConfig config,
 		PeerOutboundBootstrap peerOutboundBootstrap,
-		ScheduledEventDispatcher<PeerOutboundConnectionTimeout> timeoutEventDispatcher
+		ScheduledEventDispatcher<PeerOutboundConnectionTimeout> timeoutEventDispatcher,
+		EventDispatcher<PeerEvent> peerEventDispatcher
 	) {
 		this.config = Objects.requireNonNull(config);
 		this.peerOutboundBootstrap = Objects.requireNonNull(peerOutboundBootstrap);
 		this.timeoutEventDispatcher = Objects.requireNonNull(timeoutEventDispatcher);
+		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 	}
 
 	public CompletableFuture<PeerChannel> connectTo(RadixNodeUri uri) {
@@ -148,6 +152,7 @@ public final class PendingOutboundChannelsManager {
 				final var maybeFuture = this.pendingChannels.remove(timeout.getUri().getNodeId());
 				if (maybeFuture != null) {
 					maybeFuture.completeExceptionally(new IOException("Peer connection timeout"));
+					peerEventDispatcher.dispatch(PeerEvent.PeerConnectionTimeout.create(timeout.getUri()));
 				}
 			}
 		};

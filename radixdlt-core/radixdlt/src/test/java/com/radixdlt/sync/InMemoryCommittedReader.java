@@ -67,7 +67,6 @@ package com.radixdlt.sync;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.DtoLedgerProof;
@@ -83,22 +82,23 @@ import java.util.TreeMap;
 /**
  * A correct in memory committed reader used for testing
  */
-class InMemoryCommittedReader implements CommittedReader {
-	private final Object lock = new Object();
-	private final TreeMap<Long, VerifiedTxnsAndProof> commandsAndProof = new TreeMap<>();
-	private final LedgerAccumulatorVerifier accumulatorVerifier;
-	private final Hasher hasher;
-	private final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
-
-	@Inject
-	InMemoryCommittedReader(
-		LedgerAccumulatorVerifier accumulatorVerifier,
-		Hasher hasher
-	) {
-		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
-		this.hasher = Objects.requireNonNull(hasher);
+public final class InMemoryCommittedReader implements CommittedReader {
+	public static final class Store {
+		final TreeMap<Long, VerifiedTxnsAndProof> commandsAndProof = new TreeMap<>();
+		final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
 	}
 
+	private final Object lock = new Object();
+	private final LedgerAccumulatorVerifier accumulatorVerifier;
+	private final Store store;
+
+	@Inject
+	InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier, Store store) {
+		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
+		this.store = store;
+	}
+
+	@SuppressWarnings("unchecked")
 	public EventProcessor<LedgerUpdate> updateProcessor() {
 		return update -> {
 			synchronized (lock) {
@@ -106,7 +106,7 @@ class InMemoryCommittedReader implements CommittedReader {
 				long firstVersion = update.getTail().getStateVersion() - commands.size() + 1;
 				for (long version = firstVersion; version <= update.getTail().getStateVersion(); version++) {
 					int index = (int) (version - firstVersion);
-					commandsAndProof.put(
+					store.commandsAndProof.put(
 						version,
 						VerifiedTxnsAndProof.create(
 							commands.subList(index, commands.size()),
@@ -115,8 +115,10 @@ class InMemoryCommittedReader implements CommittedReader {
 					);
 				}
 
+				final var nextEpoch = update.getTail().getEpoch() + 1;
+
 				if (update.getTail().isEndOfEpoch()) {
-					this.epochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
+					this.store.epochProofs.put(nextEpoch, update.getTail());
 				}
 			}
 		};
@@ -126,7 +128,7 @@ class InMemoryCommittedReader implements CommittedReader {
 	public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
 		synchronized (lock) {
 			final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-			Entry<Long, VerifiedTxnsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
+			Entry<Long, VerifiedTxnsAndProof> entry = store.commandsAndProof.higherEntry(stateVersion);
 
 			if (entry != null) {
 				List<Txn> txns = accumulatorVerifier
@@ -147,12 +149,16 @@ class InMemoryCommittedReader implements CommittedReader {
 	@Override
 	public Optional<LedgerProof> getEpochProof(long epoch) {
 		synchronized (lock) {
-			return Optional.ofNullable(epochProofs.get(epoch));
+			return Optional.ofNullable(store.epochProofs.get(epoch));
 		}
 	}
 
 	@Override
 	public Optional<LedgerProof> getLastProof() {
-		return Optional.ofNullable(commandsAndProof.lastEntry()).map(p -> p.getValue().getProof());
+		return Optional.ofNullable(store.commandsAndProof.lastEntry()).map(p -> p.getValue().getProof());
+	}
+
+	public Store getStore() {
+		return store;
 	}
 }

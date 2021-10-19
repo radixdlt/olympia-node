@@ -100,7 +100,6 @@ public class CommittedChecker implements TestInvariant {
 			.flatMapMaybe(txn ->
 				Observable.<BFTCommittedUpdate>create(
 					emitter -> commits.addListener((n, e) -> emitter.onNext(e), BFTCommittedUpdate.class))
-
 					.serialize()
 					.filter(e -> e.getCommitted().stream()
 						.flatMap(PreparedVertex::getTxns)

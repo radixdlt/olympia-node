@@ -64,12 +64,16 @@
 package com.radixdlt.api.handler;
 
 import com.radixdlt.api.archive.construction.ConstructionHandler;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.RERules;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OutputStream;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.api.data.PreparedTransaction;
@@ -88,6 +92,7 @@ import com.radixdlt.utils.functional.Result;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -109,8 +114,16 @@ public class ConstructionHandlerTest {
 	private static final String FEE_PAYER = addressing.forAccounts().of(ACCOUNT_ADDR);
 
 	private final SubmissionService submissionService = mock(SubmissionService.class);
-	private final ActionParser actionParserService = new ActionParser(addressing);
-	private final ConstructionHandler handler = new ConstructionHandler(submissionService, actionParserService, addressing);
+	private final Forks forks = mock(Forks.class);
+	private final ActionParser actionParser = new ActionParser(addressing, forks);
+	private final ConstructionHandler handler = new ConstructionHandler(submissionService, actionParser, addressing);
+
+	@Before
+	public void setup() {
+		final var reRules = mock(RERules.class);
+		when(reRules.getMaxRounds()).thenReturn(View.of(10L));
+		when(forks.getCandidateFork()).thenReturn(Optional.empty());
+	}
 
 	@Test
 	public void testBuildTransactionPositional() {

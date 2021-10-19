@@ -64,6 +64,7 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventProcessorOnDispatch;
@@ -71,7 +72,7 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.utils.KeyComparator;
@@ -179,7 +180,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
+					bind(new TypeLiteral<ImmutableSet<BFTNode>>() { }).toInstance(ImmutableSet.copyOf(allNodes));
 				}
 
 				@ProvidesIntoSet
@@ -227,7 +228,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 				Amount.ofTokens(10000)
 			),
 			MempoolConfig.asModule(10, 10),
-			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					Set.of("xrd"),
@@ -244,6 +244,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 					10
 				)),
 			new ForksModule(),
+			new MainnetForksModule(),
 			new PersistedNodeForTestingModule(),
 			new AbstractModule() {
 				@Override

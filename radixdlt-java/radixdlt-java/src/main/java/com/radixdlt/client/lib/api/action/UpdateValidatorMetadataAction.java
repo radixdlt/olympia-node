@@ -65,6 +65,7 @@
 package com.radixdlt.client.lib.api.action;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.google.common.hash.HashCode;
 import com.radixdlt.client.lib.api.ActionType;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 
@@ -74,10 +75,12 @@ public class UpdateValidatorMetadataAction implements Action {
 	private final ValidatorAddress delegate;
 	private final String name;
 	private final String url;
+	private final HashCode forkVoteHash;
 
-	public UpdateValidatorMetadataAction(ValidatorAddress delegate, String name, String url) {
+	public UpdateValidatorMetadataAction(ValidatorAddress delegate, String name, String url, HashCode forkVoteHash) {
 		this.delegate = delegate;
 		this.name = name;
 		this.url = url;
+		this.forkVoteHash = forkVoteHash;
 	}
 }
