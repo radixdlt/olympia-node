@@ -63,6 +63,8 @@
 
 package com.radixdlt.api.archive;
 
+import com.radixdlt.api.archive.construction.InvalidTransactionException;
+import com.radixdlt.api.archive.construction.StateConflictException;
 import com.radixdlt.api.archive.tokens.ResourceNotFoundException;
 import com.radixdlt.api.archive.transaction.TransactionNotFoundException;
 import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
@@ -70,9 +72,7 @@ import com.radixdlt.application.validators.construction.InvalidRakeIncreaseExcep
 import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.FeeConstructionException;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
@@ -168,11 +168,18 @@ public enum ApiErrorCode {
 			return new JSONObject();
 		}
 	},
-	MEMPOOL_REJECTED(MempoolRejectedException.class, 201, "Transaction rejected from mempool") {
+	STATE_CONFLICT(StateConflictException.class, 201, "State conflict") {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (MempoolRejectedException) e;
-			var reException = (RadixEngineException) ex.getCause();
+			var ex = (StateConflictException) e;
+			// TODO: elaborate
+			return new JSONObject();
+		}
+	},
+	INVALID_TRANSACTION(InvalidTransactionException.class, 202, "Invalid transaction") {
+		@Override
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
+			var ex = (InvalidTransactionException) e;
 			// TODO: elaborate
 			return new JSONObject()
 				.put("message", ex.getMessage());

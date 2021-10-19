@@ -129,8 +129,13 @@ public class ArchiveServerModule extends AbstractModule {
 			ApiErrorCode.TRANSACTION_NOT_FOUND,
 			ApiErrorCode.TOKEN_NOT_FOUND,
 			ApiErrorCode.TXBUILDER_EXCEPTION,
+			ApiErrorCode.FEE_CONSTRUCTION_ERROR,
+			ApiErrorCode.NOT_ENOUGH_RESOURCES,
+			ApiErrorCode.INVALID_RAKE_INCREASE,
+			ApiErrorCode.STAKE_PERMISSION,
 			ApiErrorCode.MEMPOOL_FULL,
-			ApiErrorCode.MEMPOOL_REJECTED
+			ApiErrorCode.STATE_CONFLICT,
+			ApiErrorCode.INVALID_TRANSACTION
 		);
 		return new HttpServerRunner(Map.of(), handlers, errorCodes, port, bindAddress, "archive", addressing, counters);
 	}

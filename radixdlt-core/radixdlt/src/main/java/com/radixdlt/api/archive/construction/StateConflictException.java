@@ -63,69 +63,10 @@
 
 package com.radixdlt.api.archive.construction;
 
-import com.google.common.base.Throwables;
-import com.google.inject.Inject;
-import com.radixdlt.api.archive.ApiHandler;
-import com.radixdlt.api.archive.InvalidParametersException;
-import com.radixdlt.api.archive.JsonObjectReader;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolRejectedException;
-import org.json.JSONObject;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-final class SubmitTransactionHandler implements ApiHandler<Txn> {
-	private final EventDispatcher<MempoolAdd> dispatcher;
-
-	@Inject
-	SubmitTransactionHandler(EventDispatcher<MempoolAdd> mempoolAddEventDispatcher) {
-		this.dispatcher = mempoolAddEventDispatcher;
-	}
-
-	@Override
-	public Txn parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		var bytes = requestReader.getHexBytes("signedTransaction");
-		return Txn.create(bytes);
-	}
-
-	@Override
-	public JSONObject handleRequest(Txn txn) throws Exception {
-		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
-
-		dispatcher.dispatch(mempoolAdd);
-		try {
-			// We need to block here as we need to complete the request in the same thread
-			var success = completableFuture.get();
-			return new JSONObject()
-				.put("transactionIdentifier", success.getTxn().getId())
-				.put("duplicate", false);
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof MempoolDuplicateException) {
-				return new JSONObject()
-					.put("transactionIdentifier", txn.getId())
-					.put("duplicate", true);
-			}
-
-			if (e.getCause() instanceof MempoolRejectedException) {
-				var ex = (MempoolRejectedException) e.getCause();
-				var reException = (RadixEngineException) ex.getCause();
-
-				var cause = Throwables.getRootCause(reException);
-				if (cause instanceof SubstateNotFoundException) {
-					throw new StateConflictException(reException);
-				}
-
-				throw new InvalidTransactionException(reException);
-			}
-			throw e;
-		}
+public class StateConflictException extends Exception {
+	public StateConflictException(RadixEngineException cause) {
+		super(cause);
 	}
 }
