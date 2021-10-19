@@ -242,7 +242,7 @@ public final class LocalSyncService {
 			))
 			.put(handler(
 				SyncingState.class, SyncLedgerUpdateTimeout.class,
-				state -> unused -> this.processSync(state)
+				state -> event -> this.processSyncLedgerUpdateTimeout(state, event)
 			))
 			.build();
 	}
@@ -422,7 +422,7 @@ public final class LocalSyncService {
 			);
 		} else {
 			this.syncLedgerUpdateTimeoutDispatcher.dispatch(
-				SyncLedgerUpdateTimeout.create(),
+				SyncLedgerUpdateTimeout.create(currentState.getCurrentHeader().getStateVersion()),
 				1000L
 			);
 			this.verifiedSender.sendVerifiedSyncResponse(syncResponse);
@@ -473,6 +473,14 @@ public final class LocalSyncService {
 				.clearPendingRequest()
 				.removeCandidate(syncRequestTimeout.getPeer())
 		);
+	}
+
+	private SyncState processSyncLedgerUpdateTimeout(SyncingState currentState, SyncLedgerUpdateTimeout event) {
+		if (event.stateVersion() != currentState.getCurrentHeader().getStateVersion()) {
+			return currentState; // obsolete timeout event; ignore
+		} else {
+			return this.processSync(currentState);
+		}
 	}
 
 	private SyncState updateCurrentHeaderIfNeeded(SyncState currentState, LedgerUpdate ledgerUpdate) {
