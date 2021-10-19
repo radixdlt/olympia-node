@@ -42,7 +42,7 @@ public class RadixHttpClient {
     public HealthStatus getHealthStatus(String rootUrl) {
         String url = rootUrl + HEALTH_PATH;
         HttpResponse<JsonNode> response = Unirest.get(url).asJson();
-        return HealthStatus.valueOf(response.getBody().getObject().getString("status"));
+        return HealthStatus.valueOf(response.getBody().getObject().getString("network_status"));
     }
 
     public Metrics getMetrics(String rootUrl) {
