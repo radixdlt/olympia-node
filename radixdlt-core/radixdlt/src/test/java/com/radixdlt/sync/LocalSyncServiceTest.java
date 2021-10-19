@@ -100,6 +100,8 @@ import java.util.stream.Stream;
 
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.network.p2p.PeersView.PeerInfo;
+import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
+import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseHandler;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
@@ -128,8 +130,8 @@ public class LocalSyncServiceTest {
 	private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
 	private RemoteSyncResponseSignaturesVerifier signaturesVerifier;
 	private LedgerAccumulatorVerifier accumulatorVerifier;
-	private LocalSyncService.VerifiedSyncResponseSender verifiedSender;
-	private LocalSyncService.InvalidSyncResponseSender invalidSyncedCommandsSender;
+	private VerifiedSyncResponseHandler verifiedSyncResponseHandler;
+	private InvalidSyncResponseHandler invalidSyncResponseHandler;
 
 	@Before
 	public void setUp() {
@@ -145,8 +147,8 @@ public class LocalSyncServiceTest {
 		this.validatorSetVerifier = mock(RemoteSyncResponseValidatorSetVerifier.class);
 		this.signaturesVerifier = mock(RemoteSyncResponseSignaturesVerifier.class);
 		this.accumulatorVerifier = mock(LedgerAccumulatorVerifier.class);
-		this.verifiedSender = mock(LocalSyncService.VerifiedSyncResponseSender.class);
-		this.invalidSyncedCommandsSender = mock(LocalSyncService.InvalidSyncResponseSender.class);
+		this.verifiedSyncResponseHandler = mock(VerifiedSyncResponseHandler.class);
+		this.invalidSyncResponseHandler = mock(InvalidSyncResponseHandler.class);
 	}
 
 	private void setupSyncServiceWithState(SyncState syncState) {
@@ -163,8 +165,8 @@ public class LocalSyncServiceTest {
 			validatorSetVerifier,
 			signaturesVerifier,
 			accumulatorVerifier,
-			verifiedSender,
-			invalidSyncedCommandsSender,
+			verifiedSyncResponseHandler,
+			invalidSyncResponseHandler,
 			syncState
 		);
 	}
@@ -402,7 +404,7 @@ public class LocalSyncServiceTest {
 
 		this.localSyncService.syncResponseEventProcessor().process(peer1, syncResponse);
 
-		verify(verifiedSender, times(1)).sendVerifiedSyncResponse(syncResponse);
+		verify(verifiedSyncResponseHandler, times(1)).handleVerifiedSyncResponse(syncResponse);
 		verify(syncLedgerUpdateTimeoutDispatcher, times(1)).dispatch(any(), anyLong());
 		verifyNoMoreInteractions(syncRequestDispatcher);
 	}
