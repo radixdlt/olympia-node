@@ -5,7 +5,7 @@ on:
     types: [ published ]
   push:
     branches:
-      - rc\/*
+      - develop
       - release\/*
 jobs:
   cancel_running_workflows:
