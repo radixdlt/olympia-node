@@ -84,8 +84,8 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.store.LastProof;
-import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseSender;
-import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseSender;
+import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseHandler;
+import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.SyncState;
 import com.radixdlt.sync.RemoteSyncService;
@@ -148,7 +148,7 @@ public class SyncServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	private InvalidSyncResponseSender invalidSyncResponseSender(
+	private InvalidSyncResponseHandler invalidSyncResponseHandler(
 		SystemCounters counters,
 		PeerControl peerControl
 	) {
@@ -159,7 +159,7 @@ public class SyncServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	private VerifiedSyncResponseSender verifiedSyncResponseSender(
+	private VerifiedSyncResponseHandler verifiedSyncResponseHandler(
 		EventDispatcher<VerifiedTxnsAndProof> syncCommandsDispatcher
 	) {
 		return resp -> {

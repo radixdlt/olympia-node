@@ -71,7 +71,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.stream.Stream;
 
-class CreateFixedTokenAction implements TransactionAction {
+class CreateFixedTokenAction implements TransactionAction, ResourceAction {
 	private final REAddr from;
 	private final UInt256 amount;
 	private final REAddr rri;
@@ -104,5 +104,15 @@ class CreateFixedTokenAction implements TransactionAction {
 	@Override
 	public Stream<TxAction> toAction() {
 		return Stream.of(new CreateFixedToken(TransactionAction.rriValue(rri), from, symbol, name, description, iconUrl, tokenUrl, amount));
+	}
+
+	@Override
+	public String getSymbol() {
+		return symbol;
+	}
+
+	@Override
+	public REAddr getAddress() {
+		return rri;
 	}
 }

@@ -108,8 +108,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import static com.radixdlt.utils.TypedMocks.rmock;
-
 public final class MempoolRunnerTest {
 	@Inject
 	private Map<String, ModuleRunner> moduleRunners;
@@ -118,7 +116,6 @@ public final class MempoolRunnerTest {
 
 	private StateComputer stateComputer = mock(StateComputer.class);
 
-	@SuppressWarnings("unchecked")
 	public Module createModule() {
 		return new AbstractModule() {
 			@Override
@@ -136,7 +133,7 @@ public final class MempoolRunnerTest {
 				});
 				bind(LedgerAccumulator.class).toInstance(mock(LedgerAccumulator.class));
 				bind(LedgerAccumulatorVerifier.class).toInstance(mock(LedgerAccumulatorVerifier.class));
-				bind(new TypeLiteral<Comparator<LedgerProof>>() {}).toInstance(rmock(Comparator.class));
+				bind(new TypeLiteral<Comparator<LedgerProof>>() { }).toInstance(mock(Comparator.class));
 				bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
 				bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 				Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);

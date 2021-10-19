@@ -65,6 +65,7 @@
 package com.radixdlt.integration.invariants;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -75,7 +76,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -91,10 +91,10 @@ import javax.annotation.concurrent.NotThreadSafe;
 public final class SafetyChecker {
 	private final TreeMap<EpochView, VerifiedVertex> committedVertices = new TreeMap<>();
 	private final Map<BFTNode, EpochView> lastCommittedByNode = new HashMap<>();
-	private final List<BFTNode> nodes;
+	private final ImmutableSet<BFTNode> nodes;
 
 	@Inject
-	public SafetyChecker(List<BFTNode> nodes) {
+	public SafetyChecker(ImmutableSet<BFTNode> nodes) {
 		this.nodes = Objects.requireNonNull(nodes);
 	}
 

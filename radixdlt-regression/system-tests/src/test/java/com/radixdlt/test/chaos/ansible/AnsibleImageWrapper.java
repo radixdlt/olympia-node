@@ -64,13 +64,11 @@
 
 package com.radixdlt.test.chaos.ansible;
 
-import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.assertj.core.util.Lists;
-import org.assertj.core.util.Sets;
 import org.junit.platform.commons.util.StringUtils;
-import utils.CmdHelper;
 
 import java.util.List;
 import java.util.Optional;
@@ -95,13 +93,18 @@ public class AnsibleImageWrapper {
     private Set<String> nodeAddresses;
 
     public static AnsibleImageWrapper createWithDefaultImage() {
-        String sshKeyLocation = ChaosExperimentUtils.getSshIdentityLocation();
+        String sshKeyLocation = getSshIdentityLocation();
         String clusterName = Optional.ofNullable(System.getenv("TESTNET_NAME")).orElseThrow();
         // the ansible image needs an SSH key because it runs tasks over SSH
         AnsibleImageWrapper wrapper = new AnsibleImageWrapper(DEFAULT_ANSIBLE_IMAGE, clusterName);
         wrapper.copyfileToNamedVolume(sshKeyLocation);
         wrapper.pullImage();
         return wrapper;
+    }
+
+    public static String getSshIdentityLocation() {
+        return Optional.ofNullable(System.getenv("SSH_IDENTITY"))
+            .orElse(System.getenv("HOME") + "/.ssh/id_rsa");
     }
 
     private AnsibleImageWrapper(String image, String clusterName) {

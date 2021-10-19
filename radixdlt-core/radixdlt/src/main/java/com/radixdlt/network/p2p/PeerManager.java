@@ -69,6 +69,8 @@ import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
@@ -111,6 +113,7 @@ public final class PeerManager {
 	private final Addressing addressing;
 	private final Provider<AddressBook> addressBook;
 	private final Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager;
+	private final SystemCounters counters;
 
 	private final Object lock = new Object();
 	private final Map<NodeId, Set<PeerChannel>> activeChannels = new ConcurrentHashMap<>();
@@ -122,13 +125,15 @@ public final class PeerManager {
 		P2PConfig config,
 		Addressing addressing,
 		Provider<AddressBook> addressBook,
-		Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager
+		Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager,
+		SystemCounters counters
 	) {
 		this.self = Objects.requireNonNull(self.getNodeId());
 		this.config = Objects.requireNonNull(config);
 		this.addressing = addressing;
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.pendingOutboundChannelsManager = Objects.requireNonNull(pendingOutboundChannelsManager);
+		this.counters = Objects.requireNonNull(counters);
 
 		log.info("Node URI: {}",  self);
 	}
@@ -245,6 +250,8 @@ public final class PeerManager {
 				// we're over the limit, need to disconnect one of the peers
 				this.disconnectOutboundPeersOverLimit(peerConnected.getChannel().getRemoteNodeId());
 			}
+
+			updateChannelsCounters();
 		}
 	}
 
@@ -299,6 +306,7 @@ public final class PeerManager {
 				channelsForPubKey.remove(channel);
 				if (channelsForPubKey.isEmpty()) {
 					this.activeChannels.remove(channel.getRemoteNodeId());
+					updateChannelsCounters();
 				}
 			}
 		}
@@ -351,5 +359,11 @@ public final class PeerManager {
 
 	private void handlePeerHandshakeFailed(PeerHandshakeFailed peerHandshakeFailed) {
 		peerHandshakeFailed.getChannel().getUri().ifPresent(this.addressBook.get()::blacklist);
+	}
+
+	private void updateChannelsCounters() {
+		counters.set(CounterType.NETWORKING_P2P_ACTIVE_CHANNELS, activeChannels().size());
+		counters.set(CounterType.NETWORKING_P2P_ACTIVE_INBOUND_CHANNELS, activeChannels().stream().filter(PeerChannel::isInbound).count());
+		counters.set(CounterType.NETWORKING_P2P_ACTIVE_OUTBOUND_CHANNELS, activeChannels().stream().filter(PeerChannel::isOutbound).count());
 	}
 }

@@ -64,20 +64,22 @@
 
 package com.radixdlt.crypto;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.utils.Bytes;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

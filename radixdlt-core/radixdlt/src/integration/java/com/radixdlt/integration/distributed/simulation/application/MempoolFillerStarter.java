@@ -64,7 +64,7 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
-import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
@@ -76,7 +76,7 @@ public final class MempoolFillerStarter implements SimulationTest.SimulationNetw
     @Override
     public void start(SimulationNodes.RunningNetwork network) {
         EventDispatcher<MempoolFillerUpdate> dispatcher = network
-                .getDispatcher(MempoolFillerUpdate.class, network.getNodes().get(0));
+            .getDispatcher(MempoolFillerUpdate.class, network.getNodes().stream().findAny().orElseThrow());
         dispatcher.dispatch(MempoolFillerUpdate.enable(15, true));
     }
 

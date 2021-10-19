@@ -67,9 +67,14 @@ package com.radixdlt.api.data;
 import org.json.JSONObject;
 
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Functions;
+
+import java.util.List;
 
 import static org.bouncycastle.util.encoders.Hex.toHexString;
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+
+import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
 import static java.util.Objects.requireNonNull;
 
@@ -77,19 +82,22 @@ public class PreparedTransaction {
 	private final byte[] blob;
 	private final byte[] hashToSign;
 	private final UInt256 fee;
+	private final List<JSONObject> notifications;
 
-	private PreparedTransaction(byte[] blob, byte[] hashToSign, UInt256 fee) {
+	private PreparedTransaction(byte[] blob, byte[] hashToSign, UInt256 fee, List<JSONObject> notifications) {
 		this.blob = blob;
 		this.hashToSign = hashToSign;
 		this.fee = fee;
+		this.notifications = notifications;
 	}
 
-	public static PreparedTransaction create(byte[] blob, byte[] hashToSign, UInt256 fee) {
+	public static PreparedTransaction create(byte[] blob, byte[] hashToSign, UInt256 fee, List<JSONObject> notifications) {
 		requireNonNull(blob);
 		requireNonNull(hashToSign);
 		requireNonNull(fee);
+		requireNonNull(notifications);
 
-		return new PreparedTransaction(blob, hashToSign, fee);
+		return new PreparedTransaction(blob, hashToSign, fee, notifications);
 	}
 
 	public byte[] getBlob() {
@@ -105,13 +113,11 @@ public class PreparedTransaction {
 	}
 
 	public JSONObject asJson() {
-		return jsonObject()
-			.put(
-				"transaction",
-				jsonObject()
-					.put("blob", toHexString(blob))
-					.put("hashOfBlobToSign", toHexString(hashToSign))
-			)
-			.put("fee", fee.toString());
+		var transactionDetails = jsonObject()
+			.put("blob", toHexString(blob))
+			.put("hashOfBlobToSign", toHexString(hashToSign))
+			.put("notifications", fromCollection(notifications, Functions::identity));
+
+		return jsonObject().put("transaction", transactionDetails).put("fee", fee.toString());
 	}
 }

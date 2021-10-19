@@ -64,6 +64,8 @@
 
 package com.radixdlt.client.lib.api.async;
 
+import com.radixdlt.client.lib.dto.TransactionDTO;
+import com.radixdlt.client.lib.dto.TransactionHistory;
 import org.bouncycastle.util.encoders.Hex;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -71,6 +73,7 @@ import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
+
 import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.api.rpc.JsonRpcRequest;
 import com.radixdlt.client.lib.api.rpc.JsonRpcResponse;
@@ -101,16 +104,16 @@ import com.radixdlt.client.lib.dto.SyncConfiguration;
 import com.radixdlt.client.lib.dto.SyncData;
 import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.client.lib.dto.TokenInfo;
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TransactionsDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
-import com.radixdlt.client.lib.network.HttpClientUtils;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.utils.functional.Promise;
 import com.radixdlt.utils.functional.Result;
 
 import java.net.http.HttpClient;
@@ -118,45 +121,10 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_BALANCES;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_HISTORY;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_INFO;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_STAKES;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_SUBMIT_SINGLE_STEP;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_UNSTAKES;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.API_CONFIGURATION;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.API_DATA;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.BFT_CONFIGURATION;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.BFT_DATA;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.CONSTRUCTION_BUILD;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.CONSTRUCTION_FINALIZE;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.CONSTRUCTION_SUBMIT;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.LEDGER_CHECKPOINTS;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.LEDGER_EPOCH_PROOF;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.LEDGER_PROOF;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.MEMPOOL_CONFIGURATION;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.MEMPOOL_DATA;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_ADDRESS_BOOK;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_CONFIG;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_DATA;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_DEMAND;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_ID;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_PEERS;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.NETWORK_THROUGHPUT;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.RADIX_ENGINE_CONFIGURATION;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.RADIX_ENGINE_DATA;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.SYNC_CONFIGURATION;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.SYNC_DATA;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.TOKEN_INFO;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.TOKEN_NATIVE;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.TRANSACTION_LOOKUP;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.TRANSACTION_STATUS;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_CURRENT_EPOCH;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_NODE_INFO;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LIST;
-import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.*;
+import static com.radixdlt.errors.ClientErrors.MISSING_BASE_URL;
 
 import static java.util.Optional.ofNullable;
 
@@ -250,6 +218,13 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 		public Promise<TransactionStatusDTO> status(AID txId) {
 			return call(request(TRANSACTION_STATUS, txId.toString()), new TypeReference<>() {});
 		}
+
+		@Override
+		public Promise<TransactionsDTO> list(long limit, OptionalLong offset) {
+			var request = request(TRANSACTION_LIST, limit);
+			offset.ifPresent(request::addParameters);
+			return call(request, new TypeReference<>() {});
+		}
 	};
 
 	private final SingleAccount account = new SingleAccount() {
@@ -260,10 +235,10 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 
 		@Override
 		public Promise<TransactionHistory> history(
-			AccountAddress address, int size, Optional<NavigationCursor> cursor
+			AccountAddress address, int size, OptionalLong nextOffset
 		) {
 			var request = request(ACCOUNT_HISTORY, address.toString(networkId()), size);
-			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
+			nextOffset.ifPresent(request::addParameters);
 
 			return call(request, new TypeReference<>() {});
 		}
@@ -463,6 +438,11 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 	}
 
 	@Override
+	public Addressing addressing() {
+		return networkAddressing();
+	}
+
+	@Override
 	public AsyncRadixApi withTimeout(Duration timeout) {
 		setTimeout(timeout);
 		return this;
@@ -484,11 +464,7 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 		int secondaryPort,
 		Optional<BasicAuth> authentication
 	) {
-		return HttpClientUtils.buildHttpClient(DEFAULT_TIMEOUT)
-			.fold(
-				Promise::failure,
-				client -> connect(url, primaryPort, secondaryPort, client, authentication)
-			);
+		return buildHttpClient().fold(Promise::failure, client -> connect(url, primaryPort, secondaryPort, client, authentication));
 	}
 
 	static Promise<RadixApi> connect(
@@ -500,9 +476,9 @@ public class AsyncRadixApi extends RadixApiBase implements RadixApi {
 	) {
 		return ofNullable(url)
 			.map(baseUrl -> Result.ok(new AsyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
-			.orElseGet(BASE_URL_IS_MANDATORY::result)
+			.orElseGet(MISSING_BASE_URL::result)
 			.flatMap(asyncRadixApi -> asyncRadixApi.network().id().join()
-				.onSuccess(networkId -> asyncRadixApi.configure(networkId.getNetworkId()))
+				.onSuccess(networkId -> asyncRadixApi.configureSerialization(networkId.getNetworkId()))
 				.map(__ -> asyncRadixApi))
 			.fold(Promise::failure, Promise::ok);
 	}

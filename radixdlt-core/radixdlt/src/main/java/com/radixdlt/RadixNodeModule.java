@@ -64,7 +64,7 @@
 
 package com.radixdlt;
 
-import com.radixdlt.statecomputer.forks.StokenetForksModule;
+import com.radixdlt.api.ApiModule;
 import com.radixdlt.statecomputer.forks.TestingForksModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,11 +75,6 @@ import org.radix.utils.IOUtils;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.module.ArchiveApiModule;
-import com.radixdlt.api.module.CommonApiModule;
-import com.radixdlt.api.module.NodeApiModule;
-import com.radixdlt.api.qualifier.Endpoints;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -111,6 +106,7 @@ import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.StokenetForksModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
@@ -119,10 +115,6 @@ import com.radixdlt.utils.Bytes;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
-
-import static com.radixdlt.EndpointConfig.enabledArchiveEndpoints;
-import static com.radixdlt.EndpointConfig.enabledNodeEndpoints;
-import static com.radixdlt.EndpointConfig.endpointStatuses;
 
 /**
  * Module which manages everything in a single node
@@ -201,6 +193,9 @@ public final class RadixNodeModule extends AbstractModule {
 		var addressing = Addressing.ofNetworkId(networkId);
 		bind(Addressing.class).toInstance(addressing);
 		bindConstant().annotatedWith(NetworkId.class).to(networkId);
+		var genesis = loadGenesis(networkId);
+		bind(Txn.class).annotatedWith(Genesis.class).toInstance(genesis);
+
 		bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
 		bind(RuntimeProperties.class).toInstance(properties);
 
@@ -256,13 +251,12 @@ public final class RadixNodeModule extends AbstractModule {
 		// State Computer
 		install(new ForksModule());
 
-		// TODO: Refactor
-		if (properties.get("testing_forks.enable", false)) {
-			log.info("Using testing forks");
-			install(new TestingForksModule());
-		} else if (networkId == Network.MAINNET.getId()) {
+		if (networkId == Network.MAINNET.getId()) {
 			log.info("Using mainnet forks");
 			install(new MainnetForksModule());
+		} else if (properties.get("testing_forks.enable", false)) {
+			log.info("Using testing forks");
+			install(new TestingForksModule());
 		} else {
 			log.info("Using stokenet forks");
 			install(new StokenetForksModule());
@@ -297,30 +291,6 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new PeerLivenessMonitorModule());
 
 		// API
-		configureApi();
-	}
-
-	private void configureApi() {
-		var archiveEndpoints = enabledArchiveEndpoints(properties, networkId);
-		var nodeEndpoints = enabledNodeEndpoints(properties, networkId);
-		var statuses = endpointStatuses(properties, networkId);
-
-		bind(new TypeLiteral<List<EndpointStatus>>() {}).annotatedWith(Endpoints.class).toInstance(statuses);
-
-		if (hasActiveEndpoints(archiveEndpoints, nodeEndpoints)) {
-			install(new CommonApiModule());
-		}
-
-		if (!archiveEndpoints.isEmpty()) {
-			install(new ArchiveApiModule(archiveEndpoints));
-		}
-
-		if (!nodeEndpoints.isEmpty()) {
-			install(new NodeApiModule(nodeEndpoints));
-		}
-	}
-
-	private boolean hasActiveEndpoints(List<EndpointConfig> archiveEndpoints, List<EndpointConfig> nodeEndpoints) {
-		return !archiveEndpoints.isEmpty() || !nodeEndpoints.isEmpty();
+		install(new ApiModule(networkId, properties));
 	}
 }

@@ -64,17 +64,17 @@
 
 package com.radixdlt.identifiers;
 
-import com.radixdlt.utils.Pair;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
 
-import static com.radixdlt.identifiers.CommonErrors.INVALID_ACCOUNT_ADDRESS;
+import static com.radixdlt.errors.ApiErrors.INVALID_ACCOUNT_ADDRESS;
 
 /**
  * Bech-32 encoding/decoding of account addresses.
@@ -135,6 +135,6 @@ public final class AccountAddressing {
 	}
 
 	public Result<REAddr> parseFunctional(String addr) {
-		return Result.wrap(INVALID_ACCOUNT_ADDRESS, () -> parse(addr));
+		return Result.wrap(() -> INVALID_ACCOUNT_ADDRESS.with(addr), () -> parse(addr));
 	}
 }

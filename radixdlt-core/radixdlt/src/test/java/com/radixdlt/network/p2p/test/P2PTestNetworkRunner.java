@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.p2p.test;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
 import org.junit.rules.TemporaryFolder;
@@ -153,7 +154,7 @@ public final class P2PTestNetworkRunner {
 			builder.add(new TestNode(injector, uri, nodeKey));
 		}
 
-		final var injectors = List.copyOf(builder);
+		final var injectors = ImmutableList.copyOf(builder);
 
 		p2pNetwork.setNodes(injectors);
 

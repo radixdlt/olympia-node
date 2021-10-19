@@ -64,6 +64,15 @@
 
 package com.radixdlt.crypto;
 
+import org.bouncycastle.jcajce.PKCS12Key;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import com.radixdlt.TestSetupUtils;
+import com.radixdlt.crypto.exception.KeyStoreException;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -79,15 +88,6 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.stream.IntStream;
 
 import javax.crypto.SecretKey;
-
-import org.bouncycastle.jcajce.PKCS12Key;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import com.radixdlt.TestSetupUtils;
-import com.radixdlt.crypto.exception.KeyStoreException;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

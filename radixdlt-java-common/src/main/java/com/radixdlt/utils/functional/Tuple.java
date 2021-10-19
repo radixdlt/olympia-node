@@ -91,6 +91,13 @@ public interface Tuple<S extends Tuple<?>> {
 
 	interface Tuple2<T1, T2> extends Tuple<Tuple2<T1, T2>> {
 		<T> T map(FN2<T, T1, T2> mapper);
+		default T1 first() {
+			return map((first, __) -> first);
+		}
+
+		default T2 last() {
+			return map((__, last) -> last);
+		}
 	}
 
 	interface Tuple3<T1, T2, T3> extends Tuple<Tuple3<T1, T2, T3>> {

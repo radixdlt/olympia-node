@@ -211,7 +211,7 @@ public final class RadixEngine<M> {
 
 		private void assertNotDeleted() {
 			if (deleted) {
-				throw new IllegalStateException();
+				throw new IllegalStateException("Radix engine branch is deleted");
 			}
 		}
 
@@ -510,6 +510,12 @@ public final class RadixEngine<M> {
 				return m;
 			}
 		);
+	}
+
+	public <T extends ResourceInBucket> UInt384 reduceResources(SubstateIndex<T> index) {
+		synchronized (stateUpdateEngineLock) {
+			return reduce(index, UInt384.ZERO, (m, t) -> m.add(t.getAmount()));
+		}
 	}
 
 	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(

@@ -18,6 +18,7 @@ import com.radixdlt.utils.AWSSecretsOutputOptions;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -175,20 +176,10 @@ public class AWSSecrets {
 
 				var keyFileAwsSecret = new HashMap<String, Object>();
 				var publicKeyFileAwsSecret = new HashMap<String, Object>();
-				final NodeAddressing nodeAddressing = NodeAddressing.bech32(network.getNodeHrp());
-				final ValidatorAddressing validatorAddressing = ValidatorAddressing.bech32(network.getValidatorHrp());
-				try {
-					var data = Files.readAllBytes(keyFilePath);
-					keyFileAwsSecret.put("key", data);
-					var pubKey = keyPair.getPublicKey();
-					publicKeyFileAwsSecret.put("bech32", nodeAddressing.of(pubKey));
-					publicKeyFileAwsSecret.put("hex", pubKey.toHex());
-					publicKeyFileAwsSecret.put("validator_address", validatorAddressing.of(pubKey));
-					System.out.println(nodeAddressing.of(pubKey));
-					System.out.println(pubKey.toHex());
-				} catch (IOException e) {
-					throw new IllegalStateException("While reading validator keys", e);
-				}
+
+				putKeyBytes(keyFilePath, keyFileAwsSecret);
+				printAddresses(network, keyPair, publicKeyFileAwsSecret);
+
 				var keyPasswordAwsSecret = new HashMap<String, Object>();
 				keyPasswordAwsSecret.put("key", password);
 
@@ -198,6 +189,28 @@ public class AWSSecrets {
 			} catch (Exception e) {
 				System.out.println(e);
 			}
+		}
+	}
+
+	private static void printAddresses(Network network, ECKeyPair keyPair, HashMap<String, Object> publicKeyFileAwsSecret) {
+		var pubKey = keyPair.getPublicKey();
+		var nodeAddressing = NodeAddressing.bech32(network.getNodeHrp());
+		var validatorAddressing = ValidatorAddressing.bech32(network.getValidatorHrp());
+
+		publicKeyFileAwsSecret.put("bech32", nodeAddressing.of(pubKey));
+		publicKeyFileAwsSecret.put("hex", pubKey.toHex());
+		publicKeyFileAwsSecret.put("validator_address", validatorAddressing.of(pubKey));
+
+		System.out.println(nodeAddressing.of(pubKey));
+		System.out.println(pubKey.toHex());
+	}
+
+	private static void putKeyBytes(Path keyFilePath, HashMap<String, Object> keyFileAwsSecret) {
+		try {
+			var data = Files.readAllBytes(keyFilePath);
+			keyFileAwsSecret.put("key", data);
+		} catch (IOException e) {
+			throw new IllegalStateException("While reading validator keys", e);
 		}
 	}
 

@@ -109,6 +109,7 @@ import com.radixdlt.utils.functional.Result;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * <h2>Imperative version of synchronous Radix JSON RPC client.</h2>
@@ -360,15 +361,12 @@ public interface ImperativeRadixApi {
 
 		/**
 		 * Get transaction history.
-		 * <p>
-		 * To get full list, pass empty cursor for first request and then just pass cursor received in the response
-		 * back to API until you get empty cursor again.
 		 *
 		 * @param address account address for which information is requested
 		 * @param size batch size
-		 * @param cursor pagination cursor
+		 * @param offset offset to start retrieval at
 		 */
-		TransactionHistory history(AccountAddress address, int size, NavigationCursor cursor);
+		TransactionHistory history(AccountAddress address, int size, OptionalLong offset);
 
 		/**
 		 * Get stakes made from given account.
@@ -405,7 +403,7 @@ public interface ImperativeRadixApi {
 		/**
 		 * Lookup validator by address.
 		 *
-		 * @param validatorAddress
+		 * @param validatorAddress validator address
 		 */
 		ValidatorDTO lookup(ValidatorAddress validatorAddress);
 	}
@@ -654,8 +652,8 @@ public interface ImperativeRadixApi {
 					}
 
 					@Override
-					public TransactionHistory history(AccountAddress address, int size, NavigationCursor cursor) {
-						return unwrap(api.account().history(address, size, Optional.ofNullable(cursor)));
+					public TransactionHistory history(AccountAddress address, int size, OptionalLong offset) {
+						return unwrap(api.account().history(address, size, offset));
 					}
 
 					@Override

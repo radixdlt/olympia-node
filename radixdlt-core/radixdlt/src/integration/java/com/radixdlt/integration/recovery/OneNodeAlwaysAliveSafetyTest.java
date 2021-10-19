@@ -64,6 +64,7 @@
 
 package com.radixdlt.integration.recovery;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventProcessorOnDispatch;
@@ -179,7 +180,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
+					bind(new TypeLiteral<ImmutableSet<BFTNode>>() { }).toInstance(ImmutableSet.copyOf(allNodes));
 				}
 
 				@ProvidesIntoSet

@@ -67,8 +67,10 @@ package com.radixdlt.integration.staking;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.store.ValidatorUptime;
-import com.radixdlt.api.store.berkeley.BerkeleyValidatorUptimeArchiveStore;
+import com.radixdlt.api.archive.accounts.BerkeleyAccountInfoStore;
+import com.radixdlt.api.data.ValidatorUptime;
+import com.radixdlt.api.archive.validators.BerkeleyValidatorUptimeArchiveStore;
+import com.radixdlt.api.archive.tokens.BerkeleyResourceInfoStore;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
@@ -80,6 +82,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.integration.FailOnEvent;
+import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
@@ -90,8 +93,9 @@ import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.ThreadContext;
 import org.assertj.core.util.Throwables;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -135,8 +139,6 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -158,7 +160,7 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.UInt256;
 
-import java.util.ArrayList;
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -168,8 +170,6 @@ import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-
-import io.reactivex.rxjava3.schedulers.Timed;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -213,12 +213,11 @@ public class StakingUnstakingValidatorsTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 	private DeterministicNetwork network;
-	private List<Supplier<Injector>> nodeCreators;
-	private final List<Injector> nodes = new ArrayList<>();
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final Module radixEngineConfiguration;
 	private final Module byzantineModule;
 	private final long maxRounds;
+	private MultiNodeDeterministicRunner deterministicRunner;
 
 	public StakingUnstakingValidatorsTest(Module forkModule, long maxRounds, Module byzantineModule) {
 		this.nodeKeys = PrivateKeys.numeric(1)
@@ -243,13 +242,15 @@ public class StakingUnstakingValidatorsTest {
 
 		List<BFTNode> allNodes = nodeKeys.stream()
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
-		this.nodeCreators = Streams.mapWithIndex(nodeKeys.stream(), (k, i) ->
+		var nodeCreators = Streams.mapWithIndex(nodeKeys.stream(), (k, i) ->
 			(Supplier<Injector>) () -> createRunner(i == 1, k, allNodes)).collect(Collectors.toList());
 
-		for (Supplier<Injector> nodeCreator : nodeCreators) {
-			this.nodes.add(nodeCreator.get());
-		}
-		this.nodes.forEach(i -> i.getInstance(DeterministicProcessor.class).start());
+		deterministicRunner = new MultiNodeDeterministicRunner(
+			nodeCreators,
+			this::stopDatabase,
+			network
+		);
+		deterministicRunner.start();
 	}
 
 	private void stopDatabase(Injector injector) {
@@ -260,7 +261,7 @@ public class StakingUnstakingValidatorsTest {
 
 	@After
 	public void teardown() {
-		this.nodes.forEach(this::stopDatabase);
+		deterministicRunner.tearDown();
 	}
 
 	private Injector createRunner(boolean byzantine, ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
@@ -298,8 +299,12 @@ public class StakingUnstakingValidatorsTest {
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 					bind(BerkeleyValidatorUptimeArchiveStore.class).in(Scopes.SINGLETON);
-					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class).addBinding()
-						.to(BerkeleyValidatorUptimeArchiveStore.class);
+					var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
+					binder.addBinding().to(BerkeleyValidatorUptimeArchiveStore.class);
+					bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
+					binder.addBinding().to(BerkeleyResourceInfoStore.class);
+					bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
+					binder.addBinding().to(BerkeleyAccountInfoStore.class);
 				}
 
 				@Provides
@@ -312,51 +317,14 @@ public class StakingUnstakingValidatorsTest {
 		);
 	}
 
-	private void restartNode(int index) {
-		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
-		Injector injector = nodeCreators.get(index).get();
-		stopDatabase(this.nodes.set(index, injector));
-		withThreadCtx(injector, () -> injector.getInstance(DeterministicProcessor.class).start());
-	}
-
-	private void withThreadCtx(Injector injector, Runnable r) {
-		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-		try {
-			r.run();
-		} finally {
-			ThreadContext.remove("self");
-		}
-	}
-
-	private Timed<ControlledMessage> processNext() {
-		Timed<ControlledMessage> msg = this.network.nextMessage();
-		logger.debug("Processing message {}", msg);
-
-		int nodeIndex = msg.value().channelId().receiverIndex();
-		Injector injector = this.nodes.get(nodeIndex);
-		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-		try {
-			injector.getInstance(DeterministicProcessor.class)
-				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
-		} finally {
-			ThreadContext.remove("self");
-		}
-
-		return msg;
-	}
-
-	private void processForCount(int messageCount) {
-		for (int i = 0; i < messageCount; i++) {
-			processNext();
-		}
-	}
-
 	private static class NodeState {
 		private final String self;
 		private final LedgerProof lastLedgerProof;
 		private final RadixEngine<LedgerAndBFTProof> radixEngine;
 		private final ClassToInstanceMap<Object> lastEvents;
 		private final BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore;
+		private final BerkeleyResourceInfoStore resourceInfoStore;
+		private final BerkeleyAccountInfoStore accountInfoStore;
 		private final Forks forks;
 		private final ForksEpochStore forksEpochStore;
 
@@ -367,6 +335,8 @@ public class StakingUnstakingValidatorsTest {
 			@LastProof LedgerProof lastLedgerProof,
 			RadixEngine<LedgerAndBFTProof> radixEngine,
 			BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore,
+			BerkeleyResourceInfoStore resourceInfoStore,
+			BerkeleyAccountInfoStore accountInfoStore,
 			Forks forks,
 			ForksEpochStore forksEpochStore
 		) {
@@ -375,6 +345,8 @@ public class StakingUnstakingValidatorsTest {
 			this.lastLedgerProof = lastLedgerProof;
 			this.radixEngine = radixEngine;
 			this.uptimeArchiveStore = uptimeArchiveStore;
+			this.resourceInfoStore = resourceInfoStore;
+			this.accountInfoStore = accountInfoStore;
 			this.forks = forks;
 			this.forksEpochStore = forksEpochStore;
 		}
@@ -390,8 +362,8 @@ public class StakingUnstakingValidatorsTest {
 				forks.getCurrentFork(forksEpochStore.getEpochsForkHashes());
 
 			return LongStream.range(1, curEpoch)
-					.map(i -> currentFork.engineRules().getMaxRounds().number())
-					.sum() + epochView.getView().number();
+				.map(i -> currentFork.engineRules().getMaxRounds().number())
+				.sum() + epochView.getView().number();
 		}
 
 		public EpochView getEpochView() {
@@ -444,6 +416,28 @@ public class StakingUnstakingValidatorsTest {
 			return uptimeArchiveStore.getUptimeTwoWeeks();
 		}
 
+		public JSONObject getNativeToken() {
+			return resourceInfoStore.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
+		}
+
+		public JSONObject getAccountInfo(REAddr addr) {
+			return accountInfoStore.getAccountInfo(addr);
+		}
+
+		public JSONArray getAccountUnstakes(REAddr addr) {
+			return accountInfoStore.getAccountUnstakes(addr);
+		}
+
+		public BigInteger getTotalExittingStake() {
+			var totalStakeExitting = radixEngine.reduce(ExittingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			return new BigInteger(1, totalStakeExitting.toByteArray());
+		}
+
+		public BigInteger getTotalTokensInAccounts() {
+			var totalTokens = radixEngine.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			return new BigInteger(1, totalTokens.toByteArray());
+		}
+
 		public UInt256 getTotalNativeTokens() {
 			var totalTokens = radixEngine.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
 			logger.info("Total tokens: {}", Amount.ofSubunits(totalTokens));
@@ -460,7 +454,7 @@ public class StakingUnstakingValidatorsTest {
 	}
 
 	private NodeState reloadNodeState() {
-		return this.nodes.get(0).getInstance(NodeState.class);
+		return deterministicRunner.getNode(0).getInstance(NodeState.class);
 	}
 
 	/**
@@ -474,10 +468,10 @@ public class StakingUnstakingValidatorsTest {
 		var random = new Random(12345);
 
 		for (int i = 0; i < 5000; i++) {
-			processForCount(100);
+			deterministicRunner.processForCount(100);
 
 			var nodeIndex = random.nextInt(nodeKeys.size());
-			var dispatcher = this.nodes.get(nodeIndex).getInstance(
+			var dispatcher = this.deterministicRunner.getNode(nodeIndex).getInstance(
 				Key.get(new TypeLiteral<EventDispatcher<NodeApplicationRequest>>() {})
 			);
 
@@ -511,7 +505,7 @@ public class StakingUnstakingValidatorsTest {
 					action = new UnregisterValidator(privKey.getPublicKey());
 					break;
 				case 5:
-					restartNode(nodeIndex);
+					deterministicRunner.restartNode(nodeIndex);
 					continue;
 				case 6:
 					action = new UpdateValidatorFee(privKey.getPublicKey(), random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
@@ -528,10 +522,8 @@ public class StakingUnstakingValidatorsTest {
 
 			var request = TxnConstructionRequest.create().action(action);
 			dispatcher.dispatch(NodeApplicationRequest.create(request));
-			this.nodes.forEach(n -> {
-				n.getInstance(new Key<EventDispatcher<MempoolRelayTrigger>>() {}).dispatch(MempoolRelayTrigger.create());
-				n.getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() {}).dispatch(SyncCheckTrigger.create());
-			});
+			deterministicRunner.dispatchToAll(new Key<EventDispatcher<MempoolRelayTrigger>>() {}, MempoolRelayTrigger.create());
+			deterministicRunner.dispatchToAll(new Key<EventDispatcher<SyncCheckTrigger>>() {}, SyncCheckTrigger.create());
 		}
 
 		var nodeState = reloadNodeState();
@@ -552,6 +544,48 @@ public class StakingUnstakingValidatorsTest {
 		logger.info("Total uptime {}", totalUptime);
 		assertThat(totalUptime.getProposalsCompleted() + totalUptime.getProposalsMissed())
 			.isEqualTo(totalRounds);
+		var json = nodeState.getNativeToken();
+		logger.info("json {}", json.toString(4));
+		var supplyStringFromJson = json.getString("currentSupply");
+		assertThat(finalCount.toString()).isLessThanOrEqualTo(supplyStringFromJson);
+		var supplyFromJson = new BigInteger(supplyStringFromJson, 10);
+		var totalMinted = new BigInteger(json.getString("totalMinted"), 10);
+		var totalBurned = new BigInteger(json.getString("totalBurned"), 10);
+		assertThat(supplyFromJson).isEqualTo(totalMinted.subtract(totalBurned));
+
+		var totalTokenBalance = PrivateKeys.numeric(1).limit(20)
+			.map(ECKeyPair::getPublicKey)
+			.map(REAddr::ofPubKeyAccount)
+			.map(nodeState::getAccountInfo)
+			.map(jsonAccount -> {
+				var jsonArray = jsonAccount.getJSONArray("tokenBalances");
+				if (jsonArray.length() == 1) {
+					return new BigInteger(jsonArray.getJSONObject(0).getString("amount"), 10);
+				} else if (jsonArray.isEmpty()) {
+					return BigInteger.ZERO;
+				} else {
+					throw new IllegalStateException();
+				}
+			})
+			.reduce(BigInteger.ZERO, BigInteger::add);
+		assertThat(totalTokenBalance).isEqualTo(nodeState.getTotalTokensInAccounts());
+
+		var totalUnstakingBalance = PrivateKeys.numeric(1).limit(20)
+			.map(ECKeyPair::getPublicKey)
+			.map(REAddr::ofPubKeyAccount)
+			.map(nodeState::getAccountUnstakes)
+			.map(jsonUnstakes -> {
+				BigInteger sum = BigInteger.ZERO;
+				for (int i = 0; i < jsonUnstakes.length(); i++) {
+					if (jsonUnstakes.getJSONObject(i).getLong("epochsUntil") != 500) {
+						var amt = new BigInteger(jsonUnstakes.getJSONObject(i).getString("amount"), 10);
+						sum = sum.add(amt);
+					}
+				}
+				return sum;
+			})
+			.reduce(BigInteger.ZERO, BigInteger::add);
+		assertThat(totalUnstakingBalance).isEqualTo(nodeState.getTotalExittingStake());
 
 		for (var e : nodeState.getValidators().entrySet()) {
 			logger.info("{} {}", e.getKey(), e.getValue());

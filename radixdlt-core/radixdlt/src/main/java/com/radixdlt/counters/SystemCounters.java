@@ -103,7 +103,6 @@ public interface SystemCounters {
 		COUNT_BDB_LEDGER_CONTAINS("count.bdb.ledger.contains"),
 		COUNT_BDB_LEDGER_CONTAINS_TX("count.bdb.ledger.contains_tx"),
 		COUNT_BDB_LEDGER_ENTRIES("count.bdb.ledger.entries"),
-		COUNT_BDB_LEDGER_GET("count.bdb.ledger.get"),
 		COUNT_BDB_LEDGER_GET_FIRST("count.bdb.ledger.get_first"),
 		COUNT_BDB_LEDGER_GET_LAST("count.bdb.ledger.get_last"),
 		COUNT_BDB_LEDGER_GET_NEXT("count.bdb.ledger.get_next"),
@@ -169,7 +168,6 @@ public interface SystemCounters {
 
 		ELAPSED_BDB_LEDGER_COMMIT("elapsed.bdb.ledger.commit"),
 		ELAPSED_BDB_LEDGER_CREATE_TX("elapsed.bdb.ledger.create_tx"),
-		ELAPSED_BDB_LEDGER_CONTAINS("elapsed.bdb.ledger.contains"),
 		ELAPSED_BDB_LEDGER_CONTAINS_TX("elapsed.bdb.ledger.contains_tx"),
 		ELAPSED_BDB_LEDGER_ENTRIES("elapsed.bdb.ledger.entries"),
 		ELAPSED_BDB_LEDGER_GET("elapsed.bdb.ledger.get"),
@@ -235,10 +233,26 @@ public interface SystemCounters {
 		NETWORKING_TCP_CLOSED("networking.tcp.closed"),
 		NETWORKING_SENT_BYTES("networking.sent_bytes"),
 		NETWORKING_RECEIVED_BYTES("networking.received_bytes"),
+		NETWORKING_P2P_ACTIVE_INBOUND_CHANNELS("networking.p2p.active_inbound_channels"),
+		NETWORKING_P2P_ACTIVE_OUTBOUND_CHANNELS("networking.p2p.active_outbound_channels"),
+		NETWORKING_P2P_ACTIVE_CHANNELS("networking.p2p.active_channels"),
+		NETWORKING_P2P_CHANNELS_INITIALIZED("networking.p2p.channels_initialized"),
 
 		SIGNATURES_SIGNED("signatures.signed"),
 		SIGNATURES_VERIFIED("signatures.verified"),
-		TIME_DURATION("time.duration");
+		TIME_DURATION("time.duration"),
+
+		SERVER_ARCHIVE_TOTAL_RESPONSES("server.archive.total_responses"),
+		SERVER_ARCHIVE_OK_RESPONSES("server.archive.ok_responses"),
+		SERVER_ARCHIVE_NON_OK_RESPONSES("server.archive.non_ok_responses"),
+		SERVER_ARCHIVE_AVG_PROCESSING_TIME("server.archive.avg_processing_time"),
+		SERVER_ARCHIVE_TOTAL_PROCESSING_TIME("server.archive.total_processing_time"),
+		SERVER_NODE_TOTAL_RESPONSES("server.node.total_responses"),
+		SERVER_NODE_OK_RESPONSES("server.node.ok_responses"),
+		SERVER_NODE_NON_OK_RESPONSES("server.node.non_ok_responses"),
+		SERVER_NODE_AVG_PROCESSING_TIME("server.node.avg_processing_time"),
+		SERVER_NODE_TOTAL_PROCESSING_TIME("server.node.total_processing_time");
+
 
 		private final String jsonPath;
 

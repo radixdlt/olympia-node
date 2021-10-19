@@ -291,6 +291,11 @@ public class DtoTest {
 	}
 
 	@Test
+	public void testNotification() {
+		EqualsVerifier.forClass(Notification.class).suppress(Warning.NULL_FIELDS).verify();
+	}
+
+	@Test
 	public void testPerUpSubstateFee() {
 		EqualsVerifier.forClass(PerUpSubstateFee.class).suppress(Warning.NULL_FIELDS).verify();
 	}
@@ -366,7 +371,17 @@ public class DtoTest {
 	}
 
 	@Test
-	public void testTransactionHistory() {
+	public void testTransactionsDTO() {
+		EqualsVerifier.forClass(TransactionsDTO.class).suppress(Warning.NULL_FIELDS).verify();
+	}
+
+	@Test
+	public void testTransaction2DTO() {
+		EqualsVerifier.forClass(TransactionDTO.class).suppress(Warning.NULL_FIELDS).verify();
+	}
+
+	@Test
+	public void testTransactionHistory2() {
 		EqualsVerifier.forClass(TransactionHistory.class).suppress(Warning.NULL_FIELDS).verify();
 	}
 

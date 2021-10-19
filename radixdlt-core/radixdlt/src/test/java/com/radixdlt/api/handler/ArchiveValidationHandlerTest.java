@@ -63,14 +63,15 @@
  */
 package com.radixdlt.api.handler;
 
-import com.radixdlt.api.store.ValidatorUptime;
+import com.radixdlt.api.data.ValidatorUptime;
+import com.radixdlt.api.archive.validators.ArchiveValidationHandler;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import org.json.JSONObject;
 import org.junit.Test;
 
 import com.radixdlt.api.data.ValidatorInfoDetails;
-import com.radixdlt.api.service.ValidatorArchiveInfoService;
+import com.radixdlt.api.archive.validators.ValidatorArchiveInfoService;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -88,8 +89,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonArray;
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ArchiveValidationHandlerTest {

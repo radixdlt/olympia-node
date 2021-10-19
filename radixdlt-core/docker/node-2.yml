@@ -33,7 +33,5 @@ services:
       - "8081:8080"
       - "9012:9011"
       - "50506:50505"
-    networks:
-      - two_nodes
 networks:
   two_nodes:

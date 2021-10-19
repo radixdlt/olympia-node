@@ -98,6 +98,7 @@ import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TransactionsDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
@@ -105,10 +106,13 @@ import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.utils.functional.Promise;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * <h2>Asynchronous Radix JSON RPC client.</h2>
@@ -199,6 +203,11 @@ public interface RadixApi {
 	 * Enable tracing in client.
 	 */
 	RadixApi withTrace();
+
+	/**
+	 * Get {@link Addressing} instance corresponding to connected network
+	 */
+	Addressing addressing();
 
 	/**
 	 * Configure timeout for asynchronous operations.
@@ -300,6 +309,14 @@ public interface RadixApi {
 		 * @param txId the ID of the transaction to get status for
 		 */
 		Promise<TransactionStatusDTO> status(AID txId);
+
+		/**
+		 * Get paginated list of indexed transactions.
+		 *
+		 * @param limit number of transactions to return
+		 * @param offset starting offset
+		 */
+		Promise<TransactionsDTO> list(long limit, OptionalLong offset);
 	}
 
 	Transaction transaction();
@@ -365,15 +382,12 @@ public interface RadixApi {
 
 		/**
 		 * Get transaction history.
-		 * <p>
-		 * To get full list, pass empty cursor for first request and then just pass cursor received in the response
-		 * back to API until you get empty cursor again.
 		 *
 		 * @param address account address for which information is requested
 		 * @param size batch size
-		 * @param cursor pagination cursor
+		 * @param offset offset to start retrieval at
 		 */
-		Promise<TransactionHistory> history(AccountAddress address, int size, Optional<NavigationCursor> cursor);
+		Promise<TransactionHistory> history(AccountAddress address, int size, OptionalLong offset);
 
 		/**
 		 * Get stakes made from given account.
@@ -410,7 +424,7 @@ public interface RadixApi {
 		/**
 		 * Lookup validator by address.
 		 *
-		 * @param validatorAddress
+		 * @param validatorAddress validator address
 		 */
 		Promise<ValidatorDTO> lookup(ValidatorAddress validatorAddress);
 	}

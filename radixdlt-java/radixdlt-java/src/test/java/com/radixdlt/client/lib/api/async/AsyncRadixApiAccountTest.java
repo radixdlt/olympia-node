@@ -69,13 +69,13 @@ import org.junit.Test;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.dto.TokenBalances;
-import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Promise;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -84,7 +84,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -122,22 +121,6 @@ public class AsyncRadixApiAccountTest {
 		+ "\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\"}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);
-
-	@Test
-	public void testTransactionHistory() throws IOException {
-		prepareClient(TX_HISTORY)
-			.map(RadixApi::withTrace)
-			.join()
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(client -> client.account().history(ACCOUNT_ADDRESS1, 5, Optional.empty()).join()
-				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getCursor()))
-				.onSuccess(transactionHistoryDTO -> assertNotNull(transactionHistoryDTO.getTransactions()))
-				.map(TransactionHistory::getTransactions)
-				.onSuccess(txs -> assertEquals(1, txs.size()))
-				.map(txs -> txs.get(0).getActions())
-				.onSuccess(actions -> assertEquals(17, actions.size())));
-	}
 
 	@Test
 	public void testTokenBalances() throws IOException {

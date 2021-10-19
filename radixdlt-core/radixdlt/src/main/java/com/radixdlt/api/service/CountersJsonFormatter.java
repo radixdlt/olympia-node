@@ -70,7 +70,7 @@ import org.json.JSONObject;
 
 import java.util.List;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
 public final class CountersJsonFormatter {
 

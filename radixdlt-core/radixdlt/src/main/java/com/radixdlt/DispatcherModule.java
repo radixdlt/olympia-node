@@ -65,8 +65,7 @@
 package com.radixdlt;
 
 import com.radixdlt.application.NodeApplicationRequest;
-import com.radixdlt.api.service.ScheduledCacheCleanup;
-import com.radixdlt.api.service.ScheduledStatsCollecting;
+import com.radixdlt.api.service.network.ScheduledStatsCollecting;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -90,11 +89,10 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.api.chaos.mempoolfiller.ScheduledMempoolFill;
-import com.radixdlt.api.chaos.messageflooder.MessageFlooderUpdate;
-import com.radixdlt.api.chaos.messageflooder.ScheduledMessageFlood;
-import com.radixdlt.api.data.ScheduledQueueFlush;
+import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.api.node.chaos.mempoolfiller.ScheduledMempoolFill;
+import com.radixdlt.api.node.chaos.messageflooder.MessageFlooderUpdate;
+import com.radixdlt.api.node.chaos.messageflooder.ScheduledMessageFlood;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -208,10 +206,6 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(SyncCheckTrigger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMempoolFill>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledQueueFlush>>() { })
-			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledQueueFlush.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledCacheCleanup>>() { })
-			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledCacheCleanup.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledStatsCollecting>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledStatsCollecting.class)).in(Scopes.SINGLETON);
 

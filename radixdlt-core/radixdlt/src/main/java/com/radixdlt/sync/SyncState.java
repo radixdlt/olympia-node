@@ -71,6 +71,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.utils.Pair;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -275,26 +276,26 @@ public interface SyncState {
 
 	final class SyncingState implements SyncState {
 		private final LedgerProof currentHeader;
-		private final ImmutableList<BFTNode> candidatePeers;
+		private final ImmutableList<BFTNode> candidatePeersQueue;
 		private final LedgerProof targetHeader;
 		private final Optional<PendingRequest> pendingRequest;
 
 		public static SyncingState init(
 			LedgerProof currentHeader,
-			ImmutableList<BFTNode> candidatePeers,
+			ImmutableList<BFTNode> candidatePeersQueue,
 			LedgerProof targetHeader
 		) {
-			return new SyncingState(currentHeader, candidatePeers, targetHeader, Optional.empty());
+			return new SyncingState(currentHeader, candidatePeersQueue, targetHeader, Optional.empty());
 		}
 
 		private SyncingState(
 			LedgerProof currentHeader,
-			ImmutableList<BFTNode> candidatePeers,
+			ImmutableList<BFTNode> candidatePeersQueue,
 			LedgerProof targetHeader,
 			Optional<PendingRequest> pendingRequest
 		) {
 			this.currentHeader = currentHeader;
-			this.candidatePeers = candidatePeers;
+			this.candidatePeersQueue = candidatePeersQueue;
 			this.targetHeader = targetHeader;
 			this.pendingRequest = pendingRequest;
 		}
@@ -302,38 +303,56 @@ public interface SyncState {
 		public SyncingState withPendingRequest(BFTNode peer, long requestId) {
 			return new SyncingState(
 				currentHeader,
-				candidatePeers,
+				candidatePeersQueue,
 				targetHeader,
 				Optional.of(PendingRequest.create(peer, requestId))
 			);
 		}
 
 		public SyncingState clearPendingRequest() {
-			return new SyncingState(currentHeader, candidatePeers, targetHeader, Optional.empty());
+			return new SyncingState(currentHeader, candidatePeersQueue, targetHeader, Optional.empty());
 		}
 
 		public SyncingState removeCandidate(BFTNode peer) {
 			return new SyncingState(
 				currentHeader,
-				ImmutableList.copyOf(Collections2.filter(candidatePeers, not(equalTo(peer)))),
+				ImmutableList.copyOf(Collections2.filter(candidatePeersQueue, not(equalTo(peer)))),
 				targetHeader,
 				pendingRequest
 			);
 		}
 
 		public SyncingState withTargetHeader(LedgerProof newTargetHeader) {
-			return new SyncingState(currentHeader, candidatePeers, newTargetHeader, pendingRequest);
+			return new SyncingState(currentHeader, candidatePeersQueue, newTargetHeader, pendingRequest);
 		}
 
-		public SyncingState withCandidatePeers(ImmutableList<BFTNode> peers) {
+		public Pair<SyncingState, Optional<BFTNode>> fetchNextCandidatePeer() {
+			final var peerToUse = candidatePeersQueue.stream().findFirst();
+
+			if (peerToUse.isPresent()) {
+				final var newState = new SyncingState(
+					currentHeader,
+					new ImmutableList.Builder<BFTNode>()
+						.addAll(Collections2.filter(candidatePeersQueue, not(equalTo(peerToUse.get()))))
+						.add(peerToUse.get())
+						.build(),
+					targetHeader,
+					pendingRequest
+				);
+
+				return Pair.of(newState, peerToUse);
+			} else {
+				return Pair.of(this, Optional.empty());
+			}
+		}
+
+		public SyncingState addCandidatePeers(ImmutableList<BFTNode> peers) {
 			return new SyncingState(
 				currentHeader,
-					ImmutableSet.copyOf(
-						new ImmutableList.Builder<BFTNode>()
-						.addAll(peers)
-						.addAll(candidatePeers)
-						.build()
-					).asList(),
+				new ImmutableList.Builder<BFTNode>()
+					.addAll(peers)
+					.addAll(Collections2.filter(candidatePeersQueue, not(peers::contains)))
+					.build(),
 				targetHeader,
 				pendingRequest
 			);
@@ -351,12 +370,19 @@ public interface SyncState {
 			return this.pendingRequest;
 		}
 
-		public ImmutableList<BFTNode> candidatePeers() {
-			return this.candidatePeers;
-		}
-
 		public LedgerProof getTargetHeader() {
 			return this.targetHeader;
+		}
+
+		public Optional<BFTNode> peekNthCandidate(int n) {
+			var state = this;
+			Optional<BFTNode> candidate = Optional.empty();
+			for (int i = 0; i <= n; i++) {
+				final var res = state.fetchNextCandidatePeer();
+				state = res.getFirst();
+				candidate = res.getSecond();
+			}
+			return candidate;
 		}
 
 		@Override
@@ -366,7 +392,7 @@ public interface SyncState {
 
 		@Override
 		public SyncingState withCurrentHeader(LedgerProof newCurrentHeader) {
-			return new SyncingState(newCurrentHeader, candidatePeers, targetHeader, pendingRequest);
+			return new SyncingState(newCurrentHeader, candidatePeersQueue, targetHeader, pendingRequest);
 		}
 
 		@Override
@@ -385,14 +411,14 @@ public interface SyncState {
 			}
 			SyncingState that = (SyncingState) o;
 			return Objects.equals(currentHeader, that.currentHeader)
-				&& Objects.equals(candidatePeers, that.candidatePeers)
+				&& Objects.equals(candidatePeersQueue, that.candidatePeersQueue)
 				&& Objects.equals(targetHeader, that.targetHeader)
 				&& Objects.equals(pendingRequest, that.pendingRequest);
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(currentHeader, candidatePeers, targetHeader, pendingRequest);
+			return Objects.hash(currentHeader, candidatePeersQueue, targetHeader, pendingRequest);
 		}
 	}
 }

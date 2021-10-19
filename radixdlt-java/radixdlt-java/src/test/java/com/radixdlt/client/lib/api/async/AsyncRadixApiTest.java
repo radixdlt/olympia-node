@@ -67,22 +67,14 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.NavigationCursor;
 import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.api.rpc.BasicAuth;
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -128,28 +120,6 @@ public class AsyncRadixApiTest {
 						.join()
 						.onFailure(failure -> fail(failure.toString()))
 						.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId())))));
-	}
-
-	@Test
-	@Ignore("Online test")
-	public void testTransactionHistoryInPages() {
-		connect(BASE_URL)
-			.onFailure(failure -> fail(failure.toString()))
-			.onSuccess(
-				client -> {
-					var cursorHolder = new AtomicReference<NavigationCursor>();
-					do {
-						client.account().history(ACCOUNT_ADDRESS1, 5, Optional.ofNullable(cursorHolder.get()))
-							.join()
-							.onFailure(failure -> fail(failure.toString()))
-							.onSuccess(v -> v.getCursor().ifPresent(System.out::println))
-							.onSuccess(v -> v.getCursor().ifPresentOrElse(cursorHolder::set, () -> cursorHolder.set(null)))
-							.map(TransactionHistory::getTransactions)
-							.map(this::formatTxns)
-							.onSuccess(System.out::println);
-					} while (cursorHolder.get() != null && !cursorHolder.get().value().isEmpty());
-				}
-			);
 	}
 
 	@Test
@@ -257,19 +227,6 @@ public class AsyncRadixApiTest {
 				.onSuccess(submittableTransaction -> client.transaction().submit(submittableTransaction).join()
 					.onFailure(failure -> fail(failure.toString()))
 					.onSuccess(txDTO -> assertEquals(submittableTransaction.getTxId(), txDTO.getTxId()))));
-	}
-
-	private List<String> formatTxns(List<TransactionDTO> t) {
-		return t.stream()
-			.map(v -> String.format(
-				"%s (%s) - %s (%d:%d)%n",
-				v.getTxID(),
-				v.getMessage().orElse("<none>"),
-				v.getSentAt().getInstant(),
-				v.getSentAt().getInstant().getEpochSecond(),
-				v.getSentAt().getInstant().getNano()
-			))
-			.collect(Collectors.toList());
 	}
 
 	private void makeStake(RadixApi client, UInt256 amount) {

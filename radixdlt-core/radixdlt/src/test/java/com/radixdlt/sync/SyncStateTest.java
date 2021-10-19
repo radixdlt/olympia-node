@@ -191,19 +191,21 @@ public class SyncStateTest {
             targetHeader
         );
 
-        assertEquals(0, initialState.candidatePeers().size());
+        // there's no next candidate peer
+        assertTrue(initialState.fetchNextCandidatePeer().getSecond().isEmpty());
 
         final var candidate1 = mock(BFTNode.class);
         final var candidate2 = mock(BFTNode.class);
-        final var stateWithCandidates = initialState.withCandidatePeers(
+        final var stateWithCandidates = initialState.addCandidatePeers(
             ImmutableList.of(candidate1, candidate2)
         );
 
-        assertEquals(2, stateWithCandidates.candidatePeers().size());
+        assertEquals(candidate1, stateWithCandidates.peekNthCandidate(0).get());
+        assertEquals(candidate2, stateWithCandidates.peekNthCandidate(1).get());
 
         final var withRemovedCandidate = stateWithCandidates.removeCandidate(candidate1);
-        assertEquals(1, withRemovedCandidate.candidatePeers().size());
-        assertEquals(candidate2, withRemovedCandidate.candidatePeers().get(0));
+        assertEquals(candidate2, withRemovedCandidate.peekNthCandidate(0).get());
+        assertEquals(candidate2, withRemovedCandidate.peekNthCandidate(1).get());
     }
 
     @Test

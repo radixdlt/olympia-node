@@ -65,6 +65,7 @@
 package com.radixdlt.integration.staking;
 
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -80,7 +81,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.api.chaos.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
@@ -137,7 +138,7 @@ public class UnstakingLockedTokensTest {
 	@LocalSigner
 	private HashSigner hashSigner;
 	@Inject @Self private ECPublicKey self;
-	@Inject private DeterministicRunner runner;
+	@Inject private SingleNodeDeterministicRunner runner;
 	@Inject private EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
 	@Inject private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	@Inject private RadixEngine<LedgerAndBFTProof> radixEngine;

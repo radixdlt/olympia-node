@@ -1,10 +1,6 @@
 package com.radixdlt.client.lib.api.rpc;
 
-import static com.radixdlt.client.lib.api.rpc.EndPoint.ACCOUNT;
-import static com.radixdlt.client.lib.api.rpc.EndPoint.ARCHIVE;
-import static com.radixdlt.client.lib.api.rpc.EndPoint.CONSTRUCTION;
-import static com.radixdlt.client.lib.api.rpc.EndPoint.SYSTEM;
-import static com.radixdlt.client.lib.api.rpc.EndPoint.VALIDATION;
+import static com.radixdlt.client.lib.api.rpc.EndPoint.*;
 
 public enum RpcMethod {
 	TOKEN_NATIVE("tokens.get_native_token", ARCHIVE),
@@ -33,6 +29,9 @@ public enum RpcMethod {
 	CONSTRUCTION_BUILD("construction.build_transaction", CONSTRUCTION),
 	CONSTRUCTION_FINALIZE("construction.finalize_transaction", CONSTRUCTION),
 	CONSTRUCTION_SUBMIT("construction.submit_transaction", CONSTRUCTION),
+
+
+	TRANSACTION_LIST("get_transactions", TRANSACTIONS),
 
 	API_CONFIGURATION("api.get_configuration", SYSTEM),
 	API_DATA("api.get_data", SYSTEM),

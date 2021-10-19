@@ -86,38 +86,38 @@ import java.util.List;
 public final class ValidatorsSystemMetadataPostProcessor implements PostProcessor<LedgerAndBFTProof> {
 	@Override
 	public LedgerAndBFTProof process(
-		LedgerAndBFTProof metadata,
-		EngineStore<LedgerAndBFTProof> engineStore,
-		List<REProcessedTxn> txns
+			LedgerAndBFTProof metadata,
+			EngineStore<LedgerAndBFTProof> engineStore,
+			List<REProcessedTxn> txns
 	) throws PostProcessorException {
 		if (metadata.getProof().getNextValidatorSet().isPresent()) {
 			return metadata
-				.withValidatorsSystemMetadata(getValidatorsSystemMetadata(engineStore, metadata));
+					.withValidatorsSystemMetadata(getValidatorsSystemMetadata(engineStore, metadata));
 		} else {
 			return metadata;
 		}
 	}
 
 	private ImmutableList<RawSubstateBytes> getValidatorsSystemMetadata(
-		EngineStore<LedgerAndBFTProof> engineStore,
-		LedgerAndBFTProof ledgerAndBFTProof
+			EngineStore<LedgerAndBFTProof> engineStore,
+			LedgerAndBFTProof ledgerAndBFTProof
 	) {
 		final var validatorSet = ledgerAndBFTProof.getProof().getNextValidatorSet().orElseThrow();
 
 		try (var validatorMetadataCursor = engineStore.openIndexedCursor(
-			SubstateIndex.create(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))
+				SubstateIndex.create(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))
 		) {
 			return Streams.stream(validatorMetadataCursor)
-				.filter(rawSubstate -> {
-					final var keyBytes = Arrays.copyOfRange(rawSubstate.getData(), 2, 2 + ECPublicKey.COMPRESSED_BYTES);
-					try {
-						final var key = ECPublicKey.fromBytes(keyBytes);
-						return validatorSet.containsNode(key);
-					} catch (PublicKeyException ex) {
-						throw new RuntimeException(ex);
-					}
-				})
-				.collect(ImmutableList.toImmutableList());
+					.filter(rawSubstate -> {
+						final var keyBytes = Arrays.copyOfRange(rawSubstate.getData(), 2, 2 + ECPublicKey.COMPRESSED_BYTES);
+						try {
+							final var key = ECPublicKey.fromBytes(keyBytes);
+							return validatorSet.containsNode(key);
+						} catch (PublicKeyException ex) {
+							throw new RuntimeException(ex);
+						}
+					})
+					.collect(ImmutableList.toImmutableList());
 		}
 	}
 }

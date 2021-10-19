@@ -64,7 +64,6 @@
 
 package com.radixdlt.api.data;
 
-import com.radixdlt.api.store.ValidatorUptime;
 import org.json.JSONObject;
 
 import com.radixdlt.crypto.ECPublicKey;
@@ -72,7 +71,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.UInt256;
 
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
 
 import static java.util.Objects.requireNonNull;

@@ -66,6 +66,7 @@ package com.radixdlt.network.p2p.transport;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.RadixNodeUri;
@@ -136,6 +137,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 
 	@Override
 	protected void initChannel(SocketChannel socketChannel) {
+		counters.increment(CounterType.NETWORKING_P2P_CHANNELS_INITIALIZED);
+
 		final var socketChannelConfig = socketChannel.config();
 		socketChannelConfig.setReceiveBufferSize(MAX_PACKET_LENGTH);
 		socketChannelConfig.setSendBufferSize(MAX_PACKET_LENGTH);

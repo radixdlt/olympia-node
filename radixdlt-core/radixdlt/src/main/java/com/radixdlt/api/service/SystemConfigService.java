@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -64,7 +63,7 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.api.util.JsonRpcUtil;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
@@ -73,8 +72,7 @@ import org.json.JSONObject;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.EndpointStatus;
-import com.radixdlt.api.qualifier.Endpoints;
+import com.radixdlt.api.Endpoints;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
@@ -83,6 +81,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.sync.SyncConfig;
@@ -90,12 +89,13 @@ import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
 
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.api.JsonRpcUtil.fromList;
-import static com.radixdlt.api.JsonRpcUtil.jsonArray;
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
+
 
 public final class SystemConfigService {
 	@VisibleForTesting
@@ -201,12 +201,11 @@ public final class SystemConfigService {
 
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final SystemCounters systemCounters;
-	private final List<EndpointStatus> endpointStatuses;
 	private final Addressing addressing;
 
 	@Inject
 	public SystemConfigService(
-		@Endpoints List<EndpointStatus> endpointStatuses,
+		@Endpoints Map<String, Boolean> endpointStatuses,
 		@PacemakerTimeout long pacemakerTimeout,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
 		@MempoolMaxSize int mempoolMaxSize,
@@ -220,7 +219,6 @@ public final class SystemConfigService {
 	) {
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.systemCounters = systemCounters;
-		this.endpointStatuses = endpointStatuses;
 		this.addressing = addressing;
 
 		radixEngineConfiguration = prepareRadixEngineConfiguration(forks);
@@ -265,8 +263,8 @@ public final class SystemConfigService {
 		return proof == null ? new JSONObject() : proof.asJSON(addressing);
 	}
 
-	public JSONArray getRadixEngineConfiguration() {
-		return radixEngineConfiguration;
+	public JSONObject getRadixEngineConfiguration() {
+		return JsonRpcUtil.wrapArray(radixEngineConfiguration);
 	}
 
 	public JSONObject getRadixEngineData() {
@@ -285,24 +283,20 @@ public final class SystemConfigService {
 		return checkpointsConfiguration;
 	}
 
-	public void withEndpointStatuses(Consumer<? super EndpointStatus> consumer) {
-		endpointStatuses.forEach(consumer);
-	}
-
 	public AccumulatorState accumulatorState() {
 		return inMemorySystemInfo.getCurrentProof().getAccumulatorState();
 	}
 
 	@VisibleForTesting
-	static JSONObject prepareApiConfiguration(List<EndpointStatus> statuses) {
-		var enabled = statuses.stream()
-			.filter(EndpointStatus::enabled)
-			.map(EndpointStatus::name)
+	static JSONObject prepareApiConfiguration(Map<String, Boolean> statuses) {
+		var enabled = statuses.entrySet().stream()
+			.filter(Map.Entry::getValue)
+			.map(Map.Entry::getKey)
 			.collect(Collectors.toList());
 
 		return jsonObject().put(
 			"endpoints",
-			fromList(enabled, endpoint -> "/" + endpoint)
+			fromCollection(enabled, endpoint -> "/" + endpoint)
 		);
 	}
 
@@ -347,7 +341,7 @@ public final class SystemConfigService {
 	@VisibleForTesting
 	JSONObject prepareCheckpointsConfiguration(VerifiedTxnsAndProof genesis) {
 		return jsonObject()
-			.put("txn", fromList(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
+			.put("txn", fromCollection(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
 			.put("proof", genesis.getProof().asJSON(addressing));
 	}
 }

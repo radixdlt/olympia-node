@@ -312,8 +312,6 @@ public final class  RadixKeyStore implements Closeable {
 
 	private static void initializeKeyStore(KeyStore ks, File file, char[] storePassword, boolean create)
 		throws GeneralSecurityException, IOException {
-		System.out.println("Initializing " + file);
-
 		try (var is = new FileInputStream(file)) {
 			ks.load(is, storePassword);
 		} catch (FileNotFoundException ex) {

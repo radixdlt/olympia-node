@@ -6,6 +6,7 @@ import static com.radixdlt.client.lib.api.rpc.PortSelector.SECONDARY;
 public enum EndPoint {
 	ARCHIVE("/archive", PRIMARY),
 	CONSTRUCTION("/construction", PRIMARY),
+	TRANSACTIONS("/transactions", SECONDARY),
 	SYSTEM("/system", SECONDARY),
 	ACCOUNT("/account", SECONDARY),
 	VALIDATION("/validation", SECONDARY);

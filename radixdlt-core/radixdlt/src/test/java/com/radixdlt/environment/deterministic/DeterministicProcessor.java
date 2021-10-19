@@ -94,6 +94,10 @@ public final class DeterministicProcessor {
 		this.remoteProcessorOnRunners = Objects.requireNonNull(remoteProcessorOnRunners);
 	}
 
+	public BFTNode self() {
+		return self;
+	}
+
 	public void start() {
 		startProcessors.forEach(p -> p.getProcessor().start());
 	}

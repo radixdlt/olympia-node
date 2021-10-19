@@ -67,6 +67,31 @@ package com.radixdlt.serialization.mapper;
 // Checkstyle disabled here, as this file has been imported from Jackson
 //CHECKSTYLE:OFF:
 
+import com.fasterxml.jackson.core.Base64Variant;
+import com.fasterxml.jackson.core.FormatFeature;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonStreamContext;
+import com.fasterxml.jackson.core.ObjectCodec;
+import com.fasterxml.jackson.core.PrettyPrinter;
+import com.fasterxml.jackson.core.SerializableString;
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.core.base.GeneratorBase;
+import com.fasterxml.jackson.core.io.IOContext;
+import com.fasterxml.jackson.core.json.JsonWriteContext;
+import com.fasterxml.jackson.dataformat.cbor.CBORParser;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
 import static com.fasterxml.jackson.dataformat.cbor.CBORConstants.BYTE_ARRAY_2_ELEMENTS;
 import static com.fasterxml.jackson.dataformat.cbor.CBORConstants.BYTE_ARRAY_INDEFINITE;
 import static com.fasterxml.jackson.dataformat.cbor.CBORConstants.BYTE_BREAK;
@@ -93,30 +118,6 @@ import static com.fasterxml.jackson.dataformat.cbor.CBORConstants.SUFFIX_UINT16_
 import static com.fasterxml.jackson.dataformat.cbor.CBORConstants.SUFFIX_UINT32_ELEMENTS;
 import static com.fasterxml.jackson.dataformat.cbor.CBORConstants.SUFFIX_UINT64_ELEMENTS;
 import static com.fasterxml.jackson.dataformat.cbor.CBORConstants.SUFFIX_UINT8_ELEMENTS;
-
-import com.fasterxml.jackson.core.Base64Variant;
-import com.fasterxml.jackson.core.FormatFeature;
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonStreamContext;
-import com.fasterxml.jackson.core.ObjectCodec;
-import com.fasterxml.jackson.core.PrettyPrinter;
-import com.fasterxml.jackson.core.SerializableString;
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.core.base.GeneratorBase;
-import com.fasterxml.jackson.core.io.IOContext;
-import com.fasterxml.jackson.core.json.JsonWriteContext;
-import com.fasterxml.jackson.dataformat.cbor.CBORParser;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 /**
  * {@link JsonGenerator} implementation that writes CBOR encoded content.

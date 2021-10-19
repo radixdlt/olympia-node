@@ -64,6 +64,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.full_function_forks;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -131,7 +132,7 @@ public final class CoordinatedForkSanityTest {
 		final var simulationTest = bftTestBuilder.build();
 		final var runningTest = simulationTest.run(Duration.ofSeconds(30));
 		final var network = runningTest.getNetwork();
-		final var nodes = network.getNodes();
+		final var nodes = ImmutableList.copyOf(network.getNodes());
 		final var halfOfTheNodes = nodes.subList(0, nodes.size() / 2);
 		final var oneMoreNode = nodes.get(nodes.size() / 2);
 

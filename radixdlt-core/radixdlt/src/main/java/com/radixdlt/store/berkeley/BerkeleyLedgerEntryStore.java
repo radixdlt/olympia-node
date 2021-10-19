@@ -113,7 +113,6 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.StoreConfig;
-import com.radixdlt.store.TxnIndex;
 import com.radixdlt.store.berkeley.atom.AppendLog;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Longs;
@@ -139,7 +138,6 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -149,7 +147,7 @@ import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
-public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, ResourceStore, TxnIndex,
+public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTProof>, ResourceStore,
 	CommittedReader, PersistentVertexStore, ForksEpochStore {
 	private static final Logger log = LogManager.getLogger();
 
@@ -169,7 +167,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private Database mapDatabase;
 
 	// Metadata databases
-	private static final String TXN_ID_DB_NAME = "radix.txn_id_db";
 	private static final String VERTEX_STORE_DB_NAME = "radix.vertex_store";
 	private static final String TXN_DB_NAME = "radix.txn_db";
 	private static final String FORK_CONFIG_DB = "radix.fork_config_db";
@@ -187,7 +184,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 	private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
 	private static final String LEDGER_NAME = "radix.ledger";
 	private Database txnDatabase; // Txns by state version; Append-only
-	private Database txnIdDatabase; // Txns by AID; Append-only
 	private AppendLog txnLog; //Atom data append only log
 
 	private final Set<BerkeleyAdditionalStore> additionalStores;
@@ -214,8 +210,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		safeClose(resourceDatabase);
 		safeClose(mapDatabase);
 
-		safeClose(txnIdDatabase);
-
 		safeClose(indexedSubstatesDatabase);
 		safeClose(substatesDatabase);
 
@@ -233,34 +227,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		if (txnLog != null) {
 			txnLog.close();
 		}
-	}
-
-	@Override
-	public boolean contains(AID aid) {
-		return withTime(() -> {
-			var key = entry(aid.getBytes());
-			return SUCCESS == txnIdDatabase.get(null, key, null, DEFAULT);
-		}, CounterType.ELAPSED_BDB_LEDGER_CONTAINS, CounterType.COUNT_BDB_LEDGER_CONTAINS);
-	}
-
-	@Override
-	public Optional<Txn> get(AID aid) {
-		return withTime(() -> {
-			try {
-				var key = entry(aid.getBytes());
-				var value = entry();
-
-				if (txnIdDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
-					var txnBytes = txnLog.read(fromByteArray(value.getData()));
-					addBytesRead(value, key);
-					return Optional.of(Txn.create(txnBytes));
-				}
-			} catch (Exception e) {
-				fail("Get of atom '" + aid + "' failed", e);
-			}
-
-			return Optional.empty();
-		}, CounterType.ELAPSED_BDB_LEDGER_GET, CounterType.COUNT_BDB_LEDGER_GET);
 	}
 
 	private Transaction createTransaction() {
@@ -324,8 +290,12 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 					return BerkeleyLedgerEntryStore.this.loadAddr(dbTxn, addr);
 				}
 			});
+			txnLog.flush();
 			dbTxn.commit();
 			return result;
+		} catch (IOException e) {
+			dbTxn.abort();
+			throw new RuntimeException(e);
 		} catch (Exception e) {
 			dbTxn.abort();
 			throw e;
@@ -362,18 +332,22 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		return BerkeleyLedgerEntryStore.this.openIndexedCursor(null, index);
 	}
 
-	@Override
-	public Optional<RawSubstateBytes> get(SystemMapKey mapKey) {
+	private Optional<RawSubstateBytes> getInternal(Transaction dbTxn, SystemMapKey mapKey) {
 		var key = new DatabaseEntry(mapKey.array());
 		var substateId = new DatabaseEntry();
-		var result = mapDatabase.get(null, key, substateId, null);
+		var result = mapDatabase.get(dbTxn, key, substateId, null);
 		if (result != SUCCESS) {
 			return Optional.empty();
 		}
 
-		var substate = loadSubstate(null, SubstateId.fromBytes(substateId.getData())).orElseThrow();
+		var substate = loadSubstate(dbTxn, SubstateId.fromBytes(substateId.getData())).orElseThrow();
 		var substateBytes = new RawSubstateBytes(substateId.getData(), substate.array());
 		return Optional.of(substateBytes);
+	}
+
+	@Override
+	public Optional<RawSubstateBytes> get(SystemMapKey mapKey) {
+		return getInternal(null, mapKey);
 	}
 
 	private void storeTxn(Transaction dbTxn, REProcessedTxn txn) {
@@ -540,10 +514,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}, CounterType.ELAPSED_BDB_LEDGER_LAST_VERTEX, CounterType.COUNT_BDB_LEDGER_LAST_VERTEX);
 	}
 
-	public void forEach(Consumer<Txn> particleConsumer) {
-		txnLog.forEach((bytes, offset) -> particleConsumer.accept(Txn.create(bytes)));
-	}
-
 	@Override
 	public void save(VerifiedVertexStoreState vertexStoreState) {
 		withTime(() -> {
@@ -658,7 +628,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			);
 
 			proofDatabase = env.openDatabase(null, PROOF_DB_NAME, primaryConfig);
-			txnIdDatabase = env.openDatabase(null, TXN_ID_DB_NAME, primaryConfig);
 			vertexStoreDatabase = env.openDatabase(null, VERTEX_STORE_DB_NAME, pendingConfig);
 			epochProofDatabase = env.openSecondaryDatabase(null, EPOCH_PROOF_DB_NAME, proofDatabase, buildEpochProofConfig());
 
@@ -1026,9 +995,6 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 			var atomPosData = txnEntry(expectedOffset, storedSize, aid);
 			failIfNotSuccess(txnDatabase.putNoOverwrite(dbTxn, pKey, atomPosData), "Atom write for", aid);
 			addBytesWrite(atomPosData, pKey);
-			var idKey = entry(aid);
-			failIfNotSuccess(txnIdDatabase.putNoOverwrite(dbTxn, idKey, atomPosData), "Atom Id write for", aid);
-			addBytesWrite(atomPosData, idKey);
 			systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
 
 			// State database
@@ -1057,7 +1023,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 				}
 			}
 
-			additionalStores.forEach(b -> b.process(dbTxn, txn));
+			additionalStores.forEach(b -> b.process(dbTxn, txn, stateVersion, k -> getInternal(dbTxn, k)));
 
 		} catch (Exception e) {
 			if (dbTxn != null) {

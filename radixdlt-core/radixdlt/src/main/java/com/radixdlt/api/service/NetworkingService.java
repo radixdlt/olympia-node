@@ -66,6 +66,7 @@ package com.radixdlt.api.service;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.api.util.JsonRpcUtil;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -76,14 +77,13 @@ import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.networks.Addressing;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.List;
 
-import static com.radixdlt.api.JsonRpcUtil.fromList;
-import static com.radixdlt.api.JsonRpcUtil.jsonArray;
-import static com.radixdlt.api.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
 
 public final class NetworkingService {
 	@VisibleForTesting
@@ -132,20 +132,20 @@ public final class NetworkingService {
 		return configuration;
 	}
 
-	public JSONArray getPeers() {
+	public JSONObject getPeers() {
 		var peerArray = jsonArray();
 
 		peersView.peers()
 			.map(this::peerToJson)
 			.forEach(peerArray::put);
 
-		return peerArray;
+		return JsonRpcUtil.wrapArray(peerArray);
 	}
 
-	public JSONArray getAddressBook() {
+	public JSONObject getAddressBook() {
 		final var entriesArray = jsonArray();
 		addressBook.knownPeers().values().forEach(v -> entriesArray.put(addressBookEntryToJson(v)));
-		return entriesArray;
+		return JsonRpcUtil.wrapArray(entriesArray);
 	}
 
 	public JSONObject getData() {
@@ -169,7 +169,7 @@ public final class NetworkingService {
 			.put("channelBufferSize", p2PConfig.channelBufferSize())
 			.put("peerLivenessCheckInterval", p2PConfig.peerLivenessCheckInterval())
 			.put("pingTimeout", p2PConfig.pingTimeout())
-			.put("seedNodes", fromList(p2PConfig.seedNodes(), seedNode -> seedNode))
+			.put("seedNodes", fromCollection(p2PConfig.seedNodes(), seedNode -> seedNode))
 			.put("nodeAddress", addressing.forNodes().of(self));
 	}
 

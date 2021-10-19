@@ -76,9 +76,9 @@ import java.io.IOException;
 public class ValidatorAddressSerializer extends StdSerializer<ValidatorAddress> {
 	private final ValidatorAddressing addressing;
 
-	public ValidatorAddressSerializer(int networkId) {
+	public ValidatorAddressSerializer(Addressing networkAddressing) {
 		super(ValidatorAddress.class);
-		addressing = Addressing.ofNetworkId(networkId).forValidators();
+		addressing = networkAddressing.forValidators();
 	}
 
 	@Override

@@ -104,13 +104,14 @@ import com.radixdlt.client.lib.dto.TokenInfo;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionHistory;
 import com.radixdlt.client.lib.dto.TransactionStatusDTO;
+import com.radixdlt.client.lib.dto.TransactionsDTO;
 import com.radixdlt.client.lib.dto.TxBlobDTO;
 import com.radixdlt.client.lib.dto.TxDTO;
 import com.radixdlt.client.lib.dto.UnstakePositions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.client.lib.dto.ValidatorsResponse;
-import com.radixdlt.client.lib.network.HttpClientUtils;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
 
@@ -120,11 +121,8 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.BASE_URL_IS_MANDATORY;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.NETWORK_IO_ERROR;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.OPERATION_INTERRUPTED;
-import static com.radixdlt.client.lib.api.ClientLibraryErrors.UNKNOWN_ERROR;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_BALANCES;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_HISTORY;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.ACCOUNT_INFO;
@@ -156,12 +154,17 @@ import static com.radixdlt.client.lib.api.rpc.RpcMethod.SYNC_CONFIGURATION;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.SYNC_DATA;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.TOKEN_INFO;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.TOKEN_NATIVE;
+import static com.radixdlt.client.lib.api.rpc.RpcMethod.TRANSACTION_LIST;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.TRANSACTION_LOOKUP;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.TRANSACTION_STATUS;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_CURRENT_EPOCH;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATION_NODE_INFO;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LIST;
 import static com.radixdlt.client.lib.api.rpc.RpcMethod.VALIDATORS_LOOKUP;
+import static com.radixdlt.errors.ClientErrors.INTERRUPTED_OPERATION;
+import static com.radixdlt.errors.ClientErrors.IO_ERROR;
+import static com.radixdlt.errors.ClientErrors.MISSING_BASE_URL;
+import static com.radixdlt.errors.InternalErrors.UNKNOWN;
 
 import static java.util.Optional.ofNullable;
 
@@ -255,6 +258,13 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 		public Result<TransactionStatusDTO> status(AID txId) {
 			return call(request(TRANSACTION_STATUS, txId.toString()), new TypeReference<>() {});
 		}
+
+		@Override
+		public Result<TransactionsDTO> list(long limit, OptionalLong offset) {
+			var request = request(TRANSACTION_LIST, limit);
+			offset.ifPresent(request::addParameters);
+			return call(request, new TypeReference<>() {});
+		}
 	};
 
 	private final SingleAccount account = new SingleAccount() {
@@ -265,10 +275,10 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 
 		@Override
 		public Result<TransactionHistory> history(
-			AccountAddress address, int size, Optional<NavigationCursor> cursor
+			AccountAddress address, int size, OptionalLong nextOffset
 		) {
 			var request = request(ACCOUNT_HISTORY, address.toString(networkId()), size);
-			cursor.ifPresent(cursorValue -> request.addParameters(cursorValue.value()));
+			nextOffset.ifPresent(request::addParameters);
 
 			return call(request, new TypeReference<>() {});
 		}
@@ -468,6 +478,11 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 	}
 
 	@Override
+	public Addressing addressing() {
+		return networkAddressing();
+	}
+
+	@Override
 	public SyncRadixApi withTimeout(Duration timeout) {
 		setTimeout(timeout);
 		return this;
@@ -489,8 +504,7 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 		int secondaryPort,
 		Optional<BasicAuth> authentication
 	) {
-		return HttpClientUtils.buildHttpClient(DEFAULT_TIMEOUT)
-			.flatMap(client -> connect(url, primaryPort, secondaryPort, client, authentication));
+		return buildHttpClient().flatMap(client -> connect(url, primaryPort, secondaryPort, client, authentication));
 	}
 
 	static Result<RadixApi> connect(
@@ -502,9 +516,9 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 	) {
 		return ofNullable(url)
 			.map(baseUrl -> Result.ok(new SyncRadixApi(baseUrl, primaryPort, secondaryPort, client, authentication)))
-			.orElseGet(BASE_URL_IS_MANDATORY::result)
+			.orElseGet(MISSING_BASE_URL::result)
 			.flatMap(syncRadixApi -> syncRadixApi.network().id()
-				.onSuccess(networkId -> syncRadixApi.configure(networkId.getNetworkId()))
+				.onSuccess(networkId -> syncRadixApi.configureSerialization(networkId.getNetworkId()))
 				.map(__ -> syncRadixApi));
 	}
 
@@ -518,14 +532,14 @@ public class SyncRadixApi extends RadixApiBase implements RadixApi {
 
 	private Failure errorMapper(Throwable throwable) {
 		if (throwable instanceof IOException) {
-			return NETWORK_IO_ERROR.with(throwable.getMessage());
+			return IO_ERROR.with(throwable.getMessage());
 		}
 
 		if (throwable instanceof InterruptedException) {
-			return OPERATION_INTERRUPTED.with(throwable.getMessage());
+			return INTERRUPTED_OPERATION.with(throwable.getMessage());
 		}
 
-		return UNKNOWN_ERROR.with(throwable.getClass().getName(), throwable.getMessage());
+		return UNKNOWN.with(throwable.getClass().getName(), throwable.getMessage());
 	}
 
 	private <T> Result<T> bodyHandler(

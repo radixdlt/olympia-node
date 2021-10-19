@@ -65,8 +65,13 @@
 package com.radixdlt.store.berkeley;
 
 import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.sleepycat.je.Transaction;
+
+import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Simple way to add an additional store
@@ -77,5 +82,10 @@ import com.sleepycat.je.Transaction;
 public interface BerkeleyAdditionalStore {
 	void open(DatabaseEnvironment dbEnv);
 	void close();
-	void process(Transaction dbTxn, REProcessedTxn txn);
+	void process(
+		Transaction dbTxn,
+		REProcessedTxn txn,
+		long stateVersion,
+		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
+	);
 }

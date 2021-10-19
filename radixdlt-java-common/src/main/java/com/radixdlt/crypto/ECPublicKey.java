@@ -81,7 +81,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.radixdlt.identifiers.CommonErrors.INVALID_PUBLIC_KEY;
+import static com.radixdlt.errors.ApiErrors.INVALID_PUBLIC_KEY;
 
 /**
  * Asymmetric EC public key provider fixed to curve 'secp256k1'

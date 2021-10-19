@@ -199,6 +199,23 @@ public final class RERulesConfig {
 		return maxValidators;
 	}
 
+	public RERulesConfig overrideMinimumStake(Amount minimumStake) {
+		return new RERulesConfig(
+			this.reservedSymbols,
+			this.tokenSymbolPattern,
+			this.feeTable,
+			this.maxTxnSize,
+			this.maxSigsPerRound,
+			this.maxRounds,
+			this.rakeIncreaseDebouncerEpochLength,
+			minimumStake,
+			this.unstakingEpochDelay,
+			this.rewardsPerProposal,
+			this.minimumCompletedProposalsPercentage,
+			this.maxValidators
+		);
+	}
+
 	public RERulesConfig overrideMaxSigsPerRound(int maxSigsPerRound) {
 		return new RERulesConfig(
 			this.reservedSymbols,

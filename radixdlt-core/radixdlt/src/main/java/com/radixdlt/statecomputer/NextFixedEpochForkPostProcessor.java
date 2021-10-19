@@ -85,9 +85,9 @@ public final class NextFixedEpochForkPostProcessor implements PostProcessor<Ledg
 
 	@Override
 	public LedgerAndBFTProof process(
-		LedgerAndBFTProof metadata,
-		EngineStore<LedgerAndBFTProof> engineStore,
-		List<REProcessedTxn> txns
+			LedgerAndBFTProof metadata,
+			EngineStore<LedgerAndBFTProof> engineStore,
+			List<REProcessedTxn> txns
 	) throws PostProcessorException {
 		if (metadata.getProof().getNextValidatorSet().isPresent()
 				&& nextFork.epoch() == metadata.getProof().getEpoch() + 1) {

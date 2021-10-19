@@ -73,12 +73,10 @@ import java.util.stream.Collectors;
 
 public final class SubstateSerialization {
 	private final Map<Class<? extends Particle>, SubstateSerializer<Particle>> classToSerializer;
-	@SuppressWarnings("rawtypes")
 	private final Map<Class<? extends Particle>, VirtualMapper> classToVirtualSerializer;
 	private final Map<Class<? extends Particle>, KeySerializer> classToKeySerializer;
 	private final Map<Class<? extends Particle>, Byte> classToTypeByte;
 
-	@SuppressWarnings("unchecked")
 	public SubstateSerialization(
 		Collection<SubstateDefinition<? extends Particle>> definitions
 	) {
@@ -144,7 +142,6 @@ public final class SubstateSerialization {
 		return bytes;
 	}
 
-	@SuppressWarnings("unchecked")
 	public <T extends Particle> T mapVirtual(Class<T> substateClass, Object key) {
 		var serializer = classToVirtualSerializer.get(substateClass);
 		return (T) serializer.map(key);

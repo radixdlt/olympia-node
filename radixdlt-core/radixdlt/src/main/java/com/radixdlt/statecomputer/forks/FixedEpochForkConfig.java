@@ -75,10 +75,10 @@ public final class FixedEpochForkConfig implements ForkConfig {
 	private final long epoch;
 
 	public FixedEpochForkConfig(
-		String name,
-		HashCode hash,
-		RERules reRules,
-		long epoch
+			String name,
+			HashCode hash,
+			RERules reRules,
+			long epoch
 	) {
 		this.name = name;
 		this.hash = hash;
@@ -108,10 +108,10 @@ public final class FixedEpochForkConfig implements ForkConfig {
 	@Override
 	public FixedEpochForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
 		return new FixedEpochForkConfig(
-			name,
-			hash,
-			reRules.addPostProcessor(newPostProcessor),
-			epoch
+				name,
+				hash,
+				reRules.addPostProcessor(newPostProcessor),
+				epoch
 		);
 	}
 
