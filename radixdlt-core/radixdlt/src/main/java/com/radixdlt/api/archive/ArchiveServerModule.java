@@ -77,6 +77,7 @@ import com.radixdlt.api.archive.validator.ValidatorApiModule;
 import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.networks.Addressing;
 import io.undertow.server.HttpHandler;
 
 import javax.inject.Qualifier;
@@ -121,6 +122,7 @@ public class ArchiveServerModule extends AbstractModule {
 	@Singleton
 	public ModuleRunner archiveHttpServer(
 		@ArchiveServer Map<String, HttpHandler> handlers,
+		Addressing addressing,
 		SystemCounters counters
 	) {
 		var errorCodes = List.of(
@@ -131,6 +133,6 @@ public class ArchiveServerModule extends AbstractModule {
 			ApiErrorCode.MEMPOOL_DUPLICATE,
 			ApiErrorCode.MEMPOOL_REJECTED
 		);
-		return new HttpServerRunner(Map.of(), handlers, errorCodes, port, bindAddress, "archive", counters);
+		return new HttpServerRunner(Map.of(), handlers, errorCodes, port, bindAddress, "archive", addressing, counters);
 	}
 }

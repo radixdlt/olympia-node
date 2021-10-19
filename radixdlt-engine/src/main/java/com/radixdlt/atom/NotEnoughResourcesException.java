@@ -66,7 +66,20 @@ package com.radixdlt.atom;
 import com.radixdlt.utils.UInt256;
 
 public final class NotEnoughResourcesException extends TxBuilderException {
+	private final UInt256 requested;
+	private final UInt256 available;
+
 	public NotEnoughResourcesException(UInt256 requested, UInt256 available) {
 		super("Requested " + requested + " + but only " + available + " available");
+		this.requested = requested;
+		this.available = available;
+	}
+
+	public UInt256 getRequested() {
+		return requested;
+	}
+
+	public UInt256 getAvailable() {
+		return available;
 	}
 }

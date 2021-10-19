@@ -452,7 +452,7 @@ public final class RadixEngine<M> {
 			}
 		}
 
-		throw new TxBuilderException("Not enough fees: unable to construct with fees after " + maxTries + " tries.");
+		throw new FeeConstructionException(maxTries);
 	}
 
 	public REParser getParser() {

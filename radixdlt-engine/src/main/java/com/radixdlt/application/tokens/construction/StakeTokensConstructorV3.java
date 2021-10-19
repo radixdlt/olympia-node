@@ -90,7 +90,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 	@Override
 	public void construct(StakeTokens action, TxBuilder builder) throws TxBuilderException {
 		if (action.amount().compareTo(minimumStake) < 0) {
-			throw new TxBuilderException("Minimum to stake is " + minimumStake + " but trying to stake " + action.amount());
+			throw new MinimumStakeException(minimumStake, action.amount());
 		}
 
 		// TODO: construct this based on substate definition
@@ -116,7 +116,7 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 			var validator = builder.read(ValidatorOwnerCopy.class, action.to());
 			var owner = validator.getOwner();
 			if (!action.from().equals(owner)) {
-				throw new TxBuilderException("Delegation flag is false and you are not the owner.");
+				throw new DelegateStakePermissionException(owner, action.from());
 			}
 		}
 		builder.up(new PreparedStake(action.amount(), action.from(), action.to()));

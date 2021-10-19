@@ -85,7 +85,7 @@ public final class CreateFixedTokenConstructor implements ActionConstructor<Crea
 	@Override
 	public void construct(CreateFixedToken action, TxBuilder txBuilder) throws TxBuilderException {
 		if (action.getSymbol().length() > maxSymbolLength) {
-			throw new TxBuilderException("Symbol must have a length <= " + maxSymbolLength);
+			throw new SymbolLengthException(maxSymbolLength, action.getSymbol().length());
 		}
 		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
 		txBuilder.downREAddr(action.getResourceAddr());

@@ -65,17 +65,22 @@ package com.radixdlt.api.archive;
 
 import com.radixdlt.api.archive.tokens.ResourceNotFoundException;
 import com.radixdlt.api.archive.transaction.TransactionNotFoundException;
+import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
+import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
+import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 public enum ApiErrorCode {
 	UNEXPECTED_ERROR(Throwable.class, 1, "Unexpected Error") {
 		@Override
-		public JSONObject getDetails(Throwable e) {
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			return new JSONObject()
 				.put("exception", e.toString())
 				.put("cause", e.getMessage());
@@ -83,7 +88,7 @@ public enum ApiErrorCode {
 	},
 	INVALID_JSON(JsonParseException.class, 2, "Invalid JSON") {
 		@Override
-		public JSONObject getDetails(Throwable e) {
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (JsonParseException) e;
 			return new JSONObject()
 				.put("cause", ex.getCause().getMessage());
@@ -91,7 +96,7 @@ public enum ApiErrorCode {
 	},
 	INVALID_REQUEST(InvalidParametersException.class, 3, "Invalid Request Object") {
 		@Override
-		public JSONObject getDetails(Throwable e) {
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (InvalidParametersException) e;
 			return new JSONObject()
 				.put("pointer", ex.getJsonPointer())
@@ -100,7 +105,7 @@ public enum ApiErrorCode {
 	},
 	TRANSACTION_NOT_FOUND(TransactionNotFoundException.class, 4, "Transaction Not Found") {
 		@Override
-		public JSONObject getDetails(Throwable e) {
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (TransactionNotFoundException) e;
 			return new JSONObject()
 				.put("transactionIdentifier", ex.getTxnId());
@@ -108,36 +113,71 @@ public enum ApiErrorCode {
 	},
 	TOKEN_NOT_FOUND(ResourceNotFoundException.class, 5, "Token Not Found") {
 		@Override
-		public JSONObject getDetails(Throwable e) {
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (ResourceNotFoundException) e;
 			return new JSONObject()
 				.put("resourceAddress", ex.getResourceAddr());
 		}
 	},
-	TXBUILDER_EXCEPTION(TxBuilderException.class, 6, "Failed to build transaction") {
+	TXBUILDER_EXCEPTION(TxBuilderException.class, 100, "Failed to build transaction") {
 		@Override
-		public JSONObject getDetails(Throwable e) {
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (TxBuilderException) e;
 			// TODO: elaborate
 			return new JSONObject()
 				.put("message", ex.getMessage());
 		}
 	},
-	MEMPOOL_FULL(MempoolFullException.class, 7, "Mempool is full") {
+	FEE_CONSTRUCTION_ERROR(FeeConstructionException.class, 101, "Could not construct transaction with fees") {
 		@Override
-		public JSONObject getDetails(Throwable e) {
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
+			var ex = (FeeConstructionException) e;
+			return new JSONObject()
+				.put("attempts", ex.getAttempts());
+		}
+	},
+	NOT_ENOUGH_RESOURCES(NotEnoughResourcesException.class, 102, "Not enough resources") {
+		@Override
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
+			var ex = (NotEnoughResourcesException) e;
+			return new JSONObject()
+				.put("requested", ex.getRequested())
+				.put("available", ex.getAvailable());
+		}
+	},
+	INVALID_RAKE_INCREASE(InvalidRakeIncreaseException.class, 103, "Invalid rake increase") {
+		@Override
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
+			var ex = (InvalidRakeIncreaseException) e;
+			return new JSONObject()
+				.put("limit", ex.getMaxRakeIncrease())
+				.put("attempted", ex.getIncreaseAttempt());
+		}
+	},
+	STAKE_PERMISSION(DelegateStakePermissionException.class, 104, "Not allowed to stake") {
+		@Override
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
+			var ex = (DelegateStakePermissionException) e;
+			return new JSONObject()
+				.put("owner", addressing.forAccounts().of(ex.getOwner()))
+				.put("user", addressing.forAccounts().of(ex.getUser()));
+		}
+	},
+	MEMPOOL_FULL(MempoolFullException.class, 200, "Mempool is full") {
+		@Override
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			return new JSONObject();
 		}
 	},
-	MEMPOOL_DUPLICATE(MempoolDuplicateException.class, 8, "Mempool already contains transaction") {
+	MEMPOOL_DUPLICATE(MempoolDuplicateException.class, 201, "Mempool already contains transaction") {
 		@Override
-		public JSONObject getDetails(Throwable e) {
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			return new JSONObject();
 		}
 	},
-	MEMPOOL_REJECTED(MempoolRejectedException.class, 9, "Transaction rejected from mempool") {
+	MEMPOOL_REJECTED(MempoolRejectedException.class, 202, "Transaction rejected from mempool") {
 		@Override
-		public JSONObject getDetails(Throwable e) {
+		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (MempoolRejectedException) e;
 			var reException = (RadixEngineException) ex.getCause();
 			// TODO: elaborate
@@ -168,5 +208,5 @@ public enum ApiErrorCode {
 		return message;
 	}
 
-	public abstract JSONObject getDetails(Throwable e);
+	public abstract JSONObject getDetails(Throwable e, Addressing addressing);
 }

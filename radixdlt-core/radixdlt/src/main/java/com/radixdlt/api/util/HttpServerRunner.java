@@ -66,6 +66,7 @@ package com.radixdlt.api.util;
 import com.radixdlt.api.archive.ApiErrorCode;
 import com.radixdlt.api.node.metrics.MetricsHandler;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.networks.Addressing;
 import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.util.Headers;
@@ -103,6 +104,7 @@ public final class HttpServerRunner implements ModuleRunner {
 	private final String name;
 	private final int port;
 	private final String bindAddress;
+	private final Addressing addressing;
 	private final SystemCounters counters;
 
 	private Undertow server;
@@ -114,12 +116,14 @@ public final class HttpServerRunner implements ModuleRunner {
 		int port,
 		String bindAddress,
 		String name,
+		Addressing addressing,
 		SystemCounters counters
 	) {
 		this.controllers = controllers;
 		this.handlers = handlers;
 		this.errorCodes = errorCodes;
 		this.name = name.toLowerCase(Locale.US);
+		this.addressing = addressing;
 		this.bindAddress = bindAddress;
 		this.port = port;
 		this.counters = Objects.requireNonNull(counters);
@@ -166,7 +170,7 @@ public final class HttpServerRunner implements ModuleRunner {
 		server.stop();
 	}
 
-	private static void addErrorCodeHandler(ApiErrorCode errorCode, ExceptionHandler handler) {
+	private void addErrorCodeHandler(ApiErrorCode errorCode, ExceptionHandler handler) {
 		handler.addExceptionHandler(
 			errorCode.getExceptionClass(),
 			exchange -> {
@@ -176,7 +180,7 @@ public final class HttpServerRunner implements ModuleRunner {
 				exchange.getResponseSender().send(new JSONObject()
 					.put("code", errorCode.getCode())
 					.put("message", errorCode.getMessage())
-					.put("details", errorCode.getDetails(ex))
+					.put("details", errorCode.getDetails(ex, addressing))
 					.toString()
 				);
 			}

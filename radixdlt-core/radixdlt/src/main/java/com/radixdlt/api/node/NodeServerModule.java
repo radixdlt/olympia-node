@@ -83,6 +83,7 @@ import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.networks.Addressing;
 
 import javax.inject.Qualifier;
 import java.lang.annotation.Retention;
@@ -150,9 +151,10 @@ public final class NodeServerModule extends AbstractModule {
 	@Singleton
 	public ModuleRunner nodeHttpServer(
 		@NodeServer Map<String, Controller> controllers,
+		Addressing addressing,
 		SystemCounters counters
 	) {
-		return new HttpServerRunner(controllers, Map.of(), List.of(), port, bindAddress, "node", counters);
+		return new HttpServerRunner(controllers, Map.of(), List.of(), port, bindAddress, "node", addressing, counters);
 	}
 
 	/**

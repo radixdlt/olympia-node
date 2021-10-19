@@ -98,7 +98,7 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
 		var isIncrease = action.getFeePercentage() > curRakePercentage;
 		var rakeIncrease = action.getFeePercentage() - curRakePercentage;
 		if (isIncrease && rakeIncrease >= maxRakeIncrease) {
-			throw new TxBuilderException("Max rake increase is " + maxRakeIncrease + " but trying to increase " + rakeIncrease);
+			throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
 		}
 
 		var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;

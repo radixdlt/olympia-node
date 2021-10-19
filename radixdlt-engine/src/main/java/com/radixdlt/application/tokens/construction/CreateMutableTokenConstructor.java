@@ -89,7 +89,7 @@ public final class CreateMutableTokenConstructor implements ActionConstructor<Cr
 			: REAddr.ofHashedKey(action.getKey(), action.getSymbol());
 
 		if (action.getSymbol().length() > maxSymbolLength) {
-			throw new TxBuilderException("Symbol must have a length <= " + maxSymbolLength);
+			throw new SymbolLengthException(maxSymbolLength, action.getSymbol().length());
 		}
 
 		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
