@@ -120,7 +120,7 @@ final class MockP2PNetwork {
 			clientPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() { }),
 			Optional.of(serverPeerUri),
 			clientSocketChannel,
-			null
+			Optional.empty()
 		);
 
 		final var serverChannel = new PeerChannel(
@@ -135,7 +135,7 @@ final class MockP2PNetwork {
 			serverPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() { }),
 			Optional.empty(),
 			serverSocketChannel,
-			null
+			Optional.empty()
 		);
 
 		when(clientSocketChannel.writeAndFlush(any())).thenAnswer(inv -> {

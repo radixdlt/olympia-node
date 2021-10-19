@@ -89,6 +89,7 @@ import io.netty.handler.codec.bytes.ByteArrayEncoder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 import java.util.Objects;
@@ -99,6 +100,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 
 	private static final int MAX_PACKET_LENGTH = 1024 * 1024;
 	private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
+	private static final int RECEIVE_BUFFER_SIZE = 1024 * 1024;
+	private static final int SOCKET_BACKLOG_SIZE = 1024;
 
 	private final P2PConfig config;
 	private final Addressing addressing;
@@ -142,8 +145,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		final var socketChannelConfig = socketChannel.config();
 		socketChannelConfig.setReceiveBufferSize(MAX_PACKET_LENGTH);
 		socketChannelConfig.setSendBufferSize(MAX_PACKET_LENGTH);
-		socketChannelConfig.setOption(ChannelOption.SO_RCVBUF, 1024 * 1024);
-		socketChannelConfig.setOption(ChannelOption.SO_BACKLOG, 1024);
+		socketChannelConfig.setOption(ChannelOption.SO_RCVBUF, RECEIVE_BUFFER_SIZE);
+		socketChannelConfig.setOption(ChannelOption.SO_BACKLOG, SOCKET_BACKLOG_SIZE);
 
 		if (log.isDebugEnabled()) {
 			socketChannel.pipeline().addLast(new LoggingHandler(LogSink.using(log), false));
@@ -162,34 +165,44 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		socketChannel.pipeline()
 			.addLast("decode_proxy_header_line", new LineBasedFrameDecoder(255, true, true))
 			.addLast("decode_proxy_header_bytes", new ByteArrayDecoder())
-			.addLast("handle_proxy_header", new SimpleChannelInboundHandler<byte[]>() {
-				@Override
-				protected void channelRead0(ChannelHandlerContext ctx, byte[] msg) {
-					/* The proxy protocol line is a single line that ends with a carriage return
-					   and line feed ("\r\n"), and has the following form:
-					   PROXY_STRING + single space + INET_PROTOCOL + single space + CLIENT_IP + single space
-					   + PROXY_IP + single space + CLIENT_PORT + single space + PROXY_PORT + "\r\n" */
-					final var msgStr = new String(msg);
-					final var components = msgStr.split(" ");
-					if (!components[0].equals("PROXY") || !components[1].startsWith("TCP")) {
-						log.warn("Received invalid PROXY protocol header line: {}", msgStr);
-						ctx.close();
-						return;
-					}
-					final var clientAddress = InetSocketAddress.createUnresolved(
-						components[2],
-						Integer.parseInt(components[4])
-					);
+			.addLast("handle_proxy_header", new ProxyHeaderHandler(socketChannel));
+	}
 
-					// remove the proxy pipeline
-					ctx.pipeline().remove("decode_proxy_header_line");
-					ctx.pipeline().remove("decode_proxy_header_bytes");
-					ctx.pipeline().remove("handle_proxy_header");
+	private final class ProxyHeaderHandler extends SimpleChannelInboundHandler<byte[]> {
+		private final SocketChannel socketChannel;
 
-					// and create a regular peer channel pipeline
-					createPeerChannelPipeline(socketChannel, clientAddress);
-				}
-			});
+		ProxyHeaderHandler(SocketChannel socketChannel) {
+			this.socketChannel = socketChannel;
+		}
+
+		@Override
+		protected void channelRead0(ChannelHandlerContext ctx, byte[] msg) throws IOException {
+			final var clientAddress = parseProxyHeader(new String(msg));
+
+			// remove the proxy pipeline
+			ctx.pipeline().remove(LineBasedFrameDecoder.class);
+			ctx.pipeline().remove(ByteArrayDecoder.class);
+			ctx.pipeline().remove(ProxyHeaderHandler.class);
+
+			// and create a regular peer channel pipeline
+			createPeerChannelPipeline(socketChannel, clientAddress);
+		}
+
+		private InetSocketAddress parseProxyHeader(String line) throws IOException {
+			/* The proxy protocol line is a single line that ends with a carriage return
+			   and line feed ("\r\n"), and has the following form:
+			   PROXY_STRING + single space + INET_PROTOCOL + single space + CLIENT_IP + single space
+			   + PROXY_IP + single space + CLIENT_PORT + single space + PROXY_PORT + "\r\n" */
+			final var components = line.split(" ");
+
+			if (!components[0].equals("PROXY") || !components[1].startsWith("TCP")) {
+				log.warn("Received invalid PROXY protocol header line: {}", line);
+				socketChannel.close();
+				throw new IOException("Invalid PROXY header");
+			}
+
+			return InetSocketAddress.createUnresolved(components[2], Integer.parseInt(components[4]));
+		}
 	}
 
 	private void createPeerChannelPipeline(SocketChannel socketChannel, InetSocketAddress remoteAddress) {
@@ -205,11 +218,9 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 			peerEventDispatcher,
 			uri,
 			socketChannel,
-			remoteAddress
+			Optional.ofNullable(remoteAddress)
 		);
 
-		// TODO(luk): get rid of length-based framing and extend FrameCodec with
-		// capability of reading partial frames and multiple frames from a single data read
 		final int packetLength = MAX_PACKET_LENGTH + FRAME_HEADER_LENGTH;
 		final int headerLength = FRAME_HEADER_LENGTH;
 		socketChannel.pipeline()

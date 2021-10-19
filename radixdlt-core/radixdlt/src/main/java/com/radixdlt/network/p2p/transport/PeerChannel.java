@@ -154,7 +154,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		EventDispatcher<PeerEvent> peerEventDispatcher,
 		Optional<RadixNodeUri> uri,
 		SocketChannel nettyChannel,
-		InetSocketAddress remoteAddress
+		Optional<InetSocketAddress> remoteAddress
 	) {
 		this.counters = Objects.requireNonNull(counters);
 		this.addressing = Objects.requireNonNull(addressing);
@@ -163,8 +163,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
 		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId, latestForkHash);
 		this.nettyChannel = Objects.requireNonNull(nettyChannel);
-		this.host = remoteAddress != null ? remoteAddress.getHostString() : "?";
-		this.port = remoteAddress != null ? remoteAddress.getPort() : 0;
+		this.host = remoteAddress.map(InetSocketAddress::getHostString).orElse("?");
+		this.port = remoteAddress.map(InetSocketAddress::getPort).orElse(0);
 
 		this.isInitiator = uri.isPresent();
 
