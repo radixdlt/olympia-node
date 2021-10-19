@@ -71,7 +71,6 @@ import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.networks.Addressing;
@@ -169,13 +168,7 @@ public enum ApiErrorCode {
 			return new JSONObject();
 		}
 	},
-	MEMPOOL_DUPLICATE(MempoolDuplicateException.class, 201, "Mempool already contains transaction") {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			return new JSONObject();
-		}
-	},
-	MEMPOOL_REJECTED(MempoolRejectedException.class, 202, "Transaction rejected from mempool") {
+	MEMPOOL_REJECTED(MempoolRejectedException.class, 201, "Transaction rejected from mempool") {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (MempoolRejectedException) e;

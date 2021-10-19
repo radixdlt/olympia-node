@@ -71,6 +71,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import org.json.JSONObject;
 
@@ -100,8 +101,16 @@ final class SubmitTransactionHandler implements ApiHandler<Txn> {
 		try {
 			// We need to block here as we need to complete the request in the same thread
 			var success = completableFuture.get();
-			return new JSONObject().put("transactionIdentifier", success.getTxn().getId());
+			return new JSONObject()
+				.put("transactionIdentifier", success.getTxn().getId())
+				.put("duplicate", false);
 		} catch (ExecutionException e) {
+			if (e.getCause() instanceof MempoolDuplicateException) {
+				return new JSONObject()
+					.put("transactionIdentifier", txn.getId())
+					.put("duplicate", true);
+			}
+
 			if (e.getCause() instanceof MempoolRejectedException) {
 				throw (MempoolRejectedException) e.getCause();
 			}
