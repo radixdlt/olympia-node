@@ -71,6 +71,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.utils.Pair;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -299,13 +300,10 @@ public interface SyncState {
 			this.pendingRequest = pendingRequest;
 		}
 
-		public SyncingState withPendingRequestAndUpdatedQueue(BFTNode peer, long requestId) {
+		public SyncingState withPendingRequest(BFTNode peer, long requestId) {
 			return new SyncingState(
 				currentHeader,
-				new ImmutableList.Builder<BFTNode>()
-					.addAll(Collections2.filter(candidatePeersQueue, not(equalTo(peer))))
-					.add(peer)
-					.build(),
+				candidatePeersQueue,
 				targetHeader,
 				Optional.of(PendingRequest.create(peer, requestId))
 			);
@@ -326,6 +324,26 @@ public interface SyncState {
 
 		public SyncingState withTargetHeader(LedgerProof newTargetHeader) {
 			return new SyncingState(currentHeader, candidatePeersQueue, newTargetHeader, pendingRequest);
+		}
+
+		public Pair<SyncingState, Optional<BFTNode>> fetchNextCandidatePeer() {
+			final var peerToUse = candidatePeersQueue.stream().findFirst();
+
+			if (peerToUse.isPresent()) {
+				final var newState = new SyncingState(
+					currentHeader,
+					new ImmutableList.Builder<BFTNode>()
+						.addAll(Collections2.filter(candidatePeersQueue, not(equalTo(peerToUse.get()))))
+						.add(peerToUse.get())
+						.build(),
+					targetHeader,
+					pendingRequest
+				);
+
+				return Pair.of(newState, peerToUse);
+			} else {
+				return Pair.of(this, Optional.empty());
+			}
 		}
 
 		public SyncingState addCandidatePeers(ImmutableList<BFTNode> peers) {
@@ -352,12 +370,19 @@ public interface SyncState {
 			return this.pendingRequest;
 		}
 
-		public ImmutableList<BFTNode> candidatePeersQueue() {
-			return this.candidatePeersQueue;
-		}
-
 		public LedgerProof getTargetHeader() {
 			return this.targetHeader;
+		}
+
+		public Optional<BFTNode> peekNthCandidate(int n) {
+			var state = this;
+			Optional<BFTNode> candidate = Optional.empty();
+			for (int i = 0; i <= n; i++) {
+				final var res = state.fetchNextCandidatePeer();
+				state = res.getFirst();
+				candidate = res.getSecond();
+			}
+			return candidate;
 		}
 
 		@Override

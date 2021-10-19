@@ -174,7 +174,7 @@ public class SyncStateTest {
         assertFalse(initialState.waitingForResponse());
 
         final var peer = mock(BFTNode.class);
-        final var newState = initialState.withPendingRequestAndUpdatedQueue(peer, 1L);
+        final var newState = initialState.withPendingRequest(peer, 1L);
 
         assertTrue(newState.waitingForResponse());
         assertTrue(newState.waitingForResponseFrom(peer));
@@ -191,7 +191,8 @@ public class SyncStateTest {
             targetHeader
         );
 
-        assertEquals(0, initialState.candidatePeersQueue().size());
+        // there's no next candidate peer
+        assertTrue(initialState.fetchNextCandidatePeer().getSecond().isEmpty());
 
         final var candidate1 = mock(BFTNode.class);
         final var candidate2 = mock(BFTNode.class);
@@ -199,11 +200,12 @@ public class SyncStateTest {
             ImmutableList.of(candidate1, candidate2)
         );
 
-        assertEquals(2, stateWithCandidates.candidatePeersQueue().size());
+        assertEquals(candidate1, stateWithCandidates.peekNthCandidate(0).get());
+        assertEquals(candidate2, stateWithCandidates.peekNthCandidate(1).get());
 
         final var withRemovedCandidate = stateWithCandidates.removeCandidate(candidate1);
-        assertEquals(1, withRemovedCandidate.candidatePeersQueue().size());
-        assertEquals(candidate2, withRemovedCandidate.candidatePeersQueue().get(0));
+        assertEquals(candidate2, withRemovedCandidate.peekNthCandidate(0).get());
+        assertEquals(candidate2, withRemovedCandidate.peekNthCandidate(1).get());
     }
 
     @Test

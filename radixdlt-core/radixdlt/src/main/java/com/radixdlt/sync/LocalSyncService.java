@@ -359,15 +359,15 @@ public final class LocalSyncService {
 			return currentState; // we're already waiting for a response from peer
 		}
 
-		final var peerToUse = currentState.candidatePeersQueue().stream()
-			.filter(peersView::hasPeer)
-			.findFirst();
+		final var candidatePeerResult = currentState.fetchNextCandidatePeer();
+		final var stateWithUpdatedQueue = candidatePeerResult.getFirst();
+		final var maybePeerToUse = candidatePeerResult.getSecond();
 
-		return peerToUse
-			.map(peer -> this.sendSyncRequest(currentState, peer))
+		return maybePeerToUse
+			.map(peerToUse -> this.sendSyncRequest(stateWithUpdatedQueue, peerToUse))
 			.orElseGet(() -> {
 				// there's no connected peer on our candidates list, starting a fresh sync check immediately
-				return this.initSyncCheck(IdleState.init(currentState.getCurrentHeader()));
+				return this.initSyncCheck(IdleState.init(stateWithUpdatedQueue.getCurrentHeader()));
 			});
 	}
 
@@ -383,7 +383,7 @@ public final class LocalSyncService {
 			this.syncConfig.syncRequestTimeout()
 		);
 
-		return currentState.withPendingRequestAndUpdatedQueue(peer, requestId);
+		return currentState.withPendingRequest(peer, requestId);
 	}
 
 	private boolean isFullySynced(SyncState.SyncingState syncingState) {
