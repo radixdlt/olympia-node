@@ -88,7 +88,6 @@ import java.util.Map;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -360,15 +359,15 @@ public final class LocalSyncService {
 			return currentState; // we're already waiting for a response from peer
 		}
 
-		final Optional<BFTNode> peerToUse = currentState.candidatePeers().stream()
-			.filter(peersView::hasPeer)
-			.findFirst();
+		final var candidatePeerResult = currentState.fetchNextCandidatePeer();
+		final var stateWithUpdatedQueue = candidatePeerResult.getFirst();
+		final var maybePeerToUse = candidatePeerResult.getSecond();
 
-		return peerToUse
-			.map(peer -> this.sendSyncRequest(currentState, peer))
+		return maybePeerToUse
+			.map(peerToUse -> this.sendSyncRequest(stateWithUpdatedQueue, peerToUse))
 			.orElseGet(() -> {
 				// there's no connected peer on our candidates list, starting a fresh sync check immediately
-				return this.initSyncCheck(IdleState.init(currentState.getCurrentHeader()));
+				return this.initSyncCheck(IdleState.init(stateWithUpdatedQueue.getCurrentHeader()));
 			});
 	}
 
@@ -512,7 +511,7 @@ public final class LocalSyncService {
 		if (isNewerState) {
 			final var newState = currentState
 				.withTargetHeader(header)
-				.withCandidatePeers(peers);
+				.addCandidatePeers(peers);
 			return this.updateSyncTargetDiffCounter(newState);
 		} else {
 			log.trace("LocalSync: skipping as already targeted {}", currentState.getTargetHeader());
