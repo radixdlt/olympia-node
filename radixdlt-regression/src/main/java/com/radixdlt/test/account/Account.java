@@ -1,19 +1,20 @@
 package com.radixdlt.test.account;
 
-import com.radixdlt.test.utils.TransactionUtils;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.ValidatorAddress;
-import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
-import com.radixdlt.client.lib.dto.Balance;
-import com.radixdlt.client.lib.dto.TokenBalances;
-import com.radixdlt.client.lib.dto.TokenInfo;
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.radixdlt.api.addressing.AccountAddress;
+import com.radixdlt.api.addressing.ValidatorAddress;
+import com.radixdlt.api.dto.response.Balance;
+import com.radixdlt.api.dto.response.TokenBalances;
+import com.radixdlt.api.dto.response.TokenInfo;
+import com.radixdlt.api.dto.response.TransactionDTO;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.test.utils.TransactionUtils;
+import com.radixdlt.utils.UInt256;
 
 import java.time.Duration;
 import java.util.Optional;

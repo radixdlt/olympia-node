@@ -1,17 +1,18 @@
 package com.radixdlt.test.utils;
 
-import com.radixdlt.test.account.Account;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.TransactionRequest;
-import com.radixdlt.client.lib.api.ValidatorAddress;
-import com.radixdlt.client.lib.api.sync.RadixApiException;
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.client.lib.dto.TransactionStatus;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.utils.UInt256;
 import org.awaitility.Durations;
 import org.awaitility.core.ConditionTimeoutException;
+
+import com.radixdlt.api.addressing.AccountAddress;
+import com.radixdlt.api.addressing.ValidatorAddress;
+import com.radixdlt.api.dto.response.TransactionDTO;
+import com.radixdlt.api.dto.response.TransactionStatus;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.sync.RadixApiException;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.test.account.Account;
+import com.radixdlt.utils.UInt256;
 
 import java.time.Duration;
 import java.util.Optional;

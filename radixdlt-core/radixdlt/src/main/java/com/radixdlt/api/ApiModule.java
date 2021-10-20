@@ -65,8 +65,8 @@ package com.radixdlt.api;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
 import com.radixdlt.api.archive.ArchiveEndpointModule;
+import com.radixdlt.api.archive.ArchiveServerModule;
 import com.radixdlt.api.archive.construction.ConstructEndpointModule;
 import com.radixdlt.api.node.NodeApiModule;
 import com.radixdlt.api.node.account.AccountEndpointModule;
@@ -76,14 +76,14 @@ import com.radixdlt.api.node.faucet.FaucetEndpointModule;
 import com.radixdlt.api.node.health.HealthEndpointModule;
 import com.radixdlt.api.node.metrics.MetricsEndpointModule;
 import com.radixdlt.api.node.system.SystemEndpointModule;
+import com.radixdlt.api.node.transactions.TransactionIndexApiModule;
 import com.radixdlt.api.node.universe.UniverseEndpointModule;
 import com.radixdlt.api.node.validation.ValidationEndpointModule;
 import com.radixdlt.api.node.version.VersionEndpointModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
 import com.radixdlt.api.service.network.NetworkInfoServiceModule;
+import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.api.node.transactions.TransactionIndexApiModule;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -91,6 +91,7 @@ import java.util.Map;
 public class ApiModule extends AbstractModule {
 	private final RuntimeProperties properties;
 	private final int networkId;
+
 	public ApiModule(int networkId, RuntimeProperties properties) {
 		this.properties = properties;
 		this.networkId = networkId;

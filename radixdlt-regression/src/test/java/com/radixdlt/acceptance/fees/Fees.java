@@ -1,17 +1,19 @@
 package com.radixdlt.acceptance.fees;
 
-import com.radixdlt.test.RadixNetworkTest;
-import com.radixdlt.test.utils.TestingUtils;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import com.radixdlt.utils.UInt256;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
-import io.cucumber.java.en.When;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.radixdlt.api.dto.response.TransactionDTO;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.test.RadixNetworkTest;
+import com.radixdlt.test.utils.TestingUtils;
+import com.radixdlt.utils.UInt256;
+
 import java.util.Optional;
+
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 
 import static org.junit.Assert.assertEquals;
 

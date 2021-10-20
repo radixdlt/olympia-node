@@ -171,6 +171,7 @@ dependencies {
     // generateDevUniverse task to depend on those projects
     implementation project(':radixdlt-engine')
     implementation project(':radixdlt-java-common')
+    implementation project(':radixdlt-java-api')
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     implementation "com.github.akarnokd:rxjava3-extensions"

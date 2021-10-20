@@ -66,9 +66,9 @@ package com.radixdlt.client.lib.api.async;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.api.addressing.AccountAddress;
+import com.radixdlt.api.dto.response.TokenBalances;
 import com.radixdlt.client.lib.api.TransactionRequest;
-import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -88,6 +88,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static com.radixdlt.client.lib.api.token.Amount.amount;
 
 public class AsyncRadixApiAccountTest {

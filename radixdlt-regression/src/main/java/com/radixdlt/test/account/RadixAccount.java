@@ -1,8 +1,8 @@
 package com.radixdlt.test.account;
 
+import com.radixdlt.api.addressing.ValidatorAddress;
+import com.radixdlt.api.dto.response.TransactionDTO;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.api.ValidatorAddress;
-import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.identifiers.AID;
 
 import java.util.Optional;

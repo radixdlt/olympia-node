@@ -1,0 +1,20 @@
+apply plugin: 'java-library'
+apply plugin: 'org.sonarqube'
+apply plugin: 'project-report'
+
+dependencies {
+    api project(':radixdlt-engine')
+
+    testImplementation 'junit:junit'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'nl.jqno.equalsverifier:equalsverifier'
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.enabled true
+        csv.enabled false
+    }
+}

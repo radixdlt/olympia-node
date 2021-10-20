@@ -66,9 +66,9 @@ package com.radixdlt.client.lib.api.sync;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.api.addressing.AccountAddress;
+import com.radixdlt.api.dto.response.TokenBalances;
 import com.radixdlt.client.lib.api.TransactionRequest;
-import com.radixdlt.client.lib.dto.TokenBalances;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;

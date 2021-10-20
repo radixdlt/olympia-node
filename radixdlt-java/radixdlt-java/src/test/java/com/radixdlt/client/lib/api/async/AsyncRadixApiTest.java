@@ -66,9 +66,9 @@ package com.radixdlt.client.lib.api.async;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.api.addressing.AccountAddress;
+import com.radixdlt.api.addressing.ValidatorAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
-import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;

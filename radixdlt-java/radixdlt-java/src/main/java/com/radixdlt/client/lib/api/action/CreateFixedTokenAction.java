@@ -65,8 +65,8 @@
 package com.radixdlt.client.lib.api.action;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.ActionType;
+import com.radixdlt.api.addressing.AccountAddress;
+import com.radixdlt.api.dto.common.ActionType;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 

@@ -1,17 +1,18 @@
 package com.radixdlt.test;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.collect.Lists;
+import com.radixdlt.api.addressing.AccountAddress;
+import com.radixdlt.api.dto.response.Balance;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.dto.Balance;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.test.account.Account;
 import com.radixdlt.test.network.RadixNetwork;
 import com.radixdlt.test.network.checks.CheckFailureException;
 import com.radixdlt.test.network.checks.Checks;
 import com.radixdlt.test.utils.TransactionUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.stream.IntStream;

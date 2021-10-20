@@ -65,7 +65,7 @@
 package com.radixdlt.client.lib.api.action;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.radixdlt.client.lib.api.ActionType;
+import com.radixdlt.api.dto.common.ActionType;
 import com.radixdlt.crypto.ECPublicKey;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)

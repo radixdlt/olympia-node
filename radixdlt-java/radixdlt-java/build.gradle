@@ -69,6 +69,7 @@ apply plugin: 'maven-publish'
 
 dependencies {
     api project(':radixdlt-engine')
+    api project(':radixdlt-java-api')
 
     testImplementation 'junit:junit'
     testImplementation 'org.mockito:mockito-core'

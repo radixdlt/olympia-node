@@ -65,9 +65,9 @@
 package com.radixdlt.client.lib.api.action;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.radixdlt.client.lib.api.AccountAddress;
-import com.radixdlt.client.lib.api.ActionType;
-import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.api.addressing.AccountAddress;
+import com.radixdlt.api.addressing.ValidatorAddress;
+import com.radixdlt.api.dto.common.ActionType;
 import com.radixdlt.utils.UInt256;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)

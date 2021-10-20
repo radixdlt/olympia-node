@@ -1,12 +1,13 @@
 package com.radixdlt.assertions;
 
+import org.junit.Assert;
+
+import com.radixdlt.api.dto.common.Action;
+import com.radixdlt.api.dto.common.ActionType;
+import com.radixdlt.api.dto.response.TransactionDTO;
+import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.test.account.Account;
 import com.radixdlt.test.utils.TestFailureException;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.api.ActionType;
-import com.radixdlt.client.lib.dto.Action;
-import com.radixdlt.client.lib.dto.TransactionDTO;
-import org.junit.Assert;
 
 /**
  * Custom assertions (and wrappers for assertions) for the cucumber/acceptance tests
