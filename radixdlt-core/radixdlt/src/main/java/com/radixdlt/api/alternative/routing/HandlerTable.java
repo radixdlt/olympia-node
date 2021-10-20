@@ -86,4 +86,8 @@ public class HandlerTable {
 
 		return new HandlerTable(map);
 	}
+
+	public Function<?, Result<?>> forDescriptor(EndpointDescriptor<?, ?> descriptor) {
+		return mapping.get(descriptor);
+	}
 }

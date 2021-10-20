@@ -62,88 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p.transport;
+package com.radixdlt.api.alternative.server;
 
-import com.google.common.hash.HashCode;
-import com.google.inject.Inject;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.network.p2p.PeerEvent;
-import com.radixdlt.network.p2p.P2PConfig;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.LatestForkConfig;
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import org.junit.Test;
 
-import java.security.SecureRandom;
-import java.util.Objects;
-import java.util.Optional;
+import static org.junit.Assert.*;
 
-public final class PeerServerBootstrap {
-	private static final int BACKLOG_SIZE = 100;
+public class ArchiveHttpServerTest {
 
-	private final P2PConfig config;
-	private final Addressing addressing;
-	private final int networkId;
-	private final HashCode latestForkHash;
-	private final SystemCounters counters;
-	private final Serialization serialization;
-	private final SecureRandom secureRandom;
-	private final ECKeyOps ecKeyOps;
-	private final EventDispatcher<PeerEvent> peerEventDispatcher;
+	@Test
+	public void name() {
+		var text = "/path/";
 
-	//TODO: inject PeerChannelInitializer directly instead of passing all parameters for it
-	@Inject
-	public PeerServerBootstrap(
-		P2PConfig config,
-		Addressing addressing,
-		@NetworkId int networkId,
-		@LatestForkConfig ForkConfig latestForkConfig,
-		SystemCounters counters,
-		Serialization serialization,
-		SecureRandom secureRandom,
-		ECKeyOps ecKeyOps,
-		EventDispatcher<PeerEvent> peerEventDispatcher
-	) {
-		this.config = Objects.requireNonNull(config);
-		this.addressing = Objects.requireNonNull(addressing);
-		this.networkId = networkId;
-		this.latestForkHash = Objects.requireNonNull(latestForkConfig).hash();
-		this.counters = Objects.requireNonNull(counters);
-		this.serialization = Objects.requireNonNull(serialization);
-		this.secureRandom = Objects.requireNonNull(secureRandom);
-		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
-	}
-
-	public void start() throws InterruptedException {
-		final var serverGroup = new NioEventLoopGroup(1);
-		final var workerGroup = new NioEventLoopGroup();
-
-		final var serverBootstrap = new ServerBootstrap();
-		serverBootstrap.group(serverGroup, workerGroup)
-			.channel(NioServerSocketChannel.class)
-			.option(ChannelOption.SO_BACKLOG, BACKLOG_SIZE)
-			.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.peerConnectionTimeout())
-			.childHandler(new PeerChannelInitializer(
-				config,
-				addressing,
-				networkId,
-				latestForkHash,
-				counters,
-				serialization,
-				secureRandom,
-				ecKeyOps,
-				peerEventDispatcher,
-				Optional.empty()
-			));
-
-		serverBootstrap.bind(config.listenAddress(), config.listenPort()).sync();
+		System.out.println(text);
+		System.out.println(text.substring(0, text.length() - 1));
 	}
 }

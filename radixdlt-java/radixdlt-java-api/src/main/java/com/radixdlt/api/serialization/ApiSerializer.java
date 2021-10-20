@@ -62,88 +62,81 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p.transport;
+package com.radixdlt.api.serialization;
 
-import com.google.common.hash.HashCode;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.inject.Inject;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.network.p2p.PeerEvent;
-import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.api.addressing.AccountAddress;
+import com.radixdlt.api.addressing.NodeAddress;
+import com.radixdlt.api.addressing.ValidatorAddress;
+import com.radixdlt.api.serialization.serializer.AccountAddressDeserializer;
+import com.radixdlt.api.serialization.serializer.AccountAddressSerializer;
+import com.radixdlt.api.serialization.serializer.ECPublicKeyDeserializer;
+import com.radixdlt.api.serialization.serializer.ECPublicKeySerializer;
+import com.radixdlt.api.serialization.serializer.NodeAddressDeserializer;
+import com.radixdlt.api.serialization.serializer.NodeAddressSerializer;
+import com.radixdlt.api.serialization.serializer.ValidatorAddressDeserializer;
+import com.radixdlt.api.serialization.serializer.ValidatorAddressSerializer;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.LatestForkConfig;
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import com.radixdlt.utils.functional.Failure;
+import com.radixdlt.utils.functional.Result;
 
-import java.security.SecureRandom;
-import java.util.Objects;
-import java.util.Optional;
+public class ApiSerializer {
+	//TODO: move to appropriate location
+	private static final Failure UNABLE_TO_DESERIALIZE = Failure.failure(600, "Unable to deserialize: {0}");
+	private static final Failure UNABLE_TO_SERIALIZE = Failure.failure(601, "Unable to serialize: {0}");
 
-public final class PeerServerBootstrap {
-	private static final int BACKLOG_SIZE = 100;
+	private final ObjectMapper objectMapper = defaultObjectMapper();
+	private Addressing addressing;
 
-	private final P2PConfig config;
-	private final Addressing addressing;
-	private final int networkId;
-	private final HashCode latestForkHash;
-	private final SystemCounters counters;
-	private final Serialization serialization;
-	private final SecureRandom secureRandom;
-	private final ECKeyOps ecKeyOps;
-	private final EventDispatcher<PeerEvent> peerEventDispatcher;
-
-	//TODO: inject PeerChannelInitializer directly instead of passing all parameters for it
 	@Inject
-	public PeerServerBootstrap(
-		P2PConfig config,
-		Addressing addressing,
-		@NetworkId int networkId,
-		@LatestForkConfig ForkConfig latestForkConfig,
-		SystemCounters counters,
-		Serialization serialization,
-		SecureRandom secureRandom,
-		ECKeyOps ecKeyOps,
-		EventDispatcher<PeerEvent> peerEventDispatcher
-	) {
-		this.config = Objects.requireNonNull(config);
-		this.addressing = Objects.requireNonNull(addressing);
-		this.networkId = networkId;
-		this.latestForkHash = Objects.requireNonNull(latestForkConfig).hash();
-		this.counters = Objects.requireNonNull(counters);
-		this.serialization = Objects.requireNonNull(serialization);
-		this.secureRandom = Objects.requireNonNull(secureRandom);
-		this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
-		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
+	public ApiSerializer(Addressing addressing) {
+		setAddressing(addressing);
 	}
 
-	public void start() throws InterruptedException {
-		final var serverGroup = new NioEventLoopGroup(1);
-		final var workerGroup = new NioEventLoopGroup();
+	public ApiSerializer() {
+	}
 
-		final var serverBootstrap = new ServerBootstrap();
-		serverBootstrap.group(serverGroup, workerGroup)
-			.channel(NioServerSocketChannel.class)
-			.option(ChannelOption.SO_BACKLOG, BACKLOG_SIZE)
-			.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.peerConnectionTimeout())
-			.childHandler(new PeerChannelInitializer(
-				config,
-				addressing,
-				networkId,
-				latestForkHash,
-				counters,
-				serialization,
-				secureRandom,
-				ecKeyOps,
-				peerEventDispatcher,
-				Optional.empty()
-			));
+	public void setAddressing(Addressing addressing) {
+		if (this.addressing != null) {
+			throw new IllegalStateException("Attempt to set addressing more than once");
+		}
 
-		serverBootstrap.bind(config.listenAddress(), config.listenPort()).sync();
+		this.addressing = addressing;
+
+		var module = new SimpleModule()
+			.addSerializer(ValidatorAddress.class, new ValidatorAddressSerializer(addressing))
+			.addSerializer(AccountAddress.class, new AccountAddressSerializer(addressing))
+			.addSerializer(NodeAddress.class, new NodeAddressSerializer(addressing))
+			.addSerializer(ECPublicKey.class, new ECPublicKeySerializer())
+			.addDeserializer(AccountAddress.class, new AccountAddressDeserializer(addressing))
+			.addDeserializer(ValidatorAddress.class, new ValidatorAddressDeserializer(addressing))
+			.addDeserializer(NodeAddress.class, new NodeAddressDeserializer(addressing))
+			.addDeserializer(ECPublicKey.class, new ECPublicKeyDeserializer());
+		objectMapper.registerModule(module);
+	}
+
+	private ObjectMapper defaultObjectMapper() {
+		return new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
+	}
+
+	public Addressing getAddressing() {
+		return addressing;
+	}
+
+	public Result<String> serialize(Object value) {
+		return Result.wrap(UNABLE_TO_SERIALIZE, () -> objectMapper.writeValueAsString(value));
+	}
+
+	public <T> Result<T> deserialize(String body, TypeReference<T> typeReference) {
+		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.readValue(body, typeReference));
+	}
+
+	public <T> Result<T> deserialize(String body, Class<T> clazz) {
+		return Result.wrap(UNABLE_TO_DESERIALIZE, () -> objectMapper.readValue(body, clazz));
 	}
 }

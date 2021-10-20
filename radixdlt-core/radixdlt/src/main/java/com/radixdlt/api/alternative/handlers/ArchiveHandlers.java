@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.alternative.routing;
+package com.radixdlt.api.alternative.handlers;
 
 import com.radixdlt.api.dto.request.AccountGetBalancesRequest;
 import com.radixdlt.api.dto.request.AccountGetStakePositionsRequest;
@@ -104,21 +104,20 @@ import static com.radixdlt.utils.functional.Result.fail;
 public class ArchiveHandlers {
 	private static final Failure ERR_NOT_IMPLEMENTED = Failure.failure(-1, "Function is not implemented");
 
-	public Result<TokenBalances> accountGetBalances(AccountGetBalancesRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<TransactionHistory> accountGetTransactionHistory(AccountGetTransactionHistoryRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<NetworkStats> networkGetDemand(NetworkGetDemandRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<NetworkId> networkGetId(NetworkGetIdRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<NetworkStats> networkGetThroughput(NetworkGetThroughputRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<TokenInfo> tokensGetInfo(TokensGetInfoRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<TokenInfo> tokensGetNativeToken(TokensGetNativeTokenRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<TransactionStatusDTO> transactionsGetTransactionStatus(TransactionsGetTransactionStatusRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<TransactionDTO> transactionsLookupTransaction(TransactionsLookupTransactionRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<ValidatorsResponse> validatorsGetNextEpochSet(ValidatorsGetNextEpochSetRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<ValidatorDTO> validatorsLookupValidator(ValidatorsLookupValidatorRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<BuiltTransaction> constructionBuildTransaction(ConstructionBuildTransactionRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<List<StakePositions>> accountGetStakePositions(AccountGetStakePositionsRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<List<UnstakePositions>> accountGetUnstakePositions(AccountGetUnstakePositionsRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-
-	public Result<BuiltTransaction> constructionBuildTransaction(ConstructionBuildTransactionRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<NetworkId> networkGetId(NetworkGetIdRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<NetworkStats> networkGetDemand(NetworkGetDemandRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<NetworkStats> networkGetThroughput(NetworkGetThroughputRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<TokenBalances> accountGetBalances(AccountGetBalancesRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<TokenInfo> tokensGetInfo(TokensGetInfoRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<TokenInfo> tokensGetNativeToken(TokensGetNativeTokenRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<TransactionDTO> transactionsLookupTransaction(TransactionsLookupTransactionRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<TransactionHistory> accountGetTransactionHistory(AccountGetTransactionHistoryRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<TransactionStatusDTO> transactionsGetTransactionStatus(TransactionsGetTransactionStatusRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<TxBlobDTO> constructionFinalizeTransaction(ConstructionFinalizeTransactionRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<TxDTO> constructionSubmitTransaction(ConstructionSubmitTransactionRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<ValidatorDTO> validatorsLookupValidator(ValidatorsLookupValidatorRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<ValidatorsResponse> validatorsGetNextEpochSet(ValidatorsGetNextEpochSetRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 }

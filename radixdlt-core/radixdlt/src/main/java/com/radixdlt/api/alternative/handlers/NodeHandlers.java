@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.alternative.routing;
+package com.radixdlt.api.alternative.handlers;
 
 import com.radixdlt.api.dto.request.AccountGetInfoRequest;
 import com.radixdlt.api.dto.request.AccountSubmitTransactionSingleStepRequest;
@@ -117,26 +117,26 @@ import static com.radixdlt.utils.functional.Result.fail;
 public class NodeHandlers {
 	private static final Failure ERR_NOT_IMPLEMENTED = Failure.failure(-1, "Function is not implemented");
 
-	public Result<LocalAccount> accountGetInfo(AccountGetInfoRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<TxDTO> accountSubmitTransactionSingleStep(AccountSubmitTransactionSingleStepRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<ApiConfiguration> apiGetConfiguration(ApiGetConfigurationRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<ApiData> apiGetData(ApiGetDataRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<Checkpoint> checkpointsGetCheckpoints(CheckpointsGetCheckpointsRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<ConsensusConfiguration> bftGetConfiguration(BftGetConfigurationRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<ConsensusData> bftGetData(BftGetDataRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<TransactionsDTO> getTransactions(GetTransactionsRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<Proof> ledgerGetLatestEpochProof(LedgerGetLatestEpochProofRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<Proof> ledgerGetLatestProof(LedgerGetLatestProofRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<EpochData> validationGetCurrentEpochData(ValidationGetCurrentEpochDataRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<List<AddressBookEntry>> networkingGetAddressBook(NetworkingGetAddressBookRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<List<ForkDetails>> radixEngineGetConfiguration(RadixEngineGetConfigurationRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<List<NetworkPeer>> networkingGetPeers(NetworkingGetPeersRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<LocalAccount> accountGetInfo(AccountGetInfoRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<LocalValidatorInfo> validationGetNodeInfo(ValidationGetNodeInfoRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<MempoolConfiguration> mempoolGetConfiguration(MempoolGetConfigurationRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<MempoolData> mempoolGetData(MempoolGetDataRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<NetworkData> networkingGetData(NetworkingGetDataRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<NetworkConfiguration> networkingGetConfiguration(NetworkingGetConfigurationRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<NetworkData> networkingGetData(NetworkingGetDataRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<Proof> ledgerGetLatestEpochProof(LedgerGetLatestEpochProofRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<Proof> ledgerGetLatestProof(LedgerGetLatestProofRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<RadixEngineData> radixEngineGetData(RadixEngineGetDataRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<SyncConfiguration> syncGetConfiguration(SyncGetConfigurationRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<SyncData> syncGetData(SyncGetDataRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<EpochData> validationGetCurrentEpochData(ValidationGetCurrentEpochDataRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<LocalValidatorInfo> validationGetNodeInfo(ValidationGetNodeInfoRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<List<AddressBookEntry>> networkingGetAddressBook(NetworkingGetAddressBookRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<List<NetworkPeer>> networkingGetPeers(NetworkingGetPeersRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<List<ForkDetails>> radixEngineGetConfiguration(RadixEngineGetConfigurationRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<Checkpoint> checkpointsGetCheckpoints(CheckpointsGetCheckpointsRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<TransactionsDTO> getTransactions(GetTransactionsRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<TxDTO> accountSubmitTransactionSingleStep(AccountSubmitTransactionSingleStepRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 }

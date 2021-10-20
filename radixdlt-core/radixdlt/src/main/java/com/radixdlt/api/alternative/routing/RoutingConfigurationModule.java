@@ -65,6 +65,9 @@
 package com.radixdlt.api.alternative.routing;
 
 import com.google.inject.AbstractModule;
+import com.radixdlt.api.alternative.handlers.ArchiveHandlers;
+import com.radixdlt.api.alternative.handlers.NodeHandlers;
+import com.radixdlt.api.alternative.server.RouteMapping;
 import com.radixdlt.api.archive.ArchiveServer;
 import com.radixdlt.api.node.NodeServer;
 import com.radixdlt.api.routing.Route;
@@ -150,11 +153,8 @@ public class RoutingConfigurationModule extends AbstractModule {
 		var archiveHandlers = collectEnabledHandlers(archiveRoutingTable, handlers);
 		var nodeHandlers = collectEnabledHandlers(nodeRoutingTable, handlers);
 
-		bind(RoutingTable.class).annotatedWith(ArchiveServer.class).toInstance(archiveRoutingTable);
-		bind(HandlerTable.class).annotatedWith(ArchiveServer.class).toInstance(archiveHandlers);
-
-		bind(RoutingTable.class).annotatedWith(NodeServer.class).toInstance(nodeRoutingTable);
-		bind(HandlerTable.class).annotatedWith(NodeServer.class).toInstance(nodeHandlers);
+		bind(RouteMapping.class).annotatedWith(ArchiveServer.class).toInstance(RouteMapping.create(archiveRoutingTable, archiveHandlers));
+		bind(RouteMapping.class).annotatedWith(NodeServer.class).toInstance(RouteMapping.create(nodeRoutingTable, nodeHandlers));
 	}
 
 	private void validateRouting(List<EndpointMappingEntry<?, ?>> handlers) {

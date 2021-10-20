@@ -155,7 +155,7 @@ public final class RestUtils {
 		}
 	}
 
-	private static String readBody(HttpServerExchange exchange, long maxRequestSize) {
+	public static String readBody(HttpServerExchange exchange, long maxRequestSize) {
 		exchange.setMaxEntitySize(maxRequestSize);
 		exchange.startBlocking();
 
