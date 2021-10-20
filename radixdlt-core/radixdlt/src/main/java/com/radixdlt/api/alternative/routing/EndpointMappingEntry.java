@@ -64,25 +64,25 @@
 
 package com.radixdlt.api.alternative.routing;
 
-import com.radixdlt.api.dto.EndpointDescriptor;
+import com.radixdlt.api.dto.Descriptor;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.function.Function;
 
 public class EndpointMappingEntry<I, O> {
-	private final EndpointDescriptor<I, O> descriptor;
+	private final Descriptor<I, O> descriptor;
 	private final Function<I, Result<O>> handler;
 
-	private EndpointMappingEntry(EndpointDescriptor<I, O> descriptor, Function<I, Result<O>> handler) {
+	private EndpointMappingEntry(Descriptor<I, O> descriptor, Function<I, Result<O>> handler) {
 		this.descriptor = descriptor;
 		this.handler = handler;
 	}
 
-	public static <I, O> EndpointMappingEntry<I, O> entry(EndpointDescriptor<I, O> descriptor, Function<I, Result<O>> handler) {
+	public static <I, O> EndpointMappingEntry<I, O> entry(Descriptor<I, O> descriptor, Function<I, Result<O>> handler) {
 		return new EndpointMappingEntry<>(descriptor, handler);
 	}
 
-	public EndpointDescriptor<I, O> descriptor() {
+	public Descriptor<I, O> descriptor() {
 		return descriptor;
 	}
 

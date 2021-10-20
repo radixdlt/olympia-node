@@ -77,7 +77,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class ConstructionFinalizeTransactionRequest implements MethodParameters {
+public class ConstructionFinalizeTransactionRequest {
 	private final byte[] rawBlob;
 	private final ECDSASignature rawSignature;
 	private final ECPublicKey publicKey;

@@ -64,7 +64,7 @@
 
 package com.radixdlt.api.alternative.routing;
 
-import com.radixdlt.api.dto.EndpointDescriptor;
+import com.radixdlt.api.dto.Descriptor;
 import com.radixdlt.utils.functional.Result;
 
 import java.util.HashMap;
@@ -73,21 +73,21 @@ import java.util.Map;
 import java.util.function.Function;
 
 public class HandlerTable {
-	private final Map<EndpointDescriptor<?, ?>, Function<?, Result<?>>> mapping;
+	private final Map<Descriptor<?, ?>, Function<?, Result<?>>> mapping;
 
-	private HandlerTable(Map<EndpointDescriptor<?, ?>, Function<?, Result<?>>> mapping) {
+	private HandlerTable(Map<Descriptor<?, ?>, Function<?, Result<?>>> mapping) {
 		this.mapping = mapping;
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	public static HandlerTable create(List<EndpointMappingEntry<?, ?>> entryList) {
-		var map = new HashMap<EndpointDescriptor<?, ?>, Function<?, Result<?>>>();
+		var map = new HashMap<Descriptor<?, ?>, Function<?, Result<?>>>();
 		entryList.forEach(entry -> map.put(entry.descriptor(), (Function) entry.handler()));
 
 		return new HandlerTable(map);
 	}
 
-	public Function<?, Result<?>> forDescriptor(EndpointDescriptor<?, ?> descriptor) {
+	public Function<?, Result<?>> forDescriptor(Descriptor<?, ?> descriptor) {
 		return mapping.get(descriptor);
 	}
 }

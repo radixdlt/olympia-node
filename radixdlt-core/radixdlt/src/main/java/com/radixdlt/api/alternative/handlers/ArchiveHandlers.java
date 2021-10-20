@@ -71,11 +71,8 @@ import com.radixdlt.api.dto.request.AccountGetUnstakePositionsRequest;
 import com.radixdlt.api.dto.request.ConstructionBuildTransactionRequest;
 import com.radixdlt.api.dto.request.ConstructionFinalizeTransactionRequest;
 import com.radixdlt.api.dto.request.ConstructionSubmitTransactionRequest;
-import com.radixdlt.api.dto.request.NetworkGetDemandRequest;
-import com.radixdlt.api.dto.request.NetworkGetIdRequest;
-import com.radixdlt.api.dto.request.NetworkGetThroughputRequest;
+import com.radixdlt.api.dto.request.EmptyRequest;
 import com.radixdlt.api.dto.request.TokensGetInfoRequest;
-import com.radixdlt.api.dto.request.TokensGetNativeTokenRequest;
 import com.radixdlt.api.dto.request.TransactionsGetTransactionStatusRequest;
 import com.radixdlt.api.dto.request.TransactionsLookupTransactionRequest;
 import com.radixdlt.api.dto.request.ValidatorsGetNextEpochSetRequest;
@@ -107,12 +104,12 @@ public class ArchiveHandlers {
 	public Result<BuiltTransaction> constructionBuildTransaction(ConstructionBuildTransactionRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<List<StakePositions>> accountGetStakePositions(AccountGetStakePositionsRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<List<UnstakePositions>> accountGetUnstakePositions(AccountGetUnstakePositionsRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<NetworkId> networkGetId(NetworkGetIdRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<NetworkStats> networkGetDemand(NetworkGetDemandRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<NetworkStats> networkGetThroughput(NetworkGetThroughputRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<NetworkId> networkGetId(EmptyRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<NetworkStats> networkGetDemand(EmptyRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<NetworkStats> networkGetThroughput(EmptyRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<TokenBalances> accountGetBalances(AccountGetBalancesRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<TokenInfo> tokensGetInfo(TokensGetInfoRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
-	public Result<TokenInfo> tokensGetNativeToken(TokensGetNativeTokenRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
+	public Result<TokenInfo> tokensGetNativeToken(EmptyRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<TransactionDTO> transactionsLookupTransaction(TransactionsLookupTransactionRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<TransactionHistory> accountGetTransactionHistory(AccountGetTransactionHistoryRequest request) { return fail(ERR_NOT_IMPLEMENTED);}
 	public Result<TransactionStatusDTO> transactionsGetTransactionStatus(TransactionsGetTransactionStatusRequest request) { return fail(ERR_NOT_IMPLEMENTED);}

@@ -70,7 +70,7 @@ import com.radixdlt.identifiers.AID;
 
 import java.util.Objects;
 
-public class TransactionsLookupTransactionRequest implements MethodParameters {
+public class TransactionsLookupTransactionRequest {
 	private final AID txId;
 
 	private TransactionsLookupTransactionRequest(AID txId) {

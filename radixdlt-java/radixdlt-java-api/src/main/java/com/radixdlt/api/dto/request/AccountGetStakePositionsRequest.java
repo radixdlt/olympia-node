@@ -70,7 +70,7 @@ import com.radixdlt.api.addressing.AccountAddress;
 
 import java.util.Objects;
 
-public class AccountGetStakePositionsRequest implements MethodParameters {
+public class AccountGetStakePositionsRequest {
 	private final AccountAddress address;
 
 	private AccountGetStakePositionsRequest(AccountAddress address) {

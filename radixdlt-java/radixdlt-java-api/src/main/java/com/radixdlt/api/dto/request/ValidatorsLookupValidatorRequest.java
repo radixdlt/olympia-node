@@ -70,7 +70,7 @@ import com.radixdlt.api.addressing.ValidatorAddress;
 
 import java.util.Objects;
 
-public class ValidatorsLookupValidatorRequest implements MethodParameters {
+public class ValidatorsLookupValidatorRequest {
 	private final ValidatorAddress address;
 
 	private ValidatorsLookupValidatorRequest(ValidatorAddress address) {

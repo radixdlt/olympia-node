@@ -64,7 +64,7 @@
 
 package com.radixdlt.api.routing;
 
-import com.radixdlt.api.dto.EndpointDescriptor;
+import com.radixdlt.api.dto.Descriptor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -81,40 +81,40 @@ public final class ApiRouting {
 			"/archive",
 			group(
 				"/tokens",
-				endPoint("/get_native_token", EndpointDescriptor.TOKENS_GET_NATIVE_TOKEN),
-				endPoint("/get_info", EndpointDescriptor.TOKENS_GET_INFO)
+				endPoint("/get_native_token", Descriptor.TOKENS_GET_NATIVE_TOKEN),
+				endPoint("/get_info", Descriptor.TOKENS_GET_INFO)
 			),
 			group(
 				"/account",
-				endPoint("/get_balances", EndpointDescriptor.ACCOUNT_GET_BALANCES),
-				endPoint("/get_transaction_history", EndpointDescriptor.ACCOUNT_GET_TRANSACTION_HISTORY),
-				endPoint("/get_stake_positions", EndpointDescriptor.ACCOUNT_GET_STAKE_POSITIONS),
-				endPoint("/get_unstake_positions", EndpointDescriptor.ACCOUNT_GET_UNSTAKE_POSITIONS)
+				endPoint("/get_balances", Descriptor.ACCOUNT_GET_BALANCES),
+				endPoint("/get_transaction_history", Descriptor.ACCOUNT_GET_TRANSACTION_HISTORY),
+				endPoint("/get_stake_positions", Descriptor.ACCOUNT_GET_STAKE_POSITIONS),
+				endPoint("/get_unstake_positions", Descriptor.ACCOUNT_GET_UNSTAKE_POSITIONS)
 			),
 			group(
 				"/transactions",
-				endPoint("/lookup_transaction", EndpointDescriptor.TRANSACTIONS_LOOKUP_TRANSACTION),
-				endPoint("/get_transaction_status", EndpointDescriptor.TRANSACTIONS_GET_TRANSACTION_STATUS)
+				endPoint("/lookup_transaction", Descriptor.TRANSACTIONS_LOOKUP_TRANSACTION),
+				endPoint("/get_transaction_status", Descriptor.TRANSACTIONS_GET_TRANSACTION_STATUS)
 			),
 			group(
 				"/network",
-				endPoint("/get_id", EndpointDescriptor.NETWORK_GET_ID),
-				endPoint("/get_throughput", EndpointDescriptor.NETWORK_GET_THROUGHPUT),
-				endPoint("/get_demand", EndpointDescriptor.NETWORK_GET_DEMAND)
+				endPoint("/get_id", Descriptor.NETWORK_GET_ID),
+				endPoint("/get_throughput", Descriptor.NETWORK_GET_THROUGHPUT),
+				endPoint("/get_demand", Descriptor.NETWORK_GET_DEMAND)
 			),
 			group(
 				"/validators",
-				endPoint("/get_next_epoch_set", EndpointDescriptor.VALIDATORS_GET_NEXT_EPOCH_SET),
-				endPoint("/lookup_validator", EndpointDescriptor.VALIDATORS_LOOKUP_VALIDATOR)
+				endPoint("/get_next_epoch_set", Descriptor.VALIDATORS_GET_NEXT_EPOCH_SET),
+				endPoint("/lookup_validator", Descriptor.VALIDATORS_LOOKUP_VALIDATOR)
 			)
 		)
 	);
 
 	public static final RoutingTable CONSTRUCTION = table(group(
 		"/construction",
-		endPoint("/build_transaction", EndpointDescriptor.CONSTRUCTION_BUILD_TRANSACTION),
-		endPoint("/finalize_transaction", EndpointDescriptor.CONSTRUCTION_FINALIZE_TRANSACTION),
-		endPoint("/submit_transaction", EndpointDescriptor.CONSTRUCTION_SUBMIT_TRANSACTION)
+		endPoint("/build_transaction", Descriptor.CONSTRUCTION_BUILD_TRANSACTION),
+		endPoint("/finalize_transaction", Descriptor.CONSTRUCTION_FINALIZE_TRANSACTION),
+		endPoint("/submit_transaction", Descriptor.CONSTRUCTION_SUBMIT_TRANSACTION)
 	));
 
 	public static final RoutingTable SYSTEM = table(
@@ -122,44 +122,44 @@ public final class ApiRouting {
 			"/system",
 			group(
 				"/networking",
-				endPoint("/get_configuration", EndpointDescriptor.NETWORKING_GET_CONFIGURATION),
-				endPoint("/get_peers", EndpointDescriptor.NETWORKING_GET_PEERS),
-				endPoint("/get_data", EndpointDescriptor.NETWORKING_GET_DATA),
-				endPoint("/get_address_book", EndpointDescriptor.NETWORKING_GET_ADDRESS_BOOK)
+				endPoint("/get_configuration", Descriptor.NETWORKING_GET_CONFIGURATION),
+				endPoint("/get_peers", Descriptor.NETWORKING_GET_PEERS),
+				endPoint("/get_data", Descriptor.NETWORKING_GET_DATA),
+				endPoint("/get_address_book", Descriptor.NETWORKING_GET_ADDRESS_BOOK)
 			),
 			group(
 				"/api",
-				endPoint("/get_configuration", EndpointDescriptor.API_GET_CONFIGURATION),
-				endPoint("/get_data", EndpointDescriptor.API_GET_DATA)
+				endPoint("/get_configuration", Descriptor.API_GET_CONFIGURATION),
+				endPoint("/get_data", Descriptor.API_GET_DATA)
 			),
 			group(
 				"/bft",
-				endPoint("/get_configuration", EndpointDescriptor.BFT_GET_CONFIGURATION),
-				endPoint("/get_data", EndpointDescriptor.BFT_GET_DATA)
+				endPoint("/get_configuration", Descriptor.BFT_GET_CONFIGURATION),
+				endPoint("/get_data", Descriptor.BFT_GET_DATA)
 			),
 			group(
 				"/mempool",
-				endPoint("/get_configuration", EndpointDescriptor.MEMPOOL_GET_CONFIGURATION),
-				endPoint("/get_data", EndpointDescriptor.MEMPOOL_GET_DATA)
+				endPoint("/get_configuration", Descriptor.MEMPOOL_GET_CONFIGURATION),
+				endPoint("/get_data", Descriptor.MEMPOOL_GET_DATA)
 			),
 			group(
 				"/ledger",
-				endPoint("/get_latest_proof", EndpointDescriptor.LEDGER_GET_LATEST_PROOF),
-				endPoint("/get_latest_epoch_proof", EndpointDescriptor.LEDGER_GET_LATEST_EPOCH_PROOF)
+				endPoint("/get_latest_proof", Descriptor.LEDGER_GET_LATEST_PROOF),
+				endPoint("/get_latest_epoch_proof", Descriptor.LEDGER_GET_LATEST_EPOCH_PROOF)
 			),
 			group(
 				"/checkpoints",
-				endPoint("checkpoints.get_checkpoints", EndpointDescriptor.CHECKPOINTS_GET_CHECKPOINTS)
+				endPoint("checkpoints.get_checkpoints", Descriptor.CHECKPOINTS_GET_CHECKPOINTS)
 			),
 			group(
 				"/engine",
-				endPoint("/get_configuration", EndpointDescriptor.RADIX_ENGINE_GET_CONFIGURATION),
-				endPoint("/get_data", EndpointDescriptor.RADIX_ENGINE_GET_DATA)
+				endPoint("/get_configuration", Descriptor.RADIX_ENGINE_GET_CONFIGURATION),
+				endPoint("/get_data", Descriptor.RADIX_ENGINE_GET_DATA)
 			),
 			group(
 				"/sync",
-				endPoint("/get_configuration", EndpointDescriptor.SYNC_GET_CONFIGURATION),
-				endPoint("/get_data", EndpointDescriptor.SYNC_GET_DATA)
+				endPoint("/get_configuration", Descriptor.SYNC_GET_CONFIGURATION),
+				endPoint("/get_data", Descriptor.SYNC_GET_DATA)
 			)
 		)
 	);
@@ -168,22 +168,22 @@ public final class ApiRouting {
 	public static final RoutingTable TRANSACTIONS = table(
 		group(
 			"/transactions",
-			endPoint("/get_transactions", EndpointDescriptor.GET_TRANSACTIONS)
+			endPoint("/get_transactions", Descriptor.GET_TRANSACTIONS)
 		)
 	);
 
 	public static final RoutingTable VALIDATION = table(
 		group(
 			"/validation",
-			endPoint("/get_node_info", EndpointDescriptor.VALIDATION_GET_NODE_INFO),
-			endPoint("/get_current_epoch_data", EndpointDescriptor.VALIDATION_GET_CURRENT_EPOCH_DATA)
+			endPoint("/get_node_info", Descriptor.VALIDATION_GET_NODE_INFO),
+			endPoint("/get_current_epoch_data", Descriptor.VALIDATION_GET_CURRENT_EPOCH_DATA)
 		)
 	);
 
 	public static final RoutingTable ACCOUNT = table(group(
 		"/account",
-		endPoint("/get_info", EndpointDescriptor.ACCOUNT_GET_INFO),
-		endPoint("/submit_transaction_single_step", EndpointDescriptor.ACCOUNT_SUBMIT_TRANSACTION_SINGLE_STEP)
+		endPoint("/get_info", Descriptor.ACCOUNT_GET_INFO),
+		endPoint("/submit_transaction_single_step", Descriptor.ACCOUNT_SUBMIT_TRANSACTION_SINGLE_STEP)
 	));
 
 	public static final Map<String, RoutingTable> ALL_ROUTING_TABLES;

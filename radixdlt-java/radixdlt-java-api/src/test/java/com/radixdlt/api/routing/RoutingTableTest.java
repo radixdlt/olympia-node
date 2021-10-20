@@ -66,7 +66,7 @@ package com.radixdlt.api.routing;
 
 import org.junit.Test;
 
-import com.radixdlt.api.dto.EndpointDescriptor;
+import com.radixdlt.api.dto.Descriptor;
 
 import java.util.List;
 import java.util.Optional;
@@ -80,13 +80,13 @@ public class RoutingTableTest {
 	@Test
 	public void routesAreAdded() {
 		var def = RoutingTable.table(
-			endPoint("/one", EndpointDescriptor.ACCOUNT_GET_BALANCES),
-			endPoint("/two", EndpointDescriptor.ACCOUNT_GET_INFO)
+			endPoint("/one", Descriptor.ACCOUNT_GET_BALANCES),
+			endPoint("/two", Descriptor.ACCOUNT_GET_INFO)
 		);
 
 		assertEquals(List.of("/one/", "/two/"), def.paths());
-		assertEquals(Optional.of(EndpointDescriptor.ACCOUNT_GET_BALANCES), def.forPath("/one/"));
-		assertEquals(Optional.of(EndpointDescriptor.ACCOUNT_GET_INFO), def.forPath("/two/"));
+		assertEquals(Optional.of(Descriptor.ACCOUNT_GET_BALANCES), def.forPath("/one/"));
+		assertEquals(Optional.of(Descriptor.ACCOUNT_GET_INFO), def.forPath("/two/"));
 	}
 
 	@Test
@@ -94,20 +94,20 @@ public class RoutingTableTest {
 		var def = RoutingTable.table(
 			group(
 				"/base",
-				endPoint("/one", EndpointDescriptor.ACCOUNT_GET_BALANCES),
-				endPoint("/two", EndpointDescriptor.ACCOUNT_GET_INFO),
+				endPoint("/one", Descriptor.ACCOUNT_GET_BALANCES),
+				endPoint("/two", Descriptor.ACCOUNT_GET_INFO),
 				group(
 					"/another",
-					endPoint("/one", EndpointDescriptor.ACCOUNT_GET_TRANSACTION_HISTORY),
-					endPoint("/two", EndpointDescriptor.ACCOUNT_GET_UNSTAKE_POSITIONS)
+					endPoint("/one", Descriptor.ACCOUNT_GET_TRANSACTION_HISTORY),
+					endPoint("/two", Descriptor.ACCOUNT_GET_UNSTAKE_POSITIONS)
 				)
 			)
 		);
 
 		assertEquals(List.of("/base/another/one/", "/base/another/two/", "/base/one/", "/base/two/"), def.paths());
-		assertEquals(Optional.of(EndpointDescriptor.ACCOUNT_GET_BALANCES), def.forPath("/base/one/"));
-		assertEquals(Optional.of(EndpointDescriptor.ACCOUNT_GET_INFO), def.forPath("/base/two/"));
-		assertEquals(Optional.of(EndpointDescriptor.ACCOUNT_GET_TRANSACTION_HISTORY), def.forPath("/base/another/one/"));
-		assertEquals(Optional.of(EndpointDescriptor.ACCOUNT_GET_UNSTAKE_POSITIONS), def.forPath("/base/another/two/"));
+		assertEquals(Optional.of(Descriptor.ACCOUNT_GET_BALANCES), def.forPath("/base/one/"));
+		assertEquals(Optional.of(Descriptor.ACCOUNT_GET_INFO), def.forPath("/base/two/"));
+		assertEquals(Optional.of(Descriptor.ACCOUNT_GET_TRANSACTION_HISTORY), def.forPath("/base/another/one/"));
+		assertEquals(Optional.of(Descriptor.ACCOUNT_GET_UNSTAKE_POSITIONS), def.forPath("/base/another/two/"));
 	}
 }

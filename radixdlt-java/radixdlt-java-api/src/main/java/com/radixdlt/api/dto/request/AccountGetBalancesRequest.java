@@ -70,7 +70,7 @@ import com.radixdlt.api.addressing.AccountAddress;
 
 import java.util.Objects;
 
-public class AccountGetBalancesRequest implements MethodParameters {
+public class AccountGetBalancesRequest {
 	private final AccountAddress address;
 
 	private AccountGetBalancesRequest(AccountAddress address) {

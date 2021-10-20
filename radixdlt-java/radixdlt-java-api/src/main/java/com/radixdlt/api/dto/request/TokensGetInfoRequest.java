@@ -69,7 +69,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class TokensGetInfoRequest implements MethodParameters {
+public class TokensGetInfoRequest {
 	private final String rri;
 
 	private TokensGetInfoRequest(String rri) {

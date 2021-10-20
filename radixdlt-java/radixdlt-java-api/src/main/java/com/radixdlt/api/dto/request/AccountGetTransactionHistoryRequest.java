@@ -71,7 +71,7 @@ import com.radixdlt.api.addressing.AccountAddress;
 import java.util.Objects;
 import java.util.OptionalLong;
 
-public class AccountGetTransactionHistoryRequest implements MethodParameters {
+public class AccountGetTransactionHistoryRequest {
 	public static final int DEFAULT_OFFSET = -1;
 
 	private final AccountAddress address;

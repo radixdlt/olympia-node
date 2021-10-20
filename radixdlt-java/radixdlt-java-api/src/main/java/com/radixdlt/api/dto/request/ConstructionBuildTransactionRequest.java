@@ -73,7 +73,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class ConstructionBuildTransactionRequest implements MethodParameters {
+public class ConstructionBuildTransactionRequest {
 	private final List<Action> actions;
 	private final AccountAddress feePayer;
 	private final String message;

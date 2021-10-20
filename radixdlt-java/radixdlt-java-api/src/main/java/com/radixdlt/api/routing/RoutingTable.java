@@ -64,7 +64,7 @@
 
 package com.radixdlt.api.routing;
 
-import com.radixdlt.api.dto.EndpointDescriptor;
+import com.radixdlt.api.dto.Descriptor;
 
 import java.util.HashMap;
 import java.util.List;
@@ -76,10 +76,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class RoutingTable implements RouteSource {
-	private final NavigableMap<String, EndpointDescriptor<?, ?>> routes;
-	private final Map<EndpointDescriptor<?, ?>, String> reverseRoutes;
+	private final NavigableMap<String, Descriptor<?, ?>> routes;
+	private final Map<Descriptor<?, ?>, String> reverseRoutes;
 
-	private RoutingTable(NavigableMap<String, EndpointDescriptor<?, ?>> routes, Map<EndpointDescriptor<?, ?>, String> reverseRoutes) {
+	private RoutingTable(NavigableMap<String, Descriptor<?, ?>> routes, Map<Descriptor<?, ?>, String> reverseRoutes) {
 		this.routes = routes;
 		this.reverseRoutes = reverseRoutes;
 	}
@@ -100,7 +100,7 @@ public class RoutingTable implements RouteSource {
 		var map = routes.flatMap(RouteSource::routes)
 			.collect(Collectors.toMap(Route::path, Route::descriptor));
 
-		var reverseRoutes = new HashMap<EndpointDescriptor<?, ?>, String>();
+		var reverseRoutes = new HashMap<Descriptor<?, ?>, String>();
 
 		map.forEach((key, value) -> reverseRoutes.put(value, key));
 
@@ -126,11 +126,11 @@ public class RoutingTable implements RouteSource {
 		return List.copyOf(routes.keySet());
 	}
 
-	public Optional<EndpointDescriptor<?, ?>> forPath(String path) {
+	public Optional<Descriptor<?, ?>> forPath(String path) {
 		return Optional.ofNullable(routes.get(path));
 	}
 
-	public Optional<String> forApi(EndpointDescriptor<?, ?> descriptor) {
+	public Optional<String> forApi(Descriptor<?, ?> descriptor) {
 		return Optional.ofNullable(reverseRoutes.get(descriptor));
 	}
 }

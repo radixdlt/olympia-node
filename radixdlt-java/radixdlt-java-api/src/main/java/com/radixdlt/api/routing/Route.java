@@ -64,7 +64,7 @@
 
 package com.radixdlt.api.routing;
 
-import com.radixdlt.api.dto.EndpointDescriptor;
+import com.radixdlt.api.dto.Descriptor;
 
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -72,14 +72,14 @@ import java.util.stream.Stream;
 public class Route<I, O> implements RouteSource {
 	private static final Pattern SLASHES = Pattern.compile("/+");
 	private final String path;
-	private final EndpointDescriptor<I, O> endPoint;
+	private final Descriptor<I, O> endPoint;
 
-	private Route(String path, EndpointDescriptor<I, O> endPoint) {
+	private Route(String path, Descriptor<I, O> endPoint) {
 		this.path = path;
 		this.endPoint = endPoint;
 	}
 
-	public static <I, O> Route<I, O> endPoint(String path, EndpointDescriptor<I, O> endPoint) {
+	public static <I, O> Route<I, O> endPoint(String path, Descriptor<I, O> endPoint) {
 		return new Route<>(normalize(path), endPoint);
 	}
 
@@ -97,7 +97,7 @@ public class Route<I, O> implements RouteSource {
 		return path;
 	}
 
-	public EndpointDescriptor<I, O> descriptor() {
+	public Descriptor<I, O> descriptor() {
 		return endPoint;
 	}
 

@@ -77,7 +77,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class ConstructionSubmitTransactionRequest implements MethodParameters {
+public class ConstructionSubmitTransactionRequest {
 	private final byte[] blob;
 	private final AID txId;
 

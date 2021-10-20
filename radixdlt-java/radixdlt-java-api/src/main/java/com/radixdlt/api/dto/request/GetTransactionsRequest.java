@@ -70,7 +70,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 import java.util.OptionalLong;
 
-public class GetTransactionsRequest implements MethodParameters {
+public class GetTransactionsRequest {
 	public static final long DEFAULT_OFFSET = 1L;
 
 	private final long limit;

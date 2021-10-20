@@ -71,7 +71,7 @@ import com.radixdlt.api.dto.common.NavigationCursor;
 import java.util.Objects;
 import java.util.Optional;
 
-public class ValidatorsGetNextEpochSetRequest implements MethodParameters {
+public class ValidatorsGetNextEpochSetRequest {
 	private final long size;
 	private final Optional<NavigationCursor> cursor;
 

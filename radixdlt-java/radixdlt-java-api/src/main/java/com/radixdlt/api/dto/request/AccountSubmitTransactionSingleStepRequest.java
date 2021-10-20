@@ -72,7 +72,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class AccountSubmitTransactionSingleStepRequest implements MethodParameters {
+public class AccountSubmitTransactionSingleStepRequest {
 	private final List<Action> actions;
 	private final String message;
 

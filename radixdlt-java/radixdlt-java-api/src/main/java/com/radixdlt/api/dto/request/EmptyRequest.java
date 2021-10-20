@@ -68,13 +68,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-public class ValidationGetCurrentEpochDataRequest implements MethodParameters {
-	private static final ValidationGetCurrentEpochDataRequest INSTANCE = new ValidationGetCurrentEpochDataRequest();
+public class EmptyRequest {
+	private static final EmptyRequest INSTANCE = new EmptyRequest();
 
-	private ValidationGetCurrentEpochDataRequest() { }
+	private EmptyRequest() { }
 
 	@JsonCreator
-	public static ValidationGetCurrentEpochDataRequest create() {
+	public static EmptyRequest create() {
 		return INSTANCE;
 	}
 }
