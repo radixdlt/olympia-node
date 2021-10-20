@@ -36,7 +36,7 @@ public abstract class PMTNode {
 		// TODO: use a dirty flag or wrapper to avoid re-serializing
 		var ser = serialize();
 		if (ser.length >= DB_SIZE_COND) {
-			this.hash = HashUtils.sha512(ser).asBytes();
+			this.hash = HashUtils.sha256(ser).asBytes();
 		} else {
 			this.hash = ser;
 		}
