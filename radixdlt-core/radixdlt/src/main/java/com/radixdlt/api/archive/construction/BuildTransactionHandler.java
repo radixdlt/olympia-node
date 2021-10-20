@@ -67,6 +67,9 @@ import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.application.tokens.construction.MinimumStakeException;
+import com.radixdlt.atom.NotEnoughResourcesException;
+import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.engine.RadixEngine;
@@ -118,9 +121,30 @@ final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest
 
 	@Override
 	public JSONObject handleRequest(TxnConstructionRequest request) throws TxBuilderException {
-		var builder = radixEngine.construct(request);
+		TxBuilder builder;
+		try {
+			builder = radixEngine.construct(request);
+		} catch (NotEnoughResourcesException e) {
+			return new JSONObject()
+				.put("result", "error")
+				.put("details", new JSONObject()
+					.put("errorType", "not_enough_resources")
+					.put("requested", e.getRequested())
+					.put("available", e.getAvailable())
+				);
+		} catch (MinimumStakeException e) {
+			return new JSONObject()
+				.put("result", "error")
+				.put("details", new JSONObject()
+					.put("errorType", "minimum_stake")
+					.put("requested", e.getAttempt())
+					.put("minimum", e.getMinimumStake())
+				);
+		}
+
 		var unsignedTransaction = builder.buildForExternalSign();
 		return new JSONObject()
+			.put("result", "success")
 			.put("fee", unsignedTransaction.feesPaid().toString())
 			.put("unsignedTransaction", Bytes.toHexString(unsignedTransaction.blob()))
 			.put("payloadToSign", Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));

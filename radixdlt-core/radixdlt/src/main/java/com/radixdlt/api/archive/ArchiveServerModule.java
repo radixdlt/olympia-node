@@ -128,7 +128,6 @@ public class ArchiveServerModule extends AbstractModule {
 		var errorCodes = List.of(
 			ApiErrorCode.TXBUILDER_EXCEPTION,
 			ApiErrorCode.FEE_CONSTRUCTION_ERROR,
-			ApiErrorCode.NOT_ENOUGH_RESOURCES,
 			ApiErrorCode.INVALID_RAKE_INCREASE,
 			ApiErrorCode.STAKE_PERMISSION,
 			ApiErrorCode.MEMPOOL_FULL,

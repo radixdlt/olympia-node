@@ -67,7 +67,6 @@ import com.radixdlt.api.archive.construction.InvalidTransactionException;
 import com.radixdlt.api.archive.construction.StateConflictException;
 import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
 import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
-import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.mempool.MempoolFullException;
@@ -117,16 +116,7 @@ public enum ApiErrorCode {
 				.put("attempts", ex.getAttempts());
 		}
 	},
-	NOT_ENOUGH_RESOURCES(NotEnoughResourcesException.class, 102, "Not enough resources") {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (NotEnoughResourcesException) e;
-			return new JSONObject()
-				.put("requested", ex.getRequested())
-				.put("available", ex.getAvailable());
-		}
-	},
-	INVALID_RAKE_INCREASE(InvalidRakeIncreaseException.class, 103, "Invalid rake increase") {
+	INVALID_RAKE_INCREASE(InvalidRakeIncreaseException.class, 102, "Invalid rake increase") {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (InvalidRakeIncreaseException) e;
@@ -135,7 +125,7 @@ public enum ApiErrorCode {
 				.put("attempted", ex.getIncreaseAttempt());
 		}
 	},
-	STAKE_PERMISSION(DelegateStakePermissionException.class, 104, "Not allowed to stake") {
+	STAKE_PERMISSION(DelegateStakePermissionException.class, 103, "Not allowed to stake") {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (DelegateStakePermissionException) e;

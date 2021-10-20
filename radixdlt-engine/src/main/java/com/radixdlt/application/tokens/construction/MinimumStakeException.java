@@ -67,7 +67,20 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.utils.UInt256;
 
 public class MinimumStakeException extends TxBuilderException {
+	private final UInt256 minimumStake;
+	private final UInt256 attempt;
+
 	public MinimumStakeException(UInt256 minimumStake, UInt256 attempt) {
 		super("Minimum to stake is " + minimumStake + " but trying to stake " + attempt);
+		this.minimumStake = minimumStake;
+		this.attempt = attempt;
+	}
+
+	public UInt256 getMinimumStake() {
+		return minimumStake;
+	}
+
+	public UInt256 getAttempt() {
+		return attempt;
 	}
 }
