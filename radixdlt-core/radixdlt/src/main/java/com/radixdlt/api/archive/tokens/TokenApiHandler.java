@@ -69,6 +69,7 @@ import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 final class TokenApiHandler implements ApiHandler<REAddr> {
@@ -92,9 +93,9 @@ final class TokenApiHandler implements ApiHandler<REAddr> {
 	}
 
 	@Override
-	public JSONObject handleRequest(REAddr addr) throws ResourceNotFoundException {
+	public JSONObject handleRequest(REAddr addr) {
 		var tokenJson = store.getResourceInfo(addr)
-			.orElseThrow(() -> new ResourceNotFoundException(addr));
+			.map(o -> new JSONArray().put(o)).orElse(new JSONArray());
 		return new JSONObject()
 			.put("token", tokenJson);
 	}

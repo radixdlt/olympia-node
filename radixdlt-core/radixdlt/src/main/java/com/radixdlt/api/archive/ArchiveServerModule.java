@@ -126,8 +126,6 @@ public class ArchiveServerModule extends AbstractModule {
 		SystemCounters counters
 	) {
 		var errorCodes = List.of(
-			ApiErrorCode.TRANSACTION_NOT_FOUND,
-			ApiErrorCode.TOKEN_NOT_FOUND,
 			ApiErrorCode.TXBUILDER_EXCEPTION,
 			ApiErrorCode.FEE_CONSTRUCTION_ERROR,
 			ApiErrorCode.NOT_ENOUGH_RESOURCES,

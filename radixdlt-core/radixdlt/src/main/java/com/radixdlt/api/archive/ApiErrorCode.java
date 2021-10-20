@@ -65,8 +65,6 @@ package com.radixdlt.api.archive;
 
 import com.radixdlt.api.archive.construction.InvalidTransactionException;
 import com.radixdlt.api.archive.construction.StateConflictException;
-import com.radixdlt.api.archive.tokens.ResourceNotFoundException;
-import com.radixdlt.api.archive.transaction.TransactionNotFoundException;
 import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
 import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
 import com.radixdlt.atom.NotEnoughResourcesException;
@@ -100,22 +98,6 @@ public enum ApiErrorCode {
 			return new JSONObject()
 				.put("pointer", ex.getJsonPointer())
 				.put("cause", ex.getCause() == null ? ex.getMessage() : ex.getCause().getMessage());
-		}
-	},
-	TRANSACTION_NOT_FOUND(TransactionNotFoundException.class, 4, "Transaction Not Found") {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (TransactionNotFoundException) e;
-			return new JSONObject()
-				.put("transactionIdentifier", ex.getTxnId());
-		}
-	},
-	TOKEN_NOT_FOUND(ResourceNotFoundException.class, 5, "Token Not Found") {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (ResourceNotFoundException) e;
-			return new JSONObject()
-				.put("resourceAddress", ex.getResourceAddr());
 		}
 	},
 	TXBUILDER_EXCEPTION(TxBuilderException.class, 100, "Failed to build transaction") {

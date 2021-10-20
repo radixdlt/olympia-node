@@ -69,6 +69,7 @@ import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.identifiers.AID;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 final class TransactionHandler implements ApiHandler<AID> {
@@ -85,9 +86,9 @@ final class TransactionHandler implements ApiHandler<AID> {
 	}
 
 	@Override
-	public JSONObject handleRequest(AID txnId) throws TransactionNotFoundException {
+	public JSONObject handleRequest(AID txnId) {
 		var transactionJson = store.getTransactionJSON(txnId)
-			.orElseThrow(() -> new TransactionNotFoundException(txnId));
+			.map(json -> new JSONArray().put(json)).orElse(new JSONArray());
 		return new JSONObject()
 			.put("transaction", transactionJson);
 	}
