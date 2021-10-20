@@ -23,14 +23,17 @@ public class PMTBranch extends PMTNode {
 		return slices[nibInt];
 	}
 
-	public PMTBranch setNibble(PMTNode nextNode) {
-		var nibble = nextNode.getFirstNibble().toByte();
-		var sliceKey = TreeUtils.nibbleToInteger(nibble);
+	public PMTBranch setNibble(PMTKey nibble, PMTNode nextNode) {
+		var sliceKey = TreeUtils.nibbleToInteger(nibble.toByte());
 		if (this.slices[sliceKey] == null) {
 			slicesCounter++;
 		}
 		this.slices[sliceKey] = nextNode.getHash();
 		return this;
+	}
+
+	public PMTBranch setNibble(PMTNode nextNode) {
+		return setNibble(nextNode.getBranchNibble(), nextNode);
 	}
 
 	public byte[] serialize() {

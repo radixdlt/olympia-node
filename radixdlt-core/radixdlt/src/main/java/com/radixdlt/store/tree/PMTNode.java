@@ -2,8 +2,6 @@ package com.radixdlt.store.tree;
 
 import com.radixdlt.crypto.HashUtils;
 
-import java.nio.ByteBuffer;
-
 public abstract class PMTNode {
 
 	public enum NodeType {
@@ -21,16 +19,16 @@ public abstract class PMTNode {
 	protected byte[] hash;
 	protected byte[] serialized;
 	protected NodeType nodeType;
-	protected PMTKey firstNibble;
-	protected PMTKey tailNibbles;
+	protected PMTKey branchNibble;
+	protected PMTKey keyNibbles;
 	protected byte[] value;
 
-	protected PMTKey getFirstNibble() {
-		return firstNibble;
+	protected PMTKey getBranchNibble() {
+		return branchNibble;
 	}
 
-	protected PMTNode setFirstNibble(PMTKey contextNibble) {
-		firstNibble = contextNibble;
+	protected PMTNode setBranchNibble(PMTKey contextNibble) {
+		branchNibble = contextNibble;
 		return this;
 	}
 
@@ -38,8 +36,6 @@ public abstract class PMTNode {
 		// TODO: use a dirty flag or wrapper to avoid re-serializing
 		var ser = serialize();
 		if (ser.length >= DB_SIZE_COND) {
-			// TODO: what's the best hashing variant? Consider tree size
-			//       Ethereum uses sha3 which is keccak-256
 			this.hash = HashUtils.sha512(ser).asBytes();
 		} else {
 			this.hash = ser;

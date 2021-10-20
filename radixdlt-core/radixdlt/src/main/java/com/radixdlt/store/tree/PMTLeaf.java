@@ -1,7 +1,6 @@
 package com.radixdlt.store.tree;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 import static com.radixdlt.store.tree.TreeUtils.applyPrefix;
 
@@ -22,16 +21,16 @@ public class PMTLeaf extends PMTNode {
 	PMTLeaf(PMTKey allNibbles, byte[] newValue) {
 		this(null, allNibbles, newValue);
 	}
-	PMTLeaf(PMTKey firstNibble, PMTKey tailNibbles, byte[] newValue) {
-		this.nodeType = NodeType.LEAF; // refactor to casting or pattern
-		this.firstNibble = firstNibble;
-		this.tailNibbles = tailNibbles;
+	PMTLeaf(PMTKey branchNibble, PMTKey keyNibbles, byte[] newValue) {
+		this.nodeType = NodeType.LEAF;
+		this.branchNibble = branchNibble;
+		this.keyNibbles = keyNibbles;
 		this.value = newValue;
 	}
 
 	public byte[] serialize() {
 		// INFO: leaf can have empty key. It's because value may not fit branches' hash pointer field
-		this.prefixedKey = applyPrefix(this.tailNibbles.toByte(), getOddPrefix(), getEvenPrefix());
+		this.prefixedKey = applyPrefix(this.keyNibbles.toByte(), getOddPrefix(), getEvenPrefix());
 		// TODO: serialize, RLP?
 		return this.serialized = "Leaf serialized".getBytes();
 	}

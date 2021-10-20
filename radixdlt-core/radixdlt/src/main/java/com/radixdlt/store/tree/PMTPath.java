@@ -1,12 +1,8 @@
 package com.radixdlt.store.tree;
 
-import com.radixdlt.atom.Substate;
-
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
-public class PMTResult {
+public class PMTPath {
 
 	enum Subtree {
 		OLD,
@@ -30,7 +26,7 @@ public class PMTResult {
 		return commonPrefix;
 	}
 
-	public PMTResult setTip(PMTNode newTip) {
+	public PMTPath setTip(PMTNode newTip) {
 		tip = newTip;
 		return this;
 	}
@@ -40,7 +36,7 @@ public class PMTResult {
 	}
 
 	// INFO: Branch has empty key and remainder
-	public PMTResult setRemainder(PMTKey existing, PMTKey incoming, PMTKey common) {
+	public PMTPath setRemainder(PMTKey existing, PMTKey incoming, PMTKey common) {
 
 		this.rem.put(Subtree.OLD, existing);
 		this.rem.put(Subtree.NEW, incoming);
@@ -51,7 +47,7 @@ public class PMTResult {
 		return this;
 	}
 
-	public PMTResult recogniseRemainder(PMTKey existing, PMTKey incoming) {
+	public PMTPath recogniseRemainder(PMTKey existing, PMTKey incoming) {
 		if (existing.isEmpty()) {
 			if (incoming.isEmpty()) {
 				this.suffix = Subtree.NONE;
@@ -72,7 +68,7 @@ public class PMTResult {
 		return this.suffix;
 	}
 
-	public PMTResult cleanup() {
+	public PMTPath cleanup() {
 		this.commonPrefix = null;
 		this.rem = null;
 		this.suffix = null;

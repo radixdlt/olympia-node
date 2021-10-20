@@ -2,7 +2,7 @@ package com.radixdlt.store.tree;
 
 import com.radixdlt.atom.SubstateId;
 
-public class StateTree {
+public class SubStateTree {
 
 	// How to re-use existing up/down?
 	public enum Value  {
@@ -12,16 +12,20 @@ public class StateTree {
 
 	private PMT pmt;
 
-	public StateTree() {
+	public SubStateTree() {
 		pmt = new PMT();
 	}
 
 	public Boolean put(SubstateId key, Value value) {
 		var val = new byte[1];
 
+		// Proposal for value structure:
+		// for DOWN: 1 + TxId + Tokens
+		// for UP: 0 + Tokens
+
 		switch (value) {
-			case UP: val[0] = 0;
-			case DOWN: val[0] = 1;
+			case UP: val[0] = 0; break;
+			case DOWN: val[0] = 1; break;
 		}
 
 		var root = pmt.add(key.asBytes(), val);

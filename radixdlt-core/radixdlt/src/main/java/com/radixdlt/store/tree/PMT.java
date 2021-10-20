@@ -33,8 +33,7 @@ public class PMT {
 
 			// TODO: consider API: adding null -> remove
 			if (this.root != null) {
-				var newResult = insertNode(this.root, pmtKey, val);
-				this.root = newResult.getTip();
+				this.root = insertNode(this.root, pmtKey, val);
 			} else {
 				// TODO: move to big case when it can handle nulls
 				PMTNode nodeRoot = insertLeaf(pmtKey, val);
@@ -52,106 +51,97 @@ public class PMT {
 		return this.root.getHash();
 	}
 
-	PMTResult insertNode(PMTNode above, PMTKey pmtKey, byte[] val) {
-		return insertNode(above, pmtKey, val, new PMTResult());
-	}
-
-	PMTResult insertNode(PMTNode current, PMTKey key, byte[] val, PMTResult pmtResult) {
-		pmtResult = this.findCommonPath(pmtResult, current, key);
+	PMTNode insertNode(PMTNode current, PMTKey key, byte[] val) {
+		final PMTPath commonPath = this.findCommonPath(current, key);
+		PMTNode newTip = null;
 		switch (current.getNodeType()) {
 			case LEAF:
-			 	switch (pmtResult.whichRemainderIsLeft()) {
+			 	switch (commonPath.whichRemainderIsLeft()) {
 			 		case OLD:
-			 			var remainder = pmtResult.getRemainder(PMTResult.Subtree.OLD);
+			 			var remainder = commonPath.getRemainder(PMTPath.Subtree.OLD);
 			 			var newLeaf = insertSubLeaf(remainder.getFirstNibble(), remainder.getTailNibbles(), val);
 						var newBranch = insertBranch(current.getValue(), newLeaf);
-						var newExt = insertExtension(pmtResult, newBranch);
-						pmtResult.setTip(newExt == null ? newBranch : newExt);
+						var newExt = insertExtension(commonPath, newBranch);
+						newTip = newExt == null ? newBranch : newExt;
 						break;
 					case NEW:
-						remainder = pmtResult.getRemainder(PMTResult.Subtree.NEW);
+						remainder = commonPath.getRemainder(PMTPath.Subtree.NEW);
 						newLeaf = insertSubLeaf(remainder.getFirstNibble(), remainder.getTailNibbles(), current.value);
 						newBranch = insertBranch(val, newLeaf);
-						newExt = insertExtension(pmtResult, newBranch);
-						pmtResult.setTip(newExt == null ? newBranch : newExt);
+						newExt = insertExtension(commonPath, newBranch);
+						newTip = newExt == null ? newBranch : newExt;
 						break;
 					case BOTH:
-						var remainderNew = pmtResult.getRemainder(PMTResult.Subtree.NEW);
-						var remainderOld = pmtResult.getRemainder(PMTResult.Subtree.OLD);
+						var remainderNew = commonPath.getRemainder(PMTPath.Subtree.NEW);
+						var remainderOld = commonPath.getRemainder(PMTPath.Subtree.OLD);
 						var newLeafNew = insertSubLeaf(remainderNew.getFirstNibble(), remainderNew.getTailNibbles(), val);
 						var newLeafOld = insertSubLeaf(remainderOld.getFirstNibble(), remainderOld.getTailNibbles(), current.value);
 						newBranch = insertBranch(newLeafNew, newLeafOld);
-						newExt = insertExtension(pmtResult, newBranch);
-						pmtResult.setTip(newExt == null ? newBranch : newExt);
+						newExt = insertExtension(commonPath, newBranch);
+						newTip = newExt == null ? newBranch : newExt;
 						break;
 					case NONE:
 					    if (val == current.getValue()) {
 					    	throw new IllegalArgumentException("Nothing changed");
 						} else {
 					    	// INFO: we preserve whole key-end as there are no branches
-					    	newLeaf = insertLeaf(key, val);
-							pmtResult.setTip(newLeaf);
+							newTip = insertLeaf(key, val);
 						}
 						break;
 			}
 			break;
 			case BRANCH:
-				// INFO: Existing branch has empty key and remainder
+				// INFO: OLD branch always has empty key and remainder
 				var currentBranch = (PMTBranch) current;
-				switch (pmtResult.whichRemainderIsLeft()) {
+				switch (commonPath.whichRemainderIsLeft()) {
 					case NONE:
 						var modifiedBranch = currentBranch.setValue(val);
-						var savedBranch = insertBranch(modifiedBranch);
-						pmtResult.setTip(savedBranch);
+						newTip = insertBranch(modifiedBranch); // TODO: for mem cache we will need work on copy here
 						break;
 					case NEW:
 						var nextHash = currentBranch.getNextHash(key);
-						PMTNode nextTip;
+						PMTNode subTip;
 						if (nextHash == null) {
-							nextTip = insertSubLeaf(key.getFirstNibble(), key.getTailNibbles(), val);
+							subTip = insertSubLeaf(key.getFirstNibble(), key.getTailNibbles(), val);
 						} else {
 							var nextNode = read(nextHash);
-							var pmtResultNext = insertNode(nextNode, key.getTailNibbles(), val, pmtResult);
-							nextTip = pmtResultNext.getTip();
-							// INTO: Only here we have a context of a position-nibble
-							nextTip.setFirstNibble(key.getFirstNibble());
+							subTip = insertNode(nextNode, key.getTailNibbles(), val);
 						}
-						var branchWithNext = currentBranch.setNibble(nextTip);
-						savedBranch = insertBranch(branchWithNext);
-						pmtResult.setTip(savedBranch);
+						var branchWithNext = currentBranch.setNibble(key.getFirstNibble(), subTip);
+						newTip = insertBranch(branchWithNext); // TODO: for mem cache we will need work on copy here
 						break;
 				}
 				break;
 			case EXTENSION:
-				switch (pmtResult.whichRemainderIsLeft()) {
+				switch (commonPath.whichRemainderIsLeft()) {
 					case OLD:
-						var remainder = pmtResult.getRemainder(PMTResult.Subtree.OLD);
+						var remainder = commonPath.getRemainder(PMTPath.Subtree.OLD);
 						var newShorter = splitExtension(remainder, current);
 						var newBranch = insertBranch(val, newShorter);
-						var newExt = insertExtension(pmtResult, newBranch);
-						pmtResult.setTip(newExt == null ? newBranch : newExt);
+						var newExt = insertExtension(commonPath, newBranch);
+						newTip = newExt == null ? newBranch : newExt;
 						break;
 					case NEW:
 					case NONE:
 						var nextHash = current.getValue();
 						var nextNode = read(nextHash);
 						// INFO: for NONE, the NEW will be empty
-						var pmtResultNext = insertNode(nextNode, pmtResult.getRemainder(PMTResult.Subtree.NEW), val, pmtResult);
-						pmtResult.setTip(insertExtension(pmtResult, (PMTBranch) pmtResultNext.getTip()));
+						var subTip = insertNode(nextNode, commonPath.getRemainder(PMTPath.Subtree.NEW), val);
+						newTip = insertExtension(commonPath, (PMTBranch) subTip);
 						break;
 					case BOTH:
-						var remainderNew = pmtResult.getRemainder(PMTResult.Subtree.NEW);
-						var remainderOld = pmtResult.getRemainder(PMTResult.Subtree.OLD);
+						var remainderNew = commonPath.getRemainder(PMTPath.Subtree.NEW);
+						var remainderOld = commonPath.getRemainder(PMTPath.Subtree.OLD);
 						var newLeaf = insertSubLeaf(remainderNew.getFirstNibble(), remainderNew.getTailNibbles(), val);
 						newShorter = splitExtension(remainderOld, current);
 						newBranch = insertBranch(newLeaf, newShorter);
-						newExt = insertExtension(pmtResult, newBranch);
-						pmtResult.setTip(newExt == null ? newBranch : newExt);
+						newExt = insertExtension(commonPath, newBranch);
+						newTip = newExt == null ? newBranch : newExt;
 						break;
 				}
 				break;
 		}
-		return pmtResult.cleanup();
+		return newTip;
 	}
 
 	// INFO: the only case when leaf has full key in key-end
@@ -161,8 +151,8 @@ public class PMT {
 		return newNode;
 	}
 
-	PMTLeaf insertSubLeaf(PMTKey first, PMTKey tail, byte[] value) {
-		var newNode = new PMTLeaf(first, tail, value);
+	PMTLeaf insertSubLeaf(PMTKey branchNibble, PMTKey keyNibbles, byte[] value) {
+		var newNode = new PMTLeaf(branchNibble, keyNibbles, value);
 		save(newNode);
 		return newNode;
 	}
@@ -199,11 +189,11 @@ public class PMT {
 	}
 
 	// INFO: before branch
-	PMTExt insertExtension(PMTResult pmtResult, PMTBranch branch) {
-		if (pmtResult.getCommonPrefix().isEmpty()) {
+	PMTExt insertExtension(PMTPath pmtPath, PMTBranch branch) {
+		if (pmtPath.getCommonPrefix().isEmpty()) {
 			return null;
 		} else {
-			var newExtension = new PMTExt(pmtResult.getCommonPrefix(), branch.getHash());
+			var newExtension = new PMTExt(pmtPath.getCommonPrefix(), branch.getHash());
 			save(newExtension);
 			return newExtension;
 		}
@@ -227,27 +217,27 @@ public class PMT {
 		}
 	}
 
-	PMTResult findCommonPath(PMTResult result, PMTNode top, PMTKey key) {
+	PMTPath findCommonPath(PMTNode top, PMTKey key) {
 		// move to PMTKEY?
-		return result;
+		return null;
 	}
 
-	PMTResult remove(PMTKey pmtKey) {
+	PMTPath remove(PMTKey pmtKey) {
 		// TODO
 		return null;
 	}
 
-	PMTResult removeExtensionNode(PMTNode pmtNode) {
+	PMTPath removeExtensionNode(PMTNode pmtNode) {
 		// TODO
 		return null;
 	}
 
-	PMTResult removeLeafNode(PMTNode pmtNode) {
+	PMTPath removeLeafNode(PMTNode pmtNode) {
 		// TODO
 		return null;
 	}
 
-	PMTResult removeBranchNode(PMTNode pmtNode) {
+	PMTPath removeBranchNode(PMTNode pmtNode) {
 		// TODO
 		return null;
 	}

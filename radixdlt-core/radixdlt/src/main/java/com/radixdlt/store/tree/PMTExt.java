@@ -1,7 +1,6 @@
 package com.radixdlt.store.tree;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 import static com.radixdlt.store.tree.TreeUtils.applyPrefix;
 
@@ -25,20 +24,20 @@ public class PMTExt extends PMTNode {
 		this(null, allNibbles, newHashPointer);
 	}
 
-	PMTExt(PMTKey firstNibble, PMTKey tailNibbles, byte[] newHashPointer) {
+	PMTExt(PMTKey branchNibble, PMTKey keyNibbles, byte[] newHashPointer) {
 		nodeType = NodeType.EXTENSION; // refactor to casting or pattern
-		this.firstNibble = firstNibble;
-		this.tailNibbles = tailNibbles;
+		this.branchNibble = branchNibble;
+		this.keyNibbles = keyNibbles;
 		this.value = newHashPointer;
 	}
 
 	public byte[] serialize() {
 		// INFO: It doesn't make sense for Extension to have empty key-part.
 		//       We rewrite hash pointer to Branches' nibble position
-		if (tailNibbles.isEmpty()) {
+		if (keyNibbles.isEmpty()) {
 			return this.getValue();
 		} else {
-			this.prefixedKey = applyPrefix(this.tailNibbles.toByte(), getOddPrefix(), getEvenPrefix());
+			this.prefixedKey = applyPrefix(this.keyNibbles.toByte(), getOddPrefix(), getEvenPrefix());
 
 			// TODO: serialize, RLP?
 			return this.serialized = "Ext serialized".getBytes();
