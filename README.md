@@ -7,6 +7,7 @@ It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/180
 
 ## Subdirectories
 
+
 Here we have:
 
 - [radixdlt-core](radixdlt-core/README.md): The core consensus and networking modules
