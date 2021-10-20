@@ -1,5 +1,6 @@
 package com.radixdlt.test.network;
 
+import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
 import com.radixdlt.client.lib.api.sync.RadixApiException;
 import com.radixdlt.test.utils.TestingUtils;
@@ -7,6 +8,7 @@ import org.awaitility.Durations;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.awaitility.Awaitility.await;
@@ -24,15 +26,17 @@ public class RadixNetworkConfiguration {
     private final String jsonRpcRootUrl;
     private final int primaryPort;
     private final int secondaryPort;
+    private final String faucetUrl;
     private final String basicAuth;
     private final Type type;
     private final DockerConfiguration dockerConfiguration;
 
-    private RadixNetworkConfiguration(String jsonRpcRootUrl, int primaryPort, int secondaryPort, String basicAuth,
+    private RadixNetworkConfiguration(String jsonRpcRootUrl, int primaryPort, int secondaryPort, String faucetUrl, String basicAuth,
                                       Type type, DockerConfiguration dockerConfiguration) {
         this.jsonRpcRootUrl = jsonRpcRootUrl;
         this.primaryPort = primaryPort;
         this.secondaryPort = secondaryPort;
+        this.faucetUrl = faucetUrl;
         this.basicAuth = basicAuth;
         this.type = type;
         this.dockerConfiguration = dockerConfiguration;
@@ -46,11 +50,15 @@ public class RadixNetworkConfiguration {
                 : Integer.parseInt(TestingUtils.getEnvWithDefault("RADIXDLT_JSON_RPC_API_PRIMARY_PORT", "8080"));
             var secondaryPort = (jsonRpcRootUrl.getProtocol().equalsIgnoreCase("https")) ? 443
                 : Integer.parseInt(TestingUtils.getEnvWithDefault("RADIXDLT_JSON_RPC_API_SECONDARY_PORT", "3333"));
+            var faucetUrl = TestingUtils.getEnvWithDefault("RADIXDLT_FAUCET_URL", "");
             var basicAuth = System.getenv("RADIXDLT_BASIC_AUTH");
             var type = determineType(jsonRpcRootUrlString);
             var dockerConfiguration = DockerConfiguration.fromEnv();
-            // TODO check if docker network should be initialized but type is NOT local
-            return new RadixNetworkConfiguration(jsonRpcRootUrlString, primaryPort, secondaryPort, basicAuth, type,
+            // check if docker network should be initialized but type is NOT local
+            if (type != Type.LOCALNET && dockerConfiguration.shouldInitializeNetwork()) {
+                throw new IllegalArgumentException("Cannot initialize a non local network");
+            }
+            return new RadixNetworkConfiguration(jsonRpcRootUrlString, primaryPort, secondaryPort, faucetUrl, basicAuth, type,
                 dockerConfiguration);
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException("Bad JSON-RPC URL", e);
@@ -66,8 +74,10 @@ public class RadixNetworkConfiguration {
             ? Type.LOCALNET : Type.TESTNET;
     }
 
-    public ImperativeRadixApi connect() {
-        return ImperativeRadixApi.connect(jsonRpcRootUrl, primaryPort, secondaryPort);
+    public ImperativeRadixApi connect(Optional<BasicAuth> basicAuth) {
+        return basicAuth
+            .map(auth -> ImperativeRadixApi.connect(jsonRpcRootUrl, primaryPort, secondaryPort, auth))
+            .orElseGet(() -> ImperativeRadixApi.connect(jsonRpcRootUrl, primaryPort, secondaryPort));
     }
 
     /**
@@ -88,6 +98,8 @@ public class RadixNetworkConfiguration {
     public String getJsonRpcRootUrl() {
         return jsonRpcRootUrl;
     }
+
+    public String getFaucetUrl() { return faucetUrl; }
 
     public int getPrimaryPort() {
         return primaryPort;

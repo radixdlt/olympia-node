@@ -117,8 +117,8 @@ public final class Account implements ImperativeRadixApi, RadixAccount {
         return keyPair;
     }
 
-    public static Account initialize(String jsonRpcUrl) {
-        var api = ImperativeRadixApi.connect(jsonRpcUrl);
+    public static Account initialize(String jsonRpcUrl, int primaryPort, int secondaryPort) {
+        var api = ImperativeRadixApi.connect(jsonRpcUrl, primaryPort, secondaryPort);
         var nativeToken = api.token().describeNative();
         var newAccount = new Account(api, ECKeyPair.generateNew(), nativeToken);
         logger.trace("Generated new account with address: {}", newAccount.getAddress());

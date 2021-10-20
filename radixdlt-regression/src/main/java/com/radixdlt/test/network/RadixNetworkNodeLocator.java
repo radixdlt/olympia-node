@@ -4,15 +4,20 @@ import com.github.dockerjava.api.exception.DockerException;
 import com.google.common.collect.Sets;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
+import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
 import com.radixdlt.client.lib.api.sync.RadixApiException;
+import com.radixdlt.client.lib.dto.NetworkPeer;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.test.network.client.RadixHttpClient;
 import com.radixdlt.test.network.client.docker.DockerClient;
+import org.apache.commons.compress.utils.Lists;
+import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -30,7 +35,27 @@ public class RadixNetworkNodeLocator {
 
     public static List<RadixNode> locateNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient,
                                               DockerClient dockerClient) {
-        var peers = configuration.connect().network().peers();
+        List<RadixNode> radixNodes = Lists.newArrayList();
+        tryAddFaucetToNodeList(configuration, radixNodes);
+
+        List<NetworkPeer> peers = Lists.newArrayList();
+        try {
+            if (StringUtils.isBlank(configuration.getBasicAuth())) {
+                peers = configuration.connect(Optional.empty()).network().peers();
+            } else {
+                var credentials = configuration.getBasicAuth().split(":");
+                var basicAuth = BasicAuth.with(credentials[0], credentials[1]);
+                peers = configuration.connect(Optional.of(basicAuth)).network().peers();
+            }
+        } catch (RadixApiException e) {
+            if (e.getMessage().toLowerCase().contains("401 authorization required")) {
+                logger.warn("Could not fetch peers list from " + configuration.getJsonRpcRootUrl() + " due to 401. "
+                    + "The test will only use one core node.");
+                addSingleNodePeerToList(configuration, radixNodes);
+                return radixNodes;
+            }
+        }
+
         var peersSizePlusOne = peers.size() + 1;
         switch (configuration.getType()) {
             case LOCALNET:
@@ -39,8 +64,42 @@ public class RadixNetworkNodeLocator {
             case TESTNET:
             default:
                 logger.debug("Searching for {} testnet nodes", peersSizePlusOne);
-                throw new RuntimeException("Unimplemented");
+                return locateRemoteNodes(configuration, httpClient, dockerClient);
         }
+    }
+
+    private static void tryAddFaucetToNodeList(RadixNetworkConfiguration configuration, List<RadixNode> radixNodes) {
+        if (StringUtils.isNotBlank(configuration.getFaucetUrl())) {
+            // TODO these ports might be wrong. Faucet config should be more robust
+            Set<RadixNode.ServiceType> availableNodeServices = Sets.newHashSet();
+            availableNodeServices.add(RadixNode.ServiceType.FAUCET);
+            RadixNode faucetNode = new RadixNode(configuration.getFaucetUrl(), configuration.getPrimaryPort(),
+                configuration.getSecondaryPort(), configuration.getDockerConfiguration().getContainerName(),
+                availableNodeServices);
+            radixNodes.add(faucetNode);
+            String rootUrl = configuration.getFaucetUrl();
+            AccountAddress randomAddress = AccountAddress.create(ECKeyPair.generateNew().getPublicKey());
+            RadixHttpClient.fromRadixNetworkConfiguration(configuration).callFaucet(rootUrl, configuration.getPrimaryPort(),
+                randomAddress.toString());
+
+            // testing the faucet
+
+            logger.info("Found");
+        }
+    }
+
+    private static void addSingleNodePeerToList(RadixNetworkConfiguration configuration, List<RadixNode> radixNodes) {
+        Set<RadixNode.ServiceType> availableNodeServices = Sets.newHashSet();
+        RadixNode singleNode = new RadixNode(configuration.getJsonRpcRootUrl(), configuration.getPrimaryPort(),
+            configuration.getSecondaryPort(), configuration.getDockerConfiguration().getContainerName(),
+            availableNodeServices);
+        radixNodes.add(singleNode);
+    }
+
+    private static List<RadixNode> locateRemoteNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient,
+                                                     DockerClient dockerClient) {
+        // TODO implement
+        return null;
     }
 
     private static List<RadixNode> locateLocalNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient,
@@ -92,11 +151,11 @@ public class RadixNetworkNodeLocator {
         httpClient.callFaucet(jsonRpcRootUrl, secondaryPort, randomAddress.toString(networkId));
         availableNodeServices.add(RadixNode.ServiceType.FAUCET);
 
-        // check that the container name is correct. TODO handle exception?
+        // check that the container name is correct.
         try {
-            dockerClient.runShellCommandAndGetOutput(expectedContainerName, "pwd");
+            dockerClient.runCommand(expectedContainerName, "pwd");
         } catch (DockerException e) {
-            logger.warn("Docker client could not connect due to {} and will be disabled.", e.getMessage());
+            logger.trace("Docker client could not connect due to {} and will be disabled.", e.getMessage());
         }
 
         return new RadixNode(jsonRpcRootUrl, primaryPort, secondaryPort, expectedContainerName, availableNodeServices);

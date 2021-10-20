@@ -32,6 +32,13 @@ public class LocalDockerNetworkCreator {
     }
 
     public static UniverseVariables createNewLocalNetwork(RadixNetworkConfiguration configuration, DockerClient dockerClient) {
+        LocalDockerClient localDockerClient;
+        if (dockerClient.getClass().isAssignableFrom(LocalDockerClient.class)) {
+            localDockerClient = ((LocalDockerClient) dockerClient);
+        } else {
+            throw new IllegalArgumentException("Tried to create a local network with a " + dockerClient.getClass() + " docker client");
+        }
+
         int numberOfNodes = configuration.getDockerConfiguration().getInitialNumberOfNodes();
         logger.info("Initializing new docker network with {} nodes...", numberOfNodes);
 
@@ -40,7 +47,7 @@ public class LocalDockerNetworkCreator {
         // network stuff
         var networkName = configuration.getDockerConfiguration().getNetworkName();
         if (!Boolean.parseBoolean(System.getenv("RADIXDLT_DOCKER_DO_NOT_WIPE_NETWORK"))) {
-            dockerClient.createNetwork(networkName);
+            localDockerClient.createNetwork(networkName);
         }
 
         // starting the network
@@ -57,7 +64,7 @@ public class LocalDockerNetworkCreator {
             List<ExposedPort> exposedPorts = Lists.newArrayList();
             var hostConfig = createHostConfigWithPortBindings(nodeNumber, exposedPorts, primaryPort, secondaryPort);
 
-            dockerClient.startNewNode(configuration.getDockerConfiguration().getImage(),
+            localDockerClient.startNewNode(configuration.getDockerConfiguration().getImage(),
                 containerName,
                 environment,
                 hostConfig,

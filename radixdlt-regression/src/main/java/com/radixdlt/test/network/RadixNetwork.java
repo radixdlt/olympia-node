@@ -3,9 +3,7 @@ package com.radixdlt.test.network;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.test.account.Account;
 import com.radixdlt.test.network.client.RadixHttpClient;
-import com.radixdlt.test.network.client.docker.DockerClient;
-import com.radixdlt.test.network.client.docker.LocalDockerClient;
-import com.radixdlt.test.network.client.docker.LocalDockerNetworkCreator;
+import com.radixdlt.test.network.client.docker.*;
 import com.radixdlt.test.utils.universe.UniverseVariables;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,7 +42,8 @@ public class RadixNetwork {
 
         var dockerClient = createDockerClient(configuration);
         UniverseVariables universeVariables = null;
-        if (configuration.getDockerConfiguration().shouldInitializeNetwork()) {
+        if (configuration.getDockerConfiguration().shouldInitializeNetwork() &&
+            configuration.getType() == RadixNetworkConfiguration.Type.LOCALNET) {
             universeVariables = LocalDockerNetworkCreator.createNewLocalNetwork(configuration, dockerClient);
         }
 
@@ -64,7 +63,7 @@ public class RadixNetwork {
     }
 
     public Account generateNewAccount() {
-        return Account.initialize(configuration.getJsonRpcRootUrl());
+        return Account.initialize(configuration.getJsonRpcRootUrl(), configuration.getPrimaryPort(), configuration.getSecondaryPort());
     }
 
     /**
@@ -114,11 +113,18 @@ public class RadixNetwork {
                 dockerClient = new LocalDockerClient(dockerConfiguration.getSocketUrl());
                 break;
             case TESTNET:
+                dockerClient = new RemoteDockerClient(configuration);
+                break;
             default:
-                throw new RuntimeException("Unimplemented");
+                dockerClient = new DisabledDockerClient();
         }
-        dockerClient.connect();
-        logger.debug("Successfully initialized a {} docker client", configuration.getType());
+        try {
+            dockerClient.connect();
+            logger.debug("Successfully initialized a {} docker client", configuration.getType());
+        } catch (Exception e) {
+            logger.warn("Exception {} when trying to initialize a docker client. Client will be disabled.", e.getMessage());
+            e.printStackTrace();
+        }
         return dockerClient;
     }
 

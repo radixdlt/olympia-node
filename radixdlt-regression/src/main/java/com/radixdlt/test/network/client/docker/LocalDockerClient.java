@@ -51,7 +51,7 @@ public class LocalDockerClient implements DockerClient {
     }
 
     @SuppressWarnings("deprecation")
-    public String runShellCommandAndGetOutput(String containerId, String... commands) {
+    public String runCommand(String containerId, String... commands) {
         var output = new ByteArrayOutputStream();
         var error = new ByteArrayOutputStream();
         var cmdResponse = dockerClient.execCreateCmd(containerId).withAttachStdout(true)
@@ -69,7 +69,6 @@ public class LocalDockerClient implements DockerClient {
         return output.toString(StandardCharsets.UTF_8);
     }
 
-    @Override
     public void startNewNode(String image, String containerName, List<String> environment, HostConfig hostConfig, List<ExposedPort> exposedPorts,
                              String networkName) {
         var environmentArray = environment.toArray(new String[0]);
@@ -86,7 +85,6 @@ public class LocalDockerClient implements DockerClient {
         dockerClient.connectToNetworkCmd().withNetworkId(networkName).withContainerId(containerName).exec();
     }
 
-    @Override
     public void createNetwork(String networkName) {
         try {
             dockerClient.inspectNetworkCmd().withNetworkId(networkName).exec();
@@ -100,16 +98,15 @@ public class LocalDockerClient implements DockerClient {
     }
 
     @Override
-    public void restartContainer(String containerName) {
+    public void restartNode(String containerName) {
         dockerClient.restartContainerCmd(containerName).exec();
     }
 
     @Override
-    public void stopContainer(String containerName) {
+    public void stopNode(String containerName) {
         dockerClient.stopContainerCmd(containerName).exec();
     }
 
-    @Override
     public void wipeNetwork(String networkName) {
         var count = new AtomicInteger();
         dockerClient.listContainersCmd().withShowAll(true).exec().forEach(container -> {
