@@ -84,7 +84,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.store.InMemoryEngineStore;
 
 import java.nio.charset.StandardCharsets;
@@ -96,11 +96,10 @@ public final class GenesisBuilder {
 
 	@Inject
 	public GenesisBuilder(
-		Forks forks,
+		RERules rules,
 		LedgerAccumulator ledgerAccumulator
 	) {
 		this.ledgerAccumulator = ledgerAccumulator;
-		final var rules = forks.genesisFork().engineRules();
 		var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
 			cmConfig.getProcedures(),
@@ -114,7 +113,7 @@ public final class GenesisBuilder {
 			rules.getActionConstructors(),
 			cm,
 			new InMemoryEngineStore<>(),
-			rules.getPostProcessor()
+			rules.getBatchVerifier()
 		);
 	}
 

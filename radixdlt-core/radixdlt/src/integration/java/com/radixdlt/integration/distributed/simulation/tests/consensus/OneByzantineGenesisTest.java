@@ -66,7 +66,6 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.recovery.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
@@ -75,7 +74,6 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import java.util.concurrent.TimeUnit;
-
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -96,10 +94,7 @@ public class OneByzantineGenesisTest {
 	public void given_2_correct_bfts_and_1_byzantine__then_should_never_make_progress() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(3)
-			.addNodesOverrideModule(
-				nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
-				new MockedRecoveryModule(HashUtils.random256())
-			)
+			.addSingleByzantineModule(new MockedRecoveryModule(HashUtils.random256()))
 			.addTestModules(ConsensusMonitors.noneCommitted())
 			.build();
 
@@ -122,10 +117,7 @@ public class OneByzantineGenesisTest {
 	public void given_3_correct_bfts_and_1_byzantine__then_should_make_progress() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(4)
-			.addNodesOverrideModule(
-				nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
-				new MockedRecoveryModule(HashUtils.random256())
-			)
+			.addSingleByzantineModule(new MockedRecoveryModule(HashUtils.random256()))
 			.addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
 			.build();
 

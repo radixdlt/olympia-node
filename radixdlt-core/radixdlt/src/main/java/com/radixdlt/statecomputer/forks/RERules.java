@@ -68,41 +68,41 @@ import com.radixdlt.atom.REConstructor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.engine.PostProcessor;
+import com.radixdlt.engine.BatchVerifier;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.util.OptionalInt;
 
 public final class RERules {
-	private final RERulesVersion version;
+	private final String name;
 	private final REParser parser;
 	private final SubstateSerialization serialization;
 	private final ConstraintMachineConfig constraintMachineConfig;
 	private final REConstructor actionConstructors;
-	private final PostProcessor<LedgerAndBFTProof> postProcessor;
+	private final BatchVerifier<LedgerAndBFTProof> batchVerifier;
 	private final RERulesConfig config;
 
 	public RERules(
-		RERulesVersion version,
+		String name,
 		REParser parser,
 		SubstateSerialization serialization,
 		ConstraintMachineConfig constraintMachineConfig,
 		REConstructor actionConstructors,
-		PostProcessor<LedgerAndBFTProof> postProcessor,
+		BatchVerifier<LedgerAndBFTProof> batchVerifier,
 		RERulesConfig config
 	) {
-		this.version = version;
+		this.name = name;
 		this.parser = parser;
 		this.serialization = serialization;
 		this.constraintMachineConfig = constraintMachineConfig;
 		this.actionConstructors = actionConstructors;
-		this.postProcessor = postProcessor;
+		this.batchVerifier = batchVerifier;
 		this.config = config;
 	}
 
-	public RERulesVersion getVersion() {
-		return version;
+	public String name() {
+		return name;
 	}
 
 	public ConstraintMachineConfig getConstraintMachineConfig() {
@@ -117,8 +117,8 @@ public final class RERules {
 		return actionConstructors;
 	}
 
-	public PostProcessor<LedgerAndBFTProof> getPostProcessor() {
-		return postProcessor;
+	public BatchVerifier<LedgerAndBFTProof> getBatchVerifier() {
+		return batchVerifier;
 	}
 
 	public REParser getParser() {
@@ -139,17 +139,5 @@ public final class RERules {
 
 	public RERulesConfig getConfig() {
 		return config;
-	}
-
-	public RERules addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor) {
-		return new RERules(
-			version,
-			parser,
-			serialization,
-			constraintMachineConfig,
-			actionConstructors,
-			PostProcessor.combine(postProcessor, newPostProcessor),
-			config
-		);
 	}
 }

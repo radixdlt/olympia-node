@@ -75,12 +75,11 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-		bind(InMemoryEngineStore.Store.class).toInstance(new InMemoryEngineStore.Store());
 	}
 
 	@Provides
 	@Singleton
-	private EngineStore<LedgerAndBFTProof> engineStore(InMemoryEngineStore.Store store) {
-		return new InMemoryEngineStore<>(store);
+	private EngineStore<LedgerAndBFTProof> engineStore() {
+		return new InMemoryEngineStore<>();
 	}
 }

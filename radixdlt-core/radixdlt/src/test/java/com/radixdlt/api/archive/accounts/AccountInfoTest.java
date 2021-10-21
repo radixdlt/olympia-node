@@ -94,7 +94,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
@@ -141,7 +141,7 @@ public class AccountInfoTest {
 	public void setup() {
 		this.injector = Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
-			new MainnetForksModule(),
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(
 				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.noFees()).overrideMaxRounds(1000)
 			),

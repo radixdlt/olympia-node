@@ -64,21 +64,19 @@
 package com.radixdlt.api.node.system;
 
 import com.radixdlt.api.service.SystemConfigService;
-import com.radixdlt.api.service.NetworkingService;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
 
 import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
+import static com.radixdlt.api.util.JsonRpcUtil.wrapArray;
 
 public class SystemHandler {
 	private final SystemConfigService systemConfigService;
-	private final NetworkingService networkingService;
 
 	@Inject
-	public SystemHandler(SystemConfigService systemConfigService, NetworkingService networkingService) {
+	public SystemHandler(SystemConfigService systemConfigService) {
 		this.systemConfigService = systemConfigService;
-		this.networkingService = networkingService;
 	}
 
 	public JSONObject apiGetConfiguration(JSONObject request) {
@@ -130,19 +128,19 @@ public class SystemHandler {
 	}
 
 	public JSONObject networkingGetConfiguration(JSONObject request) {
-		return successResponse(request, networkingService.getConfiguration());
+		return successResponse(request, systemConfigService.getNetworkingConfiguration());
 	}
 
 	public JSONObject networkingGetPeers(JSONObject request) {
-		return successResponse(request, networkingService.getPeers());
+		return successResponse(request, wrapArray(systemConfigService.getNetworkingPeers()));
 	}
 
 	public JSONObject networkingGetAddressBook(JSONObject request) {
-		return successResponse(request, networkingService.getAddressBook());
+		return successResponse(request, wrapArray(systemConfigService.getNetworkingAddressBook()));
 	}
 
 	public JSONObject networkingGetData(JSONObject request) {
-		return successResponse(request, networkingService.getData());
+		return successResponse(request, systemConfigService.getNetworkingData());
 	}
 
 	public JSONObject checkpointsGetCheckpoints(JSONObject request) {

@@ -86,8 +86,7 @@ import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.ForksEpochStore;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.PrivateKeys;
@@ -224,8 +223,8 @@ public class StakingUnstakingValidatorsTest {
 			.limit(20)
 			.collect(ImmutableList.toImmutableList());
 		this.radixEngineConfiguration = Modules.combine(
+			new MainnetForkConfigsModule(),
 			new ForksModule(),
-			new MainnetForksModule(),
 			forkModule
 		);
 		this.maxRounds = maxRounds;
@@ -326,7 +325,6 @@ public class StakingUnstakingValidatorsTest {
 		private final BerkeleyResourceInfoStore resourceInfoStore;
 		private final BerkeleyAccountInfoStore accountInfoStore;
 		private final Forks forks;
-		private final ForksEpochStore forksEpochStore;
 
 		@Inject
 		private NodeState(
@@ -337,8 +335,7 @@ public class StakingUnstakingValidatorsTest {
 			BerkeleyValidatorUptimeArchiveStore uptimeArchiveStore,
 			BerkeleyResourceInfoStore resourceInfoStore,
 			BerkeleyAccountInfoStore accountInfoStore,
-			Forks forks,
-			ForksEpochStore forksEpochStore
+			Forks forks
 		) {
 			this.self = self;
 			this.lastEvents = lastEvents;
@@ -348,7 +345,6 @@ public class StakingUnstakingValidatorsTest {
 			this.resourceInfoStore = resourceInfoStore;
 			this.accountInfoStore = accountInfoStore;
 			this.forks = forks;
-			this.forksEpochStore = forksEpochStore;
 		}
 
 		public String getSelf() {
@@ -356,13 +352,10 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public long getExpectedNumberOfRounds() {
-			final var epochView = getEpochView();
-			final var curEpoch = getEpochView().getEpoch();
-			final var currentFork =
-				forks.getCurrentFork(forksEpochStore.getEpochsForkHashes());
-
+			var epochView = getEpochView();
+			var curEpoch = getEpochView().getEpoch();
 			return LongStream.range(1, curEpoch)
-				.map(i -> currentFork.engineRules().getMaxRounds().number())
+				.map(i -> forks.get(i).getMaxRounds().number())
 				.sum() + epochView.getView().number();
 		}
 

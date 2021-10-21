@@ -67,6 +67,7 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.Txn;
@@ -77,8 +78,10 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.Bytes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -115,14 +118,18 @@ public class GenesisTest {
 	@Test
 	public void genesis_should_be_a_valid_transaction() throws RadixEngineException {
 		Guice.createInjector(
+			new MainnetForkConfigsModule(),
 			new ForksModule(),
-			new MainnetForksModule(),
 			new CryptoModule(),
 			new AbstractModule() {
 				@Override
 				public void configure() {
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+				}
+				@Provides
+				RERules rules(Forks forks) {
+					return forks.get(0);
 				}
 			}
 		).injectMembers(this);

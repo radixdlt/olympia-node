@@ -126,20 +126,18 @@ import com.radixdlt.constraintmachine.meter.Meters;
 import com.radixdlt.constraintmachine.meter.UpSubstateFeeMeter;
 import com.radixdlt.constraintmachine.meter.SigsPerRoundMeter;
 import com.radixdlt.constraintmachine.meter.TxnSizeFeeMeter;
-import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.statecomputer.EpochProofVerifierV2;
-import com.radixdlt.statecomputer.ValidatorsSystemMetadataPostProcessor;
 
 public enum RERulesVersion {
 	OLYMPIA_V1 {
 		@Override
 		public RERules create(RERulesConfig config) {
-			final var maxRounds = config.getMaxRounds();
-			final var perByteFee = config.getFeeTable().getPerByteFee();
-			final var perUpSubstateFee = config.getFeeTable().getPerUpSubstateFee();
-			final var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
-			final var tokenSymbolPattern = config.getTokenSymbolPattern();
+			var maxRounds = config.getMaxRounds();
+			var perByteFee = config.getFeeTable().getPerByteFee();
+			var perUpSubstateFee = config.getFeeTable().getPerUpSubstateFee();
+			var rakeIncreaseDebouncerEpochLength = config.getRakeIncreaseDebouncerEpochLength();
+			var tokenSymbolPattern = config.getTokenSymbolPattern();
 
 			final CMAtomOS v4 = new CMAtomOS();
 			v4.load(new ValidatorConstraintScryptV2());
@@ -165,7 +163,7 @@ public enum RERulesVersion {
 					UpSubstateFeeMeter.create(perUpSubstateFee)
 				)
 			);
-			var constraintMachineConfig = new ConstraintMachineConfig(
+			var betanet4 = new ConstraintMachineConfig(
 				v4.getProcedures(),
 				v4.buildSubstateDeserialization(),
 				v4.buildVirtualSubstateDeserialization(),
@@ -208,19 +206,17 @@ public enum RERulesVersion {
 				.build();
 
 			return new RERules(
-				this,
+				"mainnet",
 				parser,
 				serialization,
-				constraintMachineConfig,
+				betanet4,
 				actionConstructors,
-				PostProcessor.combine(
-					new EpochProofVerifierV2(),
-					new ValidatorsSystemMetadataPostProcessor()
-				),
+				new EpochProofVerifierV2(),
 				config
 			);
 		}
 	};
+
 
 	public abstract RERules create(RERulesConfig config);
 }

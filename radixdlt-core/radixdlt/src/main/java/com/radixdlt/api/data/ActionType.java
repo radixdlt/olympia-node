@@ -84,7 +84,6 @@ public enum ActionType {
 	REGISTER_VALIDATOR("RegisterValidator"),
 	UNREGISTER_VALIDATOR("UnregisterValidator"),
 	UPDATE_VALIDATOR_METADATA("UpdateValidatorMetadata"),
-	UPDATE_VALIDATOR_SYSTEM_METADATA("UpdateValidatorSystemMetadata"),
 	UPDATE_VALIDATOR_FEE("UpdateValidatorFee"),
 	UPDATE_OWNER("UpdateValidatorOwnerAddress"),
 	UPDATE_DELEGATION("UpdateAllowDelegationFlag"),

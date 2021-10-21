@@ -99,7 +99,7 @@ public class OneNodeNeverSendEpochResponseTest {
 			NetworkDroppers.oneNodePerEpochLedgerStatusUpdateDropped()
 		)
 		.pacemakerTimeout(1000)
-		.numNodes(numNodes)
+		.numNodes(numNodes, 4)
 		.ledgerAndEpochs(View.of(4), randomEpochToNodesMapper())
 		.addTestModules(
 			ConsensusMonitors.safety(),

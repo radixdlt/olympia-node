@@ -71,7 +71,6 @@ import java.util.concurrent.CompletableFuture;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.transport.PeerChannel;
@@ -101,22 +100,19 @@ class MessageDispatcher {
 	private final Serialization serialization;
 	private final TimeSupplier timeSource;
 	private final PeerManager peerManager;
-	private final Addressing addressing;
 
 	MessageDispatcher(
 		SystemCounters counters,
 		MessageCentralConfiguration config,
 		Serialization serialization,
 		TimeSupplier timeSource,
-		PeerManager peerManager,
-		Addressing addressing
+		PeerManager peerManager
 	) {
 		this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.timeSource = Objects.requireNonNull(timeSource);
 		this.peerManager = Objects.requireNonNull(peerManager);
-		this.addressing = Objects.requireNonNull(addressing);
 	}
 
 	CompletableFuture<Result<Object>> send(final OutboundMessageEvent outboundMessage) {
@@ -124,11 +120,7 @@ class MessageDispatcher {
 		final var receiver = outboundMessage.receiver();
 
 		if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
-			String msg = String.format(
-				"TTL for %s message to %s has expired",
-				message.getClass().getSimpleName(),
-				addressing.forNodes().of(receiver.getPublicKey())
-			);
+			String msg = String.format("TTL for %s message to %s has expired", message.getClass().getSimpleName(), receiver);
 			log.warn(msg);
 			this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
 			return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
@@ -148,11 +140,7 @@ class MessageDispatcher {
 	}
 
 	private Result<Object> completionException(Throwable cause, NodeId receiver, Message message) {
-		final var msg = String.format(
-			"Send %s to %s failed",
-			message.getClass().getSimpleName(),
-			addressing.forNodes().of(receiver.getPublicKey())
-		);
+		final var msg = String.format("Send %s to %s failed", message.getClass().getSimpleName(), receiver);
 		log.warn("{}: {}", msg, cause.getMessage());
 		return IO_ERROR.result();
 	}

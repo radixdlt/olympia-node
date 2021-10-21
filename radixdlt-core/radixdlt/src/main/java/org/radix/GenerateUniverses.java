@@ -74,12 +74,8 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.statecomputer.forks.ForkBuilder;
-import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.InitialForkConfig;
-import com.radixdlt.statecomputer.forks.LatestForkConfig;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.utils.PrivateKeys;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -103,6 +99,8 @@ import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 
@@ -176,37 +174,17 @@ public final class GenerateUniverses {
 		var timestamp = String.valueOf(Instant.now().getEpochSecond());
 
 		var genesisProvider = Guice.createInjector(new AbstractModule() {
+			@Provides
+			@Singleton
+			RERules reRules(Forks forks) {
+				return forks.get(0);
+			}
+
 			@Override
 			protected void configure() {
 				install(new CryptoModule());
-				install(new AbstractModule() {
-					@Provides
-					@Singleton
-					private Forks forks(@InitialForkConfig  ForkConfig initialForkConfig) {
-						return Forks.create(Set.of(initialForkConfig));
-					}
-
-					@Provides
-					@Singleton
-					@InitialForkConfig
-					private ForkConfig initialForkConfig(Set<ForkBuilder> forkBuilders) {
-						return forkBuilders.stream()
-							.min((a, b) -> (int) (a.epoch() - b.epoch()))
-							.get()
-							.build();
-					}
-
-					@Provides
-					@Singleton
-					@LatestForkConfig
-					private ForkConfig latestForkConfig(Set<ForkBuilder> forkBuilders) {
-						return forkBuilders.stream()
-							.max((a, b) -> (int) (a.epoch() - b.epoch()))
-							.get()
-							.build();
-					}
-				});
-				install(new MainnetForksModule());
+				install(new MainnetForkConfigsModule());
+				install(new ForksModule());
 				bind(new TypeLiteral<List<TxAction>>() {}).annotatedWith(Genesis.class).toInstance(List.of());
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());

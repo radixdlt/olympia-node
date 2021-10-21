@@ -64,7 +64,6 @@
 package com.radixdlt.api.node.metrics;
 
 import com.radixdlt.api.node.account.AccountInfoService;
-import com.radixdlt.api.service.NetworkingService;
 import com.radixdlt.api.service.SystemConfigService;
 import com.radixdlt.api.Endpoints;
 import com.radixdlt.api.service.network.NetworkInfoService;
@@ -78,7 +77,6 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
-import com.sun.management.GcInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -102,7 +100,6 @@ import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
-import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.CompositeDataSupport;
 
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
@@ -120,8 +117,8 @@ public class MetricsService {
 		jmxMetric("java.lang:type=MemoryPool,name=G1 Survivor Space", "Usage"),
 		jmxMetric("java.lang:type=MemoryPool,name=G1 Old Gen", "Usage"),
 		jmxMetric("java.lang:type=MemoryPool,name=Metaspace", "Usage"),
-		jmxMetric("java.lang:type=GarbageCollector,name=G1 Old Generation", "Usage", "CollectionTime", "CollectionCount", "LastGcInfo"),
-		jmxMetric("java.lang:type=GarbageCollector,name=G1 Young Generation", "Usage", "CollectionTime", "CollectionCount", "LastGcInfo"),
+		jmxMetric("java.lang:type=GarbageCollector,name=G1 Old Generation", "Usage"),
+		jmxMetric("java.lang:type=GarbageCollector,name=G1 Young Generation", "Usage"),
 		jmxMetric("java.lang:type=OperatingSystem", "SystemCpuLoad", "ProcessCpuLoad", "SystemLoadAverage"),
 		jmxMetric("java.lang:type=Threading", "ThreadCount", "DaemonThreadCount"),
 		jmxMetric("java.lang:type=Memory", "HeapMemoryUsage", "NonHeapMemoryUsage"),
@@ -134,7 +131,6 @@ public class MetricsService {
 	private final SystemCounters systemCounters;
 	private final InfoSupplier infoSupplier;
 	private final SystemConfigService systemConfigService;
-	private final NetworkingService networkingService;
 	private final AccountInfoService accountInfoService;
 	private final ValidatorInfoService validatorInfoService;
 	private final NetworkInfoService networkInfoService;
@@ -149,7 +145,6 @@ public class MetricsService {
 		SystemCounters systemCounters,
 		InfoSupplier infoSupplier,
 		SystemConfigService systemConfigService,
-		NetworkingService networkingService,
 		AccountInfoService accountInfoService,
 		ValidatorInfoService validatorInfoService,
 		NetworkInfoService networkInfoService,
@@ -161,7 +156,6 @@ public class MetricsService {
 		this.systemCounters = systemCounters;
 		this.infoSupplier = infoSupplier;
 		this.systemConfigService = systemConfigService;
-		this.networkingService = networkingService;
 		this.accountInfoService = accountInfoService;
 		this.validatorInfoService = validatorInfoService;
 		this.networkInfoService = networkInfoService;
@@ -185,7 +179,7 @@ public class MetricsService {
 		appendCounter(builder, "info_configuration_pacemakermaxexponent", pacemakerMaxExponent(snapshot));
 		appendCounter(builder, "info_epochmanager_currentview_view", currentView(snapshot));
 		appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpoch(snapshot));
-		appendCounter(builder, "total_peers", networkingService.getPeersCount());
+		appendCounter(builder, "total_peers", systemConfigService.getNetworkingPeersCount());
 
 		var totalValidators = inMemorySystemInfo.getEpochProof().getNextValidatorSet()
 			.map(BFTValidatorSet::getValidators)
@@ -356,10 +350,7 @@ public class MetricsService {
 						appendCounter(builder, outName + "_max", (Number) cds.get("max"));
 						appendCounter(builder, outName + "_committed", (Number) cds.get("committed"));
 						appendCounter(builder, outName + "_used", (Number) cds.get("used"));
-					} else if (attribute.getName().equalsIgnoreCase("LastGcInfo")
-							&& attribute.getValue() instanceof CompositeData) {
-						appendGcInfoCounters(GcInfo.from((CompositeData) attribute.getValue()), builder, outName);
-					} else if (attribute.getValue() != null) {
+					} else {
 						appendCounter(builder, outName, (Number) attribute.getValue());
 					}
 				}
@@ -367,12 +358,6 @@ public class MetricsService {
 				log.error("Error while retrieving JMX metric " + objectNameString, e);
 			}
 		}
-	}
-
-	private static void appendGcInfoCounters(GcInfo gcInfo, StringBuilder builder, String outName) {
-		appendCounter(builder, outName + "_startTime", gcInfo.getStartTime());
-		appendCounter(builder, outName + "_endTime", gcInfo.getEndTime());
-		appendCounter(builder, outName + "_duration", gcInfo.getDuration());
 	}
 
 	private void appendJMXCounters(StringBuilder builder) {
