@@ -419,7 +419,10 @@ public final class RadixEngine<M> {
 					for (var action : request.getActions()) {
 						this.actionConstructors.construct(action, txBuilder);
 					}
-					request.getMsg().ifPresent(txBuilder::message);
+					var msg = request.getMsg();
+					if (msg.isPresent()) {
+						txBuilder.message(msg.get());
+					}
 				},
 				request.getSubstatesToAvoid()
 			);
@@ -442,7 +445,10 @@ public final class RadixEngine<M> {
 						for (var action : request.getActions()) {
 							this.actionConstructors.construct(action, txBuilder);
 						}
-						request.getMsg().ifPresent(txBuilder::message);
+						var msg = request.getMsg();
+						if (msg.isPresent()) {
+							txBuilder.message(msg.get());
+						}
 						this.actionConstructors.construct(new FeeReserveComplete(feePayer), txBuilder);
 					},
 					request.getSubstatesToAvoid()

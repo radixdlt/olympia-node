@@ -200,8 +200,7 @@ public final class TxBuilder {
 	// For mempool filler
 	public <T extends Particle> T downSubstate(
 		Class<T> particleClass,
-		Predicate<T> particlePredicate,
-		String errorMessage
+		Predicate<T> particlePredicate
 	) throws TxBuilderException {
 		var localSubstate = lowLevelBuilder.localUpSubstate().stream()
 			.filter(s -> particleClass.isInstance(s.getParticle()))
@@ -220,7 +219,7 @@ public final class TxBuilder {
 				.findFirst();
 
 			if (substateRead.isEmpty()) {
-				throw new TxBuilderException(errorMessage);
+				throw new NoSubstateFoundException();
 			}
 
 			down(substateRead.get().getId());
@@ -547,7 +546,7 @@ public final class TxBuilder {
 		return this;
 	}
 
-	public TxBuilder message(byte[] message) {
+	public TxBuilder message(byte[] message) throws MessageTooLongException {
 		lowLevelBuilder.message(message);
 		return this;
 	}

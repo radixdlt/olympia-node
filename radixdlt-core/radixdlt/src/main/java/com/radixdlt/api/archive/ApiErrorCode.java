@@ -65,10 +65,6 @@ package com.radixdlt.api.archive;
 
 import com.radixdlt.api.archive.construction.InvalidTransactionException;
 import com.radixdlt.api.archive.construction.StateConflictException;
-import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
-import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
@@ -99,48 +95,13 @@ public enum ApiErrorCode {
 				.put("cause", ex.getCause() == null ? ex.getMessage() : ex.getCause().getMessage());
 		}
 	},
-	TXBUILDER_EXCEPTION(TxBuilderException.class, 100, "Failed to build transaction") {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (TxBuilderException) e;
-			// TODO: elaborate
-			return new JSONObject()
-				.put("message", ex.getMessage());
-		}
-	},
-	FEE_CONSTRUCTION_ERROR(FeeConstructionException.class, 101, "Could not construct transaction with fees") {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (FeeConstructionException) e;
-			return new JSONObject()
-				.put("attempts", ex.getAttempts());
-		}
-	},
-	INVALID_RAKE_INCREASE(InvalidRakeIncreaseException.class, 102, "Invalid rake increase") {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (InvalidRakeIncreaseException) e;
-			return new JSONObject()
-				.put("limit", ex.getMaxRakeIncrease())
-				.put("attempted", ex.getIncreaseAttempt());
-		}
-	},
-	STAKE_PERMISSION(DelegateStakePermissionException.class, 103, "Not allowed to stake") {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (DelegateStakePermissionException) e;
-			return new JSONObject()
-				.put("owner", addressing.forAccounts().of(ex.getOwner()))
-				.put("user", addressing.forAccounts().of(ex.getUser()));
-		}
-	},
-	MEMPOOL_FULL(MempoolFullException.class, 200, "Mempool is full") {
+	MEMPOOL_FULL(MempoolFullException.class, 100, "Mempool is full") {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			return new JSONObject();
 		}
 	},
-	STATE_CONFLICT(StateConflictException.class, 201, "State conflict") {
+	STATE_CONFLICT(StateConflictException.class, 101, "State conflict") {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (StateConflictException) e;
@@ -148,7 +109,7 @@ public enum ApiErrorCode {
 			return new JSONObject();
 		}
 	},
-	INVALID_TRANSACTION(InvalidTransactionException.class, 202, "Invalid transaction") {
+	INVALID_TRANSACTION(InvalidTransactionException.class, 102, "Invalid transaction") {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (InvalidTransactionException) e;

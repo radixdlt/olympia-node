@@ -126,10 +126,6 @@ public class ArchiveServerModule extends AbstractModule {
 		SystemCounters counters
 	) {
 		var errorCodes = List.of(
-			ApiErrorCode.TXBUILDER_EXCEPTION,
-			ApiErrorCode.FEE_CONSTRUCTION_ERROR,
-			ApiErrorCode.INVALID_RAKE_INCREASE,
-			ApiErrorCode.STAKE_PERMISSION,
 			ApiErrorCode.MEMPOOL_FULL,
 			ApiErrorCode.STATE_CONFLICT,
 			ApiErrorCode.INVALID_TRANSACTION

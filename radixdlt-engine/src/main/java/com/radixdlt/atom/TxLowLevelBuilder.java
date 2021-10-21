@@ -161,12 +161,16 @@ public final class TxLowLevelBuilder {
 		}
 	}
 
-	public TxLowLevelBuilder message(byte[] bytes) {
+	public TxLowLevelBuilder message(byte[] bytes) throws MessageTooLongException {
+		if (bytes.length > 255) {
+			throw new MessageTooLongException(bytes.length);
+		}
+
 		instruction(REInstruction.REMicroOp.MSG, varLengthData(bytes));
 		return this;
 	}
 
-	public TxLowLevelBuilder message(String message) {
+	public TxLowLevelBuilder message(String message) throws MessageTooLongException {
 		var bytes = message.getBytes(StandardCharsets.UTF_8);
 		return message(bytes);
 	}
@@ -304,9 +308,9 @@ public final class TxLowLevelBuilder {
 		return this;
 	}
 
-	public TxLowLevelBuilder syscall(Syscall syscall, byte[] bytes) throws TxBuilderException {
+	public TxLowLevelBuilder syscall(Syscall syscall, byte[] bytes) {
 		if (bytes.length < 1 || bytes.length > 32) {
-			throw new TxBuilderException("Length must be >= 1 and <= 32 but was " + bytes.length);
+			throw new IllegalStateException("Length must be >= 1 and <= 32 but was " + bytes.length);
 		}
 		var data = new byte[Short.BYTES + 1 + bytes.length];
 		data[0] = 0;

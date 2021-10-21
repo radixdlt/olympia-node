@@ -67,11 +67,15 @@ import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
 import com.radixdlt.application.tokens.construction.MinimumStakeException;
+import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
+import com.radixdlt.atom.MessageTooLongException;
 import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -119,27 +123,58 @@ final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest
 		return constructionRequest;
 	}
 
+	private static JSONObject errorObject(JSONObject details) {
+		return new JSONObject()
+			.put("result", "error")
+			.put("details", details);
+	}
+
 	@Override
 	public JSONObject handleRequest(TxnConstructionRequest request) throws TxBuilderException {
 		TxBuilder builder;
 		try {
 			builder = radixEngine.construct(request);
+		} catch (MessageTooLongException e) {
+			return errorObject(
+				new JSONObject()
+					.put("errorType", "MESSAGE_TOO_LONG")
+					.put("limit", 255)
+					.put("actual", e.getAttemptedLength())
+			);
 		} catch (NotEnoughResourcesException e) {
-			return new JSONObject()
-				.put("result", "error")
-				.put("details", new JSONObject()
-					.put("errorType", "not_enough_resources")
+			return errorObject(
+				new JSONObject()
+					.put("errorType", "NOT_ENOUGH_RESOURCES")
 					.put("requested", e.getRequested())
 					.put("available", e.getAvailable())
-				);
+			);
 		} catch (MinimumStakeException e) {
-			return new JSONObject()
-				.put("result", "error")
-				.put("details", new JSONObject()
-					.put("errorType", "minimum_stake")
+			return errorObject(
+				new JSONObject()
+					.put("errorType", "BELOW_MINIMUM_STAKE")
 					.put("requested", e.getAttempt())
 					.put("minimum", e.getMinimumStake())
-				);
+			);
+		} catch (FeeConstructionException e) {
+			return errorObject(
+				new JSONObject()
+					.put("errorType", "COULD_NOT_CONSTRUCT_FEES")
+					.put("attempts", e.getAttempts())
+			);
+		} catch (InvalidRakeIncreaseException e) {
+			return errorObject(
+				new JSONObject()
+					.put("errorType", "ABOVE_MAXIMUM_RAKE_INCREASE")
+					.put("limit", e.getMaxRakeIncrease())
+					.put("attempted", e.getIncreaseAttempt())
+			);
+		} catch (DelegateStakePermissionException e) {
+			return errorObject(
+				new JSONObject()
+					.put("errorType", "INVALID_STAKE_PERMISSIONS")
+					.put("owner", addressing.forAccounts().of(e.getOwner()))
+					.put("user", addressing.forAccounts().of(e.getUser()))
+			);
 		}
 
 		var unsignedTransaction = builder.buildForExternalSign();

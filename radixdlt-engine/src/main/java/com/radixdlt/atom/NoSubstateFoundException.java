@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,30 +61,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.misc;
+package com.radixdlt.atom;
 
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.SplitToken;
-import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.utils.UInt256;
-
-public final class SplitTokenConstructor implements ActionConstructor<SplitToken> {
-	@Override
-	public void construct(SplitToken action, TxBuilder txBuilder) throws TxBuilderException {
-		var userAccount = action.userAcct();
-		var tokens = txBuilder.downSubstate(
-			TokensInAccount.class,
-			p -> p.getResourceAddr().equals(action.rri())
-				&& p.getHoldingAddr().equals(userAccount)
-				&& p.getAmount().compareTo(action.minSize()) > 0
-		);
-
-		var amt1 = tokens.getAmount().divide(UInt256.TWO);
-		var amt2 = tokens.getAmount().subtract(amt1);
-		txBuilder.up(new TokensInAccount(userAccount, action.rri(), amt1));
-		txBuilder.up(new TokensInAccount(userAccount, action.rri(), amt2));
-		txBuilder.end();
+public class NoSubstateFoundException extends TxBuilderException {
+	public NoSubstateFoundException() {
+		super("Could not find substate.");
 	}
 }
