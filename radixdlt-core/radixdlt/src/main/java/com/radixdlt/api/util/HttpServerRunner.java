@@ -179,7 +179,7 @@ public final class HttpServerRunner implements ModuleRunner {
 				exchange.setStatusCode(500);
 				exchange.getResponseSender().send(new JSONObject()
 					.put("code", errorCode.getCode())
-					.put("message", errorCode.getMessage())
+					.put("message", errorCode.name())
 					.put("details", errorCode.getDetails(ex, addressing))
 					.toString()
 				);
@@ -204,7 +204,7 @@ public final class HttpServerRunner implements ModuleRunner {
 		addErrorCodeHandler(ApiErrorCode.INVALID_JSON, exceptionHandler);
 		addErrorCodeHandler(ApiErrorCode.INVALID_REQUEST, exceptionHandler);
 		errorCodes.forEach(e -> addErrorCodeHandler(e, exceptionHandler));
-		addErrorCodeHandler(ApiErrorCode.UNEXPECTED_ERROR, exceptionHandler);
+		addErrorCodeHandler(ApiErrorCode.INTERNAL_SERVER_ERROR, exceptionHandler);
 
 		return wrapWithCorsFilter(exceptionHandler);
 	}

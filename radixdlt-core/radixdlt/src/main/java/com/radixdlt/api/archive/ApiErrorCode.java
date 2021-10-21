@@ -70,7 +70,7 @@ import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;
 
 public enum ApiErrorCode {
-	UNEXPECTED_ERROR(Throwable.class, 1, "Unexpected Error") {
+	INTERNAL_SERVER_ERROR(Throwable.class, 1) {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			return new JSONObject()
@@ -78,7 +78,7 @@ public enum ApiErrorCode {
 				.put("cause", e.getMessage());
 		}
 	},
-	INVALID_JSON(JsonParseException.class, 2, "Invalid JSON") {
+	INVALID_JSON(JsonParseException.class, 2) {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (JsonParseException) e;
@@ -86,7 +86,7 @@ public enum ApiErrorCode {
 				.put("cause", ex.getCause().getMessage());
 		}
 	},
-	INVALID_REQUEST(InvalidParametersException.class, 3, "Invalid Request Object") {
+	INVALID_REQUEST(InvalidParametersException.class, 3) {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (InvalidParametersException) e;
@@ -95,13 +95,13 @@ public enum ApiErrorCode {
 				.put("cause", ex.getCause() == null ? ex.getMessage() : ex.getCause().getMessage());
 		}
 	},
-	MEMPOOL_FULL(MempoolFullException.class, 100, "Mempool is full") {
+	MEMPOOL_FULL(MempoolFullException.class, 100) {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			return new JSONObject();
 		}
 	},
-	STATE_CONFLICT(StateConflictException.class, 101, "State conflict") {
+	STATE_CONFLICT(StateConflictException.class, 101) {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (StateConflictException) e;
@@ -109,7 +109,7 @@ public enum ApiErrorCode {
 			return new JSONObject();
 		}
 	},
-	INVALID_TRANSACTION(InvalidTransactionException.class, 102, "Invalid transaction") {
+	INVALID_TRANSACTION(InvalidTransactionException.class, 102) {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {
 			var ex = (InvalidTransactionException) e;
@@ -121,12 +121,10 @@ public enum ApiErrorCode {
 
 	private final Class<? extends Throwable> exceptionClass;
 	private final int code;
-	private final String message;
 
-	ApiErrorCode(Class<? extends Throwable> exceptionClass, int code, String message) {
+	ApiErrorCode(Class<? extends Throwable> exceptionClass, int code) {
 		this.exceptionClass = exceptionClass;
 		this.code = code;
-		this.message = message;
 	}
 
 	public Class<? extends Throwable> getExceptionClass() {
@@ -135,10 +133,6 @@ public enum ApiErrorCode {
 
 	public int getCode() {
 		return code;
-	}
-
-	public String getMessage() {
-		return message;
 	}
 
 	public abstract JSONObject getDetails(Throwable e, Addressing addressing);
