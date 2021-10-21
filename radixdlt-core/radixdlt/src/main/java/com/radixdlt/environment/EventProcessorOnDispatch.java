@@ -80,7 +80,6 @@ public final class EventProcessorOnDispatch<T> {
 		this.processor = Objects.requireNonNull(processor);
 	}
 
-	@SuppressWarnings("unchecked")
 	public <U> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
 		if (c.equals(eventClass)) {
 			return Optional.of((EventProcessor<U>) processor);

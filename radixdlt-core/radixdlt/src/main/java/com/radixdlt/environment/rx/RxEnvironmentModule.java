@@ -227,6 +227,7 @@ public final class RxEnvironmentModule extends AbstractModule {
 		RxRemoteEnvironment rxRemoteEnvironment,
 		Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers
 	) {
+
 		final var runnerName = Runners.SYNC;
 		final var builder = ModuleRunnerImpl.builder();
 		addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);

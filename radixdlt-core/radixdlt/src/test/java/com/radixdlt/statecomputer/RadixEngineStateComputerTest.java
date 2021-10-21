@@ -130,11 +130,9 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.InitialForkConfig;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -167,8 +165,7 @@ public class RadixEngineStateComputerTest {
 	private RadixEngineStateComputer sut;
 
 	@Inject
-	@InitialForkConfig
-	private ForkConfig forkConfig;
+	private RERules rules;
 
 	@Inject
 	private ProposerElection proposerElection;
@@ -198,13 +195,12 @@ public class RadixEngineStateComputerTest {
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 
 				install(MempoolConfig.asModule(10, 10));
+				install(new MainnetForkConfigsModule());
 				install(new ForksModule());
-				install(new MainnetForksModule());
 				install(new RadixEngineForksLatestOnlyModule());
 
 				// HACK
 				bind(CommittedReader.class).toInstance(CommittedReader.mocked());
-				bind(ForksEpochStore.class).toInstance(ForksEpochStore.mocked());
 
 				bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 
@@ -230,8 +226,8 @@ public class RadixEngineStateComputerTest {
 
 	private void setupGenesis() throws RadixEngineException {
 		var branch = radixEngine.transientBranch();
-		var result = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
-		var genesisValidatorSet = result.getProcessedTxns().get(0).getEvents().stream()
+		var processed = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
+		var genesisValidatorSet = processed.getProcessedTxns().get(0).getEvents().stream()
 			.filter(NextValidatorSetEvent.class::isInstance)
 			.map(NextValidatorSetEvent.class::cast)
 			.findFirst()
@@ -249,11 +245,7 @@ public class RadixEngineStateComputerTest {
 		if (!genesisLedgerHeader.isEndOfEpoch()) {
 			throw new IllegalStateException("Genesis must be end of epoch");
 		}
-		radixEngine.execute(
-			genesisTxns.getTxns(),
-			LedgerAndBFTProof.create(genesisLedgerHeader, null),
-			PermissionLevel.SYSTEM
-		);
+		radixEngine.execute(genesisTxns.getTxns(), LedgerAndBFTProof.create(genesisLedgerHeader), PermissionLevel.SYSTEM);
 	}
 
 	@Before
@@ -370,7 +362,7 @@ public class RadixEngineStateComputerTest {
 		// Arrange
 		var txn = radixEngine.construct(new NextRound(1, false, 0, i -> proposerElection.getProposer(View.of(i)).getKey()))
 			.buildWithoutSignature();
-		var illegalTxn = TxLowLevelBuilder.newBuilder(forkConfig.engineRules().getSerialization())
+		var illegalTxn = TxLowLevelBuilder.newBuilder(rules.getSerialization())
 			.down(SubstateId.ofSubstate(txn.getId(), 1))
 			.up(new RoundData(2, 0))
 			.end()

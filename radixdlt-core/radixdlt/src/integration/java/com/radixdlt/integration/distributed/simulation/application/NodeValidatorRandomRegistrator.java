@@ -64,15 +64,16 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -90,10 +91,10 @@ public final class NodeValidatorRandomRegistrator implements SimulationTest.Simu
 
 	@Override
 	public void start(SimulationNodes.RunningNetwork network) {
-		final var nodesList = ImmutableList.copyOf(network.getNodes());
+		List<BFTNode> nodes = network.getNodes();
 		this.disposable = Observable.interval(1, 1, TimeUnit.SECONDS)
 			// Don't unregister node0/node1 so we are assured validatorSet never becomes empty
-			.map(i -> nodesList.get(random.nextInt(nodesList.size() - 2) + 2))
+			.map(i -> nodes.get(random.nextInt(nodes.size() - 2) + 2))
 			.subscribe(node -> {
 				var d = network.getDispatcher(NodeApplicationRequest.class, node);
 				var txnConstructionRequest = TxnConstructionRequest.create();

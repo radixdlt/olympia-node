@@ -73,7 +73,6 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.R
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;

@@ -65,13 +65,10 @@
 package com.radixdlt.api.handler;
 
 import com.radixdlt.api.node.account.LocalAccountHandler;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.RERules;
+
 import org.json.JSONObject;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.api.node.account.AccountInfoService;
@@ -84,8 +81,6 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.functional.Result;
-
-import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -102,24 +97,16 @@ public class LocalAccountHandlerTest {
 	private final SubmissionService submissionService = mock(SubmissionService.class);
 	private final AccountInfoService accountService = mock(AccountInfoService.class);
 	private final Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
-	private final Forks forks = mock(Forks.class);
-	private final ActionParser actionParser = new ActionParser(addressing, forks);
+	private final ActionParser actionParserService = new ActionParser(addressing);
 
 	private final ECKeyPair keyPair = ECKeyPair.generateNew();
 	private final ECPublicKey bftKey = keyPair.getPublicKey();
 	private final HashSigner hashSigner = keyPair::sign;
 
 	private final LocalAccountHandler handler = new LocalAccountHandler(
-		accountService, submissionService, actionParser,
+		accountService, submissionService, actionParserService,
 		hashSigner, REAddr.ofPubKeyAccount(keyPair.getPublicKey())
 	);
-
-	@Before
-	public void setup() {
-		final var reRules = mock(RERules.class);
-		when(reRules.getMaxRounds()).thenReturn(View.of(10L));
-		when(forks.getCandidateFork()).thenReturn(Optional.empty());
-	}
 
 	@Test
 	public void testHandleAccountGetInfo() {

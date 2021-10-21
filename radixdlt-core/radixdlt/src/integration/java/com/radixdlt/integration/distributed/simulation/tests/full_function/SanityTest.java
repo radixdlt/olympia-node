@@ -75,7 +75,7 @@ import com.radixdlt.integration.distributed.simulation.application.RadixEngineUn
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -110,9 +110,9 @@ public class SanityTest {
 			)
 			.fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
 			.addRadixEngineConfigModules(
+				new MainnetForkConfigsModule(),
 				new RadixEngineForksLatestOnlyModule(),
-				new ForksModule(),
-				new MainnetForksModule()
+				new ForksModule()
 			)
 			.addNodeModule(MempoolConfig.asModule(1000, 10))
 			.addTestModules(

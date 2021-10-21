@@ -64,7 +64,6 @@
 
 package com.radixdlt.network.p2p.transport.handshake;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.NodeId;
 
@@ -72,8 +71,8 @@ import java.util.Optional;
 
 public interface AuthHandshakeResult {
 
-	static AuthHandshakeSuccess success(ECPublicKey remotePubKey, Secrets secrets, Optional<HashCode> latestForkHash) {
-		return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets, latestForkHash);
+	static AuthHandshakeSuccess success(ECPublicKey remotePubKey, Secrets secrets) {
+		return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets);
 	}
 
 	static AuthHandshakeError error(String msg, Optional<NodeId> maybeNodeId) {
@@ -83,12 +82,10 @@ public interface AuthHandshakeResult {
 	final class AuthHandshakeSuccess implements AuthHandshakeResult {
 		private final NodeId remoteNodeId;
 		private final Secrets secrets;
-		private final Optional<HashCode> latestForkHash;
 
-		private AuthHandshakeSuccess(NodeId remoteNodeId, Secrets secrets, Optional<HashCode> latestForkHash) {
+		private AuthHandshakeSuccess(NodeId remoteNodeId, Secrets secrets) {
 			this.remoteNodeId = remoteNodeId;
 			this.secrets = secrets;
-			this.latestForkHash = latestForkHash;
 		}
 
 		public NodeId getRemoteNodeId() {
@@ -97,10 +94,6 @@ public interface AuthHandshakeResult {
 
 		public Secrets getSecrets() {
 			return secrets;
-		}
-
-		public Optional<HashCode> getLatestForkHash() {
-			return latestForkHash;
 		}
 	}
 
