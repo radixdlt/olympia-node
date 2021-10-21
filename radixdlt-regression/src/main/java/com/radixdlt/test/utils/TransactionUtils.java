@@ -1,6 +1,5 @@
 package com.radixdlt.test.utils;
 
-import com.radixdlt.test.account.Account;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
@@ -9,8 +8,8 @@ import com.radixdlt.client.lib.api.sync.RadixApiException;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionStatus;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.test.account.Account;
 import com.radixdlt.utils.UInt256;
-import org.awaitility.Durations;
 import org.awaitility.core.ConditionTimeoutException;
 
 import java.time.Duration;
@@ -25,7 +24,7 @@ import static org.awaitility.Awaitility.await;
  */
 public final class TransactionUtils {
 
-    public static final Duration DEFAULT_TX_CONFIRMATION_PATIENCE = Durations.ONE_MINUTE;
+    public static final Duration DEFAULT_TX_CONFIRMATION_PATIENCE = Duration.ofMinutes(1);
 
     private TransactionUtils() {
 
@@ -115,7 +114,7 @@ public final class TransactionUtils {
                 return true;
             });
         } catch (ConditionTimeoutException e) {
-            throw new TestFailureException("Transaction " + txId + " was not found");
+            throw new TestFailureException("Transaction " + txId + " was not found within " + DEFAULT_TX_CONFIRMATION_PATIENCE);
         }
         return transaction.get();
     }
@@ -130,7 +129,7 @@ public final class TransactionUtils {
                 return status.getStatus().equals(TransactionStatus.CONFIRMED);
             });
         } catch (ConditionTimeoutException e) {
-            throw new TestFailureException("Transaction was not CONFIRMED within " + DEFAULT_TX_CONFIRMATION_PATIENCE);
+            throw new TestFailureException("Transaction (" + txId + ") was not CONFIRMED within " + patience);
         }
     }
 

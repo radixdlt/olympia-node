@@ -18,9 +18,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-/**
- * self-explanatory
- */
 public class LocalDockerNetworkCreator {
 
     private static final Logger logger = LogManager.getLogger();
@@ -32,16 +29,11 @@ public class LocalDockerNetworkCreator {
     }
 
     public static UniverseVariables createNewLocalNetwork(RadixNetworkConfiguration configuration, DockerClient dockerClient) {
-        LocalDockerClient localDockerClient;
-        if (dockerClient.getClass().isAssignableFrom(LocalDockerClient.class)) {
-            localDockerClient = ((LocalDockerClient) dockerClient);
-        } else {
-            throw new IllegalArgumentException("Tried to create a local network with a " + dockerClient.getClass() + " docker client");
-        }
+        // hack, should be refactored soon
+        var localDockerClient = castToLocalClient(dockerClient);
 
-        int numberOfNodes = configuration.getDockerConfiguration().getInitialNumberOfNodes();
+        var numberOfNodes = configuration.getDockerConfiguration().getInitialNumberOfNodes();
         logger.info("Initializing new docker network with {} nodes...", numberOfNodes);
-
         var variables = UniverseUtils.generateEnvironmentVariables(MAX_NUMBER_OF_NODES);
 
         // network stuff
@@ -79,6 +71,22 @@ public class LocalDockerNetworkCreator {
 
         logger.info("All nodes are UP");
         return variables;
+    }
+
+    public static void wipeLocalNetwork(RadixNetworkConfiguration configuration, DockerClient dockerClient) {
+        // hack, should be refactored soon
+        var localDockerClient =  castToLocalClient(dockerClient);
+
+        localDockerClient.wipeNetwork(configuration.getDockerConfiguration().getNetworkName());
+    }
+
+    // TODO will be removed during next refactoring
+    private static LocalDockerClient castToLocalClient(DockerClient dockerClient) {
+        if (dockerClient.getClass().isAssignableFrom(LocalDockerClient.class)) {
+            return ((LocalDockerClient) dockerClient);
+        } else {
+            throw new IllegalArgumentException("Tried to create a local network with a " + dockerClient.getClass() + " docker client");
+        }
     }
 
     private static void waitUntilNodesAreUp(RadixNetworkConfiguration configuration, int numberOfNodes) {

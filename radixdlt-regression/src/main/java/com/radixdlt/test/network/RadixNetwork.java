@@ -1,5 +1,6 @@
 package com.radixdlt.test.network;
 
+import com.github.dockerjava.api.exception.DockerClientException;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.test.account.Account;
 import com.radixdlt.test.network.client.RadixHttpClient;
@@ -56,7 +57,7 @@ public class RadixNetwork {
             throw new RuntimeException("No nodes found, cannot run tests");
         }
 
-        logger.info("Located {} nodes", radixNodes.size());
+        logger.info("Done locating nodes, found {} in total", radixNodes.size());
         radixNodes.forEach(logger::debug);
 
         return new RadixNetwork(configuration, networkId, radixNodes, httpClient, dockerClient, universeVariables);
@@ -121,7 +122,7 @@ public class RadixNetwork {
         try {
             dockerClient.connect();
             logger.debug("Successfully initialized a {} docker client", configuration.getType());
-        } catch (Exception e) {
+        } catch (DockerClientException e) {
             logger.warn("Exception {} when trying to initialize a docker client. Client will be disabled.", e.getMessage());
             e.printStackTrace();
         }

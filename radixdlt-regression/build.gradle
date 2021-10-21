@@ -125,6 +125,8 @@ dependencies {
     api project(':radixdlt-java')
     api project(':radixdlt')
 
+    implementation 'com.github.bitcoinj:bitcoinj:7c31dcb'
+
     implementation 'com.google.guava:guava'
     implementation 'org.slf4j:slf4j-simple:2.0.0-alpha2'
     implementation 'com.github.docker-java:docker-java:3.2.11'

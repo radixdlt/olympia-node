@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -35,7 +36,7 @@ public class RadixHttpClient {
     private static final String HEALTH_PATH = "/health";
     private static final String METRICS_PATH = "/metrics";
 
-    private HttpClient client;
+    private final HttpClient client;
 
     public static RadixHttpClient fromRadixNetworkConfiguration(RadixNetworkConfiguration configuration) {
         return new RadixHttpClient(configuration.getBasicAuth());
@@ -44,7 +45,7 @@ public class RadixHttpClient {
     public RadixHttpClient(String basicAuth) {
         if (basicAuth != null && !basicAuth.isBlank()) {
             var encodedCredentials = Base64.getEncoder().encodeToString(basicAuth.getBytes(StandardCharsets.UTF_8));
-            // TODO use this
+            // TODO make the new client use basic auth
         }
 
         var props = System.getProperties();
@@ -77,17 +78,21 @@ public class RadixHttpClient {
     }
 
     public HealthStatus getHealthStatus(String rootUrl) {
-        //String url = rootUrl + HEALTH_PATH;
-        //HttpResponse<JsonNode> response = Unirest.get(url).asJson();
-        //return HealthStatus.valueOf(response.getBody().getObject().getString("network_status"));
-        return null;
+        var request = HttpRequest.newBuilder().uri(URI.create(rootUrl + HEALTH_PATH)).method("GET",
+            HttpRequest.BodyPublishers.noBody()).build();
+        var responseObject = submitRequestAndParseResponseAsJson(request);
+        return HealthStatus.valueOf(responseObject.getString("network_status"));
     }
 
     public Metrics getMetrics(String rootUrl) {
-        //String url = rootUrl + METRICS_PATH;
-        //String response = Unirest.get(url).asString().getBody();
-        //return new Metrics(response);
-        return null;
+        var request = HttpRequest.newBuilder().uri(URI.create(rootUrl + METRICS_PATH)).method("GET",
+            HttpRequest.BodyPublishers.noBody()).build();
+        try {
+            var httpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
+            return new Metrics(httpResponse.body());
+        } catch (IOException | InterruptedException e) {
+            throw new RadixApiException(Failure.failure(-1, e.getMessage()));
+        }
     }
 
     public String callFaucet(String rootUrl, int port, String address) {
@@ -103,15 +108,20 @@ public class RadixHttpClient {
         var request = HttpRequest.newBuilder().uri(URI.create(rootUrl + ":" + port + FAUCET_PATH)).method(
             "POST", HttpRequest.BodyPublishers.ofString(jsonBodyString)).build();
 
+        var responseObject = submitRequestAndParseResponseAsJson(request);
+        return responseObject.getJSONObject("result").getString("txID");
+
+    }
+
+    private JSONObject submitRequestAndParseResponseAsJson(HttpRequest request) {
         try {
-            var httpResponse = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            var httpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
             int status = httpResponse.statusCode();
             if (status >= 200 && status < 300) {
-                JSONObject response = new JSONObject(httpResponse.body());
-                return response.getJSONObject("result").getString("txID");
+                return new JSONObject(httpResponse.body());
             } else {
-                throw new RadixApiException(Failure.failure(-1, "Faucet call failed: (" + status + "): "
-                    + httpResponse.body()));
+                throw new RadixApiException(Failure.failure(-1, "Http request to " + request.uri() + " failed due to ("
+                    + status + "). Body: " + httpResponse.body()));
             }
         } catch (IOException | InterruptedException e) {
             throw new RadixApiException(Failure.failure(-1, e.getMessage()));

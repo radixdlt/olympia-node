@@ -50,7 +50,7 @@ public class RadixNetworkNodeLocator {
         } catch (RadixApiException e) {
             if (e.getMessage().toLowerCase().contains("401 authorization required")) {
                 logger.warn("Could not fetch peers list from " + configuration.getJsonRpcRootUrl() + " due to 401. "
-                    + "The test will only use one core node.");
+                    + "The test will use only one archive node.");
                 addSingleNodePeerToList(configuration, radixNodes);
                 return radixNodes;
             }
@@ -73,18 +73,17 @@ public class RadixNetworkNodeLocator {
             // TODO these ports might be wrong. Faucet config should be more robust
             Set<RadixNode.ServiceType> availableNodeServices = Sets.newHashSet();
             availableNodeServices.add(RadixNode.ServiceType.FAUCET);
-            RadixNode faucetNode = new RadixNode(configuration.getFaucetUrl(), configuration.getPrimaryPort(),
+            var faucetNode = new RadixNode(configuration.getFaucetUrl(), configuration.getPrimaryPort(),
                 configuration.getSecondaryPort(), configuration.getDockerConfiguration().getContainerName(),
                 availableNodeServices);
             radixNodes.add(faucetNode);
-            String rootUrl = configuration.getFaucetUrl();
-            AccountAddress randomAddress = AccountAddress.create(ECKeyPair.generateNew().getPublicKey());
+            var rootUrl = configuration.getFaucetUrl();
+            var networkId = configuration.connect(Optional.empty()).network().id().getNetworkId();
+            var randomAddress = AccountAddress.create(ECKeyPair.generateNew().getPublicKey()).toString(networkId);
+
             RadixHttpClient.fromRadixNetworkConfiguration(configuration).callFaucet(rootUrl, configuration.getPrimaryPort(),
-                randomAddress.toString());
-
-            // testing the faucet
-
-            logger.info("Found");
+                randomAddress);
+            logger.info("Found a primary faucet at " + configuration.getFaucetUrl());
         }
     }
 
