@@ -5,6 +5,8 @@ import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
 import com.radixdlt.client.lib.api.sync.RadixApiException;
 import com.radixdlt.test.utils.TestingUtils;
 import org.awaitility.Durations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -17,6 +19,8 @@ import static org.awaitility.Awaitility.await;
  * Information needed for the initialization of a {@link RadixNetwork}
  */
 public class RadixNetworkConfiguration {
+
+    private static Logger logger = LoggerFactory.getLogger(RadixNetworkConfiguration.class);
 
     public enum Type {
         LOCALNET,
@@ -54,9 +58,8 @@ public class RadixNetworkConfiguration {
             var basicAuth = System.getenv("RADIXDLT_BASIC_AUTH");
             var type = determineType(jsonRpcRootUrlString);
             var dockerConfiguration = DockerConfiguration.fromEnv();
-            // check if docker network should be initialized but type is NOT local
             if (type != Type.LOCALNET && dockerConfiguration.shouldInitializeNetwork()) {
-                throw new IllegalArgumentException("Cannot initialize a non local network");
+                logger.warn("Cannot initialize a {} network", type);
             }
             return new RadixNetworkConfiguration(jsonRpcRootUrlString, primaryPort, secondaryPort, faucetUrl, basicAuth, type,
                 dockerConfiguration);
@@ -99,7 +102,9 @@ public class RadixNetworkConfiguration {
         return jsonRpcRootUrl;
     }
 
-    public String getFaucetUrl() { return faucetUrl; }
+    public String getFaucetUrl() {
+        return faucetUrl;
+    }
 
     public int getPrimaryPort() {
         return primaryPort;
