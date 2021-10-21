@@ -66,12 +66,13 @@ package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.Module;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
@@ -89,16 +90,18 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.integration.distributed.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.statecomputer.forks.InMemoryForksEpochStore;
+import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.sync.InMemoryCommittedReader;
 import com.radixdlt.utils.Pair;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
+import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 
 import static java.util.function.Predicate.not;
 
@@ -106,32 +109,29 @@ import static java.util.function.Predicate.not;
  * A multi-node bft test network where the network and latencies of each message is simulated.
  */
 public class SimulationNodes {
+	private final ImmutableList<ECKeyPair> initialNodes;
 	private final SimulationNetwork underlyingNetwork;
-	private final ImmutableList<Injector> nodeInstances;
 	private final Module baseModule;
-	private final Module overrideModule;
-	private final Map<ECKeyPair, Module> byzantineNodeModules;
+	private final ImmutableMultimap<ECPublicKey, Module> overrideModules;
 
 	/**
 	 * Create a BFT test network with an underlying simulated network.
-	 * @param nodes The nodes on the network
+	 * @param initialNodes The initial nodes on the network
 	 * @param underlyingNetwork the network simulator
 	 */
 	public SimulationNodes(
-		List<ECKeyPair> nodes,
+		ImmutableList<ECKeyPair> initialNodes,
 		SimulationNetwork underlyingNetwork,
 		Module baseModule,
-		Module overrideModule,
-		Map<ECKeyPair, Module> byzantineNodeModules
+		ImmutableMultimap<ECPublicKey, Module> overrideModules
 	) {
+		this.initialNodes = initialNodes;
 		this.baseModule = baseModule;
-		this.overrideModule = overrideModule;
-		this.byzantineNodeModules = byzantineNodeModules;
+		this.overrideModules = overrideModules;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
-		this.nodeInstances = nodes.stream().map(this::createBFTInstance).collect(ImmutableList.toImmutableList());
 	}
 
-	private Injector createBFTInstance(ECKeyPair self) {
+	private Module createBFTModule(ECKeyPair self) {
 		Module module = Modules.combine(
 			new AbstractModule() {
 				@Provides
@@ -147,6 +147,11 @@ public class SimulationNodes {
 				}
 
 				@Provides
+				private ECKeyPair keyPair() {
+					return self;
+				}
+
+				@Provides
 				@LocalSigner
 				HashSigner hashSigner() {
 					return self::sign;
@@ -159,21 +164,17 @@ public class SimulationNodes {
 
 		// Override modules can be used to prove that certain adversaries
 		// can break network behavior if incorrect modules are used
-		if (overrideModule != null) {
-			module = Modules.override(module).with(overrideModule);
+		if (overrideModules.containsKey(self.getPublicKey())) {
+			final var nodeOverrideModules = overrideModules.get(self.getPublicKey());
+			module = Modules.override(module).with(nodeOverrideModules);
 		}
 
-		Module byzantineModule = byzantineNodeModules.get(self);
-		if (byzantineModule != null) {
-			module = Modules.override(module).with(byzantineModule);
-		}
-
-		return Guice.createInjector(module);
+		return module;
 	}
 
 	// TODO: Add support for epoch changes
 	public interface RunningNetwork {
-		List<BFTNode> getNodes();
+		ImmutableSet<BFTNode> getNodes();
 
 		BFTConfiguration bftConfiguration();
 
@@ -183,114 +184,178 @@ public class SimulationNodes {
 
 		<T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node);
 
+		<T> T getInstance(Class<T> clazz, BFTNode node);
+
+		<T> T getInstance(Key<T> clazz, BFTNode node);
+
 		SimulationNetwork getUnderlyingNetwork();
 
 		Map<BFTNode, SystemCounters> getSystemCounters();
 
-		void runModule(int nodeIndex, String name);
+		void addOrOverrideNode(ECKeyPair key, Module extraModule);
+
+		void runModule(BFTNode node, String name);
+
+		void stop();
 	}
 
-	public RunningNetwork start(ImmutableMap<Integer, ImmutableSet<String>> disabledModuleRunners) {
-		final var moduleRunnersPerNode =
-			IntStream.range(0, this.nodeInstances.size())
-				.mapToObj(i -> {
-					final var injector = this.nodeInstances.get(i);
-					final var moduleRunners =
-						injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
-					return Pair.of(i, moduleRunners);
-				})
-				.collect(ImmutableList.toImmutableList());
+	public RunningNetwork start(ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners) {
+		return new RunningNetworkImpl(disabledModuleRunners);
+	}
 
-		for (var pair : moduleRunnersPerNode) {
+	private class RunningNetworkImpl implements RunningNetwork {
+		private final ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners;
+		private final Map<BFTNode, Injector> nodes;
+
+		private final PublishSubject<Pair<BFTNode, EpochChange>> epochChanges = PublishSubject.create();
+		private final PublishSubject<Pair<BFTNode, LedgerUpdate>> ledgerUpdates = PublishSubject.create();
+
+		RunningNetworkImpl(ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners) {
+			this.disabledModuleRunners = disabledModuleRunners;
+
+			nodes = initialNodes.stream().map(key -> {
+				final var module = createBFTModule(key);
+				return Pair.of(key, Guice.createInjector(module));
+			}).collect(Collectors.toMap(
+				p -> BFTNode.create(p.getFirst().getPublicKey()),
+				Pair::getSecond
+			));
+
+			nodes.entrySet().forEach(e -> init(e.getKey(), e.getValue()));
+		}
+
+		private void init(BFTNode node, Injector injector) {
+			this.addObservables(node, injector);
+			this.startRunners(node, injector);
+		}
+
+		private void startRunners(BFTNode node, Injector injector) {
 			final var nodeDisabledModuleRunners =
-				disabledModuleRunners.getOrDefault(pair.getFirst(), ImmutableSet.of());
+				disabledModuleRunners.getOrDefault(node, ImmutableSet.of());
 
-			pair.getSecond().entrySet().stream()
+			injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }))
+				.entrySet().stream()
 				.filter(not(e -> nodeDisabledModuleRunners.contains(e.getKey())))
 				.forEach(e -> e.getValue().start());
 		}
 
-		final List<BFTNode> bftNodes = this.nodeInstances.stream()
-			.map(i -> i.getInstance(Key.get(BFTNode.class, Self.class)))
-			.collect(Collectors.toList());
+		private void addObservables(BFTNode node, Injector injector) {
+			final var ledgerUpdateObservable =
+				injector.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { }));
+			ledgerUpdateObservable.subscribe(update -> ledgerUpdates.onNext(Pair.of(node, update)));
 
-		return new RunningNetwork() {
-			@Override
-			public List<BFTNode> getNodes() {
-				return bftNodes;
+			final var epochChangeObservable = ledgerUpdateObservable
+				.flatMapMaybe(ledgerUpdate -> {
+					final var e = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
+					return e == null ? Maybe.empty() : Maybe.just(Pair.of(node, e));
+				});
+			epochChangeObservable.subscribe(epochChanges::onNext);
+		}
+
+		@Override
+		public ImmutableSet<BFTNode> getNodes() {
+			return ImmutableSet.copyOf(nodes.keySet());
+		}
+
+		@Override
+		public BFTConfiguration bftConfiguration() {
+			return nodes.values().stream().findAny().orElseThrow()
+				.getInstance(BFTConfiguration.class);
+		}
+
+		@Override
+		public Observable<EpochChange> latestEpochChanges() {
+			// Just do first instance for now
+			final var initialEpoch = nodes.values().stream().findAny().orElseThrow()
+				.getInstance(EpochChange.class);
+
+			return Observable.just(initialEpoch).concatWith(
+				epochChanges
+					.map(Pair::getSecond)
+					.scan((cur, next) -> next.getProof().getEpoch() > cur.getProof().getEpoch() ? next : cur)
+					.distinctUntilChanged()
+			);
+		}
+
+		@Override
+		public Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates() {
+			return ledgerUpdates;
+		}
+
+		@Override
+		public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node) {
+			return getInstance(Environment.class, node).getDispatcher(eventClass);
+		}
+
+		@Override
+		public <T> T getInstance(Class<T> clazz, BFTNode node) {
+			return nodes.get(node).getInstance(clazz);
+		}
+
+		@Override
+		public <T> T getInstance(Key<T> clazz, BFTNode node) {
+			return nodes.get(node).getInstance(clazz);
+		}
+
+		@Override
+		public SimulationNetwork getUnderlyingNetwork() {
+			return underlyingNetwork;
+		}
+
+		@Override
+		public Map<BFTNode, SystemCounters> getSystemCounters() {
+			return nodes.entrySet().stream()
+				.collect(Collectors.toMap(
+					Map.Entry::getKey,
+					e -> e.getValue().getInstance(SystemCounters.class)
+				));
+		}
+
+		@Override
+		public void runModule(BFTNode node, String name) {
+			nodes.get(node)
+				.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }))
+				.get(name)
+				.start();
+		}
+
+		@Override
+		public void addOrOverrideNode(ECKeyPair key, Module extraModule) {
+			final var bftNode = BFTNode.create(key.getPublicKey());
+
+			final var existingNode = this.nodes.get(bftNode);
+			if (existingNode != null) {
+				stopNode(existingNode);
+
+				final var baseModule = createBFTModule(key);
+				final var module = Modules.override(baseModule).with(new AbstractModule() {
+					@Override
+					protected void configure() {
+						bind(InMemoryEngineStore.Store.class).toInstance(existingNode.getInstance(InMemoryEngineStore.class).getStore());
+						bind(InMemoryCommittedReader.Store.class).toInstance(existingNode.getInstance(InMemoryCommittedReader.class).getStore());
+						bind(InMemoryForksEpochStore.Store.class).toInstance(existingNode.getInstance(InMemoryForksEpochStore.class).getStore());
+					}
+				}, extraModule);
+				final var injector = Guice.createInjector(module);
+				this.nodes.put(bftNode, injector);
+				init(bftNode, injector);
+			} else {
+				final var baseModule = createBFTModule(key);
+				final var module = Modules.override(baseModule).with(extraModule);
+				final var injector = Guice.createInjector(module);
+				this.nodes.put(bftNode, injector);
+				init(bftNode, injector);
 			}
+		}
 
-			@Override
-			public BFTConfiguration bftConfiguration() {
-				return nodeInstances.get(0).getInstance(BFTConfiguration.class);
-			}
+		@Override
+		public void stop() {
+			this.nodes.values().forEach(this::stopNode);
+		}
 
-			@Override
-			public Observable<EpochChange> latestEpochChanges() {
-				// Just do first instance for now
-				EpochChange initialEpoch =  nodeInstances.get(0).getInstance(EpochChange.class);
-
-				Set<Observable<EpochChange>> epochChanges = nodeInstances.stream()
-					.map(i -> i.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { })))
-					.map(o -> o
-						.map(u -> u.getStateComputerOutput().getInstance(EpochChange.class))
-						.filter(Objects::nonNull)
-					)
-					.collect(Collectors.toSet());
-
-				return Observable.just(initialEpoch).concatWith(
-					Observable.merge(epochChanges)
-						.scan((cur, next) -> next.getProof().getEpoch() > cur.getProof().getEpoch() ? next : cur)
-						.distinctUntilChanged()
-				);
-			}
-
-			@Override
-			public Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates() {
-				Set<Observable<Pair<BFTNode, LedgerUpdate>>> committedCommands = nodeInstances.stream()
-					.map(i -> {
-						BFTNode node = i.getInstance(Key.get(BFTNode.class, Self.class));
-						return i.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { }))
-							.map(v -> Pair.of(node, v));
-					})
-					.collect(Collectors.toSet());
-
-				return Observable.merge(committedCommands);
-			}
-
-			@Override
-			public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node) {
-				int index = getNodes().indexOf(node);
-				return nodeInstances.get(index).getInstance(Environment.class).getDispatcher(eventClass);
-			}
-
-			@Override
-			public SimulationNetwork getUnderlyingNetwork() {
-				return underlyingNetwork;
-			}
-
-			@Override
-			public Map<BFTNode, SystemCounters> getSystemCounters() {
-				return bftNodes.stream()
-					.collect(Collectors.toMap(
-						node -> node,
-						node -> nodeInstances.get(bftNodes.indexOf(node)).getInstance(SystemCounters.class)
-					));
-			}
-
-			@Override
-			public void runModule(int nodeIndex, String name) {
-				nodeInstances.get(nodeIndex)
-					.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }))
-					.get(name)
-					.start();
-			}
-		};
-	}
-
-	public void stop() {
-		this.nodeInstances.stream()
-			.flatMap(i -> i.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { })).values().stream())
-			.forEach(ModuleRunner::stop);
+		private void stopNode(Injector injector) {
+			injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { })).values()
+				.forEach(ModuleRunner::stop);
+		}
 	}
 }

@@ -93,7 +93,7 @@ public class RandomValidatorsTest {
 			NetworkLatencies.fixed()
 		)
 		.pacemakerTimeout(5000)
-		.numNodes(numNodes, 2)
+		.numNodes(numNodes)
 		.addTestModules(
 			ConsensusMonitors.safety(),
 			ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),

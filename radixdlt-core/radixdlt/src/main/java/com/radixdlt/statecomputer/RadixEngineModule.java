@@ -67,75 +67,81 @@ package com.radixdlt.statecomputer;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.RERules;
+import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import com.radixdlt.statecomputer.forks.InitialForkConfig;
+import com.radixdlt.statecomputer.forks.LatestForkConfig;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.sync.CommittedReader;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.OptionalInt;
 
 /**
  * Module which manages execution of commands
  */
 public class RadixEngineModule extends AbstractModule {
-	private static final Logger logger = LogManager.getLogger();
+	@Provides
+	@Singleton
+	@InitialForkConfig
+	private ForkConfig initialForkConfig(
+		CommittedReader committedReader,
+		ForksEpochStore forksEpochStore,
+		Forks forks
+	) {
+		forks.init(committedReader, forksEpochStore);
+		return forks.getCurrentFork(forksEpochStore.getEpochsForkHashes());
+	}
 
 	@Provides
 	@Singleton
-	RERules reRules(
-		CommittedReader committedReader, // TODO: This is a hack, remove
-		Forks forks
-	) {
-		var lastProof = committedReader.getLastProof().orElse(LedgerProof.mock());
-		var epoch = lastProof.isEndOfEpoch() ? lastProof.getEpoch() + 1 : lastProof.getEpoch();
-		return forks.get(epoch);
+	@LatestForkConfig
+	private ForkConfig latestForkConfig(Forks forks) {
+		return forks.latestFork();
 	}
 
 	// TODO: Remove
 	@Provides
 	@Singleton
-	private REParser parser(RERules rules) {
-		return rules.getParser();
+	private REParser parser(@InitialForkConfig ForkConfig forkConfig) {
+		return forkConfig.engineRules().getParser();
 	}
 
 	// TODO: Remove
 	@Provides
 	@Singleton
 	@MaxSigsPerRound
-	private OptionalInt maxSigsPerRound(RERules rules) {
-		return rules.getMaxSigsPerRound();
+	private OptionalInt maxSigsPerRound(@InitialForkConfig ForkConfig forkConfig) {
+		return forkConfig.engineRules().getMaxSigsPerRound();
 	}
 
 	// TODO: Remove
 	@Provides
 	@Singleton
 	@EpochCeilingView
-	private View epochCeilingHighView(RERules rules) {
-		return rules.getMaxRounds();
+	private View epochCeilingHighView(@InitialForkConfig ForkConfig forkConfig) {
+		return forkConfig.engineRules().getMaxRounds();
 	}
 
 	// TODO: Remove
 	@Provides
 	@Singleton
 	@MaxValidators
-	private int maxValidators(RERules rules) {
-		return rules.getMaxValidators();
+	private int maxValidators(@InitialForkConfig ForkConfig forkConfig) {
+		return forkConfig.engineRules().getMaxValidators();
 	}
 
 	@Provides
 	@Singleton
 	private RadixEngine<LedgerAndBFTProof> getRadixEngine(
 		EngineStore<LedgerAndBFTProof> engineStore,
-		RERules rules
+		@InitialForkConfig ForkConfig forkConfig
 	) {
-		var cmConfig = rules.getConstraintMachineConfig();
+		final var rules = forkConfig.engineRules();
+		final var cmConfig = rules.getConstraintMachineConfig();
 		var cm = new ConstraintMachine(
 			cmConfig.getProcedures(),
 			cmConfig.getDeserialization(),
@@ -148,7 +154,7 @@ public class RadixEngineModule extends AbstractModule {
 			rules.getActionConstructors(),
 			cm,
 			engineStore,
-			rules.getBatchVerifier()
+			rules.getPostProcessor()
 		);
 	}
 }

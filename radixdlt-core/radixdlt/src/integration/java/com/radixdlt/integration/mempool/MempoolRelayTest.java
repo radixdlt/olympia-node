@@ -77,7 +77,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.MainnetForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.utils.KeyComparator;
@@ -196,9 +196,9 @@ public class MempoolRelayTest {
 				Amount.ofTokens(1000)
 			),
 			MempoolConfig.asModule(500, 100, 10, 10, 10),
-			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().overrideMaxSigsPerRound(50)),
 			new ForksModule(),
+			new MainnetForksModule(),
 			new PersistedNodeForTestingModule(),
 			new MempoolFillerModule(),
 			new AbstractModule() {

@@ -62,23 +62,39 @@
  * permissions under this License.
  */
 
-package com.radixdlt.engine;
+package com.radixdlt.statecomputer.forks;
 
-import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.OptionalBinder;
 
-import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.UnaryOperator;
 
 /**
- * Verifies that batched atoms executed on Radix Engine follow some
- * specified rules.
- *
- * @param <M> class of metadata
+ * For testing only, only tests the genesis state computer configuration
  */
-public interface BatchVerifier<M> {
-	default void testMetadata(M metadata, List<REProcessedTxn> txns) throws MetadataException {
+public class RadixEngineForksGenesisOnlyModule extends AbstractModule {
+	private final Optional<RERulesConfig> configOverride;
+
+	public RadixEngineForksGenesisOnlyModule() {
+		this.configOverride = Optional.empty();
 	}
 
-	static <M> BatchVerifier<M> empty() {
-		return new BatchVerifier<>() {};
+	public RadixEngineForksGenesisOnlyModule(RERulesConfig config) {
+		this.configOverride = Optional.of(config);
+	}
+
+	@Override
+	protected void configure() {
+		OptionalBinder.newOptionalBinder(binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() { })
+			.setBinding()
+			.toInstance(m -> {
+				final var genesisFork = m.stream()
+					.min((a, b) -> (int) (a.epoch() - b.epoch()));
+				final var baseFork = genesisFork.get().atFixedEpoch(0L);
+				return Set.of(configOverride.map(baseFork::withEngineRulesConfig).orElse(baseFork));
+			});
 	}
 }

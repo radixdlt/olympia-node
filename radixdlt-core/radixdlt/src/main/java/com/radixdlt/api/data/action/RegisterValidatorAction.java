@@ -82,3 +82,4 @@ class RegisterValidatorAction implements TransactionAction {
 		return Stream.of(new RegisterValidator(validatorKey));
 	}
 }
+

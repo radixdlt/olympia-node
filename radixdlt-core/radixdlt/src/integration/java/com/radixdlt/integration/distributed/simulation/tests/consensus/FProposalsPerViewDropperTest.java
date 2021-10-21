@@ -127,7 +127,7 @@ public class FProposalsPerViewDropperTest {
 	@Test
 	public void given_incorrect_module_where_vertex_sync_is_disabled__then_test_should_fail_against_drop_proposal_adversary() {
 		SimulationTest test = bftTestBuilder
-			.overrideWithIncorrectModule(new AbstractModule() {
+			.addOverrideModuleToAll(new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() { }).toInstance((node, request) -> { });
@@ -170,7 +170,7 @@ public class FProposalsPerViewDropperTest {
 	public void dropping_sync_adversary_with_no_timeout_scheduler_should_cause_timeouts() {
 		SimulationTest test = bftTestBuilder
 			.addNetworkModule(NetworkDroppers.bftSyncMessagesDropped(0.1))
-			.overrideWithIncorrectModule(new AbstractModule() {
+			.addOverrideModuleToAll(new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
