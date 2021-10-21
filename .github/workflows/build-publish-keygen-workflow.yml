@@ -4,7 +4,7 @@ on:
     types: [ published ]
   push:
     branches:
-      - rc\/*
+      - develop
       - release\/*
 jobs:
   cancel_running_workflows:
@@ -60,7 +60,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Login to GCR (rc)
+      - name: Login to GCR (develop)
         uses: docker/login-action@v1
         if:  "${{ steps.set_environment.outputs.is_release == 'false' }}"
         with:

@@ -67,6 +67,7 @@ package com.radixdlt.sync;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.mock;
@@ -99,6 +100,8 @@ import java.util.stream.Stream;
 
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.network.p2p.PeersView.PeerInfo;
+import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
+import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseHandler;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
@@ -127,8 +130,8 @@ public class LocalSyncServiceTest {
 	private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
 	private RemoteSyncResponseSignaturesVerifier signaturesVerifier;
 	private LedgerAccumulatorVerifier accumulatorVerifier;
-	private LocalSyncService.VerifiedSyncResponseSender verifiedSender;
-	private LocalSyncService.InvalidSyncResponseSender invalidSyncedCommandsSender;
+	private VerifiedSyncResponseHandler verifiedSyncResponseHandler;
+	private InvalidSyncResponseHandler invalidSyncResponseHandler;
 
 	@Before
 	public void setUp() {
@@ -144,8 +147,8 @@ public class LocalSyncServiceTest {
 		this.validatorSetVerifier = mock(RemoteSyncResponseValidatorSetVerifier.class);
 		this.signaturesVerifier = mock(RemoteSyncResponseSignaturesVerifier.class);
 		this.accumulatorVerifier = mock(LedgerAccumulatorVerifier.class);
-		this.verifiedSender = mock(LocalSyncService.VerifiedSyncResponseSender.class);
-		this.invalidSyncedCommandsSender = mock(LocalSyncService.InvalidSyncResponseSender.class);
+		this.verifiedSyncResponseHandler = mock(VerifiedSyncResponseHandler.class);
+		this.invalidSyncResponseHandler = mock(InvalidSyncResponseHandler.class);
 	}
 
 	private void setupSyncServiceWithState(SyncState syncState) {
@@ -162,8 +165,8 @@ public class LocalSyncServiceTest {
 			validatorSetVerifier,
 			signaturesVerifier,
 			accumulatorVerifier,
-			verifiedSender,
-			invalidSyncedCommandsSender,
+			verifiedSyncResponseHandler,
+			invalidSyncResponseHandler,
 			syncState
 		);
 	}
@@ -397,30 +400,11 @@ public class LocalSyncServiceTest {
 			currentHeader, ImmutableList.of(peer1), targetHeader).withPendingRequest(peer1, 1L);
 		this.setupSyncServiceWithState(syncState);
 
-		final var respHeadLedgerHeader = mock(LedgerHeader.class);
-		when(respHeadLedgerHeader.getAccumulatorState()).thenReturn(mock(AccumulatorState.class));
-		final var respTailLedgerHeader = mock(LedgerHeader.class);
-		when(respTailLedgerHeader.getAccumulatorState()).thenReturn(mock(AccumulatorState.class));
-		final var respHead = mock(DtoLedgerProof.class);
-		when(respHead.getLedgerHeader()).thenReturn(respHeadLedgerHeader);
-		final var respTail = mock(DtoLedgerProof.class);
-		when(respTail.getLedgerHeader()).thenReturn(respTailLedgerHeader);
-		final var response = mock(DtoTxnsAndProof.class);
-		final var txn = mock(Txn.class);
-		when(txn.getId()).thenReturn(AID.ZERO);
-		when(response.getTxns()).thenReturn(ImmutableList.of(txn));
-		when(response.getHead()).thenReturn(respHead);
-		when(response.getTail()).thenReturn(respTail);
-
-		final var syncResponse = SyncResponse.create(response);
-
-		when(validatorSetVerifier.verifyValidatorSet(syncResponse)).thenReturn(true);
-		when(signaturesVerifier.verifyResponseSignatures(syncResponse)).thenReturn(true);
-		when(accumulatorVerifier.verify(any(), any(), any())).thenReturn(true);
+		final var syncResponse = createValidMockedSyncResponse();
 
 		this.localSyncService.syncResponseEventProcessor().process(peer1, syncResponse);
 
-		verify(verifiedSender, times(1)).sendVerifiedSyncResponse(syncResponse);
+		verify(verifiedSyncResponseHandler, times(1)).handleVerifiedSyncResponse(syncResponse);
 		verify(syncLedgerUpdateTimeoutDispatcher, times(1)).dispatch(any(), anyLong());
 		verifyNoMoreInteractions(syncRequestDispatcher);
 	}
@@ -437,9 +421,8 @@ public class LocalSyncServiceTest {
 				currentHeader, ImmutableList.of(peer1), targetHeader).withPendingRequest(peer1, 1L);
 		this.setupSyncServiceWithState(syncState);
 
-		this.localSyncService.ledgerUpdateEventProcessor().process(
-			new LedgerUpdate(VerifiedTxnsAndProof.create(ImmutableList.of(), targetHeader), ImmutableClassToInstanceMap.of())
-		);
+		this.localSyncService.ledgerUpdateEventProcessor()
+			.process(ledgerUpdateAtStateVersion(targetHeader.getStateVersion()));
 
 		verifyNoMoreInteractions(syncRequestDispatcher);
 	}
@@ -450,17 +433,36 @@ public class LocalSyncServiceTest {
 		final var targetHeader = createHeaderAtStateVersion(21L);
 
 		final var peer1 = createPeer();
-		when(peersView.hasPeer(peer1)).thenReturn(true);
+		setupPeersView(peer1);
 
 		final var syncState = SyncState.SyncingState.init(
 			currentHeader, ImmutableList.of(peer1), targetHeader);
 		this.setupSyncServiceWithState(syncState);
 
 		this.localSyncService.syncLedgerUpdateTimeoutProcessor().process(
-			SyncLedgerUpdateTimeout.create()
+			SyncLedgerUpdateTimeout.create(currentHeader.getStateVersion())
 		);
 
 		verify(syncRequestDispatcher, times(1)).dispatch(eq(peer1), any());
+	}
+
+	@Test
+	public void when_obsolete_ledger_update_timeout__then_should_ignore() {
+		final var currentHeader = createHeaderAtStateVersion(19L);
+		final var targetHeader = createHeaderAtStateVersion(21L);
+
+		final var peer1 = createPeer();
+		setupPeersView(peer1);
+
+		final var syncState = SyncState.SyncingState.init(
+			currentHeader, ImmutableList.of(peer1), targetHeader);
+		this.setupSyncServiceWithState(syncState);
+
+		this.localSyncService.syncLedgerUpdateTimeoutProcessor().process(
+			SyncLedgerUpdateTimeout.create(currentHeader.getStateVersion() - 1) // timeout event for a past state version
+		);
+
+		verifyNoInteractions(syncRequestDispatcher);
 	}
 
 	@Test
@@ -529,9 +531,8 @@ public class LocalSyncServiceTest {
 		assertEquals(syncState, this.localSyncService.getSyncState());
 	}
 
-
 	@Test
-	public void when_ledger_status_update_then_should_not_add_duplicate_candidate() {
+	public void when_ledger_status_update__then_should_not_add_duplicate_candidate() {
 		final var currentHeader = createHeaderAtStateVersion(19L);
 		final var targetHeader = createHeaderAtStateVersion(21L);
 		final var newTargetHeader = createHeaderAtStateVersion(22L);
@@ -539,24 +540,95 @@ public class LocalSyncServiceTest {
 
 		final var peer1 = mock(BFTNode.class);
 		final var peer2 = mock(BFTNode.class);
-		when(peersView.peers()).thenAnswer(i -> Stream.of(peer1, peer2));
+		final var peer3 = mock(BFTNode.class);
+		setupPeersView(peer1, peer2, peer3);
 
 		final var syncState = SyncState.SyncingState.init(
-			currentHeader, ImmutableList.of(peer1), targetHeader).withPendingRequest(peer1, 1L);
+			currentHeader, ImmutableList.of(peer1, peer2), targetHeader).withPendingRequest(peer1, 1L);
 		this.setupSyncServiceWithState(syncState);
 
 		this.localSyncService.ledgerStatusUpdateEventProcessor().process(
-			peer2,
+			peer3,
 			LedgerStatusUpdate.create(newTargetHeader)
 		);
 
 		// another, newer, ledger update from the same peer
 		this.localSyncService.ledgerStatusUpdateEventProcessor().process(
-			peer2,
+			peer3,
 			LedgerStatusUpdate.create(evenNewerTargetHeader)
 		);
 
-		assertEquals(2, ((SyncState.SyncingState) this.localSyncService.getSyncState()).candidatePeers().size());
+		assertEquals(peer3, ((SyncState.SyncingState) this.localSyncService.getSyncState()).peekNthCandidate(0).get());
+		assertEquals(peer1, ((SyncState.SyncingState) this.localSyncService.getSyncState()).peekNthCandidate(1).get());
+		assertEquals(peer2, ((SyncState.SyncingState) this.localSyncService.getSyncState()).peekNthCandidate(2).get());
+		assertEquals(peer3, ((SyncState.SyncingState) this.localSyncService.getSyncState()).peekNthCandidate(3).get());
+		assertEquals(peer1, ((SyncState.SyncingState) this.localSyncService.getSyncState()).peekNthCandidate(4).get());
+		assertEquals(peer2, ((SyncState.SyncingState) this.localSyncService.getSyncState()).peekNthCandidate(5).get());
+	}
+
+	@Test
+	public void when_syncing__then_should_use_round_robin_peers() {
+		final var currentHeader = createHeaderAtStateVersion(19L);
+		final var targetHeader = createHeaderAtStateVersion(30L);
+
+		final var peer1 = createPeer();
+		final var peer2 = createPeer();
+		final var peer3 = createPeer();
+		setupPeersView(peer1, peer2, peer3);
+
+		final var syncState = SyncState.SyncingState.init(
+			currentHeader, ImmutableList.of(peer1, peer2, peer3), targetHeader);
+		this.setupSyncServiceWithState(syncState);
+
+		this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdateAtStateVersion(20L));
+		verify(syncRequestDispatcher, times(1)).dispatch(eq(peer1), any());
+		this.localSyncService.syncResponseEventProcessor().process(peer1, createValidMockedSyncResponse());
+		this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdateAtStateVersion(21L));
+		verify(syncRequestDispatcher, times(1)).dispatch(eq(peer2), any());
+		this.localSyncService.syncResponseEventProcessor().process(peer2, createValidMockedSyncResponse());
+		this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdateAtStateVersion(22L));
+		verify(syncRequestDispatcher, times(1)).dispatch(eq(peer3), any());
+		this.localSyncService.syncResponseEventProcessor().process(peer3, createValidMockedSyncResponse());
+		this.localSyncService.ledgerUpdateEventProcessor().process(ledgerUpdateAtStateVersion(23L));
+		verify(syncRequestDispatcher, times(2)).dispatch(eq(peer1), any());
+	}
+
+	private SyncResponse createValidMockedSyncResponse() {
+		final var respHeadLedgerHeader = mock(LedgerHeader.class);
+		final var respHeadAccumulatorState = mock(AccumulatorState.class);
+		when(respHeadLedgerHeader.getAccumulatorState()).thenReturn(respHeadAccumulatorState);
+		final var respTailLedgerHeader = mock(LedgerHeader.class);
+		final var respTailAccumulatorState = mock(AccumulatorState.class);
+		when(respTailLedgerHeader.getAccumulatorState()).thenReturn(respTailAccumulatorState);
+		final var respHead = mock(DtoLedgerProof.class);
+		when(respHead.getLedgerHeader()).thenReturn(respHeadLedgerHeader);
+		final var respTail = mock(DtoLedgerProof.class);
+		when(respTail.getLedgerHeader()).thenReturn(respTailLedgerHeader);
+		final var response = mock(DtoTxnsAndProof.class);
+		final var txn = mock(Txn.class);
+		when(txn.getId()).thenReturn(AID.ZERO);
+		when(response.getTxns()).thenReturn(ImmutableList.of(txn));
+		when(response.getHead()).thenReturn(respHead);
+		when(response.getTail()).thenReturn(respTail);
+
+		final var syncResponse = SyncResponse.create(response);
+
+		when(validatorSetVerifier.verifyValidatorSet(syncResponse)).thenReturn(true);
+		when(signaturesVerifier.verifyResponseSignatures(syncResponse)).thenReturn(true);
+		when(accumulatorVerifier.verify(
+			eq(respHeadAccumulatorState),
+			any(),
+			eq(respTailAccumulatorState)
+		)).thenReturn(true);
+
+		return syncResponse;
+	}
+
+	private LedgerUpdate ledgerUpdateAtStateVersion(long stateVersion) {
+		return new LedgerUpdate(
+			VerifiedTxnsAndProof.create(ImmutableList.of(), createHeaderAtStateVersion(stateVersion)),
+			ImmutableClassToInstanceMap.of()
+		);
 	}
 
 	private LedgerProof createHeaderAtStateVersion(long version) {
