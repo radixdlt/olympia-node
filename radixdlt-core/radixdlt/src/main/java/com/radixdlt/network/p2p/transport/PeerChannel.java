@@ -86,6 +86,10 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
 import com.radixdlt.utils.functional.Result;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -97,7 +101,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.SecureRandom;
@@ -113,7 +116,7 @@ import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
  * creating the frame and message codec
  * and forwarding the messages to MessageCentral.
  */
-public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
+public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 	private static final Logger log = LogManager.getLogger();
 
 	enum ChannelState {
@@ -177,14 +180,14 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	private void initHandshake(NodeId remoteNodeId) {
 		final var initiatePacket = authHandshaker.initiate(remoteNodeId.getPublicKey());
 		log.trace("Sending auth initiate to {}", this.toString());
-		this.write(initiatePacket);
+		this.write(Unpooled.wrappedBuffer(initiatePacket));
 	}
 
 	public Flowable<InboundMessage> inboundMessages() {
 		return inboundMessages;
 	}
 
-	private void handleHandshakeData(byte[] data) throws IOException {
+	private void handleHandshakeData(ByteBuf data) throws IOException {
 		if (this.isInitiator) {
 			log.trace("Auth response from {}", this.toString());
 			final var handshakeResult = this.authHandshaker.handleResponseMessage(data);
@@ -192,7 +195,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		} else {
 			log.trace("Auth initiate from {}", this.toString());
 			final var result = this.authHandshaker.handleInitialMessage(data);
-			this.write(result.getFirst());
+			this.write(Unpooled.wrappedBuffer(result.getFirst()));
 			this.finalizeHandshake(result.getSecond());
 		}
 	}
@@ -214,7 +217,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		}
 	}
 
-	private void handleMessage(byte[] buf) throws IOException {
+	private void handleMessage(ByteBuf buf) throws IOException {
 		synchronized (this.lock) {
 			final var maybeFrame = this.frameCodec.tryReadSingleFrame(buf);
 			maybeFrame.ifPresentOrElse(
@@ -236,7 +239,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	}
 
 	@Override
-	public void channelRead0(ChannelHandlerContext ctx, byte[] buf) throws Exception {
+	public void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
 		switch (this.state) {
 			case INACTIVE:
 				throw new RuntimeException("Unexpected read on inactive channel");
@@ -269,7 +272,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		ctx.close();
 	}
 
-	private void write(byte[] data) {
+	private void write(ByteBuf data) {
 		this.nettyChannel.writeAndFlush(data);
 	}
 
@@ -279,9 +282,11 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 				return IO_ERROR.result();
 			} else {
 				try {
-					final var baos = new ByteArrayOutputStream();
-					this.frameCodec.writeFrame(data, baos);
-					this.write(baos.toByteArray());
+					final var buf = PooledByteBufAllocator.DEFAULT.buffer(data.length);
+					try (var out = new ByteBufOutputStream(buf)) {
+						this.frameCodec.writeFrame(data, out);
+					}
+					this.write(buf);
 					this.outMessagesStats.tick();
 					return Result.ok(new Object());
 				} catch (IOException e) {
