@@ -108,6 +108,12 @@ if (System.getenv("CI_VERSION")){
     version radixVersion()
 }
 
+task printShadowJarFilePath {
+    doLast {
+        print project(':radixdlt').shadowJar.archiveFile.get()
+    }
+}
+
 task radixCiVersion {
     doLast {
         print "radixdlt-version:$version"
