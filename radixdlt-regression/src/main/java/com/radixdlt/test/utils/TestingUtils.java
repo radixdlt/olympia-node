@@ -1,10 +1,14 @@
 package com.radixdlt.test.utils;
 
 import com.radixdlt.application.tokens.TokenUtils;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.test.account.Account;
 import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.test.network.RadixNode;
 import com.radixdlt.test.network.client.RadixHttpClient;
+import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 import org.apache.logging.log4j.LogManager;
@@ -31,6 +35,17 @@ public final class TestingUtils {
 
     public static boolean isNullOrEmpty(String string) {
         return string == null || string.isEmpty();
+    }
+
+    public static ECKeyPair createKeyPairFromNumber(int privateKey) {
+        var pk = new byte[ECKeyPair.BYTES];
+        Ints.copyTo(privateKey, pk, ECKeyPair.BYTES - Integer.BYTES);
+
+        try {
+            return ECKeyPair.fromPrivateKey(pk);
+        } catch (PrivateKeyException | PublicKeyException e) {
+            throw new IllegalArgumentException("Error while generating public key", e);
+        }
     }
 
     public static void sleep(int seconds) {

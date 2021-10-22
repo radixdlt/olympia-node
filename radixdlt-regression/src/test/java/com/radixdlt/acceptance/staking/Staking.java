@@ -115,7 +115,7 @@ public class Staking extends RadixNetworkTest {
 
     @When("I stake {int}XRD to a validator")
     public void i_stake_xrd_to_a_validator(int stake) {
-        account1.stake(firstValidator.getAddress(), Amount.ofTokens(stake));
+        account1.stake(firstValidator.getAddress(), Amount.ofTokens(stake), Optional.empty());
     }
 
     @Then("I observe that the validator has {int}XRD more stake")

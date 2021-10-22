@@ -12,7 +12,9 @@ import com.radixdlt.test.network.checks.Checks;
 import com.radixdlt.test.utils.TransactionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.awaitility.Durations;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -64,7 +66,7 @@ public abstract class RadixNetworkTest {
         Balance balanceBeforeFaucet = account.getOwnNativeTokenBalance();
         String txID = faucet(account.getAddress());
         TransactionUtils.waitForConfirmation(account, AID.from(txID));
-        await().until(() ->
+        await().atMost(Durations.TEN_SECONDS).until(() ->
             // wait until the account's balance increases, just to be sure that the faucet delivered something
             balanceBeforeFaucet.getAmount().compareTo(account.getOwnNativeTokenBalance().getAmount()) == -1
         );

@@ -40,11 +40,24 @@ public final class TransactionUtils {
             .build());
     }
 
+    public static TransactionRequest createStakingRequest(AccountAddress from, ValidatorAddress unstakeFrom,
+                                                            Amount stake, Optional<String> message) {
+        return message.map(s -> TransactionRequest.createBuilder(from)
+            .stake(from, unstakeFrom, stake.toSubunits())
+            .message(s)
+            .build()).orElseGet(() -> TransactionRequest.createBuilder(from)
+            .stake(from, unstakeFrom, stake.toSubunits())
+            .build());
+    }
+
     public static TransactionRequest createUnstakingRequest(AccountAddress from, ValidatorAddress unstakeFrom,
-                                                            UInt256 stake) {
-        return TransactionRequest.createBuilder(from)
-            .unstake(from, unstakeFrom, stake)
-            .build();
+                                                            Amount stake, Optional<String> message) {
+        return message.map(s -> TransactionRequest.createBuilder(from)
+            .unstake(from, unstakeFrom, stake.toSubunits())
+            .message(s)
+            .build()).orElseGet(() -> TransactionRequest.createBuilder(from)
+            .unstake(from, unstakeFrom, stake.toSubunits())
+            .build());
     }
 
     /**
@@ -56,12 +69,17 @@ public final class TransactionUtils {
             .build();
     }
 
-    /**
-     * Stakes tokens and waits for transaction confirmation
+    /*
+     * Stakes tokens (w/ message) and waits for transaction confirmation
      */
-    public static AID stake(Account sender, ValidatorAddress to, Amount amount) {
-        var request = createStakingRequest(sender.getAddress(), to, amount);
-        return finalizeAndSubmitTransaction(sender, request, true);
+    public static AID stake(Account account, ValidatorAddress to, Amount amount, Optional<String> message) {
+        var request = createStakingRequest(account.getAddress(), to, amount);
+        return finalizeAndSubmitTransaction(account, request, true);
+    }
+
+    public static AID unstake(Account account, ValidatorAddress validatorAddress, Amount amount, Optional<String> message) {
+        var request = createUnstakingRequest(account.getAddress(), validatorAddress, amount, message);
+        return finalizeAndSubmitTransaction(account, request, true);
     }
 
     /**
@@ -84,6 +102,12 @@ public final class TransactionUtils {
             .build();
         return finalizeAndSubmitTransaction(creator, request, true);
     }
+
+    public static AID createMutableSupplyToken(Account account, String symbol, String name, String description,
+                                               String iconUrl, String tokenUrl) {
+        throw new RuntimeException("unimplemented");
+    }
+
 
     /**
      * Builds, finalizes and submits a transaction. Can optionally wait for it to become CONFIRMED

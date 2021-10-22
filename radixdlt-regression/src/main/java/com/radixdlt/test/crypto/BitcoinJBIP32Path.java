@@ -10,20 +10,21 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+
 /**
  * A BIP32 path wrapping underlying implementation using BitcoinJ.
  */
-public final class BitcoinJBIP32Path implements HDPath {
+final class BitcoinJBIP32Path implements HDPath {
 
     private static final String BIP32_HARDENED_MARKER_BITCOINJ = "H";
 
-    private final org.bitcoinj.crypto.HDPath path;
+    private final HDPath path;
 
-    private BitcoinJBIP32Path(org.bitcoinj.crypto.HDPath path) {
+    private BitcoinJBIP32Path(BitcoinJHDPath path) {
         this.path = path;
     }
 
-    static BitcoinJBIP32Path fromPath(HDPath path) {
+    static BitcoinJBIP32Path fromPath(BitcoinJHDPath path) {
         try {
             return fromString(path.toString());
         } catch (HDPathException e) {
@@ -33,7 +34,7 @@ public final class BitcoinJBIP32Path implements HDPath {
 
     static BitcoinJBIP32Path fromString(String path) throws HDPathException {
         HDPaths.validateHDPathString(path);
-        return new BitcoinJBIP32Path(org.bitcoinj.crypto.HDPath.parsePath(toBitcoinJPath(path)));
+        return new BitcoinJBIP32Path(BitcoinJHDPath.parsePath(toBitcoinJPath(path)));
     }
 
     private static String toBitcoinJPath(String standardPath) {
@@ -99,7 +100,7 @@ public final class BitcoinJBIP32Path implements HDPath {
     public HDPath next() {
         ArrayList<ChildNumber> nextPathComponents = new ArrayList<>(pathListFromBIP32Path(this, indexOfLastComponent()));
         nextPathComponents.add(new ChildNumber(lastComponent().num() + 1, lastComponent().isHardened()));
-        org.bitcoinj.crypto.HDPath nextPath = new org.bitcoinj.crypto.HDPath(this.hasPrivateKey(), nextPathComponents);
+        BitcoinJHDPath nextPath = new BitcoinJHDPath(this.hasPrivateKey(), nextPathComponents);
         return new BitcoinJBIP32Path(nextPath);
     }
 
@@ -124,3 +125,4 @@ public final class BitcoinJBIP32Path implements HDPath {
         return Objects.hashCode(path);
     }
 }
+

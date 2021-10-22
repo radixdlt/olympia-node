@@ -14,13 +14,13 @@ public final class BitcoinJMnemonicToSeedConverter {
         throw new IllegalStateException("Can't construct.");
     }
 
-    public static byte[] seedFromMnemonicAndPassphrase(List<String> words, String passphrase) throws MnemonicException {
+    static byte[] seedFromMnemonicAndPassphrase(List<String> words, String passphrase) throws MnemonicException {
         validateMnemonic(words);
         Objects.requireNonNull(passphrase);
         return MnemonicCode.toSeed(words, passphrase);
     }
 
-    public static byte[] seedFromMnemonic(List<String> words) throws MnemonicException {
+    static byte[] seedFromMnemonic(List<String> words) throws MnemonicException {
         return seedFromMnemonicAndPassphrase(words, HDPaths.BIP39_MNEMONIC_NO_PASSPHRASE);
     }
 
