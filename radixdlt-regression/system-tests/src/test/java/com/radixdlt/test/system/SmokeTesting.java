@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 
 public class SmokeTesting extends SystemTest {
 
-    @Test
+    //@Test
     public void network_does_not_lose_liveness_when_nodes_restart() {
         runCheck("liveness");
         var firstNode = radixNetwork.getNodes().get(0);

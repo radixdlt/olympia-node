@@ -21,11 +21,9 @@ public class TransactionSubmitting extends SystemTest {
     protected static final Logger logger = LogManager.getLogger();
 
     public TransactionSubmitting() throws MnemonicException {
-        byte[] seed = BitcoinJMnemonicToSeedConverter.seedFromMnemonic(List.of(
-            "horror", "clap", "section", "trade", "dry", "okay", "olive pledge", "combine", "ball", "exist", "true",
-            "seven", "arm", "praise"));
-        System.out.println(seed);
-
+        //byte[] seed = BitcoinJMnemonicToSeedConverter.seedFromMnemonic(List.of(
+        //    "bad", "seed"));
+        //System.out.println(seed);
         //getNetwork().getConfiguration().getExternalAccountMnemonic();
     }
 
