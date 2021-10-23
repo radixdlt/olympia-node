@@ -3,6 +3,8 @@ package com.radixdlt.test.network.client;
 import com.radixdlt.client.lib.api.sync.RadixApiException;
 import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.utils.functional.Failure;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import javax.net.ssl.SSLContext;
@@ -26,6 +28,8 @@ import java.util.Base64;
  * Also consumes the JSON-RPC methods that are not part of the RadixApi client e.g. /faucet
  */
 public class RadixHttpClient {
+
+    private static final Logger logger = LogManager.getLogger();
 
     public enum HealthStatus {
         BOOTING,
@@ -81,6 +85,9 @@ public class RadixHttpClient {
         var request = HttpRequest.newBuilder().uri(URI.create(rootUrl + HEALTH_PATH)).method("GET",
             HttpRequest.BodyPublishers.noBody()).build();
         var responseObject = submitRequestAndParseResponseAsJson(request);
+        logger.info("==============================");
+        logger.info(request.toString());
+        logger.info("==============================");
         return HealthStatus.valueOf(responseObject.getString("network_status"));
     }
 
