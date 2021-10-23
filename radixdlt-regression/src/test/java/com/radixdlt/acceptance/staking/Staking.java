@@ -67,7 +67,6 @@ package com.radixdlt.acceptance.staking;
 import com.radixdlt.test.RadixNetworkTest;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
-import io.cucumber.java.Before;
 import io.cucumber.java.BeforeStep;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
