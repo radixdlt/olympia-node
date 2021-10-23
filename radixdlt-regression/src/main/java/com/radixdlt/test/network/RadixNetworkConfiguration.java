@@ -32,18 +32,16 @@ public class RadixNetworkConfiguration {
     private final int secondaryPort;
     private final String faucetUrl;
     private final String basicAuth;
-    private final String seedPhrase;
     private final Type type;
     private final DockerConfiguration dockerConfiguration;
 
     private RadixNetworkConfiguration(String jsonRpcRootUrl, int primaryPort, int secondaryPort, String faucetUrl, String basicAuth,
-                                      String mnemonic, Type type, DockerConfiguration dockerConfiguration) {
+                                      Type type, DockerConfiguration dockerConfiguration) {
         this.jsonRpcRootUrl = jsonRpcRootUrl;
         this.primaryPort = primaryPort;
         this.secondaryPort = secondaryPort;
         this.faucetUrl = faucetUrl;
         this.basicAuth = basicAuth;
-        this.seedPhrase = mnemonic;
         this.type = type;
         this.dockerConfiguration = dockerConfiguration;
     }
@@ -58,14 +56,13 @@ public class RadixNetworkConfiguration {
                 : Integer.parseInt(TestingUtils.getEnvWithDefault("RADIXDLT_JSON_RPC_API_SECONDARY_PORT", "3333"));
             var faucetUrl = TestingUtils.getEnvWithDefault("RADIXDLT_FAUCET_URL", "");
             var basicAuth = System.getenv("RADIXDLT_BASIC_AUTH");
-            var seedPhrase = System.getenv("RADIXDLT_TESTING_ACCOUNT_SEED_PHRASE");
             var type = determineType(jsonRpcRootUrlString);
             var dockerConfiguration = DockerConfiguration.fromEnv();
             if (type != Type.LOCALNET && dockerConfiguration.shouldInitializeNetwork()) {
                 logger.warn("Cannot initialize a {} type of network", type);
             }
             return new RadixNetworkConfiguration(jsonRpcRootUrlString, primaryPort, secondaryPort, faucetUrl, basicAuth,
-                seedPhrase, type, dockerConfiguration);
+                type, dockerConfiguration);
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException("Bad JSON-RPC URL", e);
         }
@@ -119,10 +116,6 @@ public class RadixNetworkConfiguration {
 
     public String getBasicAuth() {
         return basicAuth;
-    }
-
-    public String getSeedPhrase() {
-        return seedPhrase;
     }
 
     public Type getType() {

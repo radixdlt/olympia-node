@@ -19,5 +19,10 @@ public interface RadixAccount {
 
     AID fixedSupplyToken(String symbol, String name, String description, String iconUrl, String tokenUrl, Amount supply);
 
-    AID mutableSupplyToken(String symbol, String name, String desc, String iconUrl, String tokenUrl);
+    AID mutableSupplyToken(String symbol, String name, String description, String iconUrl, String tokenUrl);
+
+    AID mint(Amount amount, String rri, Optional<String> message);
+
+    AID burn(Amount amount, String rri, Optional<String> message);
+
 }

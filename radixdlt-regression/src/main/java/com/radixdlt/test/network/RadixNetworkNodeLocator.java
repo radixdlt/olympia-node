@@ -97,8 +97,8 @@ public class RadixNetworkNodeLocator {
 
     private static List<RadixNode> locateRemoteNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient,
                                                      DockerClient dockerClient) {
-        // TODO implement
-        return null;
+        // TODO get a list of RadixNodes by parsing the peers list. However this isn't yet needed for the current tests we have
+        throw new RuntimeException("Unimplemented");
     }
 
     private static List<RadixNode> locateLocalNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient,

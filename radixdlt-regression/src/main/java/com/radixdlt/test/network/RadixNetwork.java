@@ -81,7 +81,7 @@ public class RadixNetwork {
         var nodeWithFaucet = faucets.get(0);
         var address = to.toString(networkId);
         var txID = httpClient.callFaucet(nodeWithFaucet.getRootUrl(), nodeWithFaucet.getSecondaryPort(), address);
-        logger.debug("Successfully called faucet to send tokens to {}. TxID: {}", address, txID);
+        logger.debug("Faucet successfully sent tokens to {}. TxID: {}", address, txID);
         return txID;
     }
 

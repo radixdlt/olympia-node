@@ -25,9 +25,9 @@ import static org.awaitility.Awaitility.await;
  */
 public final class TestingUtils {
 
-    public static final Duration MAX_TIME_TO_WAIT_FOR_NODES_UP = Durations.TWO_MINUTES;
-
     private static final Logger logger = LogManager.getLogger();
+
+    public static final Duration MAX_TIME_TO_WAIT_FOR_NODES_UP = Durations.TWO_MINUTES;
 
     private TestingUtils() {
 
@@ -120,9 +120,9 @@ public final class TestingUtils {
      * Uses a default duration (might want to externalize this)
      */
     public static void waitForNodeToBeUp(RadixHttpClient httpClient, String rootUrl) {
-        await().atMost(MAX_TIME_TO_WAIT_FOR_NODES_UP).ignoreExceptions().until(() -> {
-            TestingUtils.sleepMillis(250);
-            RadixHttpClient.HealthStatus status = httpClient.getHealthStatus(rootUrl);
+        await().pollDelay(Durations.TWO_HUNDRED_MILLISECONDS).atMost(MAX_TIME_TO_WAIT_FOR_NODES_UP).ignoreExceptions().until(() -> {
+            var status = httpClient.getHealthStatus(rootUrl);
+            logger.info("\n\nTMP DEBUG LINE: " + status + "\n\n");
             if (!status.equals(RadixHttpClient.HealthStatus.UP)) {
                 return false;
             }

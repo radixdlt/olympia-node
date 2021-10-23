@@ -1,6 +1,7 @@
 package com.radixdlt.test.crypto;
 
 import com.google.common.base.Objects;
+import com.radixdlt.test.crypto.errors.HDPathException;
 
 /**
  * A wrapper around some underlying

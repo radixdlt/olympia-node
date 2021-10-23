@@ -187,4 +187,14 @@ public final class Account implements ImperativeRadixApi, RadixAccount {
         return TransactionUtils.createMutableSupplyToken(this, symbol, name, description, iconUrl, tokenUrl);
     }
 
+    @Override
+    public AID mint(Amount amount, String mtt, Optional<String> message) {
+        return TransactionUtils.mint(this, amount, "mtt", message);
+    }
+
+    @Override
+    public AID burn(Amount amount, String rri, Optional<String> message) {
+        return TransactionUtils.burn(this, amount, rri, message);
+    }
+
 }

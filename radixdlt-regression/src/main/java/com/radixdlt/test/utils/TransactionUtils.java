@@ -30,8 +30,8 @@ public final class TransactionUtils {
 
     }
 
-    public static TransactionRequest createTransferRequest(AccountAddress from, AccountAddress to, String tokenRri,
-                                                           UInt256 amount, Optional<String> message) {
+    public static TransactionRequest createTokenTransferRequest(AccountAddress from, AccountAddress to, String tokenRri,
+                                                                UInt256 amount, Optional<String> message) {
         return message.map(s -> TransactionRequest.createBuilder(from)
             .transfer(from, to, amount, tokenRri)
             .message(s)
@@ -60,35 +60,69 @@ public final class TransactionUtils {
             .build());
     }
 
-    /**
-     * Stakes the given amount and waits for transaction confirmation
-     */
     public static TransactionRequest createStakingRequest(AccountAddress from, ValidatorAddress to, Amount amount) {
         return TransactionRequest.createBuilder(from)
             .stake(from, to, amount.toSubunits())
             .build();
     }
 
-    /*
-     * Stakes tokens (w/ message) and waits for transaction confirmation
+    public static TransactionRequest createMintRequest(AccountAddress from, Amount amount, String rri, Optional<String> message) {
+        return message.map(s -> TransactionRequest.createBuilder(from)
+            .mint(from, amount.toSubunits(), rri)
+            .message(s)
+            .build()).orElseGet(() -> TransactionRequest.createBuilder(from)
+            .mint(from, amount.toSubunits(), rri)
+            .build());
+    }
+
+    public static TransactionRequest createBurnRequest(AccountAddress from, Amount amount, String rri, Optional<String> message) {
+        return message.map(s -> TransactionRequest.createBuilder(from)
+            .burn(from, amount.toSubunits(), rri)
+            .message(s)
+            .build()).orElseGet(() -> TransactionRequest.createBuilder(from)
+            .mint(from, amount.toSubunits(), rri)
+            .build());
+    }
+
+    /**
+     * Stakes tokens and waits for transaction confirmation
      */
     public static AID stake(Account account, ValidatorAddress to, Amount amount, Optional<String> message) {
         var request = createStakingRequest(account.getAddress(), to, amount);
-        return finalizeAndSubmitTransaction(account, request, true);
+        return buildFinalizeAndSubmitTransaction(account, request, true);
     }
 
+    /**
+     * Unstakes tokens and waits for transaction confirmation
+     */
     public static AID unstake(Account account, ValidatorAddress validatorAddress, Amount amount, Optional<String> message) {
         var request = createUnstakingRequest(account.getAddress(), validatorAddress, amount, message);
-        return finalizeAndSubmitTransaction(account, request, true);
+        return buildFinalizeAndSubmitTransaction(account, request, true);
+    }
+
+    /**
+     * Mints tokens and waits for transaction confirmation
+     */
+    public static AID mint(Account account, Amount amount, String rri, Optional<String> message) {
+        var request = createMintRequest(account.getAddress(), amount, rri, message);
+        return buildFinalizeAndSubmitTransaction(account, request, true);
+    }
+
+    /**
+     * Burns tokens and waits for transaction confirmation
+     */
+    public static AID burn(Account account, Amount amount, String rri, Optional<String> message) {
+        var request = createBurnRequest(account.getAddress(), amount, rri, message);
+        return buildFinalizeAndSubmitTransaction(account, request, true);
     }
 
     /**
      * Executes an XRD transfer and waits for transaction confirmation
      */
     public static AID nativeTokenTransfer(Account sender, Account receiver, Amount amount, Optional<String> message) {
-        var request = TransactionUtils.createTransferRequest(sender.getAddress(), receiver.getAddress(),
+        var request = TransactionUtils.createTokenTransferRequest(sender.getAddress(), receiver.getAddress(),
             sender.getNativeToken().getRri(), amount.toSubunits(), message);
-        return finalizeAndSubmitTransaction(sender, request, true);
+        return buildFinalizeAndSubmitTransaction(sender, request, true);
     }
 
     /**
@@ -100,12 +134,15 @@ public final class TransactionUtils {
         var request = TransactionRequest.createBuilder(creator.getAddress())
             .createFixed(creator.getAddress(), key, symbol, name, description, iconUrl, tokenUrl, supply.toSubunits())
             .build();
-        return finalizeAndSubmitTransaction(creator, request, true);
+        return buildFinalizeAndSubmitTransaction(creator, request, true);
     }
 
-    public static AID createMutableSupplyToken(Account account, String symbol, String name, String description,
+    public static AID createMutableSupplyToken(Account creator, String symbol, String name, String description,
                                                String iconUrl, String tokenUrl) {
-        throw new RuntimeException("unimplemented");
+        var key = creator.getKeyPair().getPublicKey();
+        var request = TransactionRequest.createBuilder(creator.getAddress())
+            .createMutable(key, symbol, name, Optional.of(description), Optional.of(iconUrl), Optional.of(tokenUrl)).build();
+        return buildFinalizeAndSubmitTransaction(creator, request, true);
     }
 
 
@@ -114,7 +151,7 @@ public final class TransactionUtils {
      *
      * @return the {@link AID} of the submitted transaction
      */
-    public static AID finalizeAndSubmitTransaction(Account account, TransactionRequest request, boolean waitForConfirmation) {
+    public static AID buildFinalizeAndSubmitTransaction(Account account, TransactionRequest request, boolean waitForConfirmation) {
         var keyPair = account.getKeyPair();
         var builtTransaction = account.transaction().build(request);
         var finalizedTransaction = account.transaction().finalize(builtTransaction.toFinalized(keyPair), false);

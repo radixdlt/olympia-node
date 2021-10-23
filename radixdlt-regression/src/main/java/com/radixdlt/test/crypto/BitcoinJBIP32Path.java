@@ -10,21 +10,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-
 /**
  * A BIP32 path wrapping underlying implementation using BitcoinJ.
  */
-final class BitcoinJBIP32Path implements HDPath {
+public final class BitcoinJBIP32Path implements HDPath {
 
     private static final String BIP32_HARDENED_MARKER_BITCOINJ = "H";
 
-    private final HDPath path;
+    private final org.bitcoinj.crypto.HDPath path;
 
-    private BitcoinJBIP32Path(BitcoinJHDPath path) {
+    private BitcoinJBIP32Path(org.bitcoinj.crypto.HDPath path) {
         this.path = path;
     }
 
-    static BitcoinJBIP32Path fromPath(BitcoinJHDPath path) {
+    public static BitcoinJBIP32Path fromPath(HDPath path) {
         try {
             return fromString(path.toString());
         } catch (HDPathException e) {
@@ -32,9 +31,9 @@ final class BitcoinJBIP32Path implements HDPath {
         }
     }
 
-    static BitcoinJBIP32Path fromString(String path) throws HDPathException {
+    public static BitcoinJBIP32Path fromString(String path) throws HDPathException {
         HDPaths.validateHDPathString(path);
-        return new BitcoinJBIP32Path(BitcoinJHDPath.parsePath(toBitcoinJPath(path)));
+        return new BitcoinJBIP32Path(org.bitcoinj.crypto.HDPath.parsePath(toBitcoinJPath(path)));
     }
 
     private static String toBitcoinJPath(String standardPath) {
@@ -47,7 +46,7 @@ final class BitcoinJBIP32Path implements HDPath {
         return nonStandardPath.replace(BIP32_HARDENED_MARKER_BITCOINJ, HDPaths.BIP32_HARDENED_MARKER_STANDARD);
     }
 
-    private int indexOfLastComponent() {
+    public int indexOfLastComponent() {
         if (depth() == 0) {
             throw new IllegalStateException("Trying to access component of a BIP32 path with 0 depth, this is undefined.");
         }
@@ -58,7 +57,7 @@ final class BitcoinJBIP32Path implements HDPath {
         return path.get(indexOfLastComponent());
     }
 
-    List<ChildNumber> componentsUpTo(int index) {
+    public List<ChildNumber> componentsUpTo(int index) {
         return IntStream.range(0, index).mapToObj(path::get).collect(Collectors.toList());
     }
 
@@ -100,7 +99,7 @@ final class BitcoinJBIP32Path implements HDPath {
     public HDPath next() {
         ArrayList<ChildNumber> nextPathComponents = new ArrayList<>(pathListFromBIP32Path(this, indexOfLastComponent()));
         nextPathComponents.add(new ChildNumber(lastComponent().num() + 1, lastComponent().isHardened()));
-        BitcoinJHDPath nextPath = new BitcoinJHDPath(this.hasPrivateKey(), nextPathComponents);
+        org.bitcoinj.crypto.HDPath nextPath = new org.bitcoinj.crypto.HDPath(this.hasPrivateKey(), nextPathComponents);
         return new BitcoinJBIP32Path(nextPath);
     }
 
@@ -125,4 +124,3 @@ final class BitcoinJBIP32Path implements HDPath {
         return Objects.hashCode(path);
     }
 }
-
