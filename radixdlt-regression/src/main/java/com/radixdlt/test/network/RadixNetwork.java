@@ -47,8 +47,8 @@ public class RadixNetwork {
 
         // if we are using a local network, we may need to create it and store the universe variables
         UniverseVariables universeVariables = null;
-        if (configuration.getDockerConfiguration().shouldInitializeNetwork() &&
-            configuration.getType() == RadixNetworkConfiguration.Type.LOCALNET) {
+        if (configuration.getDockerConfiguration().shouldInitializeNetwork()
+            && configuration.getType() == RadixNetworkConfiguration.Type.LOCALNET) {
             var localDockerClient = new LocalDockerClient(configuration.getDockerConfiguration());
             LocalDockerNetworkCreator.createNewLocalNetwork(configuration, localDockerClient);
         }
