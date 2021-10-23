@@ -67,8 +67,8 @@ public class RemoteDockerClient implements DockerClient {
 
     private void checkProperties() {
         if (sshConfiguration.getPort() == -1 || StringUtils.isBlank(sshConfiguration.getUser())) {
-            throw new IllegalArgumentException("You need to set RADIXDLT_SYSTEM_TESTING_SSH_KEY_USER and " +
-                "RADIXDLT_SYSTEM_TESTING_SSH_KEY_PORT to run commands over SSH");
+            throw new IllegalArgumentException("You need to set RADIXDLT_SYSTEM_TESTING_SSH_KEY_USER and "
+                + "RADIXDLT_SYSTEM_TESTING_SSH_KEY_PORT to run commands over SSH");
         }
     }
 

@@ -11,7 +11,6 @@ import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.test.utils.TransactionUtils;
 import com.radixdlt.utils.UInt256;
 import org.apache.logging.log4j.LogManager;
