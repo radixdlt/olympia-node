@@ -23,7 +23,7 @@ final class BIP32Path implements HDPath {
         this.path = BitcoinJBIP32Path.fromString(path);
     }
 
-    static BIP32Path fromString(String path) throws HDPathException {
+    public static BIP32Path fromString(String path) throws HDPathException {
         return new BIP32Path(path);
     }
 

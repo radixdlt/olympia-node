@@ -2,12 +2,10 @@ package com.radixdlt.test.system.scaffolding;
 
 import com.radixdlt.test.RadixNetworkTest;
 import com.radixdlt.test.network.RadixNode;
-import com.radixdlt.test.network.client.docker.LocalDockerNetworkCreator;
 import com.radixdlt.test.utils.TestingUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 
 public class SystemTest extends RadixNetworkTest {
 
@@ -40,7 +38,7 @@ public class SystemTest extends RadixNetworkTest {
                     return;
                 }
                 String networkName = radixNetwork.getConfiguration().getDockerConfiguration().getNetworkName();
-                LocalDockerNetworkCreator.wipeLocalNetwork(radixNetwork.getConfiguration(), radixNetwork.getDockerClient());
+                radixNetwork.getDockerClient().cleanup();
                 logger.info("Wiped docker network '{}'", networkName);
                 break;
             case TESTNET:

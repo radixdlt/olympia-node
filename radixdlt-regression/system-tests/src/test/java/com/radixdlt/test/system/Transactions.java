@@ -2,21 +2,21 @@ package com.radixdlt.test.system;
 
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.test.account.Account;
+import com.radixdlt.test.crypto.BitcoinJBIP32Path;
 import com.radixdlt.test.crypto.DefaultHDKeyPairDerivation;
-import com.radixdlt.test.crypto.DefaultHDPath;
-import com.radixdlt.test.crypto.HDKeyPairDerivation;
 import com.radixdlt.test.crypto.errors.HDPathException;
 import com.radixdlt.test.crypto.errors.MnemonicException;
+import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.test.system.scaffolding.SystemTest;
 import com.radixdlt.test.utils.TestingUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.Order;
 import org.junit.platform.commons.util.StringUtils;
 import org.radix.Radix;
 
@@ -27,12 +27,13 @@ public class Transactions extends SystemTest {
 
     protected static final Logger logger = LogManager.getLogger();
 
-    private final static Amount AMOUNT_TO_STAKE = Amount.ofTokens(110);
-    private final static Amount TOKENS_TO_MINT = Amount.ofTokens(105020);
-    private final static String VERSION_STRING = Radix.systemVersionInfo().get("system_version").get("version_string").toString();
+    private static final String BIP32_PATH = "m/44'/0'/0'";
+    private static final Amount AMOUNT_TO_STAKE = Amount.ofTokens(110);
+    private static final Amount TOKENS_TO_MINT = Amount.ofTokens(105020);
+    private static final String VERSION_STRING = Radix.systemVersionInfo().get("system_version").get("version_string").toString();
 
-    // we use a known address for this test, so that we can inspect the generated transactions
-    private final static int HARDCODED_ADDRESS_PRIVATE_KEY = 11;
+    // in case there is no seed phrase, we use a known address for this test
+    private static final int HARDCODED_ADDRESS_PRIVATE_KEY = 11;
 
     private final Account account;
     private final ValidatorDTO firstValidator;
@@ -42,10 +43,10 @@ public class Transactions extends SystemTest {
         var seedPhrase = TestingUtils.getEnvWithDefault("RADIXDLT_TESTING_ACCOUNT_SEED_PHRASE", "");
 
         var configuration = getNetwork().getConfiguration();
-        this.account = StringUtils.isNotBlank(seedPhrase) ?
-            initializeAccountFromSeedPhrase(seedPhrase) :
-            Account.initialize(configuration.getJsonRpcRootUrl(), configuration.getPrimaryPort(),
-                configuration.getSecondaryPort(), TestingUtils.createKeyPairFromNumber(HARDCODED_ADDRESS_PRIVATE_KEY)).withTrace();
+        this.account = StringUtils.isNotBlank(seedPhrase)
+            ? initializeAccountFromSeedPhrase(configuration, seedPhrase)
+            : Account.initialize(configuration.getJsonRpcRootUrl(), configuration.getPrimaryPort(),
+                configuration.getSecondaryPort(), TestingUtils.createKeyPairFromNumber(HARDCODED_ADDRESS_PRIVATE_KEY));
         logger.info("Using address {} with balances:\n{}", account.getAddressForNetwork(),
             account.getOwnTokenBalances());
         firstValidator = account.validator().list(100, Optional.empty()).getValidators().get(0);
@@ -56,7 +57,7 @@ public class Transactions extends SystemTest {
         faucet(account);
     }
 
-    //@Test
+    @Test
     public void token_transfer() {
         var txId = account.transfer(account1, Amount.ofMicroTokens(2500), createTestMessageOptional());
         logger.info("Token transfer txId: {}", txId);
@@ -98,14 +99,14 @@ public class Transactions extends SystemTest {
     //@Test
     @Order(4)
     public void mint_mutable_supply_token() {
-        var txId = account.mint(Amount.ofTokens(1000), "mtt", createTestMessageOptional());
+        var txId = account.mint(TOKENS_TO_MINT, "mtt", createTestMessageOptional());
         logger.info("Token {} mint txId: {}", "mtt", txId);
     }
 
     //@Test
     @Order(5)
     public void burn_mutable_supply_token() {
-        var txId = account.burn(Amount.ofTokens(1000), "mtt", createTestMessageOptional());
+        var txId = account.burn(TOKENS_TO_MINT, "mtt", createTestMessageOptional());
         logger.info("Token {} burn txId: {}", "mtt", txId);
     }
 
@@ -124,17 +125,17 @@ public class Transactions extends SystemTest {
         logger.info("Fixed supply token txId: {}", txId);
     }
 
-    private Account initializeAccountFromSeedPhrase(String seedPhrase) {
-        logger.info("Will generate keypair from seed phrase");
+    private Account initializeAccountFromSeedPhrase(RadixNetworkConfiguration configuration, String seedPhrase) {
+        logger.info("Will generate keypair from seed phrase...");
         try {
-            HDKeyPairDerivation keyPairDerivation = DefaultHDKeyPairDerivation.fromMnemonicString("one two three");
-            ECKeyPair keyPair = keyPairDerivation.deriveKeyAtPath(DefaultHDPath.of("a")).keyPair();
-            System.out.println(keyPair);
+            var keyPairDerivation = DefaultHDKeyPairDerivation.fromMnemonicString(seedPhrase);
+            var bip32path = BitcoinJBIP32Path.fromString(BIP32_PATH);
+            var keyPair = keyPairDerivation.deriveKeyAtPath(bip32path).keyPair();
+            return Account.initialize(configuration.getJsonRpcRootUrl(), configuration.getPrimaryPort(),
+                configuration.getSecondaryPort(), keyPair);
         } catch (MnemonicException | HDPathException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Could not generate keypair from seed phrase", e);
         }
-        return null;
-        //throw new RuntimeException("Unimplemented");
     }
 
     private Optional<String> createTestMessageOptional() {

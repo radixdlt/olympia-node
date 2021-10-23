@@ -28,10 +28,7 @@ public class LocalDockerNetworkCreator {
 
     }
 
-    public static UniverseVariables createNewLocalNetwork(RadixNetworkConfiguration configuration, DockerClient dockerClient) {
-        // hack, should be refactored soon
-        var localDockerClient = castToLocalClient(dockerClient);
-
+    public static UniverseVariables createNewLocalNetwork(RadixNetworkConfiguration configuration, LocalDockerClient dockerClient) {
         var numberOfNodes = configuration.getDockerConfiguration().getInitialNumberOfNodes();
         logger.info("Initializing new docker network with {} nodes...", numberOfNodes);
         var variables = UniverseUtils.generateEnvironmentVariables(MAX_NUMBER_OF_NODES);
@@ -39,7 +36,7 @@ public class LocalDockerNetworkCreator {
         // network stuff
         var networkName = configuration.getDockerConfiguration().getNetworkName();
         if (!Boolean.parseBoolean(System.getenv("RADIXDLT_DOCKER_DO_NOT_WIPE_NETWORK"))) {
-            localDockerClient.createNetwork(networkName);
+            dockerClient.createNetwork(networkName);
         }
 
         // starting the network
@@ -56,7 +53,7 @@ public class LocalDockerNetworkCreator {
             List<ExposedPort> exposedPorts = Lists.newArrayList();
             var hostConfig = createHostConfigWithPortBindings(nodeNumber, exposedPorts, primaryPort, secondaryPort);
 
-            localDockerClient.startNewNode(configuration.getDockerConfiguration().getImage(),
+            dockerClient.startNewNode(configuration.getDockerConfiguration().getImage(),
                 containerName,
                 environment,
                 hostConfig,
@@ -66,18 +63,9 @@ public class LocalDockerNetworkCreator {
         });
 
         logger.info("Network started. Waiting for all nodes to be UP...");
-
         waitUntilNodesAreUp(configuration, MAX_NUMBER_OF_NODES);
-
         logger.info("All nodes are UP");
         return variables;
-    }
-
-    public static void wipeLocalNetwork(RadixNetworkConfiguration configuration, DockerClient dockerClient) {
-        // hack, should be refactored soon
-        var localDockerClient =  castToLocalClient(dockerClient);
-
-        localDockerClient.wipeNetwork(configuration.getDockerConfiguration().getNetworkName());
     }
 
     // TODO will be removed during next refactoring
@@ -106,7 +94,6 @@ public class LocalDockerNetworkCreator {
             if (index == nodeNumber) {
                 return null;
             }
-
             var dockerContainerName = configuration.getDockerConfiguration().getContainerName();
             var containerName = String.format(dockerContainerName, index);
 

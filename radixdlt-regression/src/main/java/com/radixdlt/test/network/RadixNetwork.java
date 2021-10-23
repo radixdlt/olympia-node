@@ -41,25 +41,26 @@ public class RadixNetwork {
         var configuration = RadixNetworkConfiguration.fromEnv();
         prettyPrintConfiguration(configuration);
 
-        var dockerClient = createDockerClient(configuration);
+        // if we are using a local network, we may need to create it and store the universe variables
         UniverseVariables universeVariables = null;
         if (configuration.getDockerConfiguration().shouldInitializeNetwork() &&
             configuration.getType() == RadixNetworkConfiguration.Type.LOCALNET) {
-            universeVariables = LocalDockerNetworkCreator.createNewLocalNetwork(configuration, dockerClient);
+            var localDockerClient = new LocalDockerClient(configuration.getDockerConfiguration());
+            LocalDockerNetworkCreator.createNewLocalNetwork(configuration, localDockerClient);
         }
 
         var networkId = configuration.pingJsonRpcApi();
         logger.info("Connected to JSON RPC API at {}", configuration.getJsonRpcRootUrl());
 
+        var dockerClient = createDockerClient(configuration);
         var httpClient = RadixHttpClient.fromRadixNetworkConfiguration(configuration);
         var radixNodes = RadixNetworkNodeLocator.locateNodes(configuration, httpClient, dockerClient);
         if (radixNodes == null || radixNodes.size() == 0) {
             throw new RuntimeException("No nodes found, cannot run tests");
         }
 
-        logger.info("Done locating nodes, found {} in total", radixNodes.size());
-        radixNodes.forEach(logger::debug);
-
+        logger.info("Done locating nodes, found {} in total.", radixNodes.size());
+        radixNodes.forEach(node -> logger.debug(" - {}", node.toString()));
         return new RadixNetwork(configuration, networkId, radixNodes, httpClient, dockerClient, universeVariables);
     }
 
@@ -69,8 +70,6 @@ public class RadixNetwork {
 
     /**
      * Calls the faucet to send tokens to the given address
-     *
-     * @return the txId of the faucet's transaction
      */
     public String faucet(AccountAddress to) {
         var faucets = nodes.stream().filter(node -> node.getAvailableServices()
@@ -109,19 +108,18 @@ public class RadixNetwork {
     private static DockerClient createDockerClient(RadixNetworkConfiguration configuration) {
         var dockerConfiguration = configuration.getDockerConfiguration();
         DockerClient dockerClient;
-        switch (configuration.getType()) {
-            case LOCALNET:
-                dockerClient = new LocalDockerClient(dockerConfiguration.getSocketUrl());
-                break;
-            case TESTNET:
-                dockerClient = new RemoteDockerClient(configuration);
-                break;
-            default:
-                dockerClient = new DisabledDockerClient();
-        }
         try {
-            dockerClient.connect();
-            logger.debug("Successfully initialized a {} docker client", configuration.getType());
+            switch (configuration.getType()) {
+                case LOCALNET:
+                    dockerClient = new LocalDockerClient(dockerConfiguration).connect();
+                    break;
+                case TESTNET:
+                    dockerClient = new RemoteDockerClient(configuration);
+                    break;
+                default:
+                    dockerClient = new DisabledDockerClient();
+            }
+            logger.debug("Initialized a {} docker client", configuration.getType());
         } catch (DockerClientException e) {
             logger.warn("Exception {} when trying to initialize a docker client. Client will be disabled.", e.getMessage());
             dockerClient = new DisabledDockerClient();

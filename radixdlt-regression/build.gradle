@@ -136,7 +136,7 @@ dependencies {
     implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.11'
     implementation 'org.buildobjects:jproc:2.6.2'
     implementation 'org.awaitility:awaitility:4.1.0'
-    implementation 'com.jcraft:jsch:0.1.55'
+    implementation 'com.github.mwiede:jsch:0.1.68'
 
     // the project lobmok dependencies.
     // Normally the lombok plugin is used, but for some reason it doesn't work so the deps are added manually

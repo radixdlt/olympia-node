@@ -10,6 +10,7 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
+import com.radixdlt.test.network.DockerConfiguration;
 import com.radixdlt.test.utils.TestingUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -29,14 +30,16 @@ public class LocalDockerClient implements DockerClient {
 
     // the unix default is unix:///var/run/docker.sock. tcp://localhost:2375 might work on windows
     private final String dockerSocketUrl;
+    private final String networkName;
 
     private com.github.dockerjava.api.DockerClient dockerClient;
 
-    public LocalDockerClient(String dockerSocketUrl) {
-        this.dockerSocketUrl = dockerSocketUrl;
+    public LocalDockerClient(DockerConfiguration dockerConfiguration) {
+        this.dockerSocketUrl = dockerConfiguration.getSocketUrl();
+        this.networkName = dockerConfiguration.getNetworkName();
     }
 
-    public void connect() {
+    public LocalDockerClient connect() {
         var config = DefaultDockerClientConfig.createDefaultConfigBuilder()
             .withDockerHost(dockerSocketUrl).build();
         var httpClient = new ApacheDockerHttpClient.Builder().dockerHost(config.getDockerHost())
@@ -48,6 +51,7 @@ public class LocalDockerClient implements DockerClient {
             throw new DockerClientException("Could not connect to socket " + dockerSocketUrl
                 + ". Are you running the tests from windows?");
         }
+        return this;
     }
 
     @SuppressWarnings("deprecation")
@@ -88,11 +92,11 @@ public class LocalDockerClient implements DockerClient {
     public void createNetwork(String networkName) {
         try {
             dockerClient.inspectNetworkCmd().withNetworkId(networkName).exec();
-            wipeNetwork(networkName);
+            cleanup();
         } catch (NotFoundException e) {
             // all good, proceed
         } catch (BadRequestException e) { // weird edge case
-            wipeNetwork(networkName);
+            cleanup();
         }
         dockerClient.createNetworkCmd().withName(networkName).exec();
     }
@@ -107,7 +111,8 @@ public class LocalDockerClient implements DockerClient {
         dockerClient.stopContainerCmd(containerName).exec();
     }
 
-    public void wipeNetwork(String networkName) {
+    @Override
+    public void cleanup(String... parameters) {
         var count = new AtomicInteger();
         dockerClient.listContainersCmd().withShowAll(true).exec().forEach(container -> {
             if (container.getNetworkSettings().getNetworks().keySet().contains(networkName)) {
@@ -118,7 +123,6 @@ public class LocalDockerClient implements DockerClient {
             count.incrementAndGet();
         });
         dockerClient.removeNetworkCmd(networkName).exec();
-
         logger.debug("Removed existing network '{}', along with its {} containers", networkName, count.intValue());
     }
 
