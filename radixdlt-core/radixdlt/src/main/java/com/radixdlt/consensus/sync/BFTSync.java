@@ -314,7 +314,6 @@ public final class BFTSync implements BFTSyncer {
 	private void startSync(HighQC highQC, BFTNode author) {
 		final SyncState syncState = new SyncState(highQC, author, hasher);
 		syncing.put(syncState.localSyncId, syncState);
-
 		if (requiresLedgerSync(syncState)) {
 			this.doCommittedSync(syncState);
 		} else {
@@ -334,7 +333,6 @@ public final class BFTSync implements BFTSyncer {
 			.collect(ImmutableList.toImmutableList());
 
 		final var qc = syncState.highQC().highestQC();
-
 		this.sendBFTSyncRequest(qc.getView(), qc.getProposed().getVertexId(), 1, authors, syncState.localSyncId);
 	}
 
@@ -428,7 +426,6 @@ public final class BFTSync implements BFTSyncer {
 
 	private void sendBFTSyncRequest(View view, HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId) {
 		GetVerticesRequest request = new GetVerticesRequest(vertexId, count);
-
 		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, view));
 		if (syncRequestState.syncIds.isEmpty()) {
 			if (this.syncRequestRateLimiter.tryAcquire()) {

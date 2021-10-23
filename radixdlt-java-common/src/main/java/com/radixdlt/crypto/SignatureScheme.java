@@ -62,14 +62,18 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package com.radixdlt.crypto;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+public enum SignatureScheme {
 
-public final class RadixNodeUriTest {
-	@Test
-	public void equals_test() {
-		EqualsVerifier.forClass(RadixNodeUri.class).verify();
-	}
+    /**
+     *  Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be found
+     *  <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here on wikipedia</a>.
+     */
+    ECDSA;
+
+    @Override
+    public String toString() {
+        return this.name().toLowerCase();
+    }
 }

@@ -112,15 +112,15 @@ public class SyncRadixApiNetworkTest {
 		+ "\"radix://dn1qwkdfp8z7rrlv5cf45tc4864n277p9ukjax90ec5cd03zr0uylxtuxr0wk5@172.20.0.6:30000\"}]}],\""
 		+ "id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 	public static final String ADDRESS_BOOK = "{\"result\":[{\"address\":\"dn1qghsre0ptn9r28d07wzrldc08shs5x7aqhj6lzy2v"
-		+ "auyaulppg4qznsumgv\",\"knownAddresses\":[{\"blacklisted\":false,\"latestConnectionStatus\":\"SUCCESS\","
-		+ "\"uri\":\"radix://dn1qghsre0ptn9r28d07wzrldc08shs5x7aqhj6lzy2vauyaulppg4qznsumgv@172.20.0.3"
+		+ "auyaulppg4qznsumgv\",\"knownAddresses\":[{\"blacklisted\":false,\"lastSuccessfulConnection\":\"2021-07-23T11"
+		+ ":44:20.324134Z\",\"uri\":\"radix://dn1qghsre0ptn9r28d07wzrldc08shs5x7aqhj6lzy2vauyaulppg4qznsumgv@172.20.0.3"
 		+ ":30000\"}],\"banned\":false},{\"address\":\"dn1qwkdfp8z7rrlv5cf45tc4864n277p9ukjax90ec5cd03zr0uylxtuxr0wk5\""
 		+ ",\"knownAddresses\":[{\"blacklisted\":false,\"uri\":\"radix://dn1qwkdfp8z7rrlv5cf45tc4864n277p9ukjax90ec5cd0"
 		+ "3zr0uylxtuxr0wk5@172.20.0.4:30000\"}],\"banned\":false},{\"address\":\"dn1qwsyxnv7gleusc34ga78kxhx4ewngsk5nv"
 		+ "v58s4h22ngu2j8ufruw62f4eq\",\"knownAddresses\":[{\"blacklisted\":false,\"uri\":\"radix://dn1qwsyxnv7gleusc34"
 		+ "ga78kxhx4ewngsk5nvv58s4h22ngu2j8ufruw62f4eq@172.20.0.5:30000\"}],\"banned\":false},{\"address\":\"dn1qfwtmur"
-		+ "ydewmf64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumcfppt2p\",\"knownAddresses\":[{\"blacklisted\":false,"
-		+ "\"latestConnectionStatus\":\"FAILURE\",\"uri\":\"radix://dn1qfwtmurydewmf64rnrektuh20g8r6svm0cpn"
+		+ "ydewmf64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumcfppt2p\",\"knownAddresses\":[{\"blacklisted\":false,\"lastSucc"
+		+ "essfulConnection\":\"2021-07-23T11:44:20.322728Z\",\"uri\":\"radix://dn1qfwtmurydewmf64rnrektuh20g8r6svm0cpn"
 		+ "pcuuay4ammw2cnumcfppt2p@172.20.0.2:30000\"}],\"banned\":false}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}";
 
 	private final HttpClient client = mock(HttpClient.class);

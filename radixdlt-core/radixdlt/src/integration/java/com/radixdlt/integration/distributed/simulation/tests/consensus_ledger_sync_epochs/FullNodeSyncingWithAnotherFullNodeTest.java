@@ -66,17 +66,14 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_s
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.SyncMonitors;
 import com.radixdlt.integration.distributed.simulation.monitors.ledger.LedgerMonitors;
@@ -94,39 +91,28 @@ import org.junit.Test;
  */
 public class FullNodeSyncingWithAnotherFullNodeTest {
 
-	private static final ImmutableList<Integer> VALIDATORS_INDICES = ImmutableList.of(0, 1);
-	private static final int NON_VALIDATOR_SYNC_NODE_INDEX = 2;
-	private static final int NODE_UNDER_TEST_INDEX = 3;
+	private static final ImmutableList<Integer> VALIDATORS = ImmutableList.of(0, 1);
+	private static final int NON_VALIDATOR_SYNC_NODE = 2;
+	private static final int NODE_UNDER_TEST = 3;
 	private static final int MAX_LEDGER_SYNC_LAG = 300;
 
 	private final Builder testBuilder;
-	private ECPublicKey nodeUnderTestKey;
-	private ECPublicKey nonValidatorSyncNodeKey;
 
 	public FullNodeSyncingWithAnotherFullNodeTest() {
 		this.testBuilder = SimulationTest.builder()
 			.numNodes(4)
-			.addressBook(nodes -> {
-				final var validatorNodes = VALIDATORS_INDICES.stream()
-					.map(nodes::get).map(ECKeyPair::getPublicKey)
-					.collect(ImmutableList.toImmutableList());
-
-				nodeUnderTestKey = nodes.get(NODE_UNDER_TEST_INDEX).getPublicKey();
-				nonValidatorSyncNodeKey = nodes.get(NON_VALIDATOR_SYNC_NODE_INDEX).getPublicKey();
-
-				return ImmutableMap.of(
-					nodes.get(0).getPublicKey(), validatorNodes,
-					nodes.get(1).getPublicKey(), validatorNodes,
-					nodes.get(2).getPublicKey(), validatorNodes,
-					// node 3 only knows of a (non-validator) node 2
-					nodeUnderTestKey, ImmutableList.of(nonValidatorSyncNodeKey)
-				);
-			})
+			.addressBook(ImmutableMap.of(
+				0, VALIDATORS,
+				1, VALIDATORS,
+				2, VALIDATORS,
+				// node 3 only knows of a (non-validator) node 2
+				NODE_UNDER_TEST, ImmutableList.of(NON_VALIDATOR_SYNC_NODE)
+			))
 			.networkModules(
 				NetworkOrdering.inOrder(),
 				NetworkLatencies.fixed(10)
 			)
-			.addOverrideModuleToAll(new AbstractModule() { // TODO: remove this hack
+			.overrideWithIncorrectModule(new AbstractModule() { // TODO: remove this hack
 				@Provides
 				public BFTValidatorSet genesisValidatorSet(Function<Long, BFTValidatorSet> mapper) {
 					return mapper.apply(0L);
@@ -135,7 +121,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 			.pacemakerTimeout(3000)
 			.ledgerAndEpochsAndSync(
 				View.of(100),
-				(unused) -> VALIDATORS_INDICES.stream().mapToInt(i -> i),
+				(unused) -> VALIDATORS.stream().mapToInt(i -> i),
 				SyncConfig.of(1000L, 10, 500L, 10, Long.MAX_VALUE)
 			)
 			.addTestModules(
@@ -157,19 +143,20 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 
 		final var testNodeCounters = runningTest.getNetwork()
-			.getSystemCounters().get(BFTNode.create(nodeUnderTestKey));
+			.getSystemCounters().get(runningTest.getNetwork().getNodes().get(NODE_UNDER_TEST));
 
 		// just to be sure that node wasn't a validator
-		assertEquals(0, testNodeCounters.get(SystemCounters.CounterType.BFT_PROPOSALS_MADE));
-		assertEquals(0, testNodeCounters.get(SystemCounters.CounterType.BFT_PROCESSED));
+		assertEquals(0, testNodeCounters.get(CounterType.BFT_PROPOSALS_MADE));
+		assertEquals(0, testNodeCounters.get(CounterType.BFT_PROCESSED));
 
 		final var syncNodeCounters = runningTest.getNetwork()
-			.getSystemCounters().get(BFTNode.create(nonValidatorSyncNodeKey));
+			.getSystemCounters().get(runningTest.getNetwork().getNodes().get(NON_VALIDATOR_SYNC_NODE));
 
 		// make sure that the sync target node actually processed all the requests from test node
 		// and test node didn't communicate directly with a validator
 		assertThat(
-			syncNodeCounters.get(SystemCounters.CounterType.SYNC_REMOTE_REQUESTS_PROCESSED) - testNodeCounters.get(CounterType.SYNC_PROCESSED)
+			syncNodeCounters.get(CounterType.SYNC_REMOTE_REQUESTS_PROCESSED) - testNodeCounters.get(CounterType.SYNC_PROCESSED)
 		).isBetween(-4L, 4L); // small discrepancies are fine
 	}
+
 }

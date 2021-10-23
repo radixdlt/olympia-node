@@ -64,7 +64,6 @@
 
 package com.radixdlt.network.p2p.transport;
 
-import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
@@ -136,7 +135,6 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	private ChannelState state = ChannelState.INACTIVE;
 	private NodeId remoteNodeId;
 	private FrameCodec frameCodec;
-	private Optional<HashCode> remoteLatestForkHash = Optional.empty();
 
 	private final RateCalculator outMessagesStats = new RateCalculator(Duration.ofSeconds(10), 128);
 
@@ -144,7 +142,6 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		P2PConfig config,
 		Addressing addressing,
 		int networkId,
-		HashCode latestForkHash,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -158,7 +155,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
 		this.uri = Objects.requireNonNull(uri);
 		uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
-		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId, latestForkHash);
+		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId);
 		this.nettyChannel = Objects.requireNonNull(nettyChannel);
 
 		this.isInitiator = uri.isPresent();
@@ -202,7 +199,6 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 			final var successResult = (AuthHandshakeSuccess) handshakeResult;
 			this.remoteNodeId = successResult.getRemoteNodeId();
 			this.frameCodec = new FrameCodec(successResult.getSecrets());
-			this.remoteLatestForkHash = successResult.getLatestForkHash();
 			this.state = ChannelState.ACTIVE;
 			log.trace("Successful auth handshake: {}", this.toString());
 			peerEventDispatcher.dispatch(PeerConnected.create(this));
@@ -319,10 +315,6 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 
 	public InetSocketAddress getRemoteSocketAddress() {
 		return (InetSocketAddress) this.nettyChannel.remoteAddress();
-	}
-
-	public Optional<HashCode> getRemoteLatestForkHash() {
-		return remoteLatestForkHash;
 	}
 
 	@Override

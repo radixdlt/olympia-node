@@ -106,16 +106,16 @@ public final class TransactionIndexApiModule extends AbstractModule {
 	@StringMapKey("get_transaction_count")
 	public JsonRpcHandler indexGetTransactionCount(BerkeleyTransactionIndexStore store) {
 		return request -> withRequiredParameters(
-				request,
-				List.of(),
-				params -> Result.wrap(
-						e -> Failure.failure(-1, e.getMessage()),
-						() -> {
-							var totalCount = store.getCount();
-							return jsonObject()
-									.put("totalCount", totalCount);
-						}
-				)
+			request,
+			List.of(),
+			params -> Result.wrap(
+				e -> Failure.failure(-1, e.getMessage()),
+				() -> {
+					var totalCount = store.getCount();
+					return jsonObject()
+						.put("totalCount", totalCount);
+				}
+			)
 		);
 	}
 

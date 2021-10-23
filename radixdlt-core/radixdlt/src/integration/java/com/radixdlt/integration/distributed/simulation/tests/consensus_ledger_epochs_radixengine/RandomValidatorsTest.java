@@ -83,7 +83,7 @@ import com.radixdlt.integration.distributed.simulation.application.NodeValidator
 import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -94,12 +94,13 @@ import org.junit.Test;
  */
 public class RandomValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(10)
+		.numNodes(10, 2)
 		.networkModules(
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
 		.addRadixEngineConfigModules(
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(
 				new RERulesConfig(
 					Set.of("xrd"),
@@ -115,8 +116,7 @@ public class RandomValidatorsTest {
 					9800,
 					50
 				)),
-			new ForksModule(),
-			new MainnetForksModule()
+			new ForksModule()
 		)
 		.ledgerAndRadixEngineWithEpochHighView()
 		.addTestModules(

@@ -73,8 +73,8 @@ public class ArchiveServerModule extends AbstractModule {
 	@Override
 	public void configure() {
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
-				.addBinding(Runners.ARCHIVE_API)
-				.to(ArchiveHttpServer.class);
+			.addBinding(Runners.ARCHIVE_API)
+			.to(ArchiveHttpServer.class);
 
 		bind(ArchiveHttpServer.class).in(Scopes.SINGLETON);
 	}

@@ -75,7 +75,7 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.PrivateKeys;
 import org.junit.After;
@@ -177,7 +177,7 @@ public class TransactionStatusTest {
 				Amount.ofTokens(1000)
 			),
 			MempoolConfig.asModule(10, 10),
-			new MainnetForksModule(),
+			new MainnetForkConfigsModule(),
 			new ForksModule(),
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
 			new PersistedNodeForTestingModule(),

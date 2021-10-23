@@ -118,7 +118,6 @@ public final class EventProcessorOnRunner<T> {
 		return runnerName;
 	}
 
-	@SuppressWarnings("unchecked")
 	public <U> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
 		if (eventClass != null && eventClass.isAssignableFrom(c)) {
 			return Optional.of((EventProcessor<U>) processor);
@@ -127,7 +126,6 @@ public final class EventProcessorOnRunner<T> {
 		return Optional.empty();
 	}
 
-	@SuppressWarnings("unchecked")
 	public <U> Optional<EventProcessor<U>> getProcessor(TypeLiteral<U> c) {
 		if (c.equals(typeLiteral)) {
 			return Optional.of((EventProcessor<U>) processor);

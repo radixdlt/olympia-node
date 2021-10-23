@@ -70,14 +70,13 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.PeersView;
 
 public class MockedPeersViewModule extends AbstractModule {
 
-	private final ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> nodes;
+	private final ImmutableMap<Integer, ImmutableList<Integer>> nodes;
 
-	public MockedPeersViewModule(ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> nodes) {
+	public MockedPeersViewModule(ImmutableMap<Integer, ImmutableList<Integer>> nodes) {
 		this.nodes = nodes;
 	}
 
@@ -90,10 +89,9 @@ public class MockedPeersViewModule extends AbstractModule {
 	}
 
 	private ImmutableList<BFTNode> filterNodes(BFTNode self, ImmutableList<BFTNode> allNodes) {
-		if (nodes != null && nodes.containsKey(self.getKey())) {
-			return nodes.get(self.getKey()).stream()
-				.map(BFTNode::create)
-				.collect(ImmutableList.toImmutableList());
+		final var selfIndex = allNodes.indexOf(self);
+		if (nodes != null && nodes.containsKey(selfIndex)) {
+			return nodes.get(selfIndex).stream().map(allNodes::get).collect(ImmutableList.toImmutableList());
 		} else {
 			return allNodes;
 		}

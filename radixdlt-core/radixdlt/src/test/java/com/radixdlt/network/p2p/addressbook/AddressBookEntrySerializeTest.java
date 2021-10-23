@@ -69,7 +69,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
-import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import org.radix.serialization.SerializeMessageObject;
 
 import java.time.Instant;
@@ -96,10 +95,7 @@ public class AddressBookEntrySerializeTest extends SerializeMessageObject<Addres
 		final var blacklistedUntil = rnd.nextBoolean()
 			? Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong())))
 			: Optional.<Instant>empty();
-		final var latestConnectionStatus = rnd.nextBoolean()
-			? Optional.of(rnd.nextBoolean() ? LatestConnectionStatus.FAILURE : LatestConnectionStatus.SUCCESS)
-			: Optional.<LatestConnectionStatus>empty();
-		final var addressEntry = new PeerAddressEntry(uri, latestConnectionStatus, blacklistedUntil);
+		final var addressEntry = new PeerAddressEntry(uri, Optional.of(Instant.ofEpochMilli(Math.abs(rnd.nextLong()))), blacklistedUntil);
 		return new AddressBookEntry(NodeId.fromPublicKey(keyPair.getPublicKey()), bannedUntil, ImmutableSet.of(addressEntry));
 	}
 }
