@@ -5,6 +5,8 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.radixdlt.test.network.RadixNetworkConfiguration;
+import com.radixdlt.test.network.SshConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.radix.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 /**
- * A tcp, socket-based client that connects to a local daemon, consuming Docker's Engine API: https://docs.docker.com/engine/api/v1.40/
+ * A class that can run commands (including docker commands e.g. 'docker restart') over ssh
  */
 public class RemoteDockerClient implements DockerClient {
 
@@ -26,24 +28,22 @@ public class RemoteDockerClient implements DockerClient {
 
     private static Logger logger = LoggerFactory.getLogger(RemoteDockerClient.class);
 
-    private final String sshKeyLocation;
-    private final String sshKeyPassphrase;
+    private final SshConfiguration sshConfiguration;
     private final String containerName;
 
     public RemoteDockerClient(RadixNetworkConfiguration configuration) {
-        this.sshKeyLocation = configuration.getSshKeyLocation();
-        this.sshKeyPassphrase = configuration.getSshKeyPassphrase();
+        this.sshConfiguration = configuration.getSshConfiguration();
         this.containerName = configuration.getDockerConfiguration().getContainerName();
     }
 
     public String runCommand(String nodeLocator, String... commands) {
         logger.debug("Run command [{}] at {}", commands, nodeLocator);
+        checkProperties();
         var jsch = new JSch();
         Session session = null;
         try {
-            jsch.addIdentity(sshKeyLocation, sshKeyPassphrase);
-            // TODO externalize username and port config once we have a test that uses this
-            session = jsch.getSession("todo", nodeLocator, 12345);
+            jsch.addIdentity(sshConfiguration.getSshKeyLocation(), sshConfiguration.getSshKeyPassphrase());
+            session = jsch.getSession(sshConfiguration.getUser(), nodeLocator, sshConfiguration.getPort());
             var config = new java.util.Properties();
             config.put("StrictHostKeyChecking", "no");
             session.setConfig(config);
@@ -62,6 +62,13 @@ public class RemoteDockerClient implements DockerClient {
             if (session != null) {
                 session.disconnect();
             }
+        }
+    }
+
+    private void checkProperties() {
+        if (sshConfiguration.getPort() == -1 || StringUtils.isBlank(sshConfiguration.getUser())) {
+            throw new IllegalArgumentException("You need to set RADIXDLT_SYSTEM_TESTING_SSH_KEY_USER and " +
+                "RADIXDLT_SYSTEM_TESTING_SSH_KEY_PORT to run commands over SSH");
         }
     }
 

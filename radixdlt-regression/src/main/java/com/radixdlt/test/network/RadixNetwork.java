@@ -111,7 +111,7 @@ public class RadixNetwork {
         try {
             switch (configuration.getType()) {
                 case LOCALNET:
-                    dockerClient = new LocalDockerClient(dockerConfiguration).connect();
+                    dockerClient = new LocalDockerClient(dockerConfiguration);
                     break;
                 case TESTNET:
                     dockerClient = new RemoteDockerClient(configuration);

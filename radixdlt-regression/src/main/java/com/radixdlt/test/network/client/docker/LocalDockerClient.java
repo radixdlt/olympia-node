@@ -37,9 +37,10 @@ public class LocalDockerClient implements DockerClient {
     public LocalDockerClient(DockerConfiguration dockerConfiguration) {
         this.dockerSocketUrl = dockerConfiguration.getSocketUrl();
         this.networkName = dockerConfiguration.getNetworkName();
+        connect();
     }
 
-    public LocalDockerClient connect() {
+    public void connect() {
         var config = DefaultDockerClientConfig.createDefaultConfigBuilder()
             .withDockerHost(dockerSocketUrl).build();
         var httpClient = new ApacheDockerHttpClient.Builder().dockerHost(config.getDockerHost())
@@ -51,7 +52,6 @@ public class LocalDockerClient implements DockerClient {
             throw new DockerClientException("Could not connect to socket " + dockerSocketUrl
                 + ". Are you running the tests from windows?");
         }
-        return this;
     }
 
     @SuppressWarnings("deprecation")

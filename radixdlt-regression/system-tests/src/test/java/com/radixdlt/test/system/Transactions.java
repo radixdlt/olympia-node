@@ -12,11 +12,11 @@ import com.radixdlt.test.system.scaffolding.SystemTest;
 import com.radixdlt.test.utils.TestingUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.util.StringUtils;
 import org.radix.Radix;
 
@@ -46,7 +46,7 @@ public class Transactions extends SystemTest {
         this.account = StringUtils.isNotBlank(seedPhrase)
             ? initializeAccountFromSeedPhrase(configuration, seedPhrase)
             : Account.initialize(configuration.getJsonRpcRootUrl(), configuration.getPrimaryPort(),
-                configuration.getSecondaryPort(), TestingUtils.createKeyPairFromNumber(HARDCODED_ADDRESS_PRIVATE_KEY));
+            configuration.getSecondaryPort(), TestingUtils.createKeyPairFromNumber(HARDCODED_ADDRESS_PRIVATE_KEY));
         logger.info("Using address {} with balances:\n{}", account.getAddressForNetwork(),
             account.getOwnTokenBalances());
         firstValidator = account.validator().list(100, Optional.empty()).getValidators().get(0);
@@ -63,8 +63,8 @@ public class Transactions extends SystemTest {
         logger.info("Token transfer txId: {}", txId);
     }
 
-    //@Test
-    //@Order(1)
+    @org.junit.Test
+    @Order(1)
     public void stake() {
         faucet(account, AMOUNT_TO_STAKE);
         logger.info("Staking {} to validator {}...", AMOUNT_TO_STAKE, firstValidator.getAddress().toString());
@@ -72,8 +72,8 @@ public class Transactions extends SystemTest {
         logger.info("Stake tokens txId: {}", txId);
     }
 
-    //@Test
-    //@Order(2)
+    @Test
+    @Order(2)
     public void unstake() {
         var nid = account.network().id().getNetworkId();
         logger.info("Unstaking {} from validator {}...", AMOUNT_TO_STAKE, firstValidator.getAddress().toString(nid));
@@ -81,7 +81,7 @@ public class Transactions extends SystemTest {
         logger.info("Unstake tokens txId: {}", txId);
     }
 
-    //@Test
+    @Test
     @Order(3)
     public void mutable_supply_token_creation() {
         faucet(account, Amount.ofTokens(100));
@@ -96,21 +96,21 @@ public class Transactions extends SystemTest {
         var lookup = account.transaction().lookup(txId);
     }
 
-    //@Test
+    @Test
     @Order(4)
     public void mint_mutable_supply_token() {
         var txId = account.mint(TOKENS_TO_MINT, "mtt", createTestMessageOptional());
         logger.info("Token {} mint txId: {}", "mtt", txId);
     }
 
-    //@Test
+    @Test
     @Order(5)
     public void burn_mutable_supply_token() {
         var txId = account.burn(TOKENS_TO_MINT, "mtt", createTestMessageOptional());
         logger.info("Token {} burn txId: {}", "mtt", txId);
     }
 
-    //@Test
+    @Test
     public void fixed_supply_token_creation() {
         faucet(account, Amount.ofTokens(100));
         var timestamp = System.currentTimeMillis();

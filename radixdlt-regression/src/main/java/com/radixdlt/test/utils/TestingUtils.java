@@ -65,6 +65,11 @@ public final class TestingUtils {
         return (envValue == null || envValue.isBlank()) ? defaultValue : envValue;
     }
 
+    public static int getEnvWithDefault(String envName, int defaultValue) {
+        String envValue = System.getenv(envName);
+        return (envValue == null || envValue.isBlank()) ? defaultValue : Integer.parseInt(envValue);
+    }
+
     /**
      * Will wait until the native token balance reaches the given amount
      */
