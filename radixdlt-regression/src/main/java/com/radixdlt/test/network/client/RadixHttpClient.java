@@ -86,7 +86,7 @@ public class RadixHttpClient {
             HttpRequest.BodyPublishers.noBody()).build();
         var responseObject = submitRequestAndParseResponseAsJson(request);
         logger.info("==============================");
-        logger.info(request.toString());
+        logger.info(responseObject.toString(5));
         logger.info("==============================");
         return HealthStatus.valueOf(responseObject.getString("network_status"));
     }

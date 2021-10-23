@@ -74,14 +74,12 @@ public class RemoteDockerClient implements DockerClient {
 
     @Override
     public void restartNode(String nodeLocator) {
-        // TODO run docker restart over ssh
-        throw new RuntimeException("Unimplemented");
+        runCommand(nodeLocator, "docker restart " + containerName);
     }
 
     @Override
     public void stopNode(String nodeLocator) {
-        // TODO run docker stop over ssh
-        throw new RuntimeException("Unimplemented");
+        runCommand(nodeLocator, "docker stop " + containerName);
     }
 
     @Override
