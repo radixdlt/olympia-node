@@ -85,10 +85,7 @@ public class RadixHttpClient {
         var request = HttpRequest.newBuilder().uri(URI.create(rootUrl + HEALTH_PATH)).method("GET",
             HttpRequest.BodyPublishers.noBody()).build();
         var responseObject = submitRequestAndParseResponseAsJson(request);
-        logger.info("==============================");
-        logger.info(responseObject.toString(5));
-        logger.info("==============================");
-        return HealthStatus.valueOf(responseObject.getString("network_status"));
+        return HealthStatus.valueOf(responseObject.getString("status"));
     }
 
     public Metrics getMetrics(String rootUrl) {
