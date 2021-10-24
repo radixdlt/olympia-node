@@ -11,6 +11,10 @@ public class Metrics {
 
     private final Map<String, Double> metrics;
 
+    public Metrics() {
+        this("");
+    }
+
     public Metrics(String text) {
         metrics = Maps.newHashMap();
         for (var line : text.split("\\R")) {

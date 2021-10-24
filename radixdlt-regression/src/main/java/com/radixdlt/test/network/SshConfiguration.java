@@ -1,15 +1,11 @@
 package com.radixdlt.test.network;
 
 import com.radixdlt.test.utils.TestingUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * properties used to connect to testnet nodes via SSH
  */
 public class SshConfiguration {
-
-    private static final Logger logger = LogManager.getLogger();
 
     private final String sshKeyLocation;
     private final String sshKeyPassphrase;

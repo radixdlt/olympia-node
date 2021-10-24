@@ -68,15 +68,6 @@ public class LocalDockerNetworkCreator {
         return variables;
     }
 
-    // TODO will be removed during next refactoring
-    private static LocalDockerClient castToLocalClient(DockerClient dockerClient) {
-        if (dockerClient.getClass().isAssignableFrom(LocalDockerClient.class)) {
-            return ((LocalDockerClient) dockerClient);
-        } else {
-            throw new IllegalArgumentException("Tried to create a local network with a " + dockerClient.getClass() + " docker client");
-        }
-    }
-
     private static void waitUntilNodesAreUp(RadixNetworkConfiguration configuration, int numberOfNodes) {
         var secondaryPort = configuration.getSecondaryPort();
         var httpClient = RadixHttpClient.fromRadixNetworkConfiguration(configuration);

@@ -37,15 +37,18 @@ public class RadixNetworkConfiguration {
     private final SshConfiguration sshConfiguration;
 
     private RadixNetworkConfiguration(String jsonRpcRootUrl, int primaryPort, int secondaryPort, String faucetUrl, String basicAuth,
-                                      Type type, DockerConfiguration dockerConfiguration, SshConfiguration sshConfiguration) {
+                                      DockerConfiguration dockerConfiguration, SshConfiguration sshConfiguration) {
         this.jsonRpcRootUrl = jsonRpcRootUrl;
         this.primaryPort = primaryPort;
         this.secondaryPort = secondaryPort;
         this.faucetUrl = faucetUrl;
         this.basicAuth = basicAuth;
-        this.type = type;
+        this.type = determineType(jsonRpcRootUrl);
         this.dockerConfiguration = dockerConfiguration;
         this.sshConfiguration = sshConfiguration;
+        if (type != Type.LOCALNET && dockerConfiguration.shouldInitializeNetwork()) {
+            logger.warn("Cannot initialize a {} type of network", type);
+        }
     }
 
     public static RadixNetworkConfiguration fromEnv() {
@@ -58,14 +61,10 @@ public class RadixNetworkConfiguration {
                 : Integer.parseInt(TestingUtils.getEnvWithDefault("RADIXDLT_JSON_RPC_API_SECONDARY_PORT", "3333"));
             var faucetUrl = TestingUtils.getEnvWithDefault("RADIXDLT_FAUCET_URL", "");
             var basicAuth = System.getenv("RADIXDLT_BASIC_AUTH");
-            var type = determineType(jsonRpcRootUrlString);
             var dockerConfiguration = DockerConfiguration.fromEnv();
             var sshConfiguration = SshConfiguration.fromEnv();
-            if (type != Type.LOCALNET && dockerConfiguration.shouldInitializeNetwork()) {
-                logger.warn("Cannot initialize a {} type of network", type);
-            }
             return new RadixNetworkConfiguration(jsonRpcRootUrlString, primaryPort, secondaryPort, faucetUrl, basicAuth,
-                type, dockerConfiguration, sshConfiguration);
+                dockerConfiguration, sshConfiguration);
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException("Bad JSON-RPC URL", e);
         }

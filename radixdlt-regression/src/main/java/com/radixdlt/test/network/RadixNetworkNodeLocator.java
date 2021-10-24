@@ -49,8 +49,8 @@ public class RadixNetworkNodeLocator {
             }
         } catch (RadixApiException e) {
             if (e.getMessage().toLowerCase().contains("401 authorization required")) {
-                logger.warn("Could not fetch peers list from " + configuration.getJsonRpcRootUrl() + " due to 401. "
-                    + "The test will use only one archive node.");
+                logger.warn("Could not fetch peers list from {} due to 401. The test will use only one archive node.",
+                    configuration.getJsonRpcRootUrl());
                 addSingleNodePeerToList(configuration, radixNodes);
                 return radixNodes;
             }
@@ -64,13 +64,13 @@ public class RadixNetworkNodeLocator {
             case TESTNET:
             default:
                 logger.debug("Searching for {} testnet nodes", peersSizePlusOne);
-                return locateRemoteNodes(configuration, httpClient, dockerClient);
+                throw new RuntimeException("Unimplemented"); // get a list of RadixNodes by parsing the peers list
         }
     }
 
     private static void tryAddFaucetToNodeList(RadixNetworkConfiguration configuration, List<RadixNode> radixNodes) {
         if (StringUtils.isNotBlank(configuration.getFaucetUrl())) {
-            // TODO these ports might be wrong. Faucet config should be more robust
+            // these ports might be wrong. Faucet config should be more robust
             Set<RadixNode.ServiceType> availableNodeServices = Sets.newHashSet();
             availableNodeServices.add(RadixNode.ServiceType.FAUCET);
             var faucetNode = new RadixNode(configuration.getFaucetUrl(), configuration.getPrimaryPort(),
@@ -83,7 +83,7 @@ public class RadixNetworkNodeLocator {
 
             RadixHttpClient.fromRadixNetworkConfiguration(configuration).callFaucet(rootUrl, configuration.getPrimaryPort(),
                 randomAddress);
-            logger.info("Found a primary faucet at " + configuration.getFaucetUrl());
+            logger.info("Found a primary faucet at {}", configuration.getFaucetUrl());
         }
     }
 
@@ -93,12 +93,6 @@ public class RadixNetworkNodeLocator {
             configuration.getSecondaryPort(), configuration.getDockerConfiguration().getContainerName(),
             availableNodeServices);
         radixNodes.add(singleNode);
-    }
-
-    private static List<RadixNode> locateRemoteNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient,
-                                                     DockerClient dockerClient) {
-        // TODO get a list of RadixNodes by parsing the peers list. However this isn't yet needed for the current tests we have
-        return Lists.newArrayList();
     }
 
     private static List<RadixNode> locateLocalNodes(RadixNetworkConfiguration configuration, RadixHttpClient httpClient,

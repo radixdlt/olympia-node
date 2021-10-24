@@ -23,7 +23,7 @@ public class RemoteDockerClient implements DockerClient {
         var configuration = RadixNetworkConfiguration.fromEnv();
         var remoteDockerClient = new RemoteDockerClient(configuration);
         var output = remoteDockerClient.runCommand("1.2.3.4", "pwd");
-        System.out.println(output);
+        logger.info(output);
     }
 
     private static Logger logger = LoggerFactory.getLogger(RemoteDockerClient.class);

@@ -50,7 +50,7 @@ public class RadixNetwork {
         if (configuration.getDockerConfiguration().shouldInitializeNetwork()
             && configuration.getType() == RadixNetworkConfiguration.Type.LOCALNET) {
             var localDockerClient = new LocalDockerClient(configuration.getDockerConfiguration());
-            LocalDockerNetworkCreator.createNewLocalNetwork(configuration, localDockerClient);
+            universeVariables = LocalDockerNetworkCreator.createNewLocalNetwork(configuration, localDockerClient);
         }
 
         var networkId = configuration.pingJsonRpcApi();
@@ -64,7 +64,7 @@ public class RadixNetwork {
         }
 
         logger.info("Done locating nodes, found {} in total.", radixNodes.size());
-        radixNodes.forEach(node -> logger.debug(" - {}", node.toString()));
+        radixNodes.forEach(node -> logger.debug(" - {}", node));
         return new RadixNetwork(configuration, networkId, radixNodes, httpClient, dockerClient, universeVariables);
     }
 
@@ -125,9 +125,8 @@ public class RadixNetwork {
             }
             logger.debug("Initialized a {} docker client", configuration.getType());
         } catch (DockerClientException e) {
-            logger.warn("Exception {} when trying to initialize a docker client. Client will be disabled.", e.getMessage());
+            logger.warn("Exception {} when trying to initialize a docker client. Client will be disabled.", e.getMessage(), e);
             dockerClient = new DisabledDockerClient();
-            e.printStackTrace();
         }
         return dockerClient;
     }

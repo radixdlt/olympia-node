@@ -3,8 +3,6 @@ package com.radixdlt.test.network.client;
 import com.radixdlt.client.lib.api.sync.RadixApiException;
 import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.utils.functional.Failure;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import javax.net.ssl.SSLContext;
@@ -15,12 +13,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.util.Base64;
 
 /**
  * A small HTTP client that consumes the non-JSON-RPC methods e.g. /health
@@ -28,8 +24,6 @@ import java.util.Base64;
  * Also consumes the JSON-RPC methods that are not part of the RadixApi client e.g. /faucet
  */
 public class RadixHttpClient {
-
-    private static final Logger logger = LogManager.getLogger();
 
     public enum HealthStatus {
         BOOTING,
@@ -48,8 +42,8 @@ public class RadixHttpClient {
 
     public RadixHttpClient(String basicAuth) {
         if (basicAuth != null && !basicAuth.isBlank()) {
-            var encodedCredentials = Base64.getEncoder().encodeToString(basicAuth.getBytes(StandardCharsets.UTF_8));
-            // TODO make the new client use basic auth
+            // we should maket this client use basic auth
+            ///var encodedCredentials = Base64.getEncoder().encodeToString(basicAuth.getBytes(StandardCharsets.UTF_8));
         }
 
         var props = System.getProperties();
@@ -57,13 +51,15 @@ public class RadixHttpClient {
         var trustAllCerts = new TrustManager[]{
             new X509TrustManager() {
                 public X509Certificate[] getAcceptedIssuers() {
-                    return null;
+                    return new X509Certificate[0];
                 }
 
                 public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                    // accept everything
                 }
 
                 public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    // accept everything
                 }
             }
         };
@@ -71,11 +67,9 @@ public class RadixHttpClient {
         try {
             var sc = SSLContext.getInstance("SSL");
             sc.init(null, trustAllCerts, new SecureRandom());
-            var client = HttpClient.newBuilder()
+            this.client = HttpClient.newBuilder()
                 .sslContext(sc)
                 .build();
-            this.client = client;
-
         } catch (KeyManagementException | NoSuchAlgorithmException e) {
             throw new RuntimeException("Cannot initialize http client", e);
         }
@@ -94,8 +88,11 @@ public class RadixHttpClient {
         try {
             var httpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
             return new Metrics(httpResponse.body());
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             throw new RadixApiException(Failure.failure(-1, e.getMessage()));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new Metrics();
         }
     }
 
@@ -127,8 +124,11 @@ public class RadixHttpClient {
                 throw new RadixApiException(Failure.failure(-1, "Http request to " + request.uri() + " failed due to ("
                     + status + "). Body: " + httpResponse.body()));
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             throw new RadixApiException(Failure.failure(-1, e.getMessage()));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new JSONObject();
         }
     }
 

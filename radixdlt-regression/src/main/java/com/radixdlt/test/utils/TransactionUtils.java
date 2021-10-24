@@ -60,12 +60,6 @@ public final class TransactionUtils {
             .build());
     }
 
-    public static TransactionRequest createStakingRequest(AccountAddress from, ValidatorAddress to, Amount amount) {
-        return TransactionRequest.createBuilder(from)
-            .stake(from, to, amount.toSubunits())
-            .build();
-    }
-
     public static TransactionRequest createMintRequest(AccountAddress from, Amount amount, String rri, Optional<String> message) {
         return message.map(s -> TransactionRequest.createBuilder(from)
             .mint(from, amount.toSubunits(), rri)
@@ -88,7 +82,7 @@ public final class TransactionUtils {
      * Stakes tokens and waits for transaction confirmation
      */
     public static AID stake(Account account, ValidatorAddress to, Amount amount, Optional<String> message) {
-        var request = createStakingRequest(account.getAddress(), to, amount);
+        var request = createStakingRequest(account.getAddress(), to, amount, message);
         return buildFinalizeAndSubmitTransaction(account, request, true);
     }
 
