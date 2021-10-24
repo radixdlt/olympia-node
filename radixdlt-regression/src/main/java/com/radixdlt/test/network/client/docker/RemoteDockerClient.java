@@ -22,8 +22,10 @@ public class RemoteDockerClient implements DockerClient {
     public static void main(String[] args) {
         var configuration = RadixNetworkConfiguration.fromEnv();
         var remoteDockerClient = new RemoteDockerClient(configuration);
-        var output = remoteDockerClient.runCommand("1.2.3.4", "pwd");
-        logger.info(output);
+        DockerNetworkCreator.initializeAndStartNode(remoteDockerClient,
+            "54.216.243.64",
+            "eu.gcr.io/dev-container-repo/radixdlt-core:develop",
+            "radix://tn31qvgd2xug9zt202atzre4y6jx8e2hf7yhnrjkj25m6vksmucdspcck32yqya@65.1.221.160");
     }
 
     private static Logger logger = LoggerFactory.getLogger(RemoteDockerClient.class);
@@ -48,14 +50,16 @@ public class RemoteDockerClient implements DockerClient {
             config.put("StrictHostKeyChecking", "no");
             session.setConfig(config);
             session.connect();
-            logger.debug("Connected over ssh to {}", nodeLocator);
+            logger.trace("Started ssh session at {}", nodeLocator);
 
             var channel = session.openChannel("exec");
-            ((ChannelExec) channel).setCommand(commands[0]);
+            var channelExec = ((ChannelExec) channel);
+            channelExec.setCommand(commands[0]);
             channel.setInputStream(null);
-            ((ChannelExec) channel).setErrStream(System.err);
+            channelExec.setErrStream(System.err);
             channel.connect();
-            return IOUtils.toString(channel.getInputStream());
+            var errorStream = IOUtils.toString(channelExec.getErrStream());
+            return StringUtils.isNotBlank(errorStream) ? errorStream : IOUtils.toString(channelExec.getInputStream());
         } catch (JSchException | IOException e) {
             throw new RuntimeException(e);
         } finally {

@@ -18,13 +18,16 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class LocalDockerNetworkCreator {
+/**
+ * Creates radix node networks using docker
+ */
+public class DockerNetworkCreator {
 
     private static final Logger logger = LogManager.getLogger();
 
     public static final int MAX_NUMBER_OF_NODES = 3;
 
-    private LocalDockerNetworkCreator() {
+    private DockerNetworkCreator() {
 
     }
 
@@ -66,6 +69,21 @@ public class LocalDockerNetworkCreator {
         waitUntilNodesAreUp(configuration, MAX_NUMBER_OF_NODES);
         logger.info("All nodes are UP");
         return variables;
+    }
+
+    /**
+     * will bring up a fresh new node, without a pre-existing ledger, and sync it to the network
+     */
+    public static void initializeAndStartNode(RemoteDockerClient dockerClient, String url, String image, String trustedNode) {
+        logger.info(dockerClient.runCommand(url, "docker ps"));
+
+        // get universe
+        var trustedNodeIP = trustedNode.split("[@]")[1];
+
+
+        // start the node
+        var command = String.format("docker run -d -e %s %s", "", image);
+        logger.info(dockerClient.runCommand(url, command));
     }
 
     private static void waitUntilNodesAreUp(RadixNetworkConfiguration configuration, int numberOfNodes) {

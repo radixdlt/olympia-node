@@ -7,7 +7,7 @@ import com.radixdlt.test.network.client.RadixHttpClient;
 import com.radixdlt.test.network.client.docker.DockerClient;
 import com.radixdlt.test.network.client.docker.DisabledDockerClient;
 import com.radixdlt.test.network.client.docker.LocalDockerClient;
-import com.radixdlt.test.network.client.docker.LocalDockerNetworkCreator;
+import com.radixdlt.test.network.client.docker.DockerNetworkCreator;
 import com.radixdlt.test.network.client.docker.RemoteDockerClient;
 import com.radixdlt.test.utils.universe.UniverseVariables;
 import org.apache.logging.log4j.LogManager;
@@ -50,7 +50,7 @@ public class RadixNetwork {
         if (configuration.getDockerConfiguration().shouldInitializeNetwork()
             && configuration.getType() == RadixNetworkConfiguration.Type.LOCALNET) {
             var localDockerClient = new LocalDockerClient(configuration.getDockerConfiguration());
-            universeVariables = LocalDockerNetworkCreator.createNewLocalNetwork(configuration, localDockerClient);
+            universeVariables = DockerNetworkCreator.createNewLocalNetwork(configuration, localDockerClient);
         }
 
         var networkId = configuration.pingJsonRpcApi();
