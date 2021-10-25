@@ -68,7 +68,9 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
@@ -79,63 +81,42 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 
 /**
-* If quorum is formed on a timeout (timeout certificate), and there's a node that's a single view behind
- * (i.e. it didn't participate in forming of TC). Then it should be able to sync up (move to next view)
- * as soon as it receives a proposal (with a TC). BFTSync should then immediately switch to next view
- * without any additional sync requests.
- * The setup is as follows:
- * 1. there are 4 nodes
- * 2. proposal is sent by the leader (0) but only received by 2 nodes (including the leader): 0 and 1
- * 3. two nodes vote on a proposal (0 and 1)
- * 4. two nodes vote on an empty timeout vertex and broadcast the vote (2 and 3)
- * 5. nodes 0 and 1 resend (broadcast) their vote with a timeout flag
- * 6. node 0 doesn't receive any of the above votes
- * 7. nodes 1, 2 and 3 can form a valid TC out of the votes they received, and they switch to the next view
- * 8. next leader (node 1) sends out a proposal
- * 9. proposal (with a valid TC) is received by node 0 (which is still on previous view)
- * 10. node 0 is able to move to the next view just by processing the proposal's TC (no additional sync requests)
- * Expected result: node 0 is at view 2 and no sync requests have been sent
+ * TODO explain me :)
  */
-public class SyncToTimeoutQcTest {
+public class InvalidMessagesTest {
 
 	private static final int NUM_NODES = 4;
 
 	private final Random random = new Random(123456);
 
 	@Test
-	public void syncToTimeoutQcTest() {
+	public void invalidVertexRequest() {
 		final DeterministicTest test = DeterministicTest.builder()
 			.numNodes(NUM_NODES)
 			.messageSelector(MessageSelector.randomSelector(random))
 			.messageMutator(
-				dropProposalsToNodes(ImmutableSet.of(2, 3))
-					.andThen(dropVotesToNode(0))
+				addSomeInvalidGetVerticesRequestsToNode(1)
 			)
 			.buildWithEpochs(View.of(10))
 			.runUntil(DeterministicTest.viewUpdateOnNode(View.of(2), 0));
 
-		for (int nodeIndex = 0; nodeIndex < NUM_NODES; ++nodeIndex) {
-			final var counters = test.getSystemCounters(nodeIndex);
-			// no bft sync requests were needed
-			assertEquals(0, counters.get(CounterType.BFT_SYNC_REQUESTS_SENT));
-		}
+		// TODO - We currently get an uncaught exception, but we should probably validate success of some kind
 	}
 
-	private static MessageMutator dropVotesToNode(int nodeIndex) {
-		return (message, queue) -> {
-			final var msg = message.message();
-			if (msg instanceof Vote) {
-				return message.isToNode(nodeIndex);
-			}
-			return false;
+	private static MessageMutator addSomeInvalidGetVerticesRequestsToNode(int nodeIndex) {
+		final var mutatorState = new Object() {
+			boolean alreadySentAdditionalMessages = false;
 		};
-	}
-
-	private static MessageMutator dropProposalsToNodes(ImmutableSet<Integer> nodesIndices) {
 		return (message, queue) -> {
-			final var msg = message.message();
-			if (msg instanceof Proposal) {
-				return message.isToOneOf(nodesIndices);
+			// When some message is sent to nodeIndex, we piggy-back on it passing through to additionally
+			// send some invalid message/s
+			if (message.isToNode(nodeIndex) && !mutatorState.alreadySentAdditionalMessages) {
+				queue.add(message.withReplacementMessage(new GetVerticesRequest(
+					HashUtils.zero256(),
+					-1 // Override count to invalid value
+				)));
+				mutatorState.alreadySentAdditionalMessages = true;
+				return false; // Don't drop message that we're piggy-backing on
 			}
 			return false;
 		};

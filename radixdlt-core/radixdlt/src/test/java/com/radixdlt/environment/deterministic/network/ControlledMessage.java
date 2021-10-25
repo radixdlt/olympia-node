@@ -64,8 +64,11 @@
 
 package com.radixdlt.environment.deterministic.network;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
+
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -92,6 +95,18 @@ public final class ControlledMessage {
 
 	public ControlledMessage withArrivalTime(long arrivalTime) {
 		return new ControlledMessage(this.origin, this.channelId, this.message, this.typeLiteral, arrivalTime);
+	}
+
+	public ControlledMessage withReplacementMessage(Object message) {
+		return new ControlledMessage(this.origin, this.channelId, message, this.typeLiteral, this.arrivalTime);
+	}
+
+	public boolean isToNode(int nodeIndex) {
+		return channelId().receiverIndex() == nodeIndex;
+	}
+
+	public boolean isToOneOf(Collection<Integer> nodeIndices) {
+		return nodeIndices.contains(channelId().receiverIndex());
 	}
 
 	public BFTNode origin() {
