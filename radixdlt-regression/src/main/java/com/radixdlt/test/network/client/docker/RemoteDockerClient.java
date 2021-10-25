@@ -27,10 +27,10 @@ public class RemoteDockerClient implements DockerClient {
         var remoteDockerClient = new RemoteDockerClient(configuration);
         DockerNetworkCreator.initializeAndStartNode(remoteDockerClient,
             configuration.getDockerConfiguration().getDockerLogin(),
-            "3.6.243.81",
-            "eu.gcr.io/dev-container-repo/radixdlt-core:develop-dcc89fe4b",
-            "radix://tn31qwm8ystgjjj6qhyq3cvu9d5t9r0u7vrxukfpeutxkwauefqhand2t0k7lx@65.2.22.148",
-            "radixdlt_core_1");
+            "host",
+            "image",
+            "trusted",
+            "container");
     }
 
     private static Logger logger = LoggerFactory.getLogger(RemoteDockerClient.class);
@@ -89,12 +89,11 @@ public class RemoteDockerClient implements DockerClient {
                     if ((inputStream.available() > 0) || (errorStream.available() > 0)) {
                         continue;
                     }
-                    logger.debug("Command exit-status: " + channel.getExitStatus());
+                    logger.debug("Command exit-status: {}", channel.getExitStatus());
                     break;
                 }
                 TestingUtils.sleepMillis(250);
             }
-
             var error = errorBuffer.toString(StandardCharsets.UTF_8);
             var output = outputBuffer.toString(StandardCharsets.UTF_8);
             return (StringUtils.isBlank(output)) ? error : output;

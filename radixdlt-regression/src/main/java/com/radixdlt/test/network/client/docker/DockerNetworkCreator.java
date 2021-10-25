@@ -9,12 +9,12 @@ import com.radixdlt.test.network.client.RadixHttpClient;
 import com.radixdlt.test.utils.TestingUtils;
 import com.radixdlt.test.utils.universe.UniverseUtils;
 import com.radixdlt.test.utils.universe.UniverseVariables;
+import kong.unirest.json.JSONObject;
 import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.Durations;
-import org.json.JSONObject;
 
 import java.util.List;
 import java.util.Objects;
@@ -79,40 +79,26 @@ public class DockerNetworkCreator {
     /**
      * will bring up a fresh new node, without a pre-existing ledger, and sync it to the network
      *
-     * @param containerName TODO write
+     * @param dockerLogin
+     * @param containerName
      */
     public static void initializeAndStartNode(RemoteDockerClient dockerClient, String dockerLogin, String host, String image,
                                               String trustedNode, String containerName) {
-        // get genesis tx
-        var trustedNodeIP = trustedNode.split("\\@")[1];
-        logger.debug("Will fetch genesis tx from {} ", trustedNodeIP);
-        var genesis = dockerClient.runCommand(trustedNodeIP, "docker exec " + containerName + " bash -c 'cat ./genesis.json'");
-        if (StringUtils.isBlank(genesis)) {
-            throw new IllegalArgumentException("Genesis tx not found, cannot proceed.");
-        }
-        var genesisTransactionHex = new JSONObject(genesis).getString("genesis");
-        logger.debug("Got genesis tx");
-
-        // get network id
-        var networkId = dockerClient.runCommand(trustedNodeIP, "docker exec " + containerName
-            + " bash -c 'env | grep 'NETWORK_ID' | rev | head -c1'");
-        logger.debug("Got network ID: {}", networkId);
-
-        // login to the registry
-        logger.info(dockerClient.runCommand(host, dockerLogin));
+        var trustedNodeHost = trustedNode.split("\\@")[1];
+        var genesisTransaction = getGenesisTransaction(dockerClient, trustedNodeHost, containerName);
+        var networkId = getNetworkId(dockerClient, trustedNodeHost, containerName);
+        loginDockerRepository(dockerClient, host, dockerLogin);
 
         // prepare env properties
         var universeVariables = UniverseUtils.generateEnvironmentVariables(1);
         var nodePrivateKey = universeVariables.getValidatorKeypairs().get(0).getPrivateKey();
         var env = DockerNetworkCreator.createEnvironmentProperties(nodePrivateKey, host, trustedNode,
-            "'" + genesisTransactionHex + "'", 8080, 3333);
+            genesisTransaction, 8080, 3333);
         env.add("RADIXDLT_NETWORK_ID=" + networkId);
         var envString = String.join(" -e ", env);
 
         // start the node
-        var command = String.format("docker run --name test_core_1 -d -e %s %s",
-            envString,
-            image);
+        var command = String.format("docker run --name test_core_1 -d -e %s %s", envString, image);
         logger.info("Starting node with command [{}]", command);
         logger.info(dockerClient.runCommand(host, command));
 
@@ -124,7 +110,7 @@ public class DockerNetworkCreator {
                 logger.info("Node is UP");
                 return true;
             } else {
-                logger.info("Node status is still {}..." + status);
+                logger.info("Node status is still {}...", status);
                 return false;
             }
         });
@@ -149,7 +135,6 @@ public class DockerNetworkCreator {
             }
             var dockerContainerName = configuration.getDockerConfiguration().getContainerName();
             var containerName = String.format(dockerContainerName, index);
-
             var keyPair = variables.getValidatorKeypairs().get(index);
             return "radix://" + keyPair.getPublicKey() + "@" + containerName;
         }).filter(Objects::nonNull).collect(Collectors.toList());
@@ -214,6 +199,38 @@ public class DockerNetworkCreator {
         exposedPorts.add(exposedSecondaryPort);
 
         return HostConfig.newHostConfig().withPortBindings(portBindings).withCapAdd(Capability.NET_ADMIN);
+    }
+
+    private static String getGenesisTransaction(RemoteDockerClient dockerClient, String host, String containerName) {
+        logger.debug("Will fetch genesis tx from {} ", host);
+        var genesis = dockerClient.runCommand(host, "docker exec " + containerName + " bash -c 'cat ./genesis.json'");
+        if (StringUtils.isBlank(genesis)) {
+            throw new IllegalArgumentException("Genesis tx not found, cannot proceed.");
+        }
+        var genesisTransactionHex = new JSONObject(genesis).getString("genesis");
+        logger.debug("Got genesis tx");
+        return genesisTransactionHex;
+    }
+
+    private static int getNetworkId(RemoteDockerClient dockerClient, String host, String containerName) {
+        logger.debug("Will fetch genesis tx from {} ", host);
+        var networkId = dockerClient.runCommand(host, "docker exec " + containerName
+            + " bash -c 'env | grep 'NETWORK_ID' | rev | head -c1'");
+        logger.debug("Got network ID: {}", networkId);
+        try {
+            return Integer.parseInt(networkId);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Network ID was not a number: " + networkId);
+        }
+    }
+
+    /**
+     * Images may need to login a docker repository and this method can run such a command at a host
+     */
+    private static String loginDockerRepository(RemoteDockerClient dockerClient, String host, String dockerLoginCommand) {
+        var output = dockerClient.runCommand(host, dockerLoginCommand).replace("\n", "");
+        logger.info(output);
+        return output;
     }
 
 }

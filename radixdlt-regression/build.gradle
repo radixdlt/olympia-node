@@ -126,24 +126,24 @@ dependencies {
     api project(':radixdlt')
 
     api 'com.github.bitcoinj:bitcoinj:7c31dcb'
-
     implementation 'org.bouncycastle:bcprov-jdk15on'
     implementation 'org.bouncycastle:bcpkix-jdk15on'
 
     implementation 'com.google.guava:guava'
     implementation 'org.slf4j:slf4j-simple:2.0.0-alpha2'
-    implementation 'com.github.docker-java:docker-java:3.2.11'
-    implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.11'
+    implementation 'com.github.docker-java:docker-java:3.2.12'
+    implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.2.12'
     implementation 'org.buildobjects:jproc:2.6.2'
     implementation 'org.awaitility:awaitility:4.1.0'
     implementation 'com.github.mwiede:jsch:0.1.68'
+    implementation 'com.konghq:unirest-java:3.13.0'
 
     // the project lobmok dependencies.
     // Normally the lombok plugin is used, but for some reason it doesn't work so the deps are added manually
-    compileOnly 'org.projectlombok:lombok:1.18.20'
-    annotationProcessor 'org.projectlombok:lombok:1.18.20'
-    testCompileOnly 'org.projectlombok:lombok:1.18.20'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
+    compileOnly 'org.projectlombok:lombok:1.18.22'
+    annotationProcessor 'org.projectlombok:lombok:1.18.22'
+    testCompileOnly 'org.projectlombok:lombok:1.18.22'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
 
     testImplementation 'junit:junit'
     testImplementation 'org.assertj:assertj-core'

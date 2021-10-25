@@ -127,7 +127,6 @@ public final class TestingUtils {
     public static void waitForNodeToBeUp(RadixHttpClient httpClient, String rootUrl) {
         await().pollDelay(Durations.TWO_HUNDRED_MILLISECONDS).atMost(MAX_TIME_TO_WAIT_FOR_NODES_UP).ignoreExceptions().until(() -> {
             var status = httpClient.getHealthStatus(rootUrl);
-            logger.info("\n\nTMP DEBUG LINE: " + status + "\n\n");
             if (!status.equals(RadixHttpClient.HealthStatus.UP)) {
                 return false;
             }

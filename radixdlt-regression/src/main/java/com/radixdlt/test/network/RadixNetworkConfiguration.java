@@ -109,7 +109,8 @@ public class RadixNetworkConfiguration {
                 });
             return networkId.intValue();
         } catch (ConditionTimeoutException e) {
-            throw new RadixApiException(Failure.failure(-1, "Could not get the network's ID within " + NETWORK_PING_PATIENCE));
+            throw new RadixApiException(Failure.failure(-1, "Could not get the network's ID within "
+                + NETWORK_PING_PATIENCE));
         }
     }
 

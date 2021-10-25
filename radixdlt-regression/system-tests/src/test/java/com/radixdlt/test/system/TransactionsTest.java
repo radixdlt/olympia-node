@@ -23,7 +23,7 @@ import org.radix.Radix;
 import java.util.Optional;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class Transactions extends SystemTest {
+class TransactionsTest extends SystemTest {
 
     protected static final Logger logger = LogManager.getLogger();
 
@@ -38,7 +38,7 @@ public class Transactions extends SystemTest {
     private final Account account;
     private final ValidatorDTO firstValidator;
 
-    public Transactions() {
+    public TransactionsTest() {
         // env properties specific to this test:
         var seedPhrase = TestingUtils.getEnvWithDefault("RADIXDLT_TESTING_ACCOUNT_SEED_PHRASE", "");
 
@@ -53,19 +53,19 @@ public class Transactions extends SystemTest {
     }
 
     @BeforeEach
-    public void callFaucet() {
+    void callFaucet() {
         faucet(account);
     }
 
     @Test
-    public void token_transfer() {
+    void token_transfer() {
         var txId = account.transfer(account1, Amount.ofMicroTokens(2500), createTestMessageOptional());
         logger.info("Token transfer txId: {}", txId);
     }
 
     @Test
     @Order(1)
-    public void stake() {
+    void stake() {
         faucet(account, AMOUNT_TO_STAKE);
         logger.info("Staking {} to validator {}...", AMOUNT_TO_STAKE, firstValidator.getAddress().toString());
         var txId = account.stake(firstValidator.getAddress(), AMOUNT_TO_STAKE, createTestMessageOptional());
@@ -74,7 +74,7 @@ public class Transactions extends SystemTest {
 
     @Test
     @Order(2)
-    public void unstake() {
+    void unstake() {
         var nid = account.network().id().getNetworkId();
         logger.info("Unstaking {} from validator {}...", AMOUNT_TO_STAKE, firstValidator.getAddress().toString(nid));
         var txId = account.unstake(firstValidator.getAddress(), AMOUNT_TO_STAKE, Optional.empty());
@@ -83,7 +83,7 @@ public class Transactions extends SystemTest {
 
     @Test
     @Order(3)
-    public void mutable_supply_token_creation() {
+    void mutable_supply_token_creation() {
         faucet(account, Amount.ofTokens(100));
         var timestamp = System.currentTimeMillis();
         var txId = account.mutableSupplyToken(
@@ -98,20 +98,20 @@ public class Transactions extends SystemTest {
 
     @Test
     @Order(4)
-    public void mint_mutable_supply_token() {
+    void mint_mutable_supply_token() {
         var txId = account.mint(TOKENS_TO_MINT, "mtt", createTestMessageOptional());
         logger.info("Token {} mint txId: {}", "mtt", txId);
     }
 
     @Test
     @Order(5)
-    public void burn_mutable_supply_token() {
+    void burn_mutable_supply_token() {
         var txId = account.burn(TOKENS_TO_MINT, "mtt", createTestMessageOptional());
         logger.info("Token {} burn txId: {}", "mtt", txId);
     }
 
     @Test
-    public void fixed_supply_token_creation() {
+    void fixed_supply_token_creation() {
         faucet(account, Amount.ofTokens(100));
         var timestamp = System.currentTimeMillis();
         var supply = Amount.ofTokens(1000000);
