@@ -299,6 +299,7 @@ ospackage {
 
     buildDeb {
         dependsOn += [installDist]
+        version = project.version.replaceAll(/[^A-Za-z0-9.+:~-]/, '')
     }
     buildRpm {
         dependsOn += [installDist]
