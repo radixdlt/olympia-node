@@ -1,0 +1,1287 @@
+openapi: 3.0.0
+info:
+  license:
+    name: MIT
+  title: Wallet/Explorer Api
+  version: 2.0.0
+servers:
+- url: http://localhost:8080
+paths:
+  /network:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NetworkRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkResponse'
+          description: The Network
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+          description: Unexpected error
+      summary: Get Network
+      x-contentType: application/json
+      x-accepts: application/json
+  /token:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenInfoRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenInfoResponse'
+          description: Token info
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+          description: Unexpected error
+      summary: Get Token Info
+      x-contentType: application/json
+      x-accepts: application/json
+  /account/balances:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountBalancesRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountBalancesResponse'
+          description: List of token balances
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+          description: Unexpected error
+      summary: Get Token Balances
+      x-contentType: application/json
+      x-accepts: application/json
+  /account/stakes:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountStakesRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountStakesResponse'
+          description: List of Stake Positions
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+          description: Unexpected error
+      summary: Get Stake Positions
+      x-contentType: application/json
+      x-accepts: application/json
+  /account/unstakes:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountUnstakesRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountUnstakesResponse'
+          description: List of Unstake Positions
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+          description: Unexpected error
+      summary: Get Unstake Positions
+      x-contentType: application/json
+      x-accepts: application/json
+  /account/transactions:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountTransactionsRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountTransactionsResponse'
+          description: List of Transactions
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+          description: Unexpected error
+      summary: Get Account Transactions
+      x-contentType: application/json
+      x-accepts: application/json
+  /validator:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidatorInfoRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidatorInfoResponse'
+          description: Validator Info
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+          description: Unexpected error
+      summary: Get Validator Info
+      x-contentType: application/json
+      x-accepts: application/json
+  /validators:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidatorsRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidatorsResponse'
+          description: Ordered list of validators
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+          description: Unexpected error
+      summary: Get Validators
+      x-contentType: application/json
+      x-accepts: application/json
+  /transaction:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionInfoRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionInfoResponse'
+          description: Transaction info
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+          description: Unexpected error
+      summary: Get Transaction Info
+      x-contentType: application/json
+      x-accepts: application/json
+  /transaction/status:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionStatusRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionStatusResponse'
+          description: Transaction Status
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+          description: Unexpected error
+      summary: Get Transaction Status
+      x-contentType: application/json
+      x-accepts: application/json
+  /construction/build:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConstructionBuildRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstructionBuildResponse'
+          description: An unsigned transaction
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+          description: Unexpected error
+      summary: Build Transaction
+      x-contentType: application/json
+      x-accepts: application/json
+  /construction/finalize:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConstructionFinalizeRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstructionFinalizeResponse'
+          description: Final Signed Transaction
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+          description: Unexpected error
+      summary: Finalize Transaction
+      x-contentType: application/json
+      x-accepts: application/json
+  /construction/submit:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConstructionSubmitRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstructionSubmitResponse'
+          description: Successful Submission
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstructionSubmitUnexpectedError'
+          description: Unexpected error
+      summary: Submit Transaction
+      x-contentType: application/json
+      x-accepts: application/json
+components:
+  schemas:
+    AccountBalancesRequest:
+      additionalProperties: false
+      example:
+        accountAddress: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+      properties:
+        accountAddress:
+          pattern: ^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+      required:
+      - accountAddress
+      type: object
+    AccountBalancesResponse:
+      additionalProperties: false
+      example:
+        balances:
+        - amount: "1000000000000000000000"
+          rri: xrd_rr1qy5wfsfh
+      properties:
+        balances:
+          items:
+            $ref: '#/components/schemas/AccountBalancesResponse_balances'
+          type: array
+      required:
+      - balances
+      type: object
+    AccountStakesRequest:
+      example:
+        accountAddress: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+      properties:
+        accountAddress:
+          pattern: ^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+      required:
+      - accountAddress
+      type: object
+    AccountStakesResponse:
+      additionalProperties: false
+      example:
+        stakes:
+        - validatorAddress: rv1qg923hl7f725cs06eg5gmdcy4pfvpa8mfnjcw669traquj28c96z5w0rld0
+          amount: "1000000000000000000000"
+      properties:
+        stakes:
+          items:
+            $ref: '#/components/schemas/AccountStakesResponse_stakes'
+          type: array
+      required:
+      - stakes
+      type: object
+    AccountUnstakesRequest:
+      example:
+        accountAddress: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+      properties:
+        accountAddress:
+          pattern: ^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+      required:
+      - accountAddress
+      type: object
+    AccountUnstakesResponse:
+      additionalProperties: false
+      example:
+        unstakes:
+        - validatorAddress: rv1qg923hl7f725cs06eg5gmdcy4pfvpa8mfnjcw669traquj28c96z5w0rld0
+          amount: "1000000000000000000000"
+      properties:
+        unstakes:
+          items:
+            $ref: '#/components/schemas/AccountUnstakesResponse_unstakes'
+          type: array
+      required:
+      - unstakes
+      type: object
+    AccountTransactionsRequest:
+      additionalProperties: false
+      example:
+        accountAddress: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+        cursor: 1
+        limit: 1
+      properties:
+        accountAddress:
+          pattern: ^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+        cursor:
+          type: integer
+        limit:
+          type: integer
+      required:
+      - accountAddress
+      type: object
+    AccountTransactionsResponse:
+      additionalProperties: false
+      example:
+        nextCursor: 0
+        totalCount: 1
+        transactions:
+        - size: 360
+          accountingEntries:
+          - owner: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+            delta: "96000000000000000000000000"
+            asset: xrd_rr1qy5wfsfh
+          - owner: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+            delta: -96000000072000000000000000
+            asset: xrd_rr1qy5wfsfh
+          fee: "72000000000000000"
+          transactionIdentifier: 4db58b950fcf446140dd945c6adfd06daa0b520f7eddf0467583d96babff579d
+          raw: 07ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842000000010100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192155e6641985800000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b6010000000000000000000000000000000000000000075df8c7a7d18d253858000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab010000000000000000000000000000000000000000004f68ca6d8cd91c60000000000b013509a88fdd0d526858746e9d92aecaaccc1169b3e6c311a3d20a61c600df5a8e32647077afce8efe17eae30fddcd31ba550e3b58e5d04f1f81af096b13128e94
+          actions:
+          - amount: "96000000000000000000000000"
+            rri: xrd_rr1qy5wfsfh
+            from: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+            to: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+            type: TokenTransfer
+          events: []
+          stateVersion: 6987832
+          timestamp: 2021-08-09T17:37:55.210Z
+      properties:
+        totalCount:
+          minimum: 0
+          type: integer
+        nextCursor:
+          minimum: 0
+          type: integer
+        transactions:
+          items:
+            $ref: '#/components/schemas/Transaction'
+          type: array
+      required:
+      - totalCount
+      - transactions
+      type: object
+    TokenTransfer:
+      allOf:
+      - $ref: '#/components/Action'
+      - $ref: '#/components/schemas/TokenTransfer_allOf'
+    StakeTokens:
+      allOf:
+      - $ref: '#/components/Action'
+      - $ref: '#/components/schemas/StakeTokens_allOf'
+    Action:
+      discriminator:
+        mapping:
+          TokenTransfer: '#/components/TokenTransfer'
+          StakeTokens: '#/components/StakeTokens'
+        propertyName: type
+      properties:
+        type:
+          type: string
+      required:
+      - type
+      type: object
+    ConstructionBuildRequest:
+      example:
+        actions:
+        - type: TokenTransfer
+          from: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+          to: rdx1qspcvwwuf8s549zyspz683v4n93g9kzpn6u6a9yalwzt00zghg75lmsftwv29
+          amount: "123000000000000000"
+          rri: xrd_rr1qy5wfsfh
+        feePayer: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+      properties:
+        actions:
+          items:
+            $ref: '#/components/Action'
+          type: array
+        feePayer:
+          pattern: ^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+        message:
+          type: string
+        disableResourceAllocationAndDestroy:
+          type: boolean
+      required:
+      - actions
+      - feePayer
+      type: object
+    ConstructionBuildSuccessResponse:
+      allOf:
+      - $ref: '#/components/schemas/ConstructionBuildResponse'
+      - $ref: '#/components/schemas/ConstructionBuildSuccessResponse_allOf'
+    ConstructionBuildErrorMessageTooLong:
+      properties:
+        limit:
+          type: integer
+        actual:
+          type: integer
+      required:
+      - actual
+      - limit
+      type: object
+    ConstructionBuildErrorNotEnoughResources:
+      properties:
+        requested:
+          pattern: ^[0-9]+$
+          type: string
+        available:
+          pattern: ^[0-9]+$
+          type: string
+      required:
+      - available
+      - requested
+      type: object
+    ConstructionBuildErrorMinimumStake:
+      properties:
+        requested:
+          pattern: ^[0-9]+$
+          type: string
+        minimum:
+          pattern: ^[0-9]+$
+          type: string
+      required:
+      - minimum
+      - requested
+      type: object
+    ConstructionBuildErrorCouldNotConstructFees:
+      properties:
+        attempts:
+          type: integer
+      required:
+      - minimum
+      - requested
+      type: object
+    ConstructionBuildErrorAboveMaximumRakeIncrease:
+      properties:
+        limit:
+          pattern: ^[0-9]+$
+          type: string
+        attempted:
+          pattern: ^[0-9]+$
+          type: string
+      required:
+      - minimum
+      - requested
+      type: object
+    ConstructionBuildErrorInvalidStakePermissions:
+      properties:
+        owner:
+          pattern: ^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+        user:
+          pattern: ^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+      required:
+      - minimum
+      - requested
+      type: object
+    ConstructionBuildError:
+      discriminator:
+        mapping:
+          MESSAGE_TOO_LONG: '#/components/schemas/ConstructionBuildErrorMessageTooLong'
+          NOT_ENOUGH_RESOURCES: '#/components/schemas/ConstructionBuildErrorNotEnoughResources'
+          BELOW_MINIMUM_STAKE: '#/components/schemas/ConstructionBuildErrorMinimumStake'
+          COULD_NOT_CONSTRUCT_FEES: '#/components/schemas/ConstructionBuildErrorCouldNotConstructFees'
+          ABOVE_MAXIMUM_RAKE_INCREASE: '#/components/schemas/ConstructionBuildErrorAboveMaximumRakeIncrease'
+          INVALID_STAKE_PERMISSIONS: '#/components/schemas/ConstructionBuildErrorInvalidStakePermissions'
+        propertyName: errorType
+      properties:
+        errorType:
+          type: string
+      required:
+      - errorType
+      type: object
+    ConstructionBuildErrorResponse:
+      allOf:
+      - $ref: '#/components/schemas/ConstructionBuildResponse'
+      - $ref: '#/components/schemas/ConstructionBuildErrorResponse_allOf'
+    ConstructionBuildResponse:
+      discriminator:
+        mapping:
+          success: '#/components/ConstructionBuildSuccessResponse'
+          error: '#/components/ConstructionBuildErrorResponse'
+        propertyName: result
+      example:
+        fee: "72000000000000000"
+        unsignedTransaction: 07ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842000000020100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a636aa8c02c00000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da3298ae6ecf94cc8000020045060004038639dc49e14a94448045a3c595996282d8419eb9ae949dfb84b7bc48ba3d4fee0100000000000000000000000000000000000000000000000001b4fbd92b5f800000
+        payloadToSign: 28f4cf3b398e0c7256a8042d3c7a024bc308997dbc10db03c5eb6152f16f7673
+        notifications: []
+      properties:
+        result:
+          type: string
+      required:
+      - result
+      type: object
+    MempoolFullError:
+      type: object
+    StateConflicError:
+      type: object
+    InvalidTransactionError:
+      properties:
+        message:
+          type: string
+      type: object
+    ConstructionSubmitUnexpectedError:
+      discriminator:
+        mapping:
+          INTERNAL_SERVER_ERROR: '#/components/schemas/InternalServerError'
+          INVALID_JSON: '#/components/schemas/InvalidJsonError'
+          INVALID_REQUEST: '#/components/schemas/InvalidRequestError'
+          MEMPOOL_FULL: '#/components/schemas/MempoolError'
+          STATE_CONFLICT: '#/components/schemas/StateConflictError'
+          INVALID_TRANSACTION: '#/components/schemas/InvalidTransactionError'
+        propertyName: message
+      properties:
+        message:
+          type: string
+      required:
+      - message
+      type: object
+    ConstructionFinalizeRequest:
+      additionalProperties: false
+      example:
+        unsignedTransaction: 07ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842000000020100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a636aa8c02c00000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da3298ae6ecf94cc8000020045060004038639dc49e14a94448045a3c595996282d8419eb9ae949dfb84b7bc48ba3d4fee0100000000000000000000000000000000000000000000000001b4fbd92b5f800000
+        signature:
+          publicKey: 03dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab
+          bytes: ""
+      properties:
+        unsignedTransaction:
+          type: string
+        signature:
+          $ref: '#/components/schemas/ConstructionFinalizeRequest_signature'
+      required:
+      - signature
+      - unsignedTransaction
+      type: object
+    ConstructionFinalizeResponse:
+      additionalProperties: false
+      example:
+        signedTransaction: signedTransaction
+      properties:
+        signedTransaction:
+          type: string
+      required:
+      - signedTransaction
+      type: object
+    ConstructionSubmitRequest:
+      additionalProperties: false
+      example:
+        signedTransaction: signedTransaction
+      properties:
+        signedTransaction:
+          type: string
+      required:
+      - signedTransaction
+      type: object
+    ConstructionSubmitResponse:
+      additionalProperties: false
+      example:
+        transactionIdentifier: transactionIdentifier
+      properties:
+        transactionIdentifier:
+          type: string
+      required:
+      - transactionIdentifier
+      type: object
+    NetworkRequest:
+      additionalProperties: false
+      example: {}
+      type: object
+    NetworkResponse:
+      additionalProperties: false
+      example:
+        network:
+          id: 1
+          name: mainnet
+      properties:
+        network:
+          $ref: '#/components/schemas/Network'
+      required:
+      - network
+      type: object
+    InternalServerError:
+      properties:
+        exception:
+          type: string
+        cause:
+          type: string
+      type: object
+    InvalidJsonError:
+      properties:
+        cause:
+          type: string
+      type: object
+    InvalidRequestError:
+      properties:
+        pointer:
+          type: string
+        cause:
+          type: string
+      type: object
+    UnexpectedError:
+      discriminator:
+        mapping:
+          INTERNAL_SERVER_ERROR: '#/components/schemas/InternalServerError'
+          INVALID_JSON: '#/components/schemas/InvalidJsonError'
+          INVALID_REQUEST: '#/components/schemas/InvalidRequestError'
+        propertyName: message
+      properties:
+        message:
+          type: string
+      required:
+      - message
+      type: object
+    TokenInfoRequest:
+      additionalProperties: false
+      example:
+        rri: xrd_rr1qy5wfsfh
+      properties:
+        rri:
+          pattern: ^[!\"#$%&'()*+,-.\/0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\\\]\^_`abcdefghijklmnopqrstuvwxyz{|}~]{1,83}_r[rb]1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,90}$
+          type: string
+      type: object
+    TokenInfoResponse:
+      example:
+        token:
+        - accounting:
+            currentSupply: "8000000000000000000000000000"
+            totalMinted: "8000000000000000000000000000"
+            totalBurned: "0"
+          properties:
+            name: Doge³
+            rri: dgc_rr1qvnre767vp607yr9pqzqhlprg72q2ny5pj4agn53k0pqy6huxw
+            description: Doge³ Cerby - Doge but on roïds
+            iconURL: https://i.ibb.co/hysnndT/ico.png
+            tokenInfoURL: https://www.radixdlt.com/
+            symbol: dgc
+            isSupplyMutable: false
+            granularity: "1"
+      properties:
+        token:
+          items:
+            $ref: '#/components/schemas/Token'
+          maxItems: 1
+          type: array
+      required:
+      - token
+      type: object
+    TransactionInfoRequest:
+      example:
+        transactionIdentifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
+      properties:
+        transactionIdentifier:
+          type: string
+      required:
+      - transactionIdentifier
+      type: object
+    TransactionInfoResponse:
+      additionalProperties: false
+      example:
+        transaction:
+        - size: 360
+          accountingEntries:
+          - owner: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+            delta: "24000000000000000000000000"
+            asset: xrd_rr1qy5wfsfh
+          - owner: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+            delta: -24000000072000000000000000
+            asset: xrd_rr1qy5wfsfh
+          fee: "72000000000000000"
+          transactionIdentifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
+          raw: 07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf
+          actions:
+          - amount: "24000000000000000000000000"
+            rri: xrd_rr1qy5wfsfh
+            from: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+            to: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+            type: TokenTransfer
+          events: []
+          stateVersion: 40898
+          timestamp: 2021-07-27T17:35:10.726Z
+      properties:
+        transaction:
+          items:
+            $ref: '#/components/schemas/Transaction'
+          maxItems: 1
+          type: array
+      required:
+      - transaction
+      type: object
+    TransactionStatusRequest:
+      additionalProperties: false
+      example:
+        transactionIdentifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
+      properties:
+        transactionIdentifier:
+          type: string
+      required:
+      - transactionIdentifier
+      type: object
+    TransactionStatusResponse:
+      additionalProperties: false
+      example:
+        status: COMMITTED
+      properties:
+        status:
+          enum:
+          - MEMPOOL
+          - COMMITTED
+          - FAILED
+          - NOT_FOUND
+          type: string
+      required:
+      - status
+      type: object
+    ValidatorInfoRequest:
+      additionalProperties: false
+      example:
+        validatorIdentifier: rv1qf2x63qx4jdaxj83kkw2yytehvvmu6r2xll5gcp6c9rancmrfsgfwttnczx
+      properties:
+        validatorIdentifier:
+          pattern: ^(r|t|d)v[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+      required:
+      - validatorIdentifier
+      type: object
+    ValidatorInfoResponse:
+      additionalProperties: false
+      example:
+        validator:
+          stake:
+            exitingOwnership: "0"
+            currentStake: "100000000000000000000"
+            currentOwnership: "100000000000000000000"
+            nextEpochEstimatedOwnerStake: "0"
+            preparedStake: "0"
+            nextEpochEstimatedStake: "100000000000000000000"
+          properties:
+            address: rv1qf2x63qx4jdaxj83kkw2yytehvvmu6r2xll5gcp6c9rancmrfsgfwttnczx
+            infoURL: https://learn.radixdlt.com/article/will-the-radix-foundation-operate-validator-nodes
+            validatorFee: "100.0"
+            name: Radix Foundation eu-west-1 node0 mainnet
+            registered: true
+            ownerAddress: rdx1qspldshtx0s2l2rcnaqtqpqz8vwps2y6d9se0wq25xrg92l66cmp6mcnc6pyu
+            externalStakeAccepted: false
+          uptime:
+            uptimePercentage: "100.00"
+            proposalsMissed: 0
+            proposalsCompleted: 108320
+      properties:
+        validator:
+          $ref: '#/components/schemas/Validator'
+      type: object
+    ValidatorsRequest:
+      additionalProperties: false
+      example:
+        limit: 10
+      properties:
+        limit:
+          minimum: 1
+          type: integer
+        offset:
+          minimum: 0
+          type: integer
+      type: object
+    ValidatorsResponse:
+      additionalProperties: false
+      example:
+        validators:
+        - stake:
+            exitingOwnership: "0"
+            currentStake: "100000000000000000000"
+            currentOwnership: "100000000000000000000"
+            nextEpochEstimatedOwnerStake: "0"
+            preparedStake: "0"
+            nextEpochEstimatedStake: "100000000000000000000"
+          properties:
+            address: rv1qf2x63qx4jdaxj83kkw2yytehvvmu6r2xll5gcp6c9rancmrfsgfwttnczx
+            infoURL: https://learn.radixdlt.com/article/will-the-radix-foundation-operate-validator-nodes
+            validatorFee: "100.0"
+            name: Radix Foundation eu-west-1 node0 mainnet
+            registered: true
+            ownerAddress: rdx1qspldshtx0s2l2rcnaqtqpqz8vwps2y6d9se0wq25xrg92l66cmp6mcnc6pyu
+            externalStakeAccepted: false
+          uptime:
+            uptimePercentage: "100.00"
+            proposalsMissed: 0
+            proposalsCompleted: 108320
+      properties:
+        validators:
+          items:
+            $ref: '#/components/schemas/Validator'
+          type: array
+        nextOffset:
+          minimum: 0
+          type: integer
+      required:
+      - validators
+      type: object
+    Network:
+      additionalProperties: false
+      example:
+        id: 1
+        name: mainnet
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+      - id
+      - name
+      type: object
+    Validator:
+      additionalProperties: false
+      example:
+        stake:
+          exitingOwnership: "0"
+          delegators:
+            rdx1qspldshtx0s2l2rcnaqtqpqz8vwps2y6d9se0wq25xrg92l66cmp6mcnc6pyu:
+              currentOwnership: "100000000000000000000"
+              nextEpochEstimatedStake: 0
+          currentStake: "100000000000000000000"
+          currentOwnership: "100000000000000000000"
+          nextEpochEstimatedOwnerStake: "0"
+          preparedStake: "0"
+          nextEpochEstimatedStake: "100000000000000000000"
+        properties:
+          validatorAddress: rv1qf2x63qx4jdaxj83kkw2yytehvvmu6r2xll5gcp6c9rancmrfsgfwttnczx
+          infoURL: https://learn.radixdlt.com/article/will-the-radix-foundation-operate-validator-nodes
+          validatorFee: "100.0"
+          name: Radix Foundation eu-west-1 node0 mainnet
+          registered: true
+          ownerAddress: rdx1qspldshtx0s2l2rcnaqtqpqz8vwps2y6d9se0wq25xrg92l66cmp6mcnc6pyu
+          externalStakeAccepted: false
+        uptime:
+          uptimePercentage: "100.00"
+          proposalsMissed: 0
+          proposalsCompleted: 108320
+      properties:
+        stake:
+          $ref: '#/components/schemas/Validator_stake'
+        properties:
+          $ref: '#/components/schemas/Validator_properties'
+        uptime:
+          $ref: '#/components/schemas/Validator_uptime'
+      type: object
+    AccountAddress:
+      pattern: ^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+      type: string
+    ValidatorAddress:
+      pattern: ^(r|t|d)v[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+      type: string
+    ResourceIdentifier:
+      pattern: ^[!\"#$%&'()*+,-.\/0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\\\]\^_`abcdefghijklmnopqrstuvwxyz{|}~]{1,83}_r[rb]1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,90}$
+      type: string
+    Amount:
+      pattern: ^[0-9]+$
+      type: string
+    Token:
+      additionalProperties: false
+      example:
+        accounting:
+          currentSupply: "8000000000000000000000000000"
+          totalMinted: "8000000000000000000000000000"
+          totalBurned: "0"
+        properties:
+          name: Doge³
+          rri: dgc_rr1qvnre767vp607yr9pqzqhlprg72q2ny5pj4agn53k0pqy6huxw
+          description: Doge³ Cerby - Doge but on roïds
+          iconURL: https://i.ibb.co/hysnndT/ico.png
+          tokenInfoURL: https://www.radixdlt.com/
+          symbol: dgc
+          isSupplyMutable: false
+          granularity: "1"
+      properties:
+        accounting:
+          $ref: '#/components/schemas/Token_accounting'
+        properties:
+          $ref: '#/components/schemas/Token_properties'
+      required:
+      - accounting
+      - properties
+      type: object
+    TransactionIdentifier:
+      maxLength: 64
+      minLength: 64
+      pattern: ^[0123456789abcdef]{64}$
+      type: string
+    Transaction:
+      additionalProperties: false
+      example:
+        size: 360
+        accountingEntries:
+        - owner: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+          delta: "24000000000000000000000000"
+          asset: xrd_rr1qy5wfsfh
+        - owner: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+          delta: -24000000072000000000000000
+          asset: xrd_rr1qy5wfsfh
+        fee: "72000000000000000"
+        txID: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
+        raw: 07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf
+        actions:
+        - Amount: "24000000000000000000000000"
+          rri: xrd_rr1qy5wfsfh
+          from: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+          to: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+          type: TokenTransfer
+        events: []
+        stateVersion: 40898
+        timestamp: 2021-07-27T17:35:10.726Z
+      properties:
+        size:
+          minimum: 1
+          type: integer
+        accountingEntries:
+          items:
+            type: object
+          type: array
+        actions:
+          items:
+            type: object
+          type: array
+        events:
+          items:
+            type: object
+          type: array
+        fee:
+          pattern: ^[0-9]+$
+          type: string
+        transactionIdentifier:
+          maxLength: 64
+          minLength: 64
+          pattern: ^[0123456789abcdef]{64}$
+          type: string
+        raw:
+          type: string
+        stateVersion:
+          type: integer
+        timestamp:
+          type: string
+      required:
+      - accountingEntries
+      - actions
+      - events
+      - fee
+      - raw
+      - size
+      - stateVersion
+      - timestamp
+      - transactionIdentifier
+      type: object
+    AccountBalancesResponse_balances:
+      properties:
+        rri:
+          pattern: ^[!\"#$%&'()*+,-.\/0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\\\]\^_`abcdefghijklmnopqrstuvwxyz{|}~]{1,83}_r[rb]1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,90}$
+          type: string
+        amount:
+          pattern: ^[0-9]+$
+          type: string
+      required:
+      - amount
+      - rri
+      type: object
+    AccountStakesResponse_stakes:
+      properties:
+        validatorAddress:
+          pattern: ^(r|t|d)v[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+        amount:
+          pattern: ^[0-9]+$
+          type: string
+      required:
+      - amount
+      - validator
+      type: object
+    AccountUnstakesResponse_unstakes:
+      properties:
+        validatorAddress:
+          pattern: ^(r|t|d)v[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+        amount:
+          pattern: ^[0-9]+$
+          type: string
+        epochsUntil:
+          type: integer
+      required:
+      - amount
+      - validatorAddress
+      type: object
+    TokenTransfer_allOf:
+      properties:
+        from:
+          pattern: ^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+        to:
+          pattern: ^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+        amount:
+          pattern: ^[0-9]+$
+          type: string
+        rri:
+          pattern: ^[!\"#$%&'()*+,-.\/0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\\\]\^_`abcdefghijklmnopqrstuvwxyz{|}~]{1,83}_r[rb]1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,90}$
+          type: string
+      type: object
+    StakeTokens_allOf:
+      properties:
+        from:
+          pattern: ^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+        validator:
+          pattern: ^(r|t|d)v[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+        amount:
+          pattern: ^[0-9]+$
+          type: string
+      type: object
+    ConstructionBuildSuccessResponse_allOf:
+      example:
+        fee: "72000000000000000"
+        unsignedTransaction: 07ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842000000020100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a636aa8c02c00000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da3298ae6ecf94cc8000020045060004038639dc49e14a94448045a3c595996282d8419eb9ae949dfb84b7bc48ba3d4fee0100000000000000000000000000000000000000000000000001b4fbd92b5f800000
+        payloadToSign: 28f4cf3b398e0c7256a8042d3c7a024bc308997dbc10db03c5eb6152f16f7673
+        notifications: []
+      properties:
+        fee:
+          pattern: ^[0-9]+$
+          type: string
+        unsignedTransaction:
+          type: string
+        payloadToSign:
+          type: string
+        notifications:
+          items:
+            type: object
+          type: array
+      required:
+      - fee
+      - notifications
+      - payloadToSign
+      - unsignedTransaction
+      type: object
+    ConstructionBuildErrorResponse_allOf:
+      properties:
+        details:
+          $ref: '#/components/schemas/ConstructionBuildError'
+      required:
+      - details
+      type: object
+    ConstructionFinalizeRequest_signature:
+      properties:
+        publicKey:
+          type: string
+        bytes:
+          type: string
+      required:
+      - bytes
+      - publicKey
+      type: object
+    Validator_stake:
+      properties:
+        exitingOwnership:
+          pattern: ^[0-9]+$
+          type: string
+        currentOwnership:
+          pattern: ^[0-9]+$
+          type: string
+        currentStake:
+          pattern: ^[0-9]+$
+          type: string
+        preparedStake:
+          pattern: ^[0-9]+$
+          type: string
+        nextEpochEstimatedStake:
+          pattern: ^[0-9]+$
+          type: string
+        nextEpochEstimatedOwnerStake:
+          pattern: ^[0-9]+$
+          type: string
+      required:
+      - currentOwnership
+      - currentStake
+      - exitingOwnership
+      - nextEpochEstimatedOwnerStake
+      - nextEpochEstimatedStake
+      - preparedStake
+      type: object
+    Validator_properties:
+      properties:
+        validatorAddress:
+          pattern: ^(r|t|d)v[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+        url:
+          type: string
+        validatorFee:
+          type: string
+        name:
+          type: string
+        registered:
+          type: boolean
+        ownerAddress:
+          pattern: ^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$
+          type: string
+        externalStakeAccepted:
+          type: boolean
+      required:
+      - externalStakeAccepted
+      - name
+      - ownerAddress
+      - registered
+      - url
+      - validatorAddress
+      - validatorFee
+      type: object
+    Validator_uptime:
+      properties:
+        uptimePercentage:
+          type: string
+        proposalsMissed:
+          minimum: 0
+          type: integer
+        proposalsCompleted:
+          minimum: 0
+          type: integer
+      required:
+      - proposalsCompleted
+      - proposalsMissed
+      - uptimePercentage
+      type: object
+    Token_accounting:
+      properties:
+        currentSupply:
+          pattern: ^[0-9]+$
+          type: string
+        totalMinted:
+          pattern: ^[0-9]+$
+          type: string
+        totalBurned:
+          pattern: ^[0-9]+$
+          type: string
+      required:
+      - currentSupply
+      - totalBurned
+      - totalMinted
+      type: object
+    Token_properties:
+      properties:
+        name:
+          type: string
+        rri:
+          pattern: ^[!\"#$%&'()*+,-.\/0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\\\]\^_`abcdefghijklmnopqrstuvwxyz{|}~]{1,83}_r[rb]1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,90}$
+          type: string
+        description:
+          type: string
+        iconUrl:
+          type: string
+        url:
+          type: string
+        symbol:
+          type: string
+        isSupplyMutable:
+          type: boolean
+        granularity:
+          pattern: ^[0-9]+$
+          type: string
+      required:
+      - description
+      - granularity
+      - iconUrl
+      - isSupplyMutable
+      - name
+      - rri
+      - symbol
+      - url
+      type: object
+
