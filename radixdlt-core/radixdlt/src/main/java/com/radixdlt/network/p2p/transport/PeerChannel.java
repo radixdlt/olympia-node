@@ -282,6 +282,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 				return IO_ERROR.result();
 			} else {
 				try {
+					// we don't need to release the buffer manually as this is done by Netty (in writeAndFlush)
 					final var buf = PooledByteBufAllocator.DEFAULT.buffer(data.length);
 					try (var out = new ByteBufOutputStream(buf)) {
 						this.frameCodec.writeFrame(data, out);

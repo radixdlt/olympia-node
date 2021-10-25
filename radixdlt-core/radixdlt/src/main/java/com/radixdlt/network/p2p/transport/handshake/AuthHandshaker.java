@@ -175,8 +175,8 @@ public final class AuthHandshaker {
 		try {
 			final var sizeBytes = new byte[2];
 			data.getBytes(0, sizeBytes, 0, sizeBytes.length);
-			final var encryptedPayload = new byte[data.readableBytes() - 2];
-			data.getBytes(2, encryptedPayload, 0, encryptedPayload.length);
+			final var encryptedPayload = new byte[data.readableBytes() - sizeBytes.length];
+			data.getBytes(sizeBytes.length, encryptedPayload, 0, encryptedPayload.length);
 			final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
 			final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
 			final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
