@@ -145,8 +145,8 @@ public class TransactionRequest {
 			return this;
 		}
 
-		public TransactionRequestBuilder unstake(AccountAddress from, ValidatorAddress validator, UInt256 amount) {
-			actions.add(new UnstakeAction(from, validator, amount));
+		public TransactionRequestBuilder unstake(AccountAddress to, ValidatorAddress validator, UInt256 amount) {
+			actions.add(new UnstakeAction(to, validator, amount));
 			return this;
 		}
 
