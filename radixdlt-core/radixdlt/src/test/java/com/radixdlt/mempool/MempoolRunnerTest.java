@@ -116,6 +116,7 @@ public final class MempoolRunnerTest {
 
 	private StateComputer stateComputer = mock(StateComputer.class);
 
+	@SuppressWarnings("unchecked") // The mock method doesn't support type-safe generics due to type erasure
 	public Module createModule() {
 		return new AbstractModule() {
 			@Override
