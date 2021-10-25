@@ -38,7 +38,7 @@ class TransactionsTest extends SystemTest {
     private final Account account;
     private final ValidatorDTO firstValidator;
 
-    public TransactionsTest() {
+    TransactionsTest() {
         // env properties specific to this test:
         var seedPhrase = TestingUtils.getEnvWithDefault("RADIXDLT_TESTING_ACCOUNT_SEED_PHRASE", "");
 
