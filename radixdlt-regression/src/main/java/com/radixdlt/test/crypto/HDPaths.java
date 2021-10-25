@@ -1,8 +1,9 @@
 package com.radixdlt.test.crypto;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.test.crypto.errors.HDPathException;
 import org.apache.logging.log4j.core.util.Integers;
+
+import java.util.List;
 
 /**
  * A set of utility methods used for e.g. validating strings representing {@link HDPath}.
@@ -30,6 +31,7 @@ public final class HDPaths {
     /**
      * Checks if the {@code path} string is a valid BIP32 path or not, using the standard BIP32
      * hardened marker {@link #BIP32_HARDENED_MARKER_STANDARD}.
+     *
      * @param path to validate
      * @return true iff {@code path} is a valid BIP32 path, else false.
      */
@@ -39,13 +41,14 @@ public final class HDPaths {
 
     /**
      * Checks if the {@code path} string is a valid BIP32 path or not.
-     * @param path to validate
+     *
+     * @param path           to validate
      * @param hardenedMarker the string used to mark hardened paths
      * @return true iff {@code path} is a valid BIP32 path, else false.
      */
     static boolean isValidHDPath(String path, String hardenedMarker) {
         // Check trivial paths
-        if (ImmutableList.of("", BIP32_PREFIX_PRIVATEKEY, BIP32_PATH_SEPARATOR).contains(path)) {
+        if (List.of("", BIP32_PREFIX_PRIVATEKEY, BIP32_PATH_SEPARATOR).contains(path)) {
             return true;
         }
         if (path.startsWith("M/") || path.startsWith("m/")) {

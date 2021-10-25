@@ -64,7 +64,8 @@ public class RadixNetworkNodeLocator {
             case TESTNET:
             default:
                 logger.debug("Searching for {} testnet nodes", peersSizePlusOne);
-                throw new RuntimeException("Unimplemented"); // get a list of RadixNodes by parsing the peers list
+                // eventually, we get a list of RadixNodes by parsing the peers list
+                return Lists.newArrayList();
         }
     }
 

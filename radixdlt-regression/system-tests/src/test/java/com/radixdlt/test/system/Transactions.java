@@ -63,7 +63,7 @@ public class Transactions extends SystemTest {
         logger.info("Token transfer txId: {}", txId);
     }
 
-    @org.junit.Test
+    @Test
     @Order(1)
     public void stake() {
         faucet(account, AMOUNT_TO_STAKE);

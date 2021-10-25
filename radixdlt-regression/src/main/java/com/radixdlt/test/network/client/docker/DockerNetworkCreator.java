@@ -10,13 +10,18 @@ import com.radixdlt.test.utils.TestingUtils;
 import com.radixdlt.test.utils.universe.UniverseUtils;
 import com.radixdlt.test.utils.universe.UniverseVariables;
 import org.apache.commons.compress.utils.Lists;
+import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.awaitility.Durations;
+import org.json.JSONObject;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.awaitility.Awaitility.await;
 
 /**
  * Creates radix node networks using docker
@@ -36,13 +41,13 @@ public class DockerNetworkCreator {
         logger.info("Initializing new docker network with {} nodes...", numberOfNodes);
         var variables = UniverseUtils.generateEnvironmentVariables(MAX_NUMBER_OF_NODES);
 
-        // network stuff
+        // docker network stuff
         var networkName = configuration.getDockerConfiguration().getNetworkName();
         if (!Boolean.parseBoolean(System.getenv("RADIXDLT_DOCKER_DO_NOT_WIPE_NETWORK"))) {
             dockerClient.createNetwork(networkName);
         }
 
-        // starting the network
+        // actually starting the radix network
         IntStream.range(0, numberOfNodes).forEach(nodeNumber -> {
             var dockerContainerName = configuration.getDockerConfiguration().getContainerName();
             var containerName = String.format(dockerContainerName, nodeNumber);
@@ -73,24 +78,63 @@ public class DockerNetworkCreator {
 
     /**
      * will bring up a fresh new node, without a pre-existing ledger, and sync it to the network
+     *
+     * @param containerName TODO write
      */
-    public static void initializeAndStartNode(RemoteDockerClient dockerClient, String url, String image, String trustedNode) {
-        logger.info(dockerClient.runCommand(url, "docker ps"));
+    public static void initializeAndStartNode(RemoteDockerClient dockerClient, String dockerLogin, String host, String image,
+                                              String trustedNode, String containerName) {
+        // get genesis tx
+        var trustedNodeIP = trustedNode.split("\\@")[1];
+        logger.debug("Will fetch genesis tx from {} ", trustedNodeIP);
+        var genesis = dockerClient.runCommand(trustedNodeIP, "docker exec " + containerName + " bash -c 'cat ./genesis.json'");
+        if (StringUtils.isBlank(genesis)) {
+            throw new IllegalArgumentException("Genesis tx not found, cannot proceed.");
+        }
+        var genesisTransactionHex = new JSONObject(genesis).getString("genesis");
+        logger.debug("Got genesis tx");
 
-        // get universe
-        var trustedNodeIP = trustedNode.split("[@]")[1];
+        // get network id
+        var networkId = dockerClient.runCommand(trustedNodeIP, "docker exec " + containerName
+            + " bash -c 'env | grep 'NETWORK_ID' | rev | head -c1'");
+        logger.debug("Got network ID: {}", networkId);
 
+        // login to the registry
+        logger.info(dockerClient.runCommand(host, dockerLogin));
+
+        // prepare env properties
+        var universeVariables = UniverseUtils.generateEnvironmentVariables(1);
+        var nodePrivateKey = universeVariables.getValidatorKeypairs().get(0).getPrivateKey();
+        var env = DockerNetworkCreator.createEnvironmentProperties(nodePrivateKey, host, trustedNode,
+            "'" + genesisTransactionHex + "'", 8080, 3333);
+        env.add("RADIXDLT_NETWORK_ID=" + networkId);
+        var envString = String.join(" -e ", env);
 
         // start the node
-        var command = String.format("docker run -d -e %s %s", "", image);
-        logger.info(dockerClient.runCommand(url, command));
+        var command = String.format("docker run --name test_core_1 -d -e %s %s",
+            envString,
+            image);
+        logger.info("Starting node with command [{}]", command);
+        logger.info(dockerClient.runCommand(host, command));
+
+        //wait until UP or SYNCING
+        await().pollInterval(Durations.FIVE_SECONDS).atMost(Durations.FIVE_MINUTES).until(() -> {
+            var healthResponse = dockerClient.runCommand(host, "docker exec test_core_1 bash -c 'curl -s localhost:3333/health'");
+            var status = new JSONObject(healthResponse).getString("status");
+            if (Objects.equals(status, "UP") || Objects.equals(status, "SYNCING")) {
+                logger.info("Node is UP");
+                return true;
+            } else {
+                logger.info("Node status is still {}..." + status);
+                return false;
+            }
+        });
     }
 
     private static void waitUntilNodesAreUp(RadixNetworkConfiguration configuration, int numberOfNodes) {
         var secondaryPort = configuration.getSecondaryPort();
         var httpClient = RadixHttpClient.fromRadixNetworkConfiguration(configuration);
 
-        List<String> rootUrls = IntStream.range(0, numberOfNodes).mapToObj(index -> "http://localhost:" + (secondaryPort + index))
+        var rootUrls = IntStream.range(0, numberOfNodes).mapToObj(index -> "http://localhost:" + (secondaryPort + index))
             .collect(Collectors.toList());
 
         rootUrls.parallelStream().forEach(rootUrl ->
@@ -118,11 +162,11 @@ public class DockerNetworkCreator {
         List<String> env = Lists.newArrayList();
 
         // java opts
-        env.add("JAVA_OPTS=-server -Xmx512m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:+AlwaysPreTouch -Dguice_bytecode_gen_option=DISABLED "
+        env.add("'JAVA_OPTS=-server -Xmx512m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:+AlwaysPreTouch -Dguice_bytecode_gen_option=DISABLED "
             + "-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom "
             + "-Dcom.sun.management.jmxremote.port=9011 -Dcom.sun.management.jmxremote.rmi.port=9011 -Dcom.sun.management.jmxremote.authenticate"
             + "=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,"
-            + "address=50505,suspend=n,server=y");
+            + "address=50505,suspend=n,server=y'");
 
         // per node variables
         env.add("RADIXDLT_NETWORK_SEEDS_REMOTE=" + remoteSeeds);
@@ -143,6 +187,9 @@ public class DockerNetworkCreator {
         env.add("RADIXDLT_HEALTH_API_ENABLE=true");
         env.add("RADIXDLT_SYSTEM_API_ENABLE=true");
         env.add("RADIXDLT_VALIDATION_API_ENABLE=true");
+        env.add("RADIXDLT_TRANSACTIONS_API_ENABLE=true");
+        env.add("RADIXDLT_UNIVERSE_API_ENABLE=true");
+        env.add("RADIXDLT_VERSION_API_ENABLE=true");
 
         // genesis transaction
         env.add("RADIXDLT_GENESIS_TXN=" + genesisTransaction);

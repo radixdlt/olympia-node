@@ -4,12 +4,15 @@ import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
 import com.radixdlt.client.lib.api.sync.RadixApiException;
 import com.radixdlt.test.utils.TestingUtils;
+import com.radixdlt.utils.functional.Failure;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.Durations;
+import org.awaitility.core.ConditionTimeoutException;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -21,6 +24,8 @@ import static org.awaitility.Awaitility.await;
 public class RadixNetworkConfiguration {
 
     private static final Logger logger = LogManager.getLogger();
+
+    private static final Duration NETWORK_PING_PATIENCE = Durations.ONE_MINUTE;
 
     public enum Type {
         LOCALNET,
@@ -95,13 +100,17 @@ public class RadixNetworkConfiguration {
      * @return the network id
      */
     public int pingJsonRpcApi() {
-        AtomicInteger networkId = new AtomicInteger();
-        await().atMost(Durations.ONE_MINUTE).ignoreException(RadixApiException.class).until(() -> {
-            networkId.set(ImperativeRadixApi.connect(jsonRpcRootUrl, primaryPort, secondaryPort).network().id().getNetworkId());
-            TestingUtils.sleepMillis(250);
-            return true;
-        });
-        return networkId.intValue();
+        try {
+            AtomicInteger networkId = new AtomicInteger();
+            await().atMost(NETWORK_PING_PATIENCE).pollInterval(Durations.TWO_HUNDRED_MILLISECONDS).
+                ignoreException(RadixApiException.class).until(() -> {
+                    networkId.set(ImperativeRadixApi.connect(jsonRpcRootUrl, primaryPort, secondaryPort).network().id().getNetworkId());
+                    return true;
+                });
+            return networkId.intValue();
+        } catch (ConditionTimeoutException e) {
+            throw new RadixApiException(Failure.failure(-1, "Could not get the network's ID within " + NETWORK_PING_PATIENCE));
+        }
     }
 
     public String getJsonRpcRootUrl() {

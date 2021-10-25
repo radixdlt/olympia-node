@@ -6,12 +6,15 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.test.network.SshConfiguration;
+import com.radixdlt.test.utils.TestingUtils;
 import org.apache.commons.lang.StringUtils;
-import org.radix.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * A class that can run commands (including docker commands e.g. 'docker restart') over ssh
@@ -23,9 +26,11 @@ public class RemoteDockerClient implements DockerClient {
         var configuration = RadixNetworkConfiguration.fromEnv();
         var remoteDockerClient = new RemoteDockerClient(configuration);
         DockerNetworkCreator.initializeAndStartNode(remoteDockerClient,
-            "54.216.243.64",
-            "eu.gcr.io/dev-container-repo/radixdlt-core:develop",
-            "radix://tn31qvgd2xug9zt202atzre4y6jx8e2hf7yhnrjkj25m6vksmucdspcck32yqya@65.1.221.160");
+            configuration.getDockerConfiguration().getDockerLogin(),
+            "3.6.243.81",
+            "eu.gcr.io/dev-container-repo/radixdlt-core:develop-dcc89fe4b",
+            "radix://tn31qwm8ystgjjj6qhyq3cvu9d5t9r0u7vrxukfpeutxkwauefqhand2t0k7lx@65.2.22.148",
+            "radixdlt_core_1");
     }
 
     private static Logger logger = LoggerFactory.getLogger(RemoteDockerClient.class);
@@ -38,33 +43,70 @@ public class RemoteDockerClient implements DockerClient {
         this.containerName = configuration.getDockerConfiguration().getContainerName();
     }
 
+    /**
+     * this is basically the official example from jsch, copied
+     */
     public String runCommand(String nodeLocator, String... commands) {
         logger.debug("Run command [{}] at {}", commands, nodeLocator);
         checkProperties();
         var jsch = new JSch();
         Session session = null;
+        ChannelExec channel = null;
         try {
             jsch.addIdentity(sshConfiguration.getSshKeyLocation(), sshConfiguration.getSshKeyPassphrase());
             session = jsch.getSession(sshConfiguration.getUser(), nodeLocator, sshConfiguration.getPort());
             var config = new java.util.Properties();
             config.put("StrictHostKeyChecking", "no");
             session.setConfig(config);
-            session.connect();
-            logger.trace("Started ssh session at {}", nodeLocator);
+            session.connect(10000);
+            logger.trace("Connected via ssh to {}", nodeLocator);
 
-            var channel = session.openChannel("exec");
-            var channelExec = ((ChannelExec) channel);
-            channelExec.setCommand(commands[0]);
-            channel.setInputStream(null);
-            channelExec.setErrStream(System.err);
+            channel = (ChannelExec) session.openChannel("exec");
+            channel.setCommand(String.join(" ", commands));
+            var outputBuffer = new ByteArrayOutputStream();
+            var errorBuffer = new ByteArrayOutputStream();
+            var inputStream = channel.getInputStream();
+            var errorStream = channel.getExtInputStream();
+
             channel.connect();
-            var errorStream = IOUtils.toString(channelExec.getErrStream());
-            return StringUtils.isNotBlank(errorStream) ? errorStream : IOUtils.toString(channelExec.getInputStream());
-        } catch (JSchException | IOException e) {
+            byte[] tmp = new byte[1024];
+            while (true) {
+                while (inputStream.available() > 0) {
+                    int i = inputStream.read(tmp, 0, 1024);
+                    if (i < 0) {
+                        break;
+                    }
+                    outputBuffer.write(tmp, 0, i);
+                }
+                while (errorStream.available() > 0) {
+                    int i = errorStream.read(tmp, 0, 1024);
+                    if (i < 0) {
+                        break;
+                    }
+                    errorBuffer.write(tmp, 0, i);
+                }
+                if (channel.isClosed()) {
+                    if ((inputStream.available() > 0) || (errorStream.available() > 0)) {
+                        continue;
+                    }
+                    logger.debug("Command exit-status: " + channel.getExitStatus());
+                    break;
+                }
+                TestingUtils.sleepMillis(250);
+            }
+
+            var error = errorBuffer.toString(StandardCharsets.UTF_8);
+            var output = outputBuffer.toString(StandardCharsets.UTF_8);
+            return (StringUtils.isBlank(output)) ? error : output;
+        } catch (IOException | JSchException e) {
+            // any error here should be escalated
             throw new RuntimeException(e);
         } finally {
             if (session != null) {
                 session.disconnect();
+            }
+            if (channel != null) {
+                channel.disconnect();
             }
         }
     }
@@ -88,7 +130,7 @@ public class RemoteDockerClient implements DockerClient {
 
     @Override
     public void cleanup(String... parameters) {
-        // TODO make sure 1) these are nodes and 2) they are brought up again
+        List.of(parameters).forEach(host -> runCommand(host, "docker start " + containerName));
     }
 
 }

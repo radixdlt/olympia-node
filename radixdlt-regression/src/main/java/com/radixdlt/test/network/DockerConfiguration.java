@@ -18,15 +18,17 @@ public class DockerConfiguration {
     private final String image;
     private final int initialNumberOfNodes;
     private final String networkName;
+    private final String dockerLogin;
 
     public DockerConfiguration(String socketUrl, String containerName, boolean shouldInitializeNetwork, String image, int initialNumberOfNodes,
-                               String networkName) {
+                               String networkName, String dockerLogin) {
         this.socketUrl = socketUrl;
         this.containerName = containerName;
         this.shouldInitializeNetwork = shouldInitializeNetwork;
         this.image = image;
         this.initialNumberOfNodes = initialNumberOfNodes;
         this.networkName = networkName;
+        this.dockerLogin = dockerLogin;
     }
 
     public static DockerConfiguration fromEnv() {
@@ -41,7 +43,8 @@ public class DockerConfiguration {
         var initialNumberOfNodesString = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_INITIAL_NUMBER_OF_NODES", "3");
         var initialNumberOfNodes = Integer.parseInt(initialNumberOfNodesString);
         var networkName = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_NETWORK_NAME", "system_testing_network");
-        return new DockerConfiguration(socketUrl, containerName, shouldInitializeNetwork, image, initialNumberOfNodes, networkName);
+        var dockerLogin = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_LOGIN_COMMAND", "");
+        return new DockerConfiguration(socketUrl, containerName, shouldInitializeNetwork, image, initialNumberOfNodes, networkName, dockerLogin);
     }
 
     public String getNetworkName() {
@@ -66,6 +69,10 @@ public class DockerConfiguration {
 
     public int getInitialNumberOfNodes() {
         return initialNumberOfNodes;
+    }
+
+    public String getDockerLogin() {
+        return dockerLogin;
     }
 
 }
