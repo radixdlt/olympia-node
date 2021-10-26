@@ -125,7 +125,11 @@ public final class RadixNodeUri {
 	}
 
 	private String getUriString() {
-		return String.format("radix://%s@%s:%s", NodeAddressing.of(networkNodeHrp, nodeId.getPublicKey()), host, port);
+		return String.format("radix://%s@%s:%s", nodeAddress(), host, port);
+	}
+
+	public String nodeAddress() {
+		return NodeAddressing.of(networkNodeHrp, nodeId.getPublicKey());
 	}
 
 	@Override
