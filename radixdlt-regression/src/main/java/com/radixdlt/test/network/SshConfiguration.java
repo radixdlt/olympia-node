@@ -21,7 +21,7 @@ public class SshConfiguration {
         return new SshConfiguration(sshKeyLocation, sshKeyPassphrase, sshUser, sshPort);
     }
 
-    private SshConfiguration(String sshKeyLocation, String sshKeyPassphrase, String user, int port) {
+    public SshConfiguration(String sshKeyLocation, String sshKeyPassphrase, String user, int port) {
         this.sshKeyLocation = sshKeyLocation;
         this.sshKeyPassphrase = sshKeyPassphrase;
         this.user = user;

@@ -22,7 +22,7 @@ public class SystemTest extends RadixNetworkTest {
     }
 
     public void runCommand(RadixNode node, String command) {
-        throw new RuntimeException("Unimplemented");
+        radixNetwork.getDockerClient().runCommand(node.getRootUrl(), command);
     }
 
     public void waitForNodeToBeUp(RadixNode node) {
@@ -37,9 +37,7 @@ public class SystemTest extends RadixNetworkTest {
                 if (Boolean.parseBoolean(System.getenv("RADIXDLT_DOCKER_DO_NOT_WIPE_NETWORK"))) {
                     return;
                 }
-                String networkName = radixNetwork.getConfiguration().getDockerConfiguration().getNetworkName();
                 radixNetwork.getDockerClient().cleanup();
-                logger.info("Wiped docker network '{}'", networkName);
                 break;
             case TESTNET:
                 break;

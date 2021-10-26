@@ -35,4 +35,16 @@ public class Metrics {
         return metrics.get("info_epochmanager_currentview_view").intValue();
     }
 
+    public long getTargetVersion() {
+        return metrics.get("info_counters_sync_target_state_version").longValue();
+    }
+
+    public long getCurrentVersion() {
+        return metrics.get("info_counters_ledger_state_version").longValue();
+    }
+
+    public long getVersionDiff() {
+        return metrics.get("info_counters_sync_target_current_diff").longValue();
+    }
+
 }

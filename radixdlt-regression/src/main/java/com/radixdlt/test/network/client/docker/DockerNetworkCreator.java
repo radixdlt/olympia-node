@@ -5,6 +5,8 @@ import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Ports;
 import com.radixdlt.test.network.RadixNetworkConfiguration;
+import com.radixdlt.test.network.SshConfiguration;
+import com.radixdlt.test.network.client.Metrics;
 import com.radixdlt.test.network.client.RadixHttpClient;
 import com.radixdlt.test.utils.TestingUtils;
 import com.radixdlt.test.utils.universe.UniverseUtils;
@@ -16,6 +18,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.awaitility.Durations;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -54,7 +57,7 @@ public class DockerNetworkCreator {
             var privateKey = variables.getValidatorKeypairs().get(nodeNumber).getPrivateKey();
             var primaryPort = configuration.getPrimaryPort();
             var secondaryPort = configuration.getSecondaryPort();
-            var remoteSeeds = generateRemoteSeedsConfig(variables, configuration, nodeNumber);
+            var remoteSeeds = generateSequentialRemoteSeedsConfig(variables, configuration, nodeNumber);
 
             var environment = createEnvironmentProperties(privateKey, containerName, remoteSeeds,
                 variables.getGenesisTransaction(), primaryPort, secondaryPort);
@@ -71,7 +74,7 @@ public class DockerNetworkCreator {
         });
 
         logger.info("Network started. Waiting for all nodes to be UP...");
-        waitUntilNodesAreUp(configuration, MAX_NUMBER_OF_NODES);
+        waitUntilLocalNodesAreUp(configuration, MAX_NUMBER_OF_NODES);
         logger.info("All nodes are UP");
         return variables;
     }
@@ -79,44 +82,69 @@ public class DockerNetworkCreator {
     /**
      * will bring up a fresh new node, without a pre-existing ledger, and sync it to the network
      *
-     * @param dockerLogin
-     * @param containerName
+     * @param host
+     * @param trustedNodeHost
      */
-    public static void initializeAndStartNode(RemoteDockerClient dockerClient, String dockerLogin, String host, String image,
-                                              String trustedNode, String containerName) {
-        var trustedNodeHost = trustedNode.split("\\@")[1];
-        var genesisTransaction = getGenesisTransaction(dockerClient, trustedNodeHost, containerName);
-        var networkId = getNetworkId(dockerClient, trustedNodeHost, containerName);
-        loginDockerRepository(dockerClient, host, dockerLogin);
+    public static void initializeAndStartNode(RadixNetworkConfiguration configuration, String host, String trustedNodeHost) {
+        var dockerClient = new RemoteDockerClient(configuration);
+        var dockerConfiguration = configuration.getDockerConfiguration();
+        var sshConfiguration = configuration.getSshConfiguration();
+        var containerName = dockerConfiguration.getContainerName();
+
+        var trustedContainerName = TestingUtils.getEnvWithDefault("RADIXDLT_TRUSTED_DOCKER_CONTAINER_NAME",
+            containerName);
+        var trustedSshUser = TestingUtils.getEnvWithDefault(
+            "RADIXDLT_SYSTEM_TESTING_TRUSTED_SSH_USER", configuration.getSshConfiguration().getUser());
+        var trustedDockerClient = new RemoteDockerClient(new SshConfiguration(sshConfiguration.getSshKeyLocation(),
+            sshConfiguration.getSshKeyPassphrase(), trustedSshUser, sshConfiguration.getPort()), trustedContainerName);
+        var genesisTransaction = getGenesisTransaction(trustedDockerClient, trustedNodeHost, trustedContainerName);
+        var networkId = getNetworkId(trustedDockerClient, trustedNodeHost, trustedContainerName);
+        var seedsRemote = getSeedsRemote(trustedDockerClient, trustedNodeHost, trustedContainerName);
+        loginDockerRepository(dockerClient, host, dockerConfiguration.getDockerLogin());
 
         // prepare env properties
         var universeVariables = UniverseUtils.generateEnvironmentVariables(1);
         var nodePrivateKey = universeVariables.getValidatorKeypairs().get(0).getPrivateKey();
-        var env = DockerNetworkCreator.createEnvironmentProperties(nodePrivateKey, host, trustedNode,
+        var env = DockerNetworkCreator.createEnvironmentProperties(nodePrivateKey, host, seedsRemote,
             genesisTransaction, 8080, 3333);
         env.add("RADIXDLT_NETWORK_ID=" + networkId);
         var envString = String.join(" -e ", env);
 
-        // start the node
-        var command = String.format("docker run --name test_core_1 -d -e %s %s", envString, image);
+        // actually start the node
+        dockerClient.runCommand(host, "docker stop " + containerName + " && docker rm " + containerName);
+        var command = String.format("docker run --name %s -d -e %s %s",
+            containerName,
+            envString,
+            dockerConfiguration.getImage());
         logger.info("Starting node with command [{}]", command);
-        logger.info(dockerClient.runCommand(host, command));
+        var output = dockerClient.runCommand(host, command);
+        if (StringUtils.isNotBlank(output)) {
+            logger.info(output.replace("\n", ""));
+        }
 
         //wait until UP or SYNCING
         await().pollInterval(Durations.FIVE_SECONDS).atMost(Durations.FIVE_MINUTES).until(() -> {
-            var healthResponse = dockerClient.runCommand(host, "docker exec test_core_1 bash -c 'curl -s localhost:3333/health'");
+            var healthResponse = dockerClient.runCommand(host,
+                "docker exec " + containerName + " bash -c 'curl -s localhost:3333/health'");
             var status = new JSONObject(healthResponse).getString("status");
-            if (Objects.equals(status, "UP") || Objects.equals(status, "SYNCING")) {
-                logger.info("Node is UP");
-                return true;
-            } else {
-                logger.info("Node status is still {}...", status);
-                return false;
-            }
+            logger.info("Node is {}", status);
+            return Objects.equals(status, "UP") || Objects.equals(status, "SYNCING");
         });
+
+        // wait until full ledger sync
+        logger.info("Starting sync watch...");
+        await().pollInterval(Durations.FIVE_SECONDS).atMost(Duration.ofHours(1)).until(() -> {
+            var metricsString = dockerClient.runCommand(host,
+                "docker exec " + containerName + " bash -c 'curl -s localhost:3333/metrics'");
+            var metrics = new Metrics(metricsString);
+            logger.info("Version {} out of {}. {}% synced.", metrics.getCurrentVersion(), metrics.getTargetVersion(),
+                String.format("%.2f", 100.0 * metrics.getCurrentVersion() / metrics.getTargetVersion()));
+            return metrics.getVersionDiff() == 0L;
+        });
+        logger.info("Sync complete!");
     }
 
-    private static void waitUntilNodesAreUp(RadixNetworkConfiguration configuration, int numberOfNodes) {
+    private static void waitUntilLocalNodesAreUp(RadixNetworkConfiguration configuration, int numberOfNodes) {
         var secondaryPort = configuration.getSecondaryPort();
         var httpClient = RadixHttpClient.fromRadixNetworkConfiguration(configuration);
 
@@ -128,7 +156,8 @@ public class DockerNetworkCreator {
         );
     }
 
-    private static String generateRemoteSeedsConfig(UniverseVariables variables, RadixNetworkConfiguration configuration, int nodeNumber) {
+    private static String generateSequentialRemoteSeedsConfig(UniverseVariables variables, RadixNetworkConfiguration configuration,
+                                                              int nodeNumber) {
         var seeds = IntStream.range(0, variables.getValidatorKeypairs().size()).mapToObj(index -> {
             if (index == nodeNumber) {
                 return null;
@@ -203,6 +232,7 @@ public class DockerNetworkCreator {
 
     private static String getGenesisTransaction(RemoteDockerClient dockerClient, String host, String containerName) {
         logger.debug("Will fetch genesis tx from {} ", host);
+        // hardcoded genesis tx file location, might break
         var genesis = dockerClient.runCommand(host, "docker exec " + containerName + " bash -c 'cat ./genesis.json'");
         if (StringUtils.isBlank(genesis)) {
             throw new IllegalArgumentException("Genesis tx not found, cannot proceed.");
@@ -213,7 +243,7 @@ public class DockerNetworkCreator {
     }
 
     private static int getNetworkId(RemoteDockerClient dockerClient, String host, String containerName) {
-        logger.debug("Will fetch genesis tx from {} ", host);
+        logger.debug("Will fetch network ID from {} ", host);
         var networkId = dockerClient.runCommand(host, "docker exec " + containerName
             + " bash -c 'env | grep 'NETWORK_ID' | rev | head -c1'");
         logger.debug("Got network ID: {}", networkId);
@@ -222,6 +252,14 @@ public class DockerNetworkCreator {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Network ID was not a number: " + networkId);
         }
+    }
+
+    private static String getSeedsRemote(RemoteDockerClient dockerClient, String host, String containerName) {
+        logger.debug("Will fetch remote seeds from {} ", host);
+        var seedsRemote = dockerClient.runCommand(host, "docker exec " + containerName
+            + " bash -c 'env | grep SEEDS_REMOTE | cut -f2 -d\"=\"'").replace("\n", "");
+        logger.debug("Got seeds remote: {}", seedsRemote);
+        return seedsRemote;
     }
 
     /**

@@ -24,13 +24,7 @@ public class RemoteDockerClient implements DockerClient {
     // testing the remote client
     public static void main(String[] args) {
         var configuration = RadixNetworkConfiguration.fromEnv();
-        var remoteDockerClient = new RemoteDockerClient(configuration);
-        DockerNetworkCreator.initializeAndStartNode(remoteDockerClient,
-            configuration.getDockerConfiguration().getDockerLogin(),
-            "host",
-            "image",
-            "trusted",
-            "container");
+        DockerNetworkCreator.initializeAndStartNode(configuration, "34.116.200.59", "65.2.22.148");
     }
 
     private static Logger logger = LoggerFactory.getLogger(RemoteDockerClient.class);
@@ -39,8 +33,12 @@ public class RemoteDockerClient implements DockerClient {
     private final String containerName;
 
     public RemoteDockerClient(RadixNetworkConfiguration configuration) {
-        this.sshConfiguration = configuration.getSshConfiguration();
-        this.containerName = configuration.getDockerConfiguration().getContainerName();
+        this(configuration.getSshConfiguration(), configuration.getDockerConfiguration().getContainerName());
+    }
+
+    public RemoteDockerClient(SshConfiguration sshConfiguration, String containerName) {
+        this.sshConfiguration = sshConfiguration;
+        this.containerName = containerName;
     }
 
     /**
