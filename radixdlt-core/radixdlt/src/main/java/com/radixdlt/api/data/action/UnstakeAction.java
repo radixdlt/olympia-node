@@ -73,18 +73,18 @@ import com.radixdlt.utils.UInt256;
 import java.util.stream.Stream;
 
 class UnstakeAction implements TransactionAction {
-	private final REAddr from;
+	private final REAddr to;
 	private final ECPublicKey delegate;
 	private final UInt256 amount;
 
-	UnstakeAction(REAddr from, ECPublicKey delegate, UInt256 amount) {
-		this.from = from;
+	UnstakeAction(REAddr to, ECPublicKey delegate, UInt256 amount) {
+		this.to = to;
 		this.delegate = delegate;
 		this.amount = amount;
 	}
 
 	@Override
 	public Stream<TxAction> toAction() {
-		return Stream.of(new UnstakeTokens(from, delegate, amount));
+		return Stream.of(new UnstakeTokens(to, delegate, amount));
 	}
 }
