@@ -299,6 +299,7 @@ ospackage {
 
     buildDeb {
         dependsOn += [installDist]
+        version = project.version.replaceAll('-', '~').replaceAll(/[^A-Za-z0-9.+:~-]/, '')
     }
     buildRpm {
         dependsOn += [installDist]
@@ -329,7 +330,7 @@ task depsize {
  * Manages the *.deb file in the docker directory
  */
 task deb4docker(type: Copy, dependsOn: buildDeb) {
-    def ospackageVersion = version.replaceAll('-', '~')
+    def ospackageVersion = project.version.replaceAll('-', '~').replaceAll(/[^A-Za-z0-9.+:~-]/, '')
 
     from("$buildDir/distributions") {
         include "radixdlt_${ospackageVersion}_all.deb"
