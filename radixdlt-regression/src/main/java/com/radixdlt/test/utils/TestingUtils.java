@@ -152,4 +152,12 @@ public final class TestingUtils {
         throw new TestFailureException(failure.message());
     }
 
+    public static void waitUntilEndOfEpoch(Account account) {
+        var currentEpoch = account.ledger().epoch().getHeader().getEpoch();
+        logger.debug("Waiting for epoch {} to end...", currentEpoch);
+        await().pollInterval(Durations.ONE_SECOND).until(() ->
+            account.ledger().epoch().getHeader().getEpoch() > currentEpoch
+        );
+        logger.debug("Epoch {} ended", currentEpoch);
+    }
 }

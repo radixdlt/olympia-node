@@ -188,7 +188,7 @@ public final class Account implements ImperativeRadixApi, RadixAccount {
 
     @Override
     public AID mint(Amount amount, String mtt, Optional<String> message) {
-        return TransactionUtils.mint(this, amount, "mtt", message);
+        return TransactionUtils.mint(this, amount, mtt, message);
     }
 
     @Override
