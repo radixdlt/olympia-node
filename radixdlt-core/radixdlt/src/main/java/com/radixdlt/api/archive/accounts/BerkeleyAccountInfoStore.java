@@ -428,7 +428,6 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			}
 
 			@Override
-			@SuppressWarnings("unchecked") // Cast to validatorAndEpoch
 			Comparator<Object> comparator() {
 				return Comparator.comparing(o -> ((Pair<String, Long>) o).getFirst());
 			}
@@ -447,7 +446,6 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			}
 
 			@Override
-			@SuppressWarnings("unchecked") // Cast to validatorAndEpoch
 			JSONObject toJSON(BerkeleyAccountInfoStore parent, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper, Object o) {
 				var validatorAndEpoch = (Pair<String, Long>) o;
 				return new JSONObject()
