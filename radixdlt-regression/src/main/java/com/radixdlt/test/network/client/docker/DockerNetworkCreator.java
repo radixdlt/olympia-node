@@ -33,7 +33,8 @@ public class DockerNetworkCreator {
 
     private static final Logger logger = LogManager.getLogger();
 
-    public static final int MAX_NUMBER_OF_NODES = 3;
+    private static final int MAX_NUMBER_OF_NODES = 3;
+    private static final String DOCKER_EXEC_COMMAND = "docker exec ";
 
     private DockerNetworkCreator() {
 
@@ -82,11 +83,65 @@ public class DockerNetworkCreator {
     /**
      * will bring up a fresh new node, without a pre-existing ledger, and sync it to the network
      *
-     * @param host
-     * @param trustedNodeHost
+     * @param host the newly initialized node will be started here
      */
-    public static void initializeAndStartNode(RadixNetworkConfiguration configuration, String host, String trustedNodeHost) {
+    public static void initializeAndStartNode(RadixNetworkConfiguration configuration, String host, String genesisTx,
+                                              int networkId, String seedsRemote) {
         var dockerClient = new RemoteDockerClient(configuration);
+        var dockerConfiguration = configuration.getDockerConfiguration();
+        var containerName = dockerConfiguration.getContainerName();
+        loginDockerRepository(dockerClient, host, dockerConfiguration.getDockerLogin());
+
+        // prepare env properties
+        var universeVariables = UniverseUtils.generateEnvironmentVariables(1);
+        var nodePrivateKey = universeVariables.getValidatorKeypairs().get(0).getPrivateKey();
+        var env = DockerNetworkCreator.createEnvironmentProperties(nodePrivateKey, host, seedsRemote,
+            genesisTx, 8080, 3333);
+        env.add("RADIXDLT_NETWORK_ID=" + networkId);
+        var envString = String.join(" -e ", env);
+
+        // actually start the node
+        dockerClient.runCommand(host, "docker stop " + containerName + " && docker rm " + containerName);
+        var command = String.format("docker run --name %s -d -e %s %s",
+            containerName,
+            envString,
+            dockerConfiguration.getImage());
+        logger.info("Starting node with command [{}]", command);
+        var output = dockerClient.runCommand(host, command).replace("\n", "");
+        if (StringUtils.isNotBlank(output)) {
+            logger.info(output);
+        }
+
+        //wait until UP or SYNCING
+        await().pollInterval(Durations.FIVE_SECONDS).atMost(Durations.FIVE_MINUTES).until(() -> {
+            var healthResponse = dockerClient.runCommand(host,
+                DOCKER_EXEC_COMMAND + containerName + " bash -c 'curl -s localhost:3333/health'");
+            var status = new JSONObject(healthResponse).getString("status");
+            logger.info("Node is {}", status);
+            return Objects.equals(status, "UP") || Objects.equals(status, "SYNCING");
+        });
+
+        // wait until full ledger sync
+        logger.info("Starting sync watch...");
+        await().pollInterval(Durations.FIVE_SECONDS).atMost(Duration.ofHours(1)).until(() -> {
+            var metricsString = dockerClient.runCommand(host,
+                DOCKER_EXEC_COMMAND + containerName + " bash -c 'curl -s localhost:3333/metrics'");
+            var metrics = new Metrics(metricsString);
+            logger.info("Version {} out of {}. {}% synced.", metrics.getCurrentVersion(), metrics.getTargetVersion(),
+                String.format("%.2f", 100.0 * metrics.getCurrentVersion() / metrics.getTargetVersion()));
+            return metrics.getVersionDiff() == 0L;
+        });
+        logger.info("Sync complete!");
+    }
+
+    /**
+     * will bring up a fresh new node, without a pre-existing ledger, and sync it to the network
+     *
+     * @param host            this will host the newly initialized node
+     * @param trustedNodeHost the network id, seeds remote and genesis tx will be fetched from here
+     */
+    public static void initializeAndStartNodeFromTrustedNode(RadixNetworkConfiguration configuration, String host,
+                                                             String trustedNodeHost) {
         var dockerConfiguration = configuration.getDockerConfiguration();
         var sshConfiguration = configuration.getSshConfiguration();
         var containerName = dockerConfiguration.getContainerName();
@@ -100,75 +155,7 @@ public class DockerNetworkCreator {
         var genesisTransaction = getGenesisTransaction(trustedDockerClient, trustedNodeHost, trustedContainerName);
         var networkId = getNetworkId(trustedDockerClient, trustedNodeHost, trustedContainerName);
         var seedsRemote = getSeedsRemote(trustedDockerClient, trustedNodeHost, trustedContainerName);
-        loginDockerRepository(dockerClient, host, dockerConfiguration.getDockerLogin());
-
-        // prepare env properties
-        var universeVariables = UniverseUtils.generateEnvironmentVariables(1);
-        var nodePrivateKey = universeVariables.getValidatorKeypairs().get(0).getPrivateKey();
-        var env = DockerNetworkCreator.createEnvironmentProperties(nodePrivateKey, host, seedsRemote,
-            genesisTransaction, 8080, 3333);
-        env.add("RADIXDLT_NETWORK_ID=" + networkId);
-        var envString = String.join(" -e ", env);
-
-        // actually start the node
-        dockerClient.runCommand(host, "docker stop " + containerName + " && docker rm " + containerName);
-        var command = String.format("docker run --name %s -d -e %s %s",
-            containerName,
-            envString,
-            dockerConfiguration.getImage());
-        logger.info("Starting node with command [{}]", command);
-        var output = dockerClient.runCommand(host, command);
-        if (StringUtils.isNotBlank(output)) {
-            logger.info(output.replace("\n", ""));
-        }
-
-        //wait until UP or SYNCING
-        await().pollInterval(Durations.FIVE_SECONDS).atMost(Durations.FIVE_MINUTES).until(() -> {
-            var healthResponse = dockerClient.runCommand(host,
-                "docker exec " + containerName + " bash -c 'curl -s localhost:3333/health'");
-            var status = new JSONObject(healthResponse).getString("status");
-            logger.info("Node is {}", status);
-            return Objects.equals(status, "UP") || Objects.equals(status, "SYNCING");
-        });
-
-        // wait until full ledger sync
-        logger.info("Starting sync watch...");
-        await().pollInterval(Durations.FIVE_SECONDS).atMost(Duration.ofHours(1)).until(() -> {
-            var metricsString = dockerClient.runCommand(host,
-                "docker exec " + containerName + " bash -c 'curl -s localhost:3333/metrics'");
-            var metrics = new Metrics(metricsString);
-            logger.info("Version {} out of {}. {}% synced.", metrics.getCurrentVersion(), metrics.getTargetVersion(),
-                String.format("%.2f", 100.0 * metrics.getCurrentVersion() / metrics.getTargetVersion()));
-            return metrics.getVersionDiff() == 0L;
-        });
-        logger.info("Sync complete!");
-    }
-
-    private static void waitUntilLocalNodesAreUp(RadixNetworkConfiguration configuration, int numberOfNodes) {
-        var secondaryPort = configuration.getSecondaryPort();
-        var httpClient = RadixHttpClient.fromRadixNetworkConfiguration(configuration);
-
-        var rootUrls = IntStream.range(0, numberOfNodes).mapToObj(index -> "http://localhost:" + (secondaryPort + index))
-            .collect(Collectors.toList());
-
-        rootUrls.parallelStream().forEach(rootUrl ->
-            TestingUtils.waitForNodeToBeUp(httpClient, rootUrl)
-        );
-    }
-
-    private static String generateSequentialRemoteSeedsConfig(UniverseVariables variables, RadixNetworkConfiguration configuration,
-                                                              int nodeNumber) {
-        var seeds = IntStream.range(0, variables.getValidatorKeypairs().size()).mapToObj(index -> {
-            if (index == nodeNumber) {
-                return null;
-            }
-            var dockerContainerName = configuration.getDockerConfiguration().getContainerName();
-            var containerName = String.format(dockerContainerName, index);
-            var keyPair = variables.getValidatorKeypairs().get(index);
-            return "radix://" + keyPair.getPublicKey() + "@" + containerName;
-        }).filter(Objects::nonNull).collect(Collectors.toList());
-
-        return String.join(",", seeds);
+        initializeAndStartNode(configuration, host, genesisTransaction, networkId, seedsRemote);
     }
 
     private static List<String> createEnvironmentProperties(String privateKey, String hostIpAddress, String remoteSeeds,
@@ -211,6 +198,33 @@ public class DockerNetworkCreator {
         return env;
     }
 
+    private static void waitUntilLocalNodesAreUp(RadixNetworkConfiguration configuration, int numberOfNodes) {
+        var secondaryPort = configuration.getSecondaryPort();
+        var httpClient = RadixHttpClient.fromRadixNetworkConfiguration(configuration);
+
+        var rootUrls = IntStream.range(0, numberOfNodes).mapToObj(index -> "http://localhost:" + (secondaryPort + index))
+            .collect(Collectors.toList());
+
+        rootUrls.parallelStream().forEach(rootUrl ->
+            TestingUtils.waitForNodeToBeUp(httpClient, rootUrl)
+        );
+    }
+
+    private static String generateSequentialRemoteSeedsConfig(UniverseVariables variables, RadixNetworkConfiguration configuration,
+                                                              int nodeNumber) {
+        var seeds = IntStream.range(0, variables.getValidatorKeypairs().size()).mapToObj(index -> {
+            if (index == nodeNumber) {
+                return null;
+            }
+            var dockerContainerName = configuration.getDockerConfiguration().getContainerName();
+            var containerName = String.format(dockerContainerName, index);
+            var keyPair = variables.getValidatorKeypairs().get(index);
+            return "radix://" + keyPair.getPublicKey() + "@" + containerName;
+        }).filter(Objects::nonNull).collect(Collectors.toList());
+
+        return String.join(",", seeds);
+    }
+
     private static HostConfig createHostConfigWithPortBindings(int index, List<ExposedPort> exposedPorts, int primaryPort,
                                                                int secondaryPort) {
         var portBindings = new Ports();
@@ -233,7 +247,7 @@ public class DockerNetworkCreator {
     private static String getGenesisTransaction(RemoteDockerClient dockerClient, String host, String containerName) {
         logger.debug("Will fetch genesis tx from {} ", host);
         // hardcoded genesis tx file location, might break
-        var genesis = dockerClient.runCommand(host, "docker exec " + containerName + " bash -c 'cat ./genesis.json'");
+        var genesis = dockerClient.runCommand(host, DOCKER_EXEC_COMMAND + containerName + " bash -c 'cat ./genesis.json'");
         if (StringUtils.isBlank(genesis)) {
             throw new IllegalArgumentException("Genesis tx not found, cannot proceed.");
         }
@@ -244,7 +258,7 @@ public class DockerNetworkCreator {
 
     private static int getNetworkId(RemoteDockerClient dockerClient, String host, String containerName) {
         logger.debug("Will fetch network ID from {} ", host);
-        var networkId = dockerClient.runCommand(host, "docker exec " + containerName
+        var networkId = dockerClient.runCommand(host, DOCKER_EXEC_COMMAND + containerName
             + " bash -c 'env | grep 'NETWORK_ID' | rev | head -c1'");
         logger.debug("Got network ID: {}", networkId);
         try {
@@ -256,7 +270,7 @@ public class DockerNetworkCreator {
 
     private static String getSeedsRemote(RemoteDockerClient dockerClient, String host, String containerName) {
         logger.debug("Will fetch remote seeds from {} ", host);
-        var seedsRemote = dockerClient.runCommand(host, "docker exec " + containerName
+        var seedsRemote = dockerClient.runCommand(host, DOCKER_EXEC_COMMAND + containerName
             + " bash -c 'env | grep SEEDS_REMOTE | cut -f2 -d\"=\"'").replace("\n", "");
         logger.debug("Got seeds remote: {}", seedsRemote);
         return seedsRemote;

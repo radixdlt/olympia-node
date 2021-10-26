@@ -24,7 +24,7 @@ public class RemoteDockerClient implements DockerClient {
     // testing the remote client
     public static void main(String[] args) {
         var configuration = RadixNetworkConfiguration.fromEnv();
-        DockerNetworkCreator.initializeAndStartNode(configuration, "34.116.200.59", "65.2.22.148");
+        DockerNetworkCreator.initializeAndStartNodeFromTrustedNode(configuration, "host", "trusted host");
     }
 
     private static Logger logger = LoggerFactory.getLogger(RemoteDockerClient.class);
