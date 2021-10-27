@@ -72,6 +72,13 @@ public class RadixHttpClient {
         var jsonBodyString = faucetBody.toString(5);
         var response = Unirest.post(rootUrl + ":" + port + FAUCET_PATH).body(jsonBodyString).asJson();
         if (response.isSuccess()) {
+            var responseBody = response.getBody().getObject();
+            if (responseBody.has("error")) {
+                var responseErrorMessage = responseBody.getJSONObject("error").getString("message");
+                var errorMessage = responseErrorMessage.toLowerCase().contains("not enough balance") ? "Faucet is out of tokens!"
+                    : responseErrorMessage;
+                throw new RadixApiException(Failure.failure(-1, errorMessage));
+            }
             return response.getBody().getObject().getJSONObject("result").getString("txID");
         } else {
             throw new RadixApiException(Failure.failure(response.getStatus(), response.getBody().toString()));

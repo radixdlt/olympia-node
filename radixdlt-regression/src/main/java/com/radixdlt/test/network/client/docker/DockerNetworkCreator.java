@@ -83,7 +83,7 @@ public class DockerNetworkCreator {
     /**
      * will bring up a fresh new node, without a pre-existing ledger, and sync it to the network
      *
-     * @param host the newly initialized node will be started here
+     * @param host the newly initialized node will be hosted here
      */
     public static void initializeAndStartNode(RadixNetworkConfiguration configuration, String host, String genesisTx,
                                               int networkId, String seedsRemote) {
