@@ -103,7 +103,6 @@ import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -160,35 +159,91 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		}
 	}
 
-	private JSONArray getAccountingJson(REProcessedTxn txn, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
-		var accounting = REResourceAccounting.compute(txn.stateUpdates());
+	private JSONArray getOperations(REResourceAccounting accounting, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
 		var bucketAccounting = new JSONArray();
 		for (var e : accounting.bucketAccounting().entrySet()) {
 			var b = e.getKey();
 			var i = e.getValue();
 
 			var bucketJson = new JSONObject();
-			if (b.getOwner() != null) {
-				bucketJson.put("owner", addressing.forAccounts().of(b.getOwner()));
-			}
-			if (b.getValidatorKey() != null) {
-				bucketJson.put("validator", addressing.forValidators().of(b.getValidatorKey()));
-			}
-			bucketJson.put("delta", i.toString());
-			if (b.resourceAddr() == null) {
-				// Don't keep track of stakeOwnership
-				continue;
+
+			if (b.resourceAddr() == null || (b.getOwner() != null && b.getValidatorKey() == null)) {
+				bucketJson.put("vaultIdentifier", new JSONObject()
+					.put("type", "account")
+					.put("address", addressing.forAccounts().of(b.getOwner()))
+				);
+			} else if (b.getOwner() != null && b.getValidatorKey() != null) {
+				bucketJson.put("vaultIdentifier", new JSONObject()
+					.put("type", "prepared_stake")
+					.put("validator", addressing.forValidators().of(b.getValidatorKey()))
+					.put("ownerAddress", addressing.forAccounts().of(b.getOwner()))
+				);
+			} else if (b.getOwner() == null && b.getValidatorKey() != null) {
+				bucketJson.put("vaultIdentifier", new JSONObject()
+					.put("type", "stake")
+					.put("validator", addressing.forValidators().of(b.getValidatorKey()))
+				);
 			}
 
-			var mapKey = SystemMapKey.ofResourceData(b.resourceAddr(), SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-			var data = mapper.apply(mapKey).orElseThrow().getData();
-			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-			var metadata = (TokenResourceMetadata) deserialize(data);
-			var rri = addressing.forResources().of(metadata.getSymbol(), b.resourceAddr());
-			bucketJson.put("asset", rri);
+			var resource = new JSONObject();
+			if (b.resourceAddr() == null) {
+				resource
+					.put("type", "stake_ownership")
+					.put("validator", addressing.forValidators().of(b.getValidatorKey()));
+			} else {
+				var mapKey = SystemMapKey.ofResourceData(b.resourceAddr(), SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+				var data = mapper.apply(mapKey).orElseThrow().getData();
+				// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+				var metadata = (TokenResourceMetadata) deserialize(data);
+				var rri = addressing.forResources().of(metadata.getSymbol(), b.resourceAddr());
+				resource
+					.put("type", "token")
+					.put("rri", rri);
+			}
+
+			bucketJson.put("amount", new JSONObject()
+				.put("value", i.toString())
+				.put("resource", resource)
+			);
+
 			bucketAccounting.put(bucketJson);
 		}
 		return bucketAccounting;
+	}
+
+	private JSONArray getOperationGroups(REProcessedTxn txn, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
+		var operationGroups = new JSONArray();
+		for (var stateUpdates : txn.getGroupedStateUpdates()) {
+			var accounting = REResourceAccounting.compute(stateUpdates.stream());
+			var operations = getOperations(accounting, mapper);
+			var entry = TwoActorEntry.parse(accounting.bucketAccounting());
+			var mappedAction = entry.map(e -> mapToJSON(
+				e,
+				addr -> {
+					var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+					var data = mapper.apply(mapKey).orElseThrow().getData();
+					// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+					var metadata = (TokenResourceMetadata) deserialize(data);
+					return addressing.forResources().of(metadata.getSymbol(), addr);
+				},
+				(k, ownership) -> {
+					var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), k.getCompressedBytes());
+					var data = mapper.apply(validatorDataKey).orElseThrow().getData();
+					var stakeData = (ValidatorStakeData) deserialize(data);
+					return ownership.multiply(stakeData.getTotalStake()).divide(stakeData.getTotalOwnership());
+				}
+			));
+
+			var operationGroup = new JSONObject()
+				.put("operations", operations);
+			mappedAction.ifPresent(jsonObject -> operationGroup.put("metadata", new JSONObject()
+				.put("inferredAction", jsonObject)
+			));
+
+			operationGroups.put(operationGroup);
+		}
+
+		return operationGroups;
 	}
 
 
@@ -226,15 +281,10 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 	}
 
 	private JSONObject mapToJSON(
-		Optional<TwoActorEntry> maybeEntry,
+		TwoActorEntry entry,
 		Function<REAddr, String> addrToRri,
 		BiFunction<ECPublicKey, UInt384, UInt384> computeStakeFromOwnership
 	) {
-		if (maybeEntry.isEmpty()) {
-			return new JSONObject().put("type", "Other");
-		}
-
-		var entry = maybeEntry.get();
 		var amtByteArray = entry.amount().toByteArray();
 		var amt = UInt256.from(amtByteArray);
 		var from = entry.from();
@@ -303,49 +353,28 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 
 		var txnId = txn.getTxnId();
 		var key = new DatabaseEntry(txnId.getBytes());
-		var actionsJson = new JSONArray();
-		txn.getGroupedStateUpdates().stream()
-			.map(stateUpdates -> {
-				var accounting = REResourceAccounting.compute(stateUpdates.stream());
-				return TwoActorEntry.parse(accounting.bucketAccounting());
-			})
-			.filter(e -> e.map(a -> !a.isFee()).orElse(true))
-			.map(entry -> mapToJSON(
-				entry,
-				addr -> {
-					var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-					var data = mapper.apply(mapKey).orElseThrow().getData();
-					// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-					var metadata = (TokenResourceMetadata) deserialize(data);
-					return addressing.forResources().of(metadata.getSymbol(), addr);
-				},
-				(k, ownership) -> {
-					var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), k.getCompressedBytes());
-					var data = mapper.apply(validatorDataKey).orElseThrow().getData();
-					var stakeData = (ValidatorStakeData) deserialize(data);
-					return ownership.multiply(stakeData.getTotalStake()).divide(stakeData.getTotalOwnership());
-				}
-			))
-			.forEach(actionsJson::put);
 		var eventsJson = getEventsJson(txn);
-		var accountingJson = getAccountingJson(txn, mapper);
+		var operationGroups = getOperationGroups(txn, mapper);
 		var fee = txn.getFeePaid();
 		var message = txn.getMsg()
 			.map(bytes -> new String(bytes, RadixConstants.STANDARD_CHARSET));
 		var jsonString = new JSONObject()
-			.put("transactionIdentifier", txn.getTxnId())
-			.put("stateVersion", stateVersion)
-			.put("raw", Bytes.toHexString(txn.getTxn().getPayload()))
-			.put("accountingEntries", accountingJson)
-			.put("actions", actionsJson)
+			.put("committedTransactionIdentifier", new JSONObject()
+				.put("transactionIdentifier", txn.getTxnId())
+				.put("stateVersion", stateVersion)
+			)
+			.put("metadata", new JSONObject()
+				.put("hex", Bytes.toHexString(txn.getTxn().getPayload()))
+				.put("fee", fee)
+				.put("size", txn.getTxn().getPayload().length)
+				.put("timestamp", timestamp.get().toEpochMilli())
+				.putOpt("message", message.orElse(null))
+			)
+			.put("operationGroups", operationGroups)
 			.put("events", eventsJson)
-			.putOpt("message", message.orElse(null))
-			.put("size", txn.getTxn().getPayload().length)
-			.put("timestamp", DateTimeFormatter.ISO_INSTANT.format(timestamp.get()))
-			.put("fee", fee)
 			.toString();
-		var value = new DatabaseEntry(jsonString.getBytes(StandardCharsets.UTF_8));
 
+		var value = new DatabaseEntry(jsonString.getBytes(StandardCharsets.UTF_8));
 		var result = txnIdDatabase.putNoOverwrite(dbTxn, key, value);
 		if (result != SUCCESS) {
 			throw new IllegalStateException("Unexpected operation status " + result);
