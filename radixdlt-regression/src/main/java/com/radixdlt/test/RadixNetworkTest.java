@@ -69,7 +69,6 @@ public abstract class RadixNetworkTest {
             // wait until the account's balance increases, just to be sure that the faucet delivered something
             balanceBeforeFaucet.getAmount().compareTo(to.getOwnNativeTokenBalance().getAmount()) < 0
         );
-        logger.info("BREWSKI");
         return txID;
     }
 
