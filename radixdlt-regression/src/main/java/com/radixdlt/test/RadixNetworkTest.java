@@ -64,7 +64,6 @@ public abstract class RadixNetworkTest {
     public String faucet(Account to) {
         Balance balanceBeforeFaucet = to.getOwnNativeTokenBalance();
         String txID = faucet(to.getAddress());
-        logger.info("CALLED FAUCET WITH " + txID);
         TransactionUtils.waitForConfirmation(to, AID.from(txID));
         await().atMost(Durations.TEN_SECONDS).until(() ->
             // wait until the account's balance increases, just to be sure that the faucet delivered something
