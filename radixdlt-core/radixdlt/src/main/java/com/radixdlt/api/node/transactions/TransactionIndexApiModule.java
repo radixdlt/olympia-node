@@ -65,27 +65,13 @@
 package com.radixdlt.api.node.transactions;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.JsonRpcController;
-import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.util.JsonRpcServer;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import com.radixdlt.utils.functional.Failure;
-import com.radixdlt.utils.functional.Result;
-import org.json.JSONArray;
+import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
-import java.util.List;
-import java.util.Map;
-
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
 
 public final class TransactionIndexApiModule extends AbstractModule {
 	private final Class<? extends Annotation> annotationType;
@@ -101,71 +87,7 @@ public final class TransactionIndexApiModule extends AbstractModule {
 		bind(BerkeleyTransactionIndexStore.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
 			.addBinding().to(BerkeleyTransactionIndexStore.class);
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
-			.addBinding(path)
-			.toProvider(ControllerProvider.class);
-	}
-
-	private static class ControllerProvider implements Provider<Controller> {
-		@Inject
-		private BerkeleyTransactionIndexStore store;
-
-		@Inject
-		private BerkeleyTransactionsByIdStore txnStore;
-
-		@Override
-		public Controller get() {
-			var handlers = Map.of(
-				"get_transaction_count", indexGetTransactionCount(store),
-				"get_transactions", indexGetTransactions(store, txnStore)
-			);
-			return new JsonRpcController(new JsonRpcServer(handlers));
-		}
-	}
-
-	private static JsonRpcHandler indexGetTransactionCount(BerkeleyTransactionIndexStore store) {
-		return request -> withRequiredParameters(
-			request,
-			List.of(),
-			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
-				() -> {
-					var totalCount = store.getCount();
-					return jsonObject()
-						.put("totalCount", totalCount);
-				}
-			)
-		);
-	}
-
-	public static JsonRpcHandler indexGetTransactions(BerkeleyTransactionIndexStore store, BerkeleyTransactionsByIdStore txnStore) {
-		return request -> withRequiredParameters(
-			request,
-			List.of("limit"),
-			List.of("offset"),
-			params -> Result.wrap(
-				e -> Failure.failure(-1, e.getMessage()),
-				() -> {
-					var limit = params.getLong("limit");
-					var offset = params.optLong("offset", 1);
-					var transactions = new JSONArray();
-					try (var stream = store.get(offset)) {
-						stream.limit(limit)
-							.map(txnId -> txnStore.getTransactionJSON(txnId).orElseThrow())
-							.forEach(transactions::put);
-					}
-					var totalCount = store.getCount();
-					var jsonResult = jsonObject();
-					if (transactions.length() > 0) {
-						var nextOffset = offset + transactions.length();
-						jsonResult.put("nextOffset", nextOffset);
-					}
-					return jsonResult
-						.put("transactions", transactions)
-						.put("count", transactions.length())
-						.put("totalCount", totalCount);
-				}
-			)
-		);
+		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, annotationType)
+			.addBinding(path).to(TransactionsHandler.class);
 	}
 }

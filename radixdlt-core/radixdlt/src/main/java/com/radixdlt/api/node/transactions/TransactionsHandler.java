@@ -61,111 +61,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.node;
+package com.radixdlt.api.node.transactions;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.node.account.AccountApiModule;
-import com.radixdlt.api.node.chaos.ChaosApiModule;
-import com.radixdlt.api.node.developer.DeveloperApiModule;
-import com.radixdlt.api.node.faucet.FaucetApiModule;
-import com.radixdlt.api.node.health.HealthApiModule;
-import com.radixdlt.api.node.metrics.MetricsApiModule;
-import com.radixdlt.api.node.system.SystemApiModule;
-import com.radixdlt.api.node.transactions.TransactionIndexApiModule;
-import com.radixdlt.api.node.validation.ValidatorApiModule;
-import com.radixdlt.api.node.version.VersionApiModule;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+class TransactionsHandler implements ApiHandler<TransactionsRequest> {
+	private final BerkeleyTransactionsByIdStore txnStore;
+	private final BerkeleyTransactionIndexStore store;
 
-/**
- * Configures the api including http server setup
- */
-public final class NodeServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-	private final boolean metricsEnable;
-	private final boolean faucetEnable;
-	private final boolean chaosEnable;
-
-	public NodeServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable,
-		boolean metricsEnable,
-		boolean faucetEnable,
-		boolean chaosEnable
+	@Inject
+	TransactionsHandler(
+		BerkeleyTransactionIndexStore store,
+		BerkeleyTransactionsByIdStore txnStore
 	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
-		this.metricsEnable = metricsEnable;
-		this.faucetEnable = faucetEnable;
-		this.chaosEnable = chaosEnable;
+		this.store = store;
+		this.txnStore = txnStore;
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class, "/system"));
-		install(new AccountApiModule(NodeServer.class, "/account"));
-		install(new ValidatorApiModule(NodeServer.class, "/validator"));
-		install(new HealthApiModule(NodeServer.class, "/health"));
-		install(new VersionApiModule(NodeServer.class, "/version"));
-		install(new DeveloperApiModule(NodeServer.class, "/developer"));
-
-		if (transactionsEnable) {
-			install(new TransactionIndexApiModule(NodeServer.class, "/transactions"));
+	public TransactionsRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		var limit = requestReader.getOptUnsignedLong("limit").orElse(1);
+		var stateVersion = requestReader.getOptUnsignedLong("stateVersion").orElse(1);
+		if (stateVersion < 1) {
+			throw new InvalidParametersException("/stateVersion", "State version must be >= 1");
 		}
-		if (metricsEnable) {
-			install(new MetricsApiModule(NodeServer.class, "/metrics"));
-		}
-		if (faucetEnable) {
-			install(new FaucetApiModule(NodeServer.class, "/faucet"));
-		}
-		if (chaosEnable) {
-			install(new ChaosApiModule(NodeServer.class, "/chaos"));
-		}
+		return new TransactionsRequest(stateVersion, limit);
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<String, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
-
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	@Override
+	public JSONObject handleRequest(TransactionsRequest request) throws Exception {
+		var transactions = new JSONArray();
+		try (var stream = store.get(request.getStateVersion())) {
+			stream.limit(request.getLimit())
+				.map(txnId -> txnStore.getTransactionJSON(txnId).orElseThrow())
+				.forEach(transactions::put);
+		}
+		var totalCount = store.getCount();
+		var jsonResult = jsonObject();
+		if (transactions.length() > 0) {
+			var nextStateVersion = request.getStateVersion() + transactions.length();
+			jsonResult.put("nextStateVersion", nextStateVersion);
+		}
+		return jsonResult
+			.put("transactions", transactions)
+			.put("count", transactions.length())
+			.put("totalCount", totalCount);
 	}
 }
