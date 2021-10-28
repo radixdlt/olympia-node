@@ -1,6 +1,6 @@
 package com.radixdlt.test.system;
 
-import com.radixdlt.test.system.scaffolding.SystemTest;
+import com.radixdlt.test.system.harness.SystemTest;
 import org.junit.jupiter.api.Test;
 
 class SmokeTests extends SystemTest {

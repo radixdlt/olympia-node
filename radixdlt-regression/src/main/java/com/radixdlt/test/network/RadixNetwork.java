@@ -125,7 +125,7 @@ public class RadixNetwork {
             }
             logger.debug("Initialized a {} docker client", configuration.getType());
         } catch (DockerClientException e) {
-            logger.warn("Exception {} when trying to initialize a docker client. Client will be disabled.", e.getMessage(), e);
+            logger.warn("Exception {} when trying to initialize a docker client. Client will be disabled.", e.getMessage());
             dockerClient = new DisabledDockerClient();
         }
         return dockerClient;

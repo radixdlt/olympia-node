@@ -1,11 +1,11 @@
-package com.radixdlt.test.system.scaffolding;
+package com.radixdlt.test.system.harness;
 
 import com.radixdlt.test.RadixNetworkTest;
 import com.radixdlt.test.network.RadixNode;
 import com.radixdlt.test.utils.TestingUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
 
 public class SystemTest extends RadixNetworkTest {
 
@@ -30,7 +30,7 @@ public class SystemTest extends RadixNetworkTest {
         logger.info("Node {} is UP", node);
     }
 
-    @AfterEach
+    @AfterAll
     public void teardown() {
         switch (radixNetwork.getConfiguration().getType()) {
             case LOCALNET:

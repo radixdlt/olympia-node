@@ -1,5 +1,6 @@
 package com.radixdlt.test.utils;
 
+import com.google.common.base.Stopwatch;
 import com.radixdlt.application.tokens.TokenUtils;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;
@@ -17,6 +18,7 @@ import org.awaitility.Durations;
 import org.awaitility.core.ConditionTimeoutException;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 
@@ -152,12 +154,14 @@ public final class TestingUtils {
         throw new TestFailureException(failure.message());
     }
 
-    public static void waitUntilEndOfEpoch(Account account) {
+    public static void waitUntilEndNextEpoch(Account account) {
         var currentEpoch = account.ledger().epoch().getHeader().getEpoch();
         logger.debug("Waiting for epoch {} to end...", currentEpoch);
-        await().pollInterval(Durations.ONE_SECOND).until(() ->
+        var stopwatch = Stopwatch.createStarted();
+        await().pollInterval(Durations.ONE_SECOND).atMost(Duration.ofMinutes(30)).until(() ->
             account.ledger().epoch().getHeader().getEpoch() > currentEpoch
         );
         logger.debug("Epoch {} ended", currentEpoch);
+        stopwatch.elapsed(TimeUnit.MILLISECONDS);
     }
 }

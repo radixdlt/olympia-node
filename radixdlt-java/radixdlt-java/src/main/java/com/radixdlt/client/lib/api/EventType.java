@@ -62,145 +62,41 @@
  * permissions under this License.
  */
 
-package com.radixdlt.client.lib.dto;
-
-import org.bouncycastle.util.encoders.Hex;
+package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.lib.api.TxTimestamp;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.utils.UInt256;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import static java.util.Objects.requireNonNull;
+public enum EventType {
+	TOKEN_CREATED("token_created");
 
-public final class TransactionDTO {
-	private final AID txID;
-	private final long stateVersion;
-	private final long size;
-	private final TxTimestamp sentAt;
-	private final UInt256 fee;
-	private final String message;
-	private final List<Action> actions;
-	private final List<Event> events;
-	private final byte[] raw;
+	private final String text;
 
-	private TransactionDTO(
-		AID txID,
-		long stateVersion,
-		long size,
-		TxTimestamp sentAt,
-		UInt256 fee,
-		String message,
-		List<Action> actions,
-		List<Event> events,
-		byte[] raw
-	) {
-		this.txID = txID;
-		this.stateVersion = stateVersion;
-		this.size = size;
-		this.sentAt = sentAt;
-		this.fee = fee;
-		this.message = message;
-		this.actions = actions;
-		this.events = events;
-		this.raw = raw;
+	private static final Map<String, EventType> TO_EVENT_TYPE = Arrays.stream(values())
+		.collect(Collectors.toMap(EventType::toJson, Function.identity()));
+
+	EventType(String text) {
+		this.text = text;
+	}
+
+	@JsonValue
+	public String toJson() {
+		return text;
 	}
 
 	@JsonCreator
-	public static TransactionDTO create(
-		@JsonProperty(value = "size", required = true) long size,
-		@JsonProperty(value = "txID", required = true) AID txID,
-		@JsonProperty(value = "timestamp", required = true) TxTimestamp sentAt,
-		@JsonProperty(value = "fee", required = true) UInt256 fee,
-		@JsonProperty(value = "message", required = false) String message,
-		@JsonProperty(value = "actions", required = true) List<Action> actions,
-		@JsonProperty(value = "events", required = true) List<Event> events,
-		@JsonProperty(value = "raw", required = true) String blob,
-		@JsonProperty(value = "stateVersion", required = true) long stateVersion,
-		@JsonProperty(value = "accountingEntries", required = true) List<Object> entries
-	) {
-		requireNonNull(txID);
-		requireNonNull(sentAt);
-		requireNonNull(fee);
-		requireNonNull(actions);
-		requireNonNull(blob);
+	public static EventType create(String action) {
+		var result = TO_EVENT_TYPE.get(action);
 
-		return new TransactionDTO(txID, stateVersion, size, sentAt, fee, message, actions, events, Hex.decode(blob));
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
+		if (result == null) {
+			throw new IllegalArgumentException("Unable to parse ActionType from : " + action);
 		}
 
-		if (!(o instanceof TransactionDTO)) {
-			return false;
-		}
-
-		var that = (TransactionDTO) o;
-		return txID.equals(that.txID)
-			&& size == that.size
-			&& stateVersion == that.stateVersion
-			&& sentAt.equals(that.sentAt)
-			&& fee.equals(that.fee)
-			&& Objects.equals(message, that.message)
-			&& Arrays.equals(raw, that.raw)
-			&& actions.equals(that.actions)
-			&& events.equals(that.events);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(txID, stateVersion, size, sentAt, fee, message, actions, events, Arrays.hashCode(raw));
-	}
-
-	@Override
-	public String toString() {
-		return "Transaction("
-			+ "txID=" + txID
-			+ ", stateVersion=" + stateVersion
-			+ ", size=" + size
-			+ ", sentAt=" + sentAt
-			+ ", fee=" + fee
-			+ ", message='" + message + '\''
-			+ ", actions=" + actions
-			+ ", events=" + events
-			+ ", raw=" + Hex.toHexString(raw)
-			+ ')';
-	}
-
-	public AID getTxID() {
-		return txID;
-	}
-
-	public TxTimestamp getSentAt() {
-		return sentAt;
-	}
-
-	public UInt256 getFee() {
-		return fee;
-	}
-
-	public Optional<String> getMessage() {
-		return Optional.ofNullable(message);
-	}
-
-	public List<Action> getActions() {
-		return actions;
-	}
-
-	public List<Event> getEvents() {
-		return events;
-	}
-
-	public byte[] getRaw() {
-		return raw;
+		return result;
 	}
 }

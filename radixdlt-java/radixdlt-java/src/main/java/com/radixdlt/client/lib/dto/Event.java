@@ -64,74 +64,33 @@
 
 package com.radixdlt.client.lib.dto;
 
-import org.bouncycastle.util.encoders.Hex;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.lib.api.TxTimestamp;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.client.lib.api.EventType;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
+public final class Event {
+	@JsonProperty("type")
+	private final EventType type;
 
-public final class TransactionDTO {
-	private final AID txID;
-	private final long stateVersion;
-	private final long size;
-	private final TxTimestamp sentAt;
-	private final UInt256 fee;
-	private final String message;
-	private final List<Action> actions;
-	private final List<Event> events;
-	private final byte[] raw;
+	@JsonProperty("rri")
+	private final String rri;
 
-	private TransactionDTO(
-		AID txID,
-		long stateVersion,
-		long size,
-		TxTimestamp sentAt,
-		UInt256 fee,
-		String message,
-		List<Action> actions,
-		List<Event> events,
-		byte[] raw
-	) {
-		this.txID = txID;
-		this.stateVersion = stateVersion;
-		this.size = size;
-		this.sentAt = sentAt;
-		this.fee = fee;
-		this.message = message;
-		this.actions = actions;
-		this.events = events;
-		this.raw = raw;
+	private Event(
+		EventType type, String rri) {
+		this.type = type;
+		this.rri = rri;
 	}
 
 	@JsonCreator
-	public static TransactionDTO create(
-		@JsonProperty(value = "size", required = true) long size,
-		@JsonProperty(value = "txID", required = true) AID txID,
-		@JsonProperty(value = "timestamp", required = true) TxTimestamp sentAt,
-		@JsonProperty(value = "fee", required = true) UInt256 fee,
-		@JsonProperty(value = "message", required = false) String message,
-		@JsonProperty(value = "actions", required = true) List<Action> actions,
-		@JsonProperty(value = "events", required = true) List<Event> events,
-		@JsonProperty(value = "raw", required = true) String blob,
-		@JsonProperty(value = "stateVersion", required = true) long stateVersion,
-		@JsonProperty(value = "accountingEntries", required = true) List<Object> entries
+	public static Event create(
+		@JsonProperty("type") EventType type,
+		@JsonProperty("rri") String rri
 	) {
-		requireNonNull(txID);
-		requireNonNull(sentAt);
-		requireNonNull(fee);
-		requireNonNull(actions);
-		requireNonNull(blob);
-
-		return new TransactionDTO(txID, stateVersion, size, sentAt, fee, message, actions, events, Hex.decode(blob));
+		return new Event(type, rri);
 	}
 
 	@Override
@@ -139,68 +98,35 @@ public final class TransactionDTO {
 		if (this == o) {
 			return true;
 		}
-
-		if (!(o instanceof TransactionDTO)) {
+		if (!(o instanceof Event)) {
 			return false;
 		}
 
-		var that = (TransactionDTO) o;
-		return txID.equals(that.txID)
-			&& size == that.size
-			&& stateVersion == that.stateVersion
-			&& sentAt.equals(that.sentAt)
-			&& fee.equals(that.fee)
-			&& Objects.equals(message, that.message)
-			&& Arrays.equals(raw, that.raw)
-			&& actions.equals(that.actions)
-			&& events.equals(that.events);
+		var eventDTO = (Event) o;
+		return type == eventDTO.type
+			&& Objects.equals(rri, eventDTO.rri);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(txID, stateVersion, size, sentAt, fee, message, actions, events, Arrays.hashCode(raw));
+		return Objects.hash(type, rri);
 	}
 
 	@Override
 	public String toString() {
-		return "Transaction("
-			+ "txID=" + txID
-			+ ", stateVersion=" + stateVersion
-			+ ", size=" + size
-			+ ", sentAt=" + sentAt
-			+ ", fee=" + fee
-			+ ", message='" + message + '\''
-			+ ", actions=" + actions
-			+ ", events=" + events
-			+ ", raw=" + Hex.toHexString(raw)
+		return "Event("
+			+ "type=" + type
+			+ ", rri=" + rri
 			+ ')';
 	}
 
-	public AID getTxID() {
-		return txID;
+	@JsonIgnore
+	public EventType getType() {
+		return type;
 	}
 
-	public TxTimestamp getSentAt() {
-		return sentAt;
-	}
-
-	public UInt256 getFee() {
-		return fee;
-	}
-
-	public Optional<String> getMessage() {
-		return Optional.ofNullable(message);
-	}
-
-	public List<Action> getActions() {
-		return actions;
-	}
-
-	public List<Event> getEvents() {
-		return events;
-	}
-
-	public byte[] getRaw() {
-		return raw;
+	@JsonIgnore
+	public Optional<String> getRri() {
+		return Optional.ofNullable(rri);
 	}
 }

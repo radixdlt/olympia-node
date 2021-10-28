@@ -48,7 +48,7 @@ public class LocalDockerClient implements DockerClient {
         dockerClient = DockerClientImpl.getInstance(config, httpClient);
         try {
             dockerClient.pingCmd().exec();
-        } catch (UnsatisfiedLinkError e) { //  this happen when you try to connect to a socket via windows
+        } catch (UnsatisfiedLinkError | NoClassDefFoundError e) { //  this happens when you try to connect to a socket via windows
             throw new DockerClientException("Could not connect to socket " + dockerSocketUrl
                 + ". Are you running the tests from windows?");
         }
@@ -65,10 +65,10 @@ public class LocalDockerClient implements DockerClient {
                 .exec(new ExecStartResultCallback(output, error))
                 .awaitCompletion(10, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            throw new DockerClientException(e.getMessage(), e);
         }
         if (StringUtils.isNotBlank(error.toString())) {
-            throw new RuntimeException(error.toString());
+            throw new DockerClientException(error.toString());
         }
         return output.toString(StandardCharsets.UTF_8);
     }

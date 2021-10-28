@@ -15,7 +15,8 @@ public class DisabledDockerClient implements DockerClient {
     }
 
     public String runCommand(String nodeLocator, String... commands) {
-        throw new DockerClientException("Disabled client cannot run command " + Arrays.toString(commands));
+        logger.trace("Disabled client cannot run command " + Arrays.toString(commands));
+        return null;
     }
 
     @Override

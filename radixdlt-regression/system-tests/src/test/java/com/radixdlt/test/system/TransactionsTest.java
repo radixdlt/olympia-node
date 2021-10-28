@@ -1,28 +1,32 @@
 package com.radixdlt.test.system;
 
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.client.lib.dto.Event;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.test.account.Account;
 import com.radixdlt.test.crypto.BitcoinJBIP32Path;
 import com.radixdlt.test.crypto.DefaultHDKeyPairDerivation;
 import com.radixdlt.test.crypto.errors.HDPathException;
 import com.radixdlt.test.crypto.errors.MnemonicException;
 import com.radixdlt.test.network.RadixNetworkConfiguration;
-import com.radixdlt.test.system.scaffolding.SystemTest;
-import com.radixdlt.test.utils.ActionUtils;
+import com.radixdlt.test.system.harness.SystemTest;
+import com.radixdlt.test.utils.TestFailureException;
 import com.radixdlt.test.utils.TestingUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.platform.commons.util.StringUtils;
 import org.radix.Radix;
 
 import java.util.Optional;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class TransactionsTest extends SystemTest {
 
@@ -38,7 +42,7 @@ class TransactionsTest extends SystemTest {
 
     private final Account account;
     private final ValidatorDTO firstValidator;
-    private String rriBuffer;
+    private String mutableTokenRri;
 
     TransactionsTest() {
         // env properties specific to this test:
@@ -49,14 +53,14 @@ class TransactionsTest extends SystemTest {
             ? initializeAccountFromSeedPhrase(configuration, seedPhrase)
             : Account.initialize(configuration.getJsonRpcRootUrl(), configuration.getPrimaryPort(),
             configuration.getSecondaryPort(), TestingUtils.createKeyPairFromNumber(HARDCODED_ADDRESS_PRIVATE_KEY));
-        logger.info("Using address {} with balances:\n{}", account.getAddressForNetwork(),
-            account.getOwnTokenBalances());
+        logger.info("Using address {} with balances: {}", account.getAddressForNetwork(),
+            account.getOwnTokenBalances().getTokenBalances());
         firstValidator = account.validator().list(100, Optional.empty()).getValidators().get(0);
     }
 
     @BeforeEach
-    void callFaucet() {
-        faucet(account);
+    void setup() {
+        callFaucetIfNeeded(account);
     }
 
     @Test
@@ -68,19 +72,18 @@ class TransactionsTest extends SystemTest {
     @Test
     @Order(1)
     void stake() {
-        faucet(account, AMOUNT_TO_STAKE);
-        logger.info("Staking {} to validator {}...", AMOUNT_TO_STAKE, firstValidator.getAddress().toString());
-        //var txId = account.stake(firstValidator.getAddress(), AMOUNT_TO_STAKE, createTestMessageOptional());
-        //logger.info("Stake tokens txId: {}", txId);
+        callFaucetIfNeeded(account, AMOUNT_TO_STAKE);
+        logger.info("Staking {} to validator {}...", AMOUNT_TO_STAKE, firstValidator);
+        var txId = account.stake(firstValidator.getAddress(), AMOUNT_TO_STAKE, createTestMessageOptional());
+        logger.info("Stake tokens txId: {}", txId);
         logger.info("Waiting until end of current epoch...");
-        TestingUtils.waitUntilEndOfEpoch(account);
+        TestingUtils.waitUntilEndNextEpoch(account);
     }
 
     @Test
     @Order(2)
     void unstake() {
-        var nid = account.network().id().getNetworkId();
-        logger.info("Unstaking {} from validator {}...", AMOUNT_TO_STAKE, firstValidator.getAddress().toString(nid));
+        logger.info("Unstaking {} from validator {}...", AMOUNT_TO_STAKE, firstValidator);
         var txId = account.unstake(firstValidator.getAddress(), AMOUNT_TO_STAKE, Optional.empty());
         logger.info("Unstake tokens txId: {}", txId);
     }
@@ -88,7 +91,7 @@ class TransactionsTest extends SystemTest {
     @Test
     @Order(3)
     void mutable_supply_token_creation() {
-        faucet(account, Amount.ofTokens(100));
+        callFaucetIfNeeded(account, Amount.ofTokens(100));
         var timestamp = System.currentTimeMillis();
         var txId = account.mutableSupplyToken(
             "mtt" + timestamp,
@@ -97,27 +100,27 @@ class TransactionsTest extends SystemTest {
             "https://www.mtesttoken.ico",
             "https://www.mtesttoken.com");
         logger.info("Mutable supply token txId: {}", txId);
-        this.rriBuffer = ActionUtils.getNewTokenRri(account.transaction().lookup(txId));
-        logger.info("Mutable supply token's rri: {}", rriBuffer);
+        setMutableTokenRri(txId);
+        logger.info("Mutable supply token's rri: {}", mutableTokenRri);
     }
 
     @Test
     @Order(4)
     void mint_mutable_supply_token() {
-        var txId = account.mint(TOKENS_TO_MINT, rriBuffer, createTestMessageOptional());
-        logger.info("Token {} mint txId: {}", rriBuffer, txId);
+        var txId = account.mint(TOKENS_TO_MINT, mutableTokenRri, createTestMessageOptional());
+        logger.info("Token {} mint txId: {}", mutableTokenRri, txId);
     }
 
     @Test
     @Order(5)
     void burn_mutable_supply_token() {
-        var txId = account.burn(TOKENS_TO_MINT, rriBuffer, createTestMessageOptional());
-        logger.info("Token {} burn txId: {}", rriBuffer, txId);
+        var txId = account.burn(TOKENS_TO_MINT, mutableTokenRri, createTestMessageOptional());
+        logger.info("Token {} burn txId: {}", mutableTokenRri, txId);
     }
 
     @Test
     void fixed_supply_token_creation() {
-        faucet(account, Amount.ofTokens(100));
+        callFaucetIfNeeded(account, Amount.ofTokens(100));
         var timestamp = System.currentTimeMillis();
         var supply = Amount.ofTokens(1000000);
         var txId = account.fixedSupplyToken(
@@ -143,8 +146,29 @@ class TransactionsTest extends SystemTest {
         }
     }
 
+    private void setMutableTokenRri(AID txId) {
+        var events = account.transaction().lookup(txId).getEvents();
+        if (events.size() != 1) {
+            throw new TestFailureException("Expected only 1 token_created action, got " + events);
+        }
+        Event event = events.get(0);
+        event.getRri().map(rri -> this.mutableTokenRri = rri).orElseThrow(() -> new TestFailureException("No rri found in event"));
+    }
+
     private Optional<String> createTestMessageOptional() {
         return Optional.of("Autogenerated test transaction from version '" + VERSION_STRING + "'");
+    }
+
+    private void callFaucetIfNeeded(Account account, Amount amount) {
+        if (account.getOwnNativeTokenBalance().getAmount().compareTo(amount.toSubunits()) < 1) {
+            faucet(account, amount);
+        }
+    }
+
+    private void callFaucetIfNeeded(Account account) {
+        if (account.getOwnNativeTokenBalance().getAmount().compareTo(Amount.ofTokens(10).toSubunits()) < 1) {
+            faucet(account);
+        }
     }
 
 }
