@@ -1,5 +1,6 @@
 package com.radixdlt.test.network.client.docker;
 
+import com.github.dockerjava.api.exception.DockerClientException;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -61,43 +62,43 @@ public class RemoteDockerClient implements DockerClient {
 
             channel = (ChannelExec) session.openChannel("exec");
             channel.setCommand(String.join(" ", commands));
-            var outputBuffer = new ByteArrayOutputStream();
-            var errorBuffer = new ByteArrayOutputStream();
-            var inputStream = channel.getInputStream();
-            var errorStream = channel.getExtInputStream();
+            try (var outputBuffer = new ByteArrayOutputStream(); var errorBuffer = new ByteArrayOutputStream()) {
+                var inputStream = channel.getInputStream();
+                var errorStream = channel.getExtInputStream();
+                channel.connect();
 
-            channel.connect();
-            byte[] tmp = new byte[1024];
-            while (true) {
-                while (inputStream.available() > 0) {
-                    int i = inputStream.read(tmp, 0, 1024);
-                    if (i < 0) {
+                byte[] tmp = new byte[1024];
+                while (true) {
+                    while (inputStream.available() > 0) {
+                        int i = inputStream.read(tmp, 0, 1024);
+                        if (i < 0) {
+                            break;
+                        }
+                        outputBuffer.write(tmp, 0, i);
+                    }
+                    while (errorStream.available() > 0) {
+                        int i = errorStream.read(tmp, 0, 1024);
+                        if (i < 0) {
+                            break;
+                        }
+                        errorBuffer.write(tmp, 0, i);
+                    }
+                    if (channel.isClosed()) {
+                        if ((inputStream.available() > 0) || (errorStream.available() > 0)) {
+                            continue;
+                        }
+                        logger.debug("Command exit-status: {}", channel.getExitStatus());
                         break;
                     }
-                    outputBuffer.write(tmp, 0, i);
+                    TestingUtils.sleepMillis(250);
                 }
-                while (errorStream.available() > 0) {
-                    int i = errorStream.read(tmp, 0, 1024);
-                    if (i < 0) {
-                        break;
-                    }
-                    errorBuffer.write(tmp, 0, i);
-                }
-                if (channel.isClosed()) {
-                    if ((inputStream.available() > 0) || (errorStream.available() > 0)) {
-                        continue;
-                    }
-                    logger.debug("Command exit-status: {}", channel.getExitStatus());
-                    break;
-                }
-                TestingUtils.sleepMillis(250);
+                var error = errorBuffer.toString(StandardCharsets.UTF_8);
+                var output = outputBuffer.toString(StandardCharsets.UTF_8);
+                return (StringUtils.isBlank(output)) ? error : output;
             }
-            var error = errorBuffer.toString(StandardCharsets.UTF_8);
-            var output = outputBuffer.toString(StandardCharsets.UTF_8);
-            return (StringUtils.isBlank(output)) ? error : output;
         } catch (IOException | JSchException e) {
             // any error here should be escalated
-            throw new RuntimeException(e);
+            throw new DockerClientException(e.getMessage(), e);
         } finally {
             if (session != null) {
                 session.disconnect();

@@ -4,8 +4,6 @@ import com.github.dockerjava.api.exception.DockerClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-
 public class DisabledDockerClient implements DockerClient {
 
     private static final Logger logger = LoggerFactory.getLogger(DisabledDockerClient.class);
@@ -15,7 +13,7 @@ public class DisabledDockerClient implements DockerClient {
     }
 
     public String runCommand(String nodeLocator, String... commands) {
-        logger.trace("Disabled client cannot run command " + Arrays.toString(commands));
+        logger.trace("Disabled client cannot run command {}", commands);
         return null;
     }
 
