@@ -99,7 +99,6 @@ public final class RemoteEventProcessorOnRunner<T> {
         return runnerName;
     }
 
-    @SuppressWarnings("unchecked")
     public <U> Optional<RemoteEventProcessor<U>> getProcessor(Class<U> c) {
         if (c.isAssignableFrom(eventClass)) {
             return Optional.of((RemoteEventProcessor<U>) processor);

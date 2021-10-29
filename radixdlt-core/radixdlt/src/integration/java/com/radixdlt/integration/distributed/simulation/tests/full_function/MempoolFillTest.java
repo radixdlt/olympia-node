@@ -82,7 +82,7 @@ import com.radixdlt.integration.distributed.simulation.monitors.radix_engine.Rad
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -108,7 +108,7 @@ public class MempoolFillTest {
 		)
 		.fullFunctionNodes(SyncConfig.of(800L, 10, 5000L))
 		.addRadixEngineConfigModules(
-			new MainnetForksModule(),
+			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(),
 			new ForksModule()
 		)
@@ -158,7 +158,7 @@ public class MempoolFillTest {
 	@Ignore("Travis not playing nicely with timeouts so disable for now until fixed.")
 	public void filler_should_overwhelm_unratelimited_mempool() {
 		SimulationTest simulationTest = bftTestBuilder
-			.addOverrideModuleToAll(MempoolConfig.asModule(100, 0))
+			.overrideWithIncorrectModule(MempoolConfig.asModule(100, 0))
 			.build();
 
 		final var results = simulationTest.run().awaitCompletion();

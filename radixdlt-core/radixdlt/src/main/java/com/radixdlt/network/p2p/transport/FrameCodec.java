@@ -65,6 +65,7 @@
 package com.radixdlt.network.p2p.transport;
 
 import com.radixdlt.network.p2p.transport.handshake.Secrets;
+import io.netty.buffer.ByteBuf;
 import org.bouncycastle.crypto.StreamCipher;
 import org.bouncycastle.crypto.digests.KeccakDigest;
 import org.bouncycastle.crypto.engines.AESEngine;
@@ -112,10 +113,11 @@ public final class FrameCodec {
 		headBuffer[2] = (byte) (frame.length);
 
 		enc.processBytes(headBuffer, 0, 16, headBuffer, 0);
-		updateMac(egressMac, headBuffer, headBuffer, 16, true);
+		final var headBufferMacResult = updateEgressMac(egressMac, headBuffer);
+		out.write(headBuffer, 0, 16);
+		out.write(headBufferMacResult, 0, 16);
 
 		final var buff = new byte[256];
-		out.write(headBuffer);
 		final var payloadStream = new ByteArrayInputStream(frame);
 		while (true) {
 			final var n = payloadStream.read(buff);
@@ -136,24 +138,24 @@ public final class FrameCodec {
 
 		final var macBuffer = new byte[egressMac.getDigestSize()];
 		doSum(egressMac, macBuffer);
-		updateMac(egressMac, macBuffer, macBuffer, 0, true);
-		out.write(macBuffer, 0, 16);
+		final var egressMacResult = updateEgressMac(egressMac, macBuffer);
+		out.write(egressMacResult, 0, 16);
 	}
 
-	public Optional<byte[]> tryReadSingleFrame(byte[] input) throws IOException {
-		if (input.length < HEADER_SIZE) {
+	public Optional<byte[]> tryReadSingleFrame(ByteBuf input) throws IOException {
+		if (input.readableBytes() < HEADER_SIZE) {
 			return Optional.empty();
 		}
 
 		final var totalBodySize = readHeader(input);
 
-		if (input.length < HEADER_SIZE + totalBodySize) {
+		if (input.readableBytes() < HEADER_SIZE + totalBodySize) {
 			return Optional.empty();
 		}
 
 		final var paddingSize = totalBodySize % 16 == 0 ? 0 : 16 - (totalBodySize % 16);
 		final var payloadBuffer = new byte[totalBodySize + paddingSize + MAC_SIZE];
-		System.arraycopy(input, HEADER_SIZE, payloadBuffer, 0, payloadBuffer.length);
+		input.getBytes(HEADER_SIZE, payloadBuffer, 0, payloadBuffer.length);
 
 		final var frameSize = payloadBuffer.length - MAC_SIZE;
 		ingressMac.update(payloadBuffer, 0, frameSize);
@@ -161,7 +163,7 @@ public final class FrameCodec {
 
 		final var macBuffer = new byte[ingressMac.getDigestSize()];
 		doSum(ingressMac, macBuffer);
-		updateMac(ingressMac, macBuffer, payloadBuffer, frameSize, false);
+		updateIngressMac(ingressMac, macBuffer, payloadBuffer, frameSize);
 
 		final var bodyBuffer = new byte[totalBodySize];
 		System.arraycopy(payloadBuffer, 0, bodyBuffer, 0, totalBodySize);
@@ -169,11 +171,11 @@ public final class FrameCodec {
 		return Optional.of(bodyBuffer);
 	}
 
-	private int readHeader(byte[] input) throws IOException {
+	private int readHeader(ByteBuf input) throws IOException {
 		final var headBuffer = new byte[32];
-		System.arraycopy(input, 0, headBuffer, 0, 32);
+		input.getBytes(0, headBuffer, 0, headBuffer.length);
 
-		updateMac(ingressMac, headBuffer, headBuffer, 16, false);
+		updateIngressMac(ingressMac, headBuffer, headBuffer, 16);
 		dec.processBytes(headBuffer, 0, 16, headBuffer, 0);
 
 		int totalBodySize = headBuffer[0] & 0xFF;
@@ -183,7 +185,21 @@ public final class FrameCodec {
 		return totalBodySize;
 	}
 
-	private void updateMac(KeccakDigest mac, byte[] seed, byte[] out, int outOffset, boolean egress) throws IOException {
+	private void updateIngressMac(KeccakDigest mac, byte[] seed, byte[] out, int outOffset) throws IOException {
+		final var result = updateMac(mac, seed);
+
+		for (int i = 0; i < MAC_SIZE; i++) {
+			if (out[i + outOffset] != result[i]) {
+				throw new IOException("MAC mismatch");
+			}
+		}
+	}
+
+	private byte[] updateEgressMac(KeccakDigest mac, byte[] seed) {
+		return updateMac(mac, seed);
+	}
+
+	private byte[] updateMac(KeccakDigest mac, byte[] seed) {
 		final var aesBlock = new byte[mac.getDigestSize()];
 		doSum(mac, aesBlock);
 		makeMacCipher().processBlock(aesBlock, 0, aesBlock, 0);
@@ -193,16 +209,7 @@ public final class FrameCodec {
 		mac.update(aesBlock, 0, MAC_SIZE);
 		final var result = new byte[mac.getDigestSize()];
 		doSum(mac, result);
-
-		if (egress) {
-			System.arraycopy(result, 0, out, outOffset, MAC_SIZE);
-		} else {
-			for (int i = 0; i < MAC_SIZE; i++) {
-				if (out[i + outOffset] != result[i]) {
-					throw new IOException("MAC mismatch");
-				}
-			}
-		}
+		return result;
 	}
 
 	private AESEngine makeMacCipher() {

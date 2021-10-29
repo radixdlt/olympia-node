@@ -68,10 +68,9 @@ import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.InitialForkConfig;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RERules;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.PrivateKeys;
 import org.junit.Ignore;
@@ -129,7 +128,7 @@ public class MempoolTest {
 	@Inject private RadixEngineStateComputer stateComputer;
 	@Inject private SystemCounters systemCounters;
 	@Inject private PeersView peersView;
-	@Inject @InitialForkConfig  private ForkConfig forkConfig;
+	@Inject private RERules rules;
 	@Inject @MempoolRelayInitialDelay private long initialDelay;
 	@Inject @MempoolRelayRepeatDelay private long repeatDelay;
 
@@ -137,8 +136,8 @@ public class MempoolTest {
 		return Guice.createInjector(
 			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault().removeSigsPerRoundLimit()),
 			MempoolConfig.asModule(10, 10, 200, 500, 10),
+			new MainnetForkConfigsModule(),
 			new ForksModule(),
-			new MainnetForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
 			new MockedGenesisModule(
 				Set.of(VALIDATOR_KEY.getPublicKey()),
@@ -160,7 +159,7 @@ public class MempoolTest {
 	}
 
 	private Txn createTxn(ECKeyPair keyPair, int numMutexes) throws Exception {
-		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder(forkConfig.engineRules().getSerialization());
+		TxLowLevelBuilder atomBuilder = TxLowLevelBuilder.newBuilder(rules.getSerialization());
 		for (int i = 0; i < numMutexes; i++) {
 			var symbol = "test" + (char) ('c' + i);
 			var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
@@ -355,7 +354,6 @@ public class MempoolTest {
 	}
 
 	@Test
-	@SuppressWarnings("deprecation")
 	@Ignore("Added hack which requires genesis to be sent as message. Reenable when fixed.")
 	public void mempool_should_relay_commands_respecting_delay_config_params() throws Exception {
 		// Arrange

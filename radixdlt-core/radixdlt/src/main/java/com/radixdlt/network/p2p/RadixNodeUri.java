@@ -125,11 +125,11 @@ public final class RadixNodeUri {
 	}
 
 	private String getUriString() {
-		return String.format("radix://%s@%s:%s", NodeAddressing.of(networkNodeHrp, nodeId.getPublicKey()), host, port);
+		return String.format("radix://%s@%s:%s", nodeAddress(), host, port);
 	}
 
-	public String getNetworkNodeHrp() {
-		return this.networkNodeHrp;
+	public String nodeAddress() {
+		return NodeAddressing.of(networkNodeHrp, nodeId.getPublicKey());
 	}
 
 	@Override
@@ -148,12 +148,11 @@ public final class RadixNodeUri {
 		final var that = (RadixNodeUri) o;
 		return port == that.port
 			&& Objects.equals(host, that.host)
-			&& Objects.equals(nodeId, that.nodeId)
-			&& Objects.equals(networkNodeHrp, that.networkNodeHrp);
+			&& Objects.equals(nodeId, that.nodeId);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(host, port, nodeId, networkNodeHrp);
+		return Objects.hash(host, port, nodeId);
 	}
 }

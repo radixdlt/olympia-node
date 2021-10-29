@@ -77,6 +77,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.utils.Pair;
+import io.netty.buffer.ByteBuf;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
 import org.bouncycastle.crypto.digests.KeccakDigest;
@@ -87,7 +88,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -114,7 +114,6 @@ public final class AuthHandshaker {
 	private final byte[] nonce;
 	private final ECKeyPair ephemeralKey;
 	private final int networkId;
-	private final HashCode latestForkHash;
 	private boolean isInitiator = false;
 	private Optional<byte[]> initiatePacketOpt = Optional.empty();
 	private Optional<byte[]> responsePacketOpt = Optional.empty();
@@ -124,8 +123,7 @@ public final class AuthHandshaker {
 		Serialization serialization,
 		SecureRandom secureRandom,
 		ECKeyOps ecKeyOps,
-		int networkId,
-		HashCode latestForkHash
+		int networkId
 	) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -133,7 +131,6 @@ public final class AuthHandshaker {
 		this.nonce = randomBytes(NONCE_SIZE);
 		this.ephemeralKey = ECKeyPair.generateNew();
 		this.networkId = networkId;
-		this.latestForkHash = latestForkHash;
 	}
 
 	public byte[] initiate(ECPublicKey remotePubKey) {
@@ -166,15 +163,16 @@ public final class AuthHandshaker {
 			signature,
 			HashCode.fromBytes(ecKeyOps.nodePubKey().getBytes()),
 			HashCode.fromBytes(nonce),
-			networkId,
-			Optional.of(latestForkHash)
+			networkId
 		);
 	}
 
-	public Pair<byte[], AuthHandshakeResult> handleInitialMessage(byte[] data) {
+	public Pair<byte[], AuthHandshakeResult> handleInitialMessage(ByteBuf data) {
 		try {
-			final var sizeBytes = Arrays.copyOfRange(data, 0, 2);
-			final var encryptedPayload = Arrays.copyOfRange(data, 2, data.length);
+			final var sizeBytes = new byte[2];
+			data.getBytes(0, sizeBytes, 0, sizeBytes.length);
+			final var encryptedPayload = new byte[data.readableBytes() - sizeBytes.length];
+			data.getBytes(sizeBytes.length, encryptedPayload, 0, encryptedPayload.length);
 			final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
 			final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
 			final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
@@ -188,8 +186,7 @@ public final class AuthHandshaker {
 
 			final var response = new AuthResponseMessage(
 				HashCode.fromBytes(ephemeralKey.getPublicKey().getBytes()),
-				HashCode.fromBytes(nonce),
-				Optional.of(latestForkHash)
+				HashCode.fromBytes(nonce)
 			);
 			final var encodedResponse = serialization.toDson(response, DsonOutput.Output.WIRE);
 
@@ -209,12 +206,14 @@ public final class AuthHandshaker {
 				remotePubKey
 			);
 
-			this.initiatePacketOpt = Optional.of(data);
+			final var initiatePacket = new byte[data.readableBytes()];
+			data.getBytes(0, initiatePacket);
+			this.initiatePacketOpt = Optional.of(initiatePacket);
 			this.responsePacketOpt = Optional.of(packet);
 			this.remotePubKeyOpt = Optional.of(remotePubKey);
 
-			final var handshakeResult =
-				finalizeHandshake(remoteEphemeralKey, message.getNonce(), message.getLatestForkHash());
+			final var handshakeResult = finalizeHandshake(remoteEphemeralKey, message.getNonce());
+
 			return Pair.of(packet, handshakeResult);
 		} catch (PublicKeyException | InvalidCipherTextException | IOException ex) {
 			return Pair.of(new byte[] {STATUS_ERROR}, AuthHandshakeResult.error(
@@ -224,20 +223,24 @@ public final class AuthHandshaker {
 		}
 	}
 
-	public AuthHandshakeResult handleResponseMessage(byte[] data) throws IOException {
+	public AuthHandshakeResult handleResponseMessage(ByteBuf data) throws IOException {
 		try {
-			final var statusByte = data[0];
+			final var statusByte = data.getByte(0);
 			if (statusByte != STATUS_OK) {
 				return AuthHandshakeResult.error("Received error response", Optional.empty());
 			}
 
-			final var sizeBytes = Arrays.copyOfRange(data, 1, 3);
-			final var encryptedPayload = Arrays.copyOfRange(data, 3, data.length);
+			final var sizeBytes = new byte[2];
+			data.getBytes(1, sizeBytes, 0, sizeBytes.length);
+			final var encryptedPayload = new byte[data.readableBytes() - 3];
+			data.getBytes(3, encryptedPayload, 0, encryptedPayload.length);
 			final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
 			final var message = serialization.fromDson(plaintext, AuthResponseMessage.class);
-			this.responsePacketOpt = Optional.of(data);
+			final var responsePacket = new byte[data.readableBytes()];
+			data.getBytes(0, responsePacket);
+			this.responsePacketOpt = Optional.of(responsePacket);
 			final var remoteEphemeralKey = ECPublicKey.fromBytes(message.getEphemeralPublicKey().asBytes());
-			return finalizeHandshake(remoteEphemeralKey, message.getNonce(), message.getLatestForkHash());
+			return finalizeHandshake(remoteEphemeralKey, message.getNonce());
 		} catch (PublicKeyException | InvalidCipherTextException ex) {
 			return AuthHandshakeResult.error(
 				String.format("Handshake decryption failed (%s)", ex.getMessage()),
@@ -253,11 +256,7 @@ public final class AuthHandshaker {
 		return ECPublicKey.recoverFrom(HashCode.fromBytes(signed), signature).orElseThrow();
 	}
 
-	private AuthHandshakeSuccess finalizeHandshake(
-		ECPublicKey remoteEphemeralKey,
-		HashCode remoteNonce,
-		Optional<HashCode> remoteLatestForkHash
-	) {
+	private AuthHandshakeSuccess finalizeHandshake(ECPublicKey remoteEphemeralKey, HashCode remoteNonce) {
 		final var initiatePacket = initiatePacketOpt.get();
 		final var responsePacket = responsePacketOpt.get();
 		final var remotePubKey = remotePubKeyOpt.get();
@@ -288,7 +287,7 @@ public final class AuthHandshaker {
 			macSecrets.getSecond()
 		);
 
-		return AuthHandshakeResult.success(remotePubKey, secrets, remoteLatestForkHash);
+		return AuthHandshakeResult.success(remotePubKey, secrets);
 	}
 
 	private Pair<KeccakDigest, KeccakDigest> macSecretSetup(

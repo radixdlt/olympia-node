@@ -64,13 +64,13 @@
 
 package com.radixdlt.network.p2p.transport.handshake;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeError;
+import io.netty.buffer.Unpooled;
 import org.junit.Test;
 import java.security.SecureRandom;
 
@@ -85,14 +85,14 @@ public final class AuthHandshakerTest {
 	public void test_auth_handshake() throws Exception {
 		final var nodeKey1 = ECKeyPair.generateNew();
 		final var nodeKey2 = ECKeyPair.generateNew();
-		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, HashCode.fromInt(1));
-		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01, HashCode.fromInt(1));
+		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01);
+		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01);
 
 		final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
-		final var handshaker2ResultPair = handshaker2.handleInitialMessage(initMessage);
+		final var handshaker2ResultPair = handshaker2.handleInitialMessage(Unpooled.wrappedBuffer(initMessage));
 		final var handshaker2Result = (AuthHandshakeSuccess) handshaker2ResultPair.getSecond();
 		final var responseMessage = handshaker2ResultPair.getFirst();
-		final var handshaker1Result = (AuthHandshakeSuccess) handshaker1.handleResponseMessage(responseMessage);
+		final var handshaker1Result = (AuthHandshakeSuccess) handshaker1.handleResponseMessage(Unpooled.wrappedBuffer(responseMessage));
 
 		assertArrayEquals(handshaker1Result.getSecrets().aes, handshaker2Result.getSecrets().aes);
 		assertArrayEquals(handshaker1Result.getSecrets().mac, handshaker2Result.getSecrets().mac);
@@ -103,11 +103,11 @@ public final class AuthHandshakerTest {
 	public void test_auth_handshake_fail_on_network_id_mismatch() {
 		final var nodeKey1 = ECKeyPair.generateNew();
 		final var nodeKey2 = ECKeyPair.generateNew();
-		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, HashCode.fromInt(1));
-		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x02, HashCode.fromInt(1));
+		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01);
+		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x02);
 
 		final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
-		final var handshaker2ResultPair = handshaker2.handleInitialMessage(initMessage);
+		final var handshaker2ResultPair = handshaker2.handleInitialMessage(Unpooled.wrappedBuffer(initMessage));
 		assertTrue(handshaker2ResultPair.getSecond() instanceof AuthHandshakeError);
 		assertArrayEquals(new byte[] {0x02}, handshaker2ResultPair.getFirst());
 	}

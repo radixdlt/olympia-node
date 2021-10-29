@@ -67,39 +67,46 @@ package com.radixdlt.client.lib.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.lib.api.ValidatorAddress;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.networks.Network;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
 public final class UnstakePositions {
 	private final UInt256 amount;
+	private final UInt256 validatorTotalOwnership;
+	private final UInt256 validatorTotalStake;
 	private final ValidatorAddress validator;
 	private final int epochsUntil;
-	private final AID withdrawTxID;
 
-	private UnstakePositions(UInt256 amount, ValidatorAddress validator, int epochsUntil, AID withdrawTxID) {
+	private UnstakePositions(
+		UInt256 amount,
+		UInt256 validatorTotalOwnership,
+		UInt256 validatorTotalStake,
+		ValidatorAddress validator,
+		int epochsUntil
+	) {
 		this.amount = amount;
+		this.validatorTotalOwnership = validatorTotalOwnership;
+		this.validatorTotalStake = validatorTotalStake;
 		this.validator = validator;
 		this.epochsUntil = epochsUntil;
-		this.withdrawTxID = withdrawTxID;
 	}
 
 	@JsonCreator
 	public static UnstakePositions create(
 		@JsonProperty(value = "amount", required = true) UInt256 amount,
 		@JsonProperty(value = "validator", required = true) ValidatorAddress validator,
-		@JsonProperty(value = "epochsUntil", required = true) int epochsUntil,
-		@JsonProperty(value = "withdrawTxID", required = true) AID withdrawTxID
+		@JsonProperty(value = "validatorTotalOwnership") UInt256 validatorTotalOwnership,
+		@JsonProperty(value = "validatorTotalStake") UInt256 validatorTotalStake,
+		@JsonProperty(value = "epochsUntil", required = true) int epochsUntil
 	) {
 		requireNonNull(amount);
 		requireNonNull(validator);
-		requireNonNull(withdrawTxID);
 
-		return new UnstakePositions(amount, validator, epochsUntil, withdrawTxID);
+		return new UnstakePositions(amount, validatorTotalOwnership, validatorTotalStake, validator, epochsUntil);
 	}
 
 	@Override
@@ -115,20 +122,24 @@ public final class UnstakePositions {
 		var that = (UnstakePositions) o;
 		return epochsUntil == that.epochsUntil
 			&& amount.equals(that.amount)
-			&& validator.equals(that.validator)
-			&& withdrawTxID.equals(that.withdrawTxID);
+			&& validatorTotalOwnership.equals(that.validatorTotalOwnership)
+			&& validatorTotalStake.equals(that.validatorTotalStake)
+			&& validator.equals(that.validator);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(amount, validator, epochsUntil, withdrawTxID);
+		return Objects.hash(amount, validatorTotalOwnership, validatorTotalStake, validator, epochsUntil);
 	}
 
 	@Override
 	public String toString() {
-		return "UnstakePositionsDTO("
-			+ "amount=" + amount +	", validator=" + validator.toString(Network.MAINNET.getId())
-			+ ", epochsUntil=" + epochsUntil + ", withdrawTxID=" + withdrawTxID + ')';
+		return "UnstakePositions("
+			+ "amount=" + amount
+			+ ", validatorTotalOwnership=" + validatorTotalOwnership
+			+ ", validatorTotalStake=" + validatorTotalStake
+			+ ", validator=" + validator
+			+ ", epochsUntil=" + epochsUntil + ')';
 	}
 
 	public UInt256 getAmount() {
@@ -143,7 +154,11 @@ public final class UnstakePositions {
 		return epochsUntil;
 	}
 
-	public AID getWithdrawTxID() {
-		return withdrawTxID;
+	public Optional<UInt256> getValidatorTotalOwnership() {
+		return Optional.ofNullable(validatorTotalOwnership);
+	}
+
+	public Optional<UInt256> getValidatorTotalStake() {
+		return Optional.ofNullable(validatorTotalStake);
 	}
 }

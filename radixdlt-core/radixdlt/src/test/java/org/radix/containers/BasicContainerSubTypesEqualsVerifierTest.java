@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class BasicContainerSubTypesEqualsVerifierTest {
+
     @Test
     public void verify_all_subtypes_correctly_override_equals_and_hash_code() {
         final Set<Class<? extends BasicContainer>> subTypes = new HashSet<>();

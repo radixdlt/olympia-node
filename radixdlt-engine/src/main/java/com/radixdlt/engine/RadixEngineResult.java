@@ -68,26 +68,23 @@ import com.radixdlt.constraintmachine.REProcessedTxn;
 
 import java.util.List;
 
-public final class RadixEngineResult<M> {
+public final class RadixEngineResult {
 	private final List<REProcessedTxn> processedTxns;
-	private final M metadata;
 	private final long verificationTime;
 	private final long storeTime;
 
-	private RadixEngineResult(List<REProcessedTxn> processedTxns, M metadata, long verificationTime, long storeTime) {
+	private RadixEngineResult(List<REProcessedTxn> processedTxns, long verificationTime, long storeTime) {
 		this.processedTxns = processedTxns;
-		this.metadata = metadata;
 		this.verificationTime = verificationTime;
 		this.storeTime = storeTime;
 	}
 
-	public static <M> RadixEngineResult<M> create(
+	public static RadixEngineResult create(
 		List<REProcessedTxn> processedTxns,
-		M metadata,
 		long verificationTime,
 		long storeTime
 	) {
-		return new RadixEngineResult<>(processedTxns, metadata, verificationTime, storeTime);
+		return new RadixEngineResult(processedTxns, verificationTime, storeTime);
 	}
 
 	public long getVerificationTime() {
@@ -96,10 +93,6 @@ public final class RadixEngineResult<M> {
 
 	public long getStoreTime() {
 		return storeTime;
-	}
-
-	public M getMetadata() {
-		return metadata;
 	}
 
 	// TODO: Create separate class for single transaction results

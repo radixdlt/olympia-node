@@ -79,21 +79,12 @@ Majority of the HTTP APIs are replaced with JSON-RPC counterparts. Remaining and
 | /universe.json | GET | Get Radix Universe. Used during setup and configuration of the node but if possible looking to remove |
 | /metrics | GET | Returns metrics in the [Prometheus text format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format). |
 
-Node health status has following format: `{"network_status" : "<network_status>", "fork_vote_status": "<fork_vote_status>", "unknown_reported_forks_hashes": ["<fork_hash>"] }`
-
-where `<network_status>` is one of the following:
+Node health status has following format: `{"status" : "<status>" }`, where `<status>` is one of the following:                             
  - BOOTING - node is booting and not ready to accept requests
  - SYNCING - node is catching up the network
  - UP - node is in sync with consensus
- - STALLED - node is out of sync and not trying to sync with network, but network is still available
- - OUT_OF_SYNC - node is out of sync and does not get updates from network (for example, connection to network is lost)
-
-`fork_vote_status` is one of the following:
-- VOTE_REQUIRED - indicates that a fork vote is required (done by sending a validator update transaction)
-- NO_ACTION_NEEDED - indicates that the validator has already voted for its most recent fork
-
-and `unknown_reported_forks_hashes` is a list of fork votes hashes that this node received from others
-during the p2p handshake. If the list is non-empty, it might indicate that a new version of the software is available to download (although not necessarily).
+ - STALLED - node is out of sync and not trying to sync with network, but network is still available.
+ - OUT_OF_SYNC - node is out of sync and does not get updates from network (for example, connection to network is lost).
 
 All listed above endpoints are expected to be protected by firewall and/or require authentication/etc.
 

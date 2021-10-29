@@ -64,7 +64,6 @@
 
 package com.radixdlt.network.p2p.transport;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyOps;
@@ -85,7 +84,6 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
-import io.netty.handler.codec.bytes.ByteArrayEncoder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -106,7 +104,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 	private final P2PConfig config;
 	private final Addressing addressing;
 	private final int networkId;
-	private final HashCode latestForkHash;
 	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final SecureRandom secureRandom;
@@ -118,7 +115,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		P2PConfig config,
 		Addressing addressing,
 		int networkId,
-		HashCode latestForkHash,
 		SystemCounters counters,
 		Serialization serialization,
 		SecureRandom secureRandom,
@@ -129,7 +125,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		this.config = Objects.requireNonNull(config);
 		this.addressing = Objects.requireNonNull(addressing);
 		this.networkId = networkId;
-		this.latestForkHash = latestForkHash;
 		this.counters = Objects.requireNonNull(counters);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.secureRandom = Objects.requireNonNull(secureRandom);
@@ -210,7 +205,6 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 			config,
 			addressing,
 			networkId,
-			latestForkHash,
 			counters,
 			serialization,
 			secureRandom,
@@ -225,9 +219,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 		final int headerLength = FRAME_HEADER_LENGTH;
 		socketChannel.pipeline()
 			.addLast("unpack", new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
-			.addLast("bytesDecoder", new ByteArrayDecoder())
 			.addLast("handler", peerChannel)
-			.addLast("pack", new LengthFieldPrepender(headerLength))
-			.addLast("bytesEncoder", new ByteArrayEncoder());
+			.addLast("pack", new LengthFieldPrepender(headerLength));
 	}
 }

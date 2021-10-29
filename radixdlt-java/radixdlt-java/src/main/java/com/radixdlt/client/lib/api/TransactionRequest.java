@@ -65,7 +65,6 @@
 package com.radixdlt.client.lib.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.hash.HashCode;
 import com.radixdlt.client.lib.api.action.Action;
 import com.radixdlt.client.lib.api.action.BurnAction;
 import com.radixdlt.client.lib.api.action.CreateFixedTokenAction;
@@ -146,8 +145,8 @@ public class TransactionRequest {
 			return this;
 		}
 
-		public TransactionRequestBuilder unstake(AccountAddress from, ValidatorAddress validator, UInt256 amount) {
-			actions.add(new UnstakeAction(from, validator, amount));
+		public TransactionRequestBuilder unstake(AccountAddress to, ValidatorAddress validator, UInt256 amount) {
+			actions.add(new UnstakeAction(to, validator, amount));
 			return this;
 		}
 
@@ -171,13 +170,8 @@ public class TransactionRequest {
 			return this;
 		}
 
-		public TransactionRequestBuilder updateValidatorMetadata(
-			ValidatorAddress validator,
-			Optional<String> name,
-			Optional<String> url,
-			Optional<HashCode> forkVoteHash
-		) {
-			actions.add(new UpdateValidatorMetadataAction(validator, name.orElse(null), url.orElse(null), forkVoteHash.orElse(null)));
+		public TransactionRequestBuilder updateValidatorMetadata(ValidatorAddress validator, Optional<String> name, Optional<String> url) {
+			actions.add(new UpdateValidatorMetadataAction(validator, name.orElse(null), url.orElse(null)));
 			return this;
 		}
 
@@ -200,7 +194,10 @@ public class TransactionRequest {
 			AccountAddress to, ECPublicKey publicKeyOfSigner, String symbol,
 			String name, String description, String iconUrl, String tokenUrl, UInt256 supply
 		) {
-			actions.add(new CreateFixedTokenAction(to, publicKeyOfSigner, symbol, name, description, iconUrl, tokenUrl, supply));
+			actions.add(new CreateFixedTokenAction(
+				to, publicKeyOfSigner, symbol, name,
+				description, iconUrl, tokenUrl, supply
+			));
 			return this;
 		}
 
@@ -210,7 +207,9 @@ public class TransactionRequest {
 		) {
 			actions.add(new CreateMutableTokenAction(
 				publicKeyOfSigner, symbol, name,
-				iconUrl.orElse(null), tokenUrl.orElse(null), description.orElse(null)
+				description.orElse(null),
+				iconUrl.orElse(null),
+				tokenUrl.orElse(null)
 			));
 			return this;
 		}

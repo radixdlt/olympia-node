@@ -64,7 +64,6 @@
 
 package com.radixdlt.network.p2p.transport;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
@@ -73,6 +72,7 @@ import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.network.p2p.transport.handshake.Secrets;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Pair;
+import io.netty.buffer.Unpooled;
 import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.security.SecureRandom;
@@ -105,21 +105,21 @@ public final class FrameCodecTest {
 
 			final var baos = new ByteArrayOutputStream();
 			source.writeFrame(message, baos);
-			final var readFrame = destination.tryReadSingleFrame(baos.toByteArray());
+			final var readFrame = destination.tryReadSingleFrame(Unpooled.wrappedBuffer(baos.toByteArray()));
 
 			assertArrayEquals(message, readFrame.get());
 		}
 	}
 
 	private Pair<Secrets, Secrets> agreeSecrets(ECKeyPair nodeKey1, ECKeyPair nodeKey2) throws Exception {
-		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, HashCode.fromInt(1));
-		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01, HashCode.fromInt(1));
+		final var handshaker1 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01);
+		final var handshaker2 = new AuthHandshaker(serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01);
 
 		final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
-		final var handshaker2ResultPair = handshaker2.handleInitialMessage(initMessage);
+		final var handshaker2ResultPair = handshaker2.handleInitialMessage(Unpooled.wrappedBuffer(initMessage));
 		final var handshaker2Result = (AuthHandshakeSuccess) handshaker2ResultPair.getSecond();
 		final var responseMessage = handshaker2ResultPair.getFirst();
-		final var handshaker1Result = (AuthHandshakeSuccess) handshaker1.handleResponseMessage(responseMessage);
+		final var handshaker1Result = (AuthHandshakeSuccess) handshaker1.handleResponseMessage(Unpooled.wrappedBuffer(responseMessage));
 
 		return Pair.of(handshaker1Result.getSecrets(), handshaker2Result.getSecrets());
 	}

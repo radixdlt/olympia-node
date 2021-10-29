@@ -64,28 +64,58 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.engine.PostProcessor;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
+import org.json.JSONObject;
 
 /**
  * Configuration used for hard forks
  */
-public interface ForkConfig {
-	String name();
-	HashCode hash();
-	RERules engineRules();
-	ForkConfig addPostProcessor(PostProcessor<LedgerAndBFTProof> newPostProcessor);
+public final class ForkConfig {
+	private final long epoch;
+	private final String name;
+	private final RERulesConfig config;
+	private final RERulesVersion version;
 
-	static HashCode voteHash(ECPublicKey publicKey, ForkConfig forkConfig) {
-		return voteHash(publicKey, forkConfig.hash());
+	public ForkConfig(
+		long epoch,
+		String name,
+		RERulesVersion version,
+		RERulesConfig config
+	) {
+		this.epoch = epoch;
+		this.name = name;
+		this.config = config;
+		this.version = version;
 	}
 
-	static HashCode voteHash(ECPublicKey publicKey, HashCode forkHash) {
-		final var bytes = ByteUtils.concatenate(publicKey.getBytes(), forkHash.asBytes());
-		return HashUtils.sha256(bytes); // it's actually hashed twice (see HashUtils impl)
+	public long getEpoch() {
+		return epoch;
+	}
+
+	public RERulesVersion getVersion() {
+		return version;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public RERulesConfig getConfig() {
+		return config;
+	}
+
+	public ForkConfig overrideEpoch(long epoch) {
+		return new ForkConfig(epoch, this.name, this.version, this.config);
+	}
+
+	public ForkConfig overrideConfig(RERulesConfig config) {
+		return new ForkConfig(this.epoch, this.name, this.version, config);
+	}
+
+	public JSONObject asJson() {
+		return new JSONObject()
+			.put("epoch", epoch)
+			.put("name", name)
+			.put("version", version.name().toLowerCase())
+			.put("config", config.asJson());
 	}
 }
