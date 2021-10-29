@@ -84,6 +84,7 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.p2p.NodeId;
@@ -96,18 +97,23 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.sync.CommittedReader;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 import org.radix.network.messaging.Message;
+import org.radix.utils.LedgerFileSync;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -128,6 +134,8 @@ public final class RadixShell {
 		private int p2pServerPort = 0;
 		private ImmutableSet.Builder<String> moduleRunnersBuilder = new ImmutableSet.Builder<>();
 		private ImmutableMap.Builder<String, String> customProperties = new ImmutableMap.Builder<>();
+		private Optional<String> dataDir = Optional.empty();
+		private String nodeKeyPass = "supersecret";
 
 		public NodeBuilder() throws ParseException {
 			properties = new RuntimeProperties(new JSONObject(), new String[] { });
@@ -139,7 +147,6 @@ public final class RadixShell {
 			properties.set("network.p2p.listen_port", p2pServerPort);
 			properties.set("network.p2p.listen_address", "127.0.0.1");
 			properties.set("network.p2p.seed_nodes", "");
-			properties.set("network.host_ip", "127.0.0.1");
 			return this;
 		}
 
@@ -153,31 +160,58 @@ public final class RadixShell {
 			return this;
 		}
 
+		public NodeBuilder dataDir(String path) {
+			this.dataDir = Optional.of(path);
+			return this;
+		}
+
+		public NodeBuilder keyPass(String pass) {
+			this.nodeKeyPass = pass;
+			return this;
+		}
+
 		public NodeBuilder prop(String name, String value) {
 			customProperties.put(name, value);
 			return this;
 		}
 
 		public Node build() throws Exception {
-			final var dataDir = Files.createTempDirectory("radix-shell-node-");
-			final var nodeKeyPath = dataDir.toString() + "/node-keystore.ks";
-			final var nodeKeyPass = "supersecret";
+			final File dataDir;
+			if (this.dataDir.isPresent()) {
+				dataDir = new File(this.dataDir.get());
+				if (!dataDir.exists()) {
+					dataDir.mkdirs();
+				}
+			} else {
+		 		dataDir = new File(Files.createTempDirectory("radix-shell-node-").toString());
+			}
+			final var nodeKeyFile = new File(dataDir, "node-keystore.ks");
 
 			customProperties.build().forEach((k, v) -> properties.set(k, v));
 
 			properties.set("db.location", dataDir.toString());
-			properties.set("node.key.path", nodeKeyPath);
+
+			if (properties.get("node.key.path", "").isEmpty()) {
+				properties.set("node.key.path", nodeKeyFile.getAbsolutePath());
+			}
+
+			if (properties.get("network.host_ip", "").isEmpty()) {
+				properties.set("network.host_ip", "127.0.0.1");
+			}
 
 			log.info("Node data dir: {}", dataDir);
 
 			final var keyPair = ECKeyPair.generateNew();
-			RadixKeyStore.fromFile(new File(nodeKeyPath), nodeKeyPass.toCharArray(), true)
-				.writeKeyPair("node", keyPair);
+			if (!nodeKeyFile.exists()) {
+				RadixKeyStore.fromFile(nodeKeyFile, nodeKeyPass.toCharArray(), true)
+					.writeKeyPair("node", keyPair);
+			}
 
+			// TODO: this is a bit of a hack, but would need to refactor PersistedBFTKeyManager otherwise
 			setEnv("RADIX_NODE_KEYSTORE_PASSWORD", nodeKeyPass);
 
 			properties.set("network.id", network.getId());
-			if (network.genesisTxn().isEmpty() && properties.get("network.genesis_txn").isEmpty()) {
+			if (network.genesisTxn().isEmpty() && properties.get("network.genesis_txn", "").isEmpty()) {
 				properties.set("network.genesis_txn", Network.STOKENET.genesisTxn().get());
 			}
 
@@ -318,6 +352,28 @@ public final class RadixShell {
 		public void cleanMsgConsumers() {
 			msgConsumers.forEach(Disposable::dispose);
 			msgConsumers.clear();
+		}
+
+		public void writeLedgerSyncToFile(String fileName) throws IOException {
+			final var start = System.currentTimeMillis();
+			LedgerFileSync.writeToFile(
+				fileName,
+				getInstance(Serialization.class),
+				getInstance(CommittedReader.class)
+			);
+			final var time = System.currentTimeMillis() - start;
+			System.out.printf("Dump finished. Took %ss%n", time / 1000);
+		}
+
+		public void restoreLedgerFromFile(String fileName) throws IOException {
+			final var start = System.currentTimeMillis();
+			LedgerFileSync.restoreFromFile(
+				fileName,
+				getInstance(Serialization.class),
+				getInstance(Key.get(new TypeLiteral<EventDispatcher<VerifiedTxnsAndProof>>() { }))
+			);
+			final var time = System.currentTimeMillis() - start;
+			System.out.printf("Restore finished. Took %ss%n", time / 1000);
 		}
 
 		@Override

@@ -66,7 +66,6 @@ package com.radixdlt.sync;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
@@ -155,7 +154,7 @@ public final class RemoteSyncService {
 		}
 
 		final var verifiable = new DtoTxnsAndProof(
-			committedCommands.getTxns().stream().map(Txn::getPayload).collect(Collectors.toList()),
+			committedCommands.getTxns(),
 			remoteCurrentHeader,
 			committedCommands.getProof().toDto()
 		);

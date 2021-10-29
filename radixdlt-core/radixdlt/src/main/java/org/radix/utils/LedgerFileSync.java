@@ -62,88 +62,126 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package org.radix.utils;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.Compress;
 
+import javax.annotation.concurrent.Immutable;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.concurrent.Immutable;
 
-/**
- * A commands and proof which has not been verified
- */
-@Immutable
-@SerializerId2("ledger.commands_and_proof")
-public final class DtoTxnsAndProof {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
+public final class LedgerFileSync {
 
-	@JsonProperty("txns")
-	@DsonOutput(Output.ALL)
-	private final List<Txn> txns;
-
-	@JsonProperty("head")
-	@DsonOutput(Output.ALL)
-	private final DtoLedgerProof head;
-
-	@JsonProperty("tail")
-	@DsonOutput(Output.ALL)
-	private final DtoLedgerProof tail;
-
-	@JsonCreator
-	public DtoTxnsAndProof(
-		@JsonProperty("txns") List<Txn> txns,
-		@JsonProperty("head") DtoLedgerProof head,
-		@JsonProperty("tail") DtoLedgerProof tail
-	) {
-		this.txns = txns == null ? ImmutableList.of() : txns;
-		this.head = Objects.requireNonNull(head);
-		this.tail = Objects.requireNonNull(tail);
-	}
-
-	public List<Txn> getTxns() {
-		return txns;
-	}
-
-	public DtoLedgerProof getHead() {
-		return head;
-	}
-
-	public DtoLedgerProof getTail() {
-		return tail;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{head=%s tail=%s}", this.getClass().getSimpleName(), head, tail);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
+	public static void writeToFile(
+		String fileName,
+		Serialization serialization,
+		CommittedReader committedReader
+	) throws IOException {
+		final var initialProof = committedReader.getEpochProof(1L);
+		final var endProofOpt = committedReader.getLastProof();
+		if (initialProof.isPresent() && endProofOpt.isPresent()) {
+			final var endProof = endProofOpt.get();
+			try (var out = new FileOutputStream(fileName)) {
+				var currentProof = initialProof.get();
+				var nextCommands = committedReader.getNextCommittedTxns(currentProof.toDto());
+				while (nextCommands != null && nextCommands.getProof().getStateVersion() <= endProof.getStateVersion()) {
+					final var commandsAndProof = new CommandsAndProof(nextCommands.getTxns(), nextCommands.getProof().toDto());
+					final var serialized = Compress.compress(serialization.toDson(commandsAndProof, DsonOutput.Output.WIRE));
+					out.write(ByteBuffer.allocate(4).putInt(serialized.length).array());
+					out.write(serialized);
+					currentProof = nextCommands.getProof();
+					nextCommands = committedReader.getNextCommittedTxns(currentProof.toDto());
+				}
+			}
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		DtoTxnsAndProof that = (DtoTxnsAndProof) o;
-		return Objects.equals(txns, that.txns)
-				&& Objects.equals(head, that.head)
-				&& Objects.equals(tail, that.tail);
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(txns, head, tail);
+	public static void restoreFromFile(
+		String fileName,
+		Serialization serialization,
+		EventDispatcher<VerifiedTxnsAndProof> verifiedTxnsAndProofDispatcher
+	) throws IOException {
+		try (var in = new FileInputStream(fileName)) {
+			while (in.available() > 0) {
+				final var len = ByteBuffer.wrap(in.readNBytes(4)).getInt();
+				final var data = in.readNBytes(len);
+				final var wrapper = serialization.fromDson(Compress.uncompress(data), CommandsAndProof.class);
+				final var proof = wrapper.getProof();
+				// TODO: verify the proof
+				final var verifiedTxnsAndProof = VerifiedTxnsAndProof.create(
+					wrapper.getTxns(),
+					new LedgerProof(proof.getOpaque(), proof.getLedgerHeader(), proof.getSignatures())
+				);
+				verifiedTxnsAndProofDispatcher.dispatch(verifiedTxnsAndProof);
+			}
+		}
+	}
+
+	@Immutable
+	@SerializerId2("ledger_file_sync.commands_and_proof")
+	private static final class CommandsAndProof {
+		@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+		@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+		SerializerDummy serializer = SerializerDummy.DUMMY;
+
+		@JsonProperty("txns")
+		@DsonOutput(DsonOutput.Output.ALL)
+		private final List<Txn> txns;
+
+		@JsonProperty("proof")
+		@DsonOutput(DsonOutput.Output.ALL)
+		private final DtoLedgerProof proof;
+
+		@JsonCreator
+		public CommandsAndProof(
+			@JsonProperty("txns") List<Txn> txns,
+			@JsonProperty("proof") DtoLedgerProof proof
+		) {
+			this.txns = Objects.requireNonNull(txns);
+			this.proof = Objects.requireNonNull(proof);
+		}
+
+		public List<Txn> getTxns() {
+			return txns;
+		}
+
+		public DtoLedgerProof getProof() {
+			return proof;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			final var that = (CommandsAndProof) o;
+			return Objects.equals(txns, that.txns)
+				&& Objects.equals(proof, that.proof);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(txns, proof);
+		}
 	}
 }
