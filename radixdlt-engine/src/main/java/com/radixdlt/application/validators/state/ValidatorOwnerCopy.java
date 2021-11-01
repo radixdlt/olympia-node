@@ -70,7 +70,7 @@ import com.radixdlt.identifiers.REAddr;
 import java.util.Objects;
 import java.util.OptionalLong;
 
-public final class ValidatorOwnerCopy implements ValidatorData {
+public final class ValidatorOwnerCopy implements ValidatorUpdatingData {
 	private final ECPublicKey validatorKey;
 	private final REAddr owner;
 	private final OptionalLong epochUpdate;
@@ -98,6 +98,7 @@ public final class ValidatorOwnerCopy implements ValidatorData {
 		return new ValidatorOwnerCopy(validatorKey, REAddr.ofPubKeyAccount(validatorKey));
 	}
 
+	@Override
 	public OptionalLong getEpochUpdate() {
 		return epochUpdate;
 	}

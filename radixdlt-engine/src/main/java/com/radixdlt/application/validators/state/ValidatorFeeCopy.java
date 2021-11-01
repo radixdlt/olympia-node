@@ -71,7 +71,7 @@ import java.util.OptionalLong;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 
-public final class ValidatorFeeCopy implements ValidatorData {
+public final class ValidatorFeeCopy implements ValidatorUpdatingData {
 	private final ECPublicKey validatorKey;
 	private final int curRakePercentage;
 	private final OptionalLong epochUpdate;
@@ -92,6 +92,7 @@ public final class ValidatorFeeCopy implements ValidatorData {
 		return new ValidatorFeeCopy(validatorKey, RAKE_MAX);
 	}
 
+	@Override
 	public OptionalLong getEpochUpdate() {
 		return epochUpdate;
 	}

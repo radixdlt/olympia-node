@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -64,66 +63,8 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.radixdlt.crypto.ECPublicKey;
-
-import java.util.Objects;
 import java.util.OptionalLong;
 
-public final class ValidatorRegisteredCopy implements ValidatorUpdatingData {
-	private final ECPublicKey validatorKey;
-	private final boolean isRegistered;
-	private final OptionalLong epochUpdate;
-
-	public ValidatorRegisteredCopy(
-		ECPublicKey validatorKey,
-		boolean isRegistered
-	) {
-		this.epochUpdate = OptionalLong.empty();
-		this.validatorKey = validatorKey;
-		this.isRegistered = isRegistered;
-	}
-
-	public ValidatorRegisteredCopy(
-		OptionalLong epochUpdate,
-		ECPublicKey validatorKey,
-		boolean isRegistered
-	) {
-		this.epochUpdate = epochUpdate;
-		this.validatorKey = validatorKey;
-		this.isRegistered = isRegistered;
-	}
-
-	public static ValidatorRegisteredCopy createVirtual(ECPublicKey validatorKey) {
-		return new ValidatorRegisteredCopy(validatorKey, false);
-	}
-
-	@Override
-	public OptionalLong getEpochUpdate() {
-		return epochUpdate;
-	}
-
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
-	}
-
-	public boolean isRegistered() {
-		return isRegistered;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(epochUpdate, validatorKey, isRegistered);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof ValidatorRegisteredCopy)) {
-			return false;
-		}
-
-		var other = (ValidatorRegisteredCopy) o;
-		return Objects.equals(this.epochUpdate, other.epochUpdate)
-			&& Objects.equals(this.validatorKey, other.validatorKey)
-			&& this.isRegistered == other.isRegistered;
-	}
+public interface ValidatorUpdatingData extends ValidatorData {
+	OptionalLong getEpochUpdate();
 }

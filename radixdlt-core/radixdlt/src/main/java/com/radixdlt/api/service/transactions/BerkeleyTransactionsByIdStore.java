@@ -72,19 +72,21 @@ import com.radixdlt.api.archive.construction.ActionType;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;
-import com.radixdlt.application.system.state.UnclaimedREAddr;
+import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.AccountBucket;
+import com.radixdlt.application.tokens.state.ResourceData;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.application.validators.state.ValidatorUpdatingData;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
@@ -195,9 +197,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 				continue;
 			}
 
-			if (stateUpdate.getParsed() instanceof TokenResource) {
-				var tokenResource = (TokenResource) stateUpdate.getParsed();
-
+			if (stateUpdate.getParsed() instanceof ResourceData) {
 				// A bit of a super hack to get the rri
 				var rri = groupedStateUpdates.stream()
 					.map(REStateUpdate::getParsed)
@@ -206,198 +206,144 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 					.map(metadata -> addressing.forResources().of(metadata.getSymbol(), metadata.getAddr()))
 					.findAny().orElseThrow();
 
-				var operationJson = new JSONObject()
-					.put("type", "Data")
-					.put("stateIdentifier", new JSONObject()
-						.put("type", "resource")
-						.put("rri", rri)
-						.put("propertyIdentifier", new JSONObject()
-							.put("name", "data")
-						)
-					)
-					.put("data", new JSONObject()
+				var operationJson = new JSONObject().put("type", "Data");
+				var stateIdentifierJson = new JSONObject()
+					.put("type", "token")
+					.put("rri", rri);
+				var propertyIdentifier = new JSONObject();
+				stateIdentifierJson.put("propertyIdentifier", propertyIdentifier);
+				operationJson.put("stateIdentifier", stateIdentifierJson);
+				var dataJson = new JSONObject();
+				operationJson.put("data", dataJson);
+
+				if (stateUpdate.getParsed() instanceof TokenResource) {
+					var tokenResource = (TokenResource) stateUpdate.getParsed();
+					propertyIdentifier.put("name", "data");
+					dataJson
 						.put("type", "token_resource")
 						.put("granularity", tokenResource.getGranularity().toString())
 						.put("isMutable", tokenResource.isMutable())
 						.putOpt("owner", tokenResource.getOwner()
 							.map(REAddr::ofPubKeyAccount)
 							.map(addressing.forAccounts()::of)
-							.orElse(null))
-					);
-				dataOperations.add(operationJson);
-			}
-
-			if (stateUpdate.getParsed() instanceof TokenResourceMetadata) {
-				var metadata = (TokenResourceMetadata) stateUpdate.getParsed();
-				var rri = addressing.forResources().of(metadata.getSymbol(), metadata.getAddr());
-				var operationJson = new JSONObject()
-					.put("type", "Data")
-					.put("stateIdentifier", new JSONObject()
-						.put("type", "resource")
-						.put("rri", rri)
-						.put("propertyIdentifier", new JSONObject()
-							.put("name", "metadata")
-						)
-					)
-					.put("data", new JSONObject()
+							.orElse(null));
+				} else if (stateUpdate.getParsed() instanceof TokenResourceMetadata) {
+					var metadata = (TokenResourceMetadata) stateUpdate.getParsed();
+					propertyIdentifier.put("name", "metadata");
+					dataJson
 						.put("type", "token_resource_metadata")
 						.put("symbol", metadata.getSymbol())
 						.put("name", metadata.getName())
 						.put("description", metadata.getDescription())
 						.put("url", metadata.getUrl())
-						.put("iconUrl", metadata.getIconUrl())
-					);
-				dataOperations.add(operationJson);
-			}
+						.put("iconUrl", metadata.getIconUrl());
+				} else {
+					throw new IllegalStateException("Unknown Resource Data " + stateUpdate.getParsed());
+				}
 
-			if (stateUpdate.getParsed() instanceof EpochData) {
-				var epochData = (EpochData) stateUpdate.getParsed();
-				var operationJson = new JSONObject()
-					.put("type", "Data")
-					.put("stateIdentifier", new JSONObject()
-						.put("type", "system")
-						.put("propertyIdentifier", new JSONObject()
-							.put("name", "epoch")
-						)
-					)
-					.put("data", new JSONObject()
-						.put("type", "epoch_data")
-						.put("epoch", epochData.getEpoch())
-					);
 				dataOperations.add(operationJson);
-			}
+			} else if (stateUpdate.getParsed() instanceof SystemData) {
+				var operationJson = new JSONObject().put("type", "Data");
+				var stateIdentifierJson = new JSONObject().put("type", "system");
+				var propertyIdentifier = new JSONObject();
+				stateIdentifierJson.put("propertyIdentifier", propertyIdentifier);
+				operationJson.put("stateIdentifier", stateIdentifierJson);
+				var dataJson = new JSONObject();
+				operationJson.put("data", dataJson);
 
-			if (stateUpdate.getParsed() instanceof RoundData) {
-				var roundData = (RoundData) stateUpdate.getParsed();
-				var operationJson = new JSONObject()
-					.put("type", "Data")
-					.put("stateIdentifier", new JSONObject()
-						.put("type", "system")
-						.put("propertyIdentifier", new JSONObject()
-							.put("name", "round")
-						)
-					)
-					.put("data", new JSONObject()
+				if (stateUpdate.getParsed() instanceof EpochData) {
+					var epochData = (EpochData) stateUpdate.getParsed();
+					propertyIdentifier.put("name", "epoch");
+					dataJson.put("type", "epoch_data").put("epoch", epochData.getEpoch());
+				} else if (stateUpdate.getParsed() instanceof RoundData) {
+					var roundData = (RoundData) stateUpdate.getParsed();
+					propertyIdentifier.put("name", "round");
+					dataJson
 						.put("type", "round_data")
-						.put("timestamp", roundData.getTimestamp())
 						.put("round", roundData.getView())
-					);
-				dataOperations.add(operationJson);
-			}
+						.put("timestamp", roundData.getTimestamp());
+				} else {
+					throw new IllegalStateException("Unknown system data:  " + stateUpdate.getParsed());
+				}
 
-			if (stateUpdate.getParsed() instanceof ValidatorRegisteredCopy) {
-				var preparedValidatorRegistered = (ValidatorRegisteredCopy) stateUpdate.getParsed();
-				var operationJson = new JSONObject()
-					.put("type", "Data")
-					.put("stateIdentifier", new JSONObject()
-						.put("type", "system")
-						.put("propertyIdentifier", new JSONObject()
-							.put("validator", addressing.forValidators().of(preparedValidatorRegistered.getValidatorKey()))
-							.put("name", "prepared_registered")
-						)
-					)
-					.put("data", new JSONObject()
+				dataOperations.add(operationJson);
+			} else if (stateUpdate.getParsed() instanceof ValidatorUpdatingData) {
+				var validatorUpdatingData = (ValidatorUpdatingData) stateUpdate.getParsed();
+				var operationJson = new JSONObject().put("type", "Data");
+				var stateIdentifierJson = new JSONObject().put("type", "system");
+				var propertyIdentifier = new JSONObject()
+					.put("validator", addressing.forValidators().of(validatorUpdatingData.getValidatorKey()));
+				stateIdentifierJson.put("propertyIdentifier", propertyIdentifier);
+				operationJson.put("stateIdentifier", stateIdentifierJson);
+				var dataJson = new JSONObject();
+				operationJson.put("data", dataJson);
+
+				if (stateUpdate.getParsed() instanceof ValidatorRegisteredCopy) {
+					var preparedValidatorRegistered = (ValidatorRegisteredCopy) stateUpdate.getParsed();
+					propertyIdentifier.put("name", "prepared_registered");
+					dataJson
 						.put("type", "prepared_validator_registered")
-						.put("registered", preparedValidatorRegistered.isRegistered())
-					);
-				dataOperations.add(operationJson);
-			} else if (stateUpdate.getParsed() instanceof ValidatorOwnerCopy) {
-				var preparedValidatorOwner = (ValidatorOwnerCopy) stateUpdate.getParsed();
-				var operationJson = new JSONObject()
-					.put("type", "Data")
-					.put("stateIdentifier", new JSONObject()
-						.put("type", "system")
-						.put("propertyIdentifier", new JSONObject()
-							.put("validator", addressing.forValidators().of(preparedValidatorOwner.getValidatorKey()))
-							.put("name", "prepared_owner"))
-					)
-					.put("data", new JSONObject()
+						.put("registered", preparedValidatorRegistered.isRegistered());
+				} else if (stateUpdate.getParsed() instanceof ValidatorOwnerCopy) {
+					var preparedValidatorOwner = (ValidatorOwnerCopy) stateUpdate.getParsed();
+					propertyIdentifier.put("name", "prepared_validator_owner");
+					dataJson
 						.put("type", "prepared_validator_owner")
-						.put("registered", addressing.forAccounts().of(preparedValidatorOwner.getOwner()))
-					);
-				dataOperations.add(operationJson);
-			} else if (stateUpdate.getParsed() instanceof ValidatorFeeCopy) {
-				var preparedValidatorFee = (ValidatorFeeCopy) stateUpdate.getParsed();
-				var operationJson = new JSONObject()
-					.put("type", "Data")
-					.put("stateIdentifier", new JSONObject()
-						.put("type", "system")
-						.put("propertyIdentifier", new JSONObject()
-							.put("name", "prepared_fee")
-							.put("validator", addressing.forValidators().of(preparedValidatorFee.getValidatorKey()))
-						)
-					)
-					.put("data", new JSONObject()
+						.put("registered", addressing.forAccounts().of(preparedValidatorOwner.getOwner()));
+				} else if (stateUpdate.getParsed() instanceof ValidatorFeeCopy) {
+					var preparedValidatorFee = (ValidatorFeeCopy) stateUpdate.getParsed();
+					propertyIdentifier.put("name", "prepared_validator_fee");
+					dataJson
 						.put("type", "prepared_validator_fee")
-						.put("fee", preparedValidatorFee.getRakePercentage())
-					);
-				dataOperations.add(operationJson);
-			}
+						.put("fee", preparedValidatorFee.getRakePercentage());
+				} else {
+					throw new IllegalStateException("Unknown validator updating data: " + stateUpdate.getParsed());
+				}
 
-			if (stateUpdate.getParsed() instanceof ValidatorMetaData) {
-				var validatorMetaData = (ValidatorMetaData) stateUpdate.getParsed();
-				var operationJson = new JSONObject()
-					.put("type", "Data")
-					.put("stateIdentifier", new JSONObject()
-						.put("type", "validator")
-						.put("validator", addressing.forValidators().of(validatorMetaData.getValidatorKey()))
-						.put("propertyIdentifier", new JSONObject()
-							.put("name", "metadata")
-						)
-					)
-					.put("data", new JSONObject()
+				dataOperations.add(operationJson);
+			} else if (stateUpdate.getParsed() instanceof ValidatorData) {
+				var validatorData = (ValidatorData) stateUpdate.getParsed();
+				var operationJson = new JSONObject().put("type", "Data");
+				var stateIdentifierJson = new JSONObject()
+					.put("type", "validator")
+					.put("validator", addressing.forValidators().of(validatorData.getValidatorKey()));
+				var propertyIdentifier = new JSONObject();
+				operationJson.put("stateIdentifier", stateIdentifierJson);
+				var dataJson = new JSONObject();
+				operationJson.put("data", dataJson);
+
+				if (stateUpdate.getParsed() instanceof ValidatorMetaData) {
+					var validatorMetaData = (ValidatorMetaData) stateUpdate.getParsed();
+					propertyIdentifier.put("name", "metadata");
+					dataJson
 						.put("type", "validator_metadata")
 						.put("name", validatorMetaData.getName())
-						.put("url", validatorMetaData.getUrl())
-					);
-				dataOperations.add(operationJson);
-			} else if (stateUpdate.getParsed() instanceof ValidatorBFTData) {
-				var validatorBFTData = (ValidatorBFTData) stateUpdate.getParsed();
-				var operationJson = new JSONObject()
-					.put("type", "Data")
-					.put("stateIdentifier", new JSONObject()
-						.put("type", "validator")
-						.put("validator", addressing.forValidators().of(validatorBFTData.getValidatorKey()))
-						.put("propertyIdentifier", new JSONObject()
-							.put("name", "bft_data")
-						)
-					)
-					.put("data", new JSONObject()
+						.put("url", validatorMetaData.getUrl());
+				} else if (stateUpdate.getParsed() instanceof ValidatorBFTData) {
+					var validatorBFTData = (ValidatorBFTData) stateUpdate.getParsed();
+					propertyIdentifier.put("name", "bft_data");
+					dataJson
 						.put("type", "validator_bft_data")
 						.put("proposals_completed", validatorBFTData.proposalsCompleted())
-						.put("proposals_missed", validatorBFTData.proposalsMissed())
-					);
-				dataOperations.add(operationJson);
-			} else if (stateUpdate.getParsed() instanceof AllowDelegationFlag) {
-				var allowDelegationFlag = (AllowDelegationFlag) stateUpdate.getParsed();
-				var operationJson = new JSONObject()
-					.put("type", "Data")
-					.put("stateIdentifier", new JSONObject()
-						.put("type", "validator")
-						.put("validator", addressing.forValidators().of(allowDelegationFlag.getValidatorKey()))
-						.put("propertyIdentifier", new JSONObject()
-							.put("name", "allow_delegation")
-						)
-					)
-					.put("data", new JSONObject()
+						.put("proposals_missed", validatorBFTData.proposalsMissed());
+				} else if (stateUpdate.getParsed() instanceof AllowDelegationFlag) {
+					var allowDelegationFlag = (AllowDelegationFlag) stateUpdate.getParsed();
+					propertyIdentifier.put("name", "allow_delegation");
+					dataJson
 						.put("type", "validator_allow_delegation")
-						.put("allow_delegation", allowDelegationFlag.allowsDelegation())
-					);
-				dataOperations.add(operationJson);
-			} else if (stateUpdate.getParsed() instanceof ValidatorStakeData) {
-				var validatorStakeData = (ValidatorStakeData) stateUpdate.getParsed();
-				var operationJson = new JSONObject()
-					.put("type", "Data")
-					.put("stateIdentifier", new JSONObject()
-						.put("type", "validator_data")
-						.put("validator", addressing.forValidators().of(validatorStakeData.getValidatorKey()))
-					)
-					.put("data", new JSONObject()
+						.put("allow_delegation", allowDelegationFlag.allowsDelegation());
+				} else if (stateUpdate.getParsed() instanceof ValidatorStakeData) {
+					var validatorStakeData = (ValidatorStakeData) stateUpdate.getParsed();
+					propertyIdentifier.put("name", "stake");
+					dataJson
 						.put("type", "validator_data")
 						.put("owner", addressing.forAccounts().of(validatorStakeData.getOwnerAddr()))
 						.put("registered", validatorStakeData.isRegistered())
-						.put("fee", validatorStakeData.getRakePercentage())
-					);
+						.put("fee", validatorStakeData.getRakePercentage());
+				} else {
+					throw new IllegalStateException("Unknown validator data " + stateUpdate.getParsed());
+				}
+
 				dataOperations.add(operationJson);
 			}
 		}
