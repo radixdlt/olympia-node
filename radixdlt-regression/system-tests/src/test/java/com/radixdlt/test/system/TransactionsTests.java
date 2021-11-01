@@ -27,9 +27,8 @@ import org.junit.platform.commons.util.StringUtils;
 
 import java.util.Optional;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class TransactionsTest extends SystemTest {
+class TransactionsTests extends SystemTest {
 
     protected static final Logger logger = LogManager.getLogger();
 
@@ -45,7 +44,7 @@ class TransactionsTest extends SystemTest {
     private final ValidatorDTO firstValidator;
     private String mutableTokenRri;
 
-    TransactionsTest() {
+    TransactionsTests() {
         // env properties specific to this test:
         var seedPhrase = TestingUtils.getEnvWithDefault("RADIXDLT_TESTING_ACCOUNT_SEED_PHRASE", "");
         // the node version of the first node in the network. This will be saved in the transaction message and will tell us
