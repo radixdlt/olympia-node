@@ -1,10 +1,15 @@
 package com.radixdlt.test.utils;
 
+import com.google.common.base.Stopwatch;
 import com.radixdlt.application.tokens.TokenUtils;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.test.account.Account;
 import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.test.network.RadixNode;
 import com.radixdlt.test.network.client.RadixHttpClient;
+import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.functional.Failure;
 import org.apache.logging.log4j.LogManager;
@@ -13,6 +18,7 @@ import org.awaitility.Durations;
 import org.awaitility.core.ConditionTimeoutException;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 
@@ -21,9 +27,9 @@ import static org.awaitility.Awaitility.await;
  */
 public final class TestingUtils {
 
-    public static final Duration MAX_TIME_TO_WAIT_FOR_NODES_UP = Durations.TWO_MINUTES;
-
     private static final Logger logger = LogManager.getLogger();
+
+    public static final Duration MAX_TIME_TO_WAIT_FOR_NODES_UP = Durations.TWO_MINUTES;
 
     private TestingUtils() {
 
@@ -31,6 +37,17 @@ public final class TestingUtils {
 
     public static boolean isNullOrEmpty(String string) {
         return string == null || string.isEmpty();
+    }
+
+    public static ECKeyPair createKeyPairFromNumber(int privateKey) {
+        var pk = new byte[ECKeyPair.BYTES];
+        Ints.copyTo(privateKey, pk, ECKeyPair.BYTES - Integer.BYTES);
+
+        try {
+            return ECKeyPair.fromPrivateKey(pk);
+        } catch (PrivateKeyException | PublicKeyException e) {
+            throw new IllegalArgumentException("Error while generating public key", e);
+        }
     }
 
     public static void sleep(int seconds) {
@@ -48,6 +65,11 @@ public final class TestingUtils {
     public static String getEnvWithDefault(String envName, String defaultValue) {
         String envValue = System.getenv(envName);
         return (envValue == null || envValue.isBlank()) ? defaultValue : envValue;
+    }
+
+    public static int getEnvWithDefault(String envName, int defaultValue) {
+        String envValue = System.getenv(envName);
+        return (envValue == null || envValue.isBlank()) ? defaultValue : Integer.parseInt(envValue);
     }
 
     /**
@@ -105,9 +127,8 @@ public final class TestingUtils {
      * Uses a default duration (might want to externalize this)
      */
     public static void waitForNodeToBeUp(RadixHttpClient httpClient, String rootUrl) {
-        await().atMost(MAX_TIME_TO_WAIT_FOR_NODES_UP).ignoreExceptions().until(() -> {
-            TestingUtils.sleepMillis(250);
-            RadixHttpClient.HealthStatus status = httpClient.getHealthStatus(rootUrl);
+        await().pollDelay(Durations.TWO_HUNDRED_MILLISECONDS).atMost(MAX_TIME_TO_WAIT_FOR_NODES_UP).ignoreExceptions().until(() -> {
+            var status = httpClient.getHealthStatus(rootUrl);
             if (!status.equals(RadixHttpClient.HealthStatus.UP)) {
                 return false;
             }
@@ -133,4 +154,14 @@ public final class TestingUtils {
         throw new TestFailureException(failure.message());
     }
 
+    public static void waitUntilEndNextEpoch(Account account) {
+        var currentEpoch = account.ledger().epoch().getHeader().getEpoch();
+        logger.debug("Waiting for epoch {} to end...", currentEpoch);
+        var stopwatch = Stopwatch.createStarted();
+        await().pollInterval(Durations.ONE_SECOND).atMost(Duration.ofMinutes(30)).until(() ->
+            account.ledger().epoch().getHeader().getEpoch() > currentEpoch
+        );
+        logger.debug("Epoch {} ended", currentEpoch);
+        stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    }
 }

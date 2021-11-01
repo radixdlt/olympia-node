@@ -1,6 +1,7 @@
 package com.radixdlt.test.network.client;
 
 import com.radixdlt.client.lib.api.sync.RadixApiException;
+import com.radixdlt.test.network.FaucetException;
 import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.utils.functional.Failure;
 import kong.unirest.HttpResponse;
@@ -8,11 +9,15 @@ import kong.unirest.JsonNode;
 import kong.unirest.Unirest;
 import kong.unirest.json.JSONObject;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+import javax.net.ssl.SSLContext;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
- * A small HTTP client that consumes the non-JSON-RPC methods e.g. /health.
+ * A small HTTP client that consumes the non-JSON-RPC methods e.g. /health
  * <p>
  * Also consumes the JSON-RPC methods that are not part of the RadixApi client e.g. /faucet
  */
@@ -20,12 +25,14 @@ public class RadixHttpClient {
 
     public enum HealthStatus {
         BOOTING,
+        SYNCING,
         UP
     }
 
-    private static final String FAUCET_PATH = "/faucet";
     private static final String HEALTH_PATH = "/health";
     private static final String METRICS_PATH = "/metrics";
+    private static final String VERSION_PATH = "/version";
+    private static final String FAUCET_PATH = "/faucet";
 
     public static RadixHttpClient fromRadixNetworkConfiguration(RadixNetworkConfiguration configuration) {
         return new RadixHttpClient(configuration.getBasicAuth());
@@ -33,46 +40,74 @@ public class RadixHttpClient {
 
     public RadixHttpClient(String basicAuth) {
         if (basicAuth != null && !basicAuth.isBlank()) {
-            var encodedCredentials = Base64.getEncoder().encodeToString(basicAuth.getBytes(StandardCharsets.UTF_8));
-            Unirest.config().setDefaultHeader("Authorization", "Basic " + encodedCredentials);
+            var credentials = basicAuth.split("\\:");
+            Unirest.config().setDefaultBasicAuth(credentials[0], credentials[1]);
         }
-        Unirest.config().automaticRetries(false);
+        try {
+            var sc = SSLContext.getInstance("TLSv1.2");
+            sc.init(null, null, new SecureRandom());
+            Unirest.config().sslContext(sc);
+            Unirest.config().verifySsl(true);
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+            throw new IllegalArgumentException(e); // highly unlikely, algorithm is standard
+        }
     }
 
     public HealthStatus getHealthStatus(String rootUrl) {
-        String url = rootUrl + HEALTH_PATH;
-        HttpResponse<JsonNode> response = Unirest.get(url).asJson();
-        return HealthStatus.valueOf(response.getBody().getObject().getString("network_status"));
+        var response = getResponseAsJsonNode(rootUrl + HEALTH_PATH);
+        return HealthStatus.valueOf(response.getBody().getObject().getString("status"));
     }
 
     public Metrics getMetrics(String rootUrl) {
-        String url = rootUrl + METRICS_PATH;
-        String response = Unirest.get(url).asString().getBody();
+        var url = rootUrl + METRICS_PATH;
+        var response = Unirest.get(url).asString().getBody();
         return new Metrics(response);
     }
 
+    /**
+     * @param port if empty, will default to whatever port RADIXDLT_JSON_RPC_API_ROOT_URL has (usually 80)
+     */
+    public String getVersion(String rootUrl, Optional<Integer> port) {
+        var url = port.isPresent() ? String.format("%s:%d%s", rootUrl, port.get(), VERSION_PATH)
+            : String.format("%s%s", rootUrl, VERSION_PATH);
+        var response = getResponseAsJsonNode(url);
+        return response.getBody().getObject().getString("version");
+    }
+
     public String callFaucet(String rootUrl, int port, String address) {
-        JSONObject faucetBody = new JSONObject();
+        var faucetBody = new JSONObject();
         faucetBody.put("jsonrpc", "2.0");
         faucetBody.put("id", "1");
         faucetBody.put("method", "faucet.request_tokens");
-        JSONObject params = new JSONObject();
+        var params = new JSONObject();
         params.put("address", address);
         faucetBody.put("params", params);
-        HttpResponse<JsonNode> response = Unirest.post(rootUrl + ":" + port + FAUCET_PATH)
-            .body(faucetBody.toString(5))
-            .asJson();
-        if (!response.isSuccess()) {
-            throw new RadixApiException(Failure.failure(-1, response.getBody().toPrettyString()));
+
+        var jsonBodyString = faucetBody.toString(5);
+        var response = Unirest.post(rootUrl + ":" + port + FAUCET_PATH).body(jsonBodyString).asJson();
+        if (response.isSuccess()) {
+            var responseBody = response.getBody().getObject();
+            if (responseBody.has("error")) {
+                var responseErrorMessage = responseBody.getJSONObject("error").getString("message");
+                var errorMessage = responseErrorMessage.toLowerCase().contains("not enough balance") ? "Faucet is out of tokens!"
+                    : responseErrorMessage;
+                throw new FaucetException(errorMessage);
+            }
+            return response.getBody().getObject().getJSONObject("result").getString("txID");
+        } else {
+            var bodyString = Objects.isNull(response.getBody()) ? response.getStatusText() + "(" + response.getStatus() + ")"
+                : response.getBody().toString();
+            throw new FaucetException(bodyString);
         }
-        JSONObject responseObject = response.getBody().getObject();
-        if (responseObject.has("error")) {
-            JSONObject errorObject = responseObject.getJSONObject("error");
-            String errorMessage = errorObject.getString("message");
-            int errorCode = errorObject.getInt("code");
-            throw new RadixApiException(Failure.failure(errorCode, errorMessage));
+    }
+
+    private HttpResponse<JsonNode> getResponseAsJsonNode(String url) {
+        var response = Unirest.get(url).asJson();
+        if (response.isSuccess()) {
+            return response;
+        } else {
+            throw new RadixApiException(Failure.failure(response.getStatus(), response.getBody().toString()));
         }
-        return responseObject.getJSONObject("result").getString("txID");
     }
 
 }

@@ -62,87 +62,71 @@
  * permissions under this License.
  */
 
-package com.radixdlt.acceptance.staking;
+package com.radixdlt.client.lib.dto;
 
-import com.radixdlt.test.RadixNetworkTest;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.dto.ValidatorDTO;
-import io.cucumber.java.BeforeStep;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
-import io.cucumber.java.en.When;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.assertj.core.util.Lists;
-import org.junit.Assert;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.lib.api.EventType;
 
-import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+public final class Event {
+	@JsonProperty("type")
+	private final EventType type;
 
-public class Staking extends RadixNetworkTest {
+	@JsonProperty("rri")
+	private final String rri;
 
-    private static final Logger logger = LogManager.getLogger();
+	private Event(
+		EventType type, String rri) {
+		this.type = type;
+		this.rri = rri;
+	}
 
-    private List<ValidatorDTO> validatorsBuffer = Lists.newArrayList();
-    private ValidatorDTO firstValidator;
+	@JsonCreator
+	public static Event create(
+		@JsonProperty("type") EventType type,
+		@JsonProperty("rri") String rri
+	) {
+		return new Event(type, rri);
+	}
 
-    @BeforeStep
-    public void update_validator_information() {
-        updateValidatorInformation();
-    }
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof Event)) {
+			return false;
+		}
 
-    @Given("I have an account with funds at a suitable Radix network")
-    public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
-        faucet(account1, Amount.ofTokens(120));
-    }
+		var eventDTO = (Event) o;
+		return type == eventDTO.type
+			&& Objects.equals(rri, eventDTO.rri);
+	}
 
-    @When("I request validator information")
-    public void i_request_validator_information() {
-        logger.info("Found {} validators", validatorsBuffer.size());
-    }
+	@Override
+	public int hashCode() {
+		return Objects.hash(type, rri);
+	}
 
-    @Then("I observe that validators have stakes delegated to them")
-    public void i_observe_that_validators_have_stakes_delegated_to_them() {
-        var totalDelegatedStakeAcrossNetwork = validatorsBuffer.stream()
-            .mapToDouble(value -> Double.parseDouble(value.getTotalDelegatedStake().toString())).sum();
-        assertTrue("No stake was found in any validator, something is wrong with the test network",
-            totalDelegatedStakeAcrossNetwork > 0);
-    }
+	@Override
+	public String toString() {
+		return "Event("
+			+ "type=" + type
+			+ ", rri=" + rri
+			+ ')';
+	}
 
-    @When("I stake {int}XRD to a validator")
-    public void i_stake_xrd_to_a_validator(int stake) {
-        account1.stake(firstValidator.getAddress(), Amount.ofTokens(stake), Optional.empty());
-    }
+	@JsonIgnore
+	public EventType getType() {
+		return type;
+	}
 
-    @Then("I observe that the validator has {int}XRD more stake")
-    public void i_observe_that_validator_having_xrd_more_stake(int stake) {
-        Amount expectedStake = Amount.ofTokens(5);
-        var previousStake = validatorsBuffer.get(0).getTotalDelegatedStake();
-        updateValidatorInformation();
-        var difference = validatorsBuffer.get(0).getTotalDelegatedStake().subtract(previousStake);
-        assertEquals(difference, expectedStake.toSubunits());
-    }
-
-    @When("I unstake {int}XRD from the same validator")
-    public void i_unstake_xrd_from_the_same_validator(Integer unstake) {
-        throw new io.cucumber.java.PendingException();
-    }
-
-    @Then("I observe that my stake is unstaked and I got my tokens back")
-    public void i_observe_that_my_stake_is_unstaked_and_i_got_my_tokens_back() {
-        throw new io.cucumber.java.PendingException();
-    }
-
-    private void updateValidatorInformation() {
-        validatorsBuffer.clear();
-        validatorsBuffer = account1.validator().list(10000, Optional.empty()).getValidators();
-        if (validatorsBuffer.isEmpty()) {
-            Assert.fail("No validators were found in the network, test cannot proceed.");
-        }
-        firstValidator = validatorsBuffer.get(0);
-    }
-
+	@JsonIgnore
+	public Optional<String> getRri() {
+		return Optional.ofNullable(rri);
+	}
 }

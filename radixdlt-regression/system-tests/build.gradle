@@ -68,6 +68,7 @@ apply plugin: 'java-library'
 
 dependencies {
     api project(':radixdlt-regression')
+    implementation 'junit:junit:4.13.1'
 
     testImplementation 'org.awaitility:awaitility'
     testImplementation 'com.google.guava:guava:29.0-jre'
