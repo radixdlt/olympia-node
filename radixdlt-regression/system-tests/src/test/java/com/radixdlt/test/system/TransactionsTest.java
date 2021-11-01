@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.platform.commons.util.StringUtils;
-import org.radix.Radix;
 
 import java.util.Optional;
 
@@ -37,7 +36,6 @@ class TransactionsTest extends SystemTest {
     private static final String BIP32_PATH = "m/44'/1022'/0'/0/0'";
     private static final Amount AMOUNT_TO_STAKE = Amount.ofTokens(100);
     private static final Amount TOKENS_TO_MINT = Amount.ofTokens(250000);
-    private static final String CLIENT_VERSION_STRING = Radix.systemVersionInfo().get("system_version").get("version_string").toString();
 
     // in case there is no seed phrase, we use a known address for this test
     private static final int HARDCODED_ADDRESS_PRIVATE_KEY = 5;
