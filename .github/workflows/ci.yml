@@ -56,17 +56,16 @@ jobs:
         run: ./gradlew integrationTest --refresh-dependencies
   rcnet-testing:
     name: RCNet live network testing
-    #if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
         with:
-          # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
       - uses: joschi/setup-jdk@v2
         with:
-          java-version: '11' # The OpenJDK version to make available on the path
-          architecture: 'x64' # defaults to 'x64'
+          java-version: '11'
+          architecture: 'x64'
       - name: Cache Gradle packages
         uses: actions/cache@v1
         with:

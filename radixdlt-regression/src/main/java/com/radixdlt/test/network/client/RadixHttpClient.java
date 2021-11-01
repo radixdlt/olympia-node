@@ -106,7 +106,10 @@ public class RadixHttpClient {
         if (response.isSuccess()) {
             return response;
         } else {
-            throw new RadixApiException(Failure.failure(response.getStatus(), response.getBody().toString()));
+            var message = response.getBody() == null
+                ? "(" + response.getStatus() + ") " + response.getStatusText()
+                : response.getBody().getObject().toString();
+            throw new RadixApiException(Failure.failure(response.getStatus(), "Call to " + url + " failed: " + message));
         }
     }
 
