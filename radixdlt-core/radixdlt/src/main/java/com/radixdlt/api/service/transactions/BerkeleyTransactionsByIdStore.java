@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.service.transactions;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.accounting.REResourceAccounting;
@@ -90,9 +91,12 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
@@ -128,11 +132,18 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 	private final AtomicReference<Instant> timestamp = new AtomicReference<>();
 	private final Addressing addressing;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+	private final LedgerAccumulator ledgerAccumulator;
+	private HashCode accumulator;
 
 	@Inject
-	public BerkeleyTransactionsByIdStore(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider, Addressing addressing) {
+	public BerkeleyTransactionsByIdStore(
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+		LedgerAccumulator ledgerAccumulator,
+		Addressing addressing
+	) {
 		// TODO: Fix this when we move AdditionalStore to be a RadixEngine construct rather than Berkeley construct
 		this.radixEngineProvider = radixEngineProvider;
+		this.ledgerAccumulator = ledgerAccumulator;
 		this.addressing = addressing;
 	}
 
@@ -144,6 +155,14 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 			.setKeyPrefixing(true)
 			.setBtreeComparator(lexicographicalComparator())
 		);
+
+		var key = new DatabaseEntry(new byte[0]);
+		var value = new DatabaseEntry();
+		if (txnIdDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
+			accumulator = HashCode.fromBytes(value.getData());
+		} else {
+			accumulator = HashUtils.zero256();
+		}
 	}
 
 	public boolean contains(AID aid) {
@@ -579,6 +598,11 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 
 	@Override
 	public void process(Transaction dbTxn, REProcessedTxn txn, long stateVersion, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
+		// TODO: Have lower level logic send real accumulator values
+		var accumulatorState = new AccumulatorState(stateVersion - 1, accumulator);
+		var nextAccumulatorState = ledgerAccumulator.accumulate(accumulatorState, txn.getTxnId().asHashCode());
+		this.accumulator = nextAccumulatorState.getAccumulatorHash();
+
 		txn.stateUpdates()
 			.filter(u -> u.getParsed() instanceof RoundData)
 			.map(u -> (RoundData) u.getParsed())
@@ -596,6 +620,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 			.put("committedTransactionIdentifier", new JSONObject()
 				.put("transactionIdentifier", txn.getTxnId())
 				.put("stateVersion", stateVersion)
+				.put("accumulator", Bytes.toHexString(this.accumulator.asBytes()))
 			)
 			.put("metadata", new JSONObject()
 				.put("hex", Bytes.toHexString(txn.getTxn().getPayload()))
@@ -609,6 +634,11 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 
 		var value = new DatabaseEntry(jsonString.getBytes(StandardCharsets.UTF_8));
 		var result = txnIdDatabase.putNoOverwrite(dbTxn, key, value);
+		if (result != SUCCESS) {
+			throw new IllegalStateException("Unexpected operation status " + result);
+		}
+
+		result = txnIdDatabase.put(dbTxn, new DatabaseEntry(new byte[0]), new DatabaseEntry(nextAccumulatorState.getAccumulatorHash().asBytes()));
 		if (result != SUCCESS) {
 			throw new IllegalStateException("Unexpected operation status " + result);
 		}
