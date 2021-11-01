@@ -65,6 +65,7 @@
 package com.radixdlt.application.system.state;
 
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.utils.Bytes;
 
 import java.util.Arrays;
 
@@ -92,5 +93,10 @@ public final class VirtualParent implements Particle {
 
 		var other = (VirtualParent) o;
 		return Arrays.equals(this.data, other.data);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{%s}", this.getClass().getSimpleName(), Bytes.toHexString(data));
 	}
 }
