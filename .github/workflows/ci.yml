@@ -77,5 +77,5 @@ jobs:
         env:
           RADIXDLT_JSON_RPC_API_ROOT_URL: https://rcnet.radixdlt.com
           RADIXDLT_FAUCET_URL: https://rcnet-faucet.radixdlt.com
-          RADIXDLT_BASIC_AUTH: ${{ secrets.BASIC_AUTH_ADMIN }}
+          RADIXDLT_BASIC_AUTH: ${{ secrets.BASIC_AUTH_RCNET_ADMIN }}
 
