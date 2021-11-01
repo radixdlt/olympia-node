@@ -3,6 +3,7 @@ package com.radixdlt.test.account;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.ValidatorAddress;
+import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
 import com.radixdlt.client.lib.dto.Balance;
 import com.radixdlt.client.lib.dto.TokenBalances;
@@ -11,8 +12,10 @@ import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.test.utils.TransactionUtils;
 import com.radixdlt.utils.UInt256;
+import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -125,19 +128,26 @@ public final class Account implements ImperativeRadixApi, RadixAccount {
         return keyPair;
     }
 
-    public static Account initialize(String jsonRpcUrl, int primaryPort, int secondaryPort, ECKeyPair keyPair) {
-        var api = ImperativeRadixApi.connect(jsonRpcUrl, primaryPort, secondaryPort).withTrace();
+    public static Account initialize(String jsonRpcUrl, int primaryPort, int secondaryPort, ECKeyPair keyPair,
+                                     String basicAuthString) {
+        var api = (StringUtils.isBlank(basicAuthString))
+            ? ImperativeRadixApi.connect(jsonRpcUrl, primaryPort, secondaryPort)
+            : ImperativeRadixApi.connect(jsonRpcUrl, primaryPort, secondaryPort, parseBasicAuthString(basicAuthString));
         var nativeToken = api.token().describeNative();
         var newAccount = new Account(api, keyPair, nativeToken);
         logger.trace("Generated new account with address: {}", newAccount.getAddress());
-        logger.trace("New account connected to {}", jsonRpcUrl);
+        logger.trace("New account connected to {}()", jsonRpcUrl);
         logger.trace("Network's native token is {}({})", nativeToken.getName(), nativeToken.getSymbol());
         return newAccount;
     }
 
     public static Account initialize(String jsonRpcUrl, int primaryPort, int secondaryPort) {
-        var keyPair = ECKeyPair.generateNew();
-        return initialize(jsonRpcUrl, primaryPort, secondaryPort, keyPair);
+        return initialize(jsonRpcUrl, primaryPort, secondaryPort, ECKeyPair.generateNew(), null);
+    }
+
+    public static Account initialize(RadixNetworkConfiguration configuration) {
+        return initialize(configuration.getJsonRpcRootUrl(), configuration.getPrimaryPort(), configuration.getSecondaryPort(),
+            ECKeyPair.generateNew(), configuration.getBasicAuth());
     }
 
     public TokenInfo getNativeToken() {
@@ -194,6 +204,11 @@ public final class Account implements ImperativeRadixApi, RadixAccount {
     @Override
     public AID burn(Amount amount, String rri, Optional<String> message) {
         return TransactionUtils.burn(this, amount, rri, message);
+    }
+
+    private static BasicAuth parseBasicAuthString(String basicAuthString) {
+        var array = basicAuthString.split("\\:");
+        return BasicAuth.with(array[0], array[1]);
     }
 
 }

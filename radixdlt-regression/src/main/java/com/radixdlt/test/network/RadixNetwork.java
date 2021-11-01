@@ -14,6 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -64,12 +65,19 @@ public class RadixNetwork {
         }
 
         logger.info("Done locating nodes, found {} in total.", radixNodes.size());
-        radixNodes.forEach(node -> logger.debug(" - {}", node));
+        radixNodes.forEach(node -> logger.debug(" * {}", node));
         return new RadixNetwork(configuration, networkId, radixNodes, httpClient, dockerClient, universeVariables);
     }
 
     public Account generateNewAccount() {
-        return Account.initialize(configuration.getJsonRpcRootUrl(), configuration.getPrimaryPort(), configuration.getSecondaryPort());
+        return Account.initialize(configuration);
+    }
+
+    /**
+     * will return the version from the /version endpoint of the first node (could be any node)
+     */
+    public String getVersionOfFirstNode() {
+        return httpClient.getVersion(nodes.get(0).getRootUrl(), Optional.of(configuration.getSecondaryPort()));
     }
 
     /**
@@ -79,7 +87,7 @@ public class RadixNetwork {
         var faucets = nodes.stream().filter(node -> node.getAvailableServices()
             .contains(RadixNode.ServiceType.FAUCET)).collect(Collectors.toList());
         if (faucets.isEmpty()) {
-            throw new NoFaucetException("No faucet found in this network");
+            throw new FaucetException("No faucet found in this network");
         }
         var nodeWithFaucet = faucets.get(0);
         var address = to.toString(networkId);
@@ -90,6 +98,10 @@ public class RadixNetwork {
 
     public DockerClient getDockerClient() {
         return dockerClient;
+    }
+
+    public RadixHttpClient getHttpClient() {
+        return httpClient;
     }
 
     public List<RadixNode> getNodes() {

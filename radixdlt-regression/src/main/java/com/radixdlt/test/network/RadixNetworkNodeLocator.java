@@ -37,13 +37,14 @@ public class RadixNetworkNodeLocator {
                                               DockerClient dockerClient) {
         List<RadixNode> radixNodes = Lists.newArrayList();
         tryAddFaucetToNodeList(configuration, radixNodes);
-
         List<NetworkPeer> peers = Lists.newArrayList();
+        addSingleNodePeerToList(configuration, radixNodes);
+
         try {
             if (StringUtils.isBlank(configuration.getBasicAuth())) {
                 peers = configuration.connect(Optional.empty()).network().peers();
             } else {
-                var credentials = configuration.getBasicAuth().split(":");
+                var credentials = configuration.getBasicAuth().split("\\:");
                 var basicAuth = BasicAuth.with(credentials[0], credentials[1]);
                 peers = configuration.connect(Optional.of(basicAuth)).network().peers();
             }
@@ -51,7 +52,6 @@ public class RadixNetworkNodeLocator {
             if (e.getMessage().toLowerCase().contains("401 authorization required")) {
                 logger.warn("Could not fetch peers list from {} due to 401. The test will use only one archive node.",
                     configuration.getJsonRpcRootUrl());
-                addSingleNodePeerToList(configuration, radixNodes);
                 return radixNodes;
             }
         }
@@ -64,8 +64,8 @@ public class RadixNetworkNodeLocator {
             case TESTNET:
             default:
                 logger.debug("Searching for {} testnet nodes", peersSizePlusOne);
-                // eventually, we get a list of RadixNodes by parsing the peers list
-                return Lists.newArrayList();
+                // eventually, we will have a list of RadixNodes by parsing the peers list
+                return radixNodes;
         }
     }
 
@@ -77,14 +77,17 @@ public class RadixNetworkNodeLocator {
             var faucetNode = new RadixNode(configuration.getFaucetUrl(), configuration.getPrimaryPort(),
                 configuration.getSecondaryPort(), configuration.getDockerConfiguration().getContainerName(),
                 availableNodeServices);
-            radixNodes.add(faucetNode);
             var rootUrl = configuration.getFaucetUrl();
             var networkId = configuration.connect(Optional.empty()).network().id().getNetworkId();
             var randomAddress = AccountAddress.create(ECKeyPair.generateNew().getPublicKey()).toString(networkId);
-
-            RadixHttpClient.fromRadixNetworkConfiguration(configuration).callFaucet(rootUrl, configuration.getPrimaryPort(),
-                randomAddress);
-            logger.info("Found a primary faucet at {}", configuration.getFaucetUrl());
+            try {
+                RadixHttpClient.fromRadixNetworkConfiguration(configuration).callFaucet(rootUrl, configuration.getPrimaryPort(),
+                    randomAddress);
+                radixNodes.add(faucetNode);
+            } catch (FaucetException e) {
+                logger.warn("No faucet found at {}, test might fail if it actually requires a faucet", rootUrl);
+            }
+            logger.info("Found a primary faucet at {}", rootUrl);
         }
     }
 

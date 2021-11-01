@@ -1,6 +1,7 @@
 package com.radixdlt.test.network.client;
 
 import com.radixdlt.client.lib.api.sync.RadixApiException;
+import com.radixdlt.test.network.FaucetException;
 import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.utils.functional.Failure;
 import kong.unirest.HttpResponse;
@@ -12,6 +13,8 @@ import javax.net.ssl.SSLContext;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A small HTTP client that consumes the non-JSON-RPC methods e.g. /health
@@ -22,12 +25,14 @@ public class RadixHttpClient {
 
     public enum HealthStatus {
         BOOTING,
+        SYNCING,
         UP
     }
 
-    private static final String FAUCET_PATH = "/faucet";
     private static final String HEALTH_PATH = "/health";
     private static final String METRICS_PATH = "/metrics";
+    private static final String VERSION_PATH = "/version";
+    private static final String FAUCET_PATH = "/faucet";
 
     public static RadixHttpClient fromRadixNetworkConfiguration(RadixNetworkConfiguration configuration) {
         return new RadixHttpClient(configuration.getBasicAuth());
@@ -49,15 +54,24 @@ public class RadixHttpClient {
     }
 
     public HealthStatus getHealthStatus(String rootUrl) {
-        String url = rootUrl + HEALTH_PATH;
-        HttpResponse<JsonNode> response = Unirest.get(url).asJson();
+        var response = getResponseAsJsonNode(rootUrl + HEALTH_PATH);
         return HealthStatus.valueOf(response.getBody().getObject().getString("status"));
     }
 
     public Metrics getMetrics(String rootUrl) {
-        String url = rootUrl + METRICS_PATH;
-        String response = Unirest.get(url).asString().getBody();
+        var url = rootUrl + METRICS_PATH;
+        var response = Unirest.get(url).asString().getBody();
         return new Metrics(response);
+    }
+
+    /**
+     * @param port if empty, will default to whatever port RADIXDLT_JSON_RPC_API_ROOT_URL has (usually 80)
+     */
+    public String getVersion(String rootUrl, Optional<Integer> port) {
+        var url = port.isPresent() ? String.format("%s:%d%s", rootUrl, port.get(), VERSION_PATH)
+            : String.format("%s%s", rootUrl, VERSION_PATH);
+        var response = getResponseAsJsonNode(url);
+        return response.getBody().getObject().getString("version");
     }
 
     public String callFaucet(String rootUrl, int port, String address) {
@@ -77,9 +91,20 @@ public class RadixHttpClient {
                 var responseErrorMessage = responseBody.getJSONObject("error").getString("message");
                 var errorMessage = responseErrorMessage.toLowerCase().contains("not enough balance") ? "Faucet is out of tokens!"
                     : responseErrorMessage;
-                throw new RadixApiException(Failure.failure(-1, errorMessage));
+                throw new FaucetException(errorMessage);
             }
             return response.getBody().getObject().getJSONObject("result").getString("txID");
+        } else {
+            var bodyString = Objects.isNull(response.getBody()) ? response.getStatusText() + "(" + response.getStatus() + ")"
+                : response.getBody().toString();
+            throw new FaucetException(bodyString);
+        }
+    }
+
+    private HttpResponse<JsonNode> getResponseAsJsonNode(String url) {
+        var response = Unirest.get(url).asJson();
+        if (response.isSuccess()) {
+            return response;
         } else {
             throw new RadixApiException(Failure.failure(response.getStatus(), response.getBody().toString()));
         }

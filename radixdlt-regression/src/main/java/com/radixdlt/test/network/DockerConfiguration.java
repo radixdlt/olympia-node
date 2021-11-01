@@ -15,7 +15,7 @@ public class DockerConfiguration {
     private final String socketUrl;
     private final String containerName;
     private final boolean shouldInitializeNetwork;
-    private String image;
+    private final String image;
     private final int initialNumberOfNodes;
     private final String networkName;
     private final String dockerLogin;
@@ -65,10 +65,6 @@ public class DockerConfiguration {
 
     public String getImage() {
         return image;
-    }
-
-    public void setImage(String image) {
-        this.image = image;
     }
 
     public int getInitialNumberOfNodes() {

@@ -49,6 +49,8 @@ public class DockerNetworkCreator {
         var networkName = configuration.getDockerConfiguration().getNetworkName();
         if (!Boolean.parseBoolean(System.getenv("RADIXDLT_DOCKER_DO_NOT_WIPE_NETWORK"))) {
             dockerClient.createNetwork(networkName);
+        } else {
+            return variables;
         }
 
         // actually starting the radix network

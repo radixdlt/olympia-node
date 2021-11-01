@@ -1,6 +1,7 @@
 package com.radixdlt.test.system;
 
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.dto.Event;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
 import com.radixdlt.identifiers.AID;
@@ -13,6 +14,7 @@ import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.test.system.harness.SystemTest;
 import com.radixdlt.test.utils.TestFailureException;
 import com.radixdlt.test.utils.TestingUtils;
+import com.radixdlt.test.utils.TransactionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,25 +36,29 @@ class TransactionsTest extends SystemTest {
 
     private static final String BIP32_PATH = "m/44'/1022'/0'/0/0'";
     private static final Amount AMOUNT_TO_STAKE = Amount.ofTokens(100);
-    private static final Amount TOKENS_TO_MINT = Amount.ofTokens(105020);
-    private static final String VERSION_STRING = Radix.systemVersionInfo().get("system_version").get("version_string").toString();
+    private static final Amount TOKENS_TO_MINT = Amount.ofTokens(250000);
+    private static final String CLIENT_VERSION_STRING = Radix.systemVersionInfo().get("system_version").get("version_string").toString();
 
     // in case there is no seed phrase, we use a known address for this test
-    private static final int HARDCODED_ADDRESS_PRIVATE_KEY = 11;
+    private static final int HARDCODED_ADDRESS_PRIVATE_KEY = 5;
 
     private final Account account;
+    private final String version;
     private final ValidatorDTO firstValidator;
     private String mutableTokenRri;
 
     TransactionsTest() {
         // env properties specific to this test:
         var seedPhrase = TestingUtils.getEnvWithDefault("RADIXDLT_TESTING_ACCOUNT_SEED_PHRASE", "");
+        // the node version of the first node in the network. This will be saved in the transaction message and will tell us
+        // which version this transaction came from
+        this.version = radixNetwork.getVersionOfFirstNode();
 
-        var configuration = getNetwork().getConfiguration();
+        var configuration = radixNetwork.getConfiguration();
         this.account = StringUtils.isNotBlank(seedPhrase)
             ? initializeAccountFromSeedPhrase(configuration, seedPhrase)
             : Account.initialize(configuration.getJsonRpcRootUrl(), configuration.getPrimaryPort(),
-            configuration.getSecondaryPort(), TestingUtils.createKeyPairFromNumber(HARDCODED_ADDRESS_PRIVATE_KEY));
+            configuration.getSecondaryPort(), TestingUtils.createKeyPairFromNumber(HARDCODED_ADDRESS_PRIVATE_KEY), configuration.getBasicAuth());
         logger.info("Using address {} with balances: {}", account.getAddressForNetwork(),
             account.getOwnTokenBalances().getTokenBalances());
         firstValidator = account.validator().list(100, Optional.empty()).getValidators().get(0);
@@ -76,27 +82,49 @@ class TransactionsTest extends SystemTest {
         logger.info("Staking {} to validator {}...", AMOUNT_TO_STAKE, firstValidator);
         var txId = account.stake(firstValidator.getAddress(), AMOUNT_TO_STAKE, createTestMessageOptional());
         logger.info("Stake tokens txId: {}", txId);
+    }
+
+    @Test
+    @Order(2)
+    void multi_action_transaction() {
+        callFaucetIfNeeded(account, AMOUNT_TO_STAKE.times(3)); // fees are high
+        var nativeTokenRri = account.getNativeToken().getRri();
+        var publicKey = account.getKeyPair().getPublicKey();
+        var timestamp = System.currentTimeMillis();
+        var request = TransactionRequest.createBuilder(account.getAddress())
+            .stake(account.getAddress(), firstValidator.getAddress(), AMOUNT_TO_STAKE.toSubunits())
+            .transfer(account.getAddress(), account1.getAddress(), Amount.ofMicroTokens(1).toSubunits(), nativeTokenRri)
+            .transfer(account.getAddress(), account2.getAddress(), Amount.ofMicroTokens(2).toSubunits(), nativeTokenRri)
+            .createMutable(publicKey, "mtt2" + timestamp, "mtesttoken2" + timestamp,
+                Optional.empty(), Optional.empty(), Optional.empty())
+            .createFixed(account.getAddress(), publicKey, "ftt2" + timestamp, "ftesttoken2", "description",
+                "https://www.icon.com", "https://www.token.com", Amount.ofTokens(1000000).toSubunits())
+            .build();
+        logger.info("Submitting a multi-action transaction...");
+        var txId = TransactionUtils.buildFinalizeAndSubmitTransaction(account, request, true);
+        logger.info("Multi-action txId: {}", txId);
         logger.info("Waiting until end of current epoch...");
         TestingUtils.waitUntilEndNextEpoch(account);
     }
 
     @Test
-    @Order(2)
+    @Order(3)
     void unstake() {
-        logger.info("Unstaking {} from validator {}...", AMOUNT_TO_STAKE, firstValidator);
-        var txId = account.unstake(firstValidator.getAddress(), AMOUNT_TO_STAKE, Optional.empty());
+        var totalStake = AMOUNT_TO_STAKE.times(2);
+        logger.info("Unstaking {} from validator {}...", totalStake, firstValidator);
+        var txId = account.unstake(firstValidator.getAddress(), AMOUNT_TO_STAKE.times(2), Optional.empty());
         logger.info("Unstake tokens txId: {}", txId);
     }
 
     @Test
-    @Order(3)
+    @Order(4)
     void mutable_supply_token_creation() {
         callFaucetIfNeeded(account, Amount.ofTokens(100));
         var timestamp = System.currentTimeMillis();
         var txId = account.mutableSupplyToken(
             "mtt" + timestamp,
             "mtesttoken" + timestamp,
-            "A mutable supply token created for testing. Version " + VERSION_STRING,
+            "A mutable supply token created for testing. Version " + version,
             "https://www.mtesttoken.ico",
             "https://www.mtesttoken.com");
         logger.info("Mutable supply token txId: {}", txId);
@@ -105,14 +133,14 @@ class TransactionsTest extends SystemTest {
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     void mint_mutable_supply_token() {
         var txId = account.mint(TOKENS_TO_MINT, mutableTokenRri, createTestMessageOptional());
         logger.info("Token {} mint txId: {}", mutableTokenRri, txId);
     }
 
     @Test
-    @Order(5)
+    @Order(6)
     void burn_mutable_supply_token() {
         var txId = account.burn(TOKENS_TO_MINT, mutableTokenRri, createTestMessageOptional());
         logger.info("Token {} burn txId: {}", mutableTokenRri, txId);
@@ -126,7 +154,7 @@ class TransactionsTest extends SystemTest {
         var txId = account.fixedSupplyToken(
             "ftt" + timestamp,
             "ftesttoken_" + timestamp,
-            "A fixed supply (" + supply + ") token created for testing. Version " + VERSION_STRING,
+            "A fixed supply (" + supply + ") token created for testing. Version " + version,
             "https://www.ftesttoken.ico",
             "https://www.ftesttoken.com",
             supply);
@@ -140,7 +168,7 @@ class TransactionsTest extends SystemTest {
             var bip32path = BitcoinJBIP32Path.fromString(BIP32_PATH);
             var keyPair = keyPairDerivation.deriveKeyAtPath(bip32path).keyPair();
             return Account.initialize(configuration.getJsonRpcRootUrl(), configuration.getPrimaryPort(),
-                configuration.getSecondaryPort(), keyPair);
+                configuration.getSecondaryPort(), keyPair, configuration.getBasicAuth());
         } catch (MnemonicException | HDPathException e) {
             throw new RuntimeException("Could not generate keypair from seed phrase", e);
         }
@@ -156,7 +184,7 @@ class TransactionsTest extends SystemTest {
     }
 
     private Optional<String> createTestMessageOptional() {
-        return Optional.of("Autogenerated test transaction from version '" + VERSION_STRING + "'");
+        return Optional.of("Autogenerated test transaction from version '" + version + "'");
     }
 
     private void callFaucetIfNeeded(Account account, Amount amount) {
