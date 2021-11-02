@@ -6,7 +6,9 @@ import com.radixdlt.test.utils.TestingUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.TestInstance;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class SystemTest extends RadixNetworkTest {
 
     protected static final Logger logger = LogManager.getLogger();

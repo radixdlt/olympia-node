@@ -84,10 +84,10 @@ public class RadixNetworkNodeLocator {
                 RadixHttpClient.fromRadixNetworkConfiguration(configuration).callFaucet(rootUrl, configuration.getPrimaryPort(),
                     randomAddress);
                 radixNodes.add(faucetNode);
+                logger.info("Found a primary faucet at {}", rootUrl);
             } catch (FaucetException e) {
                 logger.warn("No faucet found at {}, test might fail if it actually requires a faucet", rootUrl);
             }
-            logger.info("Found a primary faucet at {}", rootUrl);
         }
     }
 
