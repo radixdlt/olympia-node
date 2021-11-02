@@ -117,7 +117,8 @@ final class MockP2PNetwork {
 			ECKeyOps.fromKeyPair(clientPeer.keyPair),
 			clientPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() { }),
 			Optional.of(serverPeerUri),
-			clientSocketChannel
+			clientSocketChannel,
+			Optional.empty()
 		);
 
 		final var serverChannel = new PeerChannel(
@@ -130,7 +131,8 @@ final class MockP2PNetwork {
 			ECKeyOps.fromKeyPair(serverPeer.keyPair),
 			serverPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() { }),
 			Optional.empty(),
-			serverSocketChannel
+			serverSocketChannel,
+			Optional.empty()
 		);
 
 		when(clientSocketChannel.writeAndFlush(any())).thenAnswer(inv -> {

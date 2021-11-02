@@ -134,6 +134,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 	private final AuthHandshaker authHandshaker;
 	private final boolean isInitiator;
 	private final Channel nettyChannel;
+	private final String host;
+	private final int port;
 
 	private ChannelState state = ChannelState.INACTIVE;
 	private NodeId remoteNodeId;
@@ -151,7 +153,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 		ECKeyOps ecKeyOps,
 		EventDispatcher<PeerEvent> peerEventDispatcher,
 		Optional<RadixNodeUri> uri,
-		SocketChannel nettyChannel
+		SocketChannel nettyChannel,
+		Optional<InetSocketAddress> remoteAddress
 	) {
 		this.counters = Objects.requireNonNull(counters);
 		this.addressing = Objects.requireNonNull(addressing);
@@ -160,6 +163,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 		uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
 		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId);
 		this.nettyChannel = Objects.requireNonNull(nettyChannel);
+		this.host = remoteAddress.map(InetSocketAddress::getHostString).orElse("?");
+		this.port = remoteAddress.map(InetSocketAddress::getPort).orElse(0);
 
 		this.isInitiator = uri.isPresent();
 
@@ -172,6 +177,10 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 					log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this.toString());
 				},
 				BackpressureOverflowStrategy.DROP_LATEST);
+
+		if (this.nettyChannel.isActive()) {
+			this.init();
+		}
 	}
 
 	private void initHandshake(NodeId remoteNodeId) {
@@ -225,10 +234,14 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws PublicKeyException {
+		if (this.state == ChannelState.INACTIVE) {
+			this.init();
+		}
+	}
+
+	private void init() {
+		log.trace("Init: {}", this.toString());
 		this.state = ChannelState.AUTH_HANDSHAKE;
-
-		log.trace("Active: {}", this.toString());
-
 		if (this.isInitiator) {
 			this.initHandshake(this.remoteNodeId);
 		}
@@ -319,23 +332,21 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 		return this.uri;
 	}
 
-	public InetSocketAddress getRemoteSocketAddress() {
-		return (InetSocketAddress) this.nettyChannel.remoteAddress();
+	public String getHost() {
+		return this.host;
+	}
+
+	public int getPort() {
+		return this.port;
 	}
 
 	@Override
 	public String toString() {
-		final var hostString = nettyChannel.remoteAddress() instanceof InetSocketAddress
-			? ((InetSocketAddress) nettyChannel.remoteAddress()).getHostString()
-			: "?";
-		final var port = nettyChannel.remoteAddress() instanceof InetSocketAddress
-			? ((InetSocketAddress) nettyChannel.remoteAddress()).getPort()
-			: 0;
 		return String.format(
 			"{%s %s@%s:%s | %s}",
 			isInitiator ? "<-" : "->",
 			remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "?",
-			hostString,
+			host,
 			port,
 			state
 		);

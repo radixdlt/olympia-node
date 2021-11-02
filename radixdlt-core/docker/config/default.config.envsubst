@@ -9,6 +9,7 @@ node.key.path=$RADIXDLT_VALIDATOR_KEY_LOCATION
 
 network.host_ip=$RADIXDLT_HOST_IP_ADDRESS
 network.p2p.seed_nodes=$RADIXDLT_NETWORK_SEEDS_REMOTE
+network.p2p.use_proxy_protocol=$RADIXDLT_NETWORK_USE_PROXY_PROTOCOL
 
 chaos.enable=$RADIXDLT_CHAOS_ENABLE
 faucet.enable=$RADIXDLT_ENABLE_FAUCET

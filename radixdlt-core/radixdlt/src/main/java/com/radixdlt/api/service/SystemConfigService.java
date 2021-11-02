@@ -445,8 +445,8 @@ public class SystemConfigService {
 		peer.getChannels().forEach(channel -> {
 			var channelJson = jsonObject()
 				.put("type", channel.isOutbound() ? "out" : "in")
-				.put("localPort", channel.getSocketAddress().getPort())
-				.put("ip", channel.getSocketAddress().getAddress().getHostAddress());
+				.put("localPort", channel.getPort())
+				.put("ip", channel.getHost());
 
 			channel.getUri().ifPresent(uri -> channelJson.put("uri", uri.toString()));
 			channelsJson.put(channelJson);
