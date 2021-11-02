@@ -64,6 +64,8 @@
 
 package com.radixdlt.mempool;
 
+import org.junit.Test;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -82,28 +84,29 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
-import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.store.LastProof;
-import io.reactivex.rxjava3.core.Flowable;
-import org.junit.Test;
+import com.radixdlt.utils.TimeSupplier;
 
 import java.util.Comparator;
 import java.util.Map;
 
+import io.reactivex.rxjava3.core.Flowable;
+
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.*;
-import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 public final class MempoolRunnerTest {
 	@Inject
@@ -113,6 +116,7 @@ public final class MempoolRunnerTest {
 
 	private StateComputer stateComputer = mock(StateComputer.class);
 
+	@SuppressWarnings("unchecked") // The mock method doesn't support type-safe generics due to type erasure
 	public Module createModule() {
 		return new AbstractModule() {
 			@Override

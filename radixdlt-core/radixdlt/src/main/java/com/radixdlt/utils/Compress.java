@@ -89,11 +89,12 @@ public class Compress {
 	 * @throws IOException
 	 */
 	public static byte[] compress(byte[] input) throws IOException {
-		var out = new ByteArrayOutputStream();
-		var os = new SnappyFramedOutputStream(out);
-		os.transferFrom(new ByteArrayInputStream(input));
-		os.close();
-		return out.toByteArray();
+		try (var out = new ByteArrayOutputStream();
+			 var os = new SnappyFramedOutputStream(out)) {
+			os.transferFrom(new ByteArrayInputStream(input));
+			os.flush();
+			return out.toByteArray();
+		}
 	}
 
 	/**
@@ -105,10 +106,11 @@ public class Compress {
 	 * @throws IOException
 	 */
 	public static byte[] uncompress(byte[] input) throws IOException {
-		var is = new SnappyFramedInputStream(new ByteArrayInputStream(input));
-		var os = new ByteArrayOutputStream(Snappy.uncompressedLength(input));
-		is.transferTo(os);
-		os.close();
-		return os.toByteArray();
+		try (var is = new SnappyFramedInputStream(new ByteArrayInputStream(input));
+			 var os = new ByteArrayOutputStream(Snappy.uncompressedLength(input))) {
+			is.transferTo(os);
+			os.flush();
+			return os.toByteArray();
+		}
 	}
 }

@@ -211,7 +211,7 @@ public final class RadixEngine<M> {
 
 		private void assertNotDeleted() {
 			if (deleted) {
-				throw new IllegalStateException();
+				throw new IllegalStateException("Radix engine branch is deleted");
 			}
 		}
 

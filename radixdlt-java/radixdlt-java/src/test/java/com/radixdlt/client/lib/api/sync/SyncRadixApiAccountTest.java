@@ -112,12 +112,14 @@ public class SyncRadixApiAccountTest {
 		+ "[\"0000000000000000000000000000000000000000000000000000000000000000\"],\"message\":\"Transaction with id 00"
 		+ "00000000000000000000000000000000000000000000000000000000000000 not found\"}}\n";
 
-	private static final String STAKES_RESPONSE = "{\"result\":[{\"amount\":\"2000000000000000000000\",\"validator\":"
+	private static final String STAKES_RESPONSE = "{\"result\":[{\"amount\":\"3455000000000000000000\",\"validator\":"
 		+ "\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\"}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
-	private static final String UNSTAKES_RESPONSE = "{\"result\":[{\"amount\":\"100000000000000000000\",\"withdrawTxID\""
-		+ ":\"a8b096c07e13080299e1733a654eb60fa45014caf5d0d1d16578e8f1c3680bec\",\"epochsUntil\":147,\"validator\":"
-		+ "\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\"}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
+	private static final String UNSTAKES_RESPONSE = "{\"result\":[{\"amount\":\"195000000000000000000\",\"epochsUntil\":"
+		+ "500,\"validator\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\"},{\"amount\":"
+		+ "\"300000000000000000000\",\"validatorTotalOwnership\":\"107734488884306251968\",\"epochsUntil\":"
+		+ "500,\"validator\":\"dv1q0llj774w40wafpqg5apgd2jxhfc9aj897zk3gvt9uzh59rq9964vjryzf9\",\"validatorTotalStake\":"
+		+ "\"24455003291307584010164\"}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);
 
@@ -151,7 +153,7 @@ public class SyncRadixApiAccountTest {
 			.onSuccess(client -> client.account().stakes(ACCOUNT_ADDRESS1)
 				.onFailure(failure -> fail(failure.toString()))
 				.onSuccess(stakePositionsDTOS -> assertEquals(1, stakePositionsDTOS.size()))
-				.onSuccess(stakePositionsDTOS -> assertEquals(amount(2000).tokens(), stakePositionsDTOS.get(0).getAmount())));
+				.onSuccess(stakePositionsDTOS -> assertEquals(amount(3455).tokens(), stakePositionsDTOS.get(0).getAmount())));
 	}
 
 	@Test
@@ -161,8 +163,9 @@ public class SyncRadixApiAccountTest {
 			.onFailure(failure -> fail(failure.toString()))
 			.onSuccess(client -> client.account().unstakes(ACCOUNT_ADDRESS1)
 				.onFailure(failure -> fail(failure.toString()))
-				.onSuccess(unstakePositionsDTOS -> assertEquals(1, unstakePositionsDTOS.size()))
-				.onSuccess(unstakePositionsDTOS -> assertEquals(amount(100).tokens(), unstakePositionsDTOS.get(0).getAmount())));
+				.onSuccess(unstakePositionsDTOS -> assertEquals(2, unstakePositionsDTOS.size()))
+				.onSuccess(unstakePositionsDTOS -> assertEquals(amount(195).tokens(), unstakePositionsDTOS.get(0).getAmount()))
+				.onSuccess(unstakePositionsDTOS -> assertEquals(amount(300).tokens(), unstakePositionsDTOS.get(1).getAmount())));
 	}
 
 	@Test

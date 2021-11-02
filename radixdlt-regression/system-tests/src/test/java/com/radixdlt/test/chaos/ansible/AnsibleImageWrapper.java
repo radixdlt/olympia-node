@@ -66,7 +66,6 @@ package com.radixdlt.test.chaos.ansible;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.radixdlt.test.chaos.utils.ChaosExperimentUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.platform.commons.util.StringUtils;
@@ -94,13 +93,18 @@ public class AnsibleImageWrapper {
     private Set<String> nodeAddresses;
 
     public static AnsibleImageWrapper createWithDefaultImage() {
-        String sshKeyLocation = ChaosExperimentUtils.getSshIdentityLocation();
+        String sshKeyLocation = getSshIdentityLocation();
         String clusterName = Optional.ofNullable(System.getenv("TESTNET_NAME")).orElseThrow();
         // the ansible image needs an SSH key because it runs tasks over SSH
         AnsibleImageWrapper wrapper = new AnsibleImageWrapper(DEFAULT_ANSIBLE_IMAGE, clusterName);
         wrapper.copyfileToNamedVolume(sshKeyLocation);
         wrapper.pullImage();
         return wrapper;
+    }
+
+    public static String getSshIdentityLocation() {
+        return Optional.ofNullable(System.getenv("SSH_IDENTITY"))
+            .orElse(System.getenv("HOME") + "/.ssh/id_rsa");
     }
 
     private AnsibleImageWrapper(String image, String clusterName) {
@@ -111,6 +115,7 @@ public class AnsibleImageWrapper {
     /**
      * The key needs to be copied to a volume, which is created with the help of a temp dummy container
      */
+    @SuppressWarnings("deprecation") // CmdHelper is a placeholder
     private void copyfileToNamedVolume(String localFileLocation) {
         CmdHelper.runCommand(String.format("docker container create --name dummy -v %s:%s curlimages/curl:7.70.0",
                 KEY_VOLUME_NAME_USED_FOR_COPYING, "/ansible/ssh"));
@@ -119,10 +124,12 @@ public class AnsibleImageWrapper {
         CmdHelper.runCommand("docker rm -f dummy");
     }
 
+    @SuppressWarnings("deprecation") // CmdHelper is a placeholder
     private void pullImage() {
         CmdHelper.runCommand("docker pull " + image);
     }
 
+    @SuppressWarnings("deprecation") // CmdHelper is a placeholder
     public String runPlaybook(String playbook, String options, String tag) {
         String awsAccessKeyId = System.getenv("AWS_ACCESS_KEY_ID");
         String awsSecretAccessKey = System.getenv("AWS_SECRET_ACCESS_KEY");
@@ -173,6 +180,7 @@ public class AnsibleImageWrapper {
         return addressList.get(new Random().nextInt(addressList.size()));
     }
 
+    @SuppressWarnings("deprecation") // CmdHelper is a placeholder
     public void tearDown() {
         CmdHelper.runCommand("docker volume rm -f " + KEY_VOLUME_NAME_USED_FOR_COPYING);
     }

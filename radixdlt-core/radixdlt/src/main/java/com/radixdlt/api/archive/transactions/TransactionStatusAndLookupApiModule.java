@@ -66,13 +66,13 @@ package com.radixdlt.api.archive.transactions;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.archive.ArchiveEndpoint;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.functional.Result;
 
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_TX_ID;
+import static com.radixdlt.errors.ApiErrors.UNKNOWN_TX_ID;
 
 public class TransactionStatusAndLookupApiModule extends AbstractModule {
 	@Override

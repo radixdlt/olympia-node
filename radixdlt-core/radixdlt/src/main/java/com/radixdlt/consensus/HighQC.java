@@ -71,6 +71,7 @@ import javax.annotation.concurrent.Immutable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -179,6 +180,11 @@ public final class HighQC {
 
 	public QuorumCertificate highestCommittedQC() {
 		return this.highestCommittedQC == null ? this.highestQC : this.highestCommittedQC;
+	}
+
+	@VisibleForTesting
+	QuorumCertificate rawHighestCommittedQC() {
+		return this.highestCommittedQC;
 	}
 
 	@Override

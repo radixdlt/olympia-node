@@ -67,10 +67,12 @@ package com.radixdlt.identifiers;
 import org.bitcoinj.core.Bech32;
 
 import com.radixdlt.utils.Bits;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.functional.Result;
+import com.radixdlt.utils.functional.Result.Mapper2;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
 
-import static com.radixdlt.identifiers.CommonErrors.UNABLE_TO_DECODE;
+import static com.radixdlt.errors.ApiErrors.INVALID_RESOURCE_ADDRESS;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 /**
@@ -103,6 +105,12 @@ public final class ResourceAddressing {
 		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
 	}
 
+	public static Pair<String, REAddr> parseUnknownHrp(String rri) {
+		var data = Bech32.decode(rri);
+		var addrBytes = fromBech32Data(data.data);
+		return Pair.of(data.hrp, REAddr.of(addrBytes));
+	}
+
 	public Tuple2<String, REAddr> parse(String rri) {
 		var data = Bech32.decode(rri);
 		if (!data.hrp.endsWith(hrpSuffix)) {
@@ -113,12 +121,12 @@ public final class ResourceAddressing {
 		return tuple(symbol, REAddr.of(addrBytes));
 	}
 
-	public Result<Tuple2<String, REAddr>> parseFunctional(String rri) {
-		return Result.wrap(UNABLE_TO_DECODE, () -> parse(rri));
+	public Mapper2<String, REAddr> parseFunctional(String rri) {
+		return () -> Result.wrap(() -> INVALID_RESOURCE_ADDRESS.with(rri), () -> parse(rri));
 	}
 
 	public Result<REAddr> parseToAddr(String rri) {
-		return Result.wrap(UNABLE_TO_DECODE, () -> parse(rri).map((__, addr) -> addr));
+		return Result.wrap(() -> INVALID_RESOURCE_ADDRESS.with(rri), () -> parse(rri).last());
 	}
 
 	public String of(String symbol, REAddr addr) {

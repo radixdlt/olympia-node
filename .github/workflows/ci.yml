@@ -1,7 +1,11 @@
 name: Unit, integration tests and sonar
 
-on: [pull_request]
-
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+      - release\/*
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
@@ -50,3 +54,28 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: integration tests
         run: ./gradlew integrationTest --refresh-dependencies
+  rcnet-testing:
+    name: RCNet live network testing
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: joschi/setup-jdk@v2
+        with:
+          java-version: '11'
+          architecture: 'x64'
+      - name: Cache Gradle packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+      - name: Run tests against RCNet
+        run: ./gradlew systemTests --tests "com.radixdlt.test.system.TransactionsTests.*" --refresh-dependencies
+        env:
+          RADIXDLT_JSON_RPC_API_ROOT_URL: https://rcnet.radixdlt.com
+          RADIXDLT_FAUCET_URL: https://rcnet-faucet.radixdlt.com
+          RADIXDLT_BASIC_AUTH: ${{ secrets.BASIC_AUTH_RCNET_ADMIN }}
+

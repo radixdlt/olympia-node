@@ -66,30 +66,32 @@ package com.radixdlt.api.archive.validators;
 import com.google.common.base.Suppliers;
 import com.google.inject.Inject;
 import com.radixdlt.api.data.ValidatorInfoDetails;
+import com.radixdlt.api.functional.FunctionalRadixEngine;
 import com.radixdlt.api.service.ValidatorInfoService;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.FunctionalUtils;
+import com.radixdlt.utils.functional.Functions;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Result.Mapper2;
 
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.utils.functional.FunctionalUtils.skipUntil;
+import static com.radixdlt.utils.functional.Result.allOf;
 import static com.radixdlt.utils.functional.Tuple.tuple;
 
 public class ValidatorArchiveInfoService {
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final FunctionalRadixEngine radixEngine;
 	private final ValidatorInfoService validatorInfoService;
 	private final BerkeleyValidatorUptimeArchiveStore uptimeStore;
 	private final Supplier<List<ValidatorInfoDetails>> infoDetailsCache
@@ -97,7 +99,7 @@ public class ValidatorArchiveInfoService {
 
 	@Inject
 	public ValidatorArchiveInfoService(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
+		FunctionalRadixEngine radixEngine,
 		BerkeleyValidatorUptimeArchiveStore uptimeStore,
 		ValidatorInfoService validatorInfoService
 	) {
@@ -118,49 +120,58 @@ public class ValidatorArchiveInfoService {
 		return () -> Result.ok(tuple(newCursor, list));
 	}
 
-	public ValidatorInfoDetails getNextEpochValidator(ECPublicKey k) {
-		var metadata = validatorInfoService.getMetadata(k);
-		var curData = validatorInfoService.getValidatorStakeData(k);
-		var owner = validatorInfoService.getNextEpochValidatorOwner(k).getOwner();
-		var ownerEstimatedStake = validatorInfoService.getEstimatedIndividualStake(curData, owner);
-		var preparedStakes = validatorInfoService.getPreparedStakes(k);
-		var totalPreparedStakes = preparedStakes.values().stream().reduce(UInt384::add).orElse(UInt384.ZERO).getLow();
-		var preparedUnstakes = validatorInfoService.getEstimatedPreparedUnstakes(curData);
-		var totalPreparedUnstakes = preparedUnstakes.values().stream().reduce(UInt256::add).orElse(UInt256.ZERO);
-		var totalStake = curData.getTotalStake().add(totalPreparedStakes).subtract(totalPreparedUnstakes);
-		var ownerStake = ownerEstimatedStake
-			.add(preparedStakes.getOrDefault(owner, UInt384.ZERO).getLow())
-			.subtract(preparedUnstakes.getOrDefault(owner, UInt256.ZERO));
-		var allowsDelegation = validatorInfoService.getAllowDelegationFlag(k).allowsDelegation();
-		var isRegistered = validatorInfoService.getNextEpochRegisteredFlag(k).isRegistered();
-		var percentage = validatorInfoService.getNextValidatorFee(k).getRakePercentage();
-		var uptime = uptimeStore.getUptimeTwoWeeks(k);
-		return ValidatorInfoDetails.create(
-			k,
-			owner,
-			metadata.getName(),
-			metadata.getUrl(),
-			totalStake,
-			ownerStake,
-			allowsDelegation,
-			isRegistered,
-			percentage,
-			uptime
-		);
+	public Result<ValidatorInfoDetails> getNextEpochValidator(ECPublicKey k) {
+		return allOf(
+			validatorInfoService.getMetadata(k),
+			validatorInfoService.getValidatorStakeData(k),
+			validatorInfoService.getNextEpochValidatorOwner(k),
+			validatorInfoService.getPreparedStakes(k)
+		).flatMap((metadata, curData, validatorOwner, preparedStakes) -> {
+			var owner = validatorOwner.getOwner();
+
+			return allOf(
+				validatorInfoService.getEstimatedIndividualStake(curData, owner),
+				validatorInfoService.getEstimatedPreparedUnstakes(curData),
+				validatorInfoService.getAllowDelegationFlag(k),
+				validatorInfoService.getNextEpochRegisteredFlag(k),
+				validatorInfoService.getNextValidatorFee(k)
+			).map((ownerEstimatedStake, preparedUnstakes, allowsDelegation, isRegistered, percentage) -> {
+				var totalPreparedStakes = preparedStakes.values().stream().reduce(UInt384::add).orElse(UInt384.ZERO).getLow();
+				var totalPreparedUnstakes = preparedUnstakes.values().stream().reduce(UInt256::add).orElse(UInt256.ZERO);
+				var totalStake = curData.getTotalStake().add(totalPreparedStakes).subtract(totalPreparedUnstakes);
+				var ownerStake = ownerEstimatedStake.add(preparedStakes.getOrDefault(owner, UInt384.ZERO).getLow())
+					.subtract(preparedUnstakes.getOrDefault(owner, UInt256.ZERO));
+				var uptime = uptimeStore.getUptimeTwoWeeks(k);
+
+				return ValidatorInfoDetails.create(
+					k,
+					owner,
+					metadata.getName(),
+					metadata.getUrl(),
+					totalStake,
+					ownerStake,
+					allowsDelegation.allowsDelegation(),
+					isRegistered.isRegistered(),
+					percentage.getRakePercentage(),
+					uptime
+				);
+			});
+		});
 	}
 
 	public List<ValidatorInfoDetails> getAllValidators() {
-		var registered = radixEngine.reduce(ValidatorRegisteredCopy.class, new HashSet<ECPublicKey>(), (u, t) -> {
+		return radixEngine.reduce(ValidatorRegisteredCopy.class, new HashSet<ECPublicKey>(), (u, t) -> {
 			if (t.isRegistered()) {
 				u.add(t.getValidatorKey());
 			}
 			return u;
-		});
-
-		// TODO: Use NextEpoch action to compute all of this
-		return registered.stream()
-			.map(this::getNextEpochValidator)
-			.sorted(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed())
-			.collect(Collectors.toList());
+		}).map(
+			registered -> registered.stream()
+				.map(this::getNextEpochValidator)
+				.map(result -> result.fold(f -> null, Functions::identity))
+				.filter(Objects::nonNull)
+				.sorted(Comparator.comparing(ValidatorInfoDetails::getTotalStake).reversed())
+				.collect(Collectors.toList())
+		).fold(f -> List.of(), Functions::identity);
 	}
 }

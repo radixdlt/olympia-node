@@ -64,35 +64,6 @@
 
 package com.radixdlt.crypto;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.math.BigInteger;
-import java.nio.file.Files;
-import java.nio.file.attribute.PosixFilePermission;
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.KeyStore;
-import java.security.KeyStore.Entry;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Objects;
-import java.util.Set;
-
-import com.radixdlt.crypto.exception.KeyStoreException;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -107,10 +78,38 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
+import com.radixdlt.crypto.exception.KeyStoreException;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.KeyStore;
+import java.security.KeyStore.Entry;
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * A key store that provide basic integrity checks, plus an optional level
@@ -175,8 +174,10 @@ public final class  RadixKeyStore implements Closeable {
 	public static RadixKeyStore fromFile(File file, char[] storePassword, boolean create)
 			throws IOException, KeyStoreException {
 		try {
-			final KeyStore ks = KeyStore.getInstance("pkcs12");
-			char[] usedStorePassword = (storePassword == null || storePassword.length == 0) ? defaultKey : storePassword;
+			var ks = KeyStore.getInstance("pkcs12");
+			var usedStorePassword = (storePassword == null || storePassword.length == 0)
+									? defaultKey
+									: storePassword;
 			initializeKeyStore(ks, file, usedStorePassword, create);
 			return new RadixKeyStore(file, ks, usedStorePassword.clone());
 		} catch (GeneralSecurityException ex) {
@@ -195,6 +196,11 @@ public final class  RadixKeyStore implements Closeable {
 		this.storePassword = Objects.requireNonNull(storePassword);
 	}
 
+	@VisibleForTesting
+	char[] storePassword() {
+		return storePassword;
+	}
+
 	/**
 	 * Reads a key pair with the specified name from the key store.
 	 *
@@ -211,10 +217,10 @@ public final class  RadixKeyStore implements Closeable {
 	public ECKeyPair readKeyPair(String name, boolean create)
 			throws KeyStoreException, PrivateKeyException, PublicKeyException {
 		try {
-			KeyStore.Entry entry = this.keyStore.getEntry(name, emptyPassword);
+			var entry = this.keyStore.getEntry(name, emptyPassword);
 			if (entry == null) {
 				if (create) {
-					ECKeyPair newKeyPair = ECKeyPair.generateNew();
+					var newKeyPair = ECKeyPair.generateNew();
 					writeKeyPair(name, newKeyPair);
 					return newKeyPair;
 				} else {
@@ -247,16 +253,16 @@ public final class  RadixKeyStore implements Closeable {
 		byte[] encodedPrivKey = null;
 		try {
 			encodedPrivKey = encodePrivKey(ecKeyPair.getPrivateKey());
-			PrivateKeyInfo pki = PrivateKeyInfo.getInstance(encodedPrivKey);
+			var pki = PrivateKeyInfo.getInstance(encodedPrivKey);
 			// Note that while PrivateKey objects are in theory destroyable,
 			// the BCEC implementation has not yet been updated to accommodate.
-			PrivateKey privateKey = BouncyCastleProvider.getPrivateKey(pki);
+			var privateKey = BouncyCastleProvider.getPrivateKey(pki);
 
-			byte[] encodedPubKey = encodePubKey(ecKeyPair.getPublicKey().getBytes());
-			SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(encodedPubKey);
-			PublicKey publicKey = BouncyCastleProvider.getPublicKey(spki);
+			var encodedPubKey = encodePubKey(ecKeyPair.getPublicKey().getBytes());
+			var spki = SubjectPublicKeyInfo.getInstance(encodedPubKey);
+			var publicKey = BouncyCastleProvider.getPublicKey(spki);
 
-			KeyPair keyPair = new KeyPair(publicKey, privateKey);
+			var keyPair = new KeyPair(publicKey, privateKey);
 
 			Certificate[] chain = {
 				selfSignedCert(keyPair, 1000, DEFAULT_SUBJECT_DN)
@@ -306,7 +312,7 @@ public final class  RadixKeyStore implements Closeable {
 
 	private static void initializeKeyStore(KeyStore ks, File file, char[] storePassword, boolean create)
 		throws GeneralSecurityException, IOException {
-		try (InputStream is = new FileInputStream(file)) {
+		try (var is = new FileInputStream(file)) {
 			ks.load(is, storePassword);
 		} catch (FileNotFoundException ex) {
 			if (create) {

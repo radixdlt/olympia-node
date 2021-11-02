@@ -63,10 +63,15 @@
 
 package com.radixdlt.api.node.validation;
 
-import com.radixdlt.api.service.ValidatorInfoService;
+import org.json.JSONObject;
+
+import com.google.inject.Inject;
 import com.radixdlt.api.data.ValidatorUptime;
+import com.radixdlt.api.service.ValidatorInfoService;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.SystemMapKey;
@@ -74,13 +79,15 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.functional.Result;
 
-import org.json.JSONObject;
-
-import com.google.inject.Inject;
-
-import static com.radixdlt.api.util.JsonRpcUtil.*;
+import static com.radixdlt.api.util.JsonRpcUtil.fromMap;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
+import static com.radixdlt.api.util.JsonRpcUtil.withoutParameters;
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_PERCENTAGE_GRANULARITY;
+import static com.radixdlt.utils.functional.Result.allOf;
 
 public final class ValidationHandler {
 	private final ValidatorInfoService validatorInfoService;
@@ -101,80 +108,101 @@ public final class ValidationHandler {
 		this.addressing = addressing;
 	}
 
-	private JSONObject getValidatorInfo() {
-		var metadata = validatorInfoService.getMetadata(self);
-		var validatorData = validatorInfoService.getValidatorStakeData(self);
-		var individualStakes = validatorInfoService.getEstimatedIndividualStakes(validatorData);
+	private Result<JSONObject> getValidatorInfo(
+		ValidatorMetaData metadata,
+		ValidatorStakeData validatorData,
+		AllowDelegationFlag allowDelegationFlag,
+		ValidatorUptime uptime
+	) {
+		return allOf(
+			validatorInfoService.getEstimatedIndividualStakes(validatorData),
+			validatorInfoService.getNextEpochRegisteredFlag(self),
+			validatorInfoService.getNextEpochValidatorOwner(self),
+			validatorInfoService.getPreparedStakes(self),
+			validatorInfoService.getEstimatedPreparedUnstakes(validatorData)
+		).map((individualStakes, nextEpochRegisteredFlag, nextEpochOwner, preparedStakes, preparedUnstakes) -> {
+			var validatorAddress = addressing.forValidators().of(self);
 
-		var allowDelegationFlag = validatorInfoService.getAllowDelegationFlag(self);
-		var uptime = validatorInfoService.getUptime(self);
-		var validatorAddress = addressing.forValidators().of(self);
+			var data = jsonObject()
+				.put("name", metadata.getName())
+				.put("url", metadata.getUrl())
+				.put("address", validatorAddress)
+				.put("allowDelegation", allowDelegationFlag.allowsDelegation());
 
-		var data = jsonObject()
-			.put("name", metadata.getName())
-			.put("url", metadata.getUrl())
-			.put("address", validatorAddress)
-			.put("allowDelegation", allowDelegationFlag.allowsDelegation());
-
-		var stakesJson = fromMap(individualStakes, (addr, amt) -> jsonObject()
-			.put("delegator", addressing.forAccounts().of(addr))
-			.put("amount", amt)
-		);
-
-		var curEpoch = jsonObject()
-			.put("registered", validatorData.isRegistered())
-			.put("owner", addressing.forAccounts().of(validatorData.getOwnerAddr()))
-			.put("validatorFee", (double) validatorData.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "")
-			.put("stakes", stakesJson)
-			.put("totalStake", validatorData.getTotalStake())
-			.put("proposalsCompleted", uptime.getProposalsCompleted())
-			.put("proposalsMissed", uptime.getProposalsMissed())
-			.put("uptimePercentage", uptime.toPercentageString());
-
-		var updates = jsonObject();
-
-		var validatorRakeCopy = validatorInfoService.getNextValidatorFee(self);
-		if (validatorRakeCopy.getRakePercentage() != validatorData.getRakePercentage()) {
-			updates.put("validatorFee", (double) validatorRakeCopy.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "");
-		}
-
-		var nextEpochRegisteredFlag = validatorInfoService.getNextEpochRegisteredFlag(self).isRegistered();
-		if (nextEpochRegisteredFlag != validatorData.isRegistered()) {
-			updates.put("registered", nextEpochRegisteredFlag);
-		}
-
-		var nextEpochOwner = validatorInfoService.getNextEpochValidatorOwner(self).getOwner();
-		if (!nextEpochOwner.equals(validatorData.getOwnerAddr())) {
-			updates.put("owner", addressing.forAccounts().of(nextEpochOwner));
-		}
-
-		var preparedStakes = validatorInfoService.getPreparedStakes(self);
-		if (!preparedStakes.isEmpty()) {
-			updates.put("stakes", fromMap(preparedStakes, (addr, amount) -> jsonObject()
-				.put("amount", amount)
+			var stakesJson = fromMap(individualStakes, (addr, amt) -> jsonObject()
 				.put("delegator", addressing.forAccounts().of(addr))
-			));
-		}
+				.put("amount", amt)
+			);
 
-		var preparedUnstakes = validatorInfoService.getEstimatedPreparedUnstakes(validatorData);
-		if (!preparedUnstakes.isEmpty()) {
-			updates.put("unstakes", fromMap(preparedUnstakes, (addr, amount) -> jsonObject()
-				.put("amount", amount)
-				.put("delegator", addressing.forAccounts().of(addr))
-			));
-		}
+			var curEpoch = jsonObject()
+				.put("registered", validatorData.isRegistered())
+				.put("owner", addressing.forAccounts().of(validatorData.getOwnerAddr()))
+				.put("validatorFee", toPercentageString(validatorData.getRakePercentage()))
+				.put("stakes", stakesJson)
+				.put("totalStake", validatorData.getTotalStake())
+				.put("proposalsCompleted", uptime.getProposalsCompleted())
+				.put("proposalsMissed", uptime.getProposalsMissed())
+				.put("uptimePercentage", uptime.toPercentageString());
 
-		return data.put("epochInfo", jsonObject()
-			.put("current", curEpoch)
-			.put("updates", updates)
-		);
+			var updates = jsonObject();
+
+			validatorInfoService.getNextValidatorFee(self)
+				.onSuccess(validatorRakeCopy -> {
+					if (validatorRakeCopy.getRakePercentage() != validatorData.getRakePercentage()) {
+						updates.put("validatorFee", toPercentageString(validatorRakeCopy.getRakePercentage()));
+					}
+				});
+
+			if (nextEpochRegisteredFlag.isRegistered() != validatorData.isRegistered()) {
+				updates.put("registered", nextEpochRegisteredFlag);
+			}
+
+			if (!nextEpochOwner.getOwner().equals(validatorData.getOwnerAddr())) {
+				updates.put("owner", addressing.forAccounts().of(nextEpochOwner.getOwner()));
+			}
+
+			if (!preparedStakes.isEmpty()) {
+				updates.put("stakes", fromMap(
+					preparedStakes,
+					(addr, amount) -> jsonObject()
+						.put("amount", amount)
+						.put("delegator", addressing.forAccounts().of(addr))
+				));
+			}
+
+			if (!preparedUnstakes.isEmpty()) {
+				updates.put("unstakes", fromMap(
+					preparedUnstakes, (addr, amount) -> jsonObject()
+						.put("amount", amount)
+						.put("delegator", addressing.forAccounts().of(addr))
+				));
+			}
+
+			return data.put("epochInfo", jsonObject()
+				.put("current", curEpoch)
+				.put("updates", updates)
+			);
+		});
+	}
+
+	private static String toPercentageString(double percentage) {
+		return percentage / (double) RAKE_PERCENTAGE_GRANULARITY + "";
 	}
 
 	public JSONObject handleGetNodeInfo(JSONObject request) {
-		return successResponse(request, getValidatorInfo());
+		return withoutParameters(
+			request,
+			() -> allOf(
+				validatorInfoService.getMetadata(self),
+				validatorInfoService.getValidatorStakeData(self),
+				validatorInfoService.getAllowDelegationFlag(self),
+				validatorInfoService.getUptime(self)
+			).flatMap(this::getValidatorInfo)
+		);
 	}
 
 	public JSONObject handleGetCurrentEpochData(JSONObject request) {
+		//TODO: rework to avoid throwing exceptions
 		var validators = radixEngine.reduce(ValidatorStakeData.class, jsonArray(), (json, data) -> {
 			if (!data.isRegistered() || data.getTotalStake().isZero()) {
 				return json;
@@ -185,7 +213,8 @@ public final class ValidationHandler {
 				data.getValidatorKey().getCompressedBytes()
 			);
 
-			// TODO: need to surround this with a lock
+			//TODO: need to surround this with a lock
+			//TODO: may throw unexpected exception
 			var bftData = (ValidatorBFTData) radixEngine.get(bftDataKey).orElseThrow();
 			var uptime = ValidatorUptime.create(bftData.proposalsCompleted(), bftData.proposalsMissed());
 

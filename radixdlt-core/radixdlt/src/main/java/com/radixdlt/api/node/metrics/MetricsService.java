@@ -68,7 +68,10 @@ import com.radixdlt.api.service.SystemConfigService;
 import com.radixdlt.api.Endpoints;
 import com.radixdlt.api.service.network.NetworkInfoService;
 import com.radixdlt.api.service.ValidatorInfoService;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
@@ -82,9 +85,11 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.utils.UInt384;
+import com.radixdlt.utils.functional.Functions;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.util.AbstractCollection;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -176,9 +181,13 @@ public class MetricsService {
 		appendCounter(builder, "info_epochmanager_currentview_view", currentView(snapshot));
 		appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpoch(snapshot));
 		appendCounter(builder, "total_peers", systemConfigService.getNetworkingPeersCount());
-		var totalValidators = inMemorySystemInfo.getEpochProof().getNextValidatorSet().orElseThrow().getValidators().size();
-		appendCounter(builder, "total_validators", totalValidators);
 
+		var totalValidators = inMemorySystemInfo.getEpochProof().getNextValidatorSet()
+			.map(BFTValidatorSet::getValidators)
+			.map(AbstractCollection::size)
+			.orElse(0);
+
+		appendCounter(builder, "total_validators", totalValidators);
 		appendCounter(builder, "balance_xrd", getXrdBalance());
 		appendCounter(builder, "validator_total_stake", getTotalStake());
 
@@ -194,12 +203,15 @@ public class MetricsService {
 	}
 
 	private UInt384 getTotalStake() {
-		var stakeData = validatorInfoService.getValidatorStakeData(self.getKey());
-		return UInt384.from(stakeData.getTotalStake());
+		return validatorInfoService.getValidatorStakeData(self.getKey())
+			.map(ValidatorStakeData::getTotalStake).map(UInt384::from)
+			.fold(f -> UInt384.ZERO, Functions::identity);
 	}
 
 	private UInt384 getXrdBalance() {
-		return accountInfoService.getMyBalances().getOrDefault(REAddr.ofNativeToken(), UInt384.ZERO);
+		return accountInfoService.getMyBalances()
+			.map(balances -> balances.getOrDefault(REAddr.ofNativeToken(), UInt384.ZERO))
+			.fold(f -> UInt384.ZERO, Functions::identity);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -220,10 +232,12 @@ public class MetricsService {
 
 	private String prepareNodeInfo() {
 		var builder = new StringBuilder("nodeinfo{");
+		var registered = validatorInfoService.getNextEpochRegisteredFlag(self.getKey())
+			.fold(f -> false, ValidatorRegisteredCopy::isRegistered);
 
 		addEndpontStatuses(builder);
 		appendField(builder, "owner_address", addressing.forAccounts().of(REAddr.ofPubKeyAccount(self.getKey())));
-		appendField(builder, "validator_registered", validatorInfoService.getNextEpochRegisteredFlag(self.getKey()).isRegistered());
+		appendField(builder, "validator_registered", registered);
 		addBranchAndCommit(builder);
 		addValidatorAddress(builder);
 		addAccumulatorState(builder);
@@ -235,8 +249,10 @@ public class MetricsService {
 
 	private void addValidatorAddress(StringBuilder builder) {
 		appendField(builder, "own_validator_address", addressing.forValidators().of(self.getKey()));
-		var validatorSet = inMemorySystemInfo.getEpochProof().getNextValidatorSet().orElseThrow();
-		var inSet = validatorSet.containsNode(self);
+
+		var inSet = inMemorySystemInfo.getEpochProof().getNextValidatorSet()
+			.map(set -> set.containsNode(self)).orElse(false);
+
 		appendField(builder, "is_in_validator_set", inSet);
 	}
 
@@ -266,9 +282,10 @@ public class MetricsService {
 	private void exportCounters(StringBuilder builder) {
 		EXPORT_LIST.forEach(counterType -> generateCounterEntry(counterType, builder));
 
-		var uptime = validatorInfoService.getUptime(self.getKey());
-		appendCounter(builder, COUNTER_PREFIX + "radix_engine_cur_epoch_completed_proposals", uptime.getProposalsCompleted());
-		appendCounter(builder, COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals", uptime.getProposalsMissed());
+		validatorInfoService.getUptime(self.getKey()).onSuccess(uptime -> {
+			appendCounter(builder, COUNTER_PREFIX + "radix_engine_cur_epoch_completed_proposals", uptime.getProposalsCompleted());
+			appendCounter(builder, COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals", uptime.getProposalsMissed());
+		});
 	}
 
 	private void generateCounterEntry(CounterType counterType, StringBuilder builder) {
@@ -357,5 +374,4 @@ public class MetricsService {
 		var connection = ManagementFactory.getPlatformMBeanServer();
 		JMX_METRICS.forEach(metric -> metric.readCounter(connection, builder));
 	}
-
 }

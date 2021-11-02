@@ -86,8 +86,8 @@ import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.sync.RemoteSyncService;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.sync.LocalSyncService;
-import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseSender;
-import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseSender;
+import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseHandler;
+import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -243,8 +243,8 @@ public class EpochsSyncModule extends AbstractModule {
 		Comparator<AccumulatorState> accComparator,
 		RemoteSyncResponseSignaturesVerifier signaturesVerifier,
 		LedgerAccumulatorVerifier accumulatorVerifier,
-		VerifiedSyncResponseSender verifiedSender,
-		InvalidSyncResponseSender invalidSyncedCommandsSender
+		VerifiedSyncResponseHandler verifiedSyncResponseHandler,
+		InvalidSyncResponseHandler invalidSyncResponseHandler
 	) {
 		return (remoteSyncResponseValidatorSetVerifier, syncState) ->
 			new LocalSyncService(
@@ -260,8 +260,8 @@ public class EpochsSyncModule extends AbstractModule {
 				remoteSyncResponseValidatorSetVerifier,
 				signaturesVerifier,
 				accumulatorVerifier,
-				verifiedSender,
-				invalidSyncedCommandsSender,
+				verifiedSyncResponseHandler,
+				invalidSyncResponseHandler,
 				syncState
 			);
 	}

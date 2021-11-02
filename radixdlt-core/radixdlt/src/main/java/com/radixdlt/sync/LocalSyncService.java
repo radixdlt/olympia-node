@@ -88,7 +88,6 @@ import java.util.Map;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -118,12 +117,12 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 public final class LocalSyncService {
 
-	public interface VerifiedSyncResponseSender {
-		void sendVerifiedSyncResponse(SyncResponse remoteSyncResponse);
+	public interface VerifiedSyncResponseHandler {
+		void handleVerifiedSyncResponse(SyncResponse syncResponse);
 	}
 
-	public interface InvalidSyncResponseSender {
-		void sendInvalidSyncResponse(BFTNode sender, SyncResponse remoteSyncResponse);
+	public interface InvalidSyncResponseHandler {
+		void handleInvalidSyncResponse(BFTNode sender, SyncResponse syncResponse);
 	}
 
 	private static final Logger log = LogManager.getLogger();
@@ -141,8 +140,8 @@ public final class LocalSyncService {
 	private final RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
 	private final RemoteSyncResponseSignaturesVerifier signaturesVerifier;
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
-	private final VerifiedSyncResponseSender verifiedSender;
-	private final InvalidSyncResponseSender invalidSyncedCommandsSender;
+	private final VerifiedSyncResponseHandler verifiedSyncResponseHandler;
+	private final InvalidSyncResponseHandler invalidSyncResponseHandler;
 
 	private final ImmutableMap<Pair<? extends Class<?>, ? extends Class<?>>, Handler<?, ?>> handlers;
 
@@ -162,8 +161,8 @@ public final class LocalSyncService {
 		RemoteSyncResponseValidatorSetVerifier validatorSetVerifier,
 		RemoteSyncResponseSignaturesVerifier signaturesVerifier,
 		LedgerAccumulatorVerifier accumulatorVerifier,
-		VerifiedSyncResponseSender verifiedSender,
-		InvalidSyncResponseSender invalidSyncedCommandsSender,
+		VerifiedSyncResponseHandler verifiedSyncResponseHandler,
+		InvalidSyncResponseHandler invalidSyncResponseHandler,
 		SyncState initialState
 	) {
 		this.statusRequestDispatcher = Objects.requireNonNull(statusRequestDispatcher);
@@ -178,8 +177,8 @@ public final class LocalSyncService {
 		this.validatorSetVerifier = Objects.requireNonNull(validatorSetVerifier);
 		this.signaturesVerifier = Objects.requireNonNull(signaturesVerifier);
 		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
-		this.verifiedSender = Objects.requireNonNull(verifiedSender);
-		this.invalidSyncedCommandsSender = Objects.requireNonNull(invalidSyncedCommandsSender);
+		this.verifiedSyncResponseHandler = Objects.requireNonNull(verifiedSyncResponseHandler);
+		this.invalidSyncResponseHandler = Objects.requireNonNull(invalidSyncResponseHandler);
 
 		this.syncState = initialState;
 
@@ -242,7 +241,7 @@ public final class LocalSyncService {
 			))
 			.put(handler(
 				SyncingState.class, SyncLedgerUpdateTimeout.class,
-				state -> unused -> this.processSync(state)
+				state -> event -> this.processSyncLedgerUpdateTimeout(state, event)
 			))
 			.build();
 	}
@@ -360,15 +359,15 @@ public final class LocalSyncService {
 			return currentState; // we're already waiting for a response from peer
 		}
 
-		final Optional<BFTNode> peerToUse = currentState.candidatePeers().stream()
-			.filter(peersView::hasPeer)
-			.findFirst();
+		final var candidatePeerResult = currentState.fetchNextCandidatePeer();
+		final var stateWithUpdatedQueue = candidatePeerResult.getFirst();
+		final var maybePeerToUse = candidatePeerResult.getSecond();
 
-		return peerToUse
-			.map(peer -> this.sendSyncRequest(currentState, peer))
+		return maybePeerToUse
+			.map(peerToUse -> this.sendSyncRequest(stateWithUpdatedQueue, peerToUse))
 			.orElseGet(() -> {
 				// there's no connected peer on our candidates list, starting a fresh sync check immediately
-				return this.initSyncCheck(IdleState.init(currentState.getCurrentHeader()));
+				return this.initSyncCheck(IdleState.init(stateWithUpdatedQueue.getCurrentHeader()));
 			});
 	}
 
@@ -414,7 +413,7 @@ public final class LocalSyncService {
 		} else if (!this.verifyResponse(syncResponse)) {
 			log.warn("LocalSync: Received invalid sync response {} from {}", syncResponse, sender);
 			// validation failed, remove from candidate peers and processSync
-			invalidSyncedCommandsSender.sendInvalidSyncResponse(sender, syncResponse);
+			invalidSyncResponseHandler.handleInvalidSyncResponse(sender, syncResponse);
 			return this.processSync(
 				currentState
 					.clearPendingRequest()
@@ -422,10 +421,10 @@ public final class LocalSyncService {
 			);
 		} else {
 			this.syncLedgerUpdateTimeoutDispatcher.dispatch(
-				SyncLedgerUpdateTimeout.create(),
+				SyncLedgerUpdateTimeout.create(currentState.getCurrentHeader().getStateVersion()),
 				1000L
 			);
-			this.verifiedSender.sendVerifiedSyncResponse(syncResponse);
+			this.verifiedSyncResponseHandler.handleVerifiedSyncResponse(syncResponse);
 			return currentState.clearPendingRequest();
 		}
 	}
@@ -475,6 +474,14 @@ public final class LocalSyncService {
 		);
 	}
 
+	private SyncState processSyncLedgerUpdateTimeout(SyncingState currentState, SyncLedgerUpdateTimeout event) {
+		if (event.stateVersion() != currentState.getCurrentHeader().getStateVersion()) {
+			return currentState; // obsolete timeout event; ignore
+		} else {
+			return this.processSync(currentState);
+		}
+	}
+
 	private SyncState updateCurrentHeaderIfNeeded(SyncState currentState, LedgerUpdate ledgerUpdate) {
 		final var updatedHeader = ledgerUpdate.getTail();
 		final var isNewerState = accComparator.compare(
@@ -504,7 +511,7 @@ public final class LocalSyncService {
 		if (isNewerState) {
 			final var newState = currentState
 				.withTargetHeader(header)
-				.withCandidatePeers(peers);
+				.addCandidatePeers(peers);
 			return this.updateSyncTargetDiffCounter(newState);
 		} else {
 			log.trace("LocalSync: skipping as already targeted {}", currentState.getTargetHeader());

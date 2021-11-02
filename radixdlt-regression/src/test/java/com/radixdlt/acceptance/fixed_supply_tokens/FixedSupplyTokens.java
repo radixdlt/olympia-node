@@ -15,7 +15,7 @@ public class FixedSupplyTokens extends RadixNetworkTest {
 
     @Given("I have an account with funds at a suitable Radix network")
     public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
-        faucet(account1, Amount.ofTokens(1010));
+        faucet(account1, Amount.ofTokens(110));
     }
 
     @When("I create a fixed supply token with properties: {string}, {string}, {string}, {string}, {string}, with amount {int}")

@@ -67,8 +67,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ActionParser;
 import com.radixdlt.api.service.SubmissionService;
+import com.radixdlt.api.util.ActionParser;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.AID;
@@ -81,8 +81,8 @@ import java.util.Optional;
 
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.optString;
-import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
 import static com.radixdlt.api.util.JsonRpcUtil.safeArray;
+import static com.radixdlt.api.util.JsonRpcUtil.toResponse;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
 import static com.radixdlt.utils.functional.Result.allOf;
 
@@ -109,7 +109,7 @@ public class LocalAccountHandler {
 	}
 
 	public JSONObject handleAccountGetInfo(JSONObject request) {
-		return successResponse(request, accountService.getAccountInfo());
+		return toResponse(request, accountService.getAccountInfo());
 	}
 
 	public JSONObject handleAccountSubmitTransactionSingleStep(JSONObject request) {

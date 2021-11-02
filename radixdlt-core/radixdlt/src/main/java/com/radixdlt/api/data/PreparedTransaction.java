@@ -67,6 +67,7 @@ package com.radixdlt.api.data;
 import org.json.JSONObject;
 
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.functional.Functions;
 
 import java.util.List;
 
@@ -115,7 +116,7 @@ public class PreparedTransaction {
 		var transactionDetails = jsonObject()
 			.put("blob", toHexString(blob))
 			.put("hashOfBlobToSign", toHexString(hashToSign))
-			.put("notifications", fromCollection(notifications, v -> v));
+			.put("notifications", fromCollection(notifications, Functions::identity));
 
 		return jsonObject().put("transaction", transactionDetails).put("fee", fee.toString());
 	}

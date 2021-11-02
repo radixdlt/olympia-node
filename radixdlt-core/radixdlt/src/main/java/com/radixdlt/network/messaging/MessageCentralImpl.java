@@ -72,6 +72,7 @@ import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -153,6 +154,7 @@ final class MessageCentralImpl implements MessageCentral {
 		this.outboundThreadPool.start();
 
 		this.peerMessages = peerManager.messages()
+			.observeOn(Schedulers.computation())
 			.map(this::processInboundMessage)
 			.filter(Optional::isPresent)
 			.map(Optional::get)

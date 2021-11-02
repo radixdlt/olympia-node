@@ -68,15 +68,15 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.api.archive.ArchiveEndpoint;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 
 import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
-import static com.radixdlt.api.data.ApiErrors.UNKNOWN_RRI;
+import static com.radixdlt.errors.ApiErrors.UNKNOWN_RRI;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 
 public final class TokenApiModule extends AbstractModule {
