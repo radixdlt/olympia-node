@@ -68,12 +68,13 @@ package com.radixdlt.network.p2p.discovery;
  * A message acting as as trigger for PeerDiscovery to start a discovery round.
  */
 public final class DiscoverPeers {
-
-	public static DiscoverPeers create() {
-		return new DiscoverPeers();
-	}
+	private static final DiscoverPeers INSTANCE = new DiscoverPeers();
 
 	private DiscoverPeers() {
+	}
+
+	public static DiscoverPeers create() {
+		return INSTANCE;
 	}
 
 	@Override

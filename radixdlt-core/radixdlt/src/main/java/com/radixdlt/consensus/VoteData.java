@@ -102,8 +102,8 @@ public final class VoteData {
 
 	@JsonCreator
 	public VoteData(
-		@JsonProperty("proposed") BFTHeader proposed,
-		@JsonProperty("parent") BFTHeader parent,
+		@JsonProperty(value = "proposed", required = true) BFTHeader proposed,
+		@JsonProperty(value = "parent", required = true) BFTHeader parent,
 		@JsonProperty("committed") BFTHeader committed
 	) {
 		this.proposed = Objects.requireNonNull(proposed);

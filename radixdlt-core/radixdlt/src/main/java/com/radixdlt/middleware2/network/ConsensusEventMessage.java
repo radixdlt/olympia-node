@@ -72,6 +72,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
+import org.radix.time.Time;
 
 import java.util.Objects;
 
@@ -81,7 +82,6 @@ import java.util.Objects;
  */
 @SerializerId2("message.consensus.event")
 public final class ConsensusEventMessage extends Message {
-
 	@JsonProperty("proposal")
 	@DsonOutput(Output.ALL)
 	private final Proposal proposal;
@@ -90,45 +90,44 @@ public final class ConsensusEventMessage extends Message {
 	@DsonOutput(Output.ALL)
 	private final Vote vote;
 
-	ConsensusEventMessage() {
-		// Serializer only
-		this.proposal = null;
-		this.vote = null;
-	}
+	public ConsensusEventMessage(
+		@JsonProperty(value = "timestamp", required = true) long timestamp,
+		@JsonProperty("proposal") Proposal proposal,
+		@JsonProperty("vote") Vote vote
+	) {
+		super(timestamp);
 
-	ConsensusEventMessage(Proposal proposal) {
+		if (proposal == null && vote == null) {
+			throw new IllegalStateException("No vote nor proposal are provided for ConsensusEventMessage");
+		}
+
 		this.proposal = proposal;
-		this.vote = null;
-	}
-
-	ConsensusEventMessage(Vote vote) {
-		this.proposal = null;
 		this.vote = vote;
 	}
 
-	public ConsensusEvent getConsensusMessage() {
-		ConsensusEvent event = consensusMessageInternal();
-		if (event == null) {
-			throw new IllegalStateException("No consensus message.");
-		}
-		return event;
+	public ConsensusEventMessage(Proposal proposal) {
+		this(Time.currentTimestamp(), proposal, null);
 	}
 
-	private ConsensusEvent consensusMessageInternal() {
+	public ConsensusEventMessage(Vote vote) {
+		this(Time.currentTimestamp(), null, vote);
+	}
+
+	public ConsensusEvent getConsensusMessage() {
 		if (this.proposal != null) {
-			return this.proposal;
+			return proposal;
 		}
 
 		if (this.vote != null) {
-			return this.vote;
+			return vote;
 		}
 
-		return null;
+		throw new IllegalStateException("Should never happen");
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), consensusMessageInternal());
+		return String.format("%s[%s]", getClass().getSimpleName(), getConsensusMessage());
 	}
 
 	@Override
@@ -141,8 +140,8 @@ public final class ConsensusEventMessage extends Message {
 		}
 		ConsensusEventMessage that = (ConsensusEventMessage) o;
 		return Objects.equals(proposal, that.proposal)
-				&& Objects.equals(vote, that.vote)
-				&& Objects.equals(getTimestamp(), that.getTimestamp());
+			   && Objects.equals(vote, that.vote)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override

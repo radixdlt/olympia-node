@@ -260,7 +260,7 @@ public class EpochManagerTest {
 
 			@Provides
 			BFTValidatorSet validatorSet() {
-				return BFTValidatorSet.from(Stream.of(BFTValidator.from(self, UInt256.ONE)));
+				return BFTValidatorSet.from(Stream.of(BFTValidator.create(self, UInt256.ONE)));
 			}
 
 			@Provides
@@ -310,12 +310,12 @@ public class EpochManagerTest {
 	public void should_not_send_consensus_messages_if_not_part_of_new_epoch() {
 		// Arrange
 		epochManager.start();
-		BFTValidatorSet nextValidatorSet = BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
+		var nextValidatorSet = BFTValidatorSet.from(Stream.of(BFTValidator.create(BFTNode.random(), UInt256.ONE)));
 		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-		LedgerHeader header = LedgerHeader.genesis(accumulatorState, nextValidatorSet, 0);
-		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header);
-		VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
-		LedgerHeader nextLedgerHeader = LedgerHeader.create(
+		var header = LedgerHeader.genesis(accumulatorState, nextValidatorSet, 0);
+		var genesisVertex = UnverifiedVertex.createGenesis(header);
+		var verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+		var nextLedgerHeader = LedgerHeader.create(
 			header.getEpoch() + 1,
 			View.genesis(),
 			header.getAccumulatorState(),
@@ -328,8 +328,9 @@ public class EpochManagerTest {
 			nextValidatorSet,
 			VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher)
 		);
-		LedgerProof proof = mock(LedgerProof.class);
+		var proof = mock(LedgerProof.class);
 		when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
+
 		var epochChange = new EpochChange(proof, bftConfiguration);
 		var ledgerUpdate = new LedgerUpdate(mock(VerifiedTxnsAndProof.class), ImmutableClassToInstanceMap.of(EpochChange.class, epochChange));
 

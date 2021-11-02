@@ -64,12 +64,14 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
+import org.radix.time.Time;
 
 import java.util.Objects;
 
@@ -78,18 +80,21 @@ import java.util.Objects;
  */
 @SerializerId2("message.sync.sync_request")
 public final class SyncRequestMessage extends Message {
-
 	@JsonProperty("currentHeader")
 	@DsonOutput(Output.ALL)
 	private final DtoLedgerProof currentHeader;
 
-	SyncRequestMessage() {
-		// Serializer only
-		this.currentHeader = null;
+	@JsonCreator
+	public SyncRequestMessage(
+		@JsonProperty(value = "timestamp", required = true) long timestamp,
+		@JsonProperty(value = "currentHeader", required = true) DtoLedgerProof currentHeader
+	) {
+		super(timestamp);
+		this.currentHeader = Objects.requireNonNull(currentHeader);
 	}
 
 	public SyncRequestMessage(DtoLedgerProof currentHeader) {
-		this.currentHeader = currentHeader;
+		this(Time.currentTimestamp(), currentHeader);
 	}
 
 	public DtoLedgerProof getCurrentHeader() {
@@ -109,9 +114,10 @@ public final class SyncRequestMessage extends Message {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		SyncRequestMessage that = (SyncRequestMessage) o;
+
+		var that = (SyncRequestMessage) o;
 		return Objects.equals(currentHeader, that.currentHeader)
-			&& Objects.equals(getTimestamp(), that.getTimestamp());
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override

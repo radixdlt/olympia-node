@@ -109,9 +109,10 @@ public final class NodeApplication {
 			var txBuilder = radixEngine.construct(request.getRequest().feePayer(REAddr.ofPubKeyAccount(self)));
 			var txn = txBuilder.signAndBuild(hashSigner::sign);
 			var mempoolAdd = request.completableFuture()
-				.map(f -> MempoolAdd.create(txn, f))
+				.map(future -> MempoolAdd.create(txn, future))
 				.orElseGet(() -> MempoolAdd.create(txn));
-			this.mempoolAddEventDispatcher.dispatch(mempoolAdd);
+
+			this.mempoolAddEventDispatcher.dispatch(mempoolAdd);	//DISPATCH: event seems safe
 		} catch (TxBuilderException | RuntimeException e) {
 			log.warn("Failed to fulfil request {} reason: {}", request, e.getMessage());
 			request.completableFuture().ifPresent(c -> c.completeExceptionally(e));

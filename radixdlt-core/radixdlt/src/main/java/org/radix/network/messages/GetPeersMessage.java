@@ -64,13 +64,24 @@
 
 package org.radix.network.messages;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.radix.network.messaging.Message;
 import com.radixdlt.serialization.SerializerId2;
+import org.radix.time.Time;
 
 import java.util.Objects;
 
 @SerializerId2("p2p.discovery.get_peers")
 public final class GetPeersMessage extends Message {
+	@JsonCreator
+	public GetPeersMessage(@JsonProperty("timestamp") long timestamp) {
+		super(timestamp);
+	}
+
+	public GetPeersMessage() {
+		this(Time.currentTimestamp());
+	}
 
 	@Override
 	public String toString() {

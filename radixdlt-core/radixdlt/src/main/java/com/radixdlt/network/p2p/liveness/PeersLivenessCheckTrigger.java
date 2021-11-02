@@ -68,12 +68,13 @@ package com.radixdlt.network.p2p.liveness;
  * A message acting as a trigger for PeerLivenessMonitor to send ping messages.
  */
 public final class PeersLivenessCheckTrigger {
-
-	public static PeersLivenessCheckTrigger create() {
-		return new PeersLivenessCheckTrigger();
-	}
+	private static final PeersLivenessCheckTrigger INSTANCE = new PeersLivenessCheckTrigger();
 
 	private PeersLivenessCheckTrigger() {
+	}
+
+	public static PeersLivenessCheckTrigger create() {
+		return INSTANCE;
 	}
 
 	@Override

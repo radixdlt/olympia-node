@@ -64,29 +64,37 @@
 
 package org.radix.network.messages;
 
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.network.p2p.RadixNodeUri;
-import org.radix.network.messaging.Message;
-
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import org.radix.network.messaging.Message;
+import org.radix.time.Time;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 
 @SerializerId2("p2p.discovery.peers_response")
 public final class PeersResponseMessage extends Message {
 	@JsonProperty("peers")
 	@DsonOutput(Output.ALL)
+	@JsonInclude()
 	private final ImmutableSet<RadixNodeUri> peers;
 
-	public PeersResponseMessage() {
-		this(ImmutableSet.of());
+	@JsonCreator
+	public PeersResponseMessage(
+		@JsonProperty(value = "timestamp", required = true) long timestamp,
+		@JsonProperty("peers") ImmutableSet<RadixNodeUri> peers
+	) {
+		super(timestamp);
+		this.peers = peers == null ? ImmutableSet.of() : peers;
 	}
 
 	public PeersResponseMessage(ImmutableSet<RadixNodeUri> peers) {
-		this.peers = peers;
+		this(Time.currentTimestamp(), peers);
 	}
 
 	public ImmutableSet<RadixNodeUri> getPeers() {
@@ -106,9 +114,10 @@ public final class PeersResponseMessage extends Message {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
+
 		final var that = (PeersResponseMessage) o;
 		return Objects.equals(peers, that.peers)
-			&& Objects.equals(getTimestamp(), that.getTimestamp());
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override

@@ -71,6 +71,8 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
+import static java.util.Objects.requireNonNull;
+
 @SerializerId2("extended_client_atom")
 public class TestExtendedClientAtom extends TestClientAtom {
 	@JsonProperty("extra")
@@ -79,12 +81,17 @@ public class TestExtendedClientAtom extends TestClientAtom {
 
 	@JsonCreator
 	private TestExtendedClientAtom(
-			@JsonProperty("aid") AID aid,
-			@JsonProperty("metadata") String metaData,
-			@JsonProperty("extra") String extra
+		@JsonProperty("aid") AID aid,
+		@JsonProperty("metadata") String metaData,
+		@JsonProperty("extra") String extra
 	) {
 		super(aid, metaData);
-		this.extra = extra;
+		this.extra = requireNonNull(extra);
+	}
+
+	public TestExtendedClientAtom(String metaData) {
+		super(AID.from(HashUtils.random(AID.BYTES).asBytes()), metaData);
+		this.extra = null;
 	}
 
 	public static TestExtendedClientAtom create(String metadata, String extra) {

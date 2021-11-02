@@ -64,13 +64,24 @@
 
 package org.radix.network.messages;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
+import org.radix.time.Time;
 
 import java.util.Objects;
 
 @SerializerId2("p2p.liveness.pong")
 public final class PeerPongMessage extends Message {
+	@JsonCreator
+	public PeerPongMessage(@JsonProperty(value = "timestamp", required = true) long timestamp) {
+		super(timestamp);
+	}
+
+	public PeerPongMessage() {
+		this(Time.currentTimestamp());
+	}
 
 	@Override
 	public String toString() {

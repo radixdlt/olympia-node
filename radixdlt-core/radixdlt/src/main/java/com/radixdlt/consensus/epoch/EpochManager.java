@@ -307,7 +307,9 @@ public final class EpochManager {
 	private void processEpochChange(EpochChange epochChange) {
 		// Sanity check
 		if (epochChange.getEpoch() != this.currentEpoch() + 1) {
-			throw new IllegalStateException("Bad Epoch change: " + epochChange + " current epoch: " + this.currentEpoch);
+			//TODO: looks like byzantine message, might be used for slashing?
+			log.warn("Bad Epoch change: {} current epoch: {}", epochChange, this.currentEpoch);
+			return;
 		}
 
 		if (this.currentEpoch.getBFTConfiguration().getValidatorSet().containsNode(this.self)) {
@@ -350,7 +352,8 @@ public final class EpochManager {
 		} else if (consensusEvent instanceof Vote) {
 			bftEventProcessor.processVote((Vote) consensusEvent);
 		} else {
-			throw new IllegalStateException("Unknown consensus event: " + consensusEvent);
+			//TODO: DISPATCH: add necessary branch once there will be more ConsensusEvent implementations
+			log.warn("Unknown consensus event {}", consensusEvent);
 		}
 	}
 
@@ -435,6 +438,7 @@ public final class EpochManager {
 		};
 	}
 
+	//TODO: Why not just return syncTimeoutProcessor?
 	public EventProcessor<VertexRequestTimeout> timeoutEventProcessor() {
 		return this::processGetVerticesLocalTimeout;
 	}

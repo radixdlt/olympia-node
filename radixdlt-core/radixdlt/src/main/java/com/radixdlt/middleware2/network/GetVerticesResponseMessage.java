@@ -64,6 +64,7 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -73,7 +74,9 @@ import com.radixdlt.serialization.SerializerId2;
 
 import java.util.List;
 import java.util.Objects;
+
 import org.radix.network.messaging.Message;
+import org.radix.time.Time;
 
 /**
  * RPC Response message for GetVertex call
@@ -84,13 +87,17 @@ public final class GetVerticesResponseMessage extends Message {
 	@DsonOutput(Output.ALL)
 	private final List<UnverifiedVertex> vertices;
 
-	GetVerticesResponseMessage() {
-		// Serializer only
-		this.vertices = null;
+	@JsonCreator
+	public GetVerticesResponseMessage(
+		@JsonProperty(value = "timestamp", required = true) long timestamp,
+		@JsonProperty(value = "vertices", required = true) List<UnverifiedVertex> vertices
+	) {
+		super(timestamp);
+		this.vertices = Objects.requireNonNull(vertices);
 	}
 
-	GetVerticesResponseMessage(List<UnverifiedVertex> vertices) {
-		this.vertices = Objects.requireNonNull(vertices);
+	public GetVerticesResponseMessage(List<UnverifiedVertex> vertices) {
+		this(Time.currentTimestamp(), vertices);
 	}
 
 	public List<UnverifiedVertex> getVertices() {
@@ -110,9 +117,10 @@ public final class GetVerticesResponseMessage extends Message {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		GetVerticesResponseMessage that = (GetVerticesResponseMessage) o;
+
+		var that = (GetVerticesResponseMessage) o;
 		return Objects.equals(vertices, that.vertices)
-				&& Objects.equals(getTimestamp(), that.getTimestamp());
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override

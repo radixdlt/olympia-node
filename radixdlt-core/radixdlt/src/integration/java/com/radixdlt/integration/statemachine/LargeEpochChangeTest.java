@@ -288,7 +288,7 @@ public class LargeEpochChangeTest {
 			.findFirst()
 			.map(e -> BFTValidatorSet.from(
 				e.nextValidators().stream()
-					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
+					.map(v -> BFTValidator.create(BFTNode.create(v.getValidatorKey()), v.getAmount())))
 			);
 		var stateUpdates = result.getProcessedTxn().stateUpdates().count();
 		construction.stop();

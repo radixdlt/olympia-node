@@ -72,6 +72,7 @@ import java.util.Objects;
 /**
  * The result of a view voting (either QC or TC).
  */
+//TODO: DISPATCH: Make interface sealed after switching to Java 17; Check BFTSync::viewQuorumReachedEventProcessor
 public interface ViewVotingResult {
 
     static FormedQC qc(QuorumCertificate qc) {

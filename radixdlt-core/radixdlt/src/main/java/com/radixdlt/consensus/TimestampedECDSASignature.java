@@ -106,7 +106,7 @@ public final class TimestampedECDSASignature {
 	@JsonCreator
 	public static TimestampedECDSASignature from(
 		@JsonProperty("timestamp") long timestamp,
-		@JsonProperty("signature") ECDSASignature signature
+		@JsonProperty(value = "signature", required = true) ECDSASignature signature
 	) {
 		return new TimestampedECDSASignature(timestamp, signature);
 	}

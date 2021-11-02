@@ -67,16 +67,15 @@ package org.radix.serialization;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.serialization.ClassScanningSerializerIds;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import java.nio.charset.StandardCharsets;
-
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.radixdlt.serialization.DsonOutput.Output;
+import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -102,13 +101,10 @@ public class Serializer2Test extends RadixTest {
 
 		testObject = new DummyTestObject(true);
 
-		String jacksonJson = serialization.toJson(testObject, Output.ALL);
 		byte[] jacksonDson = serialization.toDson(testObject, Output.ALL);
 
-		DummyTestObject jacksonJsonObj = serialization.fromJson(jacksonJson, DummyTestObject.class);
 		DummyTestObject jacksonCborObj = serialization.fromDson(jacksonDson, DummyTestObject.class);
 
-		assertTrue(testObject.equals(jacksonJsonObj));
 		assertTrue(testObject.equals(jacksonCborObj));
 	}
 
@@ -117,21 +113,6 @@ public class Serializer2Test extends RadixTest {
 		byte[] bytes = serialization.toDson(testObject, Output.ALL);
 		DummyTestObject newObject = serialization.fromDson(bytes, DummyTestObject.class);
 		assertEquals(testObject, newObject);
-	}
-
-	@Test
-	public void roundTripJacksonJsonTest() throws DeserializeException {
-		String json = serialization.toJson(testObject, Output.ALL);
-		DummyTestObject newObject = serialization.fromJson(json, DummyTestObject.class);
-		assertEquals(testObject, newObject);
-	}
-
-	@Test
-	public void checkJsonSerializerInclusion() {
-		String json = serialization.toJson(testObject, Output.HASH);
-		assertTrue(json.contains("sz"));
-		json = serialization.toJson(testObject, Output.WIRE);
-		assertTrue(json.contains("sz"));
 	}
 
 	@Test

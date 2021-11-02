@@ -105,8 +105,8 @@ public final class DtoTxnsAndProof {
 	@JsonCreator
 	public DtoTxnsAndProof(
 		@JsonProperty("txns") List<byte[]> txns,
-		@JsonProperty("head") DtoLedgerProof head,
-		@JsonProperty("tail") DtoLedgerProof tail
+		@JsonProperty(value = "head", required = true) DtoLedgerProof head,
+		@JsonProperty(value = "tail", required = true) DtoLedgerProof tail
 	) {
 		this.txns = txns == null ? ImmutableList.of() : txns;
 		this.head = Objects.requireNonNull(head);

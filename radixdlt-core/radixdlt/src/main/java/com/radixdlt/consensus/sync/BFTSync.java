@@ -249,7 +249,9 @@ public final class BFTSync implements BFTSyncer {
 						this.vertexStore.highQC().highestCommittedQC(),
 						Optional.of(((FormedTC) viewQuorumReached.votingResult()).getTC()));
 			} else {
-				throw new IllegalArgumentException("Unknown voting result: " + viewQuorumReached.votingResult());
+				//TODO: DISPATCH: add necessary branch once there will be more ViewVotingResult implementations
+				log.warn("Unexpected event type {}", viewQuorumReached.votingResult());
+				return;
 			}
 
 			syncToQC(highQC, viewQuorumReached.lastAuthor());
@@ -369,7 +371,8 @@ public final class BFTSync implements BFTSyncer {
 		}
 
 		if (syncRequestState.authors.isEmpty()) {
-			throw new IllegalStateException("Request contains no authors except ourselves");
+			log.warn("Request contains no authors except ourselves");
+			return;
 		}
 
 		var syncIds = syncRequestState.syncIds.stream()
@@ -481,8 +484,10 @@ public final class BFTSync implements BFTSyncer {
 		if (syncState.committedProof.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
 			rebuildAndSyncQC(syncState);
 		} else {
-			ImmutableList<BFTNode> signers = syncState.committedProof.getSignersWithout(self);
+			var signers = syncState.committedProof.getSignersWithout(self);
+
 			syncState.setSyncStage(SyncStage.LEDGER_SYNC);
+
 			ledgerSyncing.compute(syncState.committedProof.getRaw(), (header, syncing) -> {
 				if (syncing == null) {
 					syncing = new ArrayList<>();
@@ -490,10 +495,8 @@ public final class BFTSync implements BFTSyncer {
 				syncing.add(syncState.localSyncId);
 				return syncing;
 			});
-			LocalSyncRequest localSyncRequest = new LocalSyncRequest(
-				syncState.committedProof,
-				signers
-			);
+
+			var localSyncRequest = new LocalSyncRequest(syncState.committedProof, signers);
 
 			localSyncRequestEventDispatcher.dispatch(localSyncRequest);
 		}

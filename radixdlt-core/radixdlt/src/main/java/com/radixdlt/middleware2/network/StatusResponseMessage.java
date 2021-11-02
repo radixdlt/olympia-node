@@ -64,12 +64,14 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
+import org.radix.time.Time;
 
 import java.util.Objects;
 
@@ -78,18 +80,21 @@ import java.util.Objects;
  */
 @SerializerId2("message.sync.status_response")
 public final class StatusResponseMessage extends Message {
-
 	@JsonProperty("header")
 	@DsonOutput(Output.ALL)
 	private final LedgerProof header;
 
-	StatusResponseMessage() {
-		// Serializer only
-		this.header = null;
+	@JsonCreator
+	public StatusResponseMessage(
+		@JsonProperty(value = "timestamp", required = true) long timestamp,
+		@JsonProperty(value = "header", required = true) LedgerProof header
+	) {
+		super(timestamp);
+		this.header = Objects.requireNonNull(header);
 	}
 
 	public StatusResponseMessage(LedgerProof header) {
-		this.header = header;
+		this(Time.currentTimestamp(), header);
 	}
 
 	public LedgerProof getHeader() {
@@ -111,7 +116,7 @@ public final class StatusResponseMessage extends Message {
 		}
 		StatusResponseMessage that = (StatusResponseMessage) o;
 		return Objects.equals(header, that.header)
-			&& Objects.equals(getTimestamp(), that.getTimestamp());
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override

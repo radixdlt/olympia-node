@@ -186,7 +186,7 @@ public class RadixEngineStateComputerTest {
 			public void configure() {
 				var validatorSet = BFTValidatorSet.from(registeredNodes.stream().map(ECKeyPair::getPublicKey)
 					.map(BFTNode::create)
-					.map(n -> BFTValidator.from(n, UInt256.ONE)));
+					.map(n -> BFTValidator.create(n, UInt256.ONE)));
 
 				bind(ProposerElection.class).toInstance(new WeightedRotatingLeaders(validatorSet));
 				bind(Serialization.class).toInstance(serialization);
@@ -233,7 +233,7 @@ public class RadixEngineStateComputerTest {
 			.findFirst()
 			.map(e -> BFTValidatorSet.from(
 				e.nextValidators().stream()
-					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
+					.map(v -> BFTValidator.create(BFTNode.create(v.getValidatorKey()), v.getAmount())))
 			).orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
 		radixEngine.deleteBranches();
 
@@ -448,7 +448,7 @@ public class RadixEngineStateComputerTest {
 		var ledgerProof = new LedgerProof(
 			HashUtils.random256(),
 			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0,
-				BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
+				BFTValidatorSet.from(Stream.of(BFTValidator.create(BFTNode.random(), UInt256.ONE)))
 			),
 			new TimestampedECDSASignatures()
 		);
@@ -471,7 +471,7 @@ public class RadixEngineStateComputerTest {
 		var ledgerProof = new LedgerProof(
 			HashUtils.random256(),
 			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0,
-				BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
+				BFTValidatorSet.from(Stream.of(BFTValidator.create(BFTNode.random(), UInt256.ONE)))
 			),
 			new TimestampedECDSASignatures()
 		);

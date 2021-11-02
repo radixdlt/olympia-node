@@ -71,6 +71,8 @@ import com.radixdlt.consensus.bft.View;
  * A consensus event which requires syncing to be effectively
  * processed
  */
+//TODO: make interface sealed after switching to Java 17.
+// Check EpochManager::processConsensusEventInternal and ConsensusEventMessage::getConsensusMessage
 public interface ConsensusEvent {
 
 	/**

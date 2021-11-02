@@ -68,12 +68,13 @@ package com.radixdlt.sync.messages.local;
  * A message indicating that the sync service should start the sync check.
  */
 public final class SyncCheckTrigger {
-
-	public static SyncCheckTrigger create() {
-		return new SyncCheckTrigger();
-	}
+	private static final SyncCheckTrigger INSTANCE = new SyncCheckTrigger();
 
 	private SyncCheckTrigger() {
+	}
+
+	public static SyncCheckTrigger create() {
+		return INSTANCE;
 	}
 
 	@Override
@@ -86,7 +87,7 @@ public final class SyncCheckTrigger {
 		if (this == o) {
 			return true;
 		}
-		return o != null && getClass() == o.getClass();
+		return o instanceof SyncCheckTrigger;
 	}
 
 	@Override

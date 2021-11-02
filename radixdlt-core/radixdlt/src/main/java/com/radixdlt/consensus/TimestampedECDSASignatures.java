@@ -111,7 +111,9 @@ public final class TimestampedECDSASignatures {
 	private Map<BFTNode, TimestampedECDSASignature> nodeToTimestampedSignature;
 
 	@JsonCreator
-	public static TimestampedECDSASignatures from(@JsonProperty("signatures") Map<String, TimestampedECDSASignature> signatures) {
+	public static TimestampedECDSASignatures from(
+		@JsonProperty("signatures") Map<String, TimestampedECDSASignature> signatures
+	) {
 		var signaturesByNode =
 			signatures == null
 			? Map.<BFTNode, TimestampedECDSASignature>of()
@@ -162,7 +164,7 @@ public final class TimestampedECDSASignatures {
 	 * Returns a new instance containing {@code nodeToTimestampAndSignature}.
 	 *
 	 * @param nodeToTimestampAndSignature The map of {@link com.radixdlt.crypto.ECDSASignature}s and their corresponding
-	 * 	timestamps and {@link com.radixdlt.crypto.ECPublicKey}
+	 *                                    timestamps and {@link com.radixdlt.crypto.ECPublicKey}
 	 */
 	public TimestampedECDSASignatures(Map<BFTNode, TimestampedECDSASignature> nodeToTimestampAndSignature) {
 		this.nodeToTimestampedSignature = nodeToTimestampAndSignature;

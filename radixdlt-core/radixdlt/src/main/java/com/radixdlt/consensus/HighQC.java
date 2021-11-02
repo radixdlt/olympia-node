@@ -79,6 +79,8 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Current state of synchronisation for sending node.
  */
@@ -103,7 +105,7 @@ public final class HighQC {
 
 	@JsonCreator
 	private static HighQC serializerCreate(
-		@JsonProperty("highest_qc") QuorumCertificate highestQC,
+		@JsonProperty(value = "highest_qc", required = true) QuorumCertificate highestQC,
 		@JsonProperty("committed_qc") QuorumCertificate highestCommittedQC,
 		@JsonProperty("highest_tc") TimeoutCertificate highestTC
 	) {
@@ -115,7 +117,7 @@ public final class HighQC {
 		QuorumCertificate highestCommittedQC,
 		TimeoutCertificate highestTC
 	) {
-		this.highestQC = Objects.requireNonNull(highestQC);
+		this.highestQC = requireNonNull(highestQC);
 		// Don't include separate committedQC if it is the same as highQC.
 		// This significantly reduces the serialised size of the object.
 		if (highestCommittedQC == null || highestQC.equals(highestCommittedQC)) {
@@ -159,7 +161,7 @@ public final class HighQC {
 		QuorumCertificate highestCommittedQC,
 		Optional<TimeoutCertificate> highestTC
 	) {
-		return new HighQC(highestQC, Objects.requireNonNull(highestCommittedQC), highestTC.orElse(null));
+		return new HighQC(highestQC, requireNonNull(highestCommittedQC), highestTC.orElse(null));
 	}
 
 	public Optional<TimeoutCertificate> highestTC() {

@@ -99,7 +99,7 @@ public final class AddressBookEntry {
 
 	@JsonCreator
 	private static AddressBookEntry deserialize(
-		@JsonProperty("nodeId") NodeId nodeId,
+		@JsonProperty(value = "nodeId", required = true) NodeId nodeId,
 		@JsonProperty("bannedUntil") long rawBannedUntil,
 		@JsonProperty("knownAddresses") ImmutableSet<PeerAddressEntry> knownAddresses
 	) {

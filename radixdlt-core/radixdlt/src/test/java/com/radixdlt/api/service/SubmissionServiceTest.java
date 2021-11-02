@@ -205,7 +205,7 @@ public class SubmissionServiceTest {
 
 				var validatorSet = BFTValidatorSet.from(registeredNodes.stream().map(ECKeyPair::getPublicKey)
 					.map(BFTNode::create)
-					.map(n -> BFTValidator.from(n, UInt256.ONE)));
+					.map(n -> BFTValidator.create(n, UInt256.ONE)));
 				bind(ProposerElection.class).toInstance(new WeightedRotatingLeaders(validatorSet));
 				bind(Serialization.class).toInstance(serialization);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
@@ -253,7 +253,7 @@ public class SubmissionServiceTest {
 			.findFirst()
 			.map(e -> BFTValidatorSet.from(
 				e.nextValidators().stream()
-					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
+					.map(v -> BFTValidator.create(BFTNode.create(v.getValidatorKey()), v.getAmount())))
 			).orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
 
 		radixEngine.deleteBranches();

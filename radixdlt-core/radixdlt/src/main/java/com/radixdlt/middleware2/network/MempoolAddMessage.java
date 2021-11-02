@@ -64,6 +64,7 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.radixdlt.atom.Txn;
 
 import java.util.List;
@@ -76,6 +77,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import org.radix.time.Time;
 
 @SerializerId2("message.mempool.add")
 public final class MempoolAddMessage extends Message {
@@ -83,13 +85,17 @@ public final class MempoolAddMessage extends Message {
 	@DsonOutput(Output.ALL)
 	private final List<byte[]> txns;
 
-	MempoolAddMessage() {
-		// Serializer only
-		this.txns = null;
+	@JsonCreator
+	public MempoolAddMessage(
+		@JsonProperty(value = "timestamp", required = true) long currentTimestamp,
+		@JsonProperty(value = "txns", required = true) List<byte[]> txns
+	) {
+		super(currentTimestamp);
+		this.txns = Objects.requireNonNull(txns);
 	}
 
 	public MempoolAddMessage(List<Txn> txns) {
-		this.txns = txns.stream().map(Txn::getPayload).collect(Collectors.toList());
+		this(Time.currentTimestamp(), txns.stream().map(Txn::getPayload).collect(Collectors.toList()));
 	}
 
 	public List<Txn> getTxns() {
@@ -109,9 +115,10 @@ public final class MempoolAddMessage extends Message {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		MempoolAddMessage that = (MempoolAddMessage) o;
+
+		var that = (MempoolAddMessage) o;
 		return Objects.equals(getTxns(), that.getTxns())
-				&& Objects.equals(getTimestamp(), that.getTimestamp());
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override

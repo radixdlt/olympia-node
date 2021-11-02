@@ -92,6 +92,6 @@ public class BFTValidatorTest {
 	}
 
 	private static BFTValidator create() {
-		return BFTValidator.from(mock(BFTNode.class), UInt256.ONE);
+		return BFTValidator.create(mock(BFTNode.class), UInt256.ONE);
 	}
 }

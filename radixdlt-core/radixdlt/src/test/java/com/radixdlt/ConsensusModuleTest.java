@@ -172,7 +172,7 @@ public class ConsensusModuleTest {
 		var genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, null, 0));
 		var hashedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
 		var qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(accumulatorState, null, 0));
-		var validatorSet = BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
+		var validatorSet = BFTValidatorSet.from(Stream.of(BFTValidator.create(BFTNode.random(), UInt256.ONE)));
 		var vertexStoreState = VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis, Optional.empty(), hasher);
 		var proposerElection = new WeightedRotatingLeaders(validatorSet);
 		this.bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
@@ -255,7 +255,7 @@ public class ConsensusModuleTest {
 	}
 
 	private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(QuorumCertificate parent, BFTNode bftNode, Txn txn) {
-		var unverifiedVertex = new UnverifiedVertex(parent, View.of(1), List.of(txn.getPayload()), bftNode, false);
+		var unverifiedVertex = UnverifiedVertex.create(parent, View.of(1), List.of(txn), bftNode);
 		var hash = hasher.hash(unverifiedVertex);
 		var verifiedVertex = new VerifiedVertex(unverifiedVertex, hash);
 		var next = new BFTHeader(

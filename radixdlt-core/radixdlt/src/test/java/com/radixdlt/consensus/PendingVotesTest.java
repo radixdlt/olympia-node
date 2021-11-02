@@ -64,29 +64,22 @@
 
 package com.radixdlt.consensus;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.ValidationState;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.ViewVotingResult;
-import com.radixdlt.consensus.bft.VoteProcessingResult;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected.VoteRejectedReason;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.utils.RandomHasher;
 import com.radixdlt.utils.UInt256;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -119,7 +112,7 @@ public class PendingVotesTest {
 		Vote vote2 = makeSignedVoteFor(mock(BFTNode.class), View.genesis(), vertexId);
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(
-			Collections.singleton(BFTValidator.from(vote1.getAuthor(), UInt256.ONE))
+			Collections.singleton(BFTValidator.create(vote1.getAuthor(), UInt256.ONE))
 		);
 		VoteData voteData = mock(VoteData.class);
 		BFTHeader proposed = vote1.getVoteData().getProposed();
@@ -166,8 +159,8 @@ public class PendingVotesTest {
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(
 			Arrays.asList(
-				BFTValidator.from(vote1.getAuthor(), UInt256.ONE),
-				BFTValidator.from(vote2.getAuthor(), UInt256.ONE)
+				BFTValidator.create(vote1.getAuthor(), UInt256.ONE),
+				BFTValidator.create(vote2.getAuthor(), UInt256.ONE)
 			)
 		);
 
@@ -267,10 +260,10 @@ public class PendingVotesTest {
 		when(vote2.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
 		when(vote2.isTimeout()).thenReturn(true);
 
-		BFTValidatorSet validatorSet = BFTValidatorSet.from(
-			Arrays.asList(
-				BFTValidator.from(vote1.getAuthor(), UInt256.ONE),
-				BFTValidator.from(vote2.getAuthor(), UInt256.ONE)
+		var validatorSet = BFTValidatorSet.from(
+			List.of(
+				BFTValidator.create(vote1.getAuthor(), UInt256.ONE),
+				BFTValidator.create(vote2.getAuthor(), UInt256.ONE)
 			)
 		);
 

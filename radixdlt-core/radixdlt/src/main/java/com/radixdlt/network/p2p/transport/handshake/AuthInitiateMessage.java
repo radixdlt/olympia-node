@@ -100,9 +100,9 @@ public final class AuthInitiateMessage {
 
 	@JsonCreator
 	public static AuthInitiateMessage deserialize(
-		@JsonProperty("signature") ECDSASignature signature,
-		@JsonProperty("publicKey") HashCode publicKey,
-		@JsonProperty("nonce") HashCode nonce,
+		@JsonProperty(value = "signature", required = true) ECDSASignature signature,
+		@JsonProperty(value = "publicKey", required = true) HashCode publicKey,
+		@JsonProperty(value = "nonce", required = true) HashCode nonce,
 		@JsonProperty("networkId") int networkId
 	) {
 		return new AuthInitiateMessage(signature, publicKey, nonce, networkId);

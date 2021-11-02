@@ -171,7 +171,7 @@ public class StateComputerLedgerTest {
 			View.of(5),
 			new AccumulatorState(genesisStateVersion, HashUtils.zero256()),
 			12345,
-			endOfEpoch ? BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE))) : null
+				endOfEpoch ? BFTValidatorSet.from(Stream.of(BFTValidator.create(BFTNode.random(), UInt256.ONE))) : null
 		);
 		this.genesis = UnverifiedVertex.createGenesis(ledgerHeader);
 		this.genesisVertex = new VerifiedVertex(genesis, hasher.hash(genesis));
@@ -215,7 +215,7 @@ public class StateComputerLedgerTest {
 		genesisIsEndOfEpoch(true);
 		when(stateComputer.prepare(any(), any(), anyLong()))
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
-		var unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()), BFTNode.random(), false);
+		var unverifiedVertex = UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTxn), BFTNode.random());
 		var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
 		// Act
@@ -236,7 +236,7 @@ public class StateComputerLedgerTest {
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
 
 		// Act
-		var unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()), BFTNode.random(), false);
+		var unverifiedVertex = UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTxn), BFTNode.random());
 		var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 		Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 

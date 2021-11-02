@@ -64,13 +64,24 @@
 
 package org.radix.network.messages;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
+import org.radix.time.Time;
 
 import java.util.Objects;
 
 @SerializerId2("p2p.liveness.ping")
 public final class PeerPingMessage extends Message {
+	@JsonCreator
+	public PeerPingMessage(@JsonProperty(value = "timestamp", required = true) long timestamp) {
+		super(timestamp);
+	}
+
+	public PeerPingMessage() {
+		this(Time.currentTimestamp());
+	}
 
 	@Override
 	public String toString() {
@@ -85,6 +96,7 @@ public final class PeerPingMessage extends Message {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
+
 		final var that = (PeerPingMessage) o;
 		return Objects.equals(getTimestamp(), that.getTimestamp());
 	}

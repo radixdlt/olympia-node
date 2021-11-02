@@ -66,17 +66,15 @@ package org.radix.benchmark;
 
 
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.serialization.ClassScanningSerializerIds;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.infra.Blackhole;
-
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.ClassScanningSerializerIds;
-import com.radixdlt.serialization.Serialization;
-
 import org.radix.serialization.DummyTestObject;
 import org.radix.serialization.TestSetupUtils;
 
@@ -103,12 +101,10 @@ import org.radix.serialization.TestSetupUtils;
  * disable gradle daemons.
  */
 public class CodecBenchmark {
-
 	private static final DummyTestObject testObject;
 
 	private static Serialization serialization;
 
-	private static String jacksonJson;
 	private static byte[] jacksonBytes;
 
 	static {
@@ -121,11 +117,9 @@ public class CodecBenchmark {
 
 		testObject = new DummyTestObject(true);
 
-		jacksonJson = serialization.toJson(testObject, Output.ALL);
 		jacksonBytes = serialization.toDson(testObject, Output.ALL);
 
 		System.out.format("DSON bytes length: %s%n", jacksonBytes.length);
-		System.out.format("JSON bytes length: %s%n", jacksonJson.length());
 	}
 
 	@Benchmark
@@ -141,23 +135,6 @@ public class CodecBenchmark {
 			bh.consume(newObj);
 		} catch (DeserializeException ex) {
 			throw new IllegalStateException("While deserializing from DSON", ex);
-		}
-	}
-
-
-	@Benchmark
-	public void jacksonToJsonTest(Blackhole bh) {
-		String json = serialization.toJson(testObject, Output.WIRE);
-		bh.consume(json);
-	}
-
-	@Benchmark
-	public void jacksonFromJsonTest(Blackhole bh) {
-		try {
-			DummyTestObject newObj = serialization.fromJson(jacksonJson, DummyTestObject.class);
-			bh.consume(newObj);
-		} catch (DeserializeException ex) {
-			throw new IllegalStateException("While deserializing from JSON", ex);
 		}
 	}
 }

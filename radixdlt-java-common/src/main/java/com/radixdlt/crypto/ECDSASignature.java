@@ -109,9 +109,9 @@ public final class ECDSASignature {
 
 	@JsonCreator
 	public static ECDSASignature deserialize(
-		@JsonProperty("r") byte[] r,
-		@JsonProperty("s") byte[] s,
-		@JsonProperty("v") int v
+		@JsonProperty(value = "r", required = true) byte[] r,
+		@JsonProperty(value = "s", required = true) byte[] s,
+		@JsonProperty(value = "v", required = true) int v
 	) {
 		return create(new BigInteger(1, r), new BigInteger(1, s), v);
 	}

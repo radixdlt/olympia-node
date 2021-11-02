@@ -298,13 +298,13 @@ public class SimulationTest {
 				.collect(ImmutableMap.toImmutableMap(ECKeyPair::getPublicKey, k -> stakesIterator.next()));
 
 			var initialVset = BFTValidatorSet.from(initialStakesMap.entrySet().stream()
-				.map(e -> BFTValidator.from(BFTNode.create(e.getKey()), e.getValue())));
+				.map(e -> BFTValidator.create(BFTNode.create(e.getKey()), e.getValue())));
 
 			final var bftNodes = initialStakesMap.keySet().stream()
 				.map(BFTNode::create)
 				.collect(ImmutableList.toImmutableList());
 			final var validators = initialStakesMap.entrySet().stream()
-				.map(e -> BFTValidator.from(BFTNode.create(e.getKey()), e.getValue()))
+				.map(e -> BFTValidator.create(BFTNode.create(e.getKey()), e.getValue()))
 				.collect(ImmutableList.toImmutableList());
 
 			this.initialNodesModule = new AbstractModule() {
@@ -347,7 +347,7 @@ public class SimulationTest {
 					return epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 						indices.mapToObj(nodes::get)
 							.map(node -> BFTNode.create(node.getPublicKey()))
-							.map(node -> BFTValidator.from(node, UInt256.ONE))
+							.map(node -> BFTValidator.create(node, UInt256.ONE))
 							.collect(Collectors.toList())));
 				}
 			});
@@ -402,7 +402,7 @@ public class SimulationTest {
 					return epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 						indices.mapToObj(nodes::get)
 							.map(node -> BFTNode.create(node.getPublicKey()))
-							.map(node -> BFTValidator.from(node, UInt256.ONE))
+							.map(node -> BFTValidator.create(node, UInt256.ONE))
 							.collect(Collectors.toList())));
 				}
 			});
@@ -567,7 +567,7 @@ public class SimulationTest {
 			} else {
 				modules.add(new MockedRecoveryModule());
 				var initialVset = BFTValidatorSet.from(nodes.stream()
-					.map(e -> BFTValidator.from(BFTNode.create(e.getPublicKey()), UInt256.ONE)));
+					.map(e -> BFTValidator.create(BFTNode.create(e.getPublicKey()), UInt256.ONE)));
 				modules.add(new AbstractModule() {
 					public void configure() {
 						bind(BFTValidatorSet.class).toInstance(initialVset);

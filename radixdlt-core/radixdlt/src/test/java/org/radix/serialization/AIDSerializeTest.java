@@ -78,9 +78,4 @@ public class AIDSerializeTest extends SerializeMessageObject<AID> {
 		}
 		return AID.from(bytes);
 	}
-
-	@Override
-	public void testNONEIsEmpty() {
-		// Not applicable to Atom IDs
-	}
 }

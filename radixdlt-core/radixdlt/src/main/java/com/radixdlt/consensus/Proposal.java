@@ -78,6 +78,8 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import java.util.Optional;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Represents a proposal made by a leader in a round of consensus
  */
@@ -106,9 +108,9 @@ public final class Proposal implements ConsensusEvent {
 
 	@JsonCreator
 	Proposal(
-		@JsonProperty("vertex") UnverifiedVertex vertex,
-		@JsonProperty("committedQC") QuorumCertificate committedQC,
-		@JsonProperty("signature") ECDSASignature signature,
+		@JsonProperty(value = "vertex", required = true) UnverifiedVertex vertex,
+		@JsonProperty(value = "committedQC", required = true) QuorumCertificate committedQC,
+		@JsonProperty(value = "signature", required = true) ECDSASignature signature,
 		@JsonProperty("highestTC") TimeoutCertificate highestTC
 	) {
 		this(vertex, committedQC, signature, Optional.ofNullable(highestTC));
@@ -120,9 +122,9 @@ public final class Proposal implements ConsensusEvent {
 		ECDSASignature signature,
 		Optional<TimeoutCertificate> highestTC
 	) {
-		this.vertex = Objects.requireNonNull(vertex);
-		this.committedQC = committedQC;
-		this.signature = Objects.requireNonNull(signature);
+		this.vertex = requireNonNull(vertex);
+		this.committedQC = requireNonNull(committedQC);
+		this.signature = requireNonNull(signature);
 
 		this.highestTC = // only relevant if it's for a higher view than QC
 			highestTC.filter(tc -> tc.getView().gt(vertex.getQC().getView())).orElse(null);

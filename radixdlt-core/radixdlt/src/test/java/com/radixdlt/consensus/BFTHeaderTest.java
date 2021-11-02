@@ -105,12 +105,6 @@ public class BFTHeaderTest {
 	}
 
 	@Test
-	public void testSerializerConstructor() {
-		// Don't want to see any exceptions here
-		assertThat(new BFTHeader()).isNotNull();
-	}
-
-	@Test
 	public void testToString() {
 		assertThat(this.testObject.toString()).contains(BFTHeader.class.getSimpleName());
 	}

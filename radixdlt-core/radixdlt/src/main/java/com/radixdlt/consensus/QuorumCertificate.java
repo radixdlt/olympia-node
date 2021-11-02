@@ -97,8 +97,8 @@ public final class QuorumCertificate {
 
 	@JsonCreator
 	public QuorumCertificate(
-		@JsonProperty("vote_data") VoteData voteData,
-		@JsonProperty("signatures") TimestampedECDSASignatures signatures
+		@JsonProperty(value = "vote_data", required = true) VoteData voteData,
+		@JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures
 	) {
 		this.voteData = Objects.requireNonNull(voteData);
 		this.signatures = Objects.requireNonNull(signatures);

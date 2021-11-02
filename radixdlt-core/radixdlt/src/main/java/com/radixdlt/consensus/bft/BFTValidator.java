@@ -77,6 +77,8 @@ import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
+import static java.util.Objects.requireNonNull;
+
 
 /**
  * Represents a validator and their Proof-of-Stake status.
@@ -98,22 +100,21 @@ public final class BFTValidator {
 
 	@JsonCreator
 	private BFTValidator(
-		@JsonProperty("node") String nodeKey,
-		@JsonProperty("power") UInt256 power
+		@JsonProperty(value = "node", required = true) String nodeKey,
+		@JsonProperty(value = "power", required = true) UInt256 power
 	) {
-		this.node = Objects.requireNonNull(toBFTNode(nodeKey));
-		this.power = Objects.requireNonNull(power);
+		this(toBFTNode(requireNonNull(nodeKey)), power);
 	}
 
 	private BFTValidator(
 		BFTNode node,
 		UInt256 power
 	) {
-		this.node = Objects.requireNonNull(node);
-		this.power = Objects.requireNonNull(power);
+		this.node = requireNonNull(node);
+		this.power = requireNonNull(power);
 	}
 
-	public static BFTValidator from(BFTNode node, UInt256 power) {
+	public static BFTValidator create(BFTNode node, UInt256 power) {
 		return new BFTValidator(node, power);
 	}
 

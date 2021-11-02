@@ -419,24 +419,24 @@ public class DispatcherModule extends AbstractModule {
 		SystemCounters systemCounters
 	) {
 		if (asyncProcessors.isEmpty()) {
-			return commit -> {
-				long stateVersion = commit.getVertexStoreState().getRootHeader().getStateVersion();
-				systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
-				systemCounters.add(CounterType.BFT_PROCESSED, commit.getCommitted().size());
-				systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
-				processors.forEach(e -> e.process(commit));
-			};
+			return commit -> processCommitSynchronously(commit, processors, systemCounters);
 		} else {
 			var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
 			return commit -> {
-				long stateVersion = commit.getVertexStoreState().getRootHeader().getStateVersion();
-				systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
-				systemCounters.add(CounterType.BFT_PROCESSED, commit.getCommitted().size());
-				systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
-				processors.forEach(e -> e.process(commit));
-				dispatcher.dispatch(commit);
+				processCommitSynchronously(commit, processors, systemCounters);
+				dispatcher.dispatch(commit);	//DISPATCH: processing looks safe
 			};
 		}
+	}
+
+	private void processCommitSynchronously(
+			BFTCommittedUpdate commit, @ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors, SystemCounters systemCounters
+	) {
+		long stateVersion = commit.getVertexStoreState().getRootHeader().getStateVersion();
+		systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
+		systemCounters.add(CounterType.BFT_PROCESSED, commit.getCommitted().size());
+		systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
+		processors.forEach(e -> e.process(commit));
 	}
 
 

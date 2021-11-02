@@ -90,6 +90,8 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Ledger accumulator which gets voted and agreed upon
  */
@@ -123,11 +125,11 @@ public final class LedgerHeader {
 	private LedgerHeader(
 		@JsonProperty("epoch") long epoch,
 		@JsonProperty("view") long view,
-		@JsonProperty("accumulator_state") AccumulatorState accumulatorState,
+		@JsonProperty(value = "accumulator_state", required = true) AccumulatorState accumulatorState,
 		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("next_validators") ImmutableSet<BFTValidator> nextValidators
 	) {
-		this(epoch, View.of(view), accumulatorState, timestamp, nextValidators);
+		this(epoch, View.of(view), requireNonNull(accumulatorState), timestamp, nextValidators);
 	}
 
 	private LedgerHeader(
@@ -160,7 +162,7 @@ public final class LedgerHeader {
 				var validatorJson = nextValidatorsJson.getJSONObject(i);
 				var key = addressing.forValidators().parse(validatorJson.getString("address"));
 				var stake = UInt256.from(validatorJson.getString("stake"));
-				builder.add(BFTValidator.from(BFTNode.create(key), stake));
+				builder.add(BFTValidator.create(BFTNode.create(key), stake));
 			}
 			nextValidators = builder.build();
 		} else {
@@ -237,8 +239,8 @@ public final class LedgerHeader {
 
 	@JsonProperty("view")
 	@DsonOutput(Output.ALL)
-	private Long getSerializerView() {
-		return this.view == null ? null : this.view.number();
+	private long getSerializerView() {
+		return view.number();
 	}
 
 	public View getView() {

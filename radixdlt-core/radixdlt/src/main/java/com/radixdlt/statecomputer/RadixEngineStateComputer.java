@@ -346,7 +346,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			.findFirst()
 			.map(e -> BFTValidatorSet.from(
 				e.nextValidators().stream()
-					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
+					.map(v -> BFTValidator.create(BFTNode.create(v.getValidatorKey()), v.getAmount())))
 			);
 		// Don't execute command if changing epochs
 		if (nextValidatorSet.isEmpty()) {
@@ -373,7 +373,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		} catch (RadixEngineException e) {
 			throw new CommittedBadTxnException(verifiedTxnsAndProof, e);
 		} catch (MetadataException e) {
-			throw new ByzantineQuorumException(e.getMessage());
+			throw new ByzantineQuorumException(e.getMessage(), e);
 		}
 
 		// Next epoch

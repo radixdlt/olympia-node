@@ -324,7 +324,7 @@ public final class DeterministicTest {
 		private static BFTValidatorSet completeEqualWeightValidatorSet(ImmutableList<BFTNode> nodes) {
 			return BFTValidatorSet.from(
 				nodes.stream()
-					.map(node -> BFTValidator.from(node, UInt256.ONE))
+					.map(node -> BFTValidator.create(node, UInt256.ONE))
 			);
 		}
 
@@ -335,7 +335,7 @@ public final class DeterministicTest {
 		) {
 			return BFTValidatorSet.from(
 				mapper.nodesAndWeightFor(epoch)
-					.map(niw -> BFTValidator.from(nodes.get(niw.index()), niw.weight()))
+					.map(niw -> BFTValidator.create(nodes.get(niw.index()), niw.weight()))
 			);
 		}
 

@@ -115,9 +115,9 @@ public final class LedgerProof {
 
 	@JsonCreator
 	public LedgerProof(
-		@JsonProperty("opaque") HashCode opaque,
-		@JsonProperty("ledgerState") LedgerHeader ledgerHeader,
-		@JsonProperty("signatures") TimestampedECDSASignatures signatures
+		@JsonProperty(value = "opaque", required = true) HashCode opaque,
+		@JsonProperty(value = "ledgerState", required = true) LedgerHeader ledgerHeader,
+		@JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures
 	) {
 		this.opaque = Objects.requireNonNull(opaque);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);

@@ -91,8 +91,8 @@ public final class AuthResponseMessage {
 
 	@JsonCreator
 	public static AuthResponseMessage deserialize(
-		@JsonProperty("ephemeralPublicKey") HashCode ephemeralPublicKey,
-		@JsonProperty("nonce") HashCode nonce
+		@JsonProperty(value = "ephemeralPublicKey", required = true) HashCode ephemeralPublicKey,
+		@JsonProperty(value = "nonce", required = true) HashCode nonce
 	) {
 		return new AuthResponseMessage(ephemeralPublicKey, nonce);
 	}

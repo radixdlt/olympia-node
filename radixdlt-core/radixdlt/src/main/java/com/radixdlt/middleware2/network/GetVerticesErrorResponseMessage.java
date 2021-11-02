@@ -64,32 +64,40 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
 import org.radix.network.messaging.Message;
+import org.radix.time.Time;
+
+import java.util.Objects;
 
 @SerializerId2("message.consensus.vertices_error_response")
 public final class GetVerticesErrorResponseMessage extends Message {
 	@JsonProperty("high_qc")
 	@DsonOutput(Output.ALL)
-	private HighQC highQC;
+	private final HighQC highQC;
 
 	@JsonProperty("request")
 	@DsonOutput(Output.ALL)
-	private GetVerticesRequestMessage request;
+	private final GetVerticesRequestMessage request;
 
-	GetVerticesErrorResponseMessage() {
-		// Serializer only
-		this.highQC = null;
-	}
-
-	GetVerticesErrorResponseMessage(HighQC highQC, GetVerticesRequestMessage request) {
+	@JsonCreator
+	public GetVerticesErrorResponseMessage(
+		@JsonProperty(value = "timestamp", required = true) long timestamp,
+		@JsonProperty(value = "high_qc", required = true) HighQC highQC,
+		@JsonProperty(value = "request", required = true) GetVerticesRequestMessage request
+	) {
+		super(timestamp);
 		this.highQC = Objects.requireNonNull(highQC);
 		this.request = Objects.requireNonNull(request);
+	}
+
+	public GetVerticesErrorResponseMessage(HighQC highQC, GetVerticesRequestMessage request) {
+		this(Time.currentTimestamp(), highQC, request);
 	}
 
 	public HighQC highQC() {
@@ -110,13 +118,15 @@ public final class GetVerticesErrorResponseMessage extends Message {
 		if (this == o) {
 			return true;
 		}
+
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		GetVerticesErrorResponseMessage that = (GetVerticesErrorResponseMessage) o;
+
+		var that = (GetVerticesErrorResponseMessage) o;
 		return Objects.equals(this.highQC, that.highQC)
-				&& Objects.equals(this.request, that.request)
-				&& Objects.equals(getTimestamp(), that.getTimestamp());
+			   && Objects.equals(this.request, that.request)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override

@@ -95,7 +95,7 @@ public class WeightedRotatingLeadersTest {
 		this.validatorsInOrder = Stream.generate(() -> ECKeyPair.generateNew().getPublicKey())
 			.limit(validatorSetSize)
 			.map(BFTNode::create)
-			.map(node -> BFTValidator.from(node, UInt256.ONE))
+			.map(node -> BFTValidator.create(node, UInt256.ONE))
 			.sorted(Comparator.comparing(v -> v.getNode().getKey(), KeyComparator.instance().reversed()))
 			.collect(ImmutableList.toImmutableList());
 
@@ -172,7 +172,7 @@ public class WeightedRotatingLeadersTest {
 
 		final int sumOfPower = fibonacci.get().sum();
 		this.validatorsInOrder = fibonacci.get()
-			.mapToObj(p -> BFTValidator.from(BFTNode.random(), UInt256.from(p)))
+			.mapToObj(p -> BFTValidator.create(BFTNode.random(), UInt256.from(p)))
 			.collect(ImmutableList.toImmutableList());
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);

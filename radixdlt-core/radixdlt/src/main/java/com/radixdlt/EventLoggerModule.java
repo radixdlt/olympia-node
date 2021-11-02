@@ -90,6 +90,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 
+//TODO: extract lambdas into dedicated methods
 public final class EventLoggerModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();
 
@@ -107,9 +108,9 @@ public final class EventLoggerModule extends AbstractModule {
 		};
 	}
 
+	@SuppressWarnings("UnstableApiUsage")
 	@ProvidesIntoSet
 	EventProcessorOnDispatch<?> invalidProposedTxn(Function<ECPublicKey, String> nodeString) {
-		final RateLimiter logLimiter = RateLimiter.create(1.0);
 		return new EventProcessorOnDispatch<>(
 			InvalidProposedTxn.class,
 			i -> logger.warn("eng_badprp{proposer={}}", nodeString.apply(i.getProposer()))
@@ -130,13 +131,14 @@ public final class EventLoggerModule extends AbstractModule {
 		);
 	}
 
+	@SuppressWarnings("UnstableApiUsage")
 	@ProvidesIntoSet
 	EventProcessorOnDispatch<?> logRounds(Function<BFTNode, String> nodeString) {
-		final RateLimiter logLimiter = RateLimiter.create(1.0);
+		final var logLimiter = RateLimiter.create(1.0);
 		return new EventProcessorOnDispatch<>(
 			EpochViewUpdate.class,
 			u -> {
-				Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
+				var logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
 				logger.log(logLevel, "bft_nxtrnd{epoch={} round={} leader={} nextLeader={}}",
 					u.getEpoch(),
 					u.getEpochView().getView().number(),
@@ -147,10 +149,11 @@ public final class EventLoggerModule extends AbstractModule {
 		);
 	}
 
+	@SuppressWarnings("UnstableApiUsage")
 	@ProvidesIntoSet
 	@Singleton
 	EventProcessorOnDispatch<?> ledgerUpdate(@Self BFTNode self, Function<ECPublicKey, String> nodeString) {
-		final RateLimiter logLimiter = RateLimiter.create(1.0);
+		final var logLimiter = RateLimiter.create(1.0);
 		return new EventProcessorOnDispatch<>(
 			LedgerUpdate.class,
 			u -> {

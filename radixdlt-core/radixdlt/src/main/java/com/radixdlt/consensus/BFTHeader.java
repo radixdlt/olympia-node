@@ -64,8 +64,10 @@
 
 package com.radixdlt.consensus;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
+
 import java.util.Objects;
 
 import javax.annotation.concurrent.Immutable;
@@ -78,6 +80,8 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * The bft header which gets voted upon by consensus.
  */
@@ -88,7 +92,7 @@ public final class BFTHeader {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private View view;
+	private final View view;
 
 	@JsonProperty("vertex_id")
 	@DsonOutput(Output.ALL)
@@ -97,13 +101,6 @@ public final class BFTHeader {
 	@JsonProperty("ledger_header")
 	@DsonOutput(Output.ALL)
 	private final LedgerHeader ledgerHeader;
-
-	BFTHeader() {
-		// Serializer only
-		this.view = null;
-		this.vertexId = null;
-		this.ledgerHeader = null;
-	}
 
 	// TODO: Move command output to a more opaque data structure
 	public BFTHeader(
@@ -116,12 +113,18 @@ public final class BFTHeader {
 		this.ledgerHeader = ledgerHeader;
 	}
 
-	public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
-		return new BFTHeader(
-			View.genesis(),
-			HashUtils.zero256(),
-			ledgerHeader
+	@JsonCreator
+	public static BFTHeader create(
+		@JsonProperty(value = "view", required = true) long number,
+		@JsonProperty(value = "vertex_id", required = true) HashCode vertexId,
+		@JsonProperty(value = "ledger_header", required = true) LedgerHeader ledgerHeader
+	) {
+		return new BFTHeader(View.of(number), requireNonNull(vertexId), requireNonNull(ledgerHeader)
 		);
+	}
+
+	public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
+		return new BFTHeader(View.genesis(), HashUtils.zero256(), ledgerHeader);
 	}
 
 	public LedgerHeader getLedgerHeader() {
@@ -138,13 +141,8 @@ public final class BFTHeader {
 
 	@JsonProperty("view")
 	@DsonOutput(Output.ALL)
-	private Long getSerializerView() {
-		return this.view == null ? null : this.view.number();
-	}
-
-	@JsonProperty("view")
-	private void setSerializerView(Long number) {
-		this.view = number == null ? null : View.of(number);
+	private long getSerializerView() {
+		return view.number();
 	}
 
 	@Override
@@ -158,7 +156,7 @@ public final class BFTHeader {
 			return true;
 		}
 		if (o instanceof BFTHeader) {
-			BFTHeader other = (BFTHeader) o;
+			var other = (BFTHeader) o;
 			return
 				Objects.equals(this.view, other.view)
 				&& Objects.equals(this.vertexId, other.vertexId)

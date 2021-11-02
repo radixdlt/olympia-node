@@ -94,8 +94,8 @@ public class BFTValidatorSetTest {
 
 	@Test
 	public void sensibleToString() {
-		BFTNode node = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		String s = BFTValidatorSet.from(ImmutableList.of(BFTValidator.from(node, UInt256.ONE))).toString();
+		var node = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+		var s = BFTValidatorSet.from(ImmutableList.of(BFTValidator.create(node, UInt256.ONE))).toString();
 		assertThat(s)
 			.contains(BFTValidatorSet.class.getSimpleName())
 			.contains(node.getSimpleName());
@@ -104,34 +104,35 @@ public class BFTValidatorSetTest {
 	@Test
 	public void testStreamConstructor() {
 		BFTNode node = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		String s = BFTValidatorSet.from(ImmutableList.of(BFTValidator.from(node, UInt256.ONE)).stream()).toString();
+		String s = BFTValidatorSet.from(ImmutableList.of(BFTValidator.create(node, UInt256.ONE)).stream()).toString();
 		assertThat(s).contains(node.getSimpleName());
 	}
 
 	@Test
 	public void testValidate() {
-		ECKeyPair k1 = ECKeyPair.generateNew();
-		ECKeyPair k2 = ECKeyPair.generateNew();
-		ECKeyPair k3 = ECKeyPair.generateNew();
-		ECKeyPair k4 = ECKeyPair.generateNew();
-		ECKeyPair k5 = ECKeyPair.generateNew(); // Rogue signature
+		var k1 = ECKeyPair.generateNew();
+		var k2 = ECKeyPair.generateNew();
+		var k3 = ECKeyPair.generateNew();
+		var k4 = ECKeyPair.generateNew();
+		var k5 = ECKeyPair.generateNew(); // Rogue signature
 
-		BFTNode node1 = BFTNode.create(k1.getPublicKey());
-		BFTNode node2 = BFTNode.create(k2.getPublicKey());
-		BFTNode node3 = BFTNode.create(k3.getPublicKey());
-		BFTNode node4 = BFTNode.create(k4.getPublicKey());
-		BFTNode node5 = BFTNode.create(k5.getPublicKey());
+		var node1 = BFTNode.create(k1.getPublicKey());
+		var node2 = BFTNode.create(k2.getPublicKey());
+		var node3 = BFTNode.create(k3.getPublicKey());
+		var node4 = BFTNode.create(k4.getPublicKey());
+		var node5 = BFTNode.create(k5.getPublicKey());
 
-		BFTValidator v1 = BFTValidator.from(node1, UInt256.ONE);
-		BFTValidator v2 = BFTValidator.from(node2, UInt256.ONE);
-		BFTValidator v3 = BFTValidator.from(node3, UInt256.ONE);
-		BFTValidator v4 = BFTValidator.from(node4, UInt256.ONE);
+		var v1 = BFTValidator.create(node1, UInt256.ONE);
+		var v2 = BFTValidator.create(node2, UInt256.ONE);
+		var v3 = BFTValidator.create(node3, UInt256.ONE);
+		var v4 = BFTValidator.create(node4, UInt256.ONE);
 
-		BFTValidatorSet vs = BFTValidatorSet.from(ImmutableSet.of(v1, v2, v3, v4));
-		HashCode message = HashUtils.random256();
+		var vs = BFTValidatorSet.from(ImmutableSet.of(v1, v2, v3, v4));
+		var message = HashUtils.random256();
 
 		// 2 signatures for 4 validators -> fail
-		ValidationState vst1 = vs.newValidationState();
+		var vst1 = vs.newValidationState();
+
 		assertTrue(vst1.addSignature(node1, 0L, k1.sign(message)));
 		assertFalse(vst1.complete());
 		assertTrue(vst1.addSignature(node2, 0L, k2.sign(message)));
@@ -139,7 +140,8 @@ public class BFTValidatorSetTest {
 		assertEquals(2, vst1.signatures().count());
 
 		// 3 signatures for 4 validators -> pass
-		ValidationState vst2 = vs.newValidationState();
+		var vst2 = vs.newValidationState();
+
 		assertTrue(vst2.addSignature(node1, 0L, k1.sign(message)));
 		assertFalse(vst1.complete());
 		assertTrue(vst2.addSignature(node2, 0L, k2.sign(message)));
@@ -149,7 +151,8 @@ public class BFTValidatorSetTest {
 		assertEquals(3, vst2.signatures().count());
 
 		// 2 signatures + 1 signature not from set for 4 validators -> fail
-		ValidationState vst3 = vs.newValidationState();
+		var vst3 = vs.newValidationState();
+
 		assertTrue(vst3.addSignature(node1, 0L, k1.sign(message)));
 		assertFalse(vst3.complete());
 		assertTrue(vst3.addSignature(node2, 0L, k2.sign(message)));
@@ -159,7 +162,8 @@ public class BFTValidatorSetTest {
 		assertEquals(2, vst3.signatures().count());
 
 		// 3 signatures + 1 signature not from set for 4 validators -> pass
-		ValidationState vst4 = vs.newValidationState();
+		var vst4 = vs.newValidationState();
+
 		assertTrue(vst4.addSignature(node1, 0L, k1.sign(message)));
 		assertFalse(vst3.complete());
 		assertTrue(vst4.addSignature(node2, 0L, k2.sign(message)));
@@ -173,18 +177,19 @@ public class BFTValidatorSetTest {
 
 	@Test
 	public void testValidateWithUnequalPower() {
-		ECKeyPair k1 = ECKeyPair.generateNew();
-		ECKeyPair k2 = ECKeyPair.generateNew();
+		var k1 = ECKeyPair.generateNew();
+		var k2 = ECKeyPair.generateNew();
 
-		BFTNode node1 = BFTNode.create(k1.getPublicKey());
-		BFTNode node2 = BFTNode.create(k2.getPublicKey());
+		var node1 = BFTNode.create(k1.getPublicKey());
+		var node2 = BFTNode.create(k2.getPublicKey());
 
-		BFTValidator v1 = BFTValidator.from(node1, UInt256.THREE);
-		BFTValidator v2 = BFTValidator.from(node2, UInt256.ONE);
+		var v1 = BFTValidator.create(node1, UInt256.THREE);
+		var v2 = BFTValidator.create(node2, UInt256.ONE);
 
-		BFTValidatorSet vs = BFTValidatorSet.from(ImmutableSet.of(v1, v2));
-		HashCode message = HashUtils.random256();
-		ValidationState vst1 = vs.newValidationState();
+		var vs = BFTValidatorSet.from(ImmutableSet.of(v1, v2));
+		var message = HashUtils.random256();
+		var vst1 = vs.newValidationState();
+
 		assertTrue(vst1.addSignature(node1, 0L, k1.sign(message)));
 		assertTrue(vst1.complete());
 		assertEquals(1, vst1.signatures().count());
@@ -197,7 +202,7 @@ public class BFTValidatorSetTest {
 				.mapToObj(n -> ECKeyPair.generateNew())
 				.map(ECKeyPair::getPublicKey)
 				.map(BFTNode::create)
-				.map(node -> BFTValidator.from(node, UInt256.ONE))
+				.map(node -> BFTValidator.create(node, UInt256.ONE))
 				.collect(Collectors.toList());
 
 			final var validatorSet = BFTValidatorSet.from(validators);

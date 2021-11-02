@@ -106,9 +106,9 @@ public final class SerializedVertexStoreState {
 
 	@JsonCreator
 	public SerializedVertexStoreState(
-		@JsonProperty("high_qc") HighQC highQC,
-		@JsonProperty("root") UnverifiedVertex root,
-		@JsonProperty("vertices") ImmutableList<UnverifiedVertex> vertices,
+		@JsonProperty(value = "high_qc", required = true) HighQC highQC,
+		@JsonProperty(value = "root", required = true) UnverifiedVertex root,
+		@JsonProperty(value = "vertices", required = true) ImmutableList<UnverifiedVertex> vertices,
 		@JsonProperty("highest_tc") TimeoutCertificate highestTC
 	) {
 		this.root = Objects.requireNonNull(root);

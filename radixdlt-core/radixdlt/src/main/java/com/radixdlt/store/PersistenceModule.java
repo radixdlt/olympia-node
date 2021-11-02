@@ -115,7 +115,7 @@ public class PersistenceModule extends AbstractModule {
 		return update -> {
 			systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
 			persistentVertexStore.save(update.getVertexStoreState());
-		};
+		};	//TODO: DISPATCH: processing PersistentVertexStore may throw BerkeleyStoreException
 	}
 
 	@ProvidesIntoSet
@@ -127,6 +127,6 @@ public class PersistenceModule extends AbstractModule {
 		return update -> {
 			systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
 			persistentVertexStore.save(update.getVertexStoreState());
-		};
+		};	//TODO: DISPATCH: processing PersistentVertexStore may throw BerkeleyStoreException
 	}
 }

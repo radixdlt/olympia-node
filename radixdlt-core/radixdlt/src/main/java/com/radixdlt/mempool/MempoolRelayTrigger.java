@@ -65,12 +65,13 @@
 package com.radixdlt.mempool;
 
 public final class MempoolRelayTrigger {
+	private static final MempoolRelayTrigger INSTANCE = new MempoolRelayTrigger();
 
 	private MempoolRelayTrigger() {
 	}
 
 	public static MempoolRelayTrigger create() {
-		return new MempoolRelayTrigger();
+		return INSTANCE;
 	}
 
 	@Override
@@ -83,7 +84,7 @@ public final class MempoolRelayTrigger {
 		if (this == o) {
 			return true;
 		}
-		return o != null && getClass() == o.getClass();
+		return o instanceof MempoolRelayTrigger;
 	}
 
 	@Override
