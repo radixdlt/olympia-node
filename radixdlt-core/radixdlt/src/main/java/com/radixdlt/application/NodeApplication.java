@@ -112,7 +112,7 @@ public final class NodeApplication {
 				.map(future -> MempoolAdd.create(txn, future))
 				.orElseGet(() -> MempoolAdd.create(txn));
 
-			this.mempoolAddEventDispatcher.dispatch(mempoolAdd);	//DISPATCH: event seems safe
+			this.mempoolAddEventDispatcher.dispatch(mempoolAdd);
 		} catch (TxBuilderException | RuntimeException e) {
 			log.warn("Failed to fulfil request {} reason: {}", request, e.getMessage());
 			request.completableFuture().ifPresent(c -> c.completeExceptionally(e));

@@ -352,7 +352,7 @@ public final class EpochManager {
 		} else if (consensusEvent instanceof Vote) {
 			bftEventProcessor.processVote((Vote) consensusEvent);
 		} else {
-			//TODO: DISPATCH: add necessary branch once there will be more ConsensusEvent implementations
+			//TODO: DISPATCH: remove this branch once ConsensusEvent will be sealed
 			log.warn("Unknown consensus event {}", consensusEvent);
 		}
 	}
@@ -438,8 +438,9 @@ public final class EpochManager {
 		};
 	}
 
-	//TODO: Why not just return syncTimeoutProcessor?
 	public EventProcessor<VertexRequestTimeout> timeoutEventProcessor() {
+		//Return reference to method rather than syncTimeoutProcessor directly,
+		// since syncTimeoutProcessor will change over the time
 		return this::processGetVerticesLocalTimeout;
 	}
 

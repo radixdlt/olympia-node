@@ -249,7 +249,7 @@ public final class BFTSync implements BFTSyncer {
 						this.vertexStore.highQC().highestCommittedQC(),
 						Optional.of(((FormedTC) viewQuorumReached.votingResult()).getTC()));
 			} else {
-				//TODO: DISPATCH: add necessary branch once there will be more ViewVotingResult implementations
+				//TODO: remove when ViewVotingResult will be sealed
 				log.warn("Unexpected event type {}", viewQuorumReached.votingResult());
 				return;
 			}

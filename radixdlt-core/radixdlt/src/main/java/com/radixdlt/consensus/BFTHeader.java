@@ -119,8 +119,7 @@ public final class BFTHeader {
 		@JsonProperty(value = "vertex_id", required = true) HashCode vertexId,
 		@JsonProperty(value = "ledger_header", required = true) LedgerHeader ledgerHeader
 	) {
-		return new BFTHeader(View.of(number), requireNonNull(vertexId), requireNonNull(ledgerHeader)
-		);
+		return new BFTHeader(View.of(number), requireNonNull(vertexId), requireNonNull(ledgerHeader));
 	}
 
 	public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {

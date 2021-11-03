@@ -424,13 +424,15 @@ public class DispatcherModule extends AbstractModule {
 			var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
 			return commit -> {
 				processCommitSynchronously(commit, processors, systemCounters);
-				dispatcher.dispatch(commit);	//DISPATCH: processing looks safe
+				dispatcher.dispatch(commit);
 			};
 		}
 	}
 
 	private void processCommitSynchronously(
-			BFTCommittedUpdate commit, @ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors, SystemCounters systemCounters
+		BFTCommittedUpdate commit,
+		@ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors,
+		SystemCounters systemCounters
 	) {
 		long stateVersion = commit.getVertexStoreState().getRootHeader().getStateVersion();
 		systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);

@@ -91,7 +91,7 @@ public final class ConsensusEventMessage extends Message {
 	private final Vote vote;
 
 	public ConsensusEventMessage(
-		@JsonProperty(value = "timestamp", required = true) long timestamp,
+		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("proposal") Proposal proposal,
 		@JsonProperty("vote") Vote vote
 	) {
@@ -99,6 +99,10 @@ public final class ConsensusEventMessage extends Message {
 
 		if (proposal == null && vote == null) {
 			throw new IllegalStateException("No vote nor proposal are provided for ConsensusEventMessage");
+		}
+
+		if (proposal != null && vote != null) {
+			throw new IllegalStateException("Both, vote and proposal are provided for ConsensusEventMessage");
 		}
 
 		this.proposal = proposal;

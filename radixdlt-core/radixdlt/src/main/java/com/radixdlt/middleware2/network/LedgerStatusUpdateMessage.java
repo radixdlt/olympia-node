@@ -86,8 +86,8 @@ public final class LedgerStatusUpdateMessage extends Message {
 
 	@JsonCreator
 	public LedgerStatusUpdateMessage(
-			@JsonProperty(value = "timestamp", required = true) long timestamp,
-			@JsonProperty(value = "header", required = true) LedgerProof header
+		@JsonProperty(value = "timestamp", required = true) long timestamp,
+		@JsonProperty(value = "header", required = true) LedgerProof header
 	) {
 		super(timestamp);
 		this.header = Objects.requireNonNull(header);
