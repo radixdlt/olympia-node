@@ -64,11 +64,7 @@
 
 package com.radixdlt.environment.rx;
 
-import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.middleware2.network.ConsensusEventMessage;
-import com.radixdlt.network.messaging.MessageFromPeer;
 
 import java.util.Objects;
 

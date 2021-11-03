@@ -69,6 +69,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Optional;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -199,6 +200,8 @@ public class PacemakerTest {
 		BFTInsertUpdate bftInsertUpdate = mock(BFTInsertUpdate.class);
 		when(bftInsertUpdate.getHeader()).thenReturn(bftHeader);
 		PreparedVertex preparedVertex = mock(PreparedVertex.class);
+		when(preparedVertex.getView()).thenReturn(view);
+		when(preparedVertex.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
 		VerifiedVertexStoreState vertexStoreState = mock(VerifiedVertexStoreState.class);
 		when(vertexStoreState.getHighQC()).thenReturn(highQC);
 		when(bftInsertUpdate.getInserted()).thenReturn(preparedVertex);
