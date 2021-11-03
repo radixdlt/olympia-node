@@ -1,4 +1,4 @@
-Feature: Multi-action Transactions
+Feature: Multi-Action Transactions
   As an account owner,
   I want to be bale to perform multiple operations in one logical transaction
   So that I can use the radix network more efficiently

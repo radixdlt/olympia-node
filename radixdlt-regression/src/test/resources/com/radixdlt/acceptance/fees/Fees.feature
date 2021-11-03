@@ -1,4 +1,4 @@
-Feature: Fees required for submitted transactions
+Feature: Transaction Fees
   As a radix network,
   I would like transactions to require a radix token fee,
   So that the network can be maintained

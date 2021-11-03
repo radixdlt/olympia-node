@@ -1,4 +1,4 @@
-Feature: Restricted character set for token symbols
+Feature: Token constraints
   As a token trader,
   I would like token parameters to be constrained
   So that identifying and referring to tokens won't be confusing
