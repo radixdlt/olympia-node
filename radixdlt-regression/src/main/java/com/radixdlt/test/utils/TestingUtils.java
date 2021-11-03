@@ -168,7 +168,8 @@ public final class TestingUtils {
         if (transaction.getEvents().isEmpty() || transaction.getEvents().get(0).getRri().isEmpty()) {
             throw new TestFailureException("Token creation transaction did not contain the correct event");
         }
-        var rri = transaction.getEvents().get(0).getRri().get();
+        var rriOpt = transaction.getEvents().get(0).getRri();
+        var rri = rriOpt.orElseThrow(() -> new TestFailureException("Token creation action did not have an rri"));
         return account.token().describe(rri);
     }
 
