@@ -129,7 +129,7 @@ public final class LedgerHeader {
 		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("next_validators") ImmutableSet<BFTValidator> nextValidators
 	) {
-		this(epoch, View.of(view), requireNonNull(accumulatorState), timestamp, nextValidators);
+		this(epoch, View.of(view), accumulatorState, timestamp, nextValidators);
 	}
 
 	private LedgerHeader(
@@ -141,7 +141,7 @@ public final class LedgerHeader {
 	) {
 		this.epoch = epoch;
 		this.view = view;
-		this.accumulatorState = accumulatorState;
+		this.accumulatorState = requireNonNull(accumulatorState);
 		this.nextValidators = nextValidators;
 		this.timestamp = timestamp;
 	}

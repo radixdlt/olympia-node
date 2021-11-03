@@ -161,7 +161,7 @@ public final class HighQC {
 		QuorumCertificate highestCommittedQC,
 		Optional<TimeoutCertificate> highestTC
 	) {
-		return new HighQC(highestQC, requireNonNull(highestCommittedQC), highestTC.orElse(null));
+		return new HighQC(highestQC, highestCommittedQC, highestTC.orElse(null));
 	}
 
 	public Optional<TimeoutCertificate> highestTC() {

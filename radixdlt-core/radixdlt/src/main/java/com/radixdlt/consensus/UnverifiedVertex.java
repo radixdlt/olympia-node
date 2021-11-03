@@ -163,8 +163,6 @@ public final class UnverifiedVertex {
 		List<Txn> txns,
 		BFTNode proposer
 	) {
-		requireNonNull(qc);
-
 		if (view.number() == 0) {
 			throw new IllegalArgumentException("Only genesis can have view 0.");
 		}

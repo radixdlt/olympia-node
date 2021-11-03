@@ -79,6 +79,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.annotation.concurrent.Immutable;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A commands and proof which has not been verified
  */
@@ -109,8 +111,10 @@ public final class DtoTxnsAndProof {
 		@JsonProperty(value = "tail", required = true) DtoLedgerProof tail
 	) {
 		this.txns = txns == null ? ImmutableList.of() : txns;
-		this.head = Objects.requireNonNull(head);
-		this.tail = Objects.requireNonNull(tail);
+		this.head = requireNonNull(head);
+		this.tail = requireNonNull(tail);
+
+		this.txns.forEach(Objects::requireNonNull);
 	}
 
 	public List<Txn> getTxns() {

@@ -65,20 +65,18 @@
 package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
-
-import java.util.Objects;
-
-import javax.annotation.concurrent.Immutable;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.DsonOutput.Output;
+
+import javax.annotation.concurrent.Immutable;
+import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
@@ -108,18 +106,18 @@ public final class BFTHeader {
 		HashCode vertexId, // consensus data
 		LedgerHeader ledgerHeader
 	) {
-		this.view = view;
-		this.vertexId = vertexId;
-		this.ledgerHeader = ledgerHeader;
+		this.view = requireNonNull(view);
+		this.vertexId = requireNonNull(vertexId);
+		this.ledgerHeader = requireNonNull(ledgerHeader);
 	}
 
 	@JsonCreator
 	public static BFTHeader create(
-		@JsonProperty(value = "view", required = true) long number,
+		@JsonProperty("view") long number,
 		@JsonProperty(value = "vertex_id", required = true) HashCode vertexId,
 		@JsonProperty(value = "ledger_header", required = true) LedgerHeader ledgerHeader
 	) {
-		return new BFTHeader(View.of(number), requireNonNull(vertexId), requireNonNull(ledgerHeader));
+		return new BFTHeader(View.of(number), vertexId, ledgerHeader);
 	}
 
 	public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {

@@ -340,28 +340,16 @@ public final class EpochManager {
 		queuedEvents.remove(epochChange.getEpoch());
 	}
 
-	private void appendValidator(StringBuilder msg, BFTValidator v) {
-		msg.append(v.getNode().getSimpleName()).append(':').append(v.getPower());
-	}
-
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
 		this.counters.increment(CounterType.BFT_CONSENSUS_EVENTS);
 
-		if (consensusEvent instanceof Proposal) {
-			bftEventProcessor.processProposal((Proposal) consensusEvent);
-		} else if (consensusEvent instanceof Vote) {
-			bftEventProcessor.processVote((Vote) consensusEvent);
-		} else {
-			//TODO: DISPATCH: remove this branch once ConsensusEvent will be sealed
-			log.warn("Unknown consensus event {}", consensusEvent);
-		}
+		consensusEvent.processBy(bftEventProcessor);
 	}
 
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
 		if (consensusEvent.getEpoch() > this.currentEpoch()) {
 			log.debug("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
-				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch
-			);
+				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch);
 
 			// queue higher epoch events for later processing
 			// TODO: need to clear this by some rule (e.g. timeout or max size) or else memory leak attack possible

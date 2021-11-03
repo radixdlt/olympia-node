@@ -75,6 +75,9 @@ import org.radix.network.messaging.Message;
 
 import java.util.Objects;
 
+import static com.radixdlt.utils.functional.FunctionalUtils.coalesce;
+import static java.util.Objects.requireNonNull;
+
 /**
  * The Data Transfer Object for Consensus messages. Each type of consensus message currently needs to be
  * a parameter in this class due to lack of interface serialization.
@@ -114,15 +117,7 @@ public final class ConsensusEventMessage extends Message {
 	}
 
 	public ConsensusEvent getConsensusMessage() {
-		if (this.proposal != null) {
-			return proposal;
-		}
-
-		if (this.vote != null) {
-			return vote;
-		}
-
-		throw new IllegalStateException("Should never happen");
+		return requireNonNull(coalesce(proposal, vote));
 	}
 
 	@Override

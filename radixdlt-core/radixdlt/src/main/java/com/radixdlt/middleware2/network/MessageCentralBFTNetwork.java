@@ -64,9 +64,8 @@
 
 package com.radixdlt.middleware2.network;
 
-import org.radix.network.messaging.Message;
-
 import com.google.inject.Inject;
+import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -75,11 +74,11 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.p2p.NodeId;
-
-import java.util.Objects;
-
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import org.radix.network.messaging.Message;
+
+import java.util.Objects;
 
 /**
  * BFT Network sending and receiving layer used on top of the MessageCentral
@@ -96,23 +95,21 @@ public final class MessageCentralBFTNetwork {
 	public Flowable<RemoteEvent<Vote>> remoteVotes() {
 		return remoteBftEvents()
 			.filter(m -> m.getMessage().getConsensusMessage() instanceof Vote)
-			.map(m -> {
-				final var node = BFTNode.create(m.getSource().getPublicKey());
-				final var msg = m.getMessage();
-				var vote = (Vote) msg.getConsensusMessage();
-				return RemoteEvent.create(node, vote);
-			});
+			.map(this::toRemoteEvent);
 	}
 
 	public Flowable<RemoteEvent<Proposal>> remoteProposals() {
 		return remoteBftEvents()
 			.filter(m -> m.getMessage().getConsensusMessage() instanceof Proposal)
-			.map(m -> {
-				final var node = BFTNode.create(m.getSource().getPublicKey());
-				final var msg = m.getMessage();
-				var proposal = (Proposal) msg.getConsensusMessage();
-				return RemoteEvent.create(node, proposal);
-			});
+			.map(this::toRemoteEvent);
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T extends ConsensusEvent> RemoteEvent<T> toRemoteEvent(MessageFromPeer<ConsensusEventMessage> m) {
+		final var node = BFTNode.create(m.getSource().getPublicKey());
+		final var msg = m.getMessage();
+		var vote = (T) msg.getConsensusMessage();
+		return RemoteEvent.create(node, vote);
 	}
 
 	private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {

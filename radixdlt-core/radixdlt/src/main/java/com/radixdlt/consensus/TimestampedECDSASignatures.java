@@ -108,7 +108,7 @@ public final class TimestampedECDSASignatures {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private Map<BFTNode, TimestampedECDSASignature> nodeToTimestampedSignature;
+	private final Map<BFTNode, TimestampedECDSASignature> nodeToTimestampedSignature;
 
 	@JsonCreator
 	public static TimestampedECDSASignatures from(
@@ -167,7 +167,7 @@ public final class TimestampedECDSASignatures {
 	 *                                    timestamps and {@link com.radixdlt.crypto.ECPublicKey}
 	 */
 	public TimestampedECDSASignatures(Map<BFTNode, TimestampedECDSASignature> nodeToTimestampAndSignature) {
-		this.nodeToTimestampedSignature = nodeToTimestampAndSignature;
+		this.nodeToTimestampedSignature = nodeToTimestampAndSignature == null ? Map.of() : nodeToTimestampAndSignature;
 	}
 
 	/**

@@ -72,9 +72,7 @@ import com.radixdlt.consensus.bft.View;
  * processed
  */
 //TODO: make interface sealed after switching to Java 17.
-// Check EpochManager::processConsensusEventInternal and ConsensusEventMessage::getConsensusMessage
 public interface ConsensusEvent {
-
 	/**
 	 * Retrieve the epoch number the consensus message is a part of
 	 * @return the epoch number
@@ -99,4 +97,11 @@ public interface ConsensusEvent {
 	 * @return {@link HighQC} associated with event
 	 */
 	HighQC highQC();
+
+	/**
+	 * Dispatch processing to corresponding method in the processor.
+	 *
+	 * @param processor	the processor to use
+	 */
+	void processBy(BFTEventProcessor processor);
 }
