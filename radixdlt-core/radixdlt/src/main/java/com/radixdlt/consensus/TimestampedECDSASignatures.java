@@ -91,6 +91,8 @@ import java.util.stream.Collectors;
 
 import javax.annotation.concurrent.Immutable;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A collection of <a href="https://en.wikipedia.org/wiki/
  * Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a> signatures,
@@ -114,6 +116,13 @@ public final class TimestampedECDSASignatures {
 	public static TimestampedECDSASignatures from(
 		@JsonProperty("signatures") Map<String, TimestampedECDSASignature> signatures
 	) {
+		if (signatures != null) {
+			signatures.forEach((key, value) -> {
+				requireNonNull(key);
+				requireNonNull(value);
+			});
+		}
+
 		var signaturesByNode =
 			signatures == null
 			? Map.<BFTNode, TimestampedECDSASignature>of()
