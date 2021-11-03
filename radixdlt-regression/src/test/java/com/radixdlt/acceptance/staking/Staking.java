@@ -164,7 +164,7 @@ public class Staking extends RadixNetworkTest {
     }
 
     @Then("I receive some emissions")
-    public void i_receive_xrd_in_emissions(int emissionTokens) {
+    public void i_receive_xrd_in_emissions() {
         var latestStakedAmount = account1.account().stakes(account1.getAddress()).stream()
             .filter(stakePositions -> stakePositions.getValidator().equals(firstValidator.getAddress()))
             .collect(Collectors.toList()).get(0).getAmount();
