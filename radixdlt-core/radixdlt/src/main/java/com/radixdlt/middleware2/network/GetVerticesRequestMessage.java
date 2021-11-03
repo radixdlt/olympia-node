@@ -70,11 +70,9 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import org.radix.network.messaging.Message;
 
 import java.util.Objects;
-
-import org.radix.network.messaging.Message;
-import org.radix.time.Time;
 
 /**
  * RPC Message to get request for a vertex
@@ -89,20 +87,13 @@ public final class GetVerticesRequestMessage extends Message {
 	@DsonOutput(Output.ALL)
 	private final int count;
 
-
 	@JsonCreator
 	public GetVerticesRequestMessage(
-		@JsonProperty(value = "timestamp", required = true) long timestamp,
 		@JsonProperty(value = "vertexId", required = true) HashCode vertexId,
 		@JsonProperty(value = "count", required = true) int count
 	) {
-		super(timestamp);
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.count = count;
-	}
-
-	public GetVerticesRequestMessage(HashCode vertexId, int count) {
-		this(Time.currentTimestamp(), vertexId, count);
 	}
 
 	public HashCode getVertexId() {

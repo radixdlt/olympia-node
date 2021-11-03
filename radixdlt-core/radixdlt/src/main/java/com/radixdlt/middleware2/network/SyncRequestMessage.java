@@ -71,7 +71,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
-import org.radix.time.Time;
 
 import java.util.Objects;
 
@@ -86,15 +85,9 @@ public final class SyncRequestMessage extends Message {
 
 	@JsonCreator
 	public SyncRequestMessage(
-		@JsonProperty(value = "timestamp", required = true) long timestamp,
 		@JsonProperty(value = "currentHeader", required = true) DtoLedgerProof currentHeader
 	) {
-		super(timestamp);
 		this.currentHeader = Objects.requireNonNull(currentHeader);
-	}
-
-	public SyncRequestMessage(DtoLedgerProof currentHeader) {
-		this(Time.currentTimestamp(), currentHeader);
 	}
 
 	public DtoLedgerProof getCurrentHeader() {

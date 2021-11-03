@@ -71,7 +71,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
-import org.radix.time.Time;
 
 import java.util.Objects;
 
@@ -87,17 +86,11 @@ public final class GetVerticesErrorResponseMessage extends Message {
 
 	@JsonCreator
 	public GetVerticesErrorResponseMessage(
-		@JsonProperty(value = "timestamp", required = true) long timestamp,
 		@JsonProperty(value = "high_qc", required = true) HighQC highQC,
 		@JsonProperty(value = "request", required = true) GetVerticesRequestMessage request
 	) {
-		super(timestamp);
 		this.highQC = Objects.requireNonNull(highQC);
 		this.request = Objects.requireNonNull(request);
-	}
-
-	public GetVerticesErrorResponseMessage(HighQC highQC, GetVerticesRequestMessage request) {
-		this(Time.currentTimestamp(), highQC, request);
 	}
 
 	public HighQC highQC() {

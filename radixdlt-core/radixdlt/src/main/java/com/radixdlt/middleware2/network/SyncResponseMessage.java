@@ -66,12 +66,11 @@ package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.ledger.DtoTxnsAndProof;
 import org.radix.network.messaging.Message;
-import org.radix.time.Time;
 
 import java.util.Objects;
 
@@ -86,15 +85,9 @@ public final class SyncResponseMessage extends Message {
 
 	@JsonCreator
 	public SyncResponseMessage(
-		@JsonProperty(value = "timestamp", required = true) long timestamp,
 		@JsonProperty(value = "commands", required = true) DtoTxnsAndProof commands
 	) {
-		super(timestamp);
 		this.commands = Objects.requireNonNull(commands);
-	}
-
-	public SyncResponseMessage(DtoTxnsAndProof commands) {
-		this(Time.currentTimestamp(), commands);
 	}
 
 	public DtoTxnsAndProof getCommands() {

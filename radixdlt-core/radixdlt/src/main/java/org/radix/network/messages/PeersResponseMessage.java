@@ -73,7 +73,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
-import org.radix.time.Time;
 
 import java.util.Objects;
 
@@ -86,15 +85,9 @@ public final class PeersResponseMessage extends Message {
 
 	@JsonCreator
 	public PeersResponseMessage(
-		@JsonProperty(value = "timestamp", required = true) long timestamp,
 		@JsonProperty("peers") ImmutableSet<RadixNodeUri> peers
 	) {
-		super(timestamp);
 		this.peers = peers == null ? ImmutableSet.of() : peers;
-	}
-
-	public PeersResponseMessage(ImmutableSet<RadixNodeUri> peers) {
-		this(Time.currentTimestamp(), peers);
 	}
 
 	public ImmutableSet<RadixNodeUri> getPeers() {

@@ -72,7 +72,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
-import org.radix.time.Time;
 
 import java.util.Objects;
 
@@ -91,12 +90,9 @@ public final class ConsensusEventMessage extends Message {
 	private final Vote vote;
 
 	public ConsensusEventMessage(
-		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("proposal") Proposal proposal,
 		@JsonProperty("vote") Vote vote
 	) {
-		super(timestamp);
-
 		if (proposal == null && vote == null) {
 			throw new IllegalStateException("No vote nor proposal are provided for ConsensusEventMessage");
 		}
@@ -110,11 +106,11 @@ public final class ConsensusEventMessage extends Message {
 	}
 
 	public ConsensusEventMessage(Proposal proposal) {
-		this(Time.currentTimestamp(), proposal, null);
+		this(proposal, null);
 	}
 
 	public ConsensusEventMessage(Vote vote) {
-		this(Time.currentTimestamp(), null, vote);
+		this(null, vote);
 	}
 
 	public ConsensusEvent getConsensusMessage() {

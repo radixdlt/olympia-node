@@ -64,25 +64,22 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.utils.UInt256;
-
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import org.junit.Test;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.utils.UInt256;
 import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class BFTValidatorSetTest {
 

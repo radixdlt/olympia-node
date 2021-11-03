@@ -71,7 +71,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
-import org.radix.time.Time;
 
 import java.util.Objects;
 
@@ -86,15 +85,9 @@ public final class LedgerStatusUpdateMessage extends Message {
 
 	@JsonCreator
 	public LedgerStatusUpdateMessage(
-		@JsonProperty(value = "timestamp", required = true) long timestamp,
 		@JsonProperty(value = "header", required = true) LedgerProof header
 	) {
-		super(timestamp);
 		this.header = Objects.requireNonNull(header);
-	}
-
-	public LedgerStatusUpdateMessage(LedgerProof header) {
-		this(Time.currentTimestamp(), header);
 	}
 
 	public LedgerProof getHeader() {

@@ -66,17 +66,14 @@ package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import org.radix.network.messaging.Message;
 
 import java.util.List;
 import java.util.Objects;
-
-import org.radix.network.messaging.Message;
-import org.radix.time.Time;
 
 /**
  * RPC Response message for GetVertex call
@@ -89,19 +86,13 @@ public final class GetVerticesResponseMessage extends Message {
 
 	@JsonCreator
 	public GetVerticesResponseMessage(
-		@JsonProperty(value = "timestamp", required = true) long timestamp,
 		@JsonProperty(value = "vertices", required = true) List<UnverifiedVertex> vertices
 	) {
-		super(timestamp);
 		this.vertices = Objects.requireNonNull(vertices);
 	}
 
-	public GetVerticesResponseMessage(List<UnverifiedVertex> vertices) {
-		this(Time.currentTimestamp(), vertices);
-	}
-
 	public List<UnverifiedVertex> getVertices() {
-		return vertices == null ? ImmutableList.of() : vertices;
+		return vertices;
 	}
 
 	@Override

@@ -65,19 +65,16 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerId2;
+import org.radix.network.messaging.Message;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import org.radix.network.messaging.Message;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
-import org.radix.time.Time;
 
 @SerializerId2("message.mempool.add")
 public final class MempoolAddMessage extends Message {
@@ -87,15 +84,13 @@ public final class MempoolAddMessage extends Message {
 
 	@JsonCreator
 	public MempoolAddMessage(
-		@JsonProperty(value = "timestamp", required = true) long currentTimestamp,
 		@JsonProperty(value = "txns", required = true) List<byte[]> txns
 	) {
-		super(currentTimestamp);
 		this.txns = Objects.requireNonNull(txns);
 	}
 
-	public MempoolAddMessage(List<Txn> txns) {
-		this(Time.currentTimestamp(), txns.stream().map(Txn::getPayload).collect(Collectors.toList()));
+	public static MempoolAddMessage create(List<Txn> txns) {
+		return new MempoolAddMessage(txns.stream().map(Txn::getPayload).collect(Collectors.toList()));
 	}
 
 	public List<Txn> getTxns() {

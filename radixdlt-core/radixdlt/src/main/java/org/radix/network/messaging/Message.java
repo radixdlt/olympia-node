@@ -70,7 +70,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.Ints;
-
 import org.radix.containers.BasicContainer;
 import org.radix.time.Time;
 
@@ -91,11 +90,11 @@ public abstract class Message extends BasicContainer {
 	@DsonOutput(value = {Output.API, Output.PERSIST})
 	private final long timestamp;
 
-	protected Message(long timestamp) {
-		if (timestamp < 0) {
-			throw new IllegalArgumentException("Unexpected negative timestamp " + timestamp);
-		}
+	protected Message() {
+		this(Time.currentTimestamp());
+	}
 
+	private Message(long timestamp) {
 		this.timestamp = timestamp;
 	}
 
