@@ -20,46 +20,46 @@ public class PMT {
 	//verify_proof
 
 	// NEXT:
-	// common path method
+	// TODO: * kick out branch Nibble from Ext and Leaf objects? (they are only for transfer to branch update)
+	//       * simplify getFirstNibble
+	//       * simplify getKey.getKey (from PMTNode -> PMTKey -> int[])
 	// serialization
 
 	private HashMap<byte[], byte[]> localDb = new HashMap<>(); // mock for final persistent DB API
+	private HashMap<byte[], PMTNode> localCache = new HashMap<>();
 	private PMTNode root;
 
 	public byte[] add(byte[] key, byte[] val) {
 
 		try {
-			var pmtKey = new PMTKey(key);
+			var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
 
-			// TODO: consider API: adding null -> remove
 			if (this.root != null) {
 				this.root = insertNode(this.root, pmtKey, val);
 			} else {
-				// TODO: move to big case when it can handle nulls
 				PMTNode nodeRoot = insertLeaf(pmtKey, val);
 				this.root = nodeRoot;
 			}
 		}
 		catch (Exception e) {
-			log.error("Add failure: {} for: {} {} {}",
+			log.error("PMT operation failure: {} for: {} {} {}",
 				e.getMessage(),
 				TreeUtils.toHexString(key),
 				TreeUtils.toHexString(val),
 				TreeUtils.toHexString(root.getHash()));
 		}
-		// TODO: need a protocol for exceptions
 		return this.root.getHash();
 	}
 
 	PMTNode insertNode(PMTNode current, PMTKey key, byte[] val) {
-		final PMTPath commonPath = this.findCommonPath(current, key);
+		final PMTPath commonPath = PMTPath.findCommonPath(current.getKey(), key);
 		PMTNode newTip = null;
 		switch (current.getNodeType()) {
 			case LEAF:
 			 	switch (commonPath.whichRemainderIsLeft()) {
-			 		case OLD:
-			 			var remainder = commonPath.getRemainder(PMTPath.Subtree.OLD);
-			 			var newLeaf = insertSubLeaf(remainder.getFirstNibble(), remainder.getTailNibbles(), val);
+					case OLD:
+						var remainder = commonPath.getRemainder(PMTPath.Subtree.OLD);
+						var newLeaf = insertSubLeaf(remainder.getFirstNibble(), remainder.getTailNibbles(), val);
 						var newBranch = insertBranch(current.getValue(), newLeaf);
 						var newExt = insertExtension(commonPath, newBranch);
 						newTip = newExt == null ? newBranch : newExt;
@@ -81,22 +81,23 @@ public class PMT {
 						newTip = newExt == null ? newBranch : newExt;
 						break;
 					case NONE:
-					    if (val == current.getValue()) {
-					    	throw new IllegalArgumentException("Nothing changed");
+						if (val == current.getValue()) {
+							throw new IllegalArgumentException("Nothing changed");
 						} else {
-					    	// INFO: we preserve whole key-end as there are no branches
+							// INFO: we preserve whole key-end as there are no branches
 							newTip = insertLeaf(key, val);
 						}
 						break;
-			}
-			break;
+				}
+				break;
 			case BRANCH:
 				// INFO: OLD branch always has empty key and remainder
 				var currentBranch = (PMTBranch) current;
 				switch (commonPath.whichRemainderIsLeft()) {
 					case NONE:
-						var modifiedBranch = currentBranch.setValue(val);
-						newTip = insertBranch(modifiedBranch); // TODO: for mem cache we will need work on copy here
+						var modifiedBranch = cloneBranch(currentBranch);
+						modifiedBranch.setValue(val);
+						newTip = insertBranch(modifiedBranch);
 						break;
 					case NEW:
 						var nextHash = currentBranch.getNextHash(key);
@@ -107,8 +108,9 @@ public class PMT {
 							var nextNode = read(nextHash);
 							subTip = insertNode(nextNode, key.getTailNibbles(), val);
 						}
-						var branchWithNext = currentBranch.setNibble(key.getFirstNibble(), subTip);
-						newTip = insertBranch(branchWithNext); // TODO: for mem cache we will need work on copy here
+						var branchWithNext = cloneBranch(currentBranch);
+						branchWithNext.setNibble(key.getFirstNibble(), subTip);
+						newTip = insertBranch(branchWithNext);
 						break;
 				}
 				break;
@@ -157,6 +159,9 @@ public class PMT {
 		return newNode;
 	}
 
+	PMTBranch cloneBranch(PMTBranch currentBranch) {
+		return currentBranch.copyForEdit();
+	}
 
 	PMTBranch insertBranch(PMTBranch modifiedBranch) {
 		save(modifiedBranch);
@@ -200,6 +205,8 @@ public class PMT {
 	}
 
 	private void save(PMTNode node) {
+		// TODO: introduce better key for local cache to enable removal (e.g. with round number)
+		this.localCache.put(node.getHash(), node);
 		var ser = node.serialize();
 		if (ser.length >= PMTNode.DB_SIZE_COND) {
 			this.localDb.put(node.getHash(), ser);
@@ -207,19 +214,19 @@ public class PMT {
 	}
 
 	private PMTNode read(byte[] hash) {
-		if (hash.length < PMTNode.DB_SIZE_COND) {
-			return PMTNode.deserialize(hash);
+		var localNode = localCache.get(hash);
+		if (localCache.get(hash) != null) {
+			return localNode;
 		} else {
-			var node = this.localDb.get(hash);
-			// TODO: this will return leaf or ext or branch
-			//       shall we cast in case or in deserializer?
-			return PMTNode.deserialize(node);
+			if (hash.length < PMTNode.DB_SIZE_COND) {
+				return PMTNode.deserialize(hash);
+			} else {
+				var node = this.localDb.get(hash);
+				// TODO: this will return leaf or ext or branch
+				//       shall we cast in case or in deserializer?
+				return PMTNode.deserialize(node);
+			}
 		}
-	}
-
-	PMTPath findCommonPath(PMTNode top, PMTKey key) {
-		// move to PMTKEY?
-		return null;
 	}
 
 	PMTPath remove(PMTKey pmtKey) {

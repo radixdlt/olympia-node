@@ -9,6 +9,7 @@ public class PMTBranch extends PMTNode {
 	private byte[][] slices;
 	private int slicesCounter = 0; // INFO: for removal
 
+
 	PMTBranch(byte[] value, PMTNode... nextNode) {
 		this.slices = new byte[NUMBER_OF_NIBBLES][];
 		Arrays.stream(nextNode).forEach(l -> setNibble(l));
@@ -18,13 +19,13 @@ public class PMTBranch extends PMTNode {
 	}
 
 	public byte[] getNextHash(PMTKey key) {
-		var nib = key.getFirstNibble().toByte();
-		var nibInt = TreeUtils.nibbleToInteger(nib);
-		return slices[nibInt];
+		var nib = key.getKey()[0];
+		return slices[nib];
 	}
 
 	public PMTBranch setNibble(PMTKey nibble, PMTNode nextNode) {
-		var sliceKey = TreeUtils.nibbleToInteger(nibble.toByte());
+		// XXX: check it after refactoring byte -> int !!!
+		var sliceKey = nibble.getFirstNibbleValue();
 		if (this.slices[sliceKey] == null) {
 			slicesCounter++;
 		}
@@ -36,9 +37,18 @@ public class PMTBranch extends PMTNode {
 		return setNibble(nextNode.getBranchNibble(), nextNode);
 	}
 
+	public PMTBranch copyForEdit() {
+		try {
+			return (PMTBranch) this.clone();
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+			throw new IllegalStateException("Can't clone branch for edits");
+		}
+	}
+
 	public byte[] serialize() {
 		// TODO: serilize, RLP? Array RLP serialization. How to serialize nulls?
-		return this.serialized = "Branch serialized".getBytes();
+		return this.serialized = this.serialize();
 	}
 
 }

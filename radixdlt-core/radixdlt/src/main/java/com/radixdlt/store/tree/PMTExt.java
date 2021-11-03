@@ -8,14 +8,11 @@ public class PMTExt extends PMTNode {
 
 	final private int EVEN_PREFIX = 0;
 	final private int ODD_PREFIX = 1;
-	private byte[] prefixedKey;
-
+	private int[] prefixedKey;
 	// TODO: explicit test for Nibble prefix! Check java Endianness
-
 	byte[] getEvenPrefix() {
 		return ByteBuffer.allocate(8).putInt(EVEN_PREFIX).array();
 	}
-
 	byte[] getOddPrefix() {
 		return ByteBuffer.allocate(4).putInt(ODD_PREFIX).array();
 	}
@@ -37,10 +34,10 @@ public class PMTExt extends PMTNode {
 		if (keyNibbles.isEmpty()) {
 			return this.getValue();
 		} else {
-			this.prefixedKey = applyPrefix(this.keyNibbles.toByte(), getOddPrefix(), getEvenPrefix());
+			this.prefixedKey = applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
 
 			// TODO: serialize, RLP?
-			return this.serialized = "Ext serialized".getBytes();
+			return this.serialized = this.serialize();
 		}
 	}
 }

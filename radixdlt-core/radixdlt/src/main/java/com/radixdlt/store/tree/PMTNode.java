@@ -2,7 +2,7 @@ package com.radixdlt.store.tree;
 
 import com.radixdlt.crypto.HashUtils;
 
-public abstract class PMTNode {
+public abstract class PMTNode implements Cloneable {
 
 	public enum NodeType {
 		LEAF,
@@ -10,9 +10,6 @@ public abstract class PMTNode {
 		BRANCH,
 		EMPTY
 	}
-
-	public final static Boolean AFTER_BRANCH = true;
-	public final static Boolean BEFORE_BRANCH = false;
 
 	public final static int DB_SIZE_COND = 32;
 
@@ -25,11 +22,6 @@ public abstract class PMTNode {
 
 	protected PMTKey getBranchNibble() {
 		return branchNibble;
-	}
-
-	protected PMTNode setBranchNibble(PMTKey contextNibble) {
-		branchNibble = contextNibble;
-		return this;
 	}
 
 	protected PMTNode hash() {
@@ -49,6 +41,10 @@ public abstract class PMTNode {
 		return this.hash;
 	}
 
+	public PMTKey getKey() {
+		return this.keyNibbles;
+	}
+
 	public NodeType getNodeType() {
 		return nodeType;
 	}
@@ -57,7 +53,6 @@ public abstract class PMTNode {
 		return value;
 	}
 
-	// TODO: allow to setValue? or always instantiate and copy?
 	public PMTNode setValue(byte[] value) {
 		if (this.value == value) {
 			throw new IllegalArgumentException("Nothing changed");
@@ -70,7 +65,7 @@ public abstract class PMTNode {
 	// INFO: Ext and Leaf may have overlap nibble encoded in branch position
 	public abstract byte[] serialize();
 
-	public static PMTNode deserialize(byte[] node){
+	public static PMTNode deserialize(byte[] node) {
 		// 1. use deserialization protocol e.g. RLP
 		// 2. classify a node (leaf, branch, ext)
 		//    ...Branch vs Leaf/Exp
