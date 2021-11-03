@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.acceptance.token_contraints;
+package com.radixdlt.acceptance.token_constraints;
 import org.junit.runner.RunWith;
 
 import io.cucumber.junit.CucumberOptions;

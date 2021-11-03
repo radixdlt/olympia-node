@@ -11,7 +11,12 @@ public interface RadixAccount {
 
     TransactionDTO lookup(AID txID);
 
+    /**
+     * transfers native tokens
+     */
     AID transfer(Account destination, Amount amount, Optional<String> message);
+
+    AID transfer(Account destination, Amount amount, String rri, Optional<String> message);
 
     AID stake(ValidatorAddress validatorAddress, Amount amount, Optional<String> message);
 

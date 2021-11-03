@@ -1,10 +1,12 @@
 package com.radixdlt.test.utils;
 
 import com.google.common.base.Stopwatch;
-import com.radixdlt.application.tokens.TokenUtils;
+import com.radixdlt.client.lib.dto.TokenInfo;
+import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.test.account.Account;
 import com.radixdlt.test.network.RadixNetworkConfiguration;
 import com.radixdlt.test.network.RadixNode;
@@ -19,6 +21,7 @@ import org.awaitility.core.ConditionTimeoutException;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static org.awaitility.Awaitility.await;
 
@@ -143,15 +146,41 @@ public final class TestingUtils {
     }
 
     /**
-     * used for pretty printing
+     * expects a token creation AID
      */
-    public static String fromMinorToMajorString(UInt256 minorAmount) {
-        double majorAmount = Double.parseDouble(minorAmount.toString()) / Math.pow(10, TokenUtils.SUB_UNITS_POW_10);
-        return String.valueOf(majorAmount);
+    public static TokenInfo getTokenInfoFromAID(Account account, AID aid) {
+        var transaction = account.lookup(aid);
+        return getTokenInfoFromTransaction(account, transaction);
+    }
+
+    /**
+     * expects a token creation AID
+     */
+    public static String getRriFromAID(Account account, AID aid) {
+        var transaction = account.lookup(aid);
+        return getTokenInfoFromTransaction(account, transaction).getRri();
+    }
+
+    /**
+     * expects a token creation transaction dto
+     */
+    public static TokenInfo getTokenInfoFromTransaction(Account account, TransactionDTO transaction) {
+        if (transaction.getEvents().isEmpty() || transaction.getEvents().get(0).getRri().isEmpty()) {
+            throw new TestFailureException("Token creation transaction did not contain the correct event");
+        }
+        var rri = transaction.getEvents().get(0).getRri().get();
+        return account.token().describe(rri);
     }
 
     public static <R> R toTestFailureException(Failure failure) {
         throw new TestFailureException(failure.message());
+    }
+
+    /**
+     * Waits for the given # of epochs to pass
+     */
+    public static void waitEpochs(Account account, int numberOfEpochsToWait) {
+        IntStream.range(0, numberOfEpochsToWait).forEach(i -> waitUntilEndNextEpoch(account));
     }
 
     public static void waitUntilEndNextEpoch(Account account) {
@@ -164,4 +193,5 @@ public final class TestingUtils {
         logger.debug("Epoch {} ended", currentEpoch);
         stopwatch.elapsed(TimeUnit.MILLISECONDS);
     }
+
 }
