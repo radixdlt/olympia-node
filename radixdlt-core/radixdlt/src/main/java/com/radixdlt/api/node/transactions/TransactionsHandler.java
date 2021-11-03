@@ -106,10 +106,6 @@ class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 		}
 		var totalCount = store.getCount();
 		var jsonResult = jsonObject();
-		if (transactions.length() > 0) {
-			var nextStateVersion = request.getStateVersion() + transactions.length();
-			jsonResult.put("nextStateVersion", nextStateVersion);
-		}
 		return jsonResult
 			.put("transactions", transactions)
 			.put("count", transactions.length())
