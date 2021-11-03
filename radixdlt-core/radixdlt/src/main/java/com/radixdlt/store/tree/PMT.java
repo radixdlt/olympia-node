@@ -25,8 +25,13 @@ public class PMT {
 	//       * simplify getKey.getKey (from PMTNode -> PMTKey -> int[])
 	// serialization
 
-	private HashMap<byte[], byte[]> localDb = new HashMap<>(); // mock for final persistent DB API
-	private HashMap<byte[], PMTNode> localCache = new HashMap<>();
+	public PMT() {
+		localDb = new HashMap<>();
+		localCache = new HashMap<>();
+	}
+
+	private HashMap<byte[], byte[]> localDb;             // mock for final persistent DB API
+	private HashMap<byte[], PMTNode> localCache;         // mock for cache
 	private PMTNode root;
 
 	public byte[] add(byte[] key, byte[] val) {
