@@ -67,14 +67,11 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
 
-import java.util.Objects;
-
 /**
  * The result of a view voting (either QC or TC).
  */
 //TODO: DISPATCH: Make interface sealed after switching to Java 17; Check BFTSync::viewQuorumReachedEventProcessor
-public interface ViewVotingResult {
-
+public sealed interface ViewVotingResult {
     static FormedQC qc(QuorumCertificate qc) {
         return new FormedQC(qc);
     }
@@ -88,86 +85,31 @@ public interface ViewVotingResult {
     /**
      * Signifies that the view has been completed with a formed quorum certificate.
      */
-    final class FormedQC implements ViewVotingResult {
-
-        private final QuorumCertificate qc;
-
-        public FormedQC(QuorumCertificate qc) {
-            this.qc = qc;
-        }
-
-        public QuorumCertificate getQC() {
-            return this.qc;
-        }
-
+    record FormedQC(QuorumCertificate quorumCertificate) implements ViewVotingResult {
         @Override
         public View getView() {
-            return this.qc.getView();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            FormedQC formedQC = (FormedQC) o;
-            return Objects.equals(qc, formedQC.qc);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(qc);
+            return this.quorumCertificate.getView();
         }
 
         @Override
         public String toString() {
-            return String.format("FormedQC{qc=%s}", qc);
+            return String.format("FormedQC{qc=%s}", quorumCertificate);
         }
     }
 
     /**
      * Signifies that the view has been completed with a timeout certificate.
      */
-    final class FormedTC implements ViewVotingResult {
-
-        private final TimeoutCertificate tc;
-
-        public FormedTC(TimeoutCertificate tc) {
-            this.tc = tc;
-        }
-
-        public TimeoutCertificate getTC() {
-            return this.tc;
-        }
+    record FormedTC(TimeoutCertificate timeoutCertificate) implements ViewVotingResult {
 
         @Override
         public View getView() {
-            return this.tc.getView();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            FormedTC formedTC = (FormedTC) o;
-            return Objects.equals(tc, formedTC.tc);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(tc);
+            return this.timeoutCertificate.getView();
         }
 
         @Override
         public String toString() {
-            return String.format("FormedTC{tc=%s}", tc);
+            return String.format("FormedTC{tc=%s}", timeoutCertificate);
         }
     }
 }

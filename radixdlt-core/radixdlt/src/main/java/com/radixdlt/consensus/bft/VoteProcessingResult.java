@@ -123,19 +123,13 @@ public interface VoteProcessingResult {
 	/**
 	 * Signifies that a vote has been rejected.
 	 */
-	final class VoteRejected implements VoteProcessingResult {
+	record VoteRejected(VoteProcessingResult.VoteRejected.VoteRejectedReason reason) implements VoteProcessingResult {
 		public enum VoteRejectedReason {
 			INVALID_AUTHOR, DUPLICATE_VOTE
 		}
 
-		private final VoteRejectedReason reason;
-
 		public VoteRejected(VoteRejectedReason reason) {
 			this.reason = Objects.requireNonNull(reason);
-		}
-
-		public VoteRejectedReason getReason() {
-			return this.reason;
 		}
 
 		@Override

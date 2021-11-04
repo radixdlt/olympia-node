@@ -96,6 +96,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -114,6 +115,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -178,7 +180,7 @@ public final class BFTSync implements BFTSyncer {
 
 	private static final Comparator<Map.Entry<GetVerticesRequest, SyncRequestState>> syncPriority =
 		Comparator.comparing((Map.Entry<GetVerticesRequest, SyncRequestState> e) -> e.getValue().view)
-		.reversed(); // Prioritise by highest view
+			.reversed(); // Prioritise by highest view
 
 
 	private static final Logger log = LogManager.getLogger();
@@ -238,24 +240,31 @@ public final class BFTSync implements BFTSyncer {
 			this.runOnThreads.add(Thread.currentThread().getName());
 
 			final HighQC highQC;
-			if (viewQuorumReached.votingResult() instanceof FormedQC) {
-				highQC = HighQC.from(
-						((FormedQC) viewQuorumReached.votingResult()).getQC(),
-						this.vertexStore.highQC().highestCommittedQC(),
-						this.vertexStore.getHighestTimeoutCertificate());
-			} else if (viewQuorumReached.votingResult() instanceof FormedTC) {
-				highQC = HighQC.from(
-						this.vertexStore.highQC().highestQC(),
-						this.vertexStore.highQC().highestCommittedQC(),
-						Optional.of(((FormedTC) viewQuorumReached.votingResult()).getTC()));
-			} else {
-				//TODO: remove when ViewVotingResult will be sealed
-				log.warn("Unexpected event type {}", viewQuorumReached.votingResult());
+
+			highQC = getHighQC(viewQuorumReached);
+			if (highQC == null) {
 				return;
 			}
 
 			syncToQC(highQC, viewQuorumReached.lastAuthor());
 		};
+	}
+
+	private HighQC getHighQC(ViewQuorumReached viewQuorumReached) {
+		if (viewQuorumReached.votingResult() instanceof FormedQC formedQC) {
+			return HighQC.from(
+				formedQC.quorumCertificate(),
+				this.vertexStore.highQC().highestCommittedQC(),
+				this.vertexStore.getHighestTimeoutCertificate());
+		} else if (viewQuorumReached.votingResult() instanceof FormedTC formedTC) {
+			return HighQC.from(
+				this.vertexStore.highQC().highestQC(),
+				this.vertexStore.highQC().highestCommittedQC(),
+				Optional.of(formedTC.timeoutCertificate()));
+		} else {
+			log.warn("Unexpected event type {}", viewQuorumReached.votingResult());
+			return null;
+		}
 	}
 
 	@Override

@@ -176,10 +176,20 @@ subprojects {
     group 'com.radixdlt'
     version rootProject.version
 
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'jacoco'
+    apply plugin: 'checkstyle'
+    apply plugin: 'com.adarshr.test-logger'
+
+    checkstyle {
+        toolVersion '9.1'
+    }
+
     gradle.projectsEvaluated {
         tasks.withType(JavaCompile) {
             options.release = 17
             options.encoding = "UTF-8"
+            options.compilerArgs << "--enable-preview"
             options.compilerArgs << "-Xlint:all"
 
             //TODO: uncomment once warnings will be cleared
@@ -206,11 +216,6 @@ subprojects {
             exclude "**/org/radix/**/*.java"
         }
     }
-
-    apply plugin: 'io.spring.dependency-management'
-    apply plugin: 'jacoco'
-    apply plugin: 'checkstyle'
-    apply plugin: 'com.adarshr.test-logger'
 
     dependencyManagement {
         overriddenByDependencies = false
