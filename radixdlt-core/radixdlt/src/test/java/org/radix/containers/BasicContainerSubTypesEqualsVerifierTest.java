@@ -23,7 +23,7 @@ public class BasicContainerSubTypesEqualsVerifierTest {
         subTypes.addAll(findSubTypesInPkg("com.radixdlt"));
 
         final Map<Class<?>, List<String>> ignoredFieldsByClass = Map.of(
-                Message.class, List.of("instance"));
+                Message.class, List.of("instance", "timestamp"));
 
         subTypes.stream()
                 .filter(clazz -> !Modifier.isAbstract(clazz.getModifiers()))
@@ -38,7 +38,6 @@ public class BasicContainerSubTypesEqualsVerifierTest {
                         .withRedefinedSuperclass()
                         .suppress(Warning.NONFINAL_FIELDS)
                         .withIgnoredFields(ignoredFields)
-                        .usingGetClass()
                         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
                         .verify();
         });

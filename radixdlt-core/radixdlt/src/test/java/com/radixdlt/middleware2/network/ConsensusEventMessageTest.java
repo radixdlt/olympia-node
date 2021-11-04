@@ -65,17 +65,17 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class ConsensusEventMessageTest {
 
@@ -104,25 +104,16 @@ public class ConsensusEventMessageTest {
 		assertTrue(msg1.getConsensusMessage() instanceof Vote);
 	}
 
-	@Test
-	public void sensibleToStringNone() {
-		ConsensusEventMessage msg1 = new ConsensusEventMessage();
-		String s1 = msg1.toString();
-		assertThat(s1)
-			.contains(ConsensusEventMessage.class.getSimpleName())
-			.contains("null");
-	}
-
 	@Test(expected = IllegalStateException.class)
 	public void failedConsensusMessage() {
-		ConsensusEventMessage msg1 = new ConsensusEventMessage();
+		ConsensusEventMessage msg1 = new ConsensusEventMessage((Proposal) null);
 		assertNotNull(msg1.getConsensusMessage());
 	}
 
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(ConsensusEventMessage.class)
-				.withIgnoredFields("instance")
+				.withIgnoredFields("instance", "timestamp")
 				.suppress(Warning.NONFINAL_FIELDS)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();

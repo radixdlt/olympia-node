@@ -64,13 +64,13 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class GetVerticesRequestMessageTest {
 	@Test
@@ -86,7 +86,7 @@ public class GetVerticesRequestMessageTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(GetVerticesRequestMessage.class)
-				.withIgnoredFields("instance")
+				.withIgnoredFields("instance", "timestamp")
 				.suppress(Warning.NONFINAL_FIELDS)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();

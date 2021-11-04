@@ -64,16 +64,16 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import org.radix.network.messaging.Message;
 
 import java.util.List;
 import java.util.Objects;
-import org.radix.network.messaging.Message;
 
 /**
  * RPC Response message for GetVertex call
@@ -84,17 +84,15 @@ public final class GetVerticesResponseMessage extends Message {
 	@DsonOutput(Output.ALL)
 	private final List<UnverifiedVertex> vertices;
 
-	GetVerticesResponseMessage() {
-		// Serializer only
-		this.vertices = null;
-	}
-
-	GetVerticesResponseMessage(List<UnverifiedVertex> vertices) {
+	@JsonCreator
+	public GetVerticesResponseMessage(
+		@JsonProperty(value = "vertices", required = true) List<UnverifiedVertex> vertices
+	) {
 		this.vertices = Objects.requireNonNull(vertices);
 	}
 
 	public List<UnverifiedVertex> getVertices() {
-		return vertices == null ? ImmutableList.of() : vertices;
+		return vertices;
 	}
 
 	@Override
@@ -107,16 +105,13 @@ public final class GetVerticesResponseMessage extends Message {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		GetVerticesResponseMessage that = (GetVerticesResponseMessage) o;
-		return Objects.equals(vertices, that.vertices)
-				&& Objects.equals(getTimestamp(), that.getTimestamp());
+
+		return (o instanceof GetVerticesResponseMessage that)
+			   && Objects.equals(vertices, that.vertices);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(vertices, getTimestamp());
+		return Objects.hash(vertices);
 	}
 }

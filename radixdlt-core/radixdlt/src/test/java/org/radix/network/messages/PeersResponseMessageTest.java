@@ -77,7 +77,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PeersResponseMessageTest extends SerializeMessageObject<PeersResponseMessage> {
 
 	public PeersResponseMessageTest() {
-		super(PeersResponseMessage.class, () -> new PeersResponseMessage());
+		super(PeersResponseMessage.class, () -> new PeersResponseMessage(ImmutableSet.of()));
 	}
 
 	@Test
@@ -90,7 +90,7 @@ public class PeersResponseMessageTest extends SerializeMessageObject<PeersRespon
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(PeersResponseMessage.class)
-			.withIgnoredFields("instance")
+			.withIgnoredFields("instance", "timestamp")
 			.suppress(Warning.NONFINAL_FIELDS)
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();

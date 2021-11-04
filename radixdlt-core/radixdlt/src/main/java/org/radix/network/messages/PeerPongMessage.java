@@ -64,6 +64,7 @@
 
 package org.radix.network.messages;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
 
@@ -71,6 +72,9 @@ import java.util.Objects;
 
 @SerializerId2("p2p.liveness.pong")
 public final class PeerPongMessage extends Message {
+	@JsonCreator
+	public PeerPongMessage() {
+	}
 
 	@Override
 	public String toString() {
@@ -82,15 +86,12 @@ public final class PeerPongMessage extends Message {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		final var that = (PeerPongMessage) o;
-		return Objects.equals(getTimestamp(), that.getTimestamp());
+
+		return o instanceof PeerPongMessage;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getTimestamp());
+		return Objects.hash("PeerPongMessage");
 	}
 }

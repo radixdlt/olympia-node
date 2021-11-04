@@ -64,6 +64,7 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.serialization.DsonOutput;
@@ -78,18 +79,15 @@ import java.util.Objects;
  */
 @SerializerId2("message.sync.sync_request")
 public final class SyncRequestMessage extends Message {
-
 	@JsonProperty("currentHeader")
 	@DsonOutput(Output.ALL)
 	private final DtoLedgerProof currentHeader;
 
-	SyncRequestMessage() {
-		// Serializer only
-		this.currentHeader = null;
-	}
-
-	public SyncRequestMessage(DtoLedgerProof currentHeader) {
-		this.currentHeader = currentHeader;
+	@JsonCreator
+	public SyncRequestMessage(
+		@JsonProperty(value = "currentHeader", required = true) DtoLedgerProof currentHeader
+	) {
+		this.currentHeader = Objects.requireNonNull(currentHeader);
 	}
 
 	public DtoLedgerProof getCurrentHeader() {
@@ -106,16 +104,13 @@ public final class SyncRequestMessage extends Message {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		SyncRequestMessage that = (SyncRequestMessage) o;
-		return Objects.equals(currentHeader, that.currentHeader)
-			&& Objects.equals(getTimestamp(), that.getTimestamp());
+
+		return (o instanceof SyncRequestMessage that)
+			   && Objects.equals(currentHeader, that.currentHeader);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(currentHeader, getTimestamp());
+		return Objects.hash(currentHeader);
 	}
 }

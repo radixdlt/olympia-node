@@ -100,9 +100,9 @@ public final class AuthInitiateMessage {
 
 	@JsonCreator
 	public static AuthInitiateMessage deserialize(
-		@JsonProperty("signature") ECDSASignature signature,
-		@JsonProperty("publicKey") HashCode publicKey,
-		@JsonProperty("nonce") HashCode nonce,
+		@JsonProperty(value = "signature", required = true) ECDSASignature signature,
+		@JsonProperty(value = "publicKey", required = true) HashCode publicKey,
+		@JsonProperty(value = "nonce", required = true) HashCode nonce,
 		@JsonProperty("networkId") int networkId
 	) {
 		return new AuthInitiateMessage(signature, publicKey, nonce, networkId);
@@ -136,14 +136,12 @@ public final class AuthInitiateMessage {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		final var that = (AuthInitiateMessage) o;
-		return Objects.equals(signature, that.signature)
-			&& Objects.equals(publicKey, that.publicKey)
-			&& Objects.equals(nonce, that.nonce)
-			&& networkId == that.networkId;
+
+		return (o instanceof AuthInitiateMessage that)
+			   && Objects.equals(signature, that.signature)
+			   && Objects.equals(publicKey, that.publicKey)
+			   && Objects.equals(nonce, that.nonce)
+			   && networkId == that.networkId;
 	}
 
 	@Override

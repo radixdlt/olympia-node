@@ -68,8 +68,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
@@ -82,6 +82,7 @@ import com.radixdlt.utils.UInt256;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import javax.annotation.concurrent.Immutable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -89,7 +90,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import javax.annotation.concurrent.Immutable;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A collection of <a href="https://en.wikipedia.org/wiki/
@@ -108,10 +109,19 @@ public final class TimestampedECDSASignatures {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private Map<BFTNode, TimestampedECDSASignature> nodeToTimestampedSignature;
+	private final Map<BFTNode, TimestampedECDSASignature> nodeToTimestampedSignature;
 
 	@JsonCreator
-	public static TimestampedECDSASignatures from(@JsonProperty("signatures") Map<String, TimestampedECDSASignature> signatures) {
+	public static TimestampedECDSASignatures from(
+		@JsonProperty("signatures") Map<String, TimestampedECDSASignature> signatures
+	) {
+		if (signatures != null) {
+			signatures.forEach((key, value) -> {
+				requireNonNull(key);
+				requireNonNull(value);
+			});
+		}
+
 		var signaturesByNode =
 			signatures == null
 			? Map.<BFTNode, TimestampedECDSASignature>of()
@@ -165,7 +175,7 @@ public final class TimestampedECDSASignatures {
 	 * 	timestamps and {@link com.radixdlt.crypto.ECPublicKey}
 	 */
 	public TimestampedECDSASignatures(Map<BFTNode, TimestampedECDSASignature> nodeToTimestampAndSignature) {
-		this.nodeToTimestampedSignature = nodeToTimestampAndSignature;
+		this.nodeToTimestampedSignature = nodeToTimestampAndSignature == null ? Map.of() : nodeToTimestampAndSignature;
 	}
 
 	/**

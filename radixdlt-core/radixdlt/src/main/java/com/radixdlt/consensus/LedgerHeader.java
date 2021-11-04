@@ -86,9 +86,11 @@ import com.radixdlt.utils.UInt256;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import javax.annotation.concurrent.Immutable;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.concurrent.Immutable;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Ledger accumulator which gets voted and agreed upon
@@ -123,7 +125,7 @@ public final class LedgerHeader {
 	private LedgerHeader(
 		@JsonProperty("epoch") long epoch,
 		@JsonProperty("view") long view,
-		@JsonProperty("accumulator_state") AccumulatorState accumulatorState,
+		@JsonProperty(value = "accumulator_state", required = true) AccumulatorState accumulatorState,
 		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("next_validators") ImmutableSet<BFTValidator> nextValidators
 	) {
@@ -139,7 +141,7 @@ public final class LedgerHeader {
 	) {
 		this.epoch = epoch;
 		this.view = view;
-		this.accumulatorState = accumulatorState;
+		this.accumulatorState = requireNonNull(accumulatorState);
 		this.nextValidators = nextValidators;
 		this.timestamp = timestamp;
 	}
@@ -196,7 +198,7 @@ public final class LedgerHeader {
 
 
 	public static LedgerHeader mocked() {
-		return new LedgerHeader(0, View.genesis(), new AccumulatorState(0,  HashUtils.zero256()), 0, null);
+		return new LedgerHeader(0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0, null);
 	}
 
 	public static LedgerHeader genesis(AccumulatorState accumulatorState, BFTValidatorSet nextValidators, long timestamp) {
@@ -237,8 +239,8 @@ public final class LedgerHeader {
 
 	@JsonProperty("view")
 	@DsonOutput(Output.ALL)
-	private Long getSerializerView() {
-		return this.view == null ? null : this.view.number();
+	private long getSerializerView() {
+		return view.number();
 	}
 
 	public View getView() {
@@ -275,15 +277,13 @@ public final class LedgerHeader {
 		if (o == this) {
 			return true;
 		}
-		if (o instanceof LedgerHeader) {
-			LedgerHeader other = (LedgerHeader) o;
-			return this.timestamp == other.timestamp
-				&& Objects.equals(this.accumulatorState, other.accumulatorState)
-				&& this.epoch == other.epoch
-				&& Objects.equals(this.view, other.view)
-				&& Objects.equals(this.nextValidators, other.nextValidators);
-		}
-		return false;
+
+		return (o instanceof LedgerHeader other)
+			   && this.timestamp == other.timestamp
+			   && Objects.equals(this.accumulatorState, other.accumulatorState)
+			   && this.epoch == other.epoch
+			   && Objects.equals(this.view, other.view)
+			   && Objects.equals(this.nextValidators, other.nextValidators);
 	}
 
 	@Override

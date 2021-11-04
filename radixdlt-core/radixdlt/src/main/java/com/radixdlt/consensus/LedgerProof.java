@@ -67,11 +67,11 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
-import com.google.common.hash.HashCode;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.networks.Addressing;
@@ -84,10 +84,10 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
 import org.json.JSONObject;
 
+import javax.annotation.concurrent.Immutable;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.concurrent.Immutable;
 
 /**
  * Ledger header with proof
@@ -115,9 +115,9 @@ public final class LedgerProof {
 
 	@JsonCreator
 	public LedgerProof(
-		@JsonProperty("opaque") HashCode opaque,
-		@JsonProperty("ledgerState") LedgerHeader ledgerHeader,
-		@JsonProperty("signatures") TimestampedECDSASignatures signatures
+		@JsonProperty(value = "opaque", required = true) HashCode opaque,
+		@JsonProperty(value = "ledgerState", required = true) LedgerHeader ledgerHeader,
+		@JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures
 	) {
 		this.opaque = Objects.requireNonNull(opaque);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);

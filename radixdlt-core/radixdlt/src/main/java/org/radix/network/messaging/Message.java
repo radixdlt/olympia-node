@@ -70,7 +70,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.Ints;
-
 import org.radix.containers.BasicContainer;
 import org.radix.time.Time;
 
@@ -84,19 +83,18 @@ public abstract class Message extends BasicContainer {
 	}
 
 	private static final AtomicLong instances = new AtomicLong();
-	public static final int MAX_MESSAGE_SIZE = (4096 * 1024);
 
 	private long instance = Message.instances.incrementAndGet();
 
 	@JsonProperty("timestamp")
 	@DsonOutput(value = {Output.API, Output.PERSIST})
-	private final long timestamp;
+	private long timestamp;
 
 	protected Message() {
 		this(Time.currentTimestamp());
 	}
 
-	protected Message(long timestamp) {
+	private Message(long timestamp) {
 		this.timestamp = timestamp;
 	}
 

@@ -74,8 +74,9 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
+
 import javax.annotation.concurrent.Immutable;
+import java.util.Objects;
 
 /**
  * A ledger header and proof which has not been verified
@@ -103,9 +104,9 @@ public final class DtoLedgerProof {
 
 	@JsonCreator
 	public DtoLedgerProof(
-		@JsonProperty("opaque") HashCode opaque,
-		@JsonProperty("ledgerState") LedgerHeader ledgerHeader,
-		@JsonProperty("signatures") TimestampedECDSASignatures signatures
+		@JsonProperty(value = "opaque", required = true) HashCode opaque,
+		@JsonProperty(value = "ledgerState", required = true) LedgerHeader ledgerHeader,
+		@JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures
 	) {
 		this.opaque = Objects.requireNonNull(opaque);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
@@ -134,13 +135,11 @@ public final class DtoLedgerProof {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		DtoLedgerProof that = (DtoLedgerProof) o;
-		return Objects.equals(opaque, that.opaque)
-			&& Objects.equals(ledgerHeader, that.ledgerHeader)
-			&& Objects.equals(signatures, that.signatures);
+
+		return (o instanceof DtoLedgerProof that)
+			   && Objects.equals(opaque, that.opaque)
+			   && Objects.equals(ledgerHeader, that.ledgerHeader)
+			   && Objects.equals(signatures, that.signatures);
 	}
 
 	@Override

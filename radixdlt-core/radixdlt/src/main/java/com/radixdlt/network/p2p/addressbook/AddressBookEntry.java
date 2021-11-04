@@ -99,7 +99,7 @@ public final class AddressBookEntry {
 
 	@JsonCreator
 	private static AddressBookEntry deserialize(
-		@JsonProperty("nodeId") NodeId nodeId,
+		@JsonProperty(value = "nodeId", required = true) NodeId nodeId,
 		@JsonProperty("bannedUntil") long rawBannedUntil,
 		@JsonProperty("knownAddresses") ImmutableSet<PeerAddressEntry> knownAddresses
 	) {
@@ -265,11 +265,9 @@ public final class AddressBookEntry {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		AddressBookEntry that = (AddressBookEntry) o;
-		return Objects.equals(bannedUntil, that.bannedUntil)
+
+		return (o instanceof AddressBookEntry that)
+			&& Objects.equals(bannedUntil, that.bannedUntil)
 			&& Objects.equals(nodeId, that.nodeId)
 			&& Objects.equals(knownAddresses, that.knownAddresses);
 	}

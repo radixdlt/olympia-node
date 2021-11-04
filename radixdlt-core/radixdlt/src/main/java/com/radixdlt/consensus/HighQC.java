@@ -64,20 +64,21 @@
 
 package com.radixdlt.consensus;
 
-import java.util.Objects;
-import java.util.Optional;
-
-import javax.annotation.concurrent.Immutable;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.DsonOutput.Output;
+
+import javax.annotation.concurrent.Immutable;
+import java.util.Objects;
+import java.util.Optional;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Current state of synchronisation for sending node.
@@ -103,7 +104,7 @@ public final class HighQC {
 
 	@JsonCreator
 	private static HighQC serializerCreate(
-		@JsonProperty("highest_qc") QuorumCertificate highestQC,
+		@JsonProperty(value = "highest_qc", required = true) QuorumCertificate highestQC,
 		@JsonProperty("committed_qc") QuorumCertificate highestCommittedQC,
 		@JsonProperty("highest_tc") TimeoutCertificate highestTC
 	) {
@@ -115,7 +116,7 @@ public final class HighQC {
 		QuorumCertificate highestCommittedQC,
 		TimeoutCertificate highestTC
 	) {
-		this.highestQC = Objects.requireNonNull(highestQC);
+		this.highestQC = requireNonNull(highestQC);
 		// Don't include separate committedQC if it is the same as highQC.
 		// This significantly reduces the serialised size of the object.
 		if (highestCommittedQC == null || highestQC.equals(highestCommittedQC)) {
@@ -149,9 +150,9 @@ public final class HighQC {
 	 * highestQC->proposed, but highestCommittedQC->proposed does not need
 	 * to be an ancestor of highestQC->proposed.
 	 *
-	 * @param highestQC The highest QC we have seen
+	 * @param highestQC          The highest QC we have seen
 	 * @param highestCommittedQC The highest QC we have committed
-	 * @param highestTC The highest timeout certificate
+	 * @param highestTC          The highest timeout certificate
 	 * @return A new {@link HighQC}
 	 */
 	public static HighQC from(
@@ -159,7 +160,7 @@ public final class HighQC {
 		QuorumCertificate highestCommittedQC,
 		Optional<TimeoutCertificate> highestTC
 	) {
-		return new HighQC(highestQC, Objects.requireNonNull(highestCommittedQC), highestTC.orElse(null));
+		return new HighQC(highestQC, highestCommittedQC, highestTC.orElse(null));
 	}
 
 	public Optional<TimeoutCertificate> highestTC() {
@@ -197,13 +198,11 @@ public final class HighQC {
 		if (this == o) {
 			return true;
 		}
-		if (o instanceof HighQC) {
-			HighQC that = (HighQC) o;
-			return Objects.equals(this.highestCommittedQC, that.highestCommittedQC)
-				&& Objects.equals(this.highestQC, that.highestQC)
-				&& Objects.equals(this.highestTC, that.highestTC);
-		}
-		return false;
+
+		return (o instanceof HighQC that)
+			   && Objects.equals(this.highestCommittedQC, that.highestCommittedQC)
+			   && Objects.equals(this.highestQC, that.highestQC)
+			   && Objects.equals(this.highestTC, that.highestTC);
 	}
 
 	@Override

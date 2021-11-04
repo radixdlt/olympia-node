@@ -71,32 +71,23 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.EmptyBFTEventProcessor;
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.PacemakerFactory;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.counters.SystemCounters;
@@ -106,6 +97,12 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.annotation.concurrent.NotThreadSafe;
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -114,12 +111,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import javax.annotation.concurrent.NotThreadSafe;
-import javax.inject.Inject;
-
-import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Manages Epochs and the BFT instance (which is mostly epoch agnostic) associated with each epoch
@@ -307,6 +298,8 @@ public final class EpochManager {
 	private void processEpochChange(EpochChange epochChange) {
 		// Sanity check
 		if (epochChange.getEpoch() != this.currentEpoch() + 1) {
+			//TODO: looks like byzantine message, might be used for slashing?
+			//TODO: don't trow exception
 			throw new IllegalStateException("Bad Epoch change: " + epochChange + " current epoch: " + this.currentEpoch);
 		}
 
@@ -338,18 +331,16 @@ public final class EpochManager {
 		queuedEvents.remove(epochChange.getEpoch());
 	}
 
-	private void appendValidator(StringBuilder msg, BFTValidator v) {
-		msg.append(v.getNode().getSimpleName()).append(':').append(v.getPower());
-	}
-
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
 		this.counters.increment(CounterType.BFT_CONSENSUS_EVENTS);
 
+		//TODO: replace with switch
 		if (consensusEvent instanceof Proposal) {
 			bftEventProcessor.processProposal((Proposal) consensusEvent);
 		} else if (consensusEvent instanceof Vote) {
 			bftEventProcessor.processVote((Vote) consensusEvent);
 		} else {
+			//TODO: add necessary branch once there will be more ConsensusEvent implementations
 			throw new IllegalStateException("Unknown consensus event: " + consensusEvent);
 		}
 	}
@@ -357,8 +348,7 @@ public final class EpochManager {
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
 		if (consensusEvent.getEpoch() > this.currentEpoch()) {
 			log.debug("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
-				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch
-			);
+				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch);
 
 			// queue higher epoch events for later processing
 			// TODO: need to clear this by some rule (e.g. timeout or max size) or else memory leak attack possible
@@ -436,6 +426,8 @@ public final class EpochManager {
 	}
 
 	public EventProcessor<VertexRequestTimeout> timeoutEventProcessor() {
+		//Return reference to method rather than syncTimeoutProcessor directly,
+		// since syncTimeoutProcessor will change over the time
 		return this::processGetVerticesLocalTimeout;
 	}
 

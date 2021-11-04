@@ -74,7 +74,7 @@ public class PeerPongMessageTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(PeerPongMessage.class)
-			.withIgnoredFields("instance")
+			.withIgnoredFields("instance", "timestamp")
 			.suppress(Warning.NONFINAL_FIELDS)
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.withRedefinedSuperclass()

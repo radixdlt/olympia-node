@@ -64,6 +64,7 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.serialization.DsonOutput;
@@ -78,18 +79,15 @@ import java.util.Objects;
  */
 @SerializerId2("message.sync.status_response")
 public final class StatusResponseMessage extends Message {
-
 	@JsonProperty("header")
 	@DsonOutput(Output.ALL)
 	private final LedgerProof header;
 
-	StatusResponseMessage() {
-		// Serializer only
-		this.header = null;
-	}
-
-	public StatusResponseMessage(LedgerProof header) {
-		this.header = header;
+	@JsonCreator
+	public StatusResponseMessage(
+		@JsonProperty(value = "header", required = true) LedgerProof header
+	) {
+		this.header = Objects.requireNonNull(header);
 	}
 
 	public LedgerProof getHeader() {
@@ -106,16 +104,13 @@ public final class StatusResponseMessage extends Message {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof StatusResponseMessage)) {
-			return false;
-		}
-		StatusResponseMessage that = (StatusResponseMessage) o;
-		return Objects.equals(header, that.header)
-			&& Objects.equals(getTimestamp(), that.getTimestamp());
+
+		return (o instanceof StatusResponseMessage that)
+			   && Objects.equals(header, that.header);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(header, getTimestamp());
+		return Objects.hash(header);
 	}
 }

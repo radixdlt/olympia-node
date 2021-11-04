@@ -80,8 +80,8 @@ import java.util.Objects;
  * a parameter in this class due to lack of interface serialization.
  */
 @SerializerId2("message.consensus.event")
+//TODO: requires rework
 public final class ConsensusEventMessage extends Message {
-
 	@JsonProperty("proposal")
 	@DsonOutput(Output.ALL)
 	private final Proposal proposal;
@@ -90,24 +90,32 @@ public final class ConsensusEventMessage extends Message {
 	@DsonOutput(Output.ALL)
 	private final Vote vote;
 
-	ConsensusEventMessage() {
-		// Serializer only
-		this.proposal = null;
-		this.vote = null;
-	}
+	public ConsensusEventMessage(
+		@JsonProperty("proposal") Proposal proposal,
+		@JsonProperty("vote") Vote vote
+	) {
+		if (proposal == null && vote == null) {
+			throw new IllegalStateException("No vote nor proposal are provided for ConsensusEventMessage");
+		}
 
-	ConsensusEventMessage(Proposal proposal) {
+		if (proposal != null && vote != null) {
+			throw new IllegalStateException("Both, vote and proposal are provided for ConsensusEventMessage");
+		}
+
 		this.proposal = proposal;
-		this.vote = null;
-	}
-
-	ConsensusEventMessage(Vote vote) {
-		this.proposal = null;
 		this.vote = vote;
 	}
 
+	public ConsensusEventMessage(Proposal proposal) {
+		this(proposal, null);
+	}
+
+	public ConsensusEventMessage(Vote vote) {
+		this(null, vote);
+	}
+
 	public ConsensusEvent getConsensusMessage() {
-		ConsensusEvent event = consensusMessageInternal();
+		var event = consensusMessageInternal();
 		if (event == null) {
 			throw new IllegalStateException("No consensus message.");
 		}
@@ -136,17 +144,14 @@ public final class ConsensusEventMessage extends Message {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		ConsensusEventMessage that = (ConsensusEventMessage) o;
-		return Objects.equals(proposal, that.proposal)
-				&& Objects.equals(vote, that.vote)
-				&& Objects.equals(getTimestamp(), that.getTimestamp());
+
+		return (o instanceof ConsensusEventMessage that)
+			   && Objects.equals(proposal, that.proposal)
+			   && Objects.equals(vote, that.vote);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(proposal, vote, getTimestamp());
+		return Objects.hash(proposal, vote);
 	}
 }

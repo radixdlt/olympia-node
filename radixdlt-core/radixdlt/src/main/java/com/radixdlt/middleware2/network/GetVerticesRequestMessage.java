@@ -64,13 +64,15 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
 import org.radix.network.messaging.Message;
+
+import java.util.Objects;
 
 /**
  * RPC Message to get request for a vertex
@@ -85,13 +87,15 @@ public final class GetVerticesRequestMessage extends Message {
 	@DsonOutput(Output.ALL)
 	private final int count;
 
-	GetVerticesRequestMessage() {
-		// Serializer only
-		this.vertexId = null;
-		this.count = 0;
-	}
+	@JsonCreator
+	public GetVerticesRequestMessage(
+		@JsonProperty(value = "vertexId", required = true) HashCode vertexId,
+		@JsonProperty("count") int count
+	) {
+		if (count <= 0) {
+			throw new IllegalStateException("Request contains negative count of vertices: " + count);
+		}
 
-	GetVerticesRequestMessage(HashCode vertexId, int count) {
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.count = count;
 	}
@@ -114,17 +118,14 @@ public final class GetVerticesRequestMessage extends Message {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		GetVerticesRequestMessage that = (GetVerticesRequestMessage) o;
-		return count == that.count
-				&& Objects.equals(vertexId, that.vertexId)
-				&& Objects.equals(getTimestamp(), that.getTimestamp());
+
+		return (o instanceof GetVerticesRequestMessage that)
+			   && count == that.count
+			   && Objects.equals(vertexId, that.vertexId);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(vertexId, count, getTimestamp());
+		return Objects.hash(vertexId, count);
 	}
 }
