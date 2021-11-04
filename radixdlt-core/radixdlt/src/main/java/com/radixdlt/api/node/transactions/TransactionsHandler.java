@@ -104,11 +104,6 @@ class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 				.map(txnId -> txnStore.getTransactionJSON(txnId).orElseThrow())
 				.forEach(transactions::put);
 		}
-		var totalCount = store.getCount();
-		var jsonResult = jsonObject();
-		return jsonResult
-			.put("transactions", transactions)
-			.put("count", transactions.length())
-			.put("totalCount", totalCount);
+		return jsonObject().put("transactions", transactions);
 	}
 }
