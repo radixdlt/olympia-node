@@ -1,5 +1,3 @@
-#!/usr/bin/env groovy
-
 /* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
@@ -64,92 +62,41 @@
  * permissions under this License.
  */
 
-@Library(value = 'jenkins-lib@develop', changelog = false) _
+package com.radixdlt.client.lib.api;
 
-pipeline {
-    tools {
-        jdk 'open-jdk-11'
-    }
-    options {
-        timeout(time: 2, unit: 'HOURS')
-    }
-    agent {
-        label 'master'
-    }
-    stages {
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
-        stage('Checkout RadixCore') {
-            steps {
-                sendNotifications "STARTED"
-                script {
-                    dir('RadixCore') {
-                        deleteDir()
-                    }
-                    checkoutHelpers.doCheckout("RadixCore")
-                }
-            }
-        }
-        stage('Check tag and branch have same commit') {
-            steps {
-                script {
-                    dir('RadixCore') {
-                        tag_commit = sh(script: '''
-                                      git show-ref $(git describe --abbrev=0 --tags) | grep 'refs/tags/' | cut -d" " -f1
-                                    ''', returnStdout: true).trim()
-                        branch_commit = sh(script: '''
-                                        git show-ref $(git rev-parse --abbrev-ref HEAD | sed 's/heads\\///g') | grep 'refs/heads' | cut -d " " -f1
-                                        ''', returnStdout: true).trim()
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-                        echo "Branch commit = ${branch_commit}"
-                        echo "Tag commit = ${tag_commit}"
+public enum EventType {
+	TOKEN_CREATED("token_created");
 
-                        if (tag_commit == branch_commit) {
-                            env.check = "TAG_CREATED"
-                        } else {
-                            env.check = "TAG_NOT_FOUND"
-                        }
-                        echo "Tag and Branch check resulted in ${env.check}"
+	private final String text;
 
-                    }
-                }
-            }
-        }
+	private static final Map<String, EventType> TO_EVENT_TYPE = Arrays.stream(values())
+		.collect(Collectors.toMap(EventType::toJson, Function.identity()));
 
-        stage('Build and push core image') {
-            when {
-                expression {
-                    env.check == "TAG_CREATED"
-                }
-            }
-            steps {
-                dir('RadixCore') {
-                    script {
-                        tag = sh(
-                                script: '''
-                                    git describe --abbrev=0 --tags
-                                ''', returnStdout: true
-                        ).trim()
-                        dockerHelpers.manualPushToDockerHub("radixdlt-core", tag)
-                    }
-                }
-            }
+	EventType(String text) {
+		this.text = text;
+	}
 
-        }
-        stage('Downstream jobs') {
-            when {
-                expression {
-                    env.check == "TAG_NOT_FOUND"
-                }
-            }
-            steps {
-                build job: 'Release-Branch/run-all-tests'
-            }
+	@JsonValue
+	public String toJson() {
+		return text;
+	}
 
-        }
-    }
-    post {
-        always {
-            sendNotifications currentBuild.result
-        }
-    }
+	@JsonCreator
+	public static EventType create(String action) {
+		var result = TO_EVENT_TYPE.get(action);
+
+		if (result == null) {
+			throw new IllegalArgumentException("Unable to parse ActionType from : " + action);
+		}
+
+		return result;
+	}
 }

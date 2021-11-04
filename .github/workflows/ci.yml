@@ -23,10 +23,11 @@ jobs:
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
-      - name: Set up JDK 1.11
-        uses: actions/setup-java@v1
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
         with:
-          java-version: 1.11
+          distribution: 'zulu'
+          java-version: '17'
       - name: Unit tests and Sonar analisys
         run: ./gradlew clean check jacocoTestReport sonarqube --stacktrace --refresh-dependencies -Dsonar.login=$SONAR_TOKEN
         env:
@@ -42,10 +43,11 @@ jobs:
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
-      - uses: joschi/setup-jdk@v2
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
         with:
-          java-version: '11' # The OpenJDK version to make available on the path
-          architecture: 'x64' # defaults to 'x64'
+          distribution: 'zulu'
+          java-version: '17'
       - name: Cache Gradle packages
         uses: actions/cache@v1
         with:
@@ -54,3 +56,28 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: integration tests
         run: ./gradlew integrationTest --refresh-dependencies
+  rcnet-testing:
+    name: RCNet live network testing
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: joschi/setup-jdk@v2
+        with:
+          java-version: '11'
+          architecture: 'x64'
+      - name: Cache Gradle packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+      - name: Run tests against RCNet
+        run: ./gradlew systemTests --tests "com.radixdlt.test.system.TransactionsTests.*" --refresh-dependencies
+        env:
+          RADIXDLT_JSON_RPC_API_ROOT_URL: https://rcnet.radixdlt.com
+          RADIXDLT_FAUCET_URL: https://rcnet-faucet.radixdlt.com
+          RADIXDLT_BASIC_AUTH: ${{ secrets.BASIC_AUTH_RCNET_ADMIN }}
+

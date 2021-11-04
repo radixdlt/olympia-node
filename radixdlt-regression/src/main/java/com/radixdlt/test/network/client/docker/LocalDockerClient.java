@@ -10,6 +10,7 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
+import com.radixdlt.test.network.DockerConfiguration;
 import com.radixdlt.test.utils.TestingUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -29,11 +30,14 @@ public class LocalDockerClient implements DockerClient {
 
     // the unix default is unix:///var/run/docker.sock. tcp://localhost:2375 might work on windows
     private final String dockerSocketUrl;
+    private final String networkName;
 
     private com.github.dockerjava.api.DockerClient dockerClient;
 
-    public LocalDockerClient(String dockerSocketUrl) {
-        this.dockerSocketUrl = dockerSocketUrl;
+    public LocalDockerClient(DockerConfiguration dockerConfiguration) {
+        this.dockerSocketUrl = dockerConfiguration.getSocketUrl();
+        this.networkName = dockerConfiguration.getNetworkName();
+        connect();
     }
 
     public void connect() {
@@ -44,14 +48,14 @@ public class LocalDockerClient implements DockerClient {
         dockerClient = DockerClientImpl.getInstance(config, httpClient);
         try {
             dockerClient.pingCmd().exec();
-        } catch (UnsatisfiedLinkError e) { //  this happen when you try to connect to a socket via windows
+        } catch (UnsatisfiedLinkError | NoClassDefFoundError e) { //  this happens when you try to connect to a socket via windows
             throw new DockerClientException("Could not connect to socket " + dockerSocketUrl
                 + ". Are you running the tests from windows?");
         }
     }
 
     @SuppressWarnings("deprecation")
-    public String runShellCommandAndGetOutput(String containerId, String... commands) {
+    public String runCommand(String containerId, String... commands) {
         var output = new ByteArrayOutputStream();
         var error = new ByteArrayOutputStream();
         var cmdResponse = dockerClient.execCreateCmd(containerId).withAttachStdout(true)
@@ -61,15 +65,14 @@ public class LocalDockerClient implements DockerClient {
                 .exec(new ExecStartResultCallback(output, error))
                 .awaitCompletion(10, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            throw new DockerClientException(e.getMessage(), e);
         }
         if (StringUtils.isNotBlank(error.toString())) {
-            throw new RuntimeException(error.toString());
+            throw new DockerClientException(error.toString());
         }
         return output.toString(StandardCharsets.UTF_8);
     }
 
-    @Override
     public void startNewNode(String image, String containerName, List<String> environment, HostConfig hostConfig, List<ExposedPort> exposedPorts,
                              String networkName) {
         var environmentArray = environment.toArray(new String[0]);
@@ -86,31 +89,30 @@ public class LocalDockerClient implements DockerClient {
         dockerClient.connectToNetworkCmd().withNetworkId(networkName).withContainerId(containerName).exec();
     }
 
-    @Override
     public void createNetwork(String networkName) {
         try {
             dockerClient.inspectNetworkCmd().withNetworkId(networkName).exec();
-            wipeNetwork(networkName);
+            cleanup();
         } catch (NotFoundException e) {
             // all good, proceed
         } catch (BadRequestException e) { // weird edge case
-            wipeNetwork(networkName);
+            cleanup();
         }
         dockerClient.createNetworkCmd().withName(networkName).exec();
     }
 
     @Override
-    public void restartContainer(String containerName) {
+    public void restartNode(String containerName) {
         dockerClient.restartContainerCmd(containerName).exec();
     }
 
     @Override
-    public void stopContainer(String containerName) {
+    public void stopNode(String containerName) {
         dockerClient.stopContainerCmd(containerName).exec();
     }
 
     @Override
-    public void wipeNetwork(String networkName) {
+    public void cleanup(String... parameters) {
         var count = new AtomicInteger();
         dockerClient.listContainersCmd().withShowAll(true).exec().forEach(container -> {
             if (container.getNetworkSettings().getNetworks().keySet().contains(networkName)) {
@@ -121,7 +123,6 @@ public class LocalDockerClient implements DockerClient {
             count.incrementAndGet();
         });
         dockerClient.removeNetworkCmd(networkName).exec();
-
         logger.debug("Removed existing network '{}', along with its {} containers", networkName, count.intValue());
     }
 

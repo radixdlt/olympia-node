@@ -12,6 +12,7 @@ import com.radixdlt.test.network.checks.Checks;
 import com.radixdlt.test.utils.TransactionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.awaitility.Durations;
 
 import java.util.List;
 import java.util.stream.IntStream;
@@ -60,13 +61,13 @@ public abstract class RadixNetworkTest {
      *
      * @return the txID of the faucet's transaction
      */
-    public String faucet(Account account) {
-        Balance balanceBeforeFaucet = account.getOwnNativeTokenBalance();
-        String txID = faucet(account.getAddress());
-        TransactionUtils.waitForConfirmation(account, AID.from(txID));
-        await().until(() ->
+    public String faucet(Account to) {
+        Balance balanceBeforeFaucet = to.getOwnNativeTokenBalance();
+        String txID = faucet(to.getAddress());
+        TransactionUtils.waitForConfirmation(to, AID.from(txID));
+        await().atMost(Durations.TEN_SECONDS).until(() ->
             // wait until the account's balance increases, just to be sure that the faucet delivered something
-            balanceBeforeFaucet.getAmount().compareTo(account.getOwnNativeTokenBalance().getAmount()) == -1
+            balanceBeforeFaucet.getAmount().compareTo(to.getOwnNativeTokenBalance().getAmount()) < 0
         );
         return txID;
     }
@@ -74,11 +75,11 @@ public abstract class RadixNetworkTest {
     /**
      * Repeatedly calls the faucet until the given amount is credited
      */
-    public void faucet(Account account, Amount amount) {
-        Balance originalBalance = account.getOwnNativeTokenBalance();
-        while (account.getOwnNativeTokenBalance().getAmount().subtract(originalBalance.getAmount())
-            .compareTo(amount.toSubunits()) == -1) {
-            faucet(account);
+    public void faucet(Account to, Amount amount) {
+        Balance originalBalance = to.getOwnNativeTokenBalance();
+        while (to.getOwnNativeTokenBalance().getAmount().subtract(originalBalance.getAmount())
+            .compareTo(amount.toSubunits()) < 0) {
+            faucet(to);
         }
     }
 
