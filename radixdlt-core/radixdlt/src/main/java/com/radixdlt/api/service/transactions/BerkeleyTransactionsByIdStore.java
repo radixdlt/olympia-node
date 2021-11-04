@@ -119,7 +119,9 @@ import org.json.JSONObject;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -128,6 +130,7 @@ import java.util.function.Function;
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
+import static com.radixdlt.atom.SubstateTypeId.*;
 
 public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalStore {
 	private static final String TXN_ID_DB_NAME = "radix.transactions";
@@ -137,6 +140,36 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final LedgerAccumulator ledgerAccumulator;
 	private HashCode accumulator;
+	private static final Map<SubstateTypeId, String> SUBSTATE_TYPE_ID_STRING_MAP;
+	static {
+		SUBSTATE_TYPE_ID_STRING_MAP = new EnumMap<>(SubstateTypeId.class);
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VIRTUAL_PARENT, "VirtualParent");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(UNCLAIMED_READDR, "UnclaimedRadixEngineAddress");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(ROUND_DATA, "RoundData");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(EPOCH_DATA, "EpochData");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(TOKEN_RESOURCE, "TokenData");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(TOKEN_RESOURCE_METADATA, "TokenMetadata");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(TOKENS, "Tokens");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(PREPARED_STAKE, "PreparedStake");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(STAKE_OWNERSHIP, "StakeOwnership");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(PREPARED_UNSTAKE, "PreparedUnstake");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(EXITING_STAKE, "ExitingStake");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_META_DATA, "ValidatorMetadata");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_STAKE_DATA, "ValidatorData");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_BFT_DATA, "ValidatorBFTData");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_ALLOW_DELEGATION_FLAG, "ValidatorAllowDelegation");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_REGISTERED_FLAG_COPY, "PreparedValidatorRegistered");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_RAKE_COPY, "PreparedValidatorFee");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_OWNER_COPY, "PreparedValidatorOwner");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_SYSTEM_META_DATA, "ValidatorSystemMetadata");
+
+		for (var id : SubstateTypeId.values()) {
+			if (!SUBSTATE_TYPE_ID_STRING_MAP.containsKey(id)) {
+				throw new IllegalStateException("No string associated with substate type id " + id);
+			}
+		}
+
+	}
 
 	@Inject
 	public BerkeleyTransactionsByIdStore(
@@ -198,13 +231,13 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 	) {
 		var substateId = update.getId();
 		var operationJson = new JSONObject()
-			.put("type", update.getParsed().getClass().getSimpleName())
+			.put("type", SUBSTATE_TYPE_ID_STRING_MAP.get(SubstateTypeId.valueOf(update.typeByte())))
 			.put("substate", new JSONObject()
-				.put("substateIdentifier", Bytes.toHexString(substateId.asBytes()))
-				.put("substateOperation", update.isBootUp() ? "BOOTUP" : "SHUTDOWN")
+				.put("substate_identifier", Bytes.toHexString(substateId.asBytes()))
+				.put("substate_operation", update.isBootUp() ? "BOOTUP" : "SHUTDOWN")
 			)
 			.putOpt("metadata", update.isShutDown() ? null : new JSONObject()
-				.put("substateDataHex", Bytes.toHexString(update.getRawSubstateBytes().getData()))
+				.put("substate_data_hex", Bytes.toHexString(update.getRawSubstateBytes().getData()))
 			);
 
 		if (update.getParsed() instanceof ResourceInBucket) {
@@ -235,7 +268,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 						.put("metadata", new JSONObject()
 							.put("validator", addressing.forValidators().of(bucket.getValidatorKey()))
 						);
-					addressIdentifier.put("subAddress", subAddressJson);
+					addressIdentifier.put("sub_address", subAddressJson);
 					if (bucket.getEpochUnlock() == null) {
 						subAddressJson.put("address", "prepared_stakes");
 					} else if (bucket.getEpochUnlock() == 0L) {
@@ -249,9 +282,9 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 				addressIdentifier.put("address", addressing.forValidators().of(bucket.getValidatorKey()));
 				operationJson
 					.put("data", new JSONObject()
-						.put("action", update.isBootUp() ? "create" : "delete")
+						.put("action", update.isBootUp() ? "CREATE" : "DELETE")
 						.put("object", new JSONObject()
-							.put("type", "validator_data")
+							.put("type", "ValidatorData")
 							.put("owner", addressing.forAccounts().of(validatorStakeData.getOwnerAddr()))
 							.put("registered", validatorStakeData.isRegistered())
 							.put("fee", validatorStakeData.getRakePercentage())
@@ -267,9 +300,15 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 					.put("resource", resource)
 				);
 			}
-			operationJson.put("addressIdentifier", addressIdentifier);
+			operationJson.put("address_identifier", addressIdentifier);
 		} else {
-			var objectJson = new JSONObject();
+			var objectJson = new JSONObject()
+				.put("type", SUBSTATE_TYPE_ID_STRING_MAP.get(SubstateTypeId.valueOf(update.typeByte())));
+			var dataJson = new JSONObject()
+				.put("action", update.isBootUp() ? "CREATE" : "DELETE")
+				.put("object", objectJson);
+			operationJson.put("data", dataJson);
+
 			if (update.getParsed() instanceof ResourceData) {
 				var resourceData = (ResourceData) update.getParsed();
 
@@ -277,14 +316,13 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 				var symbol = tokenAddressToSymbol.apply(resourceData.getAddr());
 				var rri = addressing.forResources().of(symbol, resourceData.getAddr());
 				var addressIdentifierJson = new JSONObject().put("address", rri);
-				operationJson.put("addressIdentifier", addressIdentifierJson);
+				operationJson.put("address_identifier", addressIdentifierJson);
 
 				if (update.getParsed() instanceof TokenResource) {
 					var tokenResource = (TokenResource) update.getParsed();
 					objectJson
-						.put("type", "token_data")
 						.put("granularity", tokenResource.getGranularity().toString())
-						.put("isMutable", tokenResource.isMutable())
+						.put("is_mutable", tokenResource.isMutable())
 						.putOpt("owner", tokenResource.getOwner()
 							.map(REAddr::ofPubKeyAccount)
 							.map(addressing.forAccounts()::of)
@@ -292,25 +330,23 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 				} else if (update.getParsed() instanceof TokenResourceMetadata) {
 					var metadata = (TokenResourceMetadata) update.getParsed();
 					objectJson
-						.put("type", "token_metadata")
 						.put("symbol", metadata.getSymbol())
 						.put("name", metadata.getName())
 						.put("description", metadata.getDescription())
 						.put("url", metadata.getUrl())
-						.put("iconUrl", metadata.getIconUrl());
+						.put("icon_url", metadata.getIconUrl());
 				} else {
 					throw new IllegalStateException("Unknown Resource Data " + update.getParsed());
 				}
 			} else if (update.getParsed() instanceof SystemData) {
 				var addressIdentifierJson = new JSONObject().put("address", "system");
-				operationJson.put("addressIdentifier", addressIdentifierJson);
+				operationJson.put("address_identifier", addressIdentifierJson);
 				if (update.getParsed() instanceof EpochData) {
 					var epochData = (EpochData) update.getParsed();
-					objectJson.put("type", "epoch_data").put("epoch", epochData.getEpoch());
+					objectJson.put("epoch", epochData.getEpoch());
 				} else if (update.getParsed() instanceof RoundData) {
 					var roundData = (RoundData) update.getParsed();
 					objectJson
-						.put("type", "round_data")
 						.put("round", roundData.getView())
 						.put("timestamp", roundData.getTimestamp());
 				} else {
@@ -320,22 +356,16 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 				var validatorUpdatingData = (ValidatorUpdatingData) update.getParsed();
 				var addressIdentifierJson = new JSONObject()
 					.put("address", addressing.forValidators().of(validatorUpdatingData.getValidatorKey()));
-				operationJson.put("addressIdentifier", addressIdentifierJson);
+				operationJson.put("address_identifier", addressIdentifierJson);
 				if (update.getParsed() instanceof ValidatorRegisteredCopy) {
 					var preparedValidatorRegistered = (ValidatorRegisteredCopy) update.getParsed();
-					objectJson
-						.put("type", "prepared_validator_registered")
-						.put("registered", preparedValidatorRegistered.isRegistered());
+					objectJson.put("registered", preparedValidatorRegistered.isRegistered());
 				} else if (update.getParsed() instanceof ValidatorOwnerCopy) {
 					var preparedValidatorOwner = (ValidatorOwnerCopy) update.getParsed();
-					objectJson
-						.put("type", "prepared_validator_owner")
-						.put("registered", addressing.forAccounts().of(preparedValidatorOwner.getOwner()));
+					objectJson.put("registered", addressing.forAccounts().of(preparedValidatorOwner.getOwner()));
 				} else if (update.getParsed() instanceof ValidatorFeeCopy) {
 					var preparedValidatorFee = (ValidatorFeeCopy) update.getParsed();
-					objectJson
-						.put("type", "prepared_validator_fee")
-						.put("fee", preparedValidatorFee.getRakePercentage());
+					objectJson.put("fee", preparedValidatorFee.getRakePercentage());
 				} else {
 					throw new IllegalStateException("Unknown validator updating data: " + update.getParsed());
 				}
@@ -343,44 +373,31 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 				var validatorData = (ValidatorData) update.getParsed();
 				var addressIdentifierJson = new JSONObject()
 					.put("address", addressing.forValidators().of(validatorData.getValidatorKey()));
-				operationJson.put("addressIdentifier", addressIdentifierJson);
+				operationJson.put("address_identifier", addressIdentifierJson);
 
 				if (update.getParsed() instanceof ValidatorMetaData) {
 					var validatorMetaData = (ValidatorMetaData) update.getParsed();
 					objectJson
-						.put("type", "validator_metadata")
 						.put("name", validatorMetaData.getName())
 						.put("url", validatorMetaData.getUrl());
 				} else if (update.getParsed() instanceof ValidatorBFTData) {
 					var validatorBFTData = (ValidatorBFTData) update.getParsed();
 					objectJson
-						.put("type", "validator_bft_data")
-						.put("proposalsCompleted", validatorBFTData.proposalsCompleted())
-						.put("proposalsMissed", validatorBFTData.proposalsMissed());
+						.put("proposals_completed", validatorBFTData.proposalsCompleted())
+						.put("proposals_missed", validatorBFTData.proposalsMissed());
 				} else if (update.getParsed() instanceof AllowDelegationFlag) {
 					var allowDelegationFlag = (AllowDelegationFlag) update.getParsed();
-					objectJson
-						.put("type", "validator_allow_delegation")
-						.put("allowDelegation", allowDelegationFlag.allowsDelegation());
+					objectJson.put("allow_delegation", allowDelegationFlag.allowsDelegation());
 				} else if (update.getParsed() instanceof ValidatorSystemMetadata) {
 					var validatorSystemMetadata = (ValidatorSystemMetadata) update.getParsed();
-					objectJson
-						.put("type", "validator_system_metadata")
-						.put("data", Bytes.toHexString(validatorSystemMetadata.getData()));
+					objectJson.put("data", Bytes.toHexString(validatorSystemMetadata.getData()));
 				} else {
 					throw new IllegalStateException("Unknown validator data " + update.getParsed());
 				}
 			} else {
-				operationJson.put("addressIdentifier", new JSONObject()
+				operationJson.put("address_identifier", new JSONObject()
 					.put("address", "system")
 				);
-			}
-
-			if (objectJson.length() > 0) {
-				var dataJson = new JSONObject()
-					.put("action", update.isBootUp() ? "create" : "delete")
-					.put("object", objectJson);
-				operationJson.put("data", dataJson);
 			}
 		}
 
@@ -523,27 +540,27 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		var fee = txn.getFeePaid();
 		var messageHex = txn.getMsg().map(Bytes::toHexString);
 		var jsonString = new JSONObject()
-			.put("committedStateIdentifier", new JSONObject()
-				.put("stateVersion", stateVersion)
-				.put("transactionAccumulator", Bytes.toHexString(nextAccumulatorState.getAccumulatorHash().asBytes()))
+			.put("committed_state_identifier", new JSONObject()
+				.put("state_version", stateVersion)
+				.put("transaction_accumulator", Bytes.toHexString(nextAccumulatorState.getAccumulatorHash().asBytes()))
 			)
-			.put("previousCommittedStateIdentifier", new JSONObject()
-				.put("stateVersion", stateVersion - 1)
-				.put("transactionAccumulator", Bytes.toHexString(this.accumulator.asBytes()))
+			.put("previous_committed_state_identifier", new JSONObject()
+				.put("state_version", stateVersion - 1)
+				.put("transaction_accumulator", Bytes.toHexString(this.accumulator.asBytes()))
 			)
-			.put("transactionIdentifier", txn.getTxnId())
+			.put("transaction_identifier", txn.getTxnId())
 			.put("metadata", new JSONObject()
 				.put("hex", Bytes.toHexString(txn.getTxn().getPayload()))
 				.put("fee", fee)
 				.put("size", txn.getTxn().getPayload().length)
 				.put("timestamp", timestamp.get().toEpochMilli())
-				.putOpt("signedBy", txn.getSignedBy()
+				.putOpt("signed_by", txn.getSignedBy()
 					.map(p -> Bytes.toHexString(p.getCompressedBytes()))
 					.map(hex -> new JSONObject().put("hex", hex))
 					.orElse(null))
 				.putOpt("message", messageHex.map(hex -> new JSONObject().put("hex", hex)).orElse(null))
 			)
-			.put("operationGroups", operationGroups)
+			.put("operation_groups", operationGroups)
 			.toString();
 
 		this.accumulator = nextAccumulatorState.getAccumulatorHash();
