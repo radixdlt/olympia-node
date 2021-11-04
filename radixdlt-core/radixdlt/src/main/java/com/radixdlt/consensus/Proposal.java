@@ -182,9 +182,4 @@ public final class Proposal implements ConsensusEvent {
 		}
 		return false;
 	}
-
-	@Override
-	public void processBy(BFTEventProcessor processor) {
-		processor.processProposal(this);
-	}
 }

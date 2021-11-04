@@ -97,11 +97,4 @@ public interface ConsensusEvent {
 	 * @return {@link HighQC} associated with event
 	 */
 	HighQC highQC();
-
-	/**
-	 * Dispatch processing to corresponding method in the processor.
-	 *
-	 * @param processor	the processor to use
-	 */
-	void processBy(BFTEventProcessor processor);
 }

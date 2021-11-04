@@ -71,6 +71,8 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
@@ -332,7 +334,14 @@ public final class EpochManager {
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
 		this.counters.increment(CounterType.BFT_CONSENSUS_EVENTS);
 
-		consensusEvent.processBy(bftEventProcessor);
+		if (consensusEvent instanceof Proposal) {
+			bftEventProcessor.processProposal((Proposal) consensusEvent);
+		} else if (consensusEvent instanceof Vote) {
+			bftEventProcessor.processVote((Vote) consensusEvent);
+		} else {
+			//TODO: DISPATCH: add necessary branch once there will be more ConsensusEvent implementations
+			log.warn("Unknown consensus event {}", consensusEvent);
+		}
 	}
 
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {

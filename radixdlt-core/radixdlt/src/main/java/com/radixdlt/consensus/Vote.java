@@ -247,9 +247,4 @@ public final class Vote implements ConsensusEvent {
 		}
 		return false;
 	}
-
-	@Override
-	public void processBy(BFTEventProcessor processor) {
-		processor.processVote(this);
-	}
 }

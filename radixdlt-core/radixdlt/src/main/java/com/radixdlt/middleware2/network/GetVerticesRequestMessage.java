@@ -92,7 +92,7 @@ public final class GetVerticesRequestMessage extends Message {
 		@JsonProperty(value = "vertexId", required = true) HashCode vertexId,
 		@JsonProperty("count") int count
 	) {
-		if (count < 0) {
+		if (count <= 0) {
 			throw new IllegalStateException("Request contains negative count of vertices: " + count);
 		}
 
