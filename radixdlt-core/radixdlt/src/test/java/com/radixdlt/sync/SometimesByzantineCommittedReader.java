@@ -64,21 +64,20 @@
 
 package com.radixdlt.sync;
 
-import org.junit.Ignore;
-
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import org.junit.Ignore;
 
 import java.util.List;
 import java.util.Objects;
@@ -179,7 +178,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 		}
 	}
 
-	@Ignore
+	@Ignore("This is not a test, but JUnit4 picks it as a test for some reason")
 	private enum ReadType {
 		GOOD {
 			@Override
