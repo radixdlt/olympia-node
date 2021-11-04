@@ -86,6 +86,7 @@ import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.application.validators.state.ValidatorUpdatingData;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.Particle;
@@ -119,13 +120,11 @@ import org.json.JSONObject;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.sleepycat.je.LockMode.DEFAULT;
@@ -193,30 +192,96 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		}
 	}
 
-	private List<JSONObject> getDataOperations(List<REStateUpdate> groupedStateUpdates) {
-		var dataOperations = new ArrayList<JSONObject>();
-		for (var stateUpdate : groupedStateUpdates) {
-			if (stateUpdate.getParsed() instanceof ResourceData) {
+	private JSONObject getOperation(
+		REStateUpdate update,
+		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper,
+		Function<REAddr, String> tokenAddressToSymbol
+	) {
+		var substateId = update.getId();
+		var operationJson = new JSONObject()
+			.put("type", update.getParsed().getClass().getSimpleName())
+			.put("substate", new JSONObject()
+				.put("identifier", Bytes.toHexString(substateId.asBytes()))
+				.put("op", update.isBootUp() ? "BOOTUP" : "SHUTDOWN")
+			);
+
+		if (update.getParsed() instanceof ResourceInBucket) {
+			var resourceInBucket = (ResourceInBucket) update.getParsed();
+			var bucket = resourceInBucket.bucket();
+			var amount = new BigInteger(update.isBootUp() ? 1 : -1, resourceInBucket.getAmount().toByteArray());
+			var resource = new JSONObject();
+			if (bucket.resourceAddr() == null) {
+				resource
+					.put("type", "stake_ownership")
+					.put("validator", addressing.forValidators().of(bucket.getValidatorKey()));
+			} else {
+				var mapKey = SystemMapKey.ofResourceData(bucket.resourceAddr(), SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+				var data = mapper.apply(mapKey).orElseThrow().getData();
+				// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+				var metadata = (TokenResourceMetadata) deserialize(data);
+				var rri = addressing.forResources().of(metadata.getSymbol(), bucket.resourceAddr());
+				resource
+					.put("type", "token")
+					.put("rri", rri);
+			}
+
+			final JSONObject addressIdentifier = new JSONObject();
+			if (bucket.getOwner() != null) {
+				addressIdentifier.put("address", addressing.forAccounts().of(bucket.getOwner()));
+				if (bucket.getValidatorKey() != null) {
+					var subAddressJson = new JSONObject()
+						.put("address", addressing.forValidators().of(bucket.getValidatorKey()));
+					addressIdentifier.put("subAddress", subAddressJson);
+					if (bucket.getEpochUnlock() == null) {
+						subAddressJson.put("metadata", new JSONObject().put("name", "prepared_stakes"));
+					} else if (bucket.getEpochUnlock() == 0L) {
+						subAddressJson.put("metadata", new JSONObject().put("name", "prepared_unstakes"));
+					} else {
+						subAddressJson.put("metadata", new JSONObject().put("name", "exiting_stakes"));
+					}
+				}
+			} else if (update.getParsed() instanceof ValidatorStakeData) {
+				var validatorStakeData = (ValidatorStakeData) update.getParsed();
+				addressIdentifier.put("address", addressing.forValidators().of(bucket.getValidatorKey()));
+				operationJson
+					.put("data", new JSONObject()
+						.put("action", update.isBootUp() ? "create" : "delete")
+						.put("object", new JSONObject()
+							.put("type", "validator_data")
+							.put("owner", addressing.forAccounts().of(validatorStakeData.getOwnerAddr()))
+							.put("registered", validatorStakeData.isRegistered())
+							.put("fee", validatorStakeData.getRakePercentage())
+						)
+					)
+					.put("substate", new JSONObject()
+						.put("identifier", Bytes.toHexString(substateId.asBytes()))
+						.put("op", update.isBootUp() ? "BOOTUP" : "SHUTDOWN")
+					);
+			} else {
+				throw new IllegalStateException("Unknown vault " + bucket);
+			}
+
+			if (!amount.equals(BigInteger.ZERO)) {
+				operationJson.put("amount", new JSONObject()
+					.put("value", amount.toString())
+					.put("resource", resource)
+				);
+			}
+			operationJson.put("addressIdentifier", addressIdentifier);
+		} else {
+			var objectJson = new JSONObject();
+			if (update.getParsed() instanceof ResourceData) {
+				var resourceData = (ResourceData) update.getParsed();
+
 				// A bit of a super hack to get the rri
-				var rri = groupedStateUpdates.stream()
-					.map(REStateUpdate::getParsed)
-					.filter(TokenResourceMetadata.class::isInstance)
-					.map(TokenResourceMetadata.class::cast)
-					.map(metadata -> addressing.forResources().of(metadata.getSymbol(), metadata.getAddr()))
-					.findAny().orElseThrow();
-
-				var operationJson = new JSONObject()
-					.put("type", stateUpdate.isBootUp() ? "Write" : "Delete");
-
-				var addressIdentifierJson = new JSONObject()
-					.put("address", rri);
+				var symbol = tokenAddressToSymbol.apply(resourceData.getAddr());
+				var rri = addressing.forResources().of(symbol, resourceData.getAddr());
+				var addressIdentifierJson = new JSONObject().put("address", rri);
 				operationJson.put("addressIdentifier", addressIdentifierJson);
-				var dataJson = new JSONObject();
-				operationJson.put("data", dataJson);
 
-				if (stateUpdate.getParsed() instanceof TokenResource) {
-					var tokenResource = (TokenResource) stateUpdate.getParsed();
-					dataJson
+				if (update.getParsed() instanceof TokenResource) {
+					var tokenResource = (TokenResource) update.getParsed();
+					objectJson
 						.put("type", "token_data")
 						.put("granularity", tokenResource.getGranularity().toString())
 						.put("isMutable", tokenResource.isMutable())
@@ -224,9 +289,9 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 							.map(REAddr::ofPubKeyAccount)
 							.map(addressing.forAccounts()::of)
 							.orElse(null));
-				} else if (stateUpdate.getParsed() instanceof TokenResourceMetadata) {
-					var metadata = (TokenResourceMetadata) stateUpdate.getParsed();
-					dataJson
+				} else if (update.getParsed() instanceof TokenResourceMetadata) {
+					var metadata = (TokenResourceMetadata) update.getParsed();
+					objectJson
 						.put("type", "token_metadata")
 						.put("symbol", metadata.getSymbol())
 						.put("name", metadata.getName())
@@ -234,184 +299,109 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 						.put("url", metadata.getUrl())
 						.put("iconUrl", metadata.getIconUrl());
 				} else {
-					throw new IllegalStateException("Unknown Resource Data " + stateUpdate.getParsed());
+					throw new IllegalStateException("Unknown Resource Data " + update.getParsed());
 				}
-
-				dataOperations.add(operationJson);
-			} else if (stateUpdate.getParsed() instanceof SystemData) {
-				var operationJson = new JSONObject()
-					.put("type", stateUpdate.isBootUp() ? "Write" : "Delete");
+			} else if (update.getParsed() instanceof SystemData) {
 				var addressIdentifierJson = new JSONObject().put("address", "system");
 				operationJson.put("addressIdentifier", addressIdentifierJson);
-				var dataJson = new JSONObject();
-				operationJson.put("data", dataJson);
-
-				if (stateUpdate.getParsed() instanceof EpochData) {
-					var epochData = (EpochData) stateUpdate.getParsed();
-					dataJson.put("type", "epoch_data").put("epoch", epochData.getEpoch());
-				} else if (stateUpdate.getParsed() instanceof RoundData) {
-					var roundData = (RoundData) stateUpdate.getParsed();
-					dataJson
+				if (update.getParsed() instanceof EpochData) {
+					var epochData = (EpochData) update.getParsed();
+					objectJson.put("type", "epoch_data").put("epoch", epochData.getEpoch());
+				} else if (update.getParsed() instanceof RoundData) {
+					var roundData = (RoundData) update.getParsed();
+					objectJson
 						.put("type", "round_data")
 						.put("round", roundData.getView())
 						.put("timestamp", roundData.getTimestamp());
 				} else {
-					throw new IllegalStateException("Unknown system data:  " + stateUpdate.getParsed());
+					throw new IllegalStateException("Unknown system data:  " + update.getParsed());
 				}
-
-				dataOperations.add(operationJson);
-			} else if (stateUpdate.getParsed() instanceof ValidatorUpdatingData) {
-				var validatorUpdatingData = (ValidatorUpdatingData) stateUpdate.getParsed();
-				var operationJson = new JSONObject()
-					.put("type", stateUpdate.isBootUp() ? "Write" : "Delete");
+			} else if (update.getParsed() instanceof ValidatorUpdatingData) {
+				var validatorUpdatingData = (ValidatorUpdatingData) update.getParsed();
 				var addressIdentifierJson = new JSONObject()
 					.put("address", addressing.forValidators().of(validatorUpdatingData.getValidatorKey()));
 				operationJson.put("addressIdentifier", addressIdentifierJson);
-				var dataJson = new JSONObject();
-				operationJson.put("data", dataJson);
-
-				if (stateUpdate.getParsed() instanceof ValidatorRegisteredCopy) {
-					var preparedValidatorRegistered = (ValidatorRegisteredCopy) stateUpdate.getParsed();
-					dataJson
+				if (update.getParsed() instanceof ValidatorRegisteredCopy) {
+					var preparedValidatorRegistered = (ValidatorRegisteredCopy) update.getParsed();
+					objectJson
 						.put("type", "prepared_validator_registered")
 						.put("registered", preparedValidatorRegistered.isRegistered());
-				} else if (stateUpdate.getParsed() instanceof ValidatorOwnerCopy) {
-					var preparedValidatorOwner = (ValidatorOwnerCopy) stateUpdate.getParsed();
-					dataJson
+				} else if (update.getParsed() instanceof ValidatorOwnerCopy) {
+					var preparedValidatorOwner = (ValidatorOwnerCopy) update.getParsed();
+					objectJson
 						.put("type", "prepared_validator_owner")
 						.put("registered", addressing.forAccounts().of(preparedValidatorOwner.getOwner()));
-				} else if (stateUpdate.getParsed() instanceof ValidatorFeeCopy) {
-					var preparedValidatorFee = (ValidatorFeeCopy) stateUpdate.getParsed();
-					dataJson
+				} else if (update.getParsed() instanceof ValidatorFeeCopy) {
+					var preparedValidatorFee = (ValidatorFeeCopy) update.getParsed();
+					objectJson
 						.put("type", "prepared_validator_fee")
 						.put("fee", preparedValidatorFee.getRakePercentage());
 				} else {
-					throw new IllegalStateException("Unknown validator updating data: " + stateUpdate.getParsed());
+					throw new IllegalStateException("Unknown validator updating data: " + update.getParsed());
 				}
-
-				dataOperations.add(operationJson);
-			} else if (stateUpdate.getParsed() instanceof ValidatorData) {
-				var validatorData = (ValidatorData) stateUpdate.getParsed();
-				var operationJson = new JSONObject()
-					.put("type", stateUpdate.isBootUp() ? "Write" : "Delete");
-
+			} else if (update.getParsed() instanceof ValidatorData) {
+				var validatorData = (ValidatorData) update.getParsed();
 				var addressIdentifierJson = new JSONObject()
 					.put("address", addressing.forValidators().of(validatorData.getValidatorKey()));
 				operationJson.put("addressIdentifier", addressIdentifierJson);
-				var dataJson = new JSONObject();
-				operationJson.put("data", dataJson);
 
-				if (stateUpdate.getParsed() instanceof ValidatorMetaData) {
-					var validatorMetaData = (ValidatorMetaData) stateUpdate.getParsed();
-					dataJson
+				if (update.getParsed() instanceof ValidatorMetaData) {
+					var validatorMetaData = (ValidatorMetaData) update.getParsed();
+					objectJson
 						.put("type", "validator_metadata")
 						.put("name", validatorMetaData.getName())
 						.put("url", validatorMetaData.getUrl());
-				} else if (stateUpdate.getParsed() instanceof ValidatorBFTData) {
-					var validatorBFTData = (ValidatorBFTData) stateUpdate.getParsed();
-					dataJson
+				} else if (update.getParsed() instanceof ValidatorBFTData) {
+					var validatorBFTData = (ValidatorBFTData) update.getParsed();
+					objectJson
 						.put("type", "validator_bft_data")
 						.put("proposalsCompleted", validatorBFTData.proposalsCompleted())
 						.put("proposalsMissed", validatorBFTData.proposalsMissed());
-				} else if (stateUpdate.getParsed() instanceof AllowDelegationFlag) {
-					var allowDelegationFlag = (AllowDelegationFlag) stateUpdate.getParsed();
-					dataJson
+				} else if (update.getParsed() instanceof AllowDelegationFlag) {
+					var allowDelegationFlag = (AllowDelegationFlag) update.getParsed();
+					objectJson
 						.put("type", "validator_allow_delegation")
 						.put("allowDelegation", allowDelegationFlag.allowsDelegation());
-				} else if (stateUpdate.getParsed() instanceof ValidatorStakeData) {
-					var validatorStakeData = (ValidatorStakeData) stateUpdate.getParsed();
-					dataJson
-						.put("type", "validator_data")
-						.put("owner", addressing.forAccounts().of(validatorStakeData.getOwnerAddr()))
-						.put("registered", validatorStakeData.isRegistered())
-						.put("fee", validatorStakeData.getRakePercentage());
+				} else if (update.getParsed() instanceof ValidatorSystemMetadata) {
+					var validatorSystemMetadata = (ValidatorSystemMetadata) update.getParsed();
+					objectJson
+						.put("type", "validator_system_metadata")
+						.put("data", Bytes.toHexString(validatorSystemMetadata.getData()));
 				} else {
-					throw new IllegalStateException("Unknown validator data " + stateUpdate.getParsed());
+					throw new IllegalStateException("Unknown validator data " + update.getParsed());
 				}
-
-				dataOperations.add(operationJson);
-			}
-		}
-
-		return dataOperations;
-	}
-
-	private JSONObject getOperation(REStateUpdate update, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
-
-		var resourceInBucket = (ResourceInBucket) update.getParsed();
-		var bucket = resourceInBucket.bucket();
-		var amount = new BigInteger(update.isBootUp() ? 1 : -1, resourceInBucket.getAmount().toByteArray());
-		var substateId = update.getId();
-
-		var operationJson = new JSONObject();
-		operationJson.put("type", "Move");
-
-		var resource = new JSONObject();
-		if (bucket.resourceAddr() == null) {
-			resource
-				.put("type", "stake_ownership")
-				.put("validator", addressing.forValidators().of(bucket.getValidatorKey()));
-		} else {
-			var mapKey = SystemMapKey.ofResourceData(bucket.resourceAddr(), SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-			var data = mapper.apply(mapKey).orElseThrow().getData();
-			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-			var metadata = (TokenResourceMetadata) deserialize(data);
-			var rri = addressing.forResources().of(metadata.getSymbol(), bucket.resourceAddr());
-			resource
-				.put("type", "token")
-				.put("rri", rri);
-		}
-
-		final JSONObject addressIdentifier = new JSONObject();
-		if (bucket.getOwner() != null) {
-			addressIdentifier.put("address", addressing.forAccounts().of(bucket.getOwner()));
-			if (bucket.getValidatorKey() == null) {
-				operationJson.put("substate", new JSONObject()
-					.put("identifier", Bytes.toHexString(substateId.asBytes()))
-					.put("op", update.isBootUp() ? "BOOTUP" : "SHUTDOWN")
-				);
 			} else {
-				if (bucket.getEpochUnlock() == null) {
-					addressIdentifier
-						.put("subAddress", new JSONObject()
-							.put("address", addressing.forValidators().of(bucket.getValidatorKey()))
-							.put("metadata", new JSONObject().put("name", "prepared_stakes"))
-						);
-				} else if (bucket.getEpochUnlock() == 0L) {
-					addressIdentifier
-						.put("subAddress", new JSONObject()
-							.put("address", addressing.forValidators().of(bucket.getValidatorKey()))
-							.put("metadata", new JSONObject().put("name", "prepared_unstakes"))
-						);
-				} else {
-					addressIdentifier
-						.put("subAddress", new JSONObject()
-							.put("address", addressing.forValidators().of(bucket.getValidatorKey()))
-							.put("metadata", new JSONObject().put("name", "exiting_stakes"))
-						);
-				}
+				operationJson.put("addressIdentifier", new JSONObject()
+					.put("address", "system")
+				);
 			}
-		} else if (bucket.getValidatorKey() != null) {
-			addressIdentifier.put("address", addressing.forValidators().of(bucket.getValidatorKey()));
-		} else {
-			throw new IllegalStateException("Unknown vault " + bucket);
+
+			if (objectJson.length() > 0) {
+				var dataJson = new JSONObject()
+					.put("action", update.isBootUp() ? "create" : "delete")
+					.put("object", objectJson);
+				operationJson.put("data", dataJson);
+			}
 		}
-		return operationJson
-			.put("addressIdentifier", addressIdentifier)
-			.put("amount", new JSONObject()
-				.put("value", amount.toString())
-				.put("resource", resource)
-			);
+
+		return operationJson;
 	}
 
-	private JSONArray getOperations(Stream<REStateUpdate> stateUpdates, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
+	private JSONArray getOperations(List<REStateUpdate> stateUpdates, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
+		Function<REAddr, String> addressToSymbol = addr ->
+			stateUpdates.stream()
+				.map(REStateUpdate::getParsed)
+				.filter(TokenResourceMetadata.class::isInstance)
+				.map(TokenResourceMetadata.class::cast)
+				.filter(r -> r.getAddr().equals(addr))
+				.findAny()
+				.map(TokenResourceMetadata::getSymbol).orElseThrow();
+
 		var operations = new JSONArray();
-		stateUpdates
-			.filter(u -> u.getParsed() instanceof ResourceInBucket)
-			.forEach(u -> {
-				var operation = getOperation(u, mapper);
-				operations.put(operation);
-			});
+		for (var stateUpdate : stateUpdates) {
+			var operation = getOperation(stateUpdate, mapper, addressToSymbol);
+			operations.put(operation);
+		}
 		return operations;
 	}
 
@@ -419,12 +409,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		var operationGroups = new JSONArray();
 
 		for (var stateUpdates : txn.getGroupedStateUpdates()) {
-			var operations = getOperations(stateUpdates.stream(), mapper);
-
-			for (var dataOperation : getDataOperations(stateUpdates)) {
-				operations.put(dataOperation);
-			}
-
+			var operations = getOperations(stateUpdates, mapper);
 			var accounting = REResourceAccounting.compute(stateUpdates.stream());
 			var entry = TwoActorEntry.parse(accounting.bucketAccounting());
 			var mappedAction = entry.map(e -> mapToJSON(

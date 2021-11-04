@@ -73,7 +73,7 @@ import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public final class ExittingStake implements ResourceInBucket {
+public final class ExitingStake implements ResourceInBucket {
 	private final UInt256 amount;
 
 	// Bucket keys
@@ -81,7 +81,7 @@ public final class ExittingStake implements ResourceInBucket {
 	private final ECPublicKey delegateKey;
 	private final long epochUnlocked;
 
-	public ExittingStake(
+	public ExitingStake(
 		long epochUnlocked,
 		ECPublicKey delegateKey,
 		REAddr owner,
@@ -147,10 +147,10 @@ public final class ExittingStake implements ResourceInBucket {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof ExittingStake)) {
+		if (!(o instanceof ExitingStake)) {
 			return false;
 		}
-		var that = (ExittingStake) o;
+		var that = (ExitingStake) o;
 		return Objects.equals(delegateKey, that.delegateKey)
 			&& Objects.equals(owner, that.owner)
 			&& Objects.equals(amount, that.amount)

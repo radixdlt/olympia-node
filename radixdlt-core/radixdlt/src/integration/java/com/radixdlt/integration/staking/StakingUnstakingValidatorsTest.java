@@ -116,7 +116,7 @@ import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.application.tokens.state.ExittingStake;
+import com.radixdlt.application.tokens.state.ExitingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
@@ -416,7 +416,7 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public BigInteger getTotalExittingStake() {
-			var totalStakeExitting = radixEngine.reduce(ExittingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			var totalStakeExitting = radixEngine.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
 			return new BigInteger(1, totalStakeExitting.toByteArray());
 		}
 
@@ -432,7 +432,7 @@ public class StakingUnstakingValidatorsTest {
 			logger.info("Total staked: {}", Amount.ofSubunits(totalStaked));
 			var totalStakePrepared = radixEngine.reduce(PreparedStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
 			logger.info("Total preparing stake: {}", Amount.ofSubunits(totalStakePrepared));
-			var totalStakeExitting = radixEngine.reduce(ExittingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			var totalStakeExitting = radixEngine.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
 			logger.info("Total exitting stake: {}", Amount.ofSubunits(totalStakeExitting));
 			var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
 			logger.info("Total: {}", Amount.ofSubunits(total));

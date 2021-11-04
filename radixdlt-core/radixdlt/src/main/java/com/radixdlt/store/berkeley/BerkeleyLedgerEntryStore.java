@@ -458,7 +458,7 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 								// 2-36: Validator Key
 								// 37-69: Account Address
 								prefixIndexSize = 2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES);
-							} else if (substateTypeId == SubstateTypeId.EXITTING_STAKE.id()) {
+							} else if (substateTypeId == SubstateTypeId.EXITING_STAKE.id()) {
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2-5: Epoch

@@ -71,7 +71,7 @@ import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.system.state.VirtualParent;
-import com.radixdlt.application.tokens.state.ExittingStake;
+import com.radixdlt.application.tokens.state.ExitingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.tokens.state.TokenResource;
@@ -100,7 +100,7 @@ public enum SubstateTypeId {
 	PREPARED_STAKE((byte) 0x7, PreparedStake.class),
 	STAKE_OWNERSHIP((byte) 0x8, StakeOwnership.class),
 	PREPARED_UNSTAKE((byte) 0x9, PreparedUnstakeOwnership.class),
-	EXITTING_STAKE((byte) 0xa, ExittingStake.class),
+	EXITING_STAKE((byte) 0xa, ExitingStake.class),
 	VALIDATOR_META_DATA((byte) 0xb, ValidatorMetaData.class),
 	VALIDATOR_STAKE_DATA((byte) 0xc, ValidatorStakeData.class),
 	VALIDATOR_BFT_DATA((byte) 0xd, ValidatorBFTData.class),

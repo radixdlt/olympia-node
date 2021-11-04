@@ -76,7 +76,7 @@ import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.ExittingStake;
+import com.radixdlt.application.tokens.state.ExitingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.application.tokens.state.TokensInAccount;
@@ -138,15 +138,15 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 	public final class ProcessExittingStake implements ReducerState {
 		private final UpdatingEpoch updatingEpoch;
-		private final TreeSet<ExittingStake> exitting = new TreeSet<>(
-			Comparator.comparing(ExittingStake::dataKey, UnsignedBytes.lexicographicalComparator())
+		private final TreeSet<ExitingStake> exitting = new TreeSet<>(
+			Comparator.comparing(ExitingStake::dataKey, UnsignedBytes.lexicographicalComparator())
 		);
 
 		ProcessExittingStake(UpdatingEpoch updatingEpoch) {
 			this.updatingEpoch = updatingEpoch;
 		}
 
-		public ReducerState process(IndexedSubstateIterator<ExittingStake> indexedSubstateIterator) throws ProcedureException {
+		public ReducerState process(IndexedSubstateIterator<ExitingStake> indexedSubstateIterator) throws ProcedureException {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
 			var expectedPrefix = new byte[Long.BYTES + 1];
 			Longs.copyTo(expectedEpoch, expectedPrefix, 1);
@@ -352,7 +352,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.onDone = onDone;
 		}
 
-		ReducerState exit(ExittingStake u) throws MismatchException {
+		ReducerState exit(ExitingStake u) throws MismatchException {
 			var firstAddr = unstaking.firstKey();
 			var ownershipUnstake = unstaking.remove(firstAddr);
 			var epochUnlocked = updatingEpoch.prevEpoch.getEpoch() + unstakingEpochDelay + 1;
@@ -779,7 +779,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		));
 
 		os.procedure(new ShutdownAllProcedure<>(
-			ExittingStake.class, UpdatingEpoch.class,
+			ExitingStake.class, UpdatingEpoch.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> {
 				var exittingStake = new ProcessExittingStake(s);
@@ -809,7 +809,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			(d, s, r, c) -> ReducerResult.incomplete(s.startUpdate(d))
 		));
 		os.procedure(new UpProcedure<>(
-			Unstaking.class, ExittingStake.class,
+			Unstaking.class, ExitingStake.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.exit(u))
 		));
@@ -945,15 +945,15 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		);
 		os.substate(
 			new SubstateDefinition<>(
-				ExittingStake.class,
-				SubstateTypeId.EXITTING_STAKE.id(),
+				ExitingStake.class,
+				SubstateTypeId.EXITING_STAKE.id(),
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var epochUnlocked = REFieldSerialization.deserializeNonNegativeLong(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
 					var owner = REFieldSerialization.deserializeAccountREAddr(buf);
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
-					return new ExittingStake(epochUnlocked, delegate, owner, amount);
+					return new ExitingStake(epochUnlocked, delegate, owner, amount);
 				},
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
