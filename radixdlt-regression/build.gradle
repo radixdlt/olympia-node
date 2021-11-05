@@ -98,8 +98,11 @@ test {
     }
 }
 
+tasks.withType<JavaCompile> {
+    options.compilerArgs.add("--enable-preview")
+}
+
 acceptanceTest {
-    options.compilerArgs << "--enable-preview"
     testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
