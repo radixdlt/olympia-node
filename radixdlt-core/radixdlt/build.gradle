@@ -230,6 +230,7 @@ task generateDevUniverse(type: Exec) {
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+        "--enable-preview",
         "org.radix.GenerateUniverses",
         "--validator-count=${validators}"
 }
