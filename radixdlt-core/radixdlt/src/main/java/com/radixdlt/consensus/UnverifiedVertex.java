@@ -134,10 +134,8 @@ public final class UnverifiedVertex {
 			throw new IllegalArgumentException("Txns must be empty if timeout");
 		}
 
-		if (txns != null && !txns.isEmpty()) {
-			for (var txn : txns) {
-				requireNonNull(txn);
-			}
+		if (txns != null) {
+			txns.forEach(Objects::requireNonNull);
 		}
 
 		this.txns = txns;

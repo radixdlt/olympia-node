@@ -88,7 +88,7 @@ public abstract class Message extends BasicContainer {
 
 	@JsonProperty("timestamp")
 	@DsonOutput(value = {Output.API, Output.PERSIST})
-	private long timestamp;
+	private final long timestamp;
 
 	protected Message() {
 		this(Time.currentTimestamp());

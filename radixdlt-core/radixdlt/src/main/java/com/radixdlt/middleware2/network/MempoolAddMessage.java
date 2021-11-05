@@ -86,6 +86,7 @@ public final class MempoolAddMessage extends Message {
 		@JsonProperty(value = "txns", required = true) List<byte[]> txns
 	) {
 		this.txns = Objects.requireNonNull(txns);
+		this.txns.forEach(Objects::requireNonNull);
 	}
 
 	public static MempoolAddMessage from(List<Txn> txns) {

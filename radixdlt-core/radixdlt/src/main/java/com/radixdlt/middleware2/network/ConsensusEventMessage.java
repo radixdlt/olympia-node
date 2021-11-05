@@ -99,7 +99,7 @@ public final class ConsensusEventMessage extends Message {
 		}
 
 		if (proposal != null && vote != null) {
-			throw new IllegalStateException("Both, vote and proposal are provided for ConsensusEventMessage");
+			throw new IllegalArgumentException("Both, vote and proposal are provided for ConsensusEventMessage");
 		}
 
 		this.proposal = proposal;

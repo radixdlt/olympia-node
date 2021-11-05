@@ -229,7 +229,7 @@ public final class BFTSync implements BFTSyncer {
 						Optional.of(((FormedTC) viewQuorumReached.votingResult()).getTC()));
 			} else {
 				//TODO: cleanup this mess
-				throw new IllegalArgumentException("Unknown voting result: " + viewQuorumReached.votingResult());
+				throw new IllegalStateException("Unknown voting result: " + viewQuorumReached.votingResult());
 			}
 
 			syncToQC(highQC, viewQuorumReached.lastAuthor());
@@ -349,7 +349,6 @@ public final class BFTSync implements BFTSyncer {
 		}
 
 		if (syncRequestState.authors.isEmpty()) {
-			//TODO: potentially may cause node failure. Issue should be handled without throwing exception
 			throw new IllegalStateException("Request contains no authors except ourselves");
 		}
 

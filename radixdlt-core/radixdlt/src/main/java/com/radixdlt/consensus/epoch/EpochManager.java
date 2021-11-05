@@ -298,8 +298,7 @@ public final class EpochManager {
 	private void processEpochChange(EpochChange epochChange) {
 		// Sanity check
 		if (epochChange.getEpoch() != this.currentEpoch() + 1) {
-			//TODO: looks like byzantine message, might be used for slashing?
-			//TODO: don't trow exception
+			//safe, as message is internal
 			throw new IllegalStateException("Bad Epoch change: " + epochChange + " current epoch: " + this.currentEpoch);
 		}
 
