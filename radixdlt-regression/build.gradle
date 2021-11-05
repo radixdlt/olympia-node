@@ -99,6 +99,7 @@ test {
 }
 
 acceptanceTest {
+    options.compilerArgs << "--enable-preview"
     testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
