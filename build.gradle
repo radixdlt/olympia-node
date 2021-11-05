@@ -204,6 +204,7 @@ subprojects {
 
         tasks.withType(Test) {
             systemProperty "file.encoding", "UTF-8"
+            options.compilerArgs << "--enable-preview"
         }
 
         tasks.named("checkstyleMain") {
