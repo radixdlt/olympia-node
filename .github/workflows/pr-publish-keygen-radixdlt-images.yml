@@ -1,6 +1,9 @@
 name: pr-publish-keygen-radixdlt-images-workflow
 on:
   pull_request:
+  push:
+    branches:
+      - feature/moretests-02
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
