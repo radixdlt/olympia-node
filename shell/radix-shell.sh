@@ -25,4 +25,4 @@ System.out.println("\nWelcome to RadixShell!");
 EOM
 )
 
-RADIXDLT_CONSOLE_APPENDER_THRESHOLD=OFF jshell --class-path $(./gradlew -q printShadowJarFilePath) <(echo $INIT) -R -Djava.net.preferIPv4Stack=true
+RADIX_NODE_KEYSTORE_PASSWORD=supersecret RADIXDLT_CONSOLE_APPENDER_THRESHOLD=OFF jshell --class-path $(./gradlew -q printShadowJarFilePath) <(echo $INIT) -R -Djava.net.preferIPv4Stack=true

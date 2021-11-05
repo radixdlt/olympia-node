@@ -135,7 +135,7 @@ public final class RadixShell {
 		private ImmutableSet.Builder<String> moduleRunnersBuilder = new ImmutableSet.Builder<>();
 		private ImmutableMap.Builder<String, String> customProperties = new ImmutableMap.Builder<>();
 		private Optional<String> dataDir = Optional.empty();
-		private String nodeKeyPass = "supersecret";
+		private final String nodeKeyPass = System.getenv("RADIX_NODE_KEYSTORE_PASSWORD");
 
 		public NodeBuilder() throws ParseException {
 			properties = new RuntimeProperties(new JSONObject(), new String[] { });
@@ -162,11 +162,6 @@ public final class RadixShell {
 
 		public NodeBuilder dataDir(String path) {
 			this.dataDir = Optional.of(path);
-			return this;
-		}
-
-		public NodeBuilder keyPass(String pass) {
-			this.nodeKeyPass = pass;
 			return this;
 		}
 
@@ -206,9 +201,6 @@ public final class RadixShell {
 				RadixKeyStore.fromFile(nodeKeyFile, nodeKeyPass.toCharArray(), true)
 					.writeKeyPair("node", keyPair);
 			}
-
-			// TODO: this is a bit of a hack, but would need to refactor PersistedBFTKeyManager otherwise
-			setEnv("RADIX_NODE_KEYSTORE_PASSWORD", nodeKeyPass);
 
 			properties.set("network.id", network.getId());
 			if (network.genesisTxn().isEmpty() && properties.get("network.genesis_txn", "").isEmpty()) {
@@ -380,15 +372,5 @@ public final class RadixShell {
 		public String toString() {
 			return self().toString();
 		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private static void setEnv(String key, String value) throws NoSuchFieldException, IllegalAccessException {
-		final var env = System.getenv();
-		final var cl = env.getClass();
-		final var field = cl.getDeclaredField("m");
-		field.setAccessible(true);
-		final var writableEnv = (Map<String, String>) field.get(env);
-		writableEnv.put(key, value);
 	}
 }
