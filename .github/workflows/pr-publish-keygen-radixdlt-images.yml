@@ -1,6 +1,11 @@
 name: pr-publish-keygen-radixdlt-images-workflow
+#on:
+#  pull_request:
 on:
-  pull_request:
+  push:
+    branches:
+      - do-195-unrecognized-vm-option
+
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
@@ -27,15 +32,15 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-      - name: Cache Gradle packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+#      - name: Cache Gradle packages
+#        uses: actions/cache@v2
+#        with:
+#          path: |
+#            ~/.gradle/caches
+#            ~/.gradle/wrapper
+#          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+#          restore-keys: |
+#            ${{ runner.os }}-gradle-
       - id: get_version
         name: Get radixdlt version
         uses: ./.github/actions/get-version
