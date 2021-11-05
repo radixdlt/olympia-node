@@ -75,7 +75,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Run tests against RCNet
-        run: ./gradlew systemTests --tests "com.radixdlt.test.system.TransactionsTests.*" --refresh-dependencies
+        run: ./gradlew systemTests --tests "com.radixdlt.test.system.TransactionsTests.*" --refresh-dependencies --info
         env:
           RADIXDLT_JSON_RPC_API_ROOT_URL: https://rcnet.radixdlt.com
           RADIXDLT_FAUCET_URL: https://rcnet-faucet.radixdlt.com
