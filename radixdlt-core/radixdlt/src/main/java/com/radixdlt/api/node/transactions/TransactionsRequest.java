@@ -64,16 +64,16 @@
 package com.radixdlt.api.node.transactions;
 
 public final class TransactionsRequest {
-	private final long stateVersion;
+	private final long index;
 	private final long limit;
 
-	public TransactionsRequest(long stateVersion, long limit) {
-		this.stateVersion = stateVersion;
+	public TransactionsRequest(long index, long limit) {
+		this.index = index;
 		this.limit = limit;
 	}
 
-	public long getStateVersion() {
-		return stateVersion;
+	public long getIndex() {
+		return index;
 	}
 
 	public long getLimit() {

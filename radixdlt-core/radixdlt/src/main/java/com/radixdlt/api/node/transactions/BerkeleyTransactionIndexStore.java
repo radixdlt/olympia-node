@@ -118,10 +118,10 @@ public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalSt
 		}
 	}
 
-	public Stream<AID> get(long stateVersion) {
+	public Stream<AID> get(long index) {
 		var cursor = transactions.openCursor(null, null);
 		var iterator = new Iterator<AID>() {
-			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion));
+			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(index));
 			final DatabaseEntry value = new DatabaseEntry();
 			OperationStatus status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
 
@@ -155,7 +155,7 @@ public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalSt
 			var key = new DatabaseEntry();
 			var status = cursor.getLast(key, null, DEFAULT);
 			if (status == OperationStatus.NOTFOUND) {
-				expectedVersion = 1;
+				expectedVersion = 0;
 			} else {
 				expectedVersion = Longs.fromByteArray(key.getData()) + 1;
 			}

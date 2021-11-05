@@ -89,17 +89,17 @@ class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 	@Override
 	public TransactionsRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
 		var limit = requestReader.getOptUnsignedLong("limit").orElse(1);
-		var stateVersion = requestReader.getOptUnsignedLong("stateVersion").orElse(1);
-		if (stateVersion < 1) {
-			throw new InvalidParametersException("/stateVersion", "State version must be >= 1");
+		var index = requestReader.getOptUnsignedLong("index").orElse(0);
+		if (index < 1) {
+			throw new InvalidParametersException("/index", "Index must be >= 0");
 		}
-		return new TransactionsRequest(stateVersion, limit);
+		return new TransactionsRequest(index, limit);
 	}
 
 	@Override
 	public JSONObject handleRequest(TransactionsRequest request) throws Exception {
 		var transactions = new JSONArray();
-		try (var stream = store.get(request.getStateVersion())) {
+		try (var stream = store.get(request.getIndex())) {
 			stream.limit(request.getLimit())
 				.map(txnId -> txnStore.getTransactionJSON(txnId).orElseThrow())
 				.forEach(transactions::put);
