@@ -90,7 +90,7 @@ test {
 
 task systemTests(type: Test) {
     useJUnitPlatform()
-    jvmArgs("--enable-preview")
+    jvmArgs "--enable-preview"
     filter {
         includeTestsMatching "com.radixdlt.test.system.*"
     }

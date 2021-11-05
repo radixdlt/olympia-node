@@ -99,7 +99,7 @@ test {
 }
 
 acceptanceTest {
-    jvmArgs("--enable-preview")
+    jvmArgs "--enable-preview"
     testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat "full"

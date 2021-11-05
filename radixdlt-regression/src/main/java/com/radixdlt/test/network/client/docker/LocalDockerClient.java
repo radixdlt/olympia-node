@@ -4,6 +4,7 @@ import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.exception.BadRequestException;
 import com.github.dockerjava.api.exception.DockerClientException;
 import com.github.dockerjava.api.exception.NotFoundException;
+import com.github.dockerjava.api.exception.NotModifiedException;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
@@ -116,9 +117,13 @@ public class LocalDockerClient implements DockerClient {
         var count = new AtomicInteger();
         dockerClient.listContainersCmd().withShowAll(true).exec().forEach(container -> {
             if (container.getNetworkSettings().getNetworks().keySet().contains(networkName)) {
-                dockerClient.stopContainerCmd(container.getId()).exec();
-                dockerClient.removeContainerCmd(container.getId()).exec();
-                logger.debug("Removed container '{}'", container.getId());
+                try {
+                    dockerClient.stopContainerCmd(container.getId()).exec();
+                    dockerClient.removeContainerCmd(container.getId()).exec();
+                    logger.debug("Removed container '{}'", container.getId());
+                } catch (NotModifiedException e) {
+                    // ignore this, this means that the container was already stopped
+                }
             }
             count.incrementAndGet();
         });
