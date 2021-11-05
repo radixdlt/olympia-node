@@ -28,7 +28,7 @@ public class TokenConstraints extends RadixNetworkTest {
     }
 
     @Then("I cannot create a token with an icon rul {string}")
-    public void i_cannot_create_a_token_with_an_icon_rul(String iconUrl) {
+    public void i_cannot_create_a_token_with_an_icon_url(String iconUrl) {
         Assertions.runExpectingRadixApiException(() ->
             account1.mutableSupplyToken("symbol", "name", "description", iconUrl, "http://token.com"),
             "not a valid URL");
