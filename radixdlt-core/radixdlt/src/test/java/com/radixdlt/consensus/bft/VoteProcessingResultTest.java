@@ -64,6 +64,10 @@
 
 package com.radixdlt.consensus.bft;
 
+import static org.mockito.Mockito.mock;
+
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimeoutCertificate;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -81,6 +85,11 @@ public class VoteProcessingResultTest {
 
   @Test
   public void equalsQuorumReached() {
-    EqualsVerifier.forClass(VoteProcessingResult.QuorumReached.class).verify();
+    EqualsVerifier.forClass(VoteProcessingResult.QuorumReached.class)
+        .withPrefabValues(
+            ViewVotingResult.class,
+            new ViewVotingResult.FormedQC(mock(QuorumCertificate.class)),
+            new ViewVotingResult.FormedTC(mock(TimeoutCertificate.class)))
+        .verify();
   }
 }

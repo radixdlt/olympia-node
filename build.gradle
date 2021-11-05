@@ -235,6 +235,7 @@ subprojects {
 
         tasks.withType(Test) {
             systemProperty "file.encoding", "UTF-8"
+            jvmArgs("--enable-preview")
         }
     }
 
