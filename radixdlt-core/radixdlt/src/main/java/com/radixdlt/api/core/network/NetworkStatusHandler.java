@@ -61,62 +61,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core.network;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.core.NodeServerModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONObject;
 
-import java.util.HashMap;
-import java.util.Map;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
-public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_ARCHIVE_PORT = 8080;
-	private static final int DEFAULT_NODE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+final class NetworkStatusHandler implements ApiHandler<Void> {
+	private final InMemorySystemInfo inMemorySystemInfo;
+	private final AccumulatorState genesisAccumulatorState;
 
-	private final RuntimeProperties properties;
-	private final int networkId;
-
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
+	@Inject
+	NetworkStatusHandler(
+		InMemorySystemInfo inMemorySystemInfo,
+		@Genesis Txn genesisTxn,
+		LedgerAccumulator ledgerAccumulator
+	) {
+		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
+			new AccumulatorState(0, HashUtils.zero256()), genesisTxn.getId().asHashCode()
+		);
 	}
 
 	@Override
-	public void configure() {
-		install(new NetworkInfoServiceModule());
+	public Void parseRequest(JsonObjectReader reader) {
+		return null;
+	}
 
-		var endpointStatus = new HashMap<String, Boolean>();
-
-		var archiveEnable = properties.get("api.archive.enable", false);
-		endpointStatus.put("archive", archiveEnable);
-		if (archiveEnable) {
-			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
-			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new ArchiveServerModule(port, bindAddress));
-		}
-
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		endpointStatus.put("transactions", transactionsEnable);
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
-		}
-
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		endpointStatus.put("metrics", metricsEnable);
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("faucet", faucetEnable);
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("chaos", chaosEnable);
-		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
-		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
+	@Override
+	public JSONObject handleRequest(Void request) {
+		var currentProof = inMemorySystemInfo.getCurrentProof();
+		return jsonObject()
+			.put("genesis_state_identifier", new JSONObject()
+				.put("state_version", genesisAccumulatorState.getStateVersion())
+				.put("transaction_accumulator", Bytes.toHexString(genesisAccumulatorState.getAccumulatorHash().asBytes()))
+			)
+			.put("current_state_identifier", new JSONObject()
+				.put("state_version", currentProof.getStateVersion())
+				.put("transaction_accumulator", Bytes.toHexString(currentProof.getAccumulatorState().getAccumulatorHash().asBytes()))
+			)
+			.put("current_state_epoch", currentProof.getEpoch())
+			.put("current_state_view", currentProof.getView().number())
+			.put("current_state_timestamp", currentProof.timestamp());
 	}
 }

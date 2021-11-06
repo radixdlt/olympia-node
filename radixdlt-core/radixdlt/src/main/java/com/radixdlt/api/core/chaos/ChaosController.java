@@ -61,62 +61,109 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core.chaos;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.core.NodeServerModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import com.google.common.annotations.VisibleForTesting;
+import com.radixdlt.api.core.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.api.core.chaos.messageflooder.MessageFlooderUpdate;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
-public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_ARCHIVE_PORT = 8080;
-	private static final int DEFAULT_NODE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RoutingHandler;
 
-	private final RuntimeProperties properties;
-	private final int networkId;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.RestUtils.respond;
+import static com.radixdlt.api.util.RestUtils.sanitizeBaseUrl;
+import static com.radixdlt.api.util.RestUtils.withBody;
+import static com.radixdlt.errors.InternalErrors.UNKNOWN;
 
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
+public final class ChaosController implements Controller {
+	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
+	private final EventDispatcher<MessageFlooderUpdate> messageDispatcher;
+	private final Addressing addressing;
+
+	public ChaosController(
+		EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
+		EventDispatcher<MessageFlooderUpdate> messageDispatcher,
+		Addressing addressing
+	) {
+		this.mempoolDispatcher = mempoolDispatcher;
+		this.messageDispatcher = messageDispatcher;
+		this.addressing = addressing;
 	}
 
 	@Override
-	public void configure() {
-		install(new NetworkInfoServiceModule());
+	public void configureRoutes(String root, RoutingHandler handler) {
+		var sanitized = sanitizeBaseUrl(root);
+		handler.put(sanitized + "/message-flooder", this::handleMessageFlood);
+		handler.put(sanitized + "/mempool-filler", this::handleMempoolFill);
+	}
 
-		var endpointStatus = new HashMap<String, Boolean>();
+	@VisibleForTesting
+	void handleMessageFlood(HttpServerExchange exchange) {
+		withBody(exchange, values -> {
+			var update = MessageFlooderUpdate.create();
 
-		var archiveEnable = properties.get("api.archive.enable", false);
-		endpointStatus.put("archive", archiveEnable);
-		if (archiveEnable) {
-			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
-			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new ArchiveServerModule(port, bindAddress));
+			if (values.getBoolean("enabled")) {
+				var data = values.getJSONObject("data");
+
+				if (data.has("nodeAddress")) {
+					update = update.bftNode(createNodeByKey(data.getString("nodeAddress")));
+				}
+
+				if (data.has("messagesPerSec")) {
+					update = update.messagesPerSec(data.getInt("messagesPerSec"));
+				}
+
+				if (data.has("commandSize")) {
+					update = update.commandSize(data.getInt("commandSize"));
+				}
+			}
+
+			this.messageDispatcher.dispatch(update);
+		});
+	}
+
+	@VisibleForTesting
+	void handleMempoolFill(HttpServerExchange exchange) {
+		withBody(exchange, values -> {
+			var completableFuture = new CompletableFuture<Void>();
+			var update = prepareUpdate(completableFuture, values.getBoolean("enabled"));
+			mempoolDispatcher.dispatch(update);
+
+			try {
+				completableFuture.get();
+				respond(exchange, jsonObject().put("result", values.getBoolean("enabled") ? "enabled" : "disabled"));
+			} catch (ExecutionException e) {
+				var response = jsonObject()
+					.put("error", jsonObject()
+						.put("code", UNKNOWN.code())
+						.put("message", UNKNOWN.with(e.getCause().getClass(), e.getCause().getMessage())));
+				respond(exchange, response);
+			}
+		});
+	}
+
+	private MempoolFillerUpdate prepareUpdate(CompletableFuture<Void> completableFuture, boolean enable) {
+		if (enable) {
+			return MempoolFillerUpdate.enable(100, true, completableFuture);
+		} else {
+			return MempoolFillerUpdate.disable(completableFuture);
 		}
+	}
 
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		endpointStatus.put("transactions", transactionsEnable);
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
+	private BFTNode createNodeByKey(final String nodeAddress) {
+		try {
+			return BFTNode.create(addressing.forValidators().parse(nodeAddress));
+		} catch (DeserializeException e) {
+			throw new IllegalArgumentException();
 		}
-
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		endpointStatus.put("metrics", metricsEnable);
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("faucet", faucetEnable);
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("chaos", chaosEnable);
-		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
-		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
 	}
 }

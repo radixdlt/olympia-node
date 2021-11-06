@@ -61,62 +61,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core.version;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.core.NodeServerModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import org.json.JSONObject;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.google.common.annotations.VisibleForTesting;
+import com.radixdlt.api.util.Controller;
 
-public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_ARCHIVE_PORT = 8080;
-	private static final int DEFAULT_NODE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RoutingHandler;
 
-	private final RuntimeProperties properties;
-	private final int networkId;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.RestUtils.respond;
+import static com.radixdlt.api.util.RestUtils.sanitizeBaseUrl;
 
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
+public class VersionController implements Controller {
+	private final JSONObject versionData;
+
+	public VersionController(String versionString) {
+		versionData = jsonObject().put("version", versionString);
 	}
 
 	@Override
-	public void configure() {
-		install(new NetworkInfoServiceModule());
+	public void configureRoutes(String root, RoutingHandler handler) {
+		handler.get(sanitizeBaseUrl(root), this::handleVersionRequest);
+	}
 
-		var endpointStatus = new HashMap<String, Boolean>();
-
-		var archiveEnable = properties.get("api.archive.enable", false);
-		endpointStatus.put("archive", archiveEnable);
-		if (archiveEnable) {
-			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
-			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new ArchiveServerModule(port, bindAddress));
-		}
-
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		endpointStatus.put("transactions", transactionsEnable);
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
-		}
-
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		endpointStatus.put("metrics", metricsEnable);
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("faucet", faucetEnable);
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("chaos", chaosEnable);
-		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
-		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
+	@VisibleForTesting
+	void handleVersionRequest(HttpServerExchange exchange) {
+		respond(exchange, versionData);
 	}
 }

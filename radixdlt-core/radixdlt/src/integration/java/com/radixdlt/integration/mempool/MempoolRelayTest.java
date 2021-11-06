@@ -65,8 +65,8 @@
 package com.radixdlt.integration.mempool;
 
 import com.google.inject.Provides;
-import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.api.core.chaos.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.api.core.chaos.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.actions.MintToken;

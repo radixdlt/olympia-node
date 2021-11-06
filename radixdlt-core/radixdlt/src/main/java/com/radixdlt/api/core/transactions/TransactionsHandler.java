@@ -61,62 +61,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core.transactions;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.core.NodeServerModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.util.HashMap;
-import java.util.Map;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
-public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_ARCHIVE_PORT = 8080;
-	private static final int DEFAULT_NODE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+class TransactionsHandler implements ApiHandler<TransactionsRequest> {
+	private final BerkeleyTransactionsByIdStore txnStore;
+	private final BerkeleyTransactionIndexStore store;
 
-	private final RuntimeProperties properties;
-	private final int networkId;
-
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
+	@Inject
+	TransactionsHandler(
+		BerkeleyTransactionIndexStore store,
+		BerkeleyTransactionsByIdStore txnStore
+	) {
+		this.store = store;
+		this.txnStore = txnStore;
 	}
 
 	@Override
-	public void configure() {
-		install(new NetworkInfoServiceModule());
-
-		var endpointStatus = new HashMap<String, Boolean>();
-
-		var archiveEnable = properties.get("api.archive.enable", false);
-		endpointStatus.put("archive", archiveEnable);
-		if (archiveEnable) {
-			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
-			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new ArchiveServerModule(port, bindAddress));
+	public TransactionsRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		var limit = requestReader.getOptUnsignedLong("limit").orElse(1);
+		var index = requestReader.getOptUnsignedLong("index").orElse(0);
+		if (index < 0) {
+			throw new InvalidParametersException("/index", "Index must be >= 0");
 		}
+		return new TransactionsRequest(index, limit);
+	}
 
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		endpointStatus.put("transactions", transactionsEnable);
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
+	@Override
+	public JSONObject handleRequest(TransactionsRequest request) throws Exception {
+		var transactions = new JSONArray();
+		try (var stream = store.get(request.getIndex())) {
+			stream.limit(request.getLimit())
+				.map(txnId -> txnStore.getTransactionJSON(txnId).orElseThrow())
+				.forEach(transactions::put);
 		}
-
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		endpointStatus.put("metrics", metricsEnable);
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("faucet", faucetEnable);
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("chaos", chaosEnable);
-		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
-		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
+		return jsonObject().put("transactions", transactions);
 	}
 }

@@ -61,62 +61,68 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core.faucet;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.core.NodeServerModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import org.json.JSONObject;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.google.inject.Inject;
+import com.radixdlt.api.functional.ExceptionDecoder;
+import com.radixdlt.application.NodeApplicationRequest;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.actions.FaucetTokensTransfer;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.utils.functional.Result;
 
-public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_ARCHIVE_PORT = 8080;
-	private static final int DEFAULT_NODE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
-	private final RuntimeProperties properties;
-	private final int networkId;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.withRequiredStringParameter;
+import static com.radixdlt.errors.ClientErrors.INTERRUPTED_OPERATION;
+import static com.radixdlt.errors.ApiErrors.UNABLE_TO_SUBMIT_TX;
 
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
+public class FaucetHandler {
+	private final REAddr account;
+	private final Addressing addressing;
+	private final EventDispatcher<NodeApplicationRequest> dispatcher;
+
+	@Inject
+	public FaucetHandler(
+		@Self REAddr account,
+		Addressing addressing,
+		EventDispatcher<NodeApplicationRequest> dispatcher
+	) {
+		this.account = account;
+		this.addressing = addressing;
+		this.dispatcher = dispatcher;
 	}
 
-	@Override
-	public void configure() {
-		install(new NetworkInfoServiceModule());
+	public JSONObject requestTokens(JSONObject request) {
+		return withRequiredStringParameter(
+			request, "address",
+			address -> addressing.forAccounts().parseFunctional(address).flatMap(this::sendTokens)
+		);
+	}
 
-		var endpointStatus = new HashMap<String, Boolean>();
-
-		var archiveEnable = properties.get("api.archive.enable", false);
-		endpointStatus.put("archive", archiveEnable);
-		if (archiveEnable) {
-			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
-			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new ArchiveServerModule(port, bindAddress));
+	private Result<JSONObject> sendTokens(REAddr destination) {
+		var request = TxnConstructionRequest.create().action(
+			new FaucetTokensTransfer(account, destination)
+		);
+		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
+		var accountRequest = NodeApplicationRequest.create(request, completableFuture);
+		dispatcher.dispatch(accountRequest);
+		try {
+			var success = completableFuture.get();
+			return Result.ok(jsonObject().put("txID", success.getTxn().getId()));
+		} catch (ExecutionException e) {
+			return UNABLE_TO_SUBMIT_TX.with(e.getCause().getMessage()).result();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return INTERRUPTED_OPERATION.with("Send tokens", ExceptionDecoder.extractMessage(e)).result();
 		}
-
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		endpointStatus.put("transactions", transactionsEnable);
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
-		}
-
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		endpointStatus.put("metrics", metricsEnable);
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("faucet", faucetEnable);
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("chaos", chaosEnable);
-		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
-		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
 	}
 }

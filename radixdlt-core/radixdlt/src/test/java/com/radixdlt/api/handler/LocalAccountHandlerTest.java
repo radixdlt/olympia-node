@@ -64,14 +64,14 @@
 
 package com.radixdlt.api.handler;
 
-import com.radixdlt.api.node.account.LocalAccountHandler;
+import com.radixdlt.api.core.account.LocalAccountHandler;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 
 import org.json.JSONObject;
 import org.junit.Test;
 
-import com.radixdlt.api.node.account.AccountInfoService;
+import com.radixdlt.api.core.account.AccountInfoService;
 import com.radixdlt.api.util.ActionParser;
 import com.radixdlt.api.service.SubmissionService;
 import com.radixdlt.consensus.HashSigner;

@@ -61,62 +61,61 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core.metrics;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.core.NodeServerModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.api.util.MovingAverage;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.counters.SystemCounters;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Objects;
 
-public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_ARCHIVE_PORT = 8080;
-	private static final int DEFAULT_NODE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+public final class MetricsHandler implements HttpHandler {
 
-	private final RuntimeProperties properties;
-	private final int networkId;
+	private final SystemCounters counters;
+	private final HttpHandler next;
 
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
+	private final CounterType totalResponsesCounter;
+	private final CounterType okResponsesCounter;
+	private final CounterType nonOkResponsesCounter;
+	private final CounterType avgProcessingTimeCounter;
+	private final CounterType totalProcessingTimeCounter;
+
+	private final MovingAverage timeAvg = MovingAverage.create(10L);
+
+	public MetricsHandler(SystemCounters counters, String serverName, HttpHandler next) {
+		this.counters = Objects.requireNonNull(counters);
+		this.next = Objects.requireNonNull(next);
+
+		final var nameUpper = serverName.toUpperCase();
+		this.totalResponsesCounter = CounterType.valueOf(String.format("SERVER_%s_TOTAL_RESPONSES", nameUpper));
+		this.okResponsesCounter = CounterType.valueOf(String.format("SERVER_%s_OK_RESPONSES", nameUpper));
+		this.nonOkResponsesCounter = CounterType.valueOf(String.format("SERVER_%s_NON_OK_RESPONSES", nameUpper));
+		this.avgProcessingTimeCounter = CounterType.valueOf(String.format("SERVER_%s_AVG_PROCESSING_TIME", nameUpper));
+		this.totalProcessingTimeCounter = CounterType.valueOf(String.format("SERVER_%s_TOTAL_PROCESSING_TIME", nameUpper));
 	}
 
 	@Override
-	public void configure() {
-		install(new NetworkInfoServiceModule());
+	public void handleRequest(HttpServerExchange exchange) throws Exception {
+		if (!exchange.isComplete()) {
+			final long start = System.currentTimeMillis();
+			exchange.addExchangeCompleteListener((completedExchange, nextListener) -> {
+				long time = System.currentTimeMillis() - start;
+				timeAvg.update(time);
+				counters.set(avgProcessingTimeCounter, timeAvg.asLong());
+				counters.add(totalProcessingTimeCounter, time);
 
-		var endpointStatus = new HashMap<String, Boolean>();
+				counters.increment(totalResponsesCounter);
+				if (completedExchange.getStatusCode() == 200) {
+					counters.increment(okResponsesCounter);
+				} else {
+					counters.increment(nonOkResponsesCounter);
+				}
 
-		var archiveEnable = properties.get("api.archive.enable", false);
-		endpointStatus.put("archive", archiveEnable);
-		if (archiveEnable) {
-			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
-			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new ArchiveServerModule(port, bindAddress));
+				nextListener.proceed();
+			});
 		}
-
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		endpointStatus.put("transactions", transactionsEnable);
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
-		}
-
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		endpointStatus.put("metrics", metricsEnable);
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("faucet", faucetEnable);
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("chaos", chaosEnable);
-		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
-		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
+		next.handleRequest(exchange);
 	}
 }

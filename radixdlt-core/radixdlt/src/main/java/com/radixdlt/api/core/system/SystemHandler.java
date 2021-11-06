@@ -61,62 +61,89 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core.system;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.core.NodeServerModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.api.service.SystemConfigService;
+import org.json.JSONObject;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.google.inject.Inject;
 
-public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_ARCHIVE_PORT = 8080;
-	private static final int DEFAULT_NODE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
+import static com.radixdlt.api.util.JsonRpcUtil.wrapArray;
 
-	private final RuntimeProperties properties;
-	private final int networkId;
+public class SystemHandler {
+	private final SystemConfigService systemConfigService;
 
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
+	@Inject
+	public SystemHandler(SystemConfigService systemConfigService) {
+		this.systemConfigService = systemConfigService;
 	}
 
-	@Override
-	public void configure() {
-		install(new NetworkInfoServiceModule());
+	public JSONObject apiGetConfiguration(JSONObject request) {
+		return successResponse(request, systemConfigService.getApiConfiguration());
+	}
 
-		var endpointStatus = new HashMap<String, Boolean>();
+	public JSONObject apiGetData(JSONObject request) {
+		return successResponse(request, systemConfigService.getApiData());
+	}
 
-		var archiveEnable = properties.get("api.archive.enable", false);
-		endpointStatus.put("archive", archiveEnable);
-		if (archiveEnable) {
-			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
-			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new ArchiveServerModule(port, bindAddress));
-		}
+	public JSONObject bftGetConfiguration(JSONObject request) {
+		return successResponse(request, systemConfigService.getBftConfiguration());
+	}
 
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		endpointStatus.put("transactions", transactionsEnable);
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
-		}
+	public JSONObject bftGetData(JSONObject request) {
+		return successResponse(request, systemConfigService.getBftData());
+	}
 
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		endpointStatus.put("metrics", metricsEnable);
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("faucet", faucetEnable);
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("chaos", chaosEnable);
-		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
-		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
+	public JSONObject mempoolGetConfiguration(JSONObject request) {
+		return successResponse(request, systemConfigService.getMempoolConfiguration());
+	}
+
+	public JSONObject mempoolGetData(JSONObject request) {
+		return successResponse(request, systemConfigService.getMempoolData());
+	}
+
+	public JSONObject ledgerGetLatestProof(JSONObject request) {
+		return successResponse(request, systemConfigService.getLatestProof());
+	}
+
+	public JSONObject ledgerGetLatestEpochProof(JSONObject request) {
+		return successResponse(request, systemConfigService.getLatestEpochProof());
+	}
+
+	public JSONObject radixEngineGetConfiguration(JSONObject request) {
+		return successResponse(request, systemConfigService.getRadixEngineConfiguration());
+	}
+
+	public JSONObject radixEngineGetData(JSONObject request) {
+		return successResponse(request, systemConfigService.getRadixEngineData());
+	}
+
+	public JSONObject syncGetConfiguration(JSONObject request) {
+		return successResponse(request, systemConfigService.getSyncConfig());
+	}
+
+	public JSONObject syncGetData(JSONObject request) {
+		return successResponse(request, systemConfigService.getSyncData());
+	}
+
+	public JSONObject networkingGetConfiguration(JSONObject request) {
+		return successResponse(request, systemConfigService.getNetworkingConfiguration());
+	}
+
+	public JSONObject networkingGetPeers(JSONObject request) {
+		return successResponse(request, wrapArray(systemConfigService.getNetworkingPeers()));
+	}
+
+	public JSONObject networkingGetAddressBook(JSONObject request) {
+		return successResponse(request, wrapArray(systemConfigService.getNetworkingAddressBook()));
+	}
+
+	public JSONObject networkingGetData(JSONObject request) {
+		return successResponse(request, systemConfigService.getNetworkingData());
+	}
+
+	public JSONObject checkpointsGetCheckpoints(JSONObject request) {
+		return successResponse(request, systemConfigService.getCheckpoints());
 	}
 }

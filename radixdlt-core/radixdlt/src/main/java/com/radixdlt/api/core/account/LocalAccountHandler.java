@@ -61,62 +61,81 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core.account;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.core.NodeServerModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.google.inject.Inject;
+import com.radixdlt.api.service.SubmissionService;
+import com.radixdlt.api.util.ActionParser;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.utils.functional.Result;
 
-public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_ARCHIVE_PORT = 8080;
-	private static final int DEFAULT_NODE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+import java.util.List;
+import java.util.Optional;
 
-	private final RuntimeProperties properties;
-	private final int networkId;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static com.radixdlt.api.util.JsonRpcUtil.optString;
+import static com.radixdlt.api.util.JsonRpcUtil.safeArray;
+import static com.radixdlt.api.util.JsonRpcUtil.toResponse;
+import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
+import static com.radixdlt.utils.functional.Result.allOf;
 
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
+public class LocalAccountHandler {
+	private final AccountInfoService accountService;
+	private final SubmissionService submissionService;
+	private final ActionParser actionParserService;
+	private final HashSigner hashSigner;
+	private final REAddr account;
+
+	@Inject
+	public LocalAccountHandler(
+		AccountInfoService accountService,
+		SubmissionService submissionService,
+		ActionParser actionParserService,
+		@LocalSigner HashSigner hashSigner,
+		@Self REAddr account
+	) {
+		this.accountService = accountService;
+		this.submissionService = submissionService;
+		this.actionParserService = actionParserService;
+		this.hashSigner = hashSigner;
+		this.account = account;
 	}
 
-	@Override
-	public void configure() {
-		install(new NetworkInfoServiceModule());
+	public JSONObject handleAccountGetInfo(JSONObject request) {
+		return toResponse(request, accountService.getAccountInfo());
+	}
 
-		var endpointStatus = new HashMap<String, Boolean>();
+	public JSONObject handleAccountSubmitTransactionSingleStep(JSONObject request) {
+		return withRequiredParameters(request, List.of("actions"), List.of("message"), this::respondWithTransactionId);
+	}
 
-		var archiveEnable = properties.get("api.archive.enable", false);
-		endpointStatus.put("archive", archiveEnable);
-		if (archiveEnable) {
-			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
-			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new ArchiveServerModule(port, bindAddress));
-		}
+	private Result<JSONObject> respondWithTransactionId(JSONObject params) {
+		return allOf(
+			safeArray(params, "actions"),
+			Result.ok(optString(params, "message")),
+			Result.ok(params.optBoolean("disableResourceAllocationAndDestroy"))
+		)
+			.flatMap(this::parseSignSubmit)
+			.map(LocalAccountHandler::formatTxId);
+	}
 
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		endpointStatus.put("transactions", transactionsEnable);
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
-		}
+	private Result<AID> parseSignSubmit(
+		JSONArray actions, Optional<String> message, boolean disableResourceAllocationAndDestroy
+	) {
+		return actionParserService.parse(actions)
+			.flatMap(steps -> submissionService.oneStepSubmit(
+				account, steps, message, hashSigner, disableResourceAllocationAndDestroy
+			));
+	}
 
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		endpointStatus.put("metrics", metricsEnable);
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("faucet", faucetEnable);
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("chaos", chaosEnable);
-		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
-		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
+	private static JSONObject formatTxId(AID txId) {
+		return jsonObject().put("txID", txId);
 	}
 }

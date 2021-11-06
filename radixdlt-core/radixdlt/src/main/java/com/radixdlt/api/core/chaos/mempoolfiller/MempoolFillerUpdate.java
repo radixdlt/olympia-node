@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -61,62 +62,96 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core.chaos.mempoolfiller;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.core.NodeServerModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.concurrent.CompletableFuture;
 
-import java.util.HashMap;
-import java.util.Map;
+/**
+ * An update event to the mempool filler
+ */
+public final class MempoolFillerUpdate {
+    private final int parallelTransactions;
+    private final boolean sendToSelf;
+    private final CompletableFuture<Void> completableFuture;
 
-public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_ARCHIVE_PORT = 8080;
-	private static final int DEFAULT_NODE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+    private MempoolFillerUpdate(
+        int parallelTransactions,
+        boolean sendToSelf,
+		CompletableFuture<Void> completableFuture
+    ) {
+        this.parallelTransactions = parallelTransactions;
+        this.sendToSelf = sendToSelf;
+        this.completableFuture = completableFuture;
+    }
 
-	private final RuntimeProperties properties;
-	private final int networkId;
+    public static MempoolFillerUpdate enable(
+        int parallelTransactions,
+        boolean sendToSelf
+    ) {
+    	return new MempoolFillerUpdate(parallelTransactions, sendToSelf, null);
+    }
 
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
+    public static MempoolFillerUpdate enable(
+        int parallelTransactions,
+        boolean sendToSelf,
+        CompletableFuture<Void> completableFuture
+    ) {
+    	if (parallelTransactions < 0) {
+    	    throw new IllegalArgumentException("parallelTransactions must be > 0.");
+        }
+    	Objects.requireNonNull(completableFuture);
+        return new MempoolFillerUpdate(parallelTransactions, sendToSelf, completableFuture);
+    }
+
+    public static MempoolFillerUpdate disable() {
+    	return new MempoolFillerUpdate(-1, false, null);
 	}
 
-	@Override
-	public void configure() {
-		install(new NetworkInfoServiceModule());
+    public static MempoolFillerUpdate disable(CompletableFuture<Void> completableFuture) {
+        Objects.requireNonNull(completableFuture);
+        return new MempoolFillerUpdate(-1, false, completableFuture);
+    }
 
-		var endpointStatus = new HashMap<String, Boolean>();
+    public void onSuccess() {
+        if (completableFuture != null) {
+            completableFuture.complete(null);
+        }
+    }
 
-		var archiveEnable = properties.get("api.archive.enable", false);
-		endpointStatus.put("archive", archiveEnable);
-		if (archiveEnable) {
-			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
-			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new ArchiveServerModule(port, bindAddress));
-		}
+    public void onError(String error) {
+        if (completableFuture != null) {
+            completableFuture.completeExceptionally(new RuntimeException(error));
+        }
+    }
 
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		endpointStatus.put("transactions", transactionsEnable);
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
-		}
+    public boolean enabled() {
+        return parallelTransactions > 0;
+    }
 
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		endpointStatus.put("metrics", metricsEnable);
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("faucet", faucetEnable);
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("chaos", chaosEnable);
-		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
-		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
-	}
+    public OptionalInt numTransactions() {
+        return parallelTransactions > 0 ? OptionalInt.of(parallelTransactions) : OptionalInt.empty();
+    }
+
+    public Optional<Boolean> sendToSelf() {
+        return parallelTransactions > 0 ? Optional.of(sendToSelf) : Optional.empty();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(parallelTransactions, sendToSelf);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof MempoolFillerUpdate)) {
+            return false;
+        }
+
+        MempoolFillerUpdate other = (MempoolFillerUpdate) o;
+        return this.parallelTransactions == other.parallelTransactions
+            && this.sendToSelf == other.sendToSelf;
+    }
 }

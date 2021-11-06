@@ -61,62 +61,111 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core.transactions;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.core.NodeServerModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import com.google.common.collect.Streams;
+import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.Longs;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.Get;
+import com.sleepycat.je.OperationStatus;
+import com.sleepycat.je.Transaction;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
-public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_ARCHIVE_PORT = 8080;
-	private static final int DEFAULT_NODE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
+import static com.sleepycat.je.LockMode.DEFAULT;
+import static com.sleepycat.je.OperationStatus.SUCCESS;
 
-	private final RuntimeProperties properties;
-	private final int networkId;
+public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalStore {
+	private static final String TRANSACTIONS_DB = "radix.versioned_transactions";
+	private Database transactions;
 
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
+	@Override
+	public void open(DatabaseEnvironment dbEnv) {
+		var env = dbEnv.getEnvironment();
+		transactions = env.openDatabase(null, TRANSACTIONS_DB, new DatabaseConfig()
+			.setAllowCreate(true)
+			.setTransactional(true)
+			.setKeyPrefixing(true)
+			.setBtreeComparator(lexicographicalComparator())
+		);
 	}
 
 	@Override
-	public void configure() {
-		install(new NetworkInfoServiceModule());
+	public void close() {
+		if (transactions != null) {
+			transactions.close();
+		}
+	}
 
-		var endpointStatus = new HashMap<String, Boolean>();
+	public long getCount() {
+		try (var cursor = transactions.openCursor(null, null)) {
+			final DatabaseEntry key = new DatabaseEntry();
+			var result = cursor.getLast(key, null, null);
+			return result == SUCCESS ? Longs.fromByteArray(key.getData()) : 0;
+		}
+	}
 
-		var archiveEnable = properties.get("api.archive.enable", false);
-		endpointStatus.put("archive", archiveEnable);
-		if (archiveEnable) {
-			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
-			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new ArchiveServerModule(port, bindAddress));
+	public Stream<AID> get(long index) {
+		var cursor = transactions.openCursor(null, null);
+		var iterator = new Iterator<AID>() {
+			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(index));
+			final DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
+
+			@Override
+			public boolean hasNext() {
+				return status == SUCCESS;
+			}
+
+			@Override
+			public AID next() {
+				if (status != SUCCESS) {
+					throw new NoSuchElementException();
+				}
+				var next = AID.from(value.getData());
+				status = cursor.getNext(key, value, null);
+				return next;
+			}
+		};
+		return Streams.stream(iterator).onClose(cursor::close);
+	}
+
+	@Override
+	public void process(
+		Transaction dbTxn,
+		REProcessedTxn txn,
+		long stateVersion,
+		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
+	) {
+		final long nextIndex;
+		try (var cursor = transactions.openCursor(dbTxn, null)) {
+			var key = new DatabaseEntry();
+			var status = cursor.getLast(key, null, DEFAULT);
+			if (status == OperationStatus.NOTFOUND) {
+				nextIndex = 0;
+			} else {
+				nextIndex = Longs.fromByteArray(key.getData()) + 1;
+			}
+		}
+		if (stateVersion != nextIndex + 1) {
+			throw new IllegalStateException("Expected stateVersion " + (nextIndex + 1) + " but is " + stateVersion);
 		}
 
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		endpointStatus.put("transactions", transactionsEnable);
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
-		}
-
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		endpointStatus.put("metrics", metricsEnable);
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("faucet", faucetEnable);
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("chaos", chaosEnable);
-		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
-		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
+		var key = new DatabaseEntry(Longs.toByteArray(nextIndex));
+		var value = new DatabaseEntry(txn.getTxnId().getBytes());
+		transactions.putNoOverwrite(dbTxn, key, value);
 	}
 }

@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -61,152 +62,92 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive.tokens;
+package com.radixdlt.api.core.chaos.mempoolfiller;
+
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.utils.PrivateKeys;
+import org.assertj.core.api.Condition;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.api.core.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.qualifier.NumPeers;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.REOutput;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TokensInfoTest {
+public class MempoolFillerTest {
+	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
-	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
-	private final Amount totalTokenAmount = Amount.ofTokens(110);
-
-	@Inject
-	@LocalSigner
-	private HashSigner hashSigner;
 	@Inject
 	@Self
-	private ECPublicKey self;
-	@Inject
-	private SingleNodeDeterministicRunner runner;
-	@Inject
-	private RadixEngine<LedgerAndBFTProof> radixEngine;
-	@Inject
-	private EventDispatcher<MempoolAdd> mempoolDispatcher;
-	@Inject
-	private BerkeleyResourceInfoStore store;
+	private BFTNode self;
+	@Inject private Hasher hasher;
+	@Inject private DeterministicProcessor processor;
+	@Inject private DeterministicNetwork network;
+	@Inject private RadixEngineStateComputer stateComputer;
+	@Inject private SystemCounters systemCounters;
+	@Inject private PeersView peersView;
 
-	private Injector injector;
-
-	@Before
-	public void setup() {
-		this.injector = Guice.createInjector(
-			MempoolConfig.asModule(1000, 10),
+	private Injector getInjector() {
+		return Guice.createInjector(
+			new RadixEngineForksLatestOnlyModule(),
+			MempoolConfig.asModule(10, 10),
 			new MainnetForkConfigsModule(),
-			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.noFees())
-			),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
 			new MockedGenesisModule(
 				Set.of(TEST_KEY.getPublicKey()),
-				totalTokenAmount,
+				Amount.ofTokens(10000000000L),
 				Amount.ofTokens(100)
 			),
-			new MempoolFillerModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
+				    install(new MempoolFillerModule());
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
-					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-						.addBinding().to(BerkeleyResourceInfoStore.class);
 				}
 			}
 		);
-		this.injector.injectMembers(this);
-	}
-
-	@After
-	public void teardown() {
-		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
-		injector.getInstance(PersistentSafetyStateStore.class).close();
-		injector.getInstance(DatabaseEnvironment.class).stop();
 	}
 
 	@Test
-	public void transfer_should_not_change_native_token_definition() throws Exception {
+	public void mempool_fill_starts_filling_mempool() {
 		// Arrange
-		runner.start();
+		getInjector().injectMembers(this);
 
 		// Act
-		var acct = REAddr.ofPubKeyAccount(self);
-		var request = TxnConstructionRequest.create()
-			.feePayer(acct)
-			.action(
-				new TransferToken(
-					REAddr.ofNativeToken(),
-					acct,
-					REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey()),
-					UInt256.ONE
-				)
-			);
-		var txBuilder = radixEngine.construct(request);
-		var transfer = txBuilder.signAndBuild(hashSigner::sign);
-		mempoolDispatcher.dispatch(MempoolAdd.create(transfer));
-		runner.runNextEventsThrough(
-			LedgerUpdate.class,
-			u -> {
-				var output = u.getStateComputerOutput().getInstance(REOutput.class);
-				return output.getProcessedTxns().stream().anyMatch(txn -> txn.getTxn().getId().equals(transfer.getId()));
-			}
-		);
+		processor.handleMessage(self, MempoolFillerUpdate.enable(15, true), null);
+		processor.handleMessage(self, ScheduledMempoolFill.create(), null);
 
 		// Assert
-		var json = store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
-		var accountingJson = json.getJSONObject("accounting");
-		assertThat(accountingJson.getString("currentSupply")).isEqualTo(totalTokenAmount.toSubunits().toString());
-		assertThat(accountingJson.getString("totalMinted")).isEqualTo(totalTokenAmount.toSubunits().toString());
-		assertThat(accountingJson.getString("totalBurned")).isEqualTo(UInt256.ZERO.toString());
+		assertThat(network.allMessages())
+			.areAtLeast(1, new Condition<>(m -> m.message() instanceof MempoolAdd, "Has mempool add"));
 	}
 }

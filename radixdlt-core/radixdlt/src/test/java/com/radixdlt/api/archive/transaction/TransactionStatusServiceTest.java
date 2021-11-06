@@ -71,7 +71,7 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.api.node.chaos.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.api.core.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;

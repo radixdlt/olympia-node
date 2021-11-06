@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -61,62 +62,107 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core.chaos.messageflooder;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.core.NodeServerModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import com.google.inject.Inject;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.radixdlt.ledger.AccumulatorState;
 
-public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_ARCHIVE_PORT = 8080;
-	private static final int DEFAULT_NODE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-	private final RuntimeProperties properties;
-	private final int networkId;
+/**
+ * Floods a node with proposal messages attempting to bring it down
+ */
+public final class MessageFlooder {
 
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
+	private Logger logger = LogManager.getLogger();
+
+	private final RemoteEventDispatcher<Proposal> proposalDispatcher;
+	private final ScheduledEventDispatcher<ScheduledMessageFlood> scheduledFloodEventDispatcher;
+	private final BFTNode self;
+
+	private BFTNode nodeToAttack;
+	private int messagesPerSec = 100;
+	private int commandSize = 1024 * 1024;
+
+	@Inject
+	public MessageFlooder(
+		@Self BFTNode self,
+		RemoteEventDispatcher<Proposal> proposalDispatcher,
+		ScheduledEventDispatcher<ScheduledMessageFlood> scheduledFloodEventDispatcher
+	) {
+		this.self = Objects.requireNonNull(self);
+		this.proposalDispatcher = Objects.requireNonNull(proposalDispatcher);
+		this.scheduledFloodEventDispatcher = Objects.requireNonNull(scheduledFloodEventDispatcher);
 	}
 
-	@Override
-	public void configure() {
-		install(new NetworkInfoServiceModule());
+	private Proposal createProposal() {
+		var accumulatorState = new AccumulatorState(9, HashUtils.random256());
+		var ledgerHeader = LedgerHeader.create(1, View.of(12345), accumulatorState, 300);
+		var header = new BFTHeader(View.of(1), HashUtils.random256(), ledgerHeader);
+		var voteData = new VoteData(header, header, header);
+		var signatures = new TimestampedECDSASignatures();
+		var qc = new QuorumCertificate(voteData, signatures);
+		var vertex = UnverifiedVertex.create(
+			qc, View.of(3), List.of(Txn.create(new byte[commandSize])), BFTNode.random()
+		);
 
-		var endpointStatus = new HashMap<String, Boolean>();
+		return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
+	}
 
-		var archiveEnable = properties.get("api.archive.enable", false);
-		endpointStatus.put("archive", archiveEnable);
-		if (archiveEnable) {
-			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
-			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new ArchiveServerModule(port, bindAddress));
-		}
+	public EventProcessor<MessageFlooderUpdate> messageFloodUpdateProcessor() {
+		return msg -> {
+			BFTNode nextNode = msg.getBFTNode().orElse(null);
+			if (Objects.equals(this.nodeToAttack, nextNode)) {
+				logger.info("Message flood no update: {}", nextNode);
+				return;
+			}
 
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		endpointStatus.put("transactions", transactionsEnable);
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
-		}
+			logger.info("Message flood update: {}", nextNode);
 
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		endpointStatus.put("metrics", metricsEnable);
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("faucet", faucetEnable);
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("chaos", chaosEnable);
-		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
-		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
+			// Start flooding if we haven't started yet.
+			if (this.nodeToAttack == null) {
+				scheduledFloodEventDispatcher.dispatch(ScheduledMessageFlood.create(), 50);
+			}
+
+			this.messagesPerSec = msg.getMessagesPerSec().orElse(this.messagesPerSec);
+			this.nodeToAttack = nextNode;
+		};
+	}
+
+	public EventProcessor<ScheduledMessageFlood> scheduledMessageFloodProcessor() {
+		return s -> {
+			if (nodeToAttack == null) {
+				return;
+			}
+
+			Proposal proposal = createProposal();
+			for (int i = 0; i < messagesPerSec; i++) {
+				proposalDispatcher.dispatch(Set.of(nodeToAttack), proposal);
+			}
+
+			scheduledFloodEventDispatcher.dispatch(ScheduledMessageFlood.create(), 1000);
+		};
 	}
 }

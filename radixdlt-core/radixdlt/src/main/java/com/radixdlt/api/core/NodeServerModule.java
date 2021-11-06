@@ -61,62 +61,114 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.core.NodeServerModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
-import com.radixdlt.properties.RuntimeProperties;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.ModuleRunner;
+import com.radixdlt.api.core.account.AccountApiModule;
+import com.radixdlt.api.core.chaos.ChaosApiModule;
+import com.radixdlt.api.core.developer.DeveloperApiModule;
+import com.radixdlt.api.core.faucet.FaucetApiModule;
+import com.radixdlt.api.core.health.HealthApiModule;
+import com.radixdlt.api.core.metrics.MetricsApiModule;
+import com.radixdlt.api.core.network.NetworkApiModule;
+import com.radixdlt.api.core.system.SystemApiModule;
+import com.radixdlt.api.core.transactions.TransactionIndexApiModule;
+import com.radixdlt.api.core.validation.ValidatorApiModule;
+import com.radixdlt.api.core.version.VersionApiModule;
+import com.radixdlt.api.util.HttpServerRunner;
+import com.radixdlt.api.util.Controller;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.networks.Addressing;
+import io.undertow.server.HttpHandler;
 
-import java.util.HashMap;
+import javax.inject.Qualifier;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import java.util.List;
 import java.util.Map;
 
-public final class ApiModule extends AbstractModule {
-	private static final int DEFAULT_ARCHIVE_PORT = 8080;
-	private static final int DEFAULT_NODE_PORT = 3333;
-	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-	private final RuntimeProperties properties;
-	private final int networkId;
+/**
+ * Configures the api including http server setup
+ */
+public final class NodeServerModule extends AbstractModule {
+	private final int port;
+	private final String bindAddress;
+	private final boolean transactionsEnable;
+	private final boolean metricsEnable;
+	private final boolean faucetEnable;
+	private final boolean chaosEnable;
 
-	public ApiModule(int networkId, RuntimeProperties properties) {
-		this.properties = properties;
-		this.networkId = networkId;
+	public NodeServerModule(
+		int port,
+		String bindAddress,
+		boolean transactionsEnable,
+		boolean metricsEnable,
+		boolean faucetEnable,
+		boolean chaosEnable
+	) {
+		this.port = port;
+		this.bindAddress = bindAddress;
+		this.transactionsEnable = transactionsEnable;
+		this.metricsEnable = metricsEnable;
+		this.faucetEnable = faucetEnable;
+		this.chaosEnable = chaosEnable;
 	}
 
 	@Override
 	public void configure() {
-		install(new NetworkInfoServiceModule());
+		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
+		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
 
-		var endpointStatus = new HashMap<String, Boolean>();
+		install(new SystemApiModule(NodeServer.class, "/system"));
+		install(new AccountApiModule(NodeServer.class, "/account"));
+		install(new ValidatorApiModule(NodeServer.class, "/validator"));
+		install(new HealthApiModule(NodeServer.class, "/health"));
+		install(new VersionApiModule(NodeServer.class, "/version"));
+		install(new DeveloperApiModule(NodeServer.class, "/developer"));
 
-		var archiveEnable = properties.get("api.archive.enable", false);
-		endpointStatus.put("archive", archiveEnable);
-		if (archiveEnable) {
-			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
-			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new ArchiveServerModule(port, bindAddress));
+		if (metricsEnable) {
+			install(new MetricsApiModule(NodeServer.class, "/metrics"));
+		}
+		if (faucetEnable) {
+			install(new FaucetApiModule(NodeServer.class, "/faucet"));
+		}
+		if (chaosEnable) {
+			install(new ChaosApiModule(NodeServer.class, "/chaos"));
 		}
 
-		var transactionsEnable = properties.get("api.transactions.enable", false);
-		endpointStatus.put("transactions", transactionsEnable);
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
+		install(new NetworkApiModule(NodeServer.class, "/network"));
+		if (transactionsEnable) {
+			install(new TransactionIndexApiModule(NodeServer.class, "/transactions"));
 		}
+	}
 
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		endpointStatus.put("metrics", metricsEnable);
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("faucet", faucetEnable);
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("chaos", chaosEnable);
-		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
-		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
-		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
+	@ProvidesIntoMap
+	@StringMapKey(Runners.NODE_API)
+	@Singleton
+	public ModuleRunner nodeHttpServer(
+		@NodeServer Map<String, Controller> controllers,
+		@NodeServer Map<String, HttpHandler> handlers,
+		Addressing addressing,
+		SystemCounters counters
+	) {
+		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
+	}
+
+	/**
+	 * Marks elements which run on Node server
+	 */
+	@Qualifier
+	@Target({ FIELD, PARAMETER, METHOD })
+	@Retention(RUNTIME)
+	private @interface NodeServer {
 	}
 }
