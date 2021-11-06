@@ -150,21 +150,21 @@ public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalSt
 		long stateVersion,
 		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
 	) {
-		final long expectedVersion;
+		final long nextIndex;
 		try (var cursor = transactions.openCursor(dbTxn, null)) {
 			var key = new DatabaseEntry();
 			var status = cursor.getLast(key, null, DEFAULT);
 			if (status == OperationStatus.NOTFOUND) {
-				expectedVersion = 0;
+				nextIndex = 0;
 			} else {
-				expectedVersion = Longs.fromByteArray(key.getData()) + 1;
+				nextIndex = Longs.fromByteArray(key.getData()) + 1;
 			}
 		}
-		if (stateVersion != expectedVersion) {
-			throw new IllegalStateException("Expected version " + expectedVersion + " but is " + stateVersion);
+		if (stateVersion != nextIndex + 1) {
+			throw new IllegalStateException("Expected stateVersion " + (nextIndex + 1) + " but is " + stateVersion);
 		}
 
-		var key = new DatabaseEntry(Longs.toByteArray(stateVersion));
+		var key = new DatabaseEntry(Longs.toByteArray(nextIndex));
 		var value = new DatabaseEntry(txn.getTxnId().getBytes());
 		transactions.putNoOverwrite(dbTxn, key, value);
 	}

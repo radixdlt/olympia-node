@@ -244,9 +244,9 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 			var resourceInBucket = (ResourceInBucket) update.getParsed();
 			var bucket = resourceInBucket.bucket();
 			var amount = new BigInteger(update.isBootUp() ? 1 : -1, resourceInBucket.getAmount().toByteArray());
-			var resource = new JSONObject();
+			var resourceIdentifier = new JSONObject();
 			if (bucket.resourceAddr() == null) {
-				resource
+				resourceIdentifier
 					.put("type", "stake_ownership")
 					.put("validator", addressing.forValidators().of(bucket.getValidatorKey()));
 			} else {
@@ -255,7 +255,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 				// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
 				var metadata = (TokenResourceMetadata) deserialize(data);
 				var rri = addressing.forResources().of(metadata.getSymbol(), bucket.resourceAddr());
-				resource
+				resourceIdentifier
 					.put("type", "token")
 					.put("rri", rri);
 			}
@@ -297,7 +297,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 			if (!amount.equals(BigInteger.ZERO)) {
 				operationJson.put("amount", new JSONObject()
 					.put("value", amount.toString())
-					.put("resource", resource)
+					.put("resource_identifier", resourceIdentifier)
 				);
 			}
 			operationJson.put("address_identifier", addressIdentifier);
@@ -357,6 +357,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 				var addressIdentifierJson = new JSONObject()
 					.put("address", addressing.forValidators().of(validatorUpdatingData.getValidatorKey()));
 				operationJson.put("address_identifier", addressIdentifierJson);
+				validatorUpdatingData.getEpochUpdate().ifPresent(epochUpdate -> objectJson.put("epoch", epochUpdate));
 				if (update.getParsed() instanceof ValidatorRegisteredCopy) {
 					var preparedValidatorRegistered = (ValidatorRegisteredCopy) update.getParsed();
 					objectJson.put("registered", preparedValidatorRegistered.isRegistered());
@@ -558,7 +559,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 					.map(p -> Bytes.toHexString(p.getCompressedBytes()))
 					.map(hex -> new JSONObject().put("hex", hex))
 					.orElse(null))
-				.putOpt("message", messageHex.map(hex -> new JSONObject().put("hex", hex)).orElse(null))
+				.putOpt("message", messageHex.orElse(null))
 			)
 			.put("operation_groups", operationGroups)
 			.toString();

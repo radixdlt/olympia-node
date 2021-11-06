@@ -90,7 +90,7 @@ class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 	public TransactionsRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
 		var limit = requestReader.getOptUnsignedLong("limit").orElse(1);
 		var index = requestReader.getOptUnsignedLong("index").orElse(0);
-		if (index < 1) {
+		if (index < 0) {
 			throw new InvalidParametersException("/index", "Index must be >= 0");
 		}
 		return new TransactionsRequest(index, limit);
