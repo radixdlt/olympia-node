@@ -61,113 +61,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.node;
+package com.radixdlt.api.node.network;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.node.account.AccountApiModule;
-import com.radixdlt.api.node.chaos.ChaosApiModule;
-import com.radixdlt.api.node.developer.DeveloperApiModule;
-import com.radixdlt.api.node.faucet.FaucetApiModule;
-import com.radixdlt.api.node.health.HealthApiModule;
-import com.radixdlt.api.node.metrics.MetricsApiModule;
-import com.radixdlt.api.node.network.NetworkApiModule;
-import com.radixdlt.api.node.system.SystemApiModule;
-import com.radixdlt.api.node.transactions.TransactionIndexApiModule;
-import com.radixdlt.api.node.validation.ValidatorApiModule;
-import com.radixdlt.api.node.version.VersionApiModule;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import org.json.JSONObject;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+class NetworkHandler implements ApiHandler<Void> {
+	private final int networkId;
+	private final Network network;
 
-/**
- * Configures the api including http server setup
- */
-public final class NodeServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-	private final boolean metricsEnable;
-	private final boolean faucetEnable;
-	private final boolean chaosEnable;
-
-	public NodeServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable,
-		boolean metricsEnable,
-		boolean faucetEnable,
-		boolean chaosEnable
-	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
-		this.metricsEnable = metricsEnable;
-		this.faucetEnable = faucetEnable;
-		this.chaosEnable = chaosEnable;
+	@Inject
+	NetworkHandler(@NetworkId int networkId) {
+		this.networkId = networkId;
+		this.network = Network.ofId(networkId).orElseThrow();
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class, "/system"));
-		install(new AccountApiModule(NodeServer.class, "/account"));
-		install(new ValidatorApiModule(NodeServer.class, "/validator"));
-		install(new HealthApiModule(NodeServer.class, "/health"));
-		install(new VersionApiModule(NodeServer.class, "/version"));
-		install(new DeveloperApiModule(NodeServer.class, "/developer"));
-		install(new NetworkApiModule(NodeServer.class, "/network"));
-
-		if (transactionsEnable) {
-			install(new TransactionIndexApiModule(NodeServer.class, "/transactions"));
-		}
-		if (metricsEnable) {
-			install(new MetricsApiModule(NodeServer.class, "/metrics"));
-		}
-		if (faucetEnable) {
-			install(new FaucetApiModule(NodeServer.class, "/faucet"));
-		}
-		if (chaosEnable) {
-			install(new ChaosApiModule(NodeServer.class, "/chaos"));
-		}
+	public Void parseRequest(JsonObjectReader reader) {
+		return null;
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<String, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
-
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	@Override
+	public JSONObject handleRequest(Void request) {
+		return jsonObject()
+			.put("network_identifier", new JSONObject()
+				.put("id", networkId)
+				.put("name", network.name().toLowerCase())
+			)
+			.put("bech32_human_readable_parts", new JSONObject()
+				.put("account_hrp", network.getAccountHrp())
+				.put("validator_hrp", network.getValidatorHrp())
+				.put("node_hrp", network.getNodeHrp())
+				.put("resource_hrp_suffix", network.getResourceHrpSuffix())
+			);
 	}
 }
