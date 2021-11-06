@@ -61,26 +61,56 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.node.ledger;
+package com.radixdlt.api.node.network;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.middleware2.InfoSupplier;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static org.radix.Radix.SYSTEM_VERSION_KEY;
+import static org.radix.Radix.VERSION_STRING_KEY;
 
-public final class LedgerApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+class NetworkConfigurationHandler implements ApiHandler<Void> {
+	private final int networkId;
+	private final Network network;
+	private final InfoSupplier infoSupplier;
 
-	public LedgerApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	NetworkConfigurationHandler(
+		@NetworkId int networkId,
+		InfoSupplier infoSupplier
+	) {
+		this.networkId = networkId;
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.infoSupplier = infoSupplier;
 	}
 
 	@Override
-	protected void configure() {
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, annotationType)
-			.addBinding(path).to(LedgerHandler.class);
+	public Void parseRequest(JsonObjectReader reader) {
+		return null;
+	}
+
+	@Override
+	public JSONObject handleRequest(Void request) {
+		return jsonObject()
+			.put("version", new JSONObject()
+				.put("core_version", infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY))
+				.put("api_version", "1.0.0")
+			)
+			.put("network_identifier", new JSONObject()
+				.put("id", networkId)
+				.put("name", network.name().toLowerCase())
+			)
+			.put("bech32_human_readable_parts", new JSONObject()
+				.put("account_hrp", network.getAccountHrp())
+				.put("validator_hrp", network.getValidatorHrp())
+				.put("node_hrp", network.getNodeHrp())
+				.put("resource_hrp_suffix", network.getResourceHrpSuffix())
+			);
 	}
 }

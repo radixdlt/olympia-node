@@ -74,7 +74,6 @@ import com.radixdlt.api.node.chaos.ChaosApiModule;
 import com.radixdlt.api.node.developer.DeveloperApiModule;
 import com.radixdlt.api.node.faucet.FaucetApiModule;
 import com.radixdlt.api.node.health.HealthApiModule;
-import com.radixdlt.api.node.ledger.LedgerApiModule;
 import com.radixdlt.api.node.metrics.MetricsApiModule;
 import com.radixdlt.api.node.network.NetworkApiModule;
 import com.radixdlt.api.node.system.SystemApiModule;
@@ -147,7 +146,6 @@ public final class NodeServerModule extends AbstractModule {
 		}
 
 		install(new NetworkApiModule(NodeServer.class, "/network"));
-		install(new LedgerApiModule(NodeServer.class, "/ledger"));
 		if (transactionsEnable) {
 			install(new TransactionIndexApiModule(NodeServer.class, "/transactions"));
 		}

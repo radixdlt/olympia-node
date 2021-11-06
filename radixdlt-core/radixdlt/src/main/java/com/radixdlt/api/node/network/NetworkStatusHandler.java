@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.node.ledger;
+package com.radixdlt.api.node.network;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
@@ -70,8 +70,6 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
@@ -79,12 +77,12 @@ import org.json.JSONObject;
 
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
-final class LedgerHandler implements ApiHandler<Void> {
+final class NetworkStatusHandler implements ApiHandler<Void> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final AccumulatorState genesisAccumulatorState;
 
 	@Inject
-	LedgerHandler(
+	NetworkStatusHandler(
 		InMemorySystemInfo inMemorySystemInfo,
 		@Genesis Txn genesisTxn,
 		LedgerAccumulator ledgerAccumulator

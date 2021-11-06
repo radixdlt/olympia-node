@@ -80,7 +80,8 @@ public final class NetworkApiModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, annotationType)
-			.addBinding(path).to(NetworkHandler.class);
+		var binder = MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, annotationType);
+		binder.addBinding(path + "/configuration").to(NetworkConfigurationHandler.class);
+		binder.addBinding(path + "/status").to(NetworkStatusHandler.class);
 	}
 }
