@@ -334,10 +334,12 @@ public final class ConstraintMachine {
 				throw new MeterException(e);
 			}
 
-			try {
-				authorization.authorizer().verify(immutableAddrs, context);
-			} catch (Exception e) {
-				throw new AuthorizationException(e);
+			if (!context.skipAuthorization()) {
+				try {
+					authorization.authorizer().verify(immutableAddrs, context);
+				} catch (Exception e) {
+					throw new AuthorizationException(e);
+				}
 			}
 		}
 

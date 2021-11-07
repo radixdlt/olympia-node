@@ -75,7 +75,6 @@ import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.Pair;

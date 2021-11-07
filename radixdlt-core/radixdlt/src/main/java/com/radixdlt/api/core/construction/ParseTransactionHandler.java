@@ -61,82 +61,70 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.archive;
+package com.radixdlt.api.core.construction;
 
-import com.google.common.base.Throwables;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.api.archive.construction.InvalidTransactionException;
-import com.radixdlt.api.archive.construction.StateConflictException;
-import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import org.json.JSONObject;
 
-public enum ApiErrorCode {
-	INTERNAL_SERVER_ERROR(Throwable.class, 1) {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var root = Throwables.getRootCause(e);
-			return new JSONObject()
-				.put("exception", e.toString())
-				.put("cause", e.getMessage())
-				.putOpt("root", root == null ? null : root.toString());
-		}
-	},
-	INVALID_JSON(JsonParseException.class, 2) {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (JsonParseException) e;
-			return new JSONObject()
-				.put("cause", ex.getCause().getMessage());
-		}
-	},
-	INVALID_REQUEST(InvalidParametersException.class, 3) {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (InvalidParametersException) e;
-			return new JSONObject()
-				.put("pointer", ex.getJsonPointer())
-				.put("cause", ex.getCause() == null ? ex.getMessage() : ex.getCause().getMessage());
-		}
-	},
-	MEMPOOL_FULL(MempoolFullException.class, 100) {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			return new JSONObject();
-		}
-	},
-	STATE_CONFLICT(StateConflictException.class, 101) {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (StateConflictException) e;
-			// TODO: elaborate
-			return new JSONObject();
-		}
-	},
-	INVALID_TRANSACTION(InvalidTransactionException.class, 102) {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (InvalidTransactionException) e;
-			// TODO: elaborate
-			return new JSONObject()
-				.put("message", ex.getMessage());
-		}
-	};
+import java.util.function.Function;
 
-	private final Class<? extends Throwable> exceptionClass;
-	private final int code;
+public class ParseTransactionHandler implements ApiHandler<ParseTransactionRequest> {
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+	private final ProcessedTxnJsonConverter converter;
+	private final Addressing addressing;
 
-	ApiErrorCode(Class<? extends Throwable> exceptionClass, int code) {
-		this.exceptionClass = exceptionClass;
-		this.code = code;
+	@Inject
+	ParseTransactionHandler(
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+		ProcessedTxnJsonConverter converter,
+		Addressing addressing
+	) {
+		this.radixEngineProvider = radixEngineProvider;
+		this.converter = converter;
+		this.addressing = addressing;
 	}
 
-	public Class<? extends Throwable> getExceptionClass() {
-		return exceptionClass;
+
+	@Override
+	public ParseTransactionRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return ParseTransactionRequest.from(requestReader);
 	}
 
-	public int getCode() {
-		return code;
-	}
+	@Override
+	public JSONObject handleRequest(ParseTransactionRequest request) throws Exception {
+		Function<REAddr, String> addressToRri = addr -> {
+			var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+			var substate = radixEngineProvider.get().get(mapKey).orElseThrow();
+			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+			var metadata = (TokenResourceMetadata) substate;
+			var symbol = metadata.getSymbol();
+			return addressing.forResources().of(symbol, addr);
+		};
 
-	public abstract JSONObject getDetails(Throwable e, Addressing addressing);
+		REProcessedTxn processed;
+		try {
+			processed = radixEngineProvider.get().test(request.getTransaction(), request.isSigned());
+		} catch (RadixEngineException e) {
+			throw new InvalidTransactionException(e);
+		}
+		var operationGroups = converter.getOperationGroups(processed, addressToRri, null);
+
+		return new JSONObject()
+			.put("operation_groups", operationGroups);
+	}
 }

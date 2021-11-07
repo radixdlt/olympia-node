@@ -84,5 +84,6 @@ public final class ConstructionApiModule extends AbstractModule {
 			binder(), String.class, HttpHandler.class, annotationType
 		);
 		routeBinder.addBinding(path + "/build").to(BuildTransactionHandler.class);
+		routeBinder.addBinding(path + "/parse").to(ParseTransactionHandler.class);
 	}
 }

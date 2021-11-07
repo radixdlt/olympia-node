@@ -74,6 +74,7 @@ import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.FeeReserveComplete;
@@ -93,6 +94,7 @@ import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.ParsedTxn;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.REAddr;
@@ -222,6 +224,11 @@ public final class RadixEngine<M> {
 			return engine.execute(txns);
 		}
 
+		public RadixEngineResult execute(List<Txn> txns, boolean skipAuthorization) throws RadixEngineException {
+			assertNotDeleted();
+			return engine.execute(txns, null, PermissionLevel.USER, skipAuthorization);
+		}
+
 		public RadixEngineResult execute(List<Txn> txns, PermissionLevel permissionLevel) throws RadixEngineException {
 			assertNotDeleted();
 			return engine.execute(txns, null, permissionLevel);
@@ -262,7 +269,7 @@ public final class RadixEngine<M> {
 	}
 
 	private Optional<ECPublicKey> getSignedByKey(ParsedTxn parsedTxn, ExecutionContext context) throws AuthorizationException {
-		if (context.permissionLevel() != PermissionLevel.SYSTEM) {
+		if (!context.skipAuthorization() && context.permissionLevel() != PermissionLevel.SYSTEM) {
 			var payloadHashAndSigMaybe = parsedTxn.getPayloadHashAndSig();
 			if (payloadHashAndSigMaybe.isPresent()) {
 				var payloadHashAndSig = payloadHashAndSigMaybe.get();
@@ -299,14 +306,12 @@ public final class RadixEngine<M> {
 		return new REProcessedTxn(parsedTxn, signedByKey.orElse(null), stateUpdates, context.getEvents());
 	}
 
-	/**
-	 * Atomically stores the given atom into the store with default permission level USER.
-	 * If the atom has any conflicts or dependency issues the atom will not be stored.
-	 *
-	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
-	 */
 	public RadixEngineResult execute(List<Txn> txns) throws RadixEngineException {
 		return execute(txns, null, PermissionLevel.USER);
+	}
+
+	public RadixEngineResult execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+		return execute(txns, meta, permissionLevel, false);
 	}
 
 	/**
@@ -317,7 +322,7 @@ public final class RadixEngine<M> {
 	 * @param permissionLevel permission level to execute on
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
-	public RadixEngineResult execute(List<Txn> txns, M meta, PermissionLevel permissionLevel) throws RadixEngineException {
+	public RadixEngineResult execute(List<Txn> txns, M meta, PermissionLevel permissionLevel, boolean skipAuthorization) throws RadixEngineException {
 		synchronized (stateUpdateEngineLock) {
 			if (!branches.isEmpty()) {
 				throw new IllegalStateException(
@@ -327,7 +332,7 @@ public final class RadixEngine<M> {
 					)
 				);
 			}
-			return engineStore.transaction(store -> executeInternal(store, txns, meta, permissionLevel));
+			return engineStore.transaction(store -> executeInternal(store, txns, meta, permissionLevel, skipAuthorization));
 		}
 	}
 
@@ -335,7 +340,8 @@ public final class RadixEngine<M> {
 		EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction,
 		List<Txn> txns,
 		M meta,
-		PermissionLevel permissionLevel
+		PermissionLevel permissionLevel,
+		boolean skipAuthorization
 	) throws RadixEngineException {
 		var processedTxns = new ArrayList<REProcessedTxn>();
 
@@ -349,7 +355,7 @@ public final class RadixEngine<M> {
 			var txn = txns.get(i);
 
 			verificationStopwatch.start();
-			var context = new ExecutionContext(txn, permissionLevel, sigsLeft);
+			var context = new ExecutionContext(txn, permissionLevel, skipAuthorization, sigsLeft);
 			final REProcessedTxn processedTxn;
 			try {
 				processedTxn = this.verify(engineStoreInTransaction, txn, context);
@@ -460,6 +466,8 @@ public final class RadixEngine<M> {
 		for (int i = 0; i < maxTries; i++) {
 			try {
 				return construct(txBuilder -> {
+					txBuilder.toLowLevelBuilder().disableResourceAllocAndDestroy();
+
 					this.actionConstructors.construct(new FeeReservePut(feePayer, feeGuess.get()), txBuilder);
 					executable.execute(txBuilder);
 					this.actionConstructors.construct(new FeeReserveComplete(feePayer), txBuilder);
@@ -504,6 +512,21 @@ public final class RadixEngine<M> {
 		throw new FeeConstructionException(maxTries);
 	}
 
+	public REProcessedTxn test(byte[] payload, boolean isSigned) throws RadixEngineException {
+		synchronized (stateUpdateEngineLock) {
+			var txn = isSigned
+				? Txn.create(payload)
+				: TxLowLevelBuilder.newBuilder(payload).sig(ECDSASignature.zeroSignature()).build();
+			var checker = this.transientBranch();
+			try {
+				var result = checker.execute(List.of(txn), !isSigned);
+				return result.getProcessedTxn();
+			} finally {
+				this.deleteBranches();
+			}
+		}
+	}
+
 	public REParser getParser() {
 		synchronized (stateUpdateEngineLock) {
 			return parser;
@@ -512,8 +535,7 @@ public final class RadixEngine<M> {
 
 	public SubstateDeserialization getSubstateDeserialization() {
 		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			return deserialization;
+			return constraintMachine.getDeserialization();
 		}
 	}
 

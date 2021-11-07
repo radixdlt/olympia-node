@@ -68,7 +68,6 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
