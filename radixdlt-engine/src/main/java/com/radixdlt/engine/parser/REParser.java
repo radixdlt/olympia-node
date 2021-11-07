@@ -64,6 +64,7 @@
 
 package com.radixdlt.engine.parser;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.constraintmachine.CallData;
@@ -77,6 +78,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
@@ -255,16 +257,13 @@ public final class REParser {
 
 		parserState.finish();
 
-		final ECPublicKey pubKey;
+		final Pair<HashCode, ECDSASignature> payloadHashAndSig;
 		if (sig != null) {
-			var hash = HashUtils.sha256(txn.getPayload(), 0, sigPosition); // This is a double hash
-			pubKey = ECPublicKey.recoverFrom(hash, sig)
-				.orElseThrow(() -> new TxnParseException(parserState, "Invalid signature"));
-			if (!pubKey.verify(hash, sig)) {
-				throw new TxnParseException(parserState, "Invalid signature");
-			}
+			var payloadHash = HashUtils.sha256(txn.getPayload(), 0, sigPosition); // This is a double hash
+			payloadHashAndSig = Pair.of(payloadHash, sig);
+
 		} else {
-			pubKey = null;
+			payloadHashAndSig = null;
 		}
 
 		return new ParsedTxn(
@@ -272,7 +271,7 @@ public final class REParser {
 			feePaid,
 			parserState.instructions,
 			parserState.msg,
-			pubKey,
+			payloadHashAndSig,
 			parserState.disableResourceAllocAndDestroy
 		);
 	}

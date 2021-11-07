@@ -84,14 +84,17 @@ import java.util.stream.Stream;
 public final class REProcessedTxn {
 	private final List<List<REStateUpdate>> stateUpdates;
 	private final ParsedTxn parsedTxn;
+	private final ECPublicKey signedByKey;
 	private final List<REEvent> events;
 
 	public REProcessedTxn(
 		ParsedTxn parsedTxn,
+		ECPublicKey signedByKey,
 		List<List<REStateUpdate>> stateUpdates,
 		List<REEvent> events
 	) {
 		this.parsedTxn = parsedTxn;
+		this.signedByKey = signedByKey;
 		this.stateUpdates = stateUpdates;
 		this.events = events;
 	}
@@ -109,7 +112,7 @@ public final class REProcessedTxn {
 	}
 
 	public Optional<ECPublicKey> getSignedBy() {
-		return parsedTxn.getSignedBy();
+		return Optional.ofNullable(signedByKey);
 	}
 
 	public AID getTxnId() {

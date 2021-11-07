@@ -91,6 +91,8 @@ import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.REAddr;
@@ -259,11 +261,33 @@ public final class RadixEngine<M> {
 		}
 	}
 
+	private Optional<ECPublicKey> getSignedByKey(ParsedTxn parsedTxn, ExecutionContext context) throws AuthorizationException {
+		if (context.permissionLevel() != PermissionLevel.SYSTEM) {
+			var payloadHashAndSigMaybe = parsedTxn.getPayloadHashAndSig();
+			if (payloadHashAndSigMaybe.isPresent()) {
+				var payloadHashAndSig = payloadHashAndSigMaybe.get();
+				var hash = payloadHashAndSig.getFirst();
+				var sig = payloadHashAndSig.getSecond();
+				var pubKey = ECPublicKey.recoverFrom(hash, sig).orElseThrow(() -> new AuthorizationException("Invalid signature"));
+				// TODO: do we still need this verify?
+				if (!pubKey.verify(hash, sig)) {
+					throw new AuthorizationException("Invalid signature");
+				}
+
+				return Optional.of(pubKey);
+			}
+		}
+
+		return Optional.empty();
+	}
+
 	private REProcessedTxn verify(EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction, Txn txn, ExecutionContext context)
 		throws AuthorizationException, TxnParseException, ConstraintMachineException {
 
 		var parsedTxn = parser.parse(txn);
-		parsedTxn.getSignedBy().ifPresent(context::setKey);
+		var signedByKey = getSignedByKey(parsedTxn, context);
+		signedByKey.ifPresent(context::setKey);
+
 		context.setDisableResourceAllocAndDestroy(parsedTxn.disableResourceAllocAndDestroy());
 
 		var stateUpdates = constraintMachine.verify(
@@ -272,7 +296,7 @@ public final class RadixEngine<M> {
 			parsedTxn.instructions()
 		);
 
-		return new REProcessedTxn(parsedTxn, stateUpdates, context.getEvents());
+		return new REProcessedTxn(parsedTxn, signedByKey.orElse(null), stateUpdates, context.getEvents());
 	}
 
 	/**
