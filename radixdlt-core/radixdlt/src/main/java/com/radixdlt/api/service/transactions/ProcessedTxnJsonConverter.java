@@ -93,6 +93,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import org.json.JSONArray;
@@ -106,32 +107,45 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter.OperationType.*;
 import static com.radixdlt.atom.SubstateTypeId.*;
 
 public final class ProcessedTxnJsonConverter {
+	public enum OperationType {
+		RESOURCE("Resource"),
+		DATA("Data"),
+		RESOURCE_AND_DATA("ResourceAndData");
+
+		private final String name;
+
+		OperationType(String name) {
+			this.name = name;
+		}
+	}
+
 	private final Addressing addressing;
-	private static final Map<SubstateTypeId, String> SUBSTATE_TYPE_ID_STRING_MAP;
+	private static final Map<SubstateTypeId, Pair<OperationType, String>> SUBSTATE_TYPE_ID_STRING_MAP;
 	static {
 		SUBSTATE_TYPE_ID_STRING_MAP = new EnumMap<>(SubstateTypeId.class);
-		SUBSTATE_TYPE_ID_STRING_MAP.put(VIRTUAL_PARENT, "VirtualParent");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(UNCLAIMED_READDR, "UnclaimedRadixEngineAddress");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(ROUND_DATA, "RoundData");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(EPOCH_DATA, "EpochData");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(TOKEN_RESOURCE, "TokenData");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(TOKEN_RESOURCE_METADATA, "TokenMetadata");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(TOKENS, "Tokens");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(PREPARED_STAKE, "PreparedStake");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(STAKE_OWNERSHIP, "StakeOwnership");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(PREPARED_UNSTAKE, "PreparedUnstake");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(EXITING_STAKE, "ExitingStake");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_META_DATA, "ValidatorMetadata");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_STAKE_DATA, "ValidatorData");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_BFT_DATA, "ValidatorBFTData");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_ALLOW_DELEGATION_FLAG, "ValidatorAllowDelegation");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_REGISTERED_FLAG_COPY, "PreparedValidatorRegistered");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_RAKE_COPY, "PreparedValidatorFee");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_OWNER_COPY, "PreparedValidatorOwner");
-		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_SYSTEM_META_DATA, "ValidatorSystemMetadata");
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VIRTUAL_PARENT, Pair.of(DATA, "VirtualParent"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(UNCLAIMED_READDR, Pair.of(DATA, "UnclaimedRadixEngineAddress"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(ROUND_DATA, Pair.of(DATA, "RoundData"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(EPOCH_DATA, Pair.of(DATA, "EpochData"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(TOKEN_RESOURCE, Pair.of(DATA, "TokenData"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(TOKEN_RESOURCE_METADATA, Pair.of(DATA, "TokenMetadata"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(TOKENS, Pair.of(RESOURCE, "Tokens"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(PREPARED_STAKE, Pair.of(RESOURCE, "PreparedStake"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(STAKE_OWNERSHIP, Pair.of(RESOURCE, "StakeOwnership"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(PREPARED_UNSTAKE, Pair.of(RESOURCE, "PreparedUnstake"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(EXITING_STAKE, Pair.of(RESOURCE, "ExitingStake"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_META_DATA, Pair.of(DATA, "ValidatorMetadata"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_STAKE_DATA, Pair.of(RESOURCE_AND_DATA, "ValidatorData"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_BFT_DATA, Pair.of(DATA, "ValidatorBFTData"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_ALLOW_DELEGATION_FLAG, Pair.of(DATA, "ValidatorAllowDelegation"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_REGISTERED_FLAG_COPY, Pair.of(DATA, "PreparedValidatorRegistered"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_RAKE_COPY, Pair.of(DATA, "PreparedValidatorFee"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_OWNER_COPY, Pair.of(DATA, "PreparedValidatorOwner"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_SYSTEM_META_DATA, Pair.of(DATA, "ValidatorSystemMetadata"));
 
 		for (var id : SubstateTypeId.values()) {
 			if (!SUBSTATE_TYPE_ID_STRING_MAP.containsKey(id)) {
@@ -181,7 +195,7 @@ public final class ProcessedTxnJsonConverter {
 	) {
 		var substateId = update.getId();
 		var operationJson = new JSONObject()
-			.put("type", SUBSTATE_TYPE_ID_STRING_MAP.get(SubstateTypeId.valueOf(update.typeByte())))
+			.put("type", SUBSTATE_TYPE_ID_STRING_MAP.get(SubstateTypeId.valueOf(update.typeByte())).getFirst().name)
 			.put("substate", new JSONObject()
 				.put("substate_identifier", Bytes.toHexString(substateId.asBytes()))
 				.put("substate_operation", update.isBootUp() ? "BOOTUP" : "SHUTDOWN")
@@ -249,7 +263,7 @@ public final class ProcessedTxnJsonConverter {
 			operationJson.put("address_identifier", addressIdentifier);
 		} else {
 			var objectJson = new JSONObject()
-				.put("type", SUBSTATE_TYPE_ID_STRING_MAP.get(SubstateTypeId.valueOf(update.typeByte())));
+				.put("type", SUBSTATE_TYPE_ID_STRING_MAP.get(SubstateTypeId.valueOf(update.typeByte())).getSecond());
 			var dataJson = new JSONObject()
 				.put("action", update.isBootUp() ? "CREATE" : "DELETE")
 				.put("object", objectJson);
