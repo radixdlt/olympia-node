@@ -247,7 +247,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 			var resourceIdentifier = new JSONObject();
 			if (bucket.resourceAddr() == null) {
 				resourceIdentifier
-					.put("type", "stake_ownership")
+					.put("type", "StakeOwnership")
 					.put("validator", addressing.forValidators().of(bucket.getValidatorKey()));
 			} else {
 				var mapKey = SystemMapKey.ofResourceData(bucket.resourceAddr(), SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
@@ -256,7 +256,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 				var metadata = (TokenResourceMetadata) deserialize(data);
 				var rri = addressing.forResources().of(metadata.getSymbol(), bucket.resourceAddr());
 				resourceIdentifier
-					.put("type", "token")
+					.put("type", "Token")
 					.put("rri", rri);
 			}
 

@@ -77,6 +77,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -114,6 +115,15 @@ public final class JsonObjectReader {
 		return OptionalLong.of(l);
 	}
 
+	public BigInteger getBigInteger(String key) throws InvalidParametersException {
+		try {
+			var bigInteger = jsonObject.getString(key);
+			return new BigInteger(bigInteger);
+		} catch (NumberFormatException | JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
 	public UInt256 getAmount(String key) throws InvalidParametersException {
 		try {
 			var amountString = jsonObject.getString(key);
@@ -137,6 +147,18 @@ public final class JsonObjectReader {
 			return ECPublicKey.fromHex(jsonObject.getString(key));
 		} catch (PublicKeyException | JSONException e) {
 			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
+	public Optional<REAddr> tryAccountAddress(String key) throws InvalidParametersException {
+		try {
+			var accountAddress = jsonObject.getString(key);
+			if (!accountAddress.startsWith(addressing.get().forAccounts().getHrp())) {
+				return Optional.empty();
+			}
+			return Optional.of(addressing.get().forAccounts().parse(accountAddress));
+		} catch (DeserializeException | JSONException e) {
+			throw new InvalidParametersException("/" + key, Throwables.getRootCause(e));
 		}
 	}
 
@@ -228,6 +250,19 @@ public final class JsonObjectReader {
 		return list;
 	}
 
+	public Optional<JsonObjectReader> getOptJsonObject(String key) throws InvalidParametersException {
+		try {
+			if (!jsonObject.has(key)) {
+				return Optional.empty();
+			}
+			var json = jsonObject.getJSONObject(key);
+			// TODO: add parent
+			return Optional.of(new JsonObjectReader(json, addressing));
+		} catch (JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
 	public JsonObjectReader getJsonObject(String key) throws InvalidParametersException {
 		try {
 			var json = jsonObject.getJSONObject(key);
@@ -254,6 +289,18 @@ public final class JsonObjectReader {
 		return Optional.of(getResource(key));
 	}
 
+	public Optional<ECPublicKey> tryValidatorIdentifier(String key) throws InvalidParametersException {
+		try {
+			var validatorAddress = jsonObject.getString(key);
+			if (!validatorAddress.startsWith(addressing.get().forValidators().getHrp())) {
+				return Optional.empty();
+			}
+			return Optional.of(addressing.get().forValidators().parse(validatorAddress));
+		} catch (DeserializeException | JSONException e) {
+			throw new InvalidParametersException("/" + key, Throwables.getRootCause(e));
+		}
+	}
+
 	public ECPublicKey getValidatorIdentifier(String key) throws InvalidParametersException {
 		try {
 			var validatorIdentifier = jsonObject.getString(key);
@@ -271,5 +318,4 @@ public final class JsonObjectReader {
 			throw new InvalidParametersException("/" + key, e);
 		}
 	}
-
 }

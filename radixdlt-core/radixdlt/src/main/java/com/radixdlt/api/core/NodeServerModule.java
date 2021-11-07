@@ -71,11 +71,13 @@ import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.core.account.AccountApiModule;
 import com.radixdlt.api.core.chaos.ChaosApiModule;
+import com.radixdlt.api.core.construction.ConstructionApiModule;
 import com.radixdlt.api.core.developer.DeveloperApiModule;
 import com.radixdlt.api.core.faucet.FaucetApiModule;
 import com.radixdlt.api.core.health.HealthApiModule;
 import com.radixdlt.api.core.metrics.MetricsApiModule;
 import com.radixdlt.api.core.network.NetworkApiModule;
+import com.radixdlt.api.core.node.NodeApiModule;
 import com.radixdlt.api.core.system.SystemApiModule;
 import com.radixdlt.api.core.transactions.TransactionIndexApiModule;
 import com.radixdlt.api.core.validation.ValidatorApiModule;
@@ -146,9 +148,11 @@ public final class NodeServerModule extends AbstractModule {
 		}
 
 		install(new NetworkApiModule(NodeServer.class, "/network"));
+		install(new NodeApiModule(NodeServer.class, "/node"));
 		if (transactionsEnable) {
 			install(new TransactionIndexApiModule(NodeServer.class, "/transactions"));
 		}
+		install(new ConstructionApiModule(NodeServer.class, "/construction"));
 	}
 
 	@ProvidesIntoMap

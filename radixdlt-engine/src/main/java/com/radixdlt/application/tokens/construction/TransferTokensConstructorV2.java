@@ -82,7 +82,6 @@ public class TransferTokensConstructorV2 implements ActionConstructor<TransferTo
 		buf.put(SubstateTypeId.TOKENS.id());
 		buf.put((byte) 0);
 		buf.put(action.from().getBytes());
-
 		var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
 		var change = txBuilder.downFungible(
 			index,

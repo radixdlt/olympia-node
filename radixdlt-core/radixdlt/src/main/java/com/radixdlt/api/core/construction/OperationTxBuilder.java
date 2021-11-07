@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,83 +61,84 @@
  * permissions under this License.
  */
 
-package com.radixdlt.identifiers;
+package com.radixdlt.api.core.construction;
 
-import org.bitcoinj.core.AddressFormatException;
-import org.bitcoinj.core.Bech32;
+import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.utils.UInt256;
 
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.Bits;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.functional.Result;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
 
-import java.util.Objects;
+public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
+	private final BuildTransactionRequest request;
 
-import static com.radixdlt.errors.ApiErrors.INVALID_ACCOUNT_ADDRESS;
-
-/**
- * Bech-32 encoding/decoding of account addresses.
- * <p>
- * The human-readable part is "rdx" for mainnet, "brx" for betanet.
- * <p>
- * The data part is a conversion of the 1-34 byte Radix Engine address
- * {@link com.radixdlt.identifiers.REAddr} to Base32 similar to specification described
- * in BIP_0173 for converting witness programs.
- */
-public final class AccountAddressing {
-	private final String hrp;
-
-	private AccountAddressing(String hrp) {
-		this.hrp = hrp;
+	private OperationTxBuilder(BuildTransactionRequest request) {
+		this.request = request;
 	}
 
-	public String getHrp() {
-		return hrp;
+	public static OperationTxBuilder from(BuildTransactionRequest request) {
+		return new OperationTxBuilder(request);
 	}
 
-	public static AccountAddressing bech32(String hrp) {
-		Objects.requireNonNull(hrp);
-		return new AccountAddressing(hrp);
-	}
+	private void execute(Operation operation, TxBuilder txBuilder) throws TxBuilderException {
+		var amountMaybe = operation.getAmount();
+		if (amountMaybe.isPresent()) {
+			var amount = amountMaybe.get();
+			var reAddrMaybe = operation.getAddressIdentifier().getREAddr();
+			if (reAddrMaybe.isPresent()) {
+				var reAddr = reAddrMaybe.get();
 
-	public static Pair<String, REAddr> parseUnknownHrp(String v) throws DeserializeException {
-		Bech32.Bech32Data bech32Data;
-		try {
-			bech32Data = Bech32.decode(v);
-		} catch (AddressFormatException e) {
-			throw new DeserializeException("Could not decode string: " + v, e);
+				if (!reAddr.isAccount()) {
+					throw new IllegalStateException();
+				}
+
+				var resourceIdentifier = amount.getResourceIdentifier();
+				var compare = amount.getValue().compareTo(BigInteger.ZERO);
+				if (compare > 0) {
+					var actionAmount = UInt256.from(amount.getValue().toString());
+					if (resourceIdentifier instanceof TokenResourceIdentifier) {
+						var tokenResourceIdentifier = (TokenResourceIdentifier) resourceIdentifier;
+						var resourceAddr = tokenResourceIdentifier.getTokenAddress();
+						txBuilder.up(new TokensInAccount(reAddr, resourceAddr, actionAmount));
+					}
+				} else if (compare < 0) {
+					var actionAmount = UInt256.from(amount.getValue().toString().substring(1));
+					if (resourceIdentifier instanceof TokenResourceIdentifier) {
+						var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
+						buf.put(SubstateTypeId.TOKENS.id());
+						buf.put((byte) 0);
+						buf.put(reAddr.getBytes());
+						var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
+						var tokenResourceIdentifier = (TokenResourceIdentifier) resourceIdentifier;
+						var resourceAddr = tokenResourceIdentifier.getTokenAddress();
+						var change = txBuilder.downFungible(
+							index,
+							p -> p.getResourceAddr().equals(resourceAddr)
+								&& p.getHoldingAddr().equals(reAddr),
+							actionAmount
+						);
+						if (!change.isZero()) {
+							txBuilder.up(new TokensInAccount(reAddr, resourceAddr, change));
+						}
+					}
+				}
+			}
 		}
+	}
 
-		try {
-			var addrBytes = fromBech32Data(bech32Data.data);
-			return Pair.of(bech32Data.hrp, REAddr.of(addrBytes));
-		} catch (IllegalArgumentException e) {
-			throw new DeserializeException("Invalid address", e);
+	@Override
+	public void execute(TxBuilder txBuilder) throws TxBuilderException {
+		for (var operationGroup : request.getOperationGroups()) {
+			for (var operation : operationGroup.getOperations()) {
+				execute(operation, txBuilder);
+			}
+			txBuilder.end();
 		}
-	}
-
-	private static byte[] toBech32Data(byte[] bytes) {
-		return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
-	}
-
-	private static byte[] fromBech32Data(byte[] bytes) {
-		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
-	}
-
-	public String of(REAddr addr) {
-		var convert = toBech32Data(addr.getBytes());
-		return Bech32.encode(hrp, convert);
-	}
-
-	public REAddr parse(String v) throws DeserializeException {
-		var p = parseUnknownHrp(v);
-		if (!p.getFirst().equals(hrp)) {
-			throw new DeserializeException("hrp must be " + hrp + " but was " + p.getFirst());
-		}
-		return p.getSecond();
-	}
-
-	public Result<REAddr> parseFunctional(String addr) {
-		return Result.wrap(() -> INVALID_ACCOUNT_ADDRESS.with(addr), () -> parse(addr));
 	}
 }

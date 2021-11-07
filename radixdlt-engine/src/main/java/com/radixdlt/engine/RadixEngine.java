@@ -429,6 +429,25 @@ public final class RadixEngine<M> {
 		}
 	}
 
+	public TxBuilder constructWithFees(TxBuilderExecutable executable, REAddr feePayer) throws TxBuilderException {
+		int maxTries = 5;
+		var perByteFee = this.actionConstructors.getPerByteFee().orElse(UInt256.ZERO);
+		var feeGuess = new AtomicReference<>(perByteFee.multiply(UInt256.from(100))); // Close to minimum size
+		for (int i = 0; i < maxTries; i++) {
+			try {
+				return construct(txBuilder -> {
+					this.actionConstructors.construct(new FeeReservePut(feePayer, feeGuess.get()), txBuilder);
+					executable.execute(txBuilder);
+					this.actionConstructors.construct(new FeeReserveComplete(feePayer), txBuilder);
+				});
+			} catch (FeeReserveCompleteException e) {
+				feeGuess.set(e.getExpectedFee());
+			}
+		}
+
+		throw new FeeConstructionException(maxTries);
+	}
+
 	private TxBuilder constructWithFees(TxnConstructionRequest request, REAddr feePayer) throws TxBuilderException {
 		int maxTries = 5;
 		var perByteFee = this.actionConstructors.getPerByteFee().orElse(UInt256.ZERO);

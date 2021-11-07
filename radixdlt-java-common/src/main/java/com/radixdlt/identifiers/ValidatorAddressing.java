@@ -91,6 +91,10 @@ public final class ValidatorAddressing {
 		this.hrp = hrp;
 	}
 
+	public String getHrp() {
+		return hrp;
+	}
+
 	public static ValidatorAddressing bech32(String hrp) {
 		Objects.requireNonNull(hrp);
 		return new ValidatorAddressing(hrp);
