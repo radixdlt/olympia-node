@@ -74,15 +74,12 @@ import com.radixdlt.atom.MessageTooLongException;
 import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
 import org.json.JSONObject;
-
-import java.nio.charset.StandardCharsets;
 
 final class BuildTransactionHandler implements ApiHandler<BuildTransactionRequest> {
 	private final Addressing addressing;

@@ -226,8 +226,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 
 	private JSONObject getOperation(
 		REStateUpdate update,
-		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper,
-		Function<REAddr, String> tokenAddressToSymbol
+		Function<REAddr, String> tokenAddressToRri
 	) {
 		var substateId = update.getId();
 		var operationJson = new JSONObject()
@@ -250,11 +249,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 					.put("type", "StakeOwnership")
 					.put("validator", addressing.forValidators().of(bucket.getValidatorKey()));
 			} else {
-				var mapKey = SystemMapKey.ofResourceData(bucket.resourceAddr(), SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-				var data = mapper.apply(mapKey).orElseThrow().getData();
-				// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-				var metadata = (TokenResourceMetadata) deserialize(data);
-				var rri = addressing.forResources().of(metadata.getSymbol(), bucket.resourceAddr());
+				var rri = tokenAddressToRri.apply(bucket.resourceAddr());
 				resourceIdentifier
 					.put("type", "Token")
 					.put("rri", rri);
@@ -313,8 +308,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 				var resourceData = (ResourceData) update.getParsed();
 
 				// A bit of a super hack to get the rri
-				var symbol = tokenAddressToSymbol.apply(resourceData.getAddr());
-				var rri = addressing.forResources().of(symbol, resourceData.getAddr());
+				var rri = tokenAddressToRri.apply(resourceData.getAddr());
 				var addressIdentifierJson = new JSONObject().put("address", rri);
 				operationJson.put("address_identifier", addressIdentifierJson);
 
@@ -405,54 +399,45 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		return operationJson;
 	}
 
-	private JSONArray getOperations(List<REStateUpdate> stateUpdates, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
-		Function<REAddr, String> addressToSymbol = addr ->
-			stateUpdates.stream()
-				.map(REStateUpdate::getParsed)
-				.filter(TokenResourceMetadata.class::isInstance)
-				.map(TokenResourceMetadata.class::cast)
-				.filter(r -> r.getAddr().equals(addr))
-				.findAny()
-				.map(TokenResourceMetadata::getSymbol).orElseThrow();
-
+	private JSONArray getOperations(List<REStateUpdate> stateUpdates, Function<REAddr, String> addressToRri) {
 		var operations = new JSONArray();
 		for (var stateUpdate : stateUpdates) {
-			var operation = getOperation(stateUpdate, mapper, addressToSymbol);
+			var operation = getOperation(stateUpdate, addressToRri);
 			operations.put(operation);
 		}
 		return operations;
 	}
 
-	private Optional<JSONObject> inferAction(List<REStateUpdate> stateUpdates, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
+	private Optional<JSONObject> inferAction(
+		List<REStateUpdate> stateUpdates,
+		Function<REAddr, String> addressToRri,
+		Function<ECPublicKey, ValidatorStakeData> getValidatorStake
+	) {
 		var accounting = REResourceAccounting.compute(stateUpdates.stream());
 		var entry = TwoActorEntry.parse(accounting.bucketAccounting());
 		return entry.map(e -> mapToJSON(
 			e,
-			addr -> {
-				var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-				var data = mapper.apply(mapKey).orElseThrow().getData();
-				// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-				var metadata = (TokenResourceMetadata) deserialize(data);
-				return addressing.forResources().of(metadata.getSymbol(), addr);
-			},
+			addressToRri,
 			(k, ownership) -> {
-				var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), k.getCompressedBytes());
-				var data = mapper.apply(validatorDataKey).orElseThrow().getData();
-				var stakeData = (ValidatorStakeData) deserialize(data);
+				var stakeData = getValidatorStake.apply(k);
 				return ownership.multiply(stakeData.getTotalStake()).divide(stakeData.getTotalOwnership());
 			}
 		));
 	}
 
-	private JSONArray getOperationGroups(REProcessedTxn txn, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper) {
+	private JSONArray getOperationGroups(
+		REProcessedTxn txn,
+		Function<REAddr, String> addressToRri,
+		Function<ECPublicKey, ValidatorStakeData> getValidatorStake
+	) {
 		var operationGroups = new JSONArray();
 
 		for (var stateUpdates : txn.getGroupedStateUpdates()) {
-			var operations = getOperations(stateUpdates, mapper);
+			var operations = getOperations(stateUpdates, addressToRri);
 			var operationGroup = new JSONObject()
 				.put("operations", operations);
 
-			inferAction(stateUpdates, mapper)
+			inferAction(stateUpdates, addressToRri, getValidatorStake)
 				.ifPresent(jsonObject -> operationGroup.put("metadata", new JSONObject().put("action", jsonObject)));
 
 			operationGroups.put(operationGroup);
@@ -535,9 +520,23 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 			.map(RoundData::asInstant)
 			.forEach(timestamp::set);
 
+		Function<REAddr, String> addressToRri = addr -> {
+			var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+			var data = mapper.apply(mapKey).orElseThrow().getData();
+			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+			var metadata = (TokenResourceMetadata) deserialize(data);
+			var symbol = metadata.getSymbol();
+			return addressing.forResources().of(symbol, addr);
+		};
+		Function<ECPublicKey, ValidatorStakeData> getValidatorStake = key -> {
+			var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), key.getCompressedBytes());
+			var data = mapper.apply(validatorDataKey).orElseThrow().getData();
+			return (ValidatorStakeData) deserialize(data);
+		};
+		var operationGroups = getOperationGroups(txn, addressToRri, getValidatorStake);
+
 		var txnId = txn.getTxnId();
 		var key = new DatabaseEntry(txnId.getBytes());
-		var operationGroups = getOperationGroups(txn, mapper);
 		var fee = txn.getFeePaid();
 		var messageHex = txn.getMsg().map(Bytes::toHexString);
 		var jsonString = new JSONObject()

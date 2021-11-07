@@ -88,8 +88,6 @@ public class BuildTransactionRequest {
 
 	public static BuildTransactionRequest from(JsonObjectReader reader) throws InvalidParametersException {
 		var feePayer = reader.getAccountAddress("fee_payer");
-		if (reader.getOptBoolean("disable_resource_allocation_and_destroy", false)) {
-		}
 		var message = reader.getOptString("message");
 		var operationGroups = reader.getList("operation_groups", OperationGroup::from);
 		return new BuildTransactionRequest(feePayer, operationGroups);
