@@ -130,6 +130,21 @@ public final class JsonObjectReader {
 		}
 	}
 
+	public int getInteger(String key, int min, int max) throws InvalidParametersException {
+		int i;
+		try {
+			i = jsonObject.getInt(key);
+		} catch (NumberFormatException | JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+
+		if (i < min || i > max) {
+			throw new InvalidParametersException("/" + key, "integer must be >= " + min + " and <= " + max);
+		}
+
+		return i;
+	}
+
 	public UInt256 getAmount(String key) throws InvalidParametersException {
 		try {
 			var amountString = jsonObject.getString(key);

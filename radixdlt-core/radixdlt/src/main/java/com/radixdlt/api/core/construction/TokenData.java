@@ -74,7 +74,6 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 public final class TokenData implements DataObject {
 	private final UInt256 granularity;

@@ -65,34 +65,31 @@ package com.radixdlt.api.core.construction;
 
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.identifiers.REAddr;
 
-public interface DataObject {
-	interface RelatedOperationFetcher {
-		<T extends DataObject> T get(Class<T> dataObjectClass);
+import java.util.OptionalLong;
+
+public final class PreparedValidatorRegistered implements DataObject {
+	private final boolean registered;
+
+	private PreparedValidatorRegistered(boolean registered) {
+		this.registered = registered;
 	}
 
-	void bootUp(
-		TxBuilder builder,
-		REAddr feePayer,
-		RelatedOperationFetcher fetcher
-	) throws TxBuilderException;
+	@Override
+	public void bootUp(TxBuilder builder, REAddr feePayer, RelatedOperationFetcher fetcher) throws TxBuilderException {
+		var validatorKey = feePayer.publicKey().orElseThrow();
+		builder.down(ValidatorRegisteredCopy.class, validatorKey);
+		var curEpoch = builder.readSystem(EpochData.class);
+		builder.up(new ValidatorRegisteredCopy(OptionalLong.of(curEpoch.getEpoch() + 1), validatorKey, registered));
+	}
 
-	static DataObject from(JsonObjectReader reader, JsonObjectReader metadataReader) throws InvalidParametersException {
-		var type = reader.getString("type");
-		switch (type) {
-			case "TokenData":
-				return TokenData.from(reader, metadataReader);
-			case "TokenMetadata":
-				return TokenMetadata.from(reader);
-			case "PreparedValidatorRegistered":
-				return PreparedValidatorRegistered.from(reader);
-			case "PreparedValidatorOwner":
-				return PreparedValidatorOwner.from(reader);
-			default:
-				throw new InvalidParametersException("/type", "Unknown type " + type);
-		}
+	public static PreparedValidatorRegistered from(JsonObjectReader reader) throws InvalidParametersException {
+		var registered = reader.getBoolean("registered");
+		return new PreparedValidatorRegistered(registered);
 	}
 }
