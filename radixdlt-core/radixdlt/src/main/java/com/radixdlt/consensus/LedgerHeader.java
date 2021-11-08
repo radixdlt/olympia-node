@@ -151,6 +151,7 @@ public final class LedgerHeader {
 		this.timestamp = timestamp;
 	}
 
+	//TODO: remove unused deserialization from JSONObject https://radixdlt.atlassian.net/browse/NT-4
 	public static LedgerHeader fromJSONObject(Addressing addressing, JSONObject json) throws DeserializeException {
 		var epoch = json.getLong("epoch");
 		var view = json.getLong("view");

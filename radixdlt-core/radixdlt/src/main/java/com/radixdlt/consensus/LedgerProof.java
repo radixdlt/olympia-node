@@ -124,6 +124,7 @@ public final class LedgerProof {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
+	//TODO: remove unused deserialization from JSONObject https://radixdlt.atlassian.net/browse/NT-4
 	public static LedgerProof fromJSON(Addressing addressing, JSONObject jsonObject) throws DeserializeException {
 		var opaque = HashCode.fromBytes(Bytes.fromHexString(jsonObject.getString("opaque")));
 		var header = LedgerHeader.fromJSONObject(addressing, jsonObject.getJSONObject("header"));
