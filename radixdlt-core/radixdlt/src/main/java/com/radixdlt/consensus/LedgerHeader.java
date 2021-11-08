@@ -140,6 +140,11 @@ public final class LedgerHeader {
 		ImmutableSet<BFTValidator> nextValidators
 	) {
 		this.epoch = epoch;
+
+		if (epoch < 0) {
+			throw new IllegalArgumentException("Epoch can't be < 0");
+		}
+
 		this.view = view;
 		this.accumulatorState = requireNonNull(accumulatorState);
 		this.nextValidators = nextValidators;
@@ -196,7 +201,7 @@ public final class LedgerHeader {
 		return json;
 	}
 
-
+	//TODO: used only for tests, move elsewhere https://radixdlt.atlassian.net/browse/NT-2
 	public static LedgerHeader mocked() {
 		return new LedgerHeader(0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0, null);
 	}

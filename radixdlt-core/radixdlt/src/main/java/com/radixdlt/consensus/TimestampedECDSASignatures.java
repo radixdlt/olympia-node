@@ -172,10 +172,14 @@ public final class TimestampedECDSASignatures {
 	 * Returns a new instance containing {@code nodeToTimestampAndSignature}.
 	 *
 	 * @param nodeToTimestampAndSignature The map of {@link com.radixdlt.crypto.ECDSASignature}s and their corresponding
-	 * 	timestamps and {@link com.radixdlt.crypto.ECPublicKey}
+	 *                                    timestamps and {@link com.radixdlt.crypto.ECPublicKey}
 	 */
 	public TimestampedECDSASignatures(Map<BFTNode, TimestampedECDSASignature> nodeToTimestampAndSignature) {
 		this.nodeToTimestampedSignature = nodeToTimestampAndSignature == null ? Map.of() : nodeToTimestampAndSignature;
+		this.nodeToTimestampedSignature.forEach((key, value) -> {
+			requireNonNull(key);
+			requireNonNull(value);
+		});
 	}
 
 	/**

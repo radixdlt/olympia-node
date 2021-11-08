@@ -107,6 +107,11 @@ public final class TimeoutCertificate {
 
 	public TimeoutCertificate(long epoch, View view, TimestampedECDSASignatures signatures) {
 		this.epoch = epoch;
+
+		if (epoch < 0) {
+			throw new IllegalArgumentException("Epoch can't be < 0");
+		}
+
 		this.view = Objects.requireNonNull(view);
 		this.signatures = Objects.requireNonNull(signatures);
 	}

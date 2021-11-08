@@ -79,7 +79,7 @@ import java.util.stream.Collectors;
 /**
  * Helper class to set up environment with dispatched events
  */
-//TODO: get rid of field injection
+//TODO: get rid of field injection https://radixdlt.atlassian.net/browse/NT-3
 public final class Dispatchers {
 	private Dispatchers() {
 		throw new IllegalStateException("Cannot instantiate.");
