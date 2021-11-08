@@ -69,6 +69,9 @@ import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+
+import java.util.function.Supplier;
 
 public class TokenMetadata implements DataObject {
 	private final String symbol;
@@ -90,10 +93,14 @@ public class TokenMetadata implements DataObject {
 	}
 
 	@Override
-	public void bootUp(TxBuilder builder, REAddr feePayer, RelatedOperationFetcher fetcher) throws TxBuilderException {
+	public void bootUp(
+		TxBuilder builder,
+		REAddr feePayer,
+		DataObject.RelatedOperationFetcher fetcher,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
 		var address = feePayer.publicKey().orElseThrow();
 		var tokenAddress = REAddr.ofHashedKey(address, symbol);
-
 		builder.up(new TokenResourceMetadata(
 			tokenAddress,
 			symbol,

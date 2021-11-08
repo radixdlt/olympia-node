@@ -182,7 +182,6 @@ public final class RadixEngine<M> {
 		}
 	}
 
-
 	/**
 	 * A cheap radix engine branch which is purely transient
 	 */

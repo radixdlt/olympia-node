@@ -63,45 +63,57 @@
 
 package com.radixdlt.api.core.construction;
 
-import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.UInt256;
 
-import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.Supplier;
 
-public class PreparedUnstakeVaultAddressIdentifier implements AddressIdentifier {
-	private final REAddr accountAddress;
+public final class PreparedValidatorFee implements DataObject {
+	private final int validatorFee;
 
-	PreparedUnstakeVaultAddressIdentifier(REAddr accountAddress) {
-		this.accountAddress = accountAddress;
-	}
-
-	@Override
-	public Optional<REAddr> getAccountAddress() {
-		return Optional.of(accountAddress);
+	private PreparedValidatorFee(int validatorFee) {
+		this.validatorFee = validatorFee;
 	}
 
 	@Override
 	public void bootUp(
-		TxBuilder txBuilder,
-		UInt256 amount,
-		ResourceIdentifier resourceIdentifier,
+		TxBuilder builder,
+		REAddr feePayer,
+		DataObject.RelatedOperationFetcher fetcher,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {
-		if (!(resourceIdentifier instanceof StakeOwnershipResourceIdentifier)) {
-			throw new InvalidResourceIdentifierException("Can only store validator ownership in prepared_unstake address");
+		var validatorKey = feePayer.publicKey().orElseThrow();
+
+		builder.down(ValidatorFeeCopy.class, validatorKey);
+		var curRakePercentage = builder.read(ValidatorStakeData.class, validatorKey)
+			.getRakePercentage();
+
+		var isIncrease = validatorFee > curRakePercentage;
+		var rakeIncrease = validatorFee - curRakePercentage;
+		var maxRakeIncrease = ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE;
+		if (isIncrease && rakeIncrease >= maxRakeIncrease) {
+			throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
 		}
-		var stakeOwnershipResourceIdentifier = (StakeOwnershipResourceIdentifier) resourceIdentifier;
-		var stakeOwnershipKey = stakeOwnershipResourceIdentifier.getValidatorKey();
-		var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount);
-		txBuilder.up(substate);
+
+		var rakeIncreaseDebounceEpochLength = config.get().getRakeIncreaseDebouncerEpochLength();
+		var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
+		var curEpoch = builder.readSystem(EpochData.class);
+		var epoch = curEpoch.getEpoch() + epochDiff;
+		builder.up(new ValidatorFeeCopy(OptionalLong.of(epoch), validatorKey, validatorFee));
 	}
 
-	public static PreparedUnstakeVaultAddressIdentifier from(REAddr accountAddress) {
-		return new PreparedUnstakeVaultAddressIdentifier(accountAddress);
+	public static PreparedValidatorFee from(JsonObjectReader reader) throws InvalidParametersException {
+		var fee = reader.getInteger("fee", 0, 10000);
+		return new PreparedValidatorFee(fee);
 	}
 }

@@ -78,19 +78,23 @@ import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Bytes;
 import org.json.JSONObject;
 
 final class BuildTransactionHandler implements ApiHandler<BuildTransactionRequest> {
 	private final Addressing addressing;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final Forks forks;
 
 	@Inject
 	BuildTransactionHandler(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
+		Forks forks,
 		Addressing addressing
 	) {
 		this.radixEngine = radixEngine;
+		this.forks = forks;
 		this.addressing = addressing;
 	}
 
@@ -112,7 +116,7 @@ final class BuildTransactionHandler implements ApiHandler<BuildTransactionReques
 
 	@Override
 	public JSONObject handleRequest(BuildTransactionRequest request) throws TxBuilderException {
-		var operationTxBuilder = OperationTxBuilder.from(request);
+		var operationTxBuilder = OperationTxBuilder.from(request, forks);
 		TxBuilder builder;
 		try {
 			builder = radixEngine.constructWithFees(operationTxBuilder, request.getFeePayer());

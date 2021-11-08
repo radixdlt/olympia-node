@@ -64,6 +64,7 @@
 package com.radixdlt.api.core.construction;
 
 import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
+import com.radixdlt.application.tokens.construction.MinimumStakeException;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
@@ -71,9 +72,11 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public class PreparedStakeVaultAddressIdentifier implements AddressIdentifier {
 	private final REAddr accountAddress;
@@ -90,7 +93,12 @@ public class PreparedStakeVaultAddressIdentifier implements AddressIdentifier {
 	}
 
 	@Override
-	public void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier) throws TxBuilderException {
+	public void bootUp(
+		TxBuilder txBuilder,
+		UInt256 amount,
+		ResourceIdentifier resourceIdentifier,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
 		if (!(resourceIdentifier instanceof TokenResourceIdentifier)) {
 			throw new InvalidResourceIdentifierException("Can only store native token in prepared_stake address");
 		}
@@ -98,6 +106,11 @@ public class PreparedStakeVaultAddressIdentifier implements AddressIdentifier {
 		var tokenAddress = tokenResourceIdentifier.getTokenAddress();
 		if (!tokenAddress.isNativeToken()) {
 			throw new InvalidResourceIdentifierException("Can only store native token in prepared_stake address");
+		}
+
+		var minStake = config.get().getMinimumStake().toSubunits();
+		if (amount.compareTo(minStake) < 0) {
+			throw new MinimumStakeException(minStake, amount);
 		}
 
 		var flag = txBuilder.read(AllowDelegationFlag.class, validatorKey);

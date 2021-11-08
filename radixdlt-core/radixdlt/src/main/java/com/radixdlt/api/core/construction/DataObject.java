@@ -68,6 +68,9 @@ import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+
+import java.util.function.Supplier;
 
 public interface DataObject {
 	interface RelatedOperationFetcher {
@@ -77,7 +80,8 @@ public interface DataObject {
 	void bootUp(
 		TxBuilder builder,
 		REAddr feePayer,
-		RelatedOperationFetcher fetcher
+		RelatedOperationFetcher fetcher,
+		Supplier<RERulesConfig> config
 	) throws TxBuilderException;
 
 	static DataObject from(JsonObjectReader reader, JsonObjectReader metadataReader) throws InvalidParametersException {
@@ -91,6 +95,8 @@ public interface DataObject {
 				return PreparedValidatorRegistered.from(reader);
 			case "PreparedValidatorOwner":
 				return PreparedValidatorOwner.from(reader);
+			case "PreparedValidatorFee":
+				return PreparedValidatorFee.from(reader);
 			default:
 				throw new InvalidParametersException("/type", "Unknown type " + type);
 		}

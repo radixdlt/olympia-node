@@ -63,27 +63,39 @@
 
 package com.radixdlt.api.core.construction;
 
+import com.google.common.base.Suppliers;
+import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 	private final BuildTransactionRequest request;
+	private final Forks forks;
 
-	private OperationTxBuilder(BuildTransactionRequest request) {
+	private OperationTxBuilder(BuildTransactionRequest request, Forks forks) {
 		this.request = request;
+		this.forks = forks;
 	}
 
-	public static OperationTxBuilder from(BuildTransactionRequest request) {
-		return new OperationTxBuilder(request);
+	public static OperationTxBuilder from(BuildTransactionRequest request, Forks forks) {
+		return new OperationTxBuilder(request, forks);
 	}
 
-	private void execute(Operation operation, List<Operation> relatedOperations, TxBuilder txBuilder) throws TxBuilderException {
+	private void execute(
+		Operation operation,
+		List<Operation> relatedOperations,
+		TxBuilder txBuilder,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
 		var amountMaybe = operation.getAmount();
 		if (amountMaybe.isPresent()) {
 			var amount = amountMaybe.get();
@@ -92,7 +104,7 @@ public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 			var compare = amount.getValue().compareTo(BigInteger.ZERO);
 			if (compare > 0) {
 				var actionAmount = UInt256.from(amount.getValue().toString());
-				addressIdentifier.bootUp(txBuilder, actionAmount, resourceIdentifier);
+				addressIdentifier.bootUp(txBuilder, actionAmount, resourceIdentifier, config);
 			} else if (compare < 0) {
 				var accountAddress = addressIdentifier.getAccountAddress()
 					.orElseThrow(() -> new InvalidAddressIdentifierException("Spending resources can only occur from account addresses."));
@@ -104,7 +116,7 @@ public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 					actionAmount
 				);
 				if (!change.isZero()) {
-					addressIdentifier.bootUp(txBuilder, change, resourceIdentifier);
+					addressIdentifier.bootUp(txBuilder, change, resourceIdentifier, config);
 				}
 			}
 		}
@@ -127,16 +139,22 @@ public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 			dataUpdate.getDataObject().bootUp(
 				txBuilder,
 				request.getFeePayer(),
-				fetcher
+				fetcher,
+				config
 			);
 		}
 	}
 
 	@Override
 	public void execute(TxBuilder txBuilder) throws TxBuilderException {
+		var configSupplier = Suppliers.memoize(() -> {
+			var epochData = txBuilder.findSystem(EpochData.class);
+			return forks.get(epochData.getEpoch()).getConfig();
+		});
+
 		for (var operationGroup : request.getOperationGroups()) {
 			for (var operation : operationGroup.getOperations()) {
-				execute(operation, operationGroup.getOperations(), txBuilder);
+				execute(operation, operationGroup.getOperations(), txBuilder, configSupplier);
 			}
 			txBuilder.end();
 		}

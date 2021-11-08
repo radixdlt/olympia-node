@@ -228,6 +228,23 @@ public final class TxBuilder {
 		}
 	}
 
+	public <T extends Particle> T findSystem(Class<T> substateClass) {
+		var typeByte = deserialization.classToByte(substateClass);
+		var mapKey = SystemMapKey.ofSystem(typeByte);
+		var localMaybe = lowLevelBuilder.get(mapKey);
+		if (localMaybe.isPresent()) {
+			return (T) localMaybe.get().getParticle();
+		}
+		return remoteSubstate.get(mapKey).map(rawSubstate -> {
+			try {
+				return (T) deserialization.deserialize(rawSubstate.getData());
+			} catch (DeserializeException e) {
+				throw new IllegalStateException();
+			}
+		}).orElseThrow();
+	}
+
+
 	public <T extends Particle> T find(Class<T> substateClass, Object key) throws TxBuilderException {
 		var keyBytes = serialization.serializeKey(substateClass, key);
 		var typeByte = deserialization.classToByte(substateClass);

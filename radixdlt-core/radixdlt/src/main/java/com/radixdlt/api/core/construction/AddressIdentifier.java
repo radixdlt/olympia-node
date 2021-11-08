@@ -68,13 +68,15 @@ import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public interface AddressIdentifier {
 	Optional<REAddr> getAccountAddress();
-	void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier) throws TxBuilderException;
+	void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) throws TxBuilderException;
 
 	private static AddressIdentifier fromAccountAddress(REAddr accountAddress, JsonObjectReader reader) throws InvalidParametersException {
 		return reader

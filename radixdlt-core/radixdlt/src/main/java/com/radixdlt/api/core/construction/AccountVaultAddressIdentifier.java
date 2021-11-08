@@ -68,9 +68,11 @@ import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public class AccountVaultAddressIdentifier implements AddressIdentifier {
 	private final REAddr accountAddress;
@@ -85,7 +87,7 @@ public class AccountVaultAddressIdentifier implements AddressIdentifier {
 	}
 
 	@Override
-	public void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier) {
+	public void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) {
 		final Particle substate;
 		if (resourceIdentifier instanceof TokenResourceIdentifier) {
 			var tokenResourceIdentifier = (TokenResourceIdentifier) resourceIdentifier;

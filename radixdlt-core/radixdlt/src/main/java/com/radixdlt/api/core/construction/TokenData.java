@@ -71,9 +71,11 @@ import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.charset.StandardCharsets;
+import java.util.function.Supplier;
 
 public final class TokenData implements DataObject {
 	private final UInt256 granularity;
@@ -89,7 +91,12 @@ public final class TokenData implements DataObject {
 	}
 
 	@Override
-	public void bootUp(TxBuilder builder, REAddr feePayer, RelatedOperationFetcher fetcher) throws TxBuilderException {
+	public void bootUp(
+		TxBuilder builder,
+		REAddr feePayer,
+		DataObject.RelatedOperationFetcher fetcher,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
 		if (!isMutable && owner != null) {
 			throw new InvalidTokenOwnerException("Cannot have owner on fixed supply token.");
 		}

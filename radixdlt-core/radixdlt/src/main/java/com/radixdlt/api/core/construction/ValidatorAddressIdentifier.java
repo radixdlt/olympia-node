@@ -65,9 +65,11 @@ package com.radixdlt.api.core.construction;
 
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public class ValidatorAddressIdentifier implements AddressIdentifier {
 	@Override
@@ -76,7 +78,7 @@ public class ValidatorAddressIdentifier implements AddressIdentifier {
 	}
 
 	@Override
-	public void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier) {
+	public void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) {
 		throw new IllegalStateException();
 	}
 }
