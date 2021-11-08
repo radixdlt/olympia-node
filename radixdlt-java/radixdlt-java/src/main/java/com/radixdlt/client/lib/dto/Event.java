@@ -62,30 +62,71 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment.rx;
+package com.radixdlt.client.lib.dto;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import io.reactivex.rxjava3.core.Flowable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.lib.api.EventType;
 
 import java.util.Objects;
+import java.util.Optional;
 
-/**
- * Provides remote event flowables from the rx environment
- * @param <T> the class of the remote event
- */
-public final class RemoteEventsProvider<T> implements Provider<Flowable<RemoteEvent<T>>> {
-    @Inject
-    private Provider<RxRemoteEnvironment> rxEnvironmentProvider;
-    private final Class<T> c;
+public final class Event {
+	@JsonProperty("type")
+	private final EventType type;
 
-    RemoteEventsProvider(Class<T> c) {
-        this.c = Objects.requireNonNull(c);
-    }
+	@JsonProperty("rri")
+	private final String rri;
 
-    @Override
-    public Flowable<RemoteEvent<T>> get() {
-        RxRemoteEnvironment e = rxEnvironmentProvider.get();
-        return e.remoteEvents(c);
-    }
+	private Event(
+		EventType type, String rri) {
+		this.type = type;
+		this.rri = rri;
+	}
+
+	@JsonCreator
+	public static Event create(
+		@JsonProperty("type") EventType type,
+		@JsonProperty("rri") String rri
+	) {
+		return new Event(type, rri);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof Event)) {
+			return false;
+		}
+
+		var eventDTO = (Event) o;
+		return type == eventDTO.type
+			&& Objects.equals(rri, eventDTO.rri);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(type, rri);
+	}
+
+	@Override
+	public String toString() {
+		return "Event("
+			+ "type=" + type
+			+ ", rri=" + rri
+			+ ')';
+	}
+
+	@JsonIgnore
+	public EventType getType() {
+		return type;
+	}
+
+	@JsonIgnore
+	public Optional<String> getRri() {
+		return Optional.ofNullable(rri);
+	}
 }

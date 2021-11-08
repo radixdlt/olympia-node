@@ -1,11 +1,12 @@
 package com.radixdlt.test.system;
 
+import com.radixdlt.test.system.harness.SystemTest;
 import org.junit.jupiter.api.Test;
 
-public class SmokeTesting extends SystemTest {
+class SmokeTests extends SystemTest {
 
     @Test
-    public void smoke_test_1() {
+    void network_does_not_lose_liveness_when_nodes_restart() {
         runCheck("liveness");
         var firstNode = radixNetwork.getNodes().get(0);
         restartNode(firstNode);

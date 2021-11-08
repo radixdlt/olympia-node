@@ -68,7 +68,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -122,19 +121,21 @@ public final class PeerManager {
 
 	@Inject
 	public PeerManager(
-		@Self BFTNode self,
+		@Self RadixNodeUri self,
 		P2PConfig config,
 		Addressing addressing,
 		Provider<AddressBook> addressBook,
 		Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager,
 		SystemCounters counters
 	) {
-		this.self = Objects.requireNonNull(NodeId.fromPublicKey(self.getKey()));
+		this.self = Objects.requireNonNull(self.getNodeId());
 		this.config = Objects.requireNonNull(config);
 		this.addressing = addressing;
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.pendingOutboundChannelsManager = Objects.requireNonNull(pendingOutboundChannelsManager);
 		this.counters = Objects.requireNonNull(counters);
+
+		log.info("Node URI: {}",  self);
 	}
 
 	public Observable<InboundMessage> messages() {

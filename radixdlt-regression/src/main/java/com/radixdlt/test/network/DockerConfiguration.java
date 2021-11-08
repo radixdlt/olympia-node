@@ -18,23 +18,23 @@ public class DockerConfiguration {
     private final String image;
     private final int initialNumberOfNodes;
     private final String networkName;
+    private final String dockerLogin;
 
     public DockerConfiguration(String socketUrl, String containerName, boolean shouldInitializeNetwork, String image, int initialNumberOfNodes,
-                               String networkName) {
+                               String networkName, String dockerLogin) {
         this.socketUrl = socketUrl;
         this.containerName = containerName;
         this.shouldInitializeNetwork = shouldInitializeNetwork;
         this.image = image;
         this.initialNumberOfNodes = initialNumberOfNodes;
         this.networkName = networkName;
+        this.dockerLogin = dockerLogin;
     }
 
     public static DockerConfiguration fromEnv() {
         var socketUrl = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_DAEMON_URL", "unix:///var/run/docker.sock");
         var containerName = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_CONTAINER_NAME", "system-testing-core%d");
-        if (!containerName.contains("%d")) {
-            throw new RuntimeException("Docker container name needs to contain a '%d' wildcard e.g. docker_core%d_1");
-        } else if (containerName.contains("_")) {
+        if (containerName.contains("_")) {
             logger.warn("Underscores in container names ({}) should be avoided", containerName);
         }
         var shouldInitializeNetworkString = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_INITIALIZE_NETWORK", "false");
@@ -43,7 +43,8 @@ public class DockerConfiguration {
         var initialNumberOfNodesString = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_INITIAL_NUMBER_OF_NODES", "3");
         var initialNumberOfNodes = Integer.parseInt(initialNumberOfNodesString);
         var networkName = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_NETWORK_NAME", "system_testing_network");
-        return new DockerConfiguration(socketUrl, containerName, shouldInitializeNetwork, image, initialNumberOfNodes, networkName);
+        var dockerLogin = TestingUtils.getEnvWithDefault("RADIXDLT_DOCKER_LOGIN_COMMAND", "");
+        return new DockerConfiguration(socketUrl, containerName, shouldInitializeNetwork, image, initialNumberOfNodes, networkName, dockerLogin);
     }
 
     public String getNetworkName() {
@@ -68,6 +69,10 @@ public class DockerConfiguration {
 
     public int getInitialNumberOfNodes() {
         return initialNumberOfNodes;
+    }
+
+    public String getDockerLogin() {
+        return dockerLogin;
     }
 
 }

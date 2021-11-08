@@ -13,8 +13,16 @@ public interface RadixAccount {
 
     AID transfer(Account destination, Amount amount, Optional<String> message);
 
-    AID stake(ValidatorAddress validatorAddress, Amount amount);
+    AID stake(ValidatorAddress validatorAddress, Amount amount, Optional<String> message);
+
+    AID unstake(ValidatorAddress validatorAddress, Amount amount, Optional<String> message);
 
     AID fixedSupplyToken(String symbol, String name, String description, String iconUrl, String tokenUrl, Amount supply);
+
+    AID mutableSupplyToken(String symbol, String name, String description, String iconUrl, String tokenUrl);
+
+    AID mint(Amount amount, String rri, Optional<String> message);
+
+    AID burn(Amount amount, String rri, Optional<String> message);
 
 }

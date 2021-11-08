@@ -67,7 +67,6 @@ package com.radixdlt.network.p2p;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.BFTNode;
 
-import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -79,16 +78,18 @@ public interface PeersView {
 
 	final class PeerChannelInfo {
 		private Optional<RadixNodeUri> uri;
-		private InetSocketAddress socketAddress;
+		private String host;
+		private int port;
 		private boolean isOutbound;
 
-		public static PeerChannelInfo create(Optional<RadixNodeUri> uri, InetSocketAddress socketAddress, boolean isOutbound) {
-			return new PeerChannelInfo(uri, socketAddress, isOutbound);
+		public static PeerChannelInfo create(Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
+			return new PeerChannelInfo(uri, host, port, isOutbound);
 		}
 
-		private PeerChannelInfo(Optional<RadixNodeUri> uri, InetSocketAddress socketAddress, boolean isOutbound) {
+		private PeerChannelInfo(Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
 			this.uri = uri;
-			this.socketAddress = socketAddress;
+			this.host = host;
+			this.port = port;
 			this.isOutbound = isOutbound;
 		}
 
@@ -96,8 +97,12 @@ public interface PeersView {
 			return uri;
 		}
 
-		public InetSocketAddress getSocketAddress() {
-			return socketAddress;
+		public String getHost() {
+			return host;
+		}
+
+		public int getPort() {
+			return port;
 		}
 
 		public boolean isOutbound() {
@@ -114,13 +119,14 @@ public interface PeersView {
 			}
 			final var other = (PeerChannelInfo) o;
 			return Objects.equals(uri, other.uri)
-				&& Objects.equals(socketAddress, other.socketAddress)
+				&& Objects.equals(host, other.host)
+				&& port == other.port
 				&& Objects.equals(isOutbound, other.isOutbound);
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(uri, socketAddress, isOutbound);
+			return Objects.hash(uri, host, port, isOutbound);
 		}
 	}
 

@@ -77,6 +77,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.utils.Pair;
+import io.netty.buffer.ByteBuf;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
 import org.bouncycastle.crypto.digests.KeccakDigest;
@@ -87,7 +88,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -171,10 +171,12 @@ public final class AuthHandshaker {
 		);
 	}
 
-	public Pair<byte[], AuthHandshakeResult> handleInitialMessage(byte[] data) {
+	public Pair<byte[], AuthHandshakeResult> handleInitialMessage(ByteBuf data) {
 		try {
-			final var sizeBytes = Arrays.copyOfRange(data, 0, 2);
-			final var encryptedPayload = Arrays.copyOfRange(data, 2, data.length);
+			final var sizeBytes = new byte[2];
+			data.getBytes(0, sizeBytes, 0, sizeBytes.length);
+			final var encryptedPayload = new byte[data.readableBytes() - sizeBytes.length];
+			data.getBytes(sizeBytes.length, encryptedPayload, 0, encryptedPayload.length);
 			final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
 			final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
 			final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
@@ -209,7 +211,9 @@ public final class AuthHandshaker {
 				remotePubKey
 			);
 
-			this.initiatePacketOpt = Optional.of(data);
+			final var initiatePacket = new byte[data.readableBytes()];
+			data.getBytes(0, initiatePacket);
+			this.initiatePacketOpt = Optional.of(initiatePacket);
 			this.responsePacketOpt = Optional.of(packet);
 			this.remotePubKeyOpt = Optional.of(remotePubKey);
 
@@ -224,18 +228,22 @@ public final class AuthHandshaker {
 		}
 	}
 
-	public AuthHandshakeResult handleResponseMessage(byte[] data) throws IOException {
+	public AuthHandshakeResult handleResponseMessage(ByteBuf data) throws IOException {
 		try {
-			final var statusByte = data[0];
+			final var statusByte = data.getByte(0);
 			if (statusByte != STATUS_OK) {
 				return AuthHandshakeResult.error("Received error response", Optional.empty());
 			}
 
-			final var sizeBytes = Arrays.copyOfRange(data, 1, 3);
-			final var encryptedPayload = Arrays.copyOfRange(data, 3, data.length);
+			final var sizeBytes = new byte[2];
+			data.getBytes(1, sizeBytes, 0, sizeBytes.length);
+			final var encryptedPayload = new byte[data.readableBytes() - 3];
+			data.getBytes(3, encryptedPayload, 0, encryptedPayload.length);
 			final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
 			final var message = serialization.fromDson(plaintext, AuthResponseMessage.class);
-			this.responsePacketOpt = Optional.of(data);
+			final var responsePacket = new byte[data.readableBytes()];
+			data.getBytes(0, responsePacket);
+			this.responsePacketOpt = Optional.of(responsePacket);
 			final var remoteEphemeralKey = ECPublicKey.fromBytes(message.getEphemeralPublicKey().asBytes());
 			return finalizeHandshake(remoteEphemeralKey, message.getNonce(), message.getLatestForkHash());
 		} catch (PublicKeyException | InvalidCipherTextException ex) {

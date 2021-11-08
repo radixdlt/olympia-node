@@ -92,7 +92,7 @@ public final class PeerManagerPeersView implements PeersView {
 		return grouppedByNodeId.entrySet().stream()
 			.map(e -> {
 				final var channelsInfo = e.getValue().stream()
-					.map(c -> PeerChannelInfo.create(c.getUri(), c.getRemoteSocketAddress(), c.isOutbound()))
+					.map(c -> PeerChannelInfo.create(c.getUri(), c.getHost(), c.getPort(), c.isOutbound()))
 					.collect(ImmutableList.toImmutableList());
 				return PeerInfo.create(e.getKey(), channelsInfo);
 			});

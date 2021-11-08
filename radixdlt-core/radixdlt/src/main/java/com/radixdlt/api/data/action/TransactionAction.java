@@ -84,8 +84,8 @@ public interface TransactionAction {
 		return new StakeAction(from, delegate, amount);
 	}
 
-	static TransactionAction unstake(REAddr from, ECPublicKey delegate, UInt256 amount) {
-		return new UnstakeAction(from, delegate, amount);
+	static TransactionAction unstake(REAddr to, ECPublicKey delegate, UInt256 amount) {
+		return new UnstakeAction(to, delegate, amount);
 	}
 
 	static TransactionAction burn(REAddr from, REAddr rri, UInt256 amount) {

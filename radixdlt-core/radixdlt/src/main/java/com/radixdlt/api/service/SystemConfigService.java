@@ -63,11 +63,12 @@
 
 package com.radixdlt.api.service;
 
-import com.radixdlt.api.util.JsonRpcUtil;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.statecomputer.forks.CandidateForkConfig;
 import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
 import com.radixdlt.statecomputer.forks.Forks;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -81,6 +82,8 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForkConfig;
@@ -95,9 +98,9 @@ import java.util.stream.Collectors;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
+import static com.radixdlt.api.util.JsonRpcUtil.wrapArray;
 
-
-public final class SystemConfigService {
+public class SystemConfigService {
 	@VisibleForTesting
 	static final List<CounterType> API_COUNTERS = List.of(
 		CounterType.COUNT_APIDB_QUEUE_SIZE,
@@ -192,7 +195,7 @@ public final class SystemConfigService {
 		CounterType.NETWORKING_RECEIVED_BYTES
 	);
 
-	private final JSONArray radixEngineConfiguration;
+	private final JSONObject radixEngineConfiguration;
 	private final JSONObject mempoolConfiguration;
 	private final JSONObject apiConfiguration;
 	private final JSONObject bftConfiguration;
@@ -205,6 +208,7 @@ public final class SystemConfigService {
 
 	@Inject
 	public SystemConfigService(
+		@Self ECPublicKey self,
 		@Endpoints Map<String, Boolean> endpointStatuses,
 		@PacemakerTimeout long pacemakerTimeout,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
@@ -234,7 +238,7 @@ public final class SystemConfigService {
 	}
 
 	public JSONObject getApiData() {
-		return CountersJsonFormatter.countersToJson(systemCounters, API_COUNTERS, false);
+		return countersToJson(systemCounters, API_COUNTERS, false);
 	}
 
 	public JSONObject getBftConfiguration() {
@@ -242,7 +246,7 @@ public final class SystemConfigService {
 	}
 
 	public JSONObject getBftData() {
-		return CountersJsonFormatter.countersToJson(systemCounters, BFT_COUNTERS, true);
+		return countersToJson(systemCounters, BFT_COUNTERS, true);
 	}
 
 	public JSONObject getMempoolConfiguration() {
@@ -250,7 +254,7 @@ public final class SystemConfigService {
 	}
 
 	public JSONObject getMempoolData() {
-		return CountersJsonFormatter.countersToJson(systemCounters, MEMPOOL_COUNTERS, true);
+		return countersToJson(systemCounters, MEMPOOL_COUNTERS, true);
 	}
 
 	public JSONObject getLatestProof() {
@@ -264,11 +268,11 @@ public final class SystemConfigService {
 	}
 
 	public JSONObject getRadixEngineConfiguration() {
-		return JsonRpcUtil.wrapArray(radixEngineConfiguration);
+		return radixEngineConfiguration;
 	}
 
 	public JSONObject getRadixEngineData() {
-		return CountersJsonFormatter.countersToJson(systemCounters, RADIX_ENGINE_COUNTERS, true);
+		return countersToJson(systemCounters, RADIX_ENGINE_COUNTERS, true);
 	}
 
 	public JSONObject getSyncConfig() {
@@ -276,7 +280,7 @@ public final class SystemConfigService {
 	}
 
 	public JSONObject getSyncData() {
-		return CountersJsonFormatter.countersToJson(systemCounters, SYNC_COUNTERS, true);
+		return countersToJson(systemCounters, SYNC_COUNTERS, true);
 	}
 
 	public JSONObject getCheckpoints() {
@@ -285,6 +289,58 @@ public final class SystemConfigService {
 
 	public AccumulatorState accumulatorState() {
 		return inMemorySystemInfo.getCurrentProof().getAccumulatorState();
+	}
+
+	@VisibleForTesting
+	static JSONObject countersToJson(SystemCounters counters, List<CounterType> types, boolean skipTopLevel) {
+		var result = jsonObject();
+		types.forEach(counterType -> counterToJson(result, counters, counterType, skipTopLevel));
+		return result;
+	}
+
+	@VisibleForTesting
+	static void counterToJson(JSONObject obj, SystemCounters systemCounters, CounterType type, boolean skipTopLevel) {
+		var ptr = obj;
+		var iterator = List.of(type.jsonPath().split("\\.")).listIterator();
+
+		if (skipTopLevel && iterator.hasNext()) {
+			iterator.next();
+		}
+
+		while (iterator.hasNext()) {
+			var element = toCamelCase(iterator.next());
+
+			if (ptr.has(element)) {
+				ptr = ptr.getJSONObject(element);
+			} else {
+				if (iterator.hasNext()) {
+					var newObj = jsonObject();
+					ptr.put(element, newObj);
+					ptr = newObj;
+				} else {
+					ptr.put(element, systemCounters.get(type));
+				}
+			}
+		}
+	}
+
+	@VisibleForTesting
+	static String toCamelCase(String input) {
+		var output = new StringBuilder();
+
+		boolean upCaseNext = false;
+
+		for (var chr : input.toCharArray()) {
+			if (chr == '_') {
+				upCaseNext = true;
+				continue;
+			}
+
+			output.append(upCaseNext ? Character.toUpperCase(chr) : chr);
+			upCaseNext = false;
+		}
+
+		return output.toString();
 	}
 
 	@VisibleForTesting
@@ -301,10 +357,10 @@ public final class SystemConfigService {
 	}
 
 	@VisibleForTesting
-	static JSONArray prepareRadixEngineConfiguration(Forks forks) {
+	static JSONObject prepareRadixEngineConfiguration(Forks forks) {
 		final var forksJson = jsonArray();
 		forks.forkConfigs().forEach(forkConfig -> forksJson.put(forkConfigJson(forkConfig)));
-		return forksJson;
+		return wrapArray(forksJson);
 	}
 
 	static JSONObject forkConfigJson(ForkConfig forkConfig) {
@@ -343,5 +399,60 @@ public final class SystemConfigService {
 		return jsonObject()
 			.put("txn", fromCollection(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
 			.put("proof", genesis.getProof().asJSON(addressing));
+	}
+
+	private JSONObject prepareNetworkingConfiguration(P2PConfig p2PConfig, ECPublicKey self) {
+		return jsonObject()
+			.put("defaultPort", p2PConfig.defaultPort())
+			.put("discoveryInterval", p2PConfig.discoveryInterval())
+			.put("listenAddress", p2PConfig.listenAddress())
+			.put("listenPort", p2PConfig.listenPort())
+			.put("broadcastPort", p2PConfig.broadcastPort())
+			.put("peerConnectionTimeout", p2PConfig.peerConnectionTimeout())
+			.put("maxInboundChannels", p2PConfig.maxInboundChannels())
+			.put("maxOutboundChannels", p2PConfig.maxOutboundChannels())
+			.put("channelBufferSize", p2PConfig.channelBufferSize())
+			.put("peerLivenessCheckInterval", p2PConfig.peerLivenessCheckInterval())
+			.put("pingTimeout", p2PConfig.pingTimeout())
+			.put("seedNodes", fromCollection(p2PConfig.seedNodes(), seedNode -> seedNode))
+			.put("nodeAddress", addressing.forNodes().of(self));
+	}
+
+	private JSONObject peerToJson(PeersView.PeerInfo peer) {
+		var channelsJson = jsonArray();
+		var peerJson = jsonObject().put("address", addressing.forNodes().of(peer.getNodeId().getPublicKey()));
+
+		peer.getChannels().forEach(channel -> {
+			var channelJson = jsonObject()
+				.put("type", channel.isOutbound() ? "out" : "in")
+				.put("localPort", channel.getPort())
+				.put("ip", channel.getHost());
+
+			channel.getUri().ifPresent(uri -> channelJson.put("uri", uri.toString()));
+			channelsJson.put(channelJson);
+		});
+		peerJson.put("channels", channelsJson);
+		return peerJson;
+	}
+
+	private JSONObject addressBookEntryToJson(AddressBookEntry e) {
+		final var knownAddressesArray = jsonArray();
+
+		e.getKnownAddresses().forEach(addr -> {
+			final var addrObj = jsonObject()
+				.put("uri", addr.getUri())
+				.put("blacklisted", addr.blacklisted());
+			addr.getLatestConnectionStatus().ifPresent(ts -> addrObj.put("latestConnectionStatus", ts));
+			knownAddressesArray.put(addrObj);
+		});
+
+		final var entryObj = jsonObject()
+			.put("address", addressing.forNodes().of(e.getNodeId().getPublicKey()))
+			.put("banned", e.isBanned())
+			.put("knownAddresses", knownAddressesArray);
+
+		e.bannedUntil().ifPresent(bannedUntil -> entryObj.put("bannedUntil", bannedUntil));
+
+		return entryObj;
 	}
 }
