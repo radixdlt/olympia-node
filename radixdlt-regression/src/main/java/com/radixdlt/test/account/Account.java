@@ -2,6 +2,7 @@ package com.radixdlt.test.account;
 
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.AccountAddress;
+import com.radixdlt.client.lib.api.TransactionRequest;
 import com.radixdlt.client.lib.api.ValidatorAddress;
 import com.radixdlt.client.lib.api.rpc.BasicAuth;
 import com.radixdlt.client.lib.api.sync.ImperativeRadixApi;
@@ -176,6 +177,16 @@ public final class Account implements ImperativeRadixApi, RadixAccount {
     }
 
     @Override
+    public AID transfer(Account destination, Amount amount, String rri, Optional<String> message) {
+        var request = message
+            .map(s -> TransactionRequest.createBuilder(address)
+                .transfer(address, destination.getAddress(), amount.toSubunits(), rri).message(s).build())
+            .orElseGet(() -> TransactionRequest.createBuilder(address)
+                .transfer(address, destination.getAddress(), amount.toSubunits(), rri).build());
+        return TransactionUtils.buildFinalizeAndSubmitTransaction(this, request, true);
+    }
+
+    @Override
     public AID stake(ValidatorAddress validatorAddress, Amount amount, Optional<String> message) {
         return TransactionUtils.stake(this, validatorAddress, amount, message);
     }
@@ -197,8 +208,8 @@ public final class Account implements ImperativeRadixApi, RadixAccount {
     }
 
     @Override
-    public AID mint(Amount amount, String mtt, Optional<String> message) {
-        return TransactionUtils.mint(this, amount, mtt, message);
+    public AID mint(Amount amount, String rri, Optional<String> message) {
+        return TransactionUtils.mint(this, amount, rri, message);
     }
 
     @Override

@@ -69,8 +69,6 @@ import com.google.inject.Key;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.crypto.exception.PublicKeyException;
-
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
@@ -167,11 +165,7 @@ final class MockP2PNetwork {
 			return null;
 		});
 
-		try {
-			serverChannel.channelActive(null);
-			clientChannel.channelActive(null);
-		} catch (PublicKeyException e) {
-			throw new RuntimeException(e);
-		}
+		serverChannel.channelActive(null);
+		clientChannel.channelActive(null);
 	}
 }
