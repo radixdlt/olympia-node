@@ -203,6 +203,9 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		forwardTo.start();
 	}
 
+	//TODO: rework processQueuedConsensusEvent(), processVoteInternal() and processProposalInternal()
+	// avoid code duplication and manual forwarding using instanceof
+	// https://radixdlt.atlassian.net/browse/NT-6
 	private boolean processQueuedConsensusEvent(ConsensusEvent event) {
 		if (event == null) {
 			return false;
@@ -268,6 +271,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private boolean syncUp(HighQC highQC, BFTNode author, Runnable whenSynced) {
 		SyncResult syncResult = this.bftSyncer.syncToQC(highQC, author);
 
+		//TODO: use switch expression and eliminate unnecessary default case
 		switch (syncResult) {
 			case SYNCED:
 				// if already end of epoch then don't need to process
