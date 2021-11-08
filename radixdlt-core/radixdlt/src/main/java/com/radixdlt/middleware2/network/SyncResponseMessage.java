@@ -106,11 +106,12 @@ public final class SyncResponseMessage extends Message {
 		}
 
 		return (o instanceof SyncResponseMessage that)
-			   && Objects.equals(commands, that.commands);
+			   && Objects.equals(commands, that.commands)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(commands);
+		return Objects.hash(commands, getTimestamp());
 	}
 }

@@ -87,11 +87,12 @@ public final class PeerPingMessage extends Message {
 			return true;
 		}
 
-		return o instanceof PeerPingMessage;
+		return (o instanceof PeerPingMessage that)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash("PeerPingMessage");
+		return Objects.hash(getTimestamp());
 	}
 }

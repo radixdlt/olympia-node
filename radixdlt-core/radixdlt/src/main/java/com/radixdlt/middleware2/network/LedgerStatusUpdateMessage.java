@@ -106,11 +106,12 @@ public final class LedgerStatusUpdateMessage extends Message {
 		}
 
 		return (o instanceof LedgerStatusUpdateMessage that)
-			   && Objects.equals(header, that.header);
+			   && Objects.equals(header, that.header)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(header);
+		return Objects.hash(header, getTimestamp());
 	}
 }

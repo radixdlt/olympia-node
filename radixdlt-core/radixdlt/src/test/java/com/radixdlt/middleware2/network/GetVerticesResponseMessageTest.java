@@ -89,7 +89,7 @@ public class GetVerticesResponseMessageTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(GetVerticesResponseMessage.class)
-				.withIgnoredFields("instance", "timestamp")
+				.withIgnoredFields("instance")
 				.suppress(Warning.NONFINAL_FIELDS)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();

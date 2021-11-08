@@ -106,11 +106,12 @@ public final class SyncRequestMessage extends Message {
 		}
 
 		return (o instanceof SyncRequestMessage that)
-			   && Objects.equals(currentHeader, that.currentHeader);
+			   && Objects.equals(currentHeader, that.currentHeader)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(currentHeader);
+		return Objects.hash(currentHeader, getTimestamp());
 	}
 }

@@ -93,7 +93,7 @@ public class MempoolAddMessageTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(MempoolAddMessage.class)
-				.withIgnoredFields("instance", "timestamp")
+				.withIgnoredFields("instance")
 				.suppress(Warning.NONFINAL_FIELDS)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();

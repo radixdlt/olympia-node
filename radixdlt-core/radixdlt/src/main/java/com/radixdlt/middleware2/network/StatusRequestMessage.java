@@ -90,11 +90,12 @@ public final class StatusRequestMessage extends Message {
 			return true;
 		}
 
-		return (o instanceof StatusRequestMessage);
+		return (o instanceof StatusRequestMessage that)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash("StatusRequestMessage");
+		return Objects.hash(getTimestamp());
 	}
 }

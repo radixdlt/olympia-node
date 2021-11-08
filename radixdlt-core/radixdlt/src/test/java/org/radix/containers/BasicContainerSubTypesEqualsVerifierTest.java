@@ -23,7 +23,7 @@ public class BasicContainerSubTypesEqualsVerifierTest {
         subTypes.addAll(findSubTypesInPkg("com.radixdlt"));
 
         final Map<Class<?>, List<String>> ignoredFieldsByClass = Map.of(
-                Message.class, List.of("instance", "timestamp"));
+                Message.class, List.of("instance"));
 
         subTypes.stream()
                 .filter(clazz -> !Modifier.isAbstract(clazz.getModifiers()))

@@ -104,11 +104,12 @@ public final class PeersResponseMessage extends Message {
 		}
 
 		return (o instanceof PeersResponseMessage that)
-			   && Objects.equals(peers, that.peers);
+			   && Objects.equals(peers, that.peers)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(peers);
+		return Objects.hash(peers, getTimestamp());
 	}
 }

@@ -114,11 +114,12 @@ public final class GetVerticesErrorResponseMessage extends Message {
 
 		return (o instanceof GetVerticesErrorResponseMessage that)
 			   && Objects.equals(this.highQC, that.highQC)
-			   && Objects.equals(this.request, that.request);
+			   && Objects.equals(this.request, that.request)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.highQC, this.request);
+		return Objects.hash(this.highQC, this.request, getTimestamp());
 	}
 }

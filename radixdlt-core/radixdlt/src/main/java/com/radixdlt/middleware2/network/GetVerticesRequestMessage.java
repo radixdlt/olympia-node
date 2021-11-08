@@ -121,11 +121,12 @@ public final class GetVerticesRequestMessage extends Message {
 
 		return (o instanceof GetVerticesRequestMessage that)
 			   && count == that.count
-			   && Objects.equals(vertexId, that.vertexId);
+			   && Objects.equals(vertexId, that.vertexId)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(vertexId, count);
+		return Objects.hash(vertexId, count, getTimestamp());
 	}
 }

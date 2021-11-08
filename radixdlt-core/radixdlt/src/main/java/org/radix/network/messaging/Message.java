@@ -91,11 +91,7 @@ public abstract class Message extends BasicContainer {
 	private final long timestamp;
 
 	protected Message() {
-		this(Time.currentTimestamp());
-	}
-
-	private Message(long timestamp) {
-		this.timestamp = timestamp;
+		this.timestamp = Time.currentTimestamp();
 	}
 
 	public long getTimestamp() {

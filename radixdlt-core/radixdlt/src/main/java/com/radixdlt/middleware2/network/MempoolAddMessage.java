@@ -109,11 +109,12 @@ public final class MempoolAddMessage extends Message {
 		}
 
 		return (o instanceof MempoolAddMessage that)
-			   && Objects.equals(getTxns(), that.getTxns());
+			   && Objects.equals(getTxns(), that.getTxns())
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getTxns());
+		return Objects.hash(getTxns(), getTimestamp());
 	}
 }

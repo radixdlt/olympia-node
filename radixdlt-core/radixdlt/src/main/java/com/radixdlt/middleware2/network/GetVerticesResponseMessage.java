@@ -107,11 +107,12 @@ public final class GetVerticesResponseMessage extends Message {
 		}
 
 		return (o instanceof GetVerticesResponseMessage that)
-			   && Objects.equals(vertices, that.vertices);
+			   && Objects.equals(vertices, that.vertices)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(vertices);
+		return Objects.hash(vertices, getTimestamp());
 	}
 }

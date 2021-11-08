@@ -147,11 +147,12 @@ public final class ConsensusEventMessage extends Message {
 
 		return (o instanceof ConsensusEventMessage that)
 			   && Objects.equals(proposal, that.proposal)
-			   && Objects.equals(vote, that.vote);
+			   && Objects.equals(vote, that.vote)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(proposal, vote);
+		return Objects.hash(proposal, vote, getTimestamp());
 	}
 }
