@@ -64,10 +64,10 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - uses: joschi/setup-jdk@v2
+      - uses: actions/setup-java@v2
         with:
-          java-version: '11'
-          architecture: 'x64'
+          distribution: 'zulu'
+          java-version: '17'
       - name: Cache Gradle packages
         uses: actions/cache@v1
         with:
@@ -75,7 +75,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Run tests against RCNet
-        run: ./gradlew systemTests --tests "com.radixdlt.test.system.TransactionsTests.*" --refresh-dependencies
+        run: ./gradlew systemTests --tests "com.radixdlt.test.system.TransactionsTests.*" --refresh-dependencies --info
         env:
           RADIXDLT_JSON_RPC_API_ROOT_URL: https://rcnet.radixdlt.com
           RADIXDLT_FAUCET_URL: https://rcnet-faucet.radixdlt.com

@@ -74,7 +74,7 @@ public final class TransactionUtils {
             .burn(from, amount.toSubunits(), rri)
             .message(s)
             .build()).orElseGet(() -> TransactionRequest.createBuilder(from)
-            .mint(from, amount.toSubunits(), rri)
+            .burn(from, amount.toSubunits(), rri)
             .build());
     }
 

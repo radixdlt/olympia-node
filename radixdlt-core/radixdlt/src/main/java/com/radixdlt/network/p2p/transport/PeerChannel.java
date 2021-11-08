@@ -67,7 +67,6 @@ package com.radixdlt.network.p2p.transport;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.NodeId;
@@ -89,7 +88,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
@@ -133,9 +131,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 	private final Optional<RadixNodeUri> uri;
 	private final AuthHandshaker authHandshaker;
 	private final boolean isInitiator;
-	private final Channel nettyChannel;
-	private final String host;
-	private final int port;
+	private final SocketChannel nettyChannel;
+	private Optional<InetSocketAddress> remoteAddress;
 
 	private ChannelState state = ChannelState.INACTIVE;
 	private NodeId remoteNodeId;
@@ -163,8 +160,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 		uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
 		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId);
 		this.nettyChannel = Objects.requireNonNull(nettyChannel);
-		this.host = remoteAddress.map(InetSocketAddress::getHostString).orElse("?");
-		this.port = remoteAddress.map(InetSocketAddress::getPort).orElse(0);
+		this.remoteAddress = Objects.requireNonNull(remoteAddress);
 
 		this.isInitiator = uri.isPresent();
 
@@ -233,7 +229,12 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 	}
 
 	@Override
-	public void channelActive(ChannelHandlerContext ctx) throws PublicKeyException {
+	public void channelActive(ChannelHandlerContext ctx) {
+		// if we weren't able to determine peer's address earlier, it should be available now
+		if (this.remoteAddress.isEmpty()) {
+			this.remoteAddress = Optional.ofNullable(this.nettyChannel.remoteAddress());
+		}
+
 		if (this.state == ChannelState.INACTIVE) {
 			this.init();
 		}
@@ -333,11 +334,11 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 	}
 
 	public String getHost() {
-		return this.host;
+		return remoteAddress.map(InetSocketAddress::getHostString).orElse("?");
 	}
 
 	public int getPort() {
-		return this.port;
+		return remoteAddress.map(InetSocketAddress::getPort).orElse(0);
 	}
 
 	@Override
@@ -346,8 +347,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 			"{%s %s@%s:%s | %s}",
 			isInitiator ? "<-" : "->",
 			remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "?",
-			host,
-			port,
+			getHost(),
+			getPort(),
 			state
 		);
 	}

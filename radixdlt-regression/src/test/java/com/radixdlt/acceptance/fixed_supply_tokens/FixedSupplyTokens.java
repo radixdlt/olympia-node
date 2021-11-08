@@ -1,44 +1,73 @@
 package com.radixdlt.acceptance.fixed_supply_tokens;
 
-import com.radixdlt.test.RadixNetworkTest;
+import com.radixdlt.TokenCreationProperties;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.client.lib.dto.TransactionDTO;
+import com.radixdlt.assertions.Assertions;
+import com.radixdlt.client.lib.api.sync.RadixApiException;
+import com.radixdlt.test.RadixNetworkTest;
+import com.radixdlt.test.utils.TestingUtils;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import java.util.Optional;
+
+import static org.junit.Assert.assertEquals;
 
 public class FixedSupplyTokens extends RadixNetworkTest {
 
-    private static final Logger logger = LogManager.getLogger();
+    private TokenCreationProperties tokenProperties;
 
     @Given("I have an account with funds at a suitable Radix network")
     public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
         faucet(account1, Amount.ofTokens(110));
     }
 
-    @When("I create a fixed supply token with properties: {string}, {string}, {string}, {string}, {string}, with amount {int}")
+    @When("I create a fixed supply token with properties: {string}, {string}, {string}, {string}, {string}, {int} total supply")
     public void i_create_a_fixed_supply_token_with_properties(String symbol, String name, String description,
-                                                              String iconUrl, String tokenUrl, int amount) {
-        txBuffer = account1.fixedSupplyToken(symbol, name, description, iconUrl, tokenUrl, Amount.ofTokens(amount));
+                                                              String iconUrl, String tokenInfoUrl, int amount) {
+        this.tokenProperties = new TokenCreationProperties(symbol, name, description, iconUrl, tokenInfoUrl, amount);
+        txBuffer = account1.fixedSupplyToken(symbol, name, description, iconUrl, tokenInfoUrl, Amount.ofTokens(amount));
     }
 
-    @When("I create a fixed supply token with name {string}")
-    public void i_create_a_fixed_supply_token_with_name(String name) {
-        txBuffer = account1.fixedSupplyToken("symbol", name, "description",
-            "https://www.icon.com", "https://www.url.com", Amount.ofTokens(200));
-    }
-
-    @Then("I can observe that the last token creation failed")
-    public void i_can_observe_that_the_last_token_creation_failed() {
-        throw new io.cucumber.java.PendingException();
+    @When("I create a fixed supply token with a total supply of {int}")
+    public void i_create_a_fixed_supply_token_with_a_supply_of(int totalSupplyTokens) {
+        var symbol = "fsymbol";
+        var name = "fname";
+        var description = "acceptance test token";
+        var iconUrl = "http://icon.com";
+        var tokenInfoUrl = "http://token.com";
+        this.tokenProperties = new TokenCreationProperties(symbol, name, description, iconUrl, tokenInfoUrl, totalSupplyTokens);
+        txBuffer = account1.fixedSupplyToken(symbol, name, description, iconUrl, tokenInfoUrl, Amount.ofTokens(totalSupplyTokens));
     }
 
     @Then("I can observe that the token has been created, with the correct values")
     public void i_can_observe_that_the_token_has_been_created_with_the_correct_values() {
-        // TODO this returns "Other", so no assertions can be made
-        TransactionDTO transaction = account1.lookup(txBuffer);
+        Assertions.assertTokenProperties(account1, txBuffer, tokenProperties);
+    }
+
+    @Then("I can send {int} of my new tokens to another account")
+    public void i_can_send_of_my_new_tokens_to_another_account(int tokensToTransfer) {
+        var rri = TestingUtils.getRriFromAID(account1, txBuffer);
+        account1.transfer(account2, Amount.ofTokens(tokensToTransfer), rri, Optional.empty());
+    }
+
+    @Then("I can observe that the token has been created, with a total supply of {int}")
+    public void i_can_observe_that_the_token_has_been_created_with_a_total_supply_of(int totalSupplyTokens) {
+        var tokenInfo = TestingUtils.getTokenInfoFromAID(account1, txBuffer);
+        assertEquals(Amount.ofTokens(totalSupplyTokens).toSubunits(), tokenInfo.getCurrentSupply());
+    }
+
+    @Then("I cannot transfer more than the total supply")
+    public void i_cannot_transfer_more_than_the_total_supply() {
+        var rri = TestingUtils.getRriFromAID(account1, txBuffer);
+        var totalSupplyPlusOneToken = Amount.ofTokens(tokenProperties.getAmount() + 1);
+        try {
+            account1.transfer(account2, totalSupplyPlusOneToken, rri, Optional.empty());
+        } catch (RadixApiException e) {
+            // sadly we don't get a more specific exception
+            assertEquals("Transaction submission failed: Not enough balance for transfer.", e.getMessage());
+        }
     }
 
 }
