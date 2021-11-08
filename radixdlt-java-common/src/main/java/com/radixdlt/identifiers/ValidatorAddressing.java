@@ -131,7 +131,7 @@ public final class ValidatorAddressing {
 		}
 
 		if (!bech32Data.hrp.equals(hrp)) {
-			throw new DeserializeException("hrp must be vb but was " + bech32Data.hrp);
+			throw new DeserializeException("hrp must be " + this.hrp + " but was " + bech32Data.hrp);
 		}
 		var keyBytes = fromBech32Data(bech32Data.data);
 		try {

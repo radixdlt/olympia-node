@@ -111,7 +111,6 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 		}
 
 		var flag = builder.read(AllowDelegationFlag.class, action.to());
-
 		if (!flag.allowsDelegation()) {
 			var validator = builder.read(ValidatorOwnerCopy.class, action.to());
 			var owner = validator.getOwner();

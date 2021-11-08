@@ -65,7 +65,19 @@ package com.radixdlt.api.core.construction;
 
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
+
+import java.nio.ByteBuffer;
+import java.util.function.Predicate;
 
 public final class TokenResourceIdentifier implements ResourceIdentifier {
 	private final REAddr tokenAddress;
@@ -76,6 +88,16 @@ public final class TokenResourceIdentifier implements ResourceIdentifier {
 
 	public REAddr getTokenAddress() {
 		return tokenAddress;
+	}
+
+	@Override
+	public Pair<SubstateIndex<ResourceInBucket>, Predicate<ResourceInBucket>> substateRetrieval(REAddr accountAddress) {
+		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
+		buf.put(SubstateTypeId.TOKENS.id());
+		buf.put((byte) 0);
+		buf.put(accountAddress.getBytes());
+		SubstateIndex<ResourceInBucket> index = SubstateIndex.create(buf.array(), TokensInAccount.class);
+		return Pair.of(index, p -> p.bucket().resourceAddr().equals(tokenAddress) && p.bucket().getOwner().equals(accountAddress));
 	}
 
 	public static TokenResourceIdentifier from(JsonObjectReader reader) throws InvalidParametersException {

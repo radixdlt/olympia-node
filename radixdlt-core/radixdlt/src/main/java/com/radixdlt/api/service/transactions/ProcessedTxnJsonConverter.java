@@ -224,17 +224,22 @@ public final class ProcessedTxnJsonConverter {
 			if (bucket.getOwner() != null) {
 				addressIdentifier.put("address", addressing.forAccounts().of(bucket.getOwner()));
 				if (bucket.getValidatorKey() != null) {
-					var subAddressJson = new JSONObject()
-						.put("metadata", new JSONObject()
-							.put("validator", addressing.forValidators().of(bucket.getValidatorKey()))
-						);
+					var subAddressJson = new JSONObject();
 					addressIdentifier.put("sub_address", subAddressJson);
 					if (bucket.getEpochUnlock() == null) {
-						subAddressJson.put("address", "prepared_stakes");
+						subAddressJson
+							.put("address", "prepared_stakes")
+							.put("metadata", new JSONObject()
+								.put("validator", addressing.forValidators().of(bucket.getValidatorKey()))
+							);
 					} else if (bucket.getEpochUnlock() == 0L) {
+						// Don't add validator as validator is already part of resource
 						subAddressJson.put("address", "prepared_unstakes");
 					} else {
-						subAddressJson.put("address", "exiting_unstakes");
+						subAddressJson.put("address", "exiting_unstakes")
+							.put("metadata", new JSONObject()
+								.put("validator", addressing.forValidators().of(bucket.getValidatorKey()))
+							);
 					}
 				}
 			} else if (update.getParsed() instanceof ValidatorStakeData) {

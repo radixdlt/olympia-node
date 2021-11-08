@@ -65,13 +65,25 @@ package com.radixdlt.api.core.construction;
 
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
+
+import java.util.function.Predicate;
 
 public interface ResourceIdentifier {
+	Pair<SubstateIndex<ResourceInBucket>, Predicate<ResourceInBucket>> substateRetrieval(REAddr accountAddress);
+
 	static ResourceIdentifier from(JsonObjectReader reader) throws InvalidParametersException {
 		var type = reader.getString("type");
 		switch (type) {
 			case "Token":
 				return TokenResourceIdentifier.from(reader);
+			case "StakeOwnership":
+				return StakeOwnershipResourceIdentifier.from(reader);
 			default:
 				throw new InvalidParametersException("/type", "Invalid type " + type);
 		}

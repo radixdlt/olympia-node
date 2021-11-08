@@ -63,17 +63,12 @@
 
 package com.radixdlt.api.core.construction;
 
-import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.utils.UInt256;
 
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 
 public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 	private final BuildTransactionRequest request;
@@ -90,43 +85,24 @@ public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 		var amountMaybe = operation.getAmount();
 		if (amountMaybe.isPresent()) {
 			var amount = amountMaybe.get();
-			var reAddrMaybe = operation.getAddressIdentifier().getREAddr();
-			if (reAddrMaybe.isPresent()) {
-				var reAddr = reAddrMaybe.get();
-
-				if (!reAddr.isAccount()) {
-					throw new IllegalStateException();
-				}
-
-				var resourceIdentifier = amount.getResourceIdentifier();
-				var compare = amount.getValue().compareTo(BigInteger.ZERO);
-				if (compare > 0) {
-					var actionAmount = UInt256.from(amount.getValue().toString());
-					if (resourceIdentifier instanceof TokenResourceIdentifier) {
-						var tokenResourceIdentifier = (TokenResourceIdentifier) resourceIdentifier;
-						var resourceAddr = tokenResourceIdentifier.getTokenAddress();
-						txBuilder.up(new TokensInAccount(reAddr, resourceAddr, actionAmount));
-					}
-				} else if (compare < 0) {
-					var actionAmount = UInt256.from(amount.getValue().toString().substring(1));
-					if (resourceIdentifier instanceof TokenResourceIdentifier) {
-						var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
-						buf.put(SubstateTypeId.TOKENS.id());
-						buf.put((byte) 0);
-						buf.put(reAddr.getBytes());
-						var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
-						var tokenResourceIdentifier = (TokenResourceIdentifier) resourceIdentifier;
-						var resourceAddr = tokenResourceIdentifier.getTokenAddress();
-						var change = txBuilder.downFungible(
-							index,
-							p -> p.getResourceAddr().equals(resourceAddr)
-								&& p.getHoldingAddr().equals(reAddr),
-							actionAmount
-						);
-						if (!change.isZero()) {
-							txBuilder.up(new TokensInAccount(reAddr, resourceAddr, change));
-						}
-					}
+			var addressIdentifier = operation.getAddressIdentifier();
+			var resourceIdentifier = amount.getResourceIdentifier();
+			var compare = amount.getValue().compareTo(BigInteger.ZERO);
+			if (compare > 0) {
+				var actionAmount = UInt256.from(amount.getValue().toString());
+				addressIdentifier.bootUp(txBuilder, actionAmount, resourceIdentifier);
+			} else if (compare < 0) {
+				var accountAddress = addressIdentifier.getAccountAddress()
+					.orElseThrow(() -> new InvalidAddressIdentifierException("Spending resources can only occur from account addresses."));
+				var actionAmount = UInt256.from(amount.getValue().toString().substring(1));
+				var retrieval = resourceIdentifier.substateRetrieval(accountAddress);
+				var change = txBuilder.downFungible(
+					retrieval.getFirst(),
+					retrieval.getSecond(),
+					actionAmount
+				);
+				if (!change.isZero()) {
+					addressIdentifier.bootUp(txBuilder, change, resourceIdentifier);
 				}
 			}
 		}
