@@ -63,82 +63,57 @@
 
 package com.radixdlt.api.core.construction;
 
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Objects;
+import java.nio.charset.StandardCharsets;
 
-public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
-	private final BuildTransactionRequest request;
+public final class TokenData implements DataObject {
+	private final UInt256 granularity;
+	private final boolean isMutable;
+	private final REAddr owner;
 
-	private OperationTxBuilder(BuildTransactionRequest request) {
-		this.request = request;
-	}
-
-	public static OperationTxBuilder from(BuildTransactionRequest request) {
-		return new OperationTxBuilder(request);
-	}
-
-	private void execute(Operation operation, List<Operation> relatedOperations, TxBuilder txBuilder) throws TxBuilderException {
-		var amountMaybe = operation.getAmount();
-		if (amountMaybe.isPresent()) {
-			var amount = amountMaybe.get();
-			var addressIdentifier = operation.getAddressIdentifier().orElseThrow();
-			var resourceIdentifier = amount.getResourceIdentifier();
-			var compare = amount.getValue().compareTo(BigInteger.ZERO);
-			if (compare > 0) {
-				var actionAmount = UInt256.from(amount.getValue().toString());
-				addressIdentifier.bootUp(txBuilder, actionAmount, resourceIdentifier);
-			} else if (compare < 0) {
-				var accountAddress = addressIdentifier.getAccountAddress()
-					.orElseThrow(() -> new InvalidAddressIdentifierException("Spending resources can only occur from account addresses."));
-				var actionAmount = UInt256.from(amount.getValue().toString().substring(1));
-				var retrieval = resourceIdentifier.substateRetrieval(accountAddress);
-				var change = txBuilder.downFungible(
-					retrieval.getFirst(),
-					retrieval.getSecond(),
-					actionAmount
-				);
-				if (!change.isZero()) {
-					addressIdentifier.bootUp(txBuilder, change, resourceIdentifier);
-				}
-			}
-		}
-
-		var dataUpdateMaybe = operation.getDataUpdate();
-		if (dataUpdateMaybe.isPresent()) {
-			var dataUpdate = dataUpdateMaybe.get();
-			var fetcher = new DataObject.RelatedOperationFetcher() {
-				@Override
-				public <T extends DataObject> T get(Class<T> dataObjectClass) {
-					return relatedOperations.stream()
-						.map(o -> o.getDataUpdate().map(DataUpdate::getDataObject).orElse(null))
-						.filter(Objects::nonNull)
-						.filter(dataObjectClass::isInstance)
-						.map(dataObjectClass::cast)
-						.findFirst()
-						.orElseThrow();
-				}
-			};
-			dataUpdate.getDataObject().bootUp(
-				txBuilder,
-				request.getFeePayer(),
-				fetcher
-			);
-		}
+	private TokenData(UInt256 granularity, boolean isMutable, REAddr owner) {
+		this.granularity = granularity;
+		this.isMutable = isMutable;
+		this.owner = owner;
 	}
 
 	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		for (var operationGroup : request.getOperationGroups()) {
-			for (var operation : operationGroup.getOperations()) {
-				execute(operation, operationGroup.getOperations(), txBuilder);
-			}
-			txBuilder.end();
+	public void bootUp(TxBuilder builder, REAddr feePayer, RelatedOperationFetcher fetcher) throws TxBuilderException {
+		if (!isMutable && owner != null) {
+			throw new InvalidTokenOwnerException("Cannot have owner on fixed supply token.");
 		}
+
+		if (granularity != null && !granularity.equals(UInt256.ONE)) {
+			// TODO: Fix
+			throw new IllegalStateException();
+		}
+
+		var address = feePayer.publicKey().orElseThrow();
+		var tokenOwner = owner == null
+			? (isMutable ? address : null)
+			: owner.publicKey().orElseThrow();
+		var tokenMetadata = fetcher.get(TokenMetadata.class);
+		var symbol = tokenMetadata.getSymbol();
+		var tokenAddress = REAddr.ofHashedKey(address, symbol);
+
+		builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8));
+		builder.downREAddr(tokenAddress);
+		var tokenResource = new TokenResource(tokenAddress, UInt256.ONE, isMutable, tokenOwner);
+		builder.up(tokenResource);
+	}
+
+	public static TokenData from(JsonObjectReader reader) throws InvalidParametersException {
+		var granularity = reader.getOptNonZeroAmount("granularity").orElse(null);
+		var isMutable = reader.getBoolean("is_mutable");
+		var owner = reader.getOptAccountAddress("owner").orElse(null);
+		return new TokenData(granularity, isMutable, owner);
 	}
 }

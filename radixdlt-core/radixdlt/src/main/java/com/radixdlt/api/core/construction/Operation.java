@@ -71,23 +71,34 @@ import java.util.Optional;
 public class Operation {
 	private final AddressIdentifier addressIdentifier;
 	private final ResourceAmount amount;
+	private final DataUpdate dataUpdate;
 
-	private Operation(AddressIdentifier addressIdentifier, ResourceAmount amount) {
+	private Operation(
+		AddressIdentifier addressIdentifier,
+		ResourceAmount amount,
+		DataUpdate dataUpdate
+	) {
 		this.addressIdentifier = addressIdentifier;
 		this.amount = amount;
+		this.dataUpdate = dataUpdate;
 	}
 
-	public AddressIdentifier getAddressIdentifier() {
-		return addressIdentifier;
+	public Optional<AddressIdentifier> getAddressIdentifier() {
+		return Optional.ofNullable(addressIdentifier);
 	}
 
 	public Optional<ResourceAmount> getAmount() {
 		return Optional.ofNullable(amount);
 	}
 
+	public Optional<DataUpdate> getDataUpdate() {
+		return Optional.ofNullable(dataUpdate);
+	}
+
 	public static Operation from(JsonObjectReader reader) throws InvalidParametersException {
-		var addressIdentifier = AddressIdentifier.from(reader.getJsonObject("address_identifier"));
+		var addressIdentifier = reader.getOptJsonObject("address_identifier", AddressIdentifier::from).orElse(null);
 		var amount = reader.getOptJsonObject("amount", ResourceAmount::from).orElse(null);
-		return new Operation(addressIdentifier, amount);
+		var data = reader.getOptJsonObject("data", DataUpdate::from).orElse(null);
+		return new Operation(addressIdentifier, amount, data);
 	}
 }

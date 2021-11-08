@@ -145,7 +145,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		}
 
 		public ReducerState claim(UnclaimedREAddr unclaimedREAddr, ExecutionContext ctx) throws ProcedureException, InvalidHashedKeyException {
-			if (ctx.permissionLevel() != PermissionLevel.SYSTEM) {
+			if (ctx.permissionLevel() != PermissionLevel.SYSTEM && !ctx.skipAuthorization()) {
 				var key = ctx.key().orElseThrow(() -> new ProcedureException("Missing key"));
 				unclaimedREAddr.verifyHashedKey(key, arg);
 			}

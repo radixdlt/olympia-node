@@ -133,6 +133,19 @@ public final class JsonObjectReader {
 		}
 	}
 
+	public Optional<UInt256> getOptNonZeroAmount(String key) throws InvalidParametersException {
+		if (!jsonObject.has(key)) {
+			return Optional.empty();
+		}
+
+		var amount = getAmount(key);
+		if (amount.isZero()) {
+			throw new InvalidParametersException("/" + key, "Amount cannot be zero.");
+		}
+		return Optional.of(amount);
+	}
+
+
 	public UInt256 getNonZeroAmount(String key) throws InvalidParametersException {
 		var amount = getAmount(key);
 		if (amount.isZero()) {
@@ -157,6 +170,22 @@ public final class JsonObjectReader {
 				return Optional.empty();
 			}
 			return Optional.of(addressing.get().forAccounts().parse(accountAddress));
+		} catch (DeserializeException | JSONException e) {
+			throw new InvalidParametersException("/" + key, Throwables.getRootCause(e));
+		}
+	}
+
+	public boolean has(String key) {
+		return jsonObject.has(key);
+	}
+
+	public Optional<REAddr> getOptAccountAddress(String key) throws InvalidParametersException {
+		try {
+			if (!jsonObject.has(key)) {
+				return Optional.empty();
+			}
+			var addressString = jsonObject.getString(key);
+			return Optional.of(addressing.get().forAccounts().parse(addressString));
 		} catch (DeserializeException | JSONException e) {
 			throw new InvalidParametersException("/" + key, Throwables.getRootCause(e));
 		}
@@ -259,6 +288,15 @@ public final class JsonObjectReader {
 			// TODO: add parent
 			var mapped = mapper.map(new JsonObjectReader(json, addressing));
 			return Optional.of(mapped);
+		} catch (JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+	}
+
+	public <T> T getJsonObject(String key, JsonObjectMapper<T> mapper) throws InvalidParametersException {
+		try {
+			var json = jsonObject.getJSONObject(key);
+			return mapper.map(new JsonObjectReader(json, addressing));
 		} catch (JSONException e) {
 			throw new InvalidParametersException("/" + key, e);
 		}

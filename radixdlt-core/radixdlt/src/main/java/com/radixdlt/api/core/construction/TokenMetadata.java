@@ -63,82 +63,54 @@
 
 package com.radixdlt.api.core.construction;
 
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.identifiers.REAddr;
 
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Objects;
+public class TokenMetadata implements DataObject {
+	private final String symbol;
+	private final String name;
+	private final String description;
+	private final String url;
+	private final String iconUrl;
 
-public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
-	private final BuildTransactionRequest request;
-
-	private OperationTxBuilder(BuildTransactionRequest request) {
-		this.request = request;
+	private TokenMetadata(String symbol, String name, String description, String url, String iconUrl) {
+		this.symbol = symbol;
+		this.name = name;
+		this.description = description;
+		this.url = url;
+		this.iconUrl = iconUrl;
 	}
 
-	public static OperationTxBuilder from(BuildTransactionRequest request) {
-		return new OperationTxBuilder(request);
-	}
-
-	private void execute(Operation operation, List<Operation> relatedOperations, TxBuilder txBuilder) throws TxBuilderException {
-		var amountMaybe = operation.getAmount();
-		if (amountMaybe.isPresent()) {
-			var amount = amountMaybe.get();
-			var addressIdentifier = operation.getAddressIdentifier().orElseThrow();
-			var resourceIdentifier = amount.getResourceIdentifier();
-			var compare = amount.getValue().compareTo(BigInteger.ZERO);
-			if (compare > 0) {
-				var actionAmount = UInt256.from(amount.getValue().toString());
-				addressIdentifier.bootUp(txBuilder, actionAmount, resourceIdentifier);
-			} else if (compare < 0) {
-				var accountAddress = addressIdentifier.getAccountAddress()
-					.orElseThrow(() -> new InvalidAddressIdentifierException("Spending resources can only occur from account addresses."));
-				var actionAmount = UInt256.from(amount.getValue().toString().substring(1));
-				var retrieval = resourceIdentifier.substateRetrieval(accountAddress);
-				var change = txBuilder.downFungible(
-					retrieval.getFirst(),
-					retrieval.getSecond(),
-					actionAmount
-				);
-				if (!change.isZero()) {
-					addressIdentifier.bootUp(txBuilder, change, resourceIdentifier);
-				}
-			}
-		}
-
-		var dataUpdateMaybe = operation.getDataUpdate();
-		if (dataUpdateMaybe.isPresent()) {
-			var dataUpdate = dataUpdateMaybe.get();
-			var fetcher = new DataObject.RelatedOperationFetcher() {
-				@Override
-				public <T extends DataObject> T get(Class<T> dataObjectClass) {
-					return relatedOperations.stream()
-						.map(o -> o.getDataUpdate().map(DataUpdate::getDataObject).orElse(null))
-						.filter(Objects::nonNull)
-						.filter(dataObjectClass::isInstance)
-						.map(dataObjectClass::cast)
-						.findFirst()
-						.orElseThrow();
-				}
-			};
-			dataUpdate.getDataObject().bootUp(
-				txBuilder,
-				request.getFeePayer(),
-				fetcher
-			);
-		}
+	public String getSymbol() {
+		return symbol;
 	}
 
 	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		for (var operationGroup : request.getOperationGroups()) {
-			for (var operation : operationGroup.getOperations()) {
-				execute(operation, operationGroup.getOperations(), txBuilder);
-			}
-			txBuilder.end();
-		}
+	public void bootUp(TxBuilder builder, REAddr feePayer, RelatedOperationFetcher fetcher) throws TxBuilderException {
+		var address = feePayer.publicKey().orElseThrow();
+		var tokenAddress = REAddr.ofHashedKey(address, symbol);
+
+		builder.up(new TokenResourceMetadata(
+			tokenAddress,
+			symbol,
+			name,
+			description,
+			iconUrl,
+			url
+		));
+	}
+
+	public static TokenMetadata from(JsonObjectReader reader) throws InvalidParametersException {
+		var symbol = reader.getString("symbol");
+		var name = reader.getOptString("name").orElse("");
+		var description = reader.getOptString("description").orElse("");
+		var url = reader.getOptString("url").orElse("");
+		var iconUrl = reader.getOptString("iconUrl").orElse("");
+
+		return new TokenMetadata(symbol, name, description, url, iconUrl);
 	}
 }

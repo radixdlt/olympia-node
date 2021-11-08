@@ -73,6 +73,7 @@ import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -81,6 +82,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import org.json.JSONObject;
 
+import java.util.List;
 import java.util.function.Function;
 
 public class ParseTransactionHandler implements ApiHandler<ParseTransactionRequest> {
@@ -107,21 +109,32 @@ public class ParseTransactionHandler implements ApiHandler<ParseTransactionReque
 
 	@Override
 	public JSONObject handleRequest(ParseTransactionRequest request) throws Exception {
-		Function<REAddr, String> addressToRri = addr -> {
-			var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-			var substate = radixEngineProvider.get().get(mapKey).orElseThrow();
-			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-			var metadata = (TokenResourceMetadata) substate;
-			var symbol = metadata.getSymbol();
-			return addressing.forResources().of(symbol, addr);
-		};
-
 		REProcessedTxn processed;
 		try {
 			processed = radixEngineProvider.get().test(request.getTransaction(), request.isSigned());
 		} catch (RadixEngineException e) {
 			throw new InvalidTransactionException(e);
 		}
+
+		Function<REAddr, String> addressToRri = addr -> {
+			var localMetadata = processed.getGroupedStateUpdates().stream()
+				.flatMap(List::stream)
+				.map(REStateUpdate::getParsed)
+				.filter(TokenResourceMetadata.class::isInstance)
+				.map(TokenResourceMetadata.class::cast)
+				.filter(r -> r.getAddr().equals(addr))
+				.findFirst();
+
+			var tokenMetadata = localMetadata.orElseGet(() -> {
+				var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+				var substate = radixEngineProvider.get().get(mapKey).orElseThrow();
+				// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+				return (TokenResourceMetadata) substate;
+			});
+
+			return addressing.forResources().of(tokenMetadata.getSymbol(), addr);
+		};
+
 		var operationGroups = converter.getOperationGroups(processed, addressToRri, null);
 
 		return new JSONObject()
