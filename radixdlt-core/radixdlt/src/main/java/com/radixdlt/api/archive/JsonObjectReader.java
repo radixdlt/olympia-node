@@ -250,14 +250,15 @@ public final class JsonObjectReader {
 		return list;
 	}
 
-	public Optional<JsonObjectReader> getOptJsonObject(String key) throws InvalidParametersException {
+	public <T> Optional<T> getOptJsonObject(String key, JsonObjectMapper<T> mapper) throws InvalidParametersException {
 		try {
 			if (!jsonObject.has(key)) {
 				return Optional.empty();
 			}
 			var json = jsonObject.getJSONObject(key);
 			// TODO: add parent
-			return Optional.of(new JsonObjectReader(json, addressing));
+			var mapped = mapper.map(new JsonObjectReader(json, addressing));
+			return Optional.of(mapped);
 		} catch (JSONException e) {
 			throw new InvalidParametersException("/" + key, e);
 		}

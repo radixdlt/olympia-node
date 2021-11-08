@@ -87,11 +87,7 @@ public class Operation {
 
 	public static Operation from(JsonObjectReader reader) throws InvalidParametersException {
 		var addressIdentifier = AddressIdentifier.from(reader.getJsonObject("address_identifier"));
-		var amount = reader.getOptJsonObject("amount");
-		return new Operation(
-			addressIdentifier,
-			amount.isPresent() ? ResourceAmount.from(amount.get()) : null
-		);
+		var amount = reader.getOptJsonObject("amount", ResourceAmount::from).orElse(null);
+		return new Operation(addressIdentifier, amount);
 	}
-
 }

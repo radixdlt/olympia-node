@@ -67,12 +67,9 @@ import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
-import javax.xml.validation.Validator;
 import java.util.Optional;
 
 public interface AddressIdentifier {
@@ -80,24 +77,22 @@ public interface AddressIdentifier {
 	void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier) throws TxBuilderException;
 
 	private static AddressIdentifier fromAccountAddress(REAddr accountAddress, JsonObjectReader reader) throws InvalidParametersException {
-		var subAddressJsonMaybe = reader.getOptJsonObject("sub_address");
-		if (subAddressJsonMaybe.isEmpty()) {
-			return AccountVaultAddressIdentifier.from(accountAddress);
-		}
-
-		var subAddressJson = subAddressJsonMaybe.get();
-		var subAddress = subAddressJson.getString("address");
-		switch (subAddress) {
-			case "prepared_stake":
-				return PreparedStakeVaultAddressIdentifier.from(
-					accountAddress,
-					subAddressJson.getJsonObject("metadata").getValidatorIdentifier("validator")
-				);
-			case "prepared_unstake":
-				return PreparedUnstakeVaultAddressIdentifier.from(accountAddress);
-			default:
-				throw new InvalidParametersException("/address", "Invalid Sub Address: " + subAddress);
-		}
+		return reader
+			.getOptJsonObject("sub_address", r -> {
+				var subAddress = r.getString("address");
+				switch (subAddress) {
+					case "prepared_stake":
+						return PreparedStakeVaultAddressIdentifier.from(
+							accountAddress,
+							r.getJsonObject("metadata").getValidatorIdentifier("validator")
+						);
+					case "prepared_unstake":
+						return PreparedUnstakeVaultAddressIdentifier.from(accountAddress);
+					default:
+						throw new InvalidParametersException("/address", "Invalid Sub Address: " + subAddress);
+				}
+			})
+			.orElseGet(() -> AccountVaultAddressIdentifier.from(accountAddress));
 	}
 
 	static AddressIdentifier from(JsonObjectReader reader) throws InvalidParametersException {

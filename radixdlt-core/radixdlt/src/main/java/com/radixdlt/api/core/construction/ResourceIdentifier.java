@@ -66,11 +66,9 @@ package com.radixdlt.api.core.construction;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.UInt256;
 
 import java.util.function.Predicate;
 

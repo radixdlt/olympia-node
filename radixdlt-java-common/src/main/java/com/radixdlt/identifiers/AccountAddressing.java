@@ -109,14 +109,14 @@ public final class AccountAddressing {
 			throw new DeserializeException("Could not decode string: " + v, e);
 		}
 
-		byte[] addrBytes;
+		final REAddr reAddr;
 		try {
-			addrBytes = fromBech32Data(bech32Data.data);
+			var addrBytes = fromBech32Data(bech32Data.data);
+			reAddr = REAddr.of(addrBytes);
 		} catch (IllegalArgumentException e) {
 			throw new DeserializeException("Invalid address", e);
 		}
 
-		var reAddr = REAddr.of(addrBytes);
 		if (!reAddr.isAccount()) {
 			throw new DeserializeException("Address is not an account");
 		}

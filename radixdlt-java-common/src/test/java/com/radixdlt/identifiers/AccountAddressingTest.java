@@ -91,7 +91,6 @@ public class AccountAddressingTest {
 
 	private final BiMap<String, String> reAddrToAccountAddress = HashBiMap.create(
 		Map.of(
-			"03" + "03".repeat(26), "brx1qvpsxqcrqvpsxqcrqvpsxqcrqvpsxqcrqvpsxqcrqvpsytf8zx",
 			"04" + "02".repeat(33), "brx1qspqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs7cr9az"
 		)
 	);
