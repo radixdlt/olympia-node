@@ -80,11 +80,11 @@ public interface DataObject {
 		RelatedOperationFetcher fetcher
 	) throws TxBuilderException;
 
-	static DataObject from(JsonObjectReader reader) throws InvalidParametersException {
+	static DataObject from(JsonObjectReader reader, JsonObjectReader metadataReader) throws InvalidParametersException {
 		var type = reader.getString("type");
 		switch (type) {
 			case "TokenData":
-				return TokenData.from(reader);
+				return TokenData.from(reader, metadataReader);
 			case "TokenMetadata":
 				return TokenMetadata.from(reader);
 			default:

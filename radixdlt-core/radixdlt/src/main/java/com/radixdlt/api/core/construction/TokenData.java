@@ -67,22 +67,26 @@ import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 public final class TokenData implements DataObject {
 	private final UInt256 granularity;
 	private final boolean isMutable;
 	private final REAddr owner;
+	private final UInt256 value;
 
-	private TokenData(UInt256 granularity, boolean isMutable, REAddr owner) {
+	private TokenData(UInt256 granularity, boolean isMutable, REAddr owner, UInt256 value) {
 		this.granularity = granularity;
 		this.isMutable = isMutable;
 		this.owner = owner;
+		this.value = value;
 	}
 
 	@Override
@@ -93,6 +97,10 @@ public final class TokenData implements DataObject {
 
 		if (granularity != null && !granularity.equals(UInt256.ONE)) {
 			// TODO: Fix
+			throw new IllegalStateException();
+		}
+
+		if (isMutable != (value == null)) {
 			throw new IllegalStateException();
 		}
 
@@ -108,12 +116,18 @@ public final class TokenData implements DataObject {
 		builder.downREAddr(tokenAddress);
 		var tokenResource = new TokenResource(tokenAddress, UInt256.ONE, isMutable, tokenOwner);
 		builder.up(tokenResource);
+
+		if (value != null) {
+			var fixedTokens = new TokensInAccount(feePayer, tokenAddress, value);
+			builder.up(fixedTokens);
+		}
 	}
 
-	public static TokenData from(JsonObjectReader reader) throws InvalidParametersException {
+	public static TokenData from(JsonObjectReader reader, JsonObjectReader metadataReader) throws InvalidParametersException {
 		var granularity = reader.getOptNonZeroAmount("granularity").orElse(null);
 		var isMutable = reader.getBoolean("is_mutable");
 		var owner = reader.getOptAccountAddress("owner").orElse(null);
-		return new TokenData(granularity, isMutable, owner);
+		var value = metadataReader.getOptNonZeroAmount("fixed_supply_amount").orElse(null);
+		return new TokenData(granularity, isMutable, owner, value);
 	}
 }

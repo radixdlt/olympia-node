@@ -78,7 +78,8 @@ public class DataUpdate {
 	}
 
 	public static DataUpdate from(JsonObjectReader reader) throws InvalidParametersException {
-		var dataObject = reader.getJsonObject("object", DataObject::from);
+		var metadataReader = reader.getOptJsonObject("metadata", r -> r).orElseGet(JsonObjectReader::empty);
+		var dataObject = reader.getJsonObject("object", r -> DataObject.from(r, metadataReader));
 		return new DataUpdate(dataObject);
 	}
 }

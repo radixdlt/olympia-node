@@ -88,6 +88,12 @@ public final class JsonObjectReader {
 	private final JSONObject jsonObject;
 	private final Supplier<Addressing> addressing;
 
+	public static JsonObjectReader empty() {
+		return new JsonObjectReader(new JSONObject(), () -> {
+			throw new UnsupportedOperationException();
+		});
+	}
+
 	private JsonObjectReader(JSONObject jsonObject, Supplier<Addressing> addressing) {
 		this.jsonObject = jsonObject;
 		this.addressing = addressing;
