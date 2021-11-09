@@ -61,29 +61,72 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.node;
+package com.radixdlt.api.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import io.undertow.server.HttpHandler;
+import com.google.common.base.Throwables;
+import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.api.archive.construction.InvalidTransactionException;
+import com.radixdlt.api.archive.construction.StateConflictException;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolRejectedException;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
-public final class NodeApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+public class SubmitTransactionHandler implements ApiHandler<Txn> {
+	private final EventDispatcher<MempoolAdd> dispatcher;
 
-	public NodeApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	SubmitTransactionHandler(EventDispatcher<MempoolAdd> mempoolAddEventDispatcher) {
+		this.dispatcher = mempoolAddEventDispatcher;
 	}
 
 	@Override
-	protected void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path + "/account").to(NodeAccountHandler.class);
-		routeBinder.addBinding(path + "/sign").to(NodeSignHandler.class);
+	public Txn parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return Txn.create(requestReader.getHexBytes("signed_transaction"));
+	}
+
+	@Override
+	public JSONObject handleRequest(Txn txn) throws Exception {
+		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
+		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
+
+		dispatcher.dispatch(mempoolAdd);
+		try {
+			// We need to block here as we need to complete the request in the same thread
+			var success = completableFuture.get();
+			return new JSONObject()
+				.put("transactionIdentifier", success.getTxn().getId())
+				.put("duplicate", false);
+		} catch (ExecutionException e) {
+			if (e.getCause() instanceof MempoolDuplicateException) {
+				return new JSONObject()
+					.put("transactionIdentifier", txn.getId())
+					.put("duplicate", true);
+			}
+
+			if (e.getCause() instanceof MempoolRejectedException) {
+				var ex = (MempoolRejectedException) e.getCause();
+				var reException = (RadixEngineException) ex.getCause();
+
+				var cause = Throwables.getRootCause(reException);
+				if (cause instanceof SubstateNotFoundException) {
+					throw new StateConflictException(reException);
+				}
+
+				throw new InvalidTransactionException(reException);
+			}
+			throw e;
+		}
 	}
 }

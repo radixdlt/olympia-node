@@ -61,29 +61,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.node;
+package com.radixdlt.api.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
 
-import java.lang.annotation.Annotation;
+public final class FinalizeTransactionRequest {
+	private final byte[] unsignedTransaction;
+	private final Signature signature;
 
-public final class NodeApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
-
-	public NodeApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	private FinalizeTransactionRequest(
+		byte[] unsignedTransaction,
+		Signature signature
+	) {
+		this.unsignedTransaction = unsignedTransaction;
+		this.signature = signature;
 	}
 
-	@Override
-	protected void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path + "/account").to(NodeAccountHandler.class);
-		routeBinder.addBinding(path + "/sign").to(NodeSignHandler.class);
+	public byte[] getUnsignedTransaction() {
+		return unsignedTransaction;
+	}
+
+	public Signature getSignature() {
+		return signature;
+	}
+
+	public static FinalizeTransactionRequest from(JsonObjectReader reader) throws InvalidParametersException {
+		var unsignedTransaction = reader.getHexBytes("unsigned_transaction");
+		var signature = reader.getJsonObject("signature", Signature::from);
+		return new FinalizeTransactionRequest(unsignedTransaction, signature);
 	}
 }

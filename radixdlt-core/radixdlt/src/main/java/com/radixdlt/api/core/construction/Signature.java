@@ -61,29 +61,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.node;
+package com.radixdlt.api.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
 
-import java.lang.annotation.Annotation;
+public class Signature {
+	private final ECPublicKey publicKey;
+	private final ECDSASignature signature;
 
-public final class NodeApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
-
-	public NodeApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	private Signature(ECPublicKey publicKey, ECDSASignature signature) {
+		this.publicKey = publicKey;
+		this.signature = signature;
 	}
 
-	@Override
-	protected void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path + "/account").to(NodeAccountHandler.class);
-		routeBinder.addBinding(path + "/sign").to(NodeSignHandler.class);
+	public ECDSASignature getECDSASignature() {
+		return signature;
+	}
+
+	public ECPublicKey getPublicKey() {
+		return publicKey;
+	}
+
+	public static Signature from(JsonObjectReader reader) throws InvalidParametersException {
+		var publicKey = reader.getPubKey("public_key");
+		var bytes = reader.getHexBytes("bytes");
+		var signature = ECDSASignature.decodeFromDER(bytes);
+		return new Signature(publicKey, signature);
 	}
 }

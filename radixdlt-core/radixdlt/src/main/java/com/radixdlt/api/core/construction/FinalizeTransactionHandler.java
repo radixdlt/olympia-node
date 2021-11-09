@@ -61,29 +61,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.node;
+package com.radixdlt.api.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.crypto.ECKeyUtils;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
-
-public final class NodeApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
-
-	public NodeApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+public final class FinalizeTransactionHandler implements ApiHandler<FinalizeTransactionRequest> {
+	@Override
+	public FinalizeTransactionRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return FinalizeTransactionRequest.from(requestReader);
 	}
 
 	@Override
-	protected void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
+	public JSONObject handleRequest(FinalizeTransactionRequest request) throws Exception {
+		var sig = request.getSignature();
+		var rawSig = sig.getECDSASignature();
+		var pubKey = sig.getPublicKey();
+		var unsignedTransaction = request.getUnsignedTransaction();
+		var hash = HashUtils.sha256(unsignedTransaction).asBytes();
+		var recoverable = ECKeyUtils.toRecoverableSig(
+			rawSig, hash, pubKey
 		);
-		routeBinder.addBinding(path + "/account").to(NodeAccountHandler.class);
-		routeBinder.addBinding(path + "/sign").to(NodeSignHandler.class);
+
+		var txn = TxLowLevelBuilder.newBuilder(unsignedTransaction).sig(recoverable).build();
+		return new JSONObject().put("signed_transaction", Bytes.toHexString(txn.getPayload()));
 	}
 }

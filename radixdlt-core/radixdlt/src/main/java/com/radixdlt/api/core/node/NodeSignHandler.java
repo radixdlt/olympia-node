@@ -67,41 +67,32 @@ import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.utils.Bytes;
 import org.json.JSONObject;
 
-class NodeHandler implements ApiHandler<Void> {
-	private final REAddr accountAddress;
-	private final ECPublicKey validatorKey;
-	private final Addressing addressing;
+public class NodeSignHandler implements ApiHandler<byte[]> {
+
+	private final HashSigner hashSigner;
 
 	@Inject
-	NodeHandler(
-		@Self REAddr accountAddress,
-		@Self ECPublicKey validatorKey,
-		Addressing addressing
-	) {
-		this.accountAddress = accountAddress;
-		this.validatorKey = validatorKey;
-		this.addressing = addressing;
+	NodeSignHandler(@LocalSigner HashSigner hashSigner) {
+		this.hashSigner = hashSigner;
 	}
 
 	@Override
-	public Void parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return null;
+	public byte[] parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return requestReader.getHexBytes("transaction");
 	}
 
 	@Override
-	public JSONObject handleRequest(Void request) throws Exception {
-		return new JSONObject()
-			.put("account_address_identifier", new JSONObject()
-				.put("address", addressing.forAccounts().of(accountAddress))
-			)
-			.put("validator_address_identifier", new JSONObject()
-				.put("address", addressing.forValidators().of(validatorKey))
-			);
+	public JSONObject handleRequest(byte[] transactionBytes) throws Exception {
+		var builder = TxLowLevelBuilder.newBuilder(transactionBytes);
+		var hash = builder.hashToSign();
+		var signature = this.hashSigner.sign(hash);
+		var signedTransaction = builder.sig(signature).blob();
+		return new JSONObject().put("signed_transaction", Bytes.toHexString(signedTransaction));
 	}
 }

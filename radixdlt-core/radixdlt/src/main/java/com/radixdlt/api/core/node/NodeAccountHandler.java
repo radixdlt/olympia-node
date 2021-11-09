@@ -63,27 +63,45 @@
 
 package com.radixdlt.api.core.node;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+class NodeAccountHandler implements ApiHandler<Void> {
+	private final REAddr accountAddress;
+	private final ECPublicKey validatorKey;
+	private final Addressing addressing;
 
-public final class NodeApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
-
-	public NodeApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	NodeAccountHandler(
+		@Self REAddr accountAddress,
+		@Self ECPublicKey validatorKey,
+		Addressing addressing
+	) {
+		this.accountAddress = accountAddress;
+		this.validatorKey = validatorKey;
+		this.addressing = addressing;
 	}
 
 	@Override
-	protected void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path + "/account").to(NodeAccountHandler.class);
-		routeBinder.addBinding(path + "/sign").to(NodeSignHandler.class);
+	public Void parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return null;
+	}
+
+	@Override
+	public JSONObject handleRequest(Void request) throws Exception {
+		return new JSONObject()
+			.put("account_address_identifier", new JSONObject()
+				.put("address", addressing.forAccounts().of(accountAddress))
+			)
+			.put("validator_address_identifier", new JSONObject()
+				.put("address", addressing.forValidators().of(validatorKey))
+			);
 	}
 }
