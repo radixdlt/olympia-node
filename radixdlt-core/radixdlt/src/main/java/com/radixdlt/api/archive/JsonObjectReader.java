@@ -230,6 +230,20 @@ public final class JsonObjectReader {
 		}
 	}
 
+	public byte[] getHexBytes(String key, int fixedLength) throws InvalidParametersException {
+		byte[] bytes;
+		try {
+			String hex = jsonObject.getString(key);
+			bytes = Bytes.fromHexString(hex);
+		} catch (JSONException | IllegalArgumentException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+		if (bytes.length != fixedLength) {
+			throw new InvalidParametersException("/" + key, "Invalid bytes length");
+		}
+
+		return bytes;
+	}
 
 	public byte[] getHexBytes(String key) throws InvalidParametersException {
 		try {

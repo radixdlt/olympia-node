@@ -65,6 +65,7 @@ package com.radixdlt.api.core.construction;
 
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.identifiers.REAddr;
@@ -72,39 +73,27 @@ import com.radixdlt.statecomputer.forks.RERulesConfig;
 
 import java.util.function.Supplier;
 
-public interface DataObject {
-	interface RelatedOperationFetcher {
-		<T extends DataObject> T get(Class<T> dataObjectClass);
+public final class ValidatorAllowDelegation implements DataObject {
+	private final boolean allowDelegation;
+
+	private ValidatorAllowDelegation(boolean allowDelegation) {
+		this.allowDelegation = allowDelegation;
 	}
 
-	void bootUp(
+	@Override
+	public void bootUp(
 		TxBuilder builder,
 		REAddr feePayer,
 		RelatedOperationFetcher fetcher,
 		Supplier<RERulesConfig> config
-	) throws TxBuilderException;
+	) throws TxBuilderException {
+		var validatorKey = feePayer.publicKey().orElseThrow();
+		builder.down(AllowDelegationFlag.class, validatorKey);
+		builder.up(new AllowDelegationFlag(validatorKey, allowDelegation));
+	}
 
-	static DataObject from(JsonObjectReader reader, JsonObjectReader metadataReader) throws InvalidParametersException {
-		var type = reader.getString("type");
-		switch (type) {
-			case "TokenData":
-				return TokenData.from(reader, metadataReader);
-			case "TokenMetadata":
-				return TokenMetadata.from(reader);
-			case "PreparedValidatorRegistered":
-				return PreparedValidatorRegistered.from(reader);
-			case "PreparedValidatorOwner":
-				return PreparedValidatorOwner.from(reader);
-			case "PreparedValidatorFee":
-				return PreparedValidatorFee.from(reader);
-			case "ValidatorMetadata":
-				return ValidatorMetadata.from(reader);
-			case "ValidatorAllowDelegation":
-				return ValidatorAllowDelegation.from(reader);
-			case "ValidatorSystemMetadata":
-				return ValidatorSystemMetadata.from(reader);
-			default:
-				throw new InvalidParametersException("/type", "Unknown type " + type);
-		}
+	public static ValidatorAllowDelegation from(JsonObjectReader reader) throws InvalidParametersException {
+		var allowDelegation = reader.getBoolean("allow_delegation");
+		return new ValidatorAllowDelegation(allowDelegation);
 	}
 }

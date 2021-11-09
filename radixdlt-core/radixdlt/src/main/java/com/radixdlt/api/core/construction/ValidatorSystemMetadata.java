@@ -72,39 +72,30 @@ import com.radixdlt.statecomputer.forks.RERulesConfig;
 
 import java.util.function.Supplier;
 
-public interface DataObject {
-	interface RelatedOperationFetcher {
-		<T extends DataObject> T get(Class<T> dataObjectClass);
+public class ValidatorSystemMetadata implements DataObject {
+	private final byte[] data;
+
+	private ValidatorSystemMetadata(byte[] data) {
+		this.data = data;
 	}
 
-	void bootUp(
+	@Override
+	public void bootUp(
 		TxBuilder builder,
 		REAddr feePayer,
 		RelatedOperationFetcher fetcher,
 		Supplier<RERulesConfig> config
-	) throws TxBuilderException;
+	) throws TxBuilderException {
+		var validatorKey = feePayer.publicKey().orElseThrow();
+		builder.down(com.radixdlt.application.validators.state.ValidatorSystemMetadata.class, validatorKey);
+		builder.up(new com.radixdlt.application.validators.state.ValidatorSystemMetadata(
+			validatorKey,
+			data
+		));
+	}
 
-	static DataObject from(JsonObjectReader reader, JsonObjectReader metadataReader) throws InvalidParametersException {
-		var type = reader.getString("type");
-		switch (type) {
-			case "TokenData":
-				return TokenData.from(reader, metadataReader);
-			case "TokenMetadata":
-				return TokenMetadata.from(reader);
-			case "PreparedValidatorRegistered":
-				return PreparedValidatorRegistered.from(reader);
-			case "PreparedValidatorOwner":
-				return PreparedValidatorOwner.from(reader);
-			case "PreparedValidatorFee":
-				return PreparedValidatorFee.from(reader);
-			case "ValidatorMetadata":
-				return ValidatorMetadata.from(reader);
-			case "ValidatorAllowDelegation":
-				return ValidatorAllowDelegation.from(reader);
-			case "ValidatorSystemMetadata":
-				return ValidatorSystemMetadata.from(reader);
-			default:
-				throw new InvalidParametersException("/type", "Unknown type " + type);
-		}
+	public static ValidatorSystemMetadata from(JsonObjectReader reader) throws InvalidParametersException {
+		var data = reader.getHexBytes("data", 32);
+		return new ValidatorSystemMetadata(data);
 	}
 }
