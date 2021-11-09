@@ -146,7 +146,7 @@ public class AccountBalanceHandler implements ApiHandler<AddressIdentifier> {
 			var substate = radixEngine.get(mapKey).orElseThrow();
 			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
 			var tokenResource = (TokenResourceMetadata) substate;
-			return tokenResource.getSymbol();
+			return addressing.forResources().of(tokenResource.getSymbol(), addr);
 		};
 
 		var balances = getBalances(

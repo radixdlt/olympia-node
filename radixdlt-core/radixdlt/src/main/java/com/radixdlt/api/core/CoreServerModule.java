@@ -101,7 +101,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 /**
  * Configures the api including http server setup
  */
-public final class NodeServerModule extends AbstractModule {
+public final class CoreServerModule extends AbstractModule {
 	private final int port;
 	private final String bindAddress;
 	private final boolean transactionsEnable;
@@ -109,7 +109,7 @@ public final class NodeServerModule extends AbstractModule {
 	private final boolean faucetEnable;
 	private final boolean chaosEnable;
 
-	public NodeServerModule(
+	public CoreServerModule(
 		int port,
 		String bindAddress,
 		boolean transactionsEnable,
@@ -131,7 +131,6 @@ public final class NodeServerModule extends AbstractModule {
 		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
 
 		install(new SystemApiModule(NodeServer.class, "/system"));
-		install(new AccountApiModule(NodeServer.class, "/account"));
 		install(new ValidatorApiModule(NodeServer.class, "/validator"));
 		install(new HealthApiModule(NodeServer.class, "/health"));
 		install(new VersionApiModule(NodeServer.class, "/version"));
@@ -147,6 +146,7 @@ public final class NodeServerModule extends AbstractModule {
 			install(new ChaosApiModule(NodeServer.class, "/chaos"));
 		}
 
+		install(new AccountApiModule(NodeServer.class, "/account"));
 		install(new NetworkApiModule(NodeServer.class, "/network"));
 		install(new NodeApiModule(NodeServer.class, "/node"));
 		if (transactionsEnable) {

@@ -1,0 +1,1428 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Radix Core API",
+    "description": "API which helps with node management as well as support for lite clients such as exchanges.",
+    "license": {
+      "name":"Apache 2.0",
+      "url":"http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "servers": [
+    {
+      "url": "localhost:3333"
+    }
+  ],
+  "tags": [
+    {
+      "name": "api",
+      "x-displayName": "Core API",
+      "description": "Core API"
+    },
+    {
+      "name": "committed_transaction",
+      "x-displayName": "Committed Transaction",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransaction\" />"
+    },
+    {
+      "name": "committed_transaction_metadata",
+      "x-displayName": "Committed Transaction Metadata",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransactionMetadata\" />"
+    },
+    {
+      "name": "operation_group",
+      "x-displayName": "Operation Group",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/OperationGroup\" />"
+    },
+    {
+      "name": "operation",
+      "x-displayName": "Operation",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/Operation\" />"
+    },
+    {
+      "name": "amount",
+      "x-displayName": "Amount",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/ResourceAmount\" />"
+    },
+    {
+      "name": "data",
+      "x-displayName": "Data",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/Data\" />"
+    },
+    {
+      "name": "substate",
+      "x-displayName": "Substate",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/Substate\" />"
+    },
+    {
+      "name": "data_object",
+      "x-displayName": "Object",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DataObject\" />"
+    },
+    {
+      "name": "public_key",
+      "x-displayName": "Public Key",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/PublicKey\" />"
+    },
+    {
+      "name": "committed_state_identifier",
+      "x-displayName": "Committed State Identifier",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/CommittedStateIdentifier\" />"
+    },
+    {
+      "name": "address_identifier",
+      "x-displayName": "Address Identifier",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/AddressIdentifier\" />"
+    },
+    {
+      "name": "sub_address_identifier",
+      "x-displayName": "Subaddress Identifier",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/SubAddress\" />"
+    },
+    {
+      "name": "resource_identifier",
+      "x-displayName": "Resource Identifier",
+      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/ResourceIdentifier\" />"
+    }
+  ],
+  "x-tagGroups": [
+    {
+      "name": "Core API",
+      "tags": [ "api" ]
+    },
+    {
+      "name": "Objects",
+      "tags": [
+        "committed_transaction",
+        "committed_transaction_metadata",
+        "operation_group",
+        "operation",
+        "amount",
+        "data",
+        "data_object",
+        "substate",
+        "public_key"
+      ]
+    },
+    {
+      "name": "Identifiers",
+      "tags": [
+        "committed_state_identifier",
+        "address_identifier",
+        "sub_address_identifier",
+        "resource_identifier"
+      ]
+    }
+  ],
+  "paths": {
+    "/network/configuration": {
+      "post": {
+        "summary": "Get Network Configuration",
+        "description": "Returns the network the node is associated with as well as the network configuration of that network.",
+        "tags": [ "api" ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NetworkConfigurationRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Network Configuration",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NetworkConfigurationResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network/status": {
+      "post": {
+        "summary": "Get Network Status",
+        "description": "Returns the current state and status of the ledger.",
+        "tags": [ "api" ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NetworkStatusRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ledger Status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NetworkStatusResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "An Unexpected Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/node/account": {
+      "post": {
+        "summary": "Get Node Info",
+        "tags": [ "api" ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NodeRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Node Info",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NodeResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/node/sign": {
+      "post": {
+        "summary": "Sign Transaction",
+        "tags": [ "api" ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NodeSignRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed Transaction",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NodeSignResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/balance": {
+      "post": {
+        "summary": "Get Account Balances",
+        "tags": [ "api" ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AccountBalanceRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account Balances",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AccountBalanceResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/construction/build": {
+      "post": {
+        "summary": "Build Transaction",
+        "tags": [ "api" ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ConstructionBuildRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "An unsigned transaction",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ConstructionBuildResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/construction/parse": {
+      "post": {
+        "summary": "Parse Transaction",
+        "tags": [ "api" ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ConstructionParseRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "An unsigned transaction",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ConstructionParseResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/construction/finalize": {
+      "post": {
+        "summary": "Finalize Transaction",
+        "tags": [ "api" ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ConstructionFinalizeRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "An unsigned transaction",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ConstructionFinalizeResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/construction/submit": {
+      "post": {
+        "summary": "Submit Transaction",
+        "tags": [ "api" ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ConstructionSubmitRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "An unsigned transaction",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ConstructionSubmitResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transactions": {
+      "post": {
+        "summary": "Get Committed Transactions",
+        "description": "Returns an ordered sublist of committed transactions. This endpoint is designed for lite clients to sync with the state of the ledger.",
+        "tags": [ "api" ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CommittedTransactionsRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sublist of Committed Transactions",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CommittedTransactionsResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "An Unexpected Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "NetworkConfigurationRequest": {
+        "type": "object",
+        "example": {
+        }
+      },
+      "NetworkConfigurationResponse": {
+        "type": "object",
+        "required": [
+          "version",
+          "network_identifier",
+          "bech32_human_readable_parts"
+        ],
+        "properties": {
+          "version": {
+            "type": "object",
+            "required": [ "core_version" ],
+            "properties": {
+              "core_version": { "type": "string" },
+              "api_version": { "type": "string" }
+            }
+          },
+          "network_identifier": { "$ref": "#/components/schemas/NetworkIdentifier" },
+          "bech32_human_readable_parts": { "$ref": "#/components/schemas/Bech32HRPs" }
+        },
+        "example": {
+          "network_identifier": {
+            "id": 1,
+            "name": "mainnet"
+          },
+          "bech32_human_readable_parts": {
+            "account_hrp": "rdx",
+            "validator_hrp": "rv",
+            "node_hrp": "rn",
+            "resource_hrp_suffix": "_rr"
+          }
+        }
+      },
+      "NetworkStatusRequest": {
+        "type": "object",
+        "example": {
+        }
+      },
+      "NetworkStatusResponse": {
+        "type": "object",
+        "required": [
+          "genesis_state_identifier",
+          "current_state_identifier",
+          "current_state_epoch",
+          "current_state_view",
+          "current_state_timestamp"
+        ],
+        "properties": {
+          "genesis_state_identifier": { "$ref": "#/components/schemas/CommittedStateIdentifier" },
+          "current_state_identifier": { "$ref": "#/components/schemas/CommittedStateIdentifier" },
+          "current_state_epoch": { "$ref": "#/components/schemas/LongNumber" },
+          "current_state_view": { "$ref": "#/components/schemas/LongNumber" },
+          "current_state_timestamp": { "$ref": "#/components/schemas/LongNumber" }
+        },
+        "example": {
+          "current_state_timestamp": 1627452363772,
+          "current_state_identifier": {
+            "state_version": 322001,
+            "transaction_accumulator": "e31f8314a67236076ad6d46391e93a93d7b9d34de2062acc620541c09dd69f95"
+          },
+          "current_state_epoch": 1,
+          "current_state_view": 321991,
+          "genesis_state_identifier": {
+            "state_version": 1,
+            "transaction_accumulator": "1e62415e5fd95c63aff69142f1359cc6a981ff7169c128d266f45adf614d09b0"
+          }
+        }
+      },
+      "NodeRequest": {
+        "type": "object",
+        "example": {
+        }
+      },
+      "NodeResponse": {
+        "type": "object",
+        "properties": {
+          "account_address_identifier": { "$ref": "#/components/schemas/AddressIdentifier" },
+          "validator_address_identifier": { "$ref": "#/components/schemas/AddressIdentifier" }
+        }
+      },
+      "NodeSignRequest": {
+        "type": "object",
+        "required": [ "transaction" ],
+        "properties": {
+          "transaction": { "type": "string" }
+        }
+      },
+      "NodeSignResponse": {
+        "type": "object",
+        "required": [ "signed_transaction" ],
+        "properties": {
+          "signed_transaction": { "type": "string" }
+        }
+      },
+      "AccountBalanceRequest": {
+        "type": "object",
+        "required": [ "address_identifier" ],
+        "properties": {
+          "address_identifier": { "$ref": "#/components/schemas/AddressIdentifier" }
+        },
+        "example": {
+          "address_identifier": {
+            "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+          }
+        }
+      },
+      "AccountBalanceResponse": {
+        "type": "object",
+        "required": [ "balances" ],
+        "properties": {
+          "balances": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ResourceAmount" }
+          }
+        }
+      },
+      "ConstructionBuildRequest": {
+        "type": "object",
+        "required": [ "operation_groups", "fee_payer" ],
+        "properties": {
+          "operation_groups": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OperationGroup" }
+          },
+          "fee_payer": { "$ref": "#/components/schemas/AccountAddress" },
+          "message": { "type": "string" },
+          "disable_resource_allocation_and_destroy": { "type": "boolean" }
+        },
+        "example": {
+          "fee_payer": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88",
+          "operation_groups": [
+            {
+              "operations": [
+                {
+                  "type": "Resource",
+                  "address_identifier": {
+                    "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+                  },
+                  "amount": {
+                    "resource_identifier": {
+                      "type": "Token",
+                      "rri": "xrd_rr1qy5wfsfh"
+                    },
+                    "value": "-1500"
+                  }
+                },
+                {
+                  "type": "Resource",
+                  "address_identifier": {
+                    "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
+                  },
+                  "amount": {
+                    "resource_identifier": {
+                      "type": "Token",
+                      "rri": "xrd_rr1qy5wfsfh"
+                    },
+                    "value": "1500"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "ConstructionBuildResponse": {
+        "type": "object",
+        "required": [ "result" ],
+        "properties": {
+          "result": { "type": "string" }
+        },
+        "discriminator": {
+          "propertyName": "result",
+          "mapping": {
+            "SUCCESS": "#/components/schemas/ConstructionBuildSuccessResponse",
+            "ERROR": "#/components/schemas/ConstructionBuildErrorResponse"
+          }
+        }
+      },
+      "ConstructionParseRequest": {
+        "type": "object",
+        "required": [ "transaction", "signed" ],
+        "properties": {
+          "transaction": { "type": "string" },
+          "signed": { "type": "boolean" }
+        },
+        "example": {
+          "transaction": "0d000107ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002010021000000000000000000000000000000000000000000000000000101ed50bab1800002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e80000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e7f6a02004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000000000000000000000000009600",
+          "signed": false
+        }
+      },
+      "ConstructionParseResponse": {
+        "type": "object",
+        "properties": {
+          "operation_groups": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OperationGroup" }
+          }
+        }
+      },
+      "ConstructionFinalizeRequest": {
+        "type": "object",
+        "required": [ "unsigned_transaction" ],
+        "properties": {
+          "unsigned_transaction": { "type": "string" },
+          "signature": { "$ref": "#/components/schemas/Signature" }
+        },
+        "example": {
+          "unsigned_transaction": "0d000107ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002010021000000000000000000000000000000000000000000000000000101ed50bab1800002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e80000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e7f6a02004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000000000000000000000000009600",
+          "signature": {
+            "public_key": "",
+            "bytes": ""
+          }
+        }
+      },
+      "ConstructionFinalizeResponse": {
+        "type": "object",
+        "required": [ "signed_transaction" ],
+        "properties": {
+          "signed_transaction": { "type": "string" }
+        }
+      },
+      "ConstructionSubmitRequest": {
+        "type": "object",
+        "required": [ "signed_transaction" ],
+        "properties": {
+          "signed_transaction": { "type": "string" }
+        }
+      },
+      "ConstructionSubmitResponse": {
+        "type": "object",
+        "required": [ "transaction_identifier" ],
+        "properties": {
+          "transaction_identifier": { "type": "string" }
+        }
+      },
+      "ConstructionBuildSuccessResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ConstructionBuildResponse" },
+          {
+            "type": "object",
+            "required": [ "fee", "unsigned_transaction", "payload_to_sign", "notifications" ],
+            "properties": {
+              "fee": { "$ref": "#/components/schemas/BigInteger" },
+              "unsigned_transaction": { "type": "string" },
+              "payload_to_sign": { "type": "string" },
+              "notifications": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ConstructionBuildErrorResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ConstructionBuildResponse" },
+          {
+            "type": "object",
+            "required": [ "details" ],
+            "properties": {
+              "details": { "$ref": "#/components/schemas/ConstructionBuildError" }
+            }
+          }
+        ]
+      },
+      "ConstructionBuildErrorMessageTooLong": {
+        "type": "object",
+        "required": [ "limit", "actual" ],
+        "properties": {
+          "limit": { "type": "integer" },
+          "actual": { "type": "integer" }
+        }
+      },
+      "ConstructionBuildErrorNotEnoughResources": {
+        "type": "object",
+        "required": [ "requested", "available" ],
+        "properties": {
+          "requested": { "$ref": "#/components/schemas/BigInteger" },
+          "available": { "$ref": "#/components/schemas/BigInteger" }
+        }
+      },
+      "ConstructionBuildErrorMinimumStake": {
+        "type": "object",
+        "required": [ "requested", "minimum" ],
+        "properties": {
+          "requested": { "$ref": "#/components/schemas/BigInteger" },
+          "minimum": { "$ref": "#/components/schemas/BigInteger" }
+        }
+      },
+      "ConstructionBuildErrorCouldNotConstructFees": {
+        "type": "object",
+        "required": [ "requested", "minimum" ],
+        "properties": {
+          "attempts": { "type": "integer" }
+        }
+      },
+      "ConstructionBuildErrorAboveMaximumRakeIncrease": {
+        "type": "object",
+        "required": [ "requested", "minimum" ],
+        "properties": {
+          "limit": { "$ref": "#/components/schemas/BigInteger" },
+          "attempted": { "$ref": "#/components/schemas/BigInteger" }
+        }
+      },
+      "ConstructionBuildErrorInvalidStakePermissions": {
+        "type": "object",
+        "required": [ "requested", "minimum" ],
+        "properties": {
+          "owner": { "$ref": "#/components/schemas/AccountAddress" },
+          "user": { "$ref": "#/components/schemas/AccountAddress" }
+        }
+      },
+      "ConstructionBuildError": {
+        "type": "object",
+        "required": [ "errorType" ],
+        "properties": {
+          "errorType": { "type": "string" }
+        },
+        "discriminator": {
+          "propertyName": "errorType",
+          "mapping": {
+            "MESSAGE_TOO_LONG": "#/components/schemas/ConstructionBuildErrorMessageTooLong",
+            "NOT_ENOUGH_RESOURCES": "#/components/schemas/ConstructionBuildErrorNotEnoughResources",
+            "BELOW_MINIMUM_STAKE": "#/components/schemas/ConstructionBuildErrorMinimumStake",
+            "COULD_NOT_CONSTRUCT_FEES": "#/components/schemas/ConstructionBuildErrorCouldNotConstructFees",
+            "ABOVE_MAXIMUM_RAKE_INCREASE": "#/components/schemas/ConstructionBuildErrorAboveMaximumRakeIncrease",
+            "INVALID_STAKE_PERMISSIONS": "#/components/schemas/ConstructionBuildErrorInvalidStakePermissions"
+          }
+        }
+      },
+      "CommittedTransactionsRequest": {
+        "description": "A request to retrieve a sublist of committed transactions to the ledger.",
+        "type": "object",
+        "properties": {
+          "index": {
+            "description": "The index of the committed transaction to start with. Must be >= 0.",
+            "$ref": "#/components/schemas/LongNumber"
+          },
+          "limit": {
+            "description": "The maximum number of transactions that will be returned. Must be >= 1.",
+            "$ref": "#/components/schemas/LongNumber"
+          }
+        },
+        "example": {
+          "index": 0,
+          "limit": 1
+        }
+      },
+      "CommittedTransactionsResponse": {
+        "description": "A response of committed transactions which specifies the state updates which have occurred on ledger.",
+        "type": "object",
+        "required": [ "transactions" ],
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CommittedTransaction" }
+          }
+        }
+      },
+      "CommittedTransaction": {
+        "description": "A transaction which has been committed on ledger at some index.",
+        "type": "object",
+        "required": [
+          "committed_state_identifier",
+          "previous_committed_state_identifier",
+          "transaction_identifier",
+          "operation_groups",
+          "metadata"
+        ],
+        "properties": {
+          "committed_state_identifier": {
+            "description": "A unique ledger state identifier following the commit of this transaction.",
+            "$ref": "#/components/schemas/CommittedStateIdentifier"
+          },
+          "previous_committed_state_identifier": {
+            "description": "The preceding ledger state identifier. Used for detecting forks.",
+            "$ref": "#/components/schemas/CommittedStateIdentifier"
+          },
+          "transaction_identifier": {
+            "description": "The 32-byte unique identifier for the transaction, hex encoded.",
+            "$ref": "#/components/schemas/TransactionIdentifier"
+          },
+          "operation_groups": {
+            "description": "Transactions are split into operation groups which are roughly equivalent to ledger accounting entries where all credits have an equivalent debit amount.",
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OperationGroup" }
+          },
+          "metadata": {
+            "description": "Metadata about the transaction like size and fee paid",
+            "$ref": "#/components/schemas/CommittedTransactionMetadata"
+          }
+        }
+      },
+
+      "CommittedTransactionMetadata": {
+        "type": "object",
+        "required": [ "size", "hex", "fee", "timestamp" ],
+        "properties": {
+          "size": {
+            "description": "The size of the transaction in bytes",
+            "type": "integer"
+          },
+          "hex": {
+            "description": "The raw transaction bytes in hex encoding",
+            "type": "string"
+          },
+          "fee": {
+            "description": "The fee paid in XRD subunits (10^18) for the transaction",
+            "$ref": "#/components/schemas/BigInteger"
+          },
+          "timestamp": {
+            "description": "Timestamp which the transaction was committed on",
+            "$ref": "#/components/schemas/LongNumber"
+          },
+          "signed_by": {
+            "description": "Optional public key which signed the transaction. If empty, then the transaction was produced by the system",
+            "$ref": "#/components/schemas/PublicKey"
+          },
+          "message": {
+            "description": "Optional hex encoded byte array in the transaction",
+            "type": "string"
+          }
+        }
+      },
+      "OperationGroup": {
+        "type": "object",
+        "required": [ "operations" ],
+        "properties": {
+          "operations": {
+            "description": "A group of operations representing a complete state update",
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Operation" }
+          },
+          "metadata": {
+            "description": "Metadata for the operation group",
+            "type": "object"
+          }
+        }
+      },
+      "Operation": {
+        "type": "object",
+        "required": [ "type", "address_identifier" ],
+        "properties": {
+          "type": {
+            "description": "The type of substate in this operation",
+            "type": "string"
+          },
+          "address_identifier": {
+            "description": "The address on which the operation is acting on.",
+            "$ref": "#/components/schemas/AddressIdentifier"
+          },
+          "substate": {
+            "description": "The substate (similar to UTXO) which this operation represents",
+            "$ref": "#/components/schemas/Substate"
+          },
+          "amount": {
+            "description": "A balance change on the address represented by the `address_identifier`",
+            "$ref": "#/components/schemas/ResourceAmount"
+          },
+          "data": {
+            "description": "A data update on the address represented by the `address_identifier`",
+            "$ref": "#/components/schemas/Data"
+          },
+          "metadata": {
+            "description": "Metadata for the operation",
+            "$ref": "#/components/schemas/OperationMetadata"
+          }
+        }
+      },
+      "Substate": {
+        "type": "object",
+        "required": [ "substate_identifier", "substate_operation" ],
+        "properties": {
+          "substate_operation": {
+            "description": "The type of substate operation (equivalent to UTXO create/spend)",
+            "type": "string",
+            "enum": [ "BOOTUP", "SHUTDOWN" ]
+          },
+          "substate_identifier": {
+            "description": "Hex encoded unique identifier for the substate",
+            "type": "string"
+          }
+        }
+      },
+      "OperationMetadata": {
+        "type": "object"
+      },
+      "ResourceAmount": {
+        "type": "object",
+        "required": [ "value", "resource_identifier" ],
+        "properties": {
+          "value": {
+            "description": "A signed big integer representing an amount of resources in 10^18 subunits",
+            "$ref": "#/components/schemas/BigInteger"
+          },
+          "resource_identifier": {
+            "description": "The resource this amount represents",
+            "$ref": "#/components/schemas/ResourceIdentifier"
+          }
+        }
+      },
+      "Data": {
+        "type": "object",
+        "required": [ "action", "object" ],
+        "properties": {
+          "action": {
+            "description": "Data action to take on `object`",
+            "type": "string",
+            "enum": [ "CREATE", "DELETE" ]
+          },
+          "object": {
+            "description": "The object of the data action",
+            "$ref": "#/components/schemas/DataObject"
+          }
+        }
+      },
+      "DataObject": {
+        "type": "object",
+        "required": [ "type" ],
+        "properties": {
+          "type": {
+            "description": "Type of Object",
+            "type": "string"
+          }
+        },
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "VirtualParent": "#/components/schemas/VirtualParentData",
+            "UnclaimedRadixEngineAddress": "#/components/schemas/UnclaimedRadixEngineAddressData",
+            "RoundData": "#/components/schemas/RoundData",
+            "EpochData": "#/components/schemas/EpochData",
+            "TokenData": "#/components/schemas/TokenData",
+            "TokenMetadata": "#/components/schemas/TokenMetadata",
+            "PreparedValidatorRegistered": "#/components/schemas/PreparedValidatorRegistered",
+            "PreparedValidatorOwner": "#/components/schemas/PreparedValidatorOwner",
+            "PreparedValidatorFee": "#/components/schemas/PreparedValidatorFee",
+            "ValidatorMetadata": "#/components/schemas/ValidatorMetadata",
+            "ValidatorBFTData": "#/components/schemas/ValidatorBFTData",
+            "ValidatorAllowDelegation": "#/components/schemas/ValidatorAllowDelegation",
+            "ValidatorData": "#/components/schemas/ValidatorData",
+            "ValidatorSystemMetadata": "#/components/schemas/ValidatorSystemMetadata"
+          }
+        }
+      },
+      "TokenData": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "type": "object",
+            "required": [ "isMutable" ],
+            "properties": {
+              "granularity": {
+                "description": "The granularity of a token given subunits of 10^18 (ie a granularity of 10^17 means that the token can be split into 0.1 chunks but no less.",
+                "$ref": "#/components/schemas/BigInteger"
+              },
+              "is_mutable": {
+                "description": "If true, the `owner` is able to mint/burn tokens. Otherwise, the token is a fixed supply token",
+                "type": "boolean"
+              },
+              "owner": {
+                "description": "The owner of the token (only available for mutable tokens) who can mint/burn",
+                "$ref": "#/components/schemas/AccountAddress"
+              }
+            }
+          }
+        ]
+      },
+      "TokenMetadata": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "type": "object",
+            "required": [ "symbol" ],
+            "properties": {
+              "symbol": {
+                "description": "The symbol of the token (not unique in the system)",
+                "type": "string"
+              },
+              "name": {
+                "description": "The name of the token",
+                "type": "string"
+              },
+              "description": {
+                "description": "Description describing the token",
+                "type": "string"
+              },
+              "url": {
+                "description": "A url which points to more info about the token",
+                "type": "string"
+              },
+              "icon_url": {
+                "description": "A url which points to the icon of the token",
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "VirtualParentData": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" }
+        ]
+      },
+      "UnclaimedRadixEngineAddressData": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" }
+        ]
+      },
+      "RoundData": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "type": "object",
+            "required": [ "round" ],
+            "properties": {
+              "round": {
+                "description": "The round of the system",
+                "$ref": "#/components/schemas/LongNumber"
+              }
+            }
+          }
+        ]
+      },
+      "EpochData": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "type": "object",
+            "required": [ "epoch" ],
+            "properties": {
+              "epoch": {
+                "description": "The epoch of the system",
+                "$ref": "#/components/schemas/LongNumber"
+              }
+            }
+          }
+        ]
+      },
+      "PreparedValidatorRegistered": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "type": "object",
+            "required": [ "registered" ],
+            "properties": {
+              "registered": {
+                "description": "The registered flag of the validator which will be updated by the end of `epoch`",
+                "type": "boolean"
+              },
+              "epoch": {
+                "description": "Optional field, when non-empty describes the epoch the `registered` flag will update, otherwise no update is scheduled",
+                "$ref": "#/components/schemas/LongNumber"
+              }
+            }
+          }
+        ]
+      },
+      "PreparedValidatorOwner": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "type": "object",
+            "required": [ "owner" ],
+            "properties": {
+              "owner": {
+                "description": "The owner of the validator which will be updated by the end of `epoch`",
+                "$ref": "#/components/schemas/AccountAddress"
+              },
+              "epoch": {
+                "description": "Optional field, when non-empty describes the epoch the `owner` field will update, otherwise no update is scheduled",
+                "$ref": "#/components/schemas/LongNumber"
+              }
+            }
+          }
+        ]
+      },
+      "PreparedValidatorFee": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "type": "object",
+            "required": [ "fee" ],
+            "properties": {
+              "fee": {
+                "description": "The fee of the validator which will be updated in a future epoch",
+                "type": "integer"
+              },
+              "epoch": {
+                "description": "Optional field, when non-empty describes the epoch the `fee` field will update, otherwise no update is scheduled",
+                "$ref": "#/components/schemas/LongNumber"
+              }
+            }
+          }
+        ]
+      },
+      "ValidatorMetadata": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "type": "object",
+            "required": [ "name", "url" ],
+            "properties": {
+              "name": {
+                "description": "The name for the validator",
+                "type": "string"
+              },
+              "url": {
+                "description": "A url which points to more info about the validator",
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "ValidatorBFTData": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "type": "object",
+            "required": [ "proposals_completed", "proposals_missed" ],
+            "properties": {
+              "proposals_completed": {
+                "description": "The number of completed proposals by this validator as a leader in the current epoch",
+                "$ref": "#/components/schemas/LongNumber"
+              },
+              "proposals_missed": {
+                "description": "The number of missed proposals by this validator as a leader in the current epoch",
+                "$ref": "#/components/schemas/LongNumber"
+              }
+            }
+          }
+        ]
+      },
+      "ValidatorAllowDelegation": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "type": "object",
+            "required": [ "allow_delegation" ],
+            "properties": {
+              "allow_delegation": {
+                "description": "Flag indicating whether stakers besides the owner of the validator can stake to this validator",
+                "type": "boolean"
+              }
+            }
+          }
+        ]
+      },
+      "ValidatorData": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "type": "object",
+            "required": [ "owner", "registered", "fee" ],
+            "properties": {
+              "owner": {
+                "description": "The owner of the validator who receives the fees when others stake to the validator",
+                "$ref": "#/components/schemas/AccountAddress"
+              },
+              "registered": {
+                "description": "Flag indicating whether a validator is registered to be part of the validator set",
+                "type": "boolean"
+              },
+              "fee": {
+                "description": "The fee percentage of the validator in 0.01% subunits (ie 10000 == 100%)",
+                "type": "integer"
+              }
+            }
+          }
+        ]
+      },
+      "ValidatorSystemMetadata": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "type": "object",
+            "required": [ "data" ],
+            "properties": {
+              "data": {
+                "description": "A hex encoded byte array",
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "PublicKey": {
+        "type": "object",
+        "properties": {
+          "hex": {
+            "description": "Compressed ECSDA Public Key hex encoded",
+            "type": "string"
+          }
+        }
+      },
+      "NetworkIdentifier": {
+        "type": "object",
+        "required": [ "id", "name" ],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" }
+        },
+        "example": {
+          "id": 1,
+          "name": "mainnet"
+        }
+      },
+      "CommittedStateIdentifier": {
+        "type": "object",
+        "required": [ "state_version", "transaction_accumulator" ],
+        "properties": {
+          "state_version": {
+            "description": "The `state_version` represents some valid committed state on ledger (similar to block height).",
+            "$ref": "#/components/schemas/LongNumber"
+          },
+          "transaction_accumulator": {
+            "description": "Accumulator hash representing all transactions which occurred up to `state_version`. Hex encoded.",
+            "type": "string"
+          }
+        }
+      },
+      "AddressIdentifier": {
+        "type": "object",
+        "required": [ "address" ],
+        "properties": {
+          "address": {
+            "description": "The top level identifier for an address",
+            "type": "string"
+          },
+          "sub_address": {
+            "description": "Further drill down into an address. Can be treated as an entirely separate address from `address` or as a child of `address`.",
+            "$ref": "#/components/schemas/SubAddress"
+          }
+        }
+      },
+      "SubAddress": {
+        "type": "object",
+        "required": [ "address" ],
+        "properties": {
+          "address": {
+            "description": "The subaddress",
+            "type": "string"
+          },
+          "metadata": {
+            "description": "Any additional data required to drill down to a particular address is added here",
+            "type": "object"
+          }
+        }
+      },
+      "ResourceIdentifier": {
+        "type": "object",
+        "required": [ "type" ],
+        "properties": {
+          "type": {
+            "description": "The type of resource",
+            "type": "string"
+          }
+        },
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "Token": "#/components/schemas/TokenResourceIdentifier",
+            "StakeOwnership": "#/components/schemas/StakeOwnershipResourceIdentifier"
+          }
+        }
+      },
+      "TokenResourceIdentifier": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ResourceIdentifier" },
+          {
+            "type": "object",
+            "required": [ "rri" ],
+            "properties": {
+              "rri": {
+                "description": "The RRI of the token",
+                "$ref": "#/components/schemas/RRI"
+              }
+            }
+          }
+        ]
+      },
+      "StakeOwnershipResourceIdentifier": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ResourceIdentifier" },
+          {
+            "type": "object",
+            "required": [ "validator" ],
+            "properties": {
+              "validator": {
+                "description": "The validator associated with this stake ownership",
+                "$ref": "#/components/schemas/ValidatorAddress"
+              }
+            }
+          }
+        ]
+      },
+      "Signature": {
+        "type": "object",
+        "required": [ "public_key", "bytes" ],
+        "properties": {
+          "public_key": { "type": "string" },
+          "bytes": { "type": "string" }
+        }
+      },
+      "Bech32HRPs": {
+        "type": "object",
+        "properties": {
+          "account_hrp": { "type": "string" },
+          "validator_hrp": { "type": "string" },
+          "node_hrp": { "type": "string" },
+          "resource_hrp_suffix": { "type": "string" }
+        }
+      },
+      "AccountAddress": {
+        "type": "string",
+        "pattern": "^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$"
+      },
+      "ValidatorAddress": {
+        "type": "string",
+        "pattern": "^(r|t|d)v[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$"
+      },
+      "RRI": {
+        "type": "string",
+        "pattern": "^[!\\\"#$%&'()*+,-.\\/0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\[\\\\\\]\\^_`abcdefghijklmnopqrstuvwxyz{|}~]{1,83}_r[rb]1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,90}$"
+      },
+      "LongNumber": {
+        "type": "integer",
+        "format": "int64"
+      },
+      "BigInteger": {
+        "type": "string",
+        "pattern": "^-?[0-9]+$"
+      },
+      "TransactionIdentifier": {
+        "type": "string",
+        "pattern": "^[0123456789abcdef]{64}$",
+        "maxLength": 64,
+        "minLength": 64
+      },
+      "InternalServerError": {
+        "type": "object",
+        "properties": {
+          "exception": { "type": "string" },
+          "cause": { "type": "string" }
+        }
+      },
+      "InvalidJsonError": {
+        "type": "object",
+        "properties": {
+          "cause": { "type": "string" }
+        }
+      },
+      "InvalidRequestError": {
+        "type": "object",
+        "properties": {
+          "pointer": { "type": "string" },
+          "cause": { "type": "string" }
+        }
+      },
+      "UnexpectedError": {
+        "type": "object",
+        "required": [ "message" ],
+        "properties": {
+          "message": { "type": "string" }
+        },
+        "discriminator": {
+          "propertyName": "message",
+          "mapping": {
+            "INTERNAL_SERVER_ERROR": "#/components/schemas/InternalServerError",
+            "INVALID_JSON": "#/components/schemas/InvalidJsonError",
+            "INVALID_REQUEST": "#/components/schemas/InvalidRequestError"
+          }
+        }
+      }
+    }
+  }
+}

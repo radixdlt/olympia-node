@@ -66,7 +66,7 @@ package com.radixdlt.api;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.api.archive.ArchiveServerModule;
-import com.radixdlt.api.core.NodeServerModule;
+import com.radixdlt.api.core.CoreServerModule;
 import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
 import com.radixdlt.api.service.network.NetworkInfoServiceModule;
 import com.radixdlt.networks.Network;
@@ -116,7 +116,7 @@ public final class ApiModule extends AbstractModule {
 		endpointStatus.put("chaos", chaosEnable);
 		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
 		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new NodeServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
+		install(new CoreServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
 		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
 	}
 }
