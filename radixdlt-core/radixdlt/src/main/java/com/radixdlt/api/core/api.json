@@ -41,6 +41,16 @@
       "description": "Retrieve info regarding this specific node's key as well as the ability to sign transactions"
     },
     {
+      "name": "objects",
+      "x-displayName": "Objects",
+      "description": "\n## Committed Transaction\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransaction\" />"
+    },
+    {
+      "name": "identifiers",
+      "x-displayName": "Identifiers",
+      "description": "\n ## Committed State Identifier <SchemaDefinition schemaRef=\"#/components/schemas/CommittedStateIdentifier\" />"
+    },
+    {
       "name": "committed_transaction",
       "x-displayName": "Committed Transaction",
       "description": "<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransaction\" />"
@@ -120,27 +130,8 @@
       "tags": [ "node" ]
     },
     {
-      "name": "Objects",
-      "tags": [
-        "committed_transaction",
-        "committed_transaction_metadata",
-        "operation_group",
-        "operation",
-        "amount",
-        "data",
-        "data_object",
-        "substate",
-        "public_key"
-      ]
-    },
-    {
-      "name": "Identifiers",
-      "tags": [
-        "committed_state_identifier",
-        "address_identifier",
-        "sub_address_identifier",
-        "resource_identifier"
-      ]
+      "name": "Models",
+      "tags": [ "objects", "identifiers" ]
     }
   ],
   "paths": {
