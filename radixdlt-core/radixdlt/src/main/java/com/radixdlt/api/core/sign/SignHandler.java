@@ -61,29 +61,38 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.node;
+package com.radixdlt.api.core.sign;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+public class SignHandler implements ApiHandler<byte[]> {
 
-public final class NodeApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+	private final HashSigner hashSigner;
 
-	public NodeApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	SignHandler(@LocalSigner HashSigner hashSigner) {
+		this.hashSigner = hashSigner;
 	}
 
 	@Override
-	protected void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path + "/account").to(NodeAccountHandler.class);
-		routeBinder.addBinding(path + "/sign").to(NodeSignHandler.class);
+	public byte[] parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return requestReader.getHexBytes("transaction");
+	}
+
+	@Override
+	public JSONObject handleRequest(byte[] transactionBytes) throws Exception {
+		var builder = TxLowLevelBuilder.newBuilder(transactionBytes);
+		var hash = builder.hashToSign();
+		var signature = this.hashSigner.sign(hash);
+		var signedTransaction = builder.sig(signature).blob();
+		return new JSONObject().put("signed_transaction", Bytes.toHexString(signedTransaction));
 	}
 }

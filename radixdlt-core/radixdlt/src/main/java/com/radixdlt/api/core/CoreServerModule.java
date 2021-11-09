@@ -77,7 +77,7 @@ import com.radixdlt.api.core.faucet.FaucetApiModule;
 import com.radixdlt.api.core.health.HealthApiModule;
 import com.radixdlt.api.core.metrics.MetricsApiModule;
 import com.radixdlt.api.core.network.NetworkApiModule;
-import com.radixdlt.api.core.node.NodeApiModule;
+import com.radixdlt.api.core.sign.SignApiModule;
 import com.radixdlt.api.core.system.SystemApiModule;
 import com.radixdlt.api.core.transactions.TransactionIndexApiModule;
 import com.radixdlt.api.core.validation.ValidatorApiModule;
@@ -148,7 +148,7 @@ public final class CoreServerModule extends AbstractModule {
 
 		install(new AccountApiModule(NodeServer.class, "/account"));
 		install(new NetworkApiModule(NodeServer.class, "/network"));
-		install(new NodeApiModule(NodeServer.class, "/node"));
+		install(new SignApiModule(NodeServer.class, "/sign"));
 		if (transactionsEnable) {
 			install(new TransactionIndexApiModule(NodeServer.class, "/transactions"));
 		}

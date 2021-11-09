@@ -23,12 +23,12 @@
     {
       "name": "account",
       "x-displayName": "Account",
-      "description": "Retrieve info regarding an account"
+      "description": "Retrieve regarding an account"
     },
     {
-      "name": "ledger",
-      "x-displayName": "Ledger",
-      "description": "Retrieve info regarding the ledger"
+      "name": "transactions",
+      "x-displayName": "Transactions",
+      "description": "Retrieve stream of committed transactions"
     },
     {
       "name": "construction",
@@ -36,9 +36,9 @@
       "description": "Construct a transaction for submission"
     },
     {
-      "name": "node",
-      "x-displayName": "Node",
-      "description": "Retrieve info regarding this specific node's key as well as the ability to sign transactions"
+      "name": "sign",
+      "x-displayName": "Sign Transaction",
+      "description": "Sign a Transaction"
     },
     {
       "name": "objects",
@@ -104,19 +104,15 @@
   "x-tagGroups": [
     {
       "name": "Data API",
-      "tags": [ "network", "account", "ledger" ]
+      "tags": [ "network", "account", "transactions" ]
     },
     {
       "name": "Construction API",
       "tags": [ "construction" ]
     },
     {
-      "name": "Node Key API",
-      "tags": [ "node" ]
-    },
-    {
-      "name": "Models",
-      "tags": [ "objects", "identifiers" ]
+      "name": "Signing API",
+      "tags": [ "sign" ]
     }
   ],
   "paths": {
@@ -186,70 +182,7 @@
         }
       }
     },
-    "/node/account": {
-      "post": {
-        "summary": "Get Node Info",
-        "tags": [ "node" ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/NodeRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Node Info",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/NodeResponse" }
-              }
-            }
-          },
-          "500": {
-            "description": "Unexpected error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/node/sign": {
-      "post": {
-        "summary": "Sign Transaction",
-        "tags": [ "node" ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/NodeSignRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Signed Transaction",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/NodeSignResponse" }
-              }
-            }
-          },
-          "500": {
-            "description": "Unexpected error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
-              }
-            }
-          }
-        }
-      }
-    },
+
     "/account/balance": {
       "post": {
         "summary": "Get Account Balances",
@@ -273,6 +206,39 @@
           },
           "500": {
             "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transactions": {
+      "post": {
+        "summary": "Get Committed Transactions",
+        "description": "Returns an ordered sublist of committed transactions. This endpoint is designed for lite clients to sync with the state of the ledger.",
+        "tags": [ "transactions" ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CommittedTransactionsRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sublist of Committed Transactions",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CommittedTransactionsResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "An Unexpected Error",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/UnexpectedError" }
@@ -410,30 +376,29 @@
         }
       }
     },
-    "/transactions": {
+    "/sign": {
       "post": {
-        "summary": "Get Committed Transactions",
-        "description": "Returns an ordered sublist of committed transactions. This endpoint is designed for lite clients to sync with the state of the ledger.",
-        "tags": [ "ledger" ],
+        "summary": "Sign Transaction",
+        "tags": [ "sign" ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CommittedTransactionsRequest" }
+              "schema": { "$ref": "#/components/schemas/SignRequest" }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Sublist of Committed Transactions",
+            "description": "Signed Transaction",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CommittedTransactionsResponse" }
+                "schema": { "$ref": "#/components/schemas/SignResponse" }
               }
             }
           },
           "500": {
-            "description": "An Unexpected Error",
+            "description": "Unexpected error",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/UnexpectedError" }
@@ -502,7 +467,15 @@
           "current_state_identifier": { "$ref": "#/components/schemas/CommittedStateIdentifier" },
           "current_state_epoch": { "$ref": "#/components/schemas/LongNumber" },
           "current_state_view": { "$ref": "#/components/schemas/LongNumber" },
-          "current_state_timestamp": { "$ref": "#/components/schemas/LongNumber" }
+          "current_state_timestamp": { "$ref": "#/components/schemas/LongNumber" },
+          "node_identifiers": {
+            "type": "object",
+            "required": [ "account_address_identifier", "validator_address_identifier" ],
+            "properties": {
+              "account_address_identifier": { "$ref": "#/components/schemas/AddressIdentifier" },
+              "validator_address_identifier": { "$ref": "#/components/schemas/AddressIdentifier" }
+            }
+          }
         },
         "example": {
           "current_state_timestamp": 1627452363772,
@@ -518,26 +491,14 @@
           }
         }
       },
-      "NodeRequest": {
-        "type": "object",
-        "example": {
-        }
-      },
-      "NodeResponse": {
-        "type": "object",
-        "properties": {
-          "account_address_identifier": { "$ref": "#/components/schemas/AddressIdentifier" },
-          "validator_address_identifier": { "$ref": "#/components/schemas/AddressIdentifier" }
-        }
-      },
-      "NodeSignRequest": {
+      "SignRequest": {
         "type": "object",
         "required": [ "transaction" ],
         "properties": {
           "transaction": { "type": "string" }
         }
       },
-      "NodeSignResponse": {
+      "SignResponse": {
         "type": "object",
         "required": [ "signed_transaction" ],
         "properties": {

@@ -67,9 +67,13 @@ import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
@@ -78,19 +82,28 @@ import org.json.JSONObject;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
 final class NetworkStatusHandler implements ApiHandler<Void> {
+	private final REAddr accountAddress;
+	private final ECPublicKey validatorKey;
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final AccumulatorState genesisAccumulatorState;
+	private final Addressing addressing;
 
 	@Inject
 	NetworkStatusHandler(
+		@Self REAddr accountAddress,
+		@Self ECPublicKey validatorKey,
 		InMemorySystemInfo inMemorySystemInfo,
 		@Genesis Txn genesisTxn,
-		LedgerAccumulator ledgerAccumulator
+		LedgerAccumulator ledgerAccumulator,
+		Addressing addressing
 	) {
+		this.accountAddress = accountAddress;
+		this.validatorKey = validatorKey;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
 			new AccumulatorState(0, HashUtils.zero256()), genesisTxn.getId().asHashCode()
 		);
+		this.addressing = addressing;
 	}
 
 	@Override
@@ -112,6 +125,13 @@ final class NetworkStatusHandler implements ApiHandler<Void> {
 			)
 			.put("current_state_epoch", currentProof.getEpoch())
 			.put("current_state_view", currentProof.getView().number())
-			.put("current_state_timestamp", currentProof.timestamp());
+			.put("current_state_timestamp", currentProof.timestamp())
+			.put("node_identifiers", new JSONObject()
+				.put("account_address_identifier", new JSONObject()
+					.put("address", addressing.forAccounts().of(accountAddress))
+				)
+				.put("validator_address_identifier", new JSONObject()
+					.put("address", addressing.forValidators().of(validatorKey))
+				));
 	}
 }
