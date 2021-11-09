@@ -22,6 +22,7 @@ RUN wget -q https://services.gradle.org/distributions/gradle-7.2-bin.zip \
 # Set Gradle in the environment variables
 ENV GRADLE_HOME=/opt/gradle-7.2
 ENV PATH=/opt/gradle-7.2/bin:$PATH
+ENV JAVA_HOME=/usr/bin/java
 ENV JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
 RUN docker --version
 
