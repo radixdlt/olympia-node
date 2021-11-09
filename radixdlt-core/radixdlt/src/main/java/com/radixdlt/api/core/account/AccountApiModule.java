@@ -64,17 +64,10 @@
 package com.radixdlt.api.core.account;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.util.JsonRpcController;
-import com.radixdlt.api.util.JsonRpcServer;
+import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
-import java.util.Map;
 
 public final class AccountApiModule extends AbstractModule {
 	private final Class<? extends Annotation> annotationType;
@@ -87,22 +80,9 @@ public final class AccountApiModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(LocalAccountHandler.class).in(Scopes.SINGLETON);
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
-			.addBinding(path)
-			.toProvider(ControllerProvider.class);
-	}
-
-	private static class ControllerProvider implements Provider<Controller> {
-		@Inject
-		private LocalAccountHandler handler;
-
-		@Override
-		public Controller get() {
-			var handlers = Map.<String, JsonRpcHandler>of(
-				"get_info", handler::handleAccountGetInfo
-			);
-			return new JsonRpcController(new JsonRpcServer(handlers));
-		}
+		var routeBinder = MapBinder.newMapBinder(
+			binder(), String.class, HttpHandler.class, annotationType
+		);
+		routeBinder.addBinding(path + "/balance").to(AccountBalanceHandler.class);
 	}
 }

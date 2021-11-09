@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,98 +61,98 @@
  * permissions under this License.
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.api.core.account;
 
+import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.api.core.construction.AddressIdentifier;
+import com.radixdlt.api.core.construction.ResourceQuery;
+import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.List;
+import java.util.function.Function;
 
-public final class SubstateIndex<T extends Particle> {
-	private final byte[] index;
-	private final Class<? extends T> substateClass;
+public class AccountBalanceHandler implements ApiHandler<AddressIdentifier> {
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final Addressing addressing;
 
-	private SubstateIndex(byte[] index, Class<? extends T> substateClass) {
-		this.index = index;
-		this.substateClass = substateClass;
-	}
-
-	public static SubstateIndex<?> create(byte[] prefix) {
-		return new SubstateIndex<>(prefix, SubstateTypeId.valueOf(prefix[0]).getSubstateClass());
-	}
-
-	public static <T extends Particle> SubstateIndex<T> create(byte[] prefix, Class<? extends T> substateClass) {
-		return new SubstateIndex<>(prefix, substateClass);
-	}
-
-	public static <T extends Particle> SubstateIndex<T> create(byte typeByte, Class<? extends T> substateClass) {
-		return new SubstateIndex<>(new byte[] {typeByte}, substateClass);
-	}
-
-	public boolean test(RawSubstateBytes bytes) {
-		return test(bytes.getData());
-	}
-
-	public boolean test(byte[] dataBytes) {
-		if (dataBytes.length < index.length) {
-			return false;
-		}
-
-		return Arrays.equals(dataBytes, 0, index.length, index, 0, index.length);
-	}
-
-	public boolean test(ByteBuffer buffer) {
-		buffer.mark();
-		if (buffer.remaining() < index.length) {
-			return false;
-		}
-
-		for (byte b : index) {
-			if (buffer.get() != b) {
-				return false;
-			}
-		}
-		buffer.reset();
-
-		return true;
-	}
-
-	public byte[] getPrefix() {
-		return index;
-	}
-
-	public Class<? extends T> getSubstateClass() {
-		return substateClass;
-	}
-
-	public <U extends Particle> Optional<SubstateIndex<U>> toSubstateIndex(Class<U> substateClass) {
-		if (this.substateClass.equals(substateClass)) {
-			return Optional.of(new SubstateIndex<>(this.index, substateClass));
-		}
-		return Optional.empty();
+	@Inject
+	AccountBalanceHandler(
+		RadixEngine<LedgerAndBFTProof> radixEngine,
+		Addressing addressing
+	) {
+		this.radixEngine = radixEngine;
+		this.addressing = addressing;
 	}
 
 	@Override
-	public int hashCode() {
-		return Objects.hash(Arrays.hashCode(index), substateClass);
+	public Addressing addressing() {
+		return addressing;
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof SubstateIndex)) {
-			return false;
+	public AddressIdentifier parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return requestReader.getJsonObject("address_identifier", AddressIdentifier::from);
+	}
+
+	private JSONObject bucketToResourceJson(Bucket bucket, Function<REAddr, String> addressToRri) {
+		if (bucket.resourceAddr() != null) {
+			return new JSONObject()
+				.put("type", "token")
+				.put("rri", addressToRri.apply(bucket.resourceAddr())
+			);
 		}
 
-		var other = (SubstateIndex) o;
-		return Arrays.equals(this.index, other.index)
-			&& Objects.equals(this.substateClass, other.substateClass);
+		return new JSONObject()
+			.put("type", "stake_ownership")
+			.put("validator", addressing.forValidators().of(bucket.getValidatorKey()));
+	}
+
+	private JSONArray getBalances(
+		List<ResourceQuery> resourceQueries,
+		Function<REAddr, String> addressToRri
+	) {
+		var balances = new JSONArray();
+		for (var resourceQuery : resourceQueries) {
+			var index = resourceQuery.getIndex();
+			var bucketPredicate = resourceQuery.getPredicate();
+			radixEngine.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
+				.forEach((bucket, amount) -> {
+					var json = new JSONObject()
+						.put("resource_identifier", bucketToResourceJson(bucket, addressToRri))
+						.put("value", amount.toString());
+					balances.put(json);
+				});
+		}
+		return balances;
 	}
 
 	@Override
-	public String toString() {
-		return String.format("%s{index=%s}", this.getClass().getSimpleName(), Bytes.toHexString(this.index));
+	public JSONObject handleRequest(AddressIdentifier request) throws Exception {
+		Function<REAddr, String> addressToRri = addr -> {
+			var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+			var substate = radixEngine.get(mapKey).orElseThrow();
+			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+			var tokenResource = (TokenResourceMetadata) substate;
+			return tokenResource.getSymbol();
+		};
+
+		var balances = getBalances(
+			request.getResourceQueries(),
+			addressToRri
+		);
+		return new JSONObject().put("balances", balances);
 	}
 }

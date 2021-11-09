@@ -61,23 +61,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.account;
+package com.radixdlt.api.core.construction;
 
-import org.json.JSONObject;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.constraintmachine.SubstateIndex;
 
-import com.google.inject.Inject;
+import java.util.function.Predicate;
 
-import static com.radixdlt.api.util.JsonRpcUtil.toResponse;
+public final class ResourceQuery {
+	private final SubstateIndex<ResourceInBucket> index;
+	private final Predicate<ResourceInBucket> predicate;
 
-public class LocalAccountHandler {
-	private final AccountInfoService accountService;
-
-	@Inject
-	public LocalAccountHandler(AccountInfoService accountService) {
-		this.accountService = accountService;
+	private ResourceQuery(SubstateIndex<ResourceInBucket> index, Predicate<ResourceInBucket> predicate) {
+		this.index = index;
+		this.predicate = predicate;
 	}
 
-	public JSONObject handleAccountGetInfo(JSONObject request) {
-		return toResponse(request, accountService.getAccountInfo());
+	public Predicate<ResourceInBucket> getPredicate() {
+		return predicate;
+	}
+
+	public SubstateIndex<ResourceInBucket> getIndex() {
+		return index;
+	}
+
+	public static ResourceQuery from(SubstateIndex<ResourceInBucket> index) {
+		return new ResourceQuery(index, b -> true);
+	}
+
+	public static ResourceQuery from(SubstateIndex<ResourceInBucket> index, Predicate<ResourceInBucket> predicate) {
+		return new ResourceQuery(index, predicate);
 	}
 }

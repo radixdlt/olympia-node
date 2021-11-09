@@ -63,21 +63,32 @@
 
 package com.radixdlt.api.core.construction;
 
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
+import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.radixdlt.atom.SubstateTypeId.PREPARED_UNSTAKE;
+
 public class PreparedUnstakeVaultAddressIdentifier implements AddressIdentifier {
 	private final REAddr accountAddress;
+	private final ECPublicKey validatorKey;
 
-	PreparedUnstakeVaultAddressIdentifier(REAddr accountAddress) {
+	PreparedUnstakeVaultAddressIdentifier(REAddr accountAddress, ECPublicKey validatorKey) {
 		this.accountAddress = accountAddress;
+		this.validatorKey = validatorKey;
 	}
 
 	@Override
@@ -101,7 +112,23 @@ public class PreparedUnstakeVaultAddressIdentifier implements AddressIdentifier 
 		txBuilder.up(substate);
 	}
 
-	public static PreparedUnstakeVaultAddressIdentifier from(REAddr accountAddress) {
-		return new PreparedUnstakeVaultAddressIdentifier(accountAddress);
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+
+		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
+		buf.put(PREPARED_UNSTAKE.id());
+		buf.put((byte) 0); // Reserved byte
+		buf.put(validatorKey.getCompressedBytes());
+		buf.put(accountAddress.getBytes());
+		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), PreparedUnstakeOwnership.class);
+		return List.of(ResourceQuery.from(index));
+	}
+
+	public static PreparedUnstakeVaultAddressIdentifier from(
+		REAddr accountAddress,
+		JsonObjectReader metadataReader
+	) throws InvalidParametersException {
+		var validatorKey = metadataReader.getValidatorIdentifier("validator");
+		return new PreparedUnstakeVaultAddressIdentifier(accountAddress, validatorKey);
 	}
 }

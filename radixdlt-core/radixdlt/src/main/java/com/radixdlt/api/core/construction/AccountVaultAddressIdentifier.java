@@ -64,15 +64,22 @@
 package com.radixdlt.api.core.construction;
 
 import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
+import org.bouncycastle.util.Arrays;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+
+import static com.radixdlt.atom.SubstateTypeId.STAKE_OWNERSHIP;
+import static com.radixdlt.atom.SubstateTypeId.TOKENS;
 
 public class AccountVaultAddressIdentifier implements AddressIdentifier {
 	private final REAddr accountAddress;
@@ -100,6 +107,20 @@ public class AccountVaultAddressIdentifier implements AddressIdentifier {
 			throw new IllegalStateException("Unknown resource identifier: " + resourceIdentifier);
 		}
 		txBuilder.up(substate);
+	}
+
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+		var tokenIndex = SubstateIndex.<ResourceInBucket>create(
+			Arrays.concatenate(new byte[]{TOKENS.id(), 0}, accountAddress.getBytes()),
+			TokensInAccount.class
+		);
+		// Unfortunately we prefixed Stakeownership in the wrong order so we'll need to do a scan
+		var ownershipIndex = SubstateIndex.<ResourceInBucket>create(STAKE_OWNERSHIP.id(), StakeOwnership.class);
+		return List.of(
+			ResourceQuery.from(tokenIndex),
+			ResourceQuery.from(ownershipIndex, b -> b.bucket().getOwner().equals(accountAddress))
+		);
 	}
 
 	public static AccountVaultAddressIdentifier from(REAddr address) {

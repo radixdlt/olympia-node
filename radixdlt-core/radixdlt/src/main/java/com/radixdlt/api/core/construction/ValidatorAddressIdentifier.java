@@ -63,15 +63,32 @@
 
 package com.radixdlt.api.core.construction;
 
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.radixdlt.atom.SubstateTypeId.VALIDATOR_STAKE_DATA;
+
 public class ValidatorAddressIdentifier implements AddressIdentifier {
+	private final ECPublicKey validatorKey;
+
+	private ValidatorAddressIdentifier(ECPublicKey validatorKey) {
+		this.validatorKey = validatorKey;
+	}
+
+	public static ValidatorAddressIdentifier from(ECPublicKey validatorKey) {
+		return new ValidatorAddressIdentifier(validatorKey);
+	}
+
 	@Override
 	public Optional<REAddr> getAccountAddress() {
 		return Optional.empty();
@@ -80,5 +97,11 @@ public class ValidatorAddressIdentifier implements AddressIdentifier {
 	@Override
 	public void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) {
 		throw new IllegalStateException();
+	}
+
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+		var index = SubstateIndex.<ResourceInBucket>create(VALIDATOR_STAKE_DATA.id(), ValidatorStakeData.class);
+		return List.of(ResourceQuery.from(index, b -> b.bucket().getValidatorKey().equals(validatorKey)));
 	}
 }

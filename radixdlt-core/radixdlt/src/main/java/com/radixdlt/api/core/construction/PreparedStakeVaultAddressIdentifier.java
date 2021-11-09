@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.core.construction;
 
+import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
 import com.radixdlt.application.tokens.construction.MinimumStakeException;
 import com.radixdlt.application.tokens.state.PreparedStake;
@@ -70,13 +71,18 @@ import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
+import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+
+import static com.radixdlt.atom.SubstateTypeId.PREPARED_STAKE;
 
 public class PreparedStakeVaultAddressIdentifier implements AddressIdentifier {
 	private final REAddr accountAddress;
@@ -123,6 +129,17 @@ public class PreparedStakeVaultAddressIdentifier implements AddressIdentifier {
 		}
 		var substate = new PreparedStake(amount, accountAddress, validatorKey);
 		txBuilder.up(substate);
+	}
+
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
+		buf.put(PREPARED_STAKE.id());
+		buf.put((byte) 0); // Reserved byte
+		buf.put(validatorKey.getCompressedBytes());
+		buf.put(accountAddress.getBytes());
+		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), PreparedStake.class);
+		return List.of(ResourceQuery.from(index));
 	}
 
 

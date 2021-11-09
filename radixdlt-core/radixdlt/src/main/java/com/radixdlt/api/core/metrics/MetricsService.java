@@ -63,7 +63,6 @@
 
 package com.radixdlt.api.core.metrics;
 
-import com.radixdlt.api.core.account.AccountInfoService;
 import com.radixdlt.api.service.SystemConfigService;
 import com.radixdlt.api.Endpoints;
 import com.radixdlt.api.service.network.NetworkInfoService;
@@ -131,7 +130,6 @@ public class MetricsService {
 	private final SystemCounters systemCounters;
 	private final InfoSupplier infoSupplier;
 	private final SystemConfigService systemConfigService;
-	private final AccountInfoService accountInfoService;
 	private final ValidatorInfoService validatorInfoService;
 	private final NetworkInfoService networkInfoService;
 	private final Addressing addressing;
@@ -145,7 +143,6 @@ public class MetricsService {
 		SystemCounters systemCounters,
 		InfoSupplier infoSupplier,
 		SystemConfigService systemConfigService,
-		AccountInfoService accountInfoService,
 		ValidatorInfoService validatorInfoService,
 		NetworkInfoService networkInfoService,
 		InMemorySystemInfo inMemorySystemInfo,
@@ -156,7 +153,6 @@ public class MetricsService {
 		this.systemCounters = systemCounters;
 		this.infoSupplier = infoSupplier;
 		this.systemConfigService = systemConfigService;
-		this.accountInfoService = accountInfoService;
 		this.validatorInfoService = validatorInfoService;
 		this.networkInfoService = networkInfoService;
 		this.inMemorySystemInfo = inMemorySystemInfo;
@@ -187,7 +183,6 @@ public class MetricsService {
 			.orElse(0);
 
 		appendCounter(builder, "total_validators", totalValidators);
-		appendCounter(builder, "balance_xrd", getXrdBalance());
 		appendCounter(builder, "validator_total_stake", getTotalStake());
 
 		appendJMXCounters(builder);
@@ -204,12 +199,6 @@ public class MetricsService {
 	private UInt384 getTotalStake() {
 		return validatorInfoService.getValidatorStakeData(self.getKey())
 			.map(ValidatorStakeData::getTotalStake).map(UInt384::from)
-			.fold(f -> UInt384.ZERO, Functions::identity);
-	}
-
-	private UInt384 getXrdBalance() {
-		return accountInfoService.getMyBalances()
-			.map(balances -> balances.getOrDefault(REAddr.ofNativeToken(), UInt384.ZERO))
 			.fold(f -> UInt384.ZERO, Functions::identity);
 	}
 

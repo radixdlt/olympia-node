@@ -71,12 +71,14 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
 public interface AddressIdentifier {
 	Optional<REAddr> getAccountAddress();
 	void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) throws TxBuilderException;
+	List<ResourceQuery> getResourceQueries();
 
 	private static AddressIdentifier fromAccountAddress(REAddr accountAddress, JsonObjectReader reader) throws InvalidParametersException {
 		return reader
@@ -89,7 +91,10 @@ public interface AddressIdentifier {
 							r.getJsonObject("metadata").getValidatorIdentifier("validator")
 						);
 					case "prepared_unstake":
-						return PreparedUnstakeVaultAddressIdentifier.from(accountAddress);
+						return PreparedUnstakeVaultAddressIdentifier.from(
+							accountAddress,
+							r.getJsonObject("metadata")
+						);
 					default:
 						throw new InvalidParametersException("/address", "Invalid Sub Address: " + subAddress);
 				}
@@ -105,7 +110,7 @@ public interface AddressIdentifier {
 
 		var validatorKey = reader.tryValidatorIdentifier("address");
 		if (validatorKey.isPresent()) {
-			return new ValidatorAddressIdentifier();
+			return ValidatorAddressIdentifier.from(validatorKey.get());
 		}
 
 		throw new InvalidParametersException("/address", "Invalid address");

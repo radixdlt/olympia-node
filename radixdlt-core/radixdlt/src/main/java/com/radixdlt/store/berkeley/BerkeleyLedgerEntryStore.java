@@ -453,6 +453,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 							} else if (substateTypeId == SubstateTypeId.STAKE_OWNERSHIP.id()) {
 								// Indexing not necessary for verification at the moment but useful for construction
 
+								// This should have had validator keys and account addresses switched so that
+								// prefix indexing could be done against account addresses rather than validators
+								// so that actions like "Unstake Everything" could be implemented and queries against
+								// accounts. A later to do...
+
 								// 0: Type Byte
 								// 1: Reserved Byte
 								// 2-36: Validator Key
