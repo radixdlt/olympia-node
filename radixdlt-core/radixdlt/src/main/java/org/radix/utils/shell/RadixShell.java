@@ -180,14 +180,13 @@ public final class RadixShell {
 			} else {
 		 		dataDir = new File(Files.createTempDirectory("radix-shell-node-").toString());
 			}
-			final var nodeKeyFile = new File(dataDir, "node-keystore.ks");
 
 			customProperties.build().forEach((k, v) -> properties.set(k, v));
 
 			properties.set("db.location", dataDir.toString());
 
 			if (properties.get("node.key.path", "").isEmpty()) {
-				properties.set("node.key.path", nodeKeyFile.getAbsolutePath());
+				properties.set("node.key.path", new File(dataDir, "node-keystore.ks").getAbsolutePath());
 			}
 
 			if (properties.get("network.host_ip", "").isEmpty()) {
@@ -196,15 +195,16 @@ public final class RadixShell {
 
 			log.info("Node data dir: {}", dataDir);
 
-			final var keyPair = ECKeyPair.generateNew();
+			final var nodeKeyFile = new File(properties.get("node.key.path"));
 			if (!nodeKeyFile.exists()) {
+				final var newKeyPair = ECKeyPair.generateNew();
 				RadixKeyStore.fromFile(nodeKeyFile, nodeKeyPass.toCharArray(), true)
-					.writeKeyPair("node", keyPair);
+					.writeKeyPair("node", newKeyPair);
 			}
 
 			properties.set("network.id", network.getId());
 			if (network.genesisTxn().isEmpty() && properties.get("network.genesis_txn", "").isEmpty()) {
-				properties.set("network.genesis_txn", Network.STOKENET.genesisTxn().get());
+				properties.set("network.genesis_txn", Network.STOKENET.genesisTxn().get()); // default to stokenet genesis
 			}
 
 			final var injector = Guice.createInjector(new RadixNodeModule(properties));
@@ -283,11 +283,12 @@ public final class RadixShell {
 				.dispatch(t);
 		}
 
-		public <T> void onEvent(Class<T> eventClass, Consumer<T> consumer) {
+		public <T> Disposable onEvent(Class<T> eventClass, Consumer<T> consumer) {
 			final var disposable =
 				injector.getInstance(RxEnvironment.class).getObservable(eventClass).subscribe(consumer::accept);
 
 			eventConsumers.add(disposable);
+			return disposable;
 		}
 
 		public void cleanEventConsumers() {
@@ -303,12 +304,13 @@ public final class RadixShell {
 			dispatchRemote(BFTNode.create(receiver.getNodeId().getPublicKey()), t);
 		}
 
-		public <T> void onRemoteEvent(Class<T> eventClass, Consumer<RemoteEvent<T>> consumer) {
+		public <T> Disposable onRemoteEvent(Class<T> eventClass, Consumer<RemoteEvent<T>> consumer) {
 			final var disposable =
 				injector.getInstance(RxRemoteEnvironment.class).remoteEvents(eventClass)
 					.subscribe(consumer::accept);
 
 			remoteEventConsumers.add(disposable);
+			return disposable;
 		}
 
 		public void cleanRemoteEventConsumers() {
@@ -335,10 +337,11 @@ public final class RadixShell {
 			getInstance(MessageCentral.class).send(nodeId, message);
 		}
 
-		public <T extends Message> void onMsg(Class<T> msgClass, Consumer<MessageFromPeer<T>> consumer) {
+		public <T extends Message> Disposable onMsg(Class<T> msgClass, Consumer<MessageFromPeer<T>> consumer) {
 			final var disposable = getInstance(MessageCentral.class).messagesOf(msgClass)
 				.subscribe(consumer::accept);
 			msgConsumers.add(disposable);
+			return disposable;
 		}
 
 		public void cleanMsgConsumers() {

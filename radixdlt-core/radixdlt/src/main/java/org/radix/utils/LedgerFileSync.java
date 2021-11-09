@@ -87,8 +87,14 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Utility class to write/restore ledger sync data from a file.
+ */
 public final class LedgerFileSync {
 
+	/**
+	 * Writes node's ledger sync data to a file.
+	 */
 	public static void writeToFile(
 		String fileName,
 		Serialization serialization,
@@ -113,6 +119,9 @@ public final class LedgerFileSync {
 		}
 	}
 
+	/**
+	 * Reads and processes ledger sync data from a file.
+	 */
 	public static void restoreFromFile(
 		String fileName,
 		Serialization serialization,
