@@ -86,7 +86,7 @@ public class Signature {
 	}
 
 	public static Signature from(JsonObjectReader reader) throws InvalidParametersException {
-		var publicKey = reader.getPubKey("public_key");
+		var publicKey = reader.getJsonObject("public_key", r -> r.getPubKey("hex"));
 		var bytes = reader.getHexBytes("bytes");
 		var signature = ECDSASignature.decodeFromDER(bytes);
 		return new Signature(publicKey, signature);

@@ -117,9 +117,11 @@ final class BuildTransactionHandler implements ApiHandler<BuildTransactionReques
 	@Override
 	public JSONObject handleRequest(BuildTransactionRequest request) throws TxBuilderException {
 		var operationTxBuilder = OperationTxBuilder.from(request, forks);
+		var feePayer = request.getFeePayer();
+		var disableResourceAllocateAndDestroy = request.isDisableResourceAllocateAndDestroy();
 		TxBuilder builder;
 		try {
-			builder = radixEngine.constructWithFees(operationTxBuilder, request.getFeePayer());
+			builder = radixEngine.constructWithFees(operationTxBuilder, disableResourceAllocateAndDestroy, feePayer);
 		} catch (MessageTooLongException e) {
 			return errorObject(
 				new JSONObject()
@@ -166,7 +168,6 @@ final class BuildTransactionHandler implements ApiHandler<BuildTransactionReques
 		var unsignedTransaction = builder.buildForExternalSign();
 		return new JSONObject()
 			.put("result", "SUCCESS")
-			.put("fee", unsignedTransaction.feesPaid().toString())
 			.put("unsigned_transaction", Bytes.toHexString(unsignedTransaction.blob()))
 			.put("payload_to_sign", Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
 	}

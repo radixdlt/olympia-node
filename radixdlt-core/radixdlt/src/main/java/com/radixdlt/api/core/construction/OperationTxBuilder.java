@@ -158,5 +158,10 @@ public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 			}
 			txBuilder.end();
 		}
+
+		var msg = request.getMessage();
+		if (msg.isPresent()) {
+			txBuilder.message(msg.get());
+		}
 	}
 }

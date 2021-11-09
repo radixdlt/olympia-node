@@ -63,58 +63,30 @@
 
 package com.radixdlt.api.core.sign;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.qualifier.LocalSigner;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.Bytes;
-import org.json.JSONObject;
 
-public class SignHandler implements ApiHandler<SignRequest> {
+public class SignRequest {
+	private final byte[] unsignedTransaction;
+	private final ECPublicKey publicKey;
 
-	private final ECPublicKey self;
-	private final HashSigner hashSigner;
-	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
-
-	@Inject
-	SignHandler(
-		@Self ECPublicKey self,
-		@LocalSigner HashSigner hashSigner,
-		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider
-	) {
-		this.self = self;
-		this.hashSigner = hashSigner;
-		this.radixEngineProvider = radixEngineProvider;
+	private SignRequest(byte[] unsignedTransaction, ECPublicKey publicKey) {
+		this.unsignedTransaction = unsignedTransaction;
+		this.publicKey = publicKey;
 	}
 
-	@Override
-	public SignRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return SignRequest.from(requestReader);
+	public byte[] getUnsignedTransaction() {
+		return unsignedTransaction;
 	}
 
-	@Override
-	public JSONObject handleRequest(SignRequest signRequest) throws Exception {
-		if (!self.equals(signRequest.getPublicKey())) {
-			throw new IllegalStateException();
-		}
+	public ECPublicKey getPublicKey() {
+		return publicKey;
+	}
 
-		// Verify this is a valid transaction and not anything more malicious
-		radixEngineProvider.get().getParser().parse(Txn.create(signRequest.getUnsignedTransaction()));
-
-		var builder = TxLowLevelBuilder.newBuilder(signRequest.getUnsignedTransaction());
-		var hash = builder.hashToSign();
-		var signature = this.hashSigner.sign(hash);
-		var signedTransaction = builder.sig(signature).blob();
-
-		return new JSONObject().put("signed_transaction", Bytes.toHexString(signedTransaction));
+	public static SignRequest from(JsonObjectReader reader) throws InvalidParametersException {
+		var unsignedTransaction = reader.getHexBytes("unsigned_transaction");
+		var publicKey = reader.getJsonObject("public_key", r -> r.getPubKey("hex"));
+		return new SignRequest(unsignedTransaction, publicKey);
 	}
 }

@@ -68,14 +68,25 @@ import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.identifiers.REAddr;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 public class BuildTransactionRequest {
 	private final REAddr feePayer;
 	private final List<OperationGroup> operationGroups;
+	private final byte[] message;
+	private final boolean disableResourceAllocateAndDestroy;
 
-	private BuildTransactionRequest(REAddr feePayer, List<OperationGroup> operationGroups) {
-		this.feePayer = feePayer;
-		this.operationGroups = operationGroups;
+	private BuildTransactionRequest(
+		REAddr feePayer,
+		List<OperationGroup> operationGroups,
+		byte[] message,
+		boolean disableResourceAllocateAndDestroy
+	) {
+		this.feePayer = Objects.requireNonNull(feePayer);
+		this.operationGroups = Objects.requireNonNull(operationGroups);
+		this.message = message;
+		this.disableResourceAllocateAndDestroy = disableResourceAllocateAndDestroy;
 	}
 
 	public REAddr getFeePayer() {
@@ -86,10 +97,19 @@ public class BuildTransactionRequest {
 		return operationGroups;
 	}
 
+	public Optional<byte[]> getMessage() {
+		return Optional.ofNullable(message);
+	}
+
+	public boolean isDisableResourceAllocateAndDestroy() {
+		return disableResourceAllocateAndDestroy;
+	}
+
 	public static BuildTransactionRequest from(JsonObjectReader reader) throws InvalidParametersException {
 		var feePayer = reader.getAccountAddress("fee_payer");
-		var message = reader.getOptString("message");
 		var operationGroups = reader.getList("operation_groups", OperationGroup::from);
-		return new BuildTransactionRequest(feePayer, operationGroups);
+		var message = reader.getHexBytes("message");
+		var disableResourceAllocateAndDestroy = reader.getOptBoolean("disable_resource_allocate_and_destroy", false);
+		return new BuildTransactionRequest(feePayer, operationGroups, message, disableResourceAllocateAndDestroy);
 	}
 }

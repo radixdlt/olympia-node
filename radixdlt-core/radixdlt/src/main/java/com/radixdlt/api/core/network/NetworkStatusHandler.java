@@ -124,7 +124,7 @@ final class NetworkStatusHandler implements ApiHandler<Void> {
 				.put("transaction_accumulator", Bytes.toHexString(currentProof.getAccumulatorState().getAccumulatorHash().asBytes()))
 			)
 			.put("current_state_epoch", currentProof.getEpoch())
-			.put("current_state_view", currentProof.getView().number())
+			.put("current_state_round", currentProof.getView().number())
 			.put("current_state_timestamp", currentProof.timestamp())
 			.put("node_identifiers", new JSONObject()
 				.put("account_address_identifier", new JSONObject()
@@ -132,6 +132,10 @@ final class NetworkStatusHandler implements ApiHandler<Void> {
 				)
 				.put("validator_address_identifier", new JSONObject()
 					.put("address", addressing.forValidators().of(validatorKey))
-				));
+				)
+				.put("public_key", new JSONObject()
+					.put("hex", validatorKey.toHex())
+				)
+			);
 	}
 }

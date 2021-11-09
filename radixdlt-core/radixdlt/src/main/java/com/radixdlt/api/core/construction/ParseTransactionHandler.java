@@ -138,6 +138,9 @@ public class ParseTransactionHandler implements ApiHandler<ParseTransactionReque
 		var operationGroups = converter.getOperationGroups(processed, addressToRri, null);
 
 		return new JSONObject()
+			.put("metadata", new JSONObject()
+				.put("fee", processed.getFeePaid().toString())
+			)
 			.put("operation_groups", operationGroups);
 	}
 }

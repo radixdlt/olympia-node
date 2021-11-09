@@ -18,7 +18,7 @@
     {
       "name": "network",
       "x-displayName": "Network",
-      "description": "Retrieve info regarding the network"
+      "description": "Get info regarding the node and network"
     },
     {
       "name": "account",
@@ -38,7 +38,7 @@
     {
       "name": "sign",
       "x-displayName": "Sign Transaction",
-      "description": "Sign a Transaction"
+      "description": "Sign a Transaction with the node's private key"
     },
     {
       "name": "objects",
@@ -119,7 +119,7 @@
     "/network/configuration": {
       "post": {
         "summary": "Get Network Configuration",
-        "description": "Returns the network the node is associated with as well as the network configuration of that network.",
+        "description": "Returns the network configuration of the network the node is connected to.",
         "tags": [ "network" ],
         "requestBody": {
           "required": true,
@@ -164,7 +164,7 @@
         },
         "responses": {
           "200": {
-            "description": "Ledger Status",
+            "description": "Network Status",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/NetworkStatusResponse" }
@@ -425,15 +425,22 @@
         ],
         "properties": {
           "version": {
+            "description": "Different versions regarding the node, network and api",
             "type": "object",
-            "required": [ "core_version" ],
+            "required": [ "core_version", "api_version" ],
             "properties": {
               "core_version": { "type": "string" },
               "api_version": { "type": "string" }
             }
           },
-          "network_identifier": { "$ref": "#/components/schemas/NetworkIdentifier" },
-          "bech32_human_readable_parts": { "$ref": "#/components/schemas/Bech32HRPs" }
+          "network_identifier": {
+            "description": "Id and name of network",
+            "$ref": "#/components/schemas/NetworkIdentifier"
+          },
+          "bech32_human_readable_parts": {
+            "description": "The unique bech32 hrps used for addressing",
+            "$ref": "#/components/schemas/Bech32HRPs"
+          }
         },
         "example": {
           "network_identifier": {
@@ -459,21 +466,38 @@
           "genesis_state_identifier",
           "current_state_identifier",
           "current_state_epoch",
-          "current_state_view",
+          "current_state_round",
           "current_state_timestamp"
         ],
         "properties": {
-          "genesis_state_identifier": { "$ref": "#/components/schemas/CommittedStateIdentifier" },
-          "current_state_identifier": { "$ref": "#/components/schemas/CommittedStateIdentifier" },
-          "current_state_epoch": { "$ref": "#/components/schemas/LongNumber" },
-          "current_state_view": { "$ref": "#/components/schemas/LongNumber" },
-          "current_state_timestamp": { "$ref": "#/components/schemas/LongNumber" },
+          "genesis_state_identifier": {
+            "description": "The ledger state identifier after the genesis transaction",
+            "$ref": "#/components/schemas/CommittedStateIdentifier"
+          },
+          "current_state_identifier": {
+            "description": "The current ledger state identifier",
+            "$ref": "#/components/schemas/CommittedStateIdentifier"
+          },
+          "current_state_epoch": {
+            "description": "The current ledger state epoch",
+            "$ref": "#/components/schemas/LongNumber"
+          },
+          "current_state_round": {
+            "description": "The current ledger state round",
+            "$ref": "#/components/schemas/LongNumber"
+          },
+          "current_state_timestamp": {
+            "description": "The current ledger state timestamp, not guaranteed to always increase",
+            "$ref": "#/components/schemas/LongNumber"
+          },
           "node_identifiers": {
+            "description": "The address identifiers associated with this node's private key",
             "type": "object",
-            "required": [ "account_address_identifier", "validator_address_identifier" ],
+            "required": [ "account_address_identifier", "validator_address_identifier", "public_key" ],
             "properties": {
               "account_address_identifier": { "$ref": "#/components/schemas/AddressIdentifier" },
-              "validator_address_identifier": { "$ref": "#/components/schemas/AddressIdentifier" }
+              "validator_address_identifier": { "$ref": "#/components/schemas/AddressIdentifier" },
+              "public_key": { "$ref": "#/components/schemas/PublicKey" }
             }
           }
         },
@@ -488,14 +512,29 @@
           "genesis_state_identifier": {
             "state_version": 1,
             "transaction_accumulator": "1e62415e5fd95c63aff69142f1359cc6a981ff7169c128d266f45adf614d09b0"
+          },
+          "node_identifiers": {
+            "account_address_identifier": {
+              "address": "rdx1qspmwn5n0qyz685f20aevh4wglxxzg9k5t5vql20s4jqa7kj8hz0njclnh0mf"
+            },
+            "validator_address_identifier": {
+              "address": "rv1qwm5aymcpqk3az2nlwt9atj8e3sjpd4zarq86nu9vs80453acnuuklp5yl2"
+            }
           }
         }
       },
       "SignRequest": {
         "type": "object",
-        "required": [ "transaction" ],
+        "required": [ "unsigned_transaction" ],
         "properties": {
-          "transaction": { "type": "string" }
+          "public_key": {
+            "description": "The public key which represents the private key to sign with",
+            "$ref": "#/components/schemas/PublicKey"
+          },
+          "unsigned_transaction": {
+            "description": "Hex encoded unsigned transaction to sign",
+            "type": "string"
+          }
         }
       },
       "SignResponse": {
@@ -509,7 +548,10 @@
         "type": "object",
         "required": [ "address_identifier" ],
         "properties": {
-          "address_identifier": { "$ref": "#/components/schemas/AddressIdentifier" }
+          "address_identifier": {
+            "description": "Address to get balance of",
+            "$ref": "#/components/schemas/AddressIdentifier"
+          }
         },
         "example": {
           "address_identifier": {
@@ -522,9 +564,35 @@
         "required": [ "balances" ],
         "properties": {
           "balances": {
+            "description": "Balances associated with the address",
             "type": "array",
             "items": { "$ref": "#/components/schemas/ResourceAmount" }
           }
+        },
+        "example": {
+          "balances": [
+            {
+              "resource_identifier": {
+                "rri": "xrd_rr1qy5wfsfh",
+                "type": "token"
+              },
+              "value": "13443027000000000000000"
+            },
+            {
+              "resource_identifier": {
+                "rri": "veri_rr1qdtwzvy8lnfgl9t5tnj8f5fwl2znssnvx27vufcx7u3slv0gce",
+                "type": "token"
+              },
+              "value": "1000000000000000000"
+            },
+            {
+              "resource_identifier": {
+                "validator": "rv1q04u5zwtgffsqkvr08xqm6vpm3gwxh4uqwtjpx5p47ew0m0v8m5zs3m3jed",
+                "type": "stake_ownership"
+              },
+              "value": "15000000000000000000000"
+            }
+          ]
         }
       },
       "ConstructionBuildRequest": {
@@ -532,12 +600,22 @@
         "required": [ "operation_groups", "fee_payer" ],
         "properties": {
           "operation_groups": {
+            "description": "Operation groups which describe the intent of the request",
             "type": "array",
             "items": { "$ref": "#/components/schemas/OperationGroup" }
           },
-          "fee_payer": { "$ref": "#/components/schemas/AccountAddress" },
-          "message": { "type": "string" },
-          "disable_resource_allocation_and_destroy": { "type": "boolean" }
+          "fee_payer": {
+            "description": "The address where fees will be subtracted from",
+            "$ref": "#/components/schemas/AccountAddress"
+          },
+          "message": {
+            "description": "An optional message encoded in hex",
+            "type": "string"
+          },
+          "disable_resource_allocate_and_destroy": {
+            "description": "Disallow minting and burning of tokens (except for fees). Useful for verification of transactions without additional substate data info such as when verifying transactions in an offline environment",
+            "type": "boolean"
+          }
         },
         "example": {
           "fee_payer": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88",
@@ -593,8 +671,14 @@
         "type": "object",
         "required": [ "transaction", "signed" ],
         "properties": {
-          "transaction": { "type": "string" },
-          "signed": { "type": "boolean" }
+          "transaction": {
+            "description": "Hex encoded transaction to parse",
+            "type": "string"
+          },
+          "signed": {
+            "description": "Whether the transaction is signed or not. If not signed, parsing will skip authorization checks.",
+            "type": "boolean"
+          }
         },
         "example": {
           "transaction": "0d000107ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002010021000000000000000000000000000000000000000000000000000101ed50bab1800002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e80000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e7f6a02004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000000000000000000000000009600",
@@ -603,10 +687,18 @@
       },
       "ConstructionParseResponse": {
         "type": "object",
+        "required": [ "operation_groups" ],
         "properties": {
           "operation_groups": {
+            "description": "The parsed operation groups",
             "type": "array",
             "items": { "$ref": "#/components/schemas/OperationGroup" }
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "fee": { "$ref": "#/components/schemas/BigInteger" }
+            }
           }
         }
       },
@@ -614,13 +706,21 @@
         "type": "object",
         "required": [ "unsigned_transaction" ],
         "properties": {
-          "unsigned_transaction": { "type": "string" },
-          "signature": { "$ref": "#/components/schemas/Signature" }
+          "unsigned_transaction": {
+            "description": "Hex encoded unsigned transaction",
+            "type": "string"
+          },
+          "signature": {
+            "description": "The signature for the unsigned transaction",
+            "$ref": "#/components/schemas/Signature"
+          }
         },
         "example": {
           "unsigned_transaction": "0d000107ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002010021000000000000000000000000000000000000000000000000000101ed50bab1800002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e80000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e7f6a02004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000000000000000000000000009600",
           "signature": {
-            "public_key": "",
+            "public_key": {
+              "hex": ""
+            },
             "bytes": ""
           }
         }
@@ -629,21 +729,39 @@
         "type": "object",
         "required": [ "signed_transaction" ],
         "properties": {
-          "signed_transaction": { "type": "string" }
+          "signed_transaction": {
+            "description": "Hex encoded signed transaction which can be submitted",
+            "type": "string"
+          }
+        },
+        "example": {
+          "signed_transaction": "07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf"
         }
       },
       "ConstructionSubmitRequest": {
         "type": "object",
         "required": [ "signed_transaction" ],
         "properties": {
-          "signed_transaction": { "type": "string" }
+          "signed_transaction": {
+            "description": "Hex encoded signed transaction to be submitted",
+            "type": "string"
+          }
+        },
+        "example": {
+          "signed_transaction": "07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf"
         }
       },
       "ConstructionSubmitResponse": {
         "type": "object",
         "required": [ "transaction_identifier" ],
         "properties": {
-          "transaction_identifier": { "type": "string" }
+          "transaction_identifier": {
+            "description": "The unique hashed identifier of the transaction submitted",
+            "type": "string"
+          }
+        },
+        "example": {
+          "transaction_identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842"
         }
       },
       "ConstructionBuildSuccessResponse": {
@@ -651,16 +769,15 @@
           { "$ref": "#/components/schemas/ConstructionBuildResponse" },
           {
             "type": "object",
-            "required": [ "fee", "unsigned_transaction", "payload_to_sign", "notifications" ],
+            "required": [ "fee", "unsigned_transaction", "payload_to_sign" ],
             "properties": {
-              "fee": { "$ref": "#/components/schemas/BigInteger" },
-              "unsigned_transaction": { "type": "string" },
-              "payload_to_sign": { "type": "string" },
-              "notifications": {
-                "type": "array",
-                "items": {
-                  "type": "object"
-                }
+              "unsigned_transaction": {
+                "description": "Hex encoded unsigned transaction",
+                "type": "string"
+              },
+              "payload_to_sign": {
+                "description": "Hex encoded hash payload to sign",
+                "type": "string"
               }
             }
           }
@@ -770,6 +887,151 @@
             "type": "array",
             "items": { "$ref": "#/components/schemas/CommittedTransaction" }
           }
+        },
+        "example": {
+          "transactions": [
+            {
+              "metadata": {
+                "size": 360,
+                "signed_by": {
+                  "hex": "02aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b6"
+                },
+                "fee": "72000000000000000",
+                "hex": "07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf",
+                "timestamp": 1627407310726
+              },
+              "committed_state_identifier": {
+                "state_version": 40898,
+                "transaction_accumulator": "5ea573f2e31640d177047d14122f1015c262f0d14d522596068784406aa1d88f"
+              },
+              "previous_committed_state_identifier": {
+                "state_version": 40897,
+                "transaction_accumulator": "dd61e3e2c9cdda8bf8973ea7d6dd4e6482c569fff45f0ca5e2bfd196f5bae4c9"
+              },
+              "transaction_identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842",
+              "operation_groups": [
+                {
+                  "metadata": {
+                    "action": {
+                      "amount": "72000000000000000",
+                      "rri": "xrd_rr1qy5wfsfh",
+                      "from": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33",
+                      "type": "BurnTokens"
+                    }
+                  },
+                  "operations": [
+                    {
+                      "amount": {
+                        "resource_identifier": {
+                          "rri": "xrd_rr1qy5wfsfh",
+                          "type": "Token"
+                        },
+                        "value": "-2400000000000000000000000000"
+                      },
+                      "substate": {
+                        "substate_identifier": "030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c",
+                        "substate_operation": "SHUTDOWN"
+                      },
+                      "address_identifier": {
+                        "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
+                      },
+                      "type": "Resource"
+                    },
+                    {
+                      "metadata": {
+                        "substate_data_hex": "06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c0000"
+                      },
+                      "amount": {
+                        "resource_identifier": {
+                          "rri": "xrd_rr1qy5wfsfh",
+                          "type": "Token"
+                        },
+                        "value": "2399999999928000000000000000"
+                      },
+                      "substate": {
+                        "substate_identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000",
+                        "substate_operation": "BOOTUP"
+                      },
+                      "address_identifier": {
+                        "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
+                      },
+                      "type": "Resource"
+                    }
+                  ]
+                },
+                {
+                  "metadata": {
+                    "action": {
+                      "amount": "24000000000000000000000000",
+                      "rri": "xrd_rr1qy5wfsfh",
+                      "from": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33",
+                      "to": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88",
+                      "type": "TokenTransfer"
+                    }
+                  },
+                  "operations": [
+                    {
+                      "amount": {
+                        "resource_identifier": {
+                          "rri": "xrd_rr1qy5wfsfh",
+                          "type": "Token"
+                        },
+                        "value": "-2399999999928000000000000000"
+                      },
+                      "substate": {
+                        "substate_identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000",
+                        "substate_operation": "SHUTDOWN"
+                      },
+                      "address_identifier": {
+                        "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
+                      },
+                      "type": "Resource"
+                    },
+                    {
+                      "metadata": {
+                        "substate_data_hex": "06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c0000"
+                      },
+                      "amount": {
+                        "resource_identifier": {
+                          "rri": "xrd_rr1qy5wfsfh",
+                          "type": "Token"
+                        },
+                        "value": "2375999999928000000000000000"
+                      },
+                      "substate": {
+                        "substate_identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000001",
+                        "substate_operation": "BOOTUP"
+                      },
+                      "address_identifier": {
+                        "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
+                      },
+                      "type": "Resource"
+                    },
+                    {
+                      "metadata": {
+                        "substate_data_hex": "06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000"
+                      },
+                      "amount": {
+                        "resource_identifier": {
+                          "rri": "xrd_rr1qy5wfsfh",
+                          "type": "Token"
+                        },
+                        "value": "24000000000000000000000000"
+                      },
+                      "substate": {
+                        "substate_identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002",
+                        "substate_operation": "BOOTUP"
+                      },
+                      "address_identifier": {
+                        "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+                      },
+                      "type": "Resource"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       },
       "CommittedTransaction": {
@@ -1314,7 +1576,7 @@
         "type": "object",
         "required": [ "public_key", "bytes" ],
         "properties": {
-          "public_key": { "type": "string" },
+          "public_key": { "$ref": "#/components/schemas/PublicKey" },
           "bytes": { "type": "string" }
         }
       },
