@@ -63,79 +63,21 @@
 
 package com.radixdlt.api.core.account;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.service.SubmissionService;
-import com.radixdlt.api.util.ActionParser;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.qualifier.LocalSigner;
-import com.radixdlt.utils.functional.Result;
 
-import java.util.List;
-import java.util.Optional;
-
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.util.JsonRpcUtil.optString;
-import static com.radixdlt.api.util.JsonRpcUtil.safeArray;
 import static com.radixdlt.api.util.JsonRpcUtil.toResponse;
-import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
-import static com.radixdlt.utils.functional.Result.allOf;
 
 public class LocalAccountHandler {
 	private final AccountInfoService accountService;
-	private final SubmissionService submissionService;
-	private final ActionParser actionParserService;
-	private final HashSigner hashSigner;
-	private final REAddr account;
 
 	@Inject
-	public LocalAccountHandler(
-		AccountInfoService accountService,
-		SubmissionService submissionService,
-		ActionParser actionParserService,
-		@LocalSigner HashSigner hashSigner,
-		@Self REAddr account
-	) {
+	public LocalAccountHandler(AccountInfoService accountService) {
 		this.accountService = accountService;
-		this.submissionService = submissionService;
-		this.actionParserService = actionParserService;
-		this.hashSigner = hashSigner;
-		this.account = account;
 	}
 
 	public JSONObject handleAccountGetInfo(JSONObject request) {
 		return toResponse(request, accountService.getAccountInfo());
-	}
-
-	public JSONObject handleAccountSubmitTransactionSingleStep(JSONObject request) {
-		return withRequiredParameters(request, List.of("actions"), List.of("message"), this::respondWithTransactionId);
-	}
-
-	private Result<JSONObject> respondWithTransactionId(JSONObject params) {
-		return allOf(
-			safeArray(params, "actions"),
-			Result.ok(optString(params, "message")),
-			Result.ok(params.optBoolean("disableResourceAllocationAndDestroy"))
-		)
-			.flatMap(this::parseSignSubmit)
-			.map(LocalAccountHandler::formatTxId);
-	}
-
-	private Result<AID> parseSignSubmit(
-		JSONArray actions, Optional<String> message, boolean disableResourceAllocationAndDestroy
-	) {
-		return actionParserService.parse(actions)
-			.flatMap(steps -> submissionService.oneStepSubmit(
-				account, steps, message, hashSigner, disableResourceAllocationAndDestroy
-			));
-	}
-
-	private static JSONObject formatTxId(AID txId) {
-		return jsonObject().put("txID", txId);
 	}
 }

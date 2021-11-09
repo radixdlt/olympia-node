@@ -100,8 +100,7 @@ public final class AccountApiModule extends AbstractModule {
 		@Override
 		public Controller get() {
 			var handlers = Map.<String, JsonRpcHandler>of(
-				"get_info", handler::handleAccountGetInfo,
-				"submit_transaction_single_step", handler::handleAccountSubmitTransactionSingleStep
+				"get_info", handler::handleAccountGetInfo
 			);
 			return new JsonRpcController(new JsonRpcServer(handlers));
 		}
