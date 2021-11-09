@@ -16,9 +16,29 @@
   ],
   "tags": [
     {
-      "name": "api",
-      "x-displayName": "Core API",
-      "description": "Core API"
+      "name": "network",
+      "x-displayName": "Network",
+      "description": "Retrieve info regarding the network"
+    },
+    {
+      "name": "account",
+      "x-displayName": "Account",
+      "description": "Retrieve info regarding an account"
+    },
+    {
+      "name": "ledger",
+      "x-displayName": "Ledger",
+      "description": "Retrieve info regarding the ledger"
+    },
+    {
+      "name": "construction",
+      "x-displayName": "Construction",
+      "description": "Construct a transaction for submission"
+    },
+    {
+      "name": "node",
+      "x-displayName": "Node",
+      "description": "Retrieve info regarding this specific node's key as well as the ability to sign transactions"
     },
     {
       "name": "committed_transaction",
@@ -88,8 +108,16 @@
   ],
   "x-tagGroups": [
     {
-      "name": "Core API",
-      "tags": [ "api" ]
+      "name": "Data",
+      "tags": [ "network", "account", "ledger" ]
+    },
+    {
+      "name": "Construction",
+      "tags": [ "construction "]
+    },
+    {
+      "name": "Node",
+      "tags": [ "node" ]
     },
     {
       "name": "Objects",
@@ -120,7 +148,7 @@
       "post": {
         "summary": "Get Network Configuration",
         "description": "Returns the network the node is associated with as well as the network configuration of that network.",
-        "tags": [ "api" ],
+        "tags": [ "network" ],
         "requestBody": {
           "required": true,
           "content": {
@@ -153,7 +181,7 @@
       "post": {
         "summary": "Get Network Status",
         "description": "Returns the current state and status of the ledger.",
-        "tags": [ "api" ],
+        "tags": [ "network" ],
         "requestBody": {
           "required": true,
           "content": {
@@ -185,7 +213,7 @@
     "/node/account": {
       "post": {
         "summary": "Get Node Info",
-        "tags": [ "api" ],
+        "tags": [ "node" ],
         "requestBody": {
           "required": true,
           "content": {
@@ -217,7 +245,7 @@
     "/node/sign": {
       "post": {
         "summary": "Sign Transaction",
-        "tags": [ "api" ],
+        "tags": [ "node" ],
         "requestBody": {
           "required": true,
           "content": {
@@ -249,7 +277,7 @@
     "/account/balance": {
       "post": {
         "summary": "Get Account Balances",
-        "tags": [ "api" ],
+        "tags": [ "account" ],
         "requestBody": {
           "required": true,
           "content": {
@@ -281,7 +309,7 @@
     "/construction/build": {
       "post": {
         "summary": "Build Transaction",
-        "tags": [ "api" ],
+        "tags": [ "construction" ],
         "requestBody": {
           "required": true,
           "content": {
@@ -313,7 +341,7 @@
     "/construction/parse": {
       "post": {
         "summary": "Parse Transaction",
-        "tags": [ "api" ],
+        "tags": [ "construction" ],
         "requestBody": {
           "required": true,
           "content": {
@@ -345,7 +373,7 @@
     "/construction/finalize": {
       "post": {
         "summary": "Finalize Transaction",
-        "tags": [ "api" ],
+        "tags": [ "construction" ],
         "requestBody": {
           "required": true,
           "content": {
@@ -377,7 +405,7 @@
     "/construction/submit": {
       "post": {
         "summary": "Submit Transaction",
-        "tags": [ "api" ],
+        "tags": [ "construction" ],
         "requestBody": {
           "required": true,
           "content": {
@@ -410,7 +438,7 @@
       "post": {
         "summary": "Get Committed Transactions",
         "description": "Returns an ordered sublist of committed transactions. This endpoint is designed for lite clients to sync with the state of the ledger.",
-        "tags": [ "api" ],
+        "tags": [ "ledger" ],
         "requestBody": {
           "required": true,
           "content": {
