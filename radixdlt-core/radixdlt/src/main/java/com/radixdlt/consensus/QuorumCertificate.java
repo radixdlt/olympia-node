@@ -64,20 +64,20 @@
 
 package com.radixdlt.consensus;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.utils.Pair;
-import java.util.Objects;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.utils.Pair;
+
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -97,8 +97,8 @@ public final class QuorumCertificate {
 
 	@JsonCreator
 	public QuorumCertificate(
-		@JsonProperty("vote_data") VoteData voteData,
-		@JsonProperty("signatures") TimestampedECDSASignatures signatures
+		@JsonProperty(value = "vote_data", required = true) VoteData voteData,
+		@JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures
 	) {
 		this.voteData = Objects.requireNonNull(voteData);
 		this.signatures = Objects.requireNonNull(signatures);

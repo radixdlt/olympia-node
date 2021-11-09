@@ -71,16 +71,17 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.DsonOutput.Output;
 
+import javax.annotation.concurrent.Immutable;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import javax.annotation.concurrent.Immutable;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Vertex in a Vertex graph
@@ -109,28 +110,32 @@ public final class UnverifiedVertex {
 	private final BFTNode proposer;
 
 	@JsonCreator
-	UnverifiedVertex(
-		@JsonProperty("qc") QuorumCertificate qc,
-		@JsonProperty("view") Long viewId,
+	private UnverifiedVertex(
+		@JsonProperty(value = "qc", required = true) QuorumCertificate qc,
+		@JsonProperty("view") long viewId,
 		@JsonProperty("txns") List<byte[]> txns,
 		@JsonProperty("p") byte[] proposer,
 		@JsonProperty("tout") Boolean proposerTimedOut
 	) throws PublicKeyException {
 		this(
 			qc,
-			viewId != null ? View.of(viewId) : null,
+			View.of(viewId),
 			txns == null ? List.of() : txns,
 			proposer != null ? BFTNode.fromPublicKeyBytes(proposer) : null,
 			proposerTimedOut
 		);
 	}
 
-	public UnverifiedVertex(QuorumCertificate qc, View view, List<byte[]> txns, BFTNode proposer, Boolean proposerTimedOut) {
-		this.qc = Objects.requireNonNull(qc);
-		this.view = Objects.requireNonNull(view);
+	private UnverifiedVertex(QuorumCertificate qc, View view, List<byte[]> txns, BFTNode proposer, Boolean proposerTimedOut) {
+		this.qc = requireNonNull(qc);
+		this.view = requireNonNull(view);
 
 		if (proposerTimedOut != null && proposerTimedOut && !txns.isEmpty()) {
 			throw new IllegalArgumentException("Txns must be empty if timeout");
+		}
+
+		if (txns != null) {
+			txns.forEach(Objects::requireNonNull);
 		}
 
 		this.txns = txns;
@@ -155,8 +160,6 @@ public final class UnverifiedVertex {
 		List<Txn> txns,
 		BFTNode proposer
 	) {
-		Objects.requireNonNull(qc);
-
 		if (view.number() == 0) {
 			throw new IllegalArgumentException("Only genesis can have view 0.");
 		}

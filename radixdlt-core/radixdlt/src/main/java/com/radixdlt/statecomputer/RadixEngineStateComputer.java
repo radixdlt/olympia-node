@@ -102,15 +102,15 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.CommittedBadTxnException;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.statecomputer.forks.Forks;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -373,7 +373,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		} catch (RadixEngineException e) {
 			throw new CommittedBadTxnException(verifiedTxnsAndProof, e);
 		} catch (MetadataException e) {
-			throw new ByzantineQuorumException(e.getMessage());
+			throw new ByzantineQuorumException(e.getMessage(), e);
 		}
 
 		// Next epoch

@@ -90,6 +90,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 
+//TODO: extract lambdas into dedicated methods
+//TODO: suppress unstable API usage warnings
 public final class EventLoggerModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();
 
@@ -109,7 +111,6 @@ public final class EventLoggerModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	EventProcessorOnDispatch<?> invalidProposedTxn(Function<ECPublicKey, String> nodeString) {
-		final RateLimiter logLimiter = RateLimiter.create(1.0);
 		return new EventProcessorOnDispatch<>(
 			InvalidProposedTxn.class,
 			i -> logger.warn("eng_badprp{proposer={}}", nodeString.apply(i.getProposer()))

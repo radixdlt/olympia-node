@@ -64,8 +64,6 @@
 
 package com.radixdlt.serialization;
 
-import static com.radixdlt.serialization.mapper.DsonFieldFilter.filterProviderFor;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
@@ -76,22 +74,26 @@ import com.google.common.collect.Lists;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.mapper.JacksonCborMapper;
 import com.radixdlt.serialization.mapper.JacksonJsonMapper;
+import org.json.JSONObject;
+
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.json.JSONObject;
+
+import static com.radixdlt.serialization.mapper.DsonFieldFilter.filterProviderFor;
 
 /**
  * Serialization class that handles conversion to/from DSON and JSON.
  */
+//TODO: get rid of JSON support
 public class Serialization {
 
 	/**

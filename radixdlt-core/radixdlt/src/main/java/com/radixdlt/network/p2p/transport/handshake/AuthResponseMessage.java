@@ -91,8 +91,8 @@ public final class AuthResponseMessage {
 
 	@JsonCreator
 	public static AuthResponseMessage deserialize(
-		@JsonProperty("ephemeralPublicKey") HashCode ephemeralPublicKey,
-		@JsonProperty("nonce") HashCode nonce
+		@JsonProperty(value = "ephemeralPublicKey", required = true) HashCode ephemeralPublicKey,
+		@JsonProperty(value = "nonce", required = true) HashCode nonce
 	) {
 		return new AuthResponseMessage(ephemeralPublicKey, nonce);
 	}
@@ -115,11 +115,10 @@ public final class AuthResponseMessage {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		final var that = (AuthResponseMessage) o;
-		return Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey) && Objects.equals(nonce, that.nonce);
+
+		return (o instanceof AuthResponseMessage that)
+			   && Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey)
+			   && Objects.equals(nonce, that.nonce);
 	}
 
 	@Override

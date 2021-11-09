@@ -73,8 +73,8 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
-import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
+import java.util.Objects;
 
 /**
  * An <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a>
@@ -106,7 +106,7 @@ public final class TimestampedECDSASignature {
 	@JsonCreator
 	public static TimestampedECDSASignature from(
 		@JsonProperty("timestamp") long timestamp,
-		@JsonProperty("signature") ECDSASignature signature
+		@JsonProperty(value = "signature", required = true) ECDSASignature signature
 	) {
 		return new TimestampedECDSASignature(timestamp, signature);
 	}

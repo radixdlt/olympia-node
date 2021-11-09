@@ -82,6 +82,8 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import java.util.Optional;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Represents a vote on a vertex
  */
@@ -114,14 +116,19 @@ public final class Vote implements ConsensusEvent {
 
 	@JsonCreator
 	Vote(
-		@JsonProperty("author") byte[] author,
+		@JsonProperty(value = "author", required = true) byte[] author,
 		@JsonProperty("vote_data") VoteData voteData,
 		@JsonProperty("ts") long timestamp,
 		@JsonProperty("signature") ECDSASignature signature,
 		@JsonProperty("high_qc") HighQC highQC,
 		@JsonProperty("timeout_signature") ECDSASignature timeoutSignature
 	) throws PublicKeyException {
-		this(BFTNode.fromPublicKeyBytes(author), voteData, timestamp, signature, highQC, Optional.ofNullable(timeoutSignature));
+		this(
+			BFTNode.fromPublicKeyBytes(requireNonNull(author)),
+			voteData,
+			timestamp,
+			signature, highQC, Optional.ofNullable(timeoutSignature)
+		);
 	}
 
 	public Vote(
@@ -132,12 +139,12 @@ public final class Vote implements ConsensusEvent {
 		HighQC highQC,
 		Optional<ECDSASignature> timeoutSignature
 	) {
-		this.author = Objects.requireNonNull(author);
-		this.voteData = Objects.requireNonNull(voteData);
+		this.author = requireNonNull(author);
+		this.voteData = requireNonNull(voteData);
 		this.timestamp = timestamp;
-		this.signature = Objects.requireNonNull(signature);
-		this.highQC = Objects.requireNonNull(highQC);
-		this.timeoutSignature = Objects.requireNonNull(timeoutSignature);
+		this.signature = requireNonNull(signature);
+		this.highQC = requireNonNull(highQC);
+		this.timeoutSignature = requireNonNull(timeoutSignature);
 	}
 
 	@Override
@@ -229,15 +236,12 @@ public final class Vote implements ConsensusEvent {
 		if (o == this) {
 			return true;
 		}
-		if (o instanceof Vote) {
-			Vote other = (Vote) o;
-			return Objects.equals(this.author, other.author)
-				&& Objects.equals(this.voteData, other.voteData)
-				&& this.timestamp == other.timestamp
-				&& Objects.equals(this.signature, other.signature)
-				&& Objects.equals(this.highQC, other.highQC)
-				&& Objects.equals(this.timeoutSignature, other.timeoutSignature);
-		}
-		return false;
+		return (o instanceof Vote other)
+			   && Objects.equals(this.author, other.author)
+			   && Objects.equals(this.voteData, other.voteData)
+			   && this.timestamp == other.timestamp
+			   && Objects.equals(this.signature, other.signature)
+			   && Objects.equals(this.highQC, other.highQC)
+			   && Objects.equals(this.timeoutSignature, other.timeoutSignature);
 	}
 }

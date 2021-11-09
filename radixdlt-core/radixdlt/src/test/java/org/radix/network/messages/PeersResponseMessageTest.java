@@ -77,7 +77,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PeersResponseMessageTest extends SerializeMessageObject<PeersResponseMessage> {
 
 	public PeersResponseMessageTest() {
-		super(PeersResponseMessage.class, () -> new PeersResponseMessage());
+		super(PeersResponseMessage.class, () -> new PeersResponseMessage(ImmutableSet.of()));
 	}
 
 	@Test

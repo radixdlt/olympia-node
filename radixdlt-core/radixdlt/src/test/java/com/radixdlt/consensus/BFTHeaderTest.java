@@ -67,13 +67,12 @@ package com.radixdlt.consensus;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class BFTHeaderTest {
 
@@ -102,12 +101,6 @@ public class BFTHeaderTest {
 
 		assertThat(id).isEqualTo(this.testObject.getVertexId());
 		assertThat(ledgerHeader).isEqualTo(this.testObject.getLedgerHeader());
-	}
-
-	@Test
-	public void testSerializerConstructor() {
-		// Don't want to see any exceptions here
-		assertThat(new BFTHeader()).isNotNull();
 	}
 
 	@Test

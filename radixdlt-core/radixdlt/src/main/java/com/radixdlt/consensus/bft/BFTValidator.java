@@ -74,8 +74,11 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
-import java.util.Objects;
+
 import javax.annotation.concurrent.Immutable;
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 
 /**
@@ -93,24 +96,23 @@ public final class BFTValidator {
 	@DsonOutput({Output.ALL})
 	private final UInt256 power;
 
-    // Public key for consensus
+	// Public key for consensus
 	private final BFTNode node;
 
 	@JsonCreator
 	private BFTValidator(
-		@JsonProperty("node") String nodeKey,
-		@JsonProperty("power") UInt256 power
+		@JsonProperty(value = "node", required = true) String nodeKey,
+		@JsonProperty(value = "power", required = true) UInt256 power
 	) {
-		this.node = Objects.requireNonNull(toBFTNode(nodeKey));
-		this.power = Objects.requireNonNull(power);
+		this(toBFTNode(requireNonNull(nodeKey)), power);
 	}
 
 	private BFTValidator(
 		BFTNode node,
 		UInt256 power
 	) {
-		this.node = Objects.requireNonNull(node);
-		this.power = Objects.requireNonNull(power);
+		this.node = requireNonNull(node);
+		this.power = requireNonNull(power);
 	}
 
 	public static BFTValidator from(BFTNode node, UInt256 power) {
@@ -153,12 +155,10 @@ public final class BFTValidator {
 		if (this == obj) {
 			return true;
 		}
-		if (obj instanceof BFTValidator) {
-			BFTValidator other = (BFTValidator) obj;
-			return Objects.equals(this.node, other.node)
-				&& Objects.equals(this.power, other.power);
-		}
-		return false;
+
+		return (obj instanceof BFTValidator other)
+			   && Objects.equals(this.node, other.node)
+			   && Objects.equals(this.power, other.power);
 	}
 
 	@Override

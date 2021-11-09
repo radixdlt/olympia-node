@@ -74,10 +74,11 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
+import javax.annotation.concurrent.Immutable;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import javax.annotation.concurrent.Immutable;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A commands and proof which has not been verified
@@ -105,16 +106,18 @@ public final class DtoTxnsAndProof {
 	@JsonCreator
 	public DtoTxnsAndProof(
 		@JsonProperty("txns") List<byte[]> txns,
-		@JsonProperty("head") DtoLedgerProof head,
-		@JsonProperty("tail") DtoLedgerProof tail
+		@JsonProperty(value = "head", required = true) DtoLedgerProof head,
+		@JsonProperty(value = "tail", required = true) DtoLedgerProof tail
 	) {
 		this.txns = txns == null ? ImmutableList.of() : txns;
-		this.head = Objects.requireNonNull(head);
-		this.tail = Objects.requireNonNull(tail);
+		this.head = requireNonNull(head);
+		this.tail = requireNonNull(tail);
+
+		this.txns.forEach(Objects::requireNonNull);
 	}
 
 	public List<Txn> getTxns() {
-		return txns.stream().map(Txn::create).collect(Collectors.toList());
+		return txns.stream().map(Txn::create).toList();
 	}
 
 	public DtoLedgerProof getHead() {
@@ -135,13 +138,11 @@ public final class DtoTxnsAndProof {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		DtoTxnsAndProof that = (DtoTxnsAndProof) o;
-		return Objects.equals(txns, that.txns)
-				&& Objects.equals(head, that.head)
-				&& Objects.equals(tail, that.tail);
+
+		return (o instanceof DtoTxnsAndProof that)
+			   && Objects.equals(txns, that.txns)
+			   && Objects.equals(head, that.head)
+			   && Objects.equals(tail, that.tail);
 	}
 
 	@Override

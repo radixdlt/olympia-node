@@ -75,6 +75,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+
 import java.util.Objects;
 import java.util.Optional;
 
@@ -106,9 +107,9 @@ public final class SerializedVertexStoreState {
 
 	@JsonCreator
 	public SerializedVertexStoreState(
-		@JsonProperty("high_qc") HighQC highQC,
-		@JsonProperty("root") UnverifiedVertex root,
-		@JsonProperty("vertices") ImmutableList<UnverifiedVertex> vertices,
+		@JsonProperty(value = "high_qc", required = true) HighQC highQC,
+		@JsonProperty(value = "root", required = true) UnverifiedVertex root,
+		@JsonProperty(value = "vertices", required = true) ImmutableList<UnverifiedVertex> vertices,
 		@JsonProperty("highest_tc") TimeoutCertificate highestTC
 	) {
 		this.root = Objects.requireNonNull(root);
@@ -140,15 +141,15 @@ public final class SerializedVertexStoreState {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof SerializedVertexStoreState)) {
-			return false;
+		if (o == this) {
+			return true;
 		}
 
-		SerializedVertexStoreState other = (SerializedVertexStoreState) o;
-		return Objects.equals(this.root, other.root)
-			&& Objects.equals(this.vertices, other.vertices)
-			&& Objects.equals(this.highQC, other.highQC)
-			&& Objects.equals(this.highestTC, other.highestTC);
+		return (o instanceof SerializedVertexStoreState other)
+			   && Objects.equals(this.root, other.root)
+			   && Objects.equals(this.vertices, other.vertices)
+			   && Objects.equals(this.highQC, other.highQC)
+			   && Objects.equals(this.highestTC, other.highestTC);
 	}
 
 	@Override
