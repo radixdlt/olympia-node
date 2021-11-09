@@ -43,22 +43,12 @@
     {
       "name": "objects",
       "x-displayName": "Objects",
-      "description": "\n## Committed Transaction\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransaction\" />"
+      "description": "\n## Committed Transaction\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransaction\" />\n\n## Committed Transaction Metadata\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransactionMetadata\" />"
     },
     {
       "name": "identifiers",
       "x-displayName": "Identifiers",
-      "description": "\n ## Committed State Identifier <SchemaDefinition schemaRef=\"#/components/schemas/CommittedStateIdentifier\" />"
-    },
-    {
-      "name": "committed_transaction",
-      "x-displayName": "Committed Transaction",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransaction\" />"
-    },
-    {
-      "name": "committed_transaction_metadata",
-      "x-displayName": "Committed Transaction Metadata",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransactionMetadata\" />"
+      "description": "\n ## Committed State Identifier\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedStateIdentifier\" />\n\n## Address Identifier\n<SchemaDefinition schemaRef=\"#/components/schemas/AddressIdentifier\" />"
     },
     {
       "name": "operation_group",
@@ -96,11 +86,6 @@
       "description": "<SchemaDefinition schemaRef=\"#/components/schemas/PublicKey\" />"
     },
     {
-      "name": "committed_state_identifier",
-      "x-displayName": "Committed State Identifier",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/CommittedStateIdentifier\" />"
-    },
-    {
       "name": "address_identifier",
       "x-displayName": "Address Identifier",
       "description": "<SchemaDefinition schemaRef=\"#/components/schemas/AddressIdentifier\" />"
@@ -118,15 +103,15 @@
   ],
   "x-tagGroups": [
     {
-      "name": "Data",
+      "name": "Data API",
       "tags": [ "network", "account", "ledger" ]
     },
     {
-      "name": "Construction",
+      "name": "Construction API",
       "tags": [ "construction" ]
     },
     {
-      "name": "Node",
+      "name": "Node Key API",
       "tags": [ "node" ]
     },
     {
