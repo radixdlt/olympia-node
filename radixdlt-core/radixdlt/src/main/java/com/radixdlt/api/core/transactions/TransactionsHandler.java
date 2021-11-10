@@ -68,6 +68,8 @@ import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.utils.Bytes;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -99,26 +101,28 @@ class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 
 	@Override
 	public JSONObject handleRequest(TransactionsRequest request) throws Exception {
+		var previousStateVersion = request.getStateVersion() - 1;
+		final JSONObject committedStateIdentifier;
+		if (previousStateVersion >= 0) {
+			try (var stream = store.get(previousStateVersion)) {
+				var prevTxnJson = stream.findFirst().flatMap(txnStore::getTransactionJSON).orElseThrow();
+				committedStateIdentifier = prevTxnJson.getJSONObject("committed_state_identifier");
+			}
+		} else {
+			committedStateIdentifier = new JSONObject()
+				.put("state_version", 0)
+				.put("transaction_accumulator", Bytes.toHexString(HashUtils.zero256().asBytes()));
+		}
+
 		var transactions = new JSONArray();
-		try (var stream = store.get(request.getIndex())) {
+		try (var stream = store.get(request.getStateVersion())) {
 			stream.limit(request.getLimit())
 				.map(txnId -> txnStore.getTransactionJSON(txnId).orElseThrow())
 				.forEach(transactions::put);
 		}
 
-		var committedStateIdentifier = transactions.getJSONObject(0).get("previous_committed_state_identifier");
-		var nextCommittedStateIdentifier = transactions.isEmpty()
-			? committedStateIdentifier
-			: transactions.getJSONObject(transactions.length() - 1).get("committed_state_identifier");
-
-		for (int i = 0; i < transactions.length(); i++) {
-			transactions.getJSONObject(i).remove("previous_committed_state_identifier");
-			transactions.getJSONObject(i).remove("committed_state_identifier");
-		}
-
 		return jsonObject()
 			.put("committed_state_identifier", committedStateIdentifier)
-			.put("next_committed_state_identifier", nextCommittedStateIdentifier)
 			.put("transactions", transactions);
 	}
 }

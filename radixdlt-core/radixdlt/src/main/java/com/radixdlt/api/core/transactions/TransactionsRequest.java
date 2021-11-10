@@ -72,7 +72,7 @@ public final class TransactionsRequest {
 		this.limit = limit;
 	}
 
-	public long getIndex() {
+	public long getStateVersion() {
 		return index;
 	}
 
