@@ -63,57 +63,45 @@
 
 package com.radixdlt.api.core.construction;
 
-import com.radixdlt.api.archive.InvalidParametersException;
-import com.radixdlt.api.archive.JsonObjectReader;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.crypto.ECPublicKey;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
-public interface AddressIdentifier {
-	Optional<REAddr> getAccountAddress();
-	void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) throws TxBuilderException;
-	List<ResourceQuery> getResourceQueries();
-	List<KeyQuery> getKeyQueries();
+public class KeyQuery {
+	private final SystemMapKey key;
+	private final Supplier<Optional<Particle>> virtualSubstate;
+	private final SubstateTypeId typeId;
 
-	private static AddressIdentifier fromAccountAddress(REAddr accountAddress, JsonObjectReader reader) throws InvalidParametersException {
-		return reader
-			.getOptJsonObject("sub_address", r -> {
-				var subAddress = r.getString("address");
-				switch (subAddress) {
-					case "prepared_stake":
-						return PreparedStakeVaultAddressIdentifier.from(
-							accountAddress,
-							r.getJsonObject("metadata").getValidatorIdentifier("validator")
-						);
-					case "prepared_unstake":
-						return PreparedUnstakeVaultAddressIdentifier.from(
-							accountAddress,
-							r.getJsonObject("metadata")
-						);
-					default:
-						throw new InvalidParametersException("/address", "Invalid Sub Address: " + subAddress);
-				}
-			})
-			.orElseGet(() -> AccountVaultAddressIdentifier.from(accountAddress));
+	private KeyQuery(SystemMapKey key, Supplier<Optional<Particle>> virtualSubstate, SubstateTypeId typeId) {
+		this.key = key;
+		this.virtualSubstate = virtualSubstate;
+		this.typeId = typeId;
 	}
 
-	static AddressIdentifier from(JsonObjectReader reader) throws InvalidParametersException {
-		var accountAddress = reader.tryAccountAddress("address");
-		if (accountAddress.isPresent()) {
-			return fromAccountAddress(accountAddress.get(), reader);
-		}
+	public SystemMapKey getKey() {
+		return key;
+	}
 
-		var validatorKey = reader.tryValidatorIdentifier("address");
-		if (validatorKey.isPresent()) {
-			return ValidatorAddressIdentifier.from(validatorKey.get());
-		}
+	public Supplier<Optional<Particle>> getVirtualSubstate() {
+		return virtualSubstate;
+	}
 
-		throw new InvalidParametersException("/address", "Invalid address");
+	public SubstateTypeId getTypeId() {
+		return typeId;
+	}
+
+	public static KeyQuery fromValidator(ECPublicKey validatorKey, SubstateTypeId typeId, Function<ECPublicKey, Particle> virtualSubstate) {
+		var key = SystemMapKey.ofSystem(typeId.id(), validatorKey.getCompressedBytes());
+		return new KeyQuery(key, () -> Optional.of(virtualSubstate.apply(validatorKey)), typeId);
+	}
+
+	public static KeyQuery fromValidator(ECPublicKey validatorKey, SubstateTypeId typeId) {
+		var key = SystemMapKey.ofSystem(typeId.id(), validatorKey.getCompressedBytes());
+		return new KeyQuery(key, Optional::empty, typeId);
 	}
 }

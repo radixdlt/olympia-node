@@ -68,7 +68,9 @@ import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.api.core.construction.AddressIdentifier;
+import com.radixdlt.api.core.construction.KeyQuery;
 import com.radixdlt.api.core.construction.ResourceQuery;
+import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
@@ -84,16 +86,19 @@ import org.json.JSONObject;
 import java.util.List;
 import java.util.function.Function;
 
-public class AddressBalanceHandler implements ApiHandler<AddressIdentifier> {
+public class AddressHandler implements ApiHandler<AddressIdentifier> {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final Addressing addressing;
+	private final ProcessedTxnJsonConverter converter;
 
 	@Inject
-	AddressBalanceHandler(
+	AddressHandler(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
+		ProcessedTxnJsonConverter converter,
 		Addressing addressing
 	) {
 		this.radixEngine = radixEngine;
+		this.converter = converter;
 		this.addressing = addressing;
 	}
 
@@ -139,20 +144,35 @@ public class AddressBalanceHandler implements ApiHandler<AddressIdentifier> {
 		return balances;
 	}
 
+	private JSONArray getObjects(
+		List<KeyQuery> keyQueries
+	) {
+		var objects = new JSONArray();
+		for (var keyQuery : keyQueries) {
+			var substate = radixEngine.get(keyQuery.getKey()).or(keyQuery.getVirtualSubstate());
+			substate.map(s -> converter.getDataObject(keyQuery.getTypeId(), s)).ifPresent(objects::put);
+		}
+		return objects;
+	}
+
 	@Override
-	public JSONObject handleRequest(AddressIdentifier request) throws Exception {
+	public JSONObject handleRequest(AddressIdentifier addressIdentifier) throws Exception {
 		Function<REAddr, String> addressToRri = addr -> {
 			var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
 			var substate = radixEngine.get(mapKey).orElseThrow();
-			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
 			var tokenResource = (TokenResourceMetadata) substate;
 			return addressing.forResources().of(tokenResource.getSymbol(), addr);
 		};
 
+		// TODO: need to fetch these in a single database transaction and retrieve version as well
 		var balances = getBalances(
-			request.getResourceQueries(),
+			addressIdentifier.getResourceQueries(),
 			addressToRri
 		);
-		return new JSONObject().put("balances", balances);
+		var objects = getObjects(addressIdentifier.getKeyQueries());
+
+		return new JSONObject()
+			.put("balances", balances)
+			.put("data_objects", objects);
 	}
 }

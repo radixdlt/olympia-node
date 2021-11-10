@@ -123,6 +123,11 @@ public class AccountVaultAddressIdentifier implements AddressIdentifier {
 		);
 	}
 
+	@Override
+	public List<KeyQuery> getKeyQueries() {
+		return List.of();
+	}
+
 	public static AccountVaultAddressIdentifier from(REAddr address) {
 		return new AccountVaultAddressIdentifier(address);
 	}

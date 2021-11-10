@@ -142,6 +142,11 @@ public class PreparedStakeVaultAddressIdentifier implements AddressIdentifier {
 		return List.of(ResourceQuery.from(index));
 	}
 
+	@Override
+	public List<KeyQuery> getKeyQueries() {
+		return List.of();
+	}
+
 
 	public static PreparedStakeVaultAddressIdentifier from(REAddr accountAddress, ECPublicKey validatorKey) {
 		return new PreparedStakeVaultAddressIdentifier(accountAddress, validatorKey);

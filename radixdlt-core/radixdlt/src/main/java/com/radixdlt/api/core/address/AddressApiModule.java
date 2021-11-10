@@ -83,6 +83,6 @@ public final class AddressApiModule extends AbstractModule {
 		var routeBinder = MapBinder.newMapBinder(
 			binder(), String.class, HttpHandler.class, annotationType
 		);
-		routeBinder.addBinding(path).to(AddressBalanceHandler.class);
+		routeBinder.addBinding(path).to(AddressHandler.class);
 	}
 }

@@ -124,6 +124,11 @@ public class PreparedUnstakeVaultAddressIdentifier implements AddressIdentifier 
 		return List.of(ResourceQuery.from(index));
 	}
 
+	@Override
+	public List<KeyQuery> getKeyQueries() {
+		return List.of();
+	}
+
 	public static PreparedUnstakeVaultAddressIdentifier from(
 		REAddr accountAddress,
 		JsonObjectReader metadataReader

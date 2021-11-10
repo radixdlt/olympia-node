@@ -543,7 +543,7 @@
           "signed_transaction": { "type": "string" }
         }
       },
-      "AddressBalanceRequest": {
+      "AddressRequest": {
         "type": "object",
         "required": [ "address_identifier" ],
         "properties": {
@@ -558,14 +558,19 @@
           }
         }
       },
-      "AddressBalanceResponse": {
+      "AddressResponse": {
         "type": "object",
-        "required": [ "balances" ],
+        "required": [ "balances", "data_objects" ],
         "properties": {
           "balances": {
             "description": "Balances associated with the address",
             "type": "array",
             "items": { "$ref": "#/components/schemas/ResourceAmount" }
+          },
+          "data_objects": {
+            "description": "Data associated with the address",
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/DataObject" }
           }
         },
         "example": {
@@ -591,7 +596,8 @@
               },
               "value": "15000000000000000000000"
             }
-          ]
+          ],
+          "data_objects": []
         }
       },
       "ConstructionBuildRequest": {
@@ -1184,7 +1190,7 @@
             "type": "string",
             "enum": [ "CREATE", "DELETE" ]
           },
-          "object": {
+          "data_object": {
             "description": "The object of the data action",
             "$ref": "#/components/schemas/DataObject"
           }
