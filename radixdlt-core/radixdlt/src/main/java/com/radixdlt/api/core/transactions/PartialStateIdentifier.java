@@ -63,20 +63,36 @@
 
 package com.radixdlt.api.core.transactions;
 
-public final class TransactionsRequest {
-	private final PartialStateIdentifier stateIdentifier;
-	private final long limit;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
 
-	public TransactionsRequest(PartialStateIdentifier stateIdentifier, long limit) {
-		this.stateIdentifier = stateIdentifier;
-		this.limit = limit;
+import java.util.Optional;
+
+public class PartialStateIdentifier {
+	private final long stateVersion;
+	private final byte[] transactionAccumulator;
+
+	private PartialStateIdentifier(long stateVersion, byte[] transactionAccumulator) {
+		this.stateVersion = stateVersion;
+		this.transactionAccumulator = transactionAccumulator;
 	}
 
-	public PartialStateIdentifier getStateIdentifier() {
-		return stateIdentifier;
+	public long getStateVersion() {
+		return stateVersion;
 	}
 
-	public long getLimit() {
-		return limit;
+	public Optional<byte[]> getTransactionAccumulator() {
+		return Optional.ofNullable(transactionAccumulator);
 	}
+
+	public static PartialStateIdentifier from(JsonObjectReader reader) throws InvalidParametersException {
+		var stateVersion = reader.getOptUnsignedLong("state_version").orElse(0);
+		if (stateVersion < 0) {
+			throw new InvalidParametersException("/state_version", "state_version must be >= 0");
+		}
+
+		var transactionAccumulator = reader.getOptHexBytes("transaction_accumulator", 32).orElse(null);
+		return new PartialStateIdentifier(stateVersion, transactionAccumulator);
+	}
+
 }

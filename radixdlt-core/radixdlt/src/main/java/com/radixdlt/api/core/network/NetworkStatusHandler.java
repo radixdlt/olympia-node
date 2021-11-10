@@ -115,6 +115,10 @@ final class NetworkStatusHandler implements ApiHandler<Void> {
 	public JSONObject handleRequest(Void request) {
 		var currentProof = inMemorySystemInfo.getCurrentProof();
 		return jsonObject()
+			.put("pre_genesis_state_identifier", new JSONObject()
+				.put("state_version", 0)
+				.put("transaction_accumulator", Bytes.toHexString(HashUtils.zero256().asBytes()))
+			)
 			.put("genesis_state_identifier", new JSONObject()
 				.put("state_version", genesisAccumulatorState.getStateVersion())
 				.put("transaction_accumulator", Bytes.toHexString(genesisAccumulatorState.getAccumulatorHash().asBytes()))

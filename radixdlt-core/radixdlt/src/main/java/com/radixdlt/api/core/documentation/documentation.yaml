@@ -5,27 +5,26 @@ info:
   title: Radix Core API
   description: |
     This API provides endpoints for both RadixCore node management and support
-    for lite client integration.
+    for middleware integration (such as exchanges).
 
     # Introduction
 
-    This API is NOT intended to be available to the public web. In particular,
-    exposing `/sign` can result in loss of funds.
+    Welcome to the Radix Core API Preview. This Preview API is intended for
+    exchanges to be able to begin integrating with the Radix network.
 
-    # Lite Client Integration
+    :::warning
 
-    Lite clients can make use of the lite client endpoints in order to gain either
-    a full view or a partial view (for example, only track asset balances) of what's
-    occuring on ledger transaction by transaction.
+    This API is NOT intended to be available on the public web and is designed
+    to be used in private networks mainly for node management and integration.
+    In particular, endpoints in the Signing API if accessed by the public can
+    result in loss of funds.
 
-    ## Flow of Operations
+    :::
 
-    ![Lite Client Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/lite_client_sequence.png)
+    # Rosetta API
 
-    ## Rosetta API
-
-    Much of the design decisions of the lite client endpoints is inspired from
-    [Rosetta API](https://www.rosetta-api.org/) most notably:
+    Much of the design decisions of the Data API and Construction API endpoints is
+    inspired from [Rosetta API](https://www.rosetta-api.org/) most notably:
       * Use of a JSON-Based RPC protocol on top of HTTP Post requests
       * Use of Operations, Amounts, and Identifiers to express generic asset movement
 
@@ -40,12 +39,72 @@ info:
 
     Future versions of the api will aim towards a fully-compliant Rosetta API.
 
+    # Transaction Operations
+
+    Similar to the [Rosetta API](https://www.rosetta-api.org/), both reading and
+    writing to the ledger use the same Address and Operation objects.
+
+    Every state change is expressed as an Operation which operates on a single
+    AddressIdentifier. A transfer thus requires atleast two Operations, one which debits
+    the sender and one which credits the receiver.
+
+    These operations are then grouped into OperationGroups which represent a well formed
+    accounting entry where credits and debits are equivalent (unless minting or burning).
+
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
 servers:
   - url: localhost:3333
 tags:
+  - name: data_overview
+    x-displayName: Data API Overview
+    description: |
+      Clients can make use of the Data API endpoints in order to synchronize
+      either a full or partial view (for example, only track XRD asset balances) of
+      what's occuring on ledger transaction by transaction.
+
+      ## Sequence Flow
+
+      Synchronization involves only using the Data API. Assuming the client has a
+      database which they are updating, below is a generic flow of operations on
+      how to synchronize via the Data API.
+
+      ![Lite Client Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/lite_client_flow.png '#width=500px;')
+
+      ## StateIdentifier
+
+      The Radix Olympia network has no concept of blocks, instead transactions are
+      managed in a flat ordered list. A hash chain is formed from these transactions
+      which represents a point in time of the ledger with a valid committed state.
+
+      ![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/state_identifiers.png '#width=500px;')
+
+      Along with the hash and the index of the hash in the hash chain, this forms a
+      State Identifier.
+      <SchemaDefinition schemaRef="#/components/schemas/CommittedStateIdentifier" exampleRef="#/components/examples/CommittedStateIdentifier" showReadOnly={true} showWriteOnly={true} />
+
+  - name: construction_overview
+    x-displayName: Construction API Overview
+    description: |
+      Clients can make use of the Construction API endpoints to construct and submit
+      transactions to the network.
+
+      The Radix Olympia network currently has six actions a non-validator may enact:
+      1. Transfer Tokens
+      2. Stake XRD to a Validator
+      3. Unstake XRD from a Validator
+      4. Create a new Token Definition
+      5. Mint Tokens
+      6. Burn Tokens
+
+      And five actions which are reserved for validators:
+      1. Set Validator Owner
+      2. Set Validator Registration
+      3. Set Validator Fee
+      4. Set Validator Metadata
+      5. Set Validator AllowDelegation Flag
+
   - name: network
     x-displayName: Network
     description: Get info about the node and network
@@ -64,11 +123,13 @@ tags:
 x-tagGroups:
   - name: Data API
     tags:
+      - data_overview
       - network
       - address
       - transactions
   - name: Construction API
     tags:
+      - construction_overview
       - construction
   - name: Signing API
     tags:
@@ -339,6 +400,7 @@ components:
     NetworkStatusResponse:
       type: object
       required:
+        - pre_genesis_state_identifier
         - genesis_state_identifier
         - current_state_identifier
         - current_state_epoch
@@ -346,6 +408,9 @@ components:
         - current_state_timestamp
         - node_identifiers
       properties:
+        pre_genesis_state_identifier:
+          description: The ledger state identifier before the genesis transaction
+          "$ref": "#/components/schemas/CommittedStateIdentifier"
         genesis_state_identifier:
           description: The ledger state identifier after the genesis transaction
           "$ref": "#/components/schemas/CommittedStateIdentifier"
@@ -1218,11 +1283,17 @@ components:
           type: string
     PartialCommittedStateIdentifier:
       type: object
+      required:
+        - state_version
       properties:
         state_version:
           description: The `state_version` represents some valid committed state on
             ledger (similar to block height).
           "$ref": "#/components/schemas/LongNumber"
+        transaction_accumulator:
+          description: Accumulator hash representing all transactions which occurred
+            up to `state_version`. Hex encoded.
+          type: string
     AddressIdentifier:
       type: object
       required:

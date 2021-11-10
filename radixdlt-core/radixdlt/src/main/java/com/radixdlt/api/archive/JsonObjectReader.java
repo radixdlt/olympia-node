@@ -103,6 +103,21 @@ public final class JsonObjectReader {
 		return new JsonObjectReader(jsonObject, addressing);
 	}
 
+	public long getUnsignedLong(String key) throws InvalidParametersException {
+		long l;
+		try {
+			l = jsonObject.getLong(key);
+		} catch (JSONException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+
+		if (l < 0) {
+			throw new InvalidParametersException("/" + key, "Number cannot be negative.");
+		}
+
+		return l;
+	}
+
 	public OptionalLong getOptUnsignedLong(String key) throws InvalidParametersException {
 		long l;
 		try {
@@ -228,6 +243,24 @@ public final class JsonObjectReader {
 		} catch (JSONException | IllegalArgumentException e) {
 			throw new InvalidParametersException("/" + key, e);
 		}
+	}
+
+	public Optional<byte[]> getOptHexBytes(String key, int fixedLength) throws InvalidParametersException {
+		byte[] bytes;
+		try {
+			if (!jsonObject.has(key)) {
+				return Optional.empty();
+			}
+			String hex = jsonObject.getString(key);
+			bytes = Bytes.fromHexString(hex);
+		} catch (JSONException | IllegalArgumentException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+		if (bytes.length != fixedLength) {
+			throw new InvalidParametersException("/" + key, "Invalid bytes length");
+		}
+
+		return Optional.of(bytes);
 	}
 
 	public byte[] getHexBytes(String key, int fixedLength) throws InvalidParametersException {

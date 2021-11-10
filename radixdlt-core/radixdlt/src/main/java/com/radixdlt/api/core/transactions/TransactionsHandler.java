@@ -91,17 +91,14 @@ class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 	@Override
 	public TransactionsRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
 		var limit = requestReader.getOptUnsignedLong("limit").orElse(1);
-		var stateVersion = requestReader.getJsonObject("committed_state_identifier", r -> r.getOptUnsignedLong("state_version"))
-			.orElse(0);
-		if (stateVersion < 0) {
-			throw new InvalidParametersException("/index", "Index must be >= 0");
-		}
-		return new TransactionsRequest(stateVersion, limit);
+		var stateIdentifier = requestReader.getJsonObject("committed_state_identifier", PartialStateIdentifier::from);
+		return new TransactionsRequest(stateIdentifier, limit);
 	}
 
 	@Override
 	public JSONObject handleRequest(TransactionsRequest request) throws Exception {
-		var previousStateVersion = request.getStateVersion() - 1;
+		var stateIdentifier = request.getStateIdentifier();
+		var previousStateVersion = stateIdentifier.getStateVersion() - 1;
 		final JSONObject committedStateIdentifier;
 		if (previousStateVersion >= 0) {
 			try (var stream = store.get(previousStateVersion)) {
@@ -113,9 +110,16 @@ class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 				.put("state_version", 0)
 				.put("transaction_accumulator", Bytes.toHexString(HashUtils.zero256().asBytes()));
 		}
+		var matchesInput = request.getStateIdentifier().getTransactionAccumulator()
+			.map(Bytes::toHexString)
+			.map(h -> committedStateIdentifier.getString("transaction_accumulator").equals(h))
+			.orElse(true);
+		if (!matchesInput) {
+			throw new IllegalStateException();
+		}
 
 		var transactions = new JSONArray();
-		try (var stream = store.get(request.getStateVersion())) {
+		try (var stream = store.get(stateIdentifier.getStateVersion())) {
 			stream.limit(request.getLimit())
 				.map(txnId -> txnStore.getTransactionJSON(txnId).orElseThrow())
 				.forEach(transactions::put);
