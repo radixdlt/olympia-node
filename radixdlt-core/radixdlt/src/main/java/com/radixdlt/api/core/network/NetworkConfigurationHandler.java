@@ -100,7 +100,7 @@ class NetworkConfigurationHandler implements ApiHandler<Void> {
 		return jsonObject()
 			.put("version", new JSONObject()
 				.put("core_version", infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY))
-				.put("api_version", "1.0.0")
+				.put("api_version", "0.9.0")
 			)
 			.put("network_identifier", new JSONObject()
 				.put("id", networkId)
