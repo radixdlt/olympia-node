@@ -96,6 +96,7 @@ public class REResourceAccounting {
 		return bucketAccounting;
 	}
 
+	//TODO:TD: Unused method. Perhaps we don't need relevant field too
 	public Map<ECPublicKey, BigInteger> stakeOwnershipAccounting() {
 		return stakeOwnershipAccounting;
 	}

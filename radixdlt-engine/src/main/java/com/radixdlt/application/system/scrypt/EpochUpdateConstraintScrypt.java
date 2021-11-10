@@ -387,6 +387,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
 		ReducerState unstakes(IndexedSubstateIterator<PreparedUnstakeOwnership> i) throws ProcedureException {
 			i.verifyPostTypePrefixIsEmpty();
+			//TODO:TD: too complex lambda, deserves dedicated method
 			i.iterator().forEachRemaining(preparedUnstakeOwned ->
 				preparingUnstake
 					.computeIfAbsent(
@@ -777,7 +778,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	//TODO:TD: too long method
 	private void epochUpdate(Loader os) {
 		// Epoch Update
-		os.procedure(new DownProcedure<>(				//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new DownProcedure<>(
 			EndPrevRound.class, EpochData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r, c) -> {
@@ -791,7 +792,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			}
 		));
 
-		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new ShutdownAllProcedure<>(
 			ExittingStake.class, UpdatingEpoch.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> {
@@ -799,101 +800,101 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				return ReducerResult.incomplete(exittingStake.process(d));
 			}
 		));
-		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new UpProcedure<>(
 			ProcessExittingStake.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.unlock(u))
 		));
 
-		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new ShutdownAllProcedure<>(
 			ValidatorBFTData.class, RewardingValidators.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.process(d, c))
 		));
 
-		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new ShutdownAllProcedure<>(
 			PreparedUnstakeOwnership.class, PreparingUnstake.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.unstakes(d))
 		));
-		os.procedure(new DownProcedure<>(				//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new DownProcedure<>(
 			LoadingStake.class, ValidatorStakeData.class,
 			d -> d.bucket().withdrawAuthorization(),
 			(d, s, r, c) -> ReducerResult.incomplete(s.startUpdate(d))
 		));
-		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new UpProcedure<>(
 			Unstaking.class, ExittingStake.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.exit(u))
 		));
-		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new ShutdownAllProcedure<>(
 			PreparedStake.class, PreparingStake.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareStakes(d))
 		));
-		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new ShutdownAllProcedure<>(
 			ValidatorFeeCopy.class, PreparingRakeUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareRakeUpdates(d))
 		));
-		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new UpProcedure<>(
 			ResetRakeUpdate.class, ValidatorFeeCopy.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
 
-		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new ShutdownAllProcedure<>(
 			ValidatorOwnerCopy.class, PreparingOwnerUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareValidatorUpdate(d))
 		));
-		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new UpProcedure<>(
 			ResetOwnerUpdate.class, ValidatorOwnerCopy.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
 
-		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new ShutdownAllProcedure<>(
 			ValidatorRegisteredCopy.class, PreparingRegisteredUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareRegisterUpdates(d))
 		));
-		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new UpProcedure<>(
 			ResetRegisteredUpdate.class, ValidatorRegisteredCopy.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
 
-		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new UpProcedure<>(
 			Staking.class, StakeOwnership.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.stake(u))
 		));
-		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new UpProcedure<>(
 			UpdatingValidatorStakes.class, ValidatorStakeData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.updateStake(u))
 		));
 
-		os.procedure(new ReadIndexProcedure<>(			//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new ReadIndexProcedure<>(
 			CreatingNextValidatorSet.class, ValidatorStakeData.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.readIndex(d, c))
 		));
 
-		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new UpProcedure<>(
 			BootupValidator.class, ValidatorBFTData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.bootUp(u))
 		));
 
-		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new UpProcedure<>(
 			StartingNextEpoch.class, EpochData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.nextEpoch(u))
 		));
 
-		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
+		os.procedure(new UpProcedure<>(
 			StartingEpochRound.class, RoundData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> {
@@ -912,7 +913,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	public void main(Loader os) {
 
 		os.substate(
-			new SubstateDefinition<>(	//TODO:TD: it's better to use dedicated named instance
+			new SubstateDefinition<>(
 				ValidatorStakeData.class,
 				SubstateTypeId.VALIDATOR_STAKE_DATA.id(),
 				//TODO:TD: lambda deserves dedicated method
@@ -942,7 +943,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			)
 		);
 		os.substate(
-			new SubstateDefinition<>(	//TODO:TD: it's better to use dedicated named instance
+			new SubstateDefinition<>(
 				StakeOwnership.class,
 				SubstateTypeId.STAKE_OWNERSHIP.id(),
 				//TODO:TD: lambda deserves dedicated method
@@ -963,7 +964,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			)
 		);
 		os.substate(
-			new SubstateDefinition<>(	//TODO:TD: it's better to use dedicated named instance
+			new SubstateDefinition<>(
 				ExittingStake.class,
 				SubstateTypeId.EXITTING_STAKE.id(),
 				//TODO:TD: lambda deserves dedicated method

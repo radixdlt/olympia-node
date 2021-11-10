@@ -68,6 +68,7 @@ import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
 import java.util.function.Function;
 
+//TODO:TD: class uses lambdas instead of polymorphism
 public final class ReadProcedure<D extends Particle, S extends ReducerState> implements Procedure  {
 	private final Class<D> readClass;
 	private final Class<S> reducerStateClass;

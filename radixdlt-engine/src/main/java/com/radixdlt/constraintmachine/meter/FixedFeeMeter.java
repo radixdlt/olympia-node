@@ -90,6 +90,7 @@ public final class FixedFeeMeter implements Meter {
 	public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context) throws Exception {
 		context.chargeOneTimeTransactionFee(txn -> fixedFee);
 
+		//TODO:TD: avoid duplication (same code present in TxnSizeFeeMeter)
 		if (procedureKey.opSignature().op() == REOp.SYSCALL) {
 			return;
 		}

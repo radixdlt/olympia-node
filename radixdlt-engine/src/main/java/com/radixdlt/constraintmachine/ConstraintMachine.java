@@ -105,6 +105,8 @@ import java.util.function.Supplier;
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
  */
 // FIXME: unchecked, rawtypes
+//TODO:TD: extract inner classes to top level;
+//TODO:TD: too long method
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintMachine {
 	private final Procedures procedures;
@@ -305,6 +307,7 @@ public final class ConstraintMachine {
 		var reducerStateClass = reducerState != null
 			? reducerState.getClass()
 			: VoidReducerState.class;
+		//TODO:TD: replace manual polymorphism with built-in
 		var key = ProcedureKey.of(reducerStateClass, opSignature);
 		return this.procedures.getProcedure(key);
 	}
@@ -351,6 +354,7 @@ public final class ConstraintMachine {
 	 * Executes transition procedures and witness validators in a particle group and validates
 	 * that the particle group is well formed.
 	 */
+	//TODO:TD: too long method, extract inner processing into dedicated methods
 	List<List<REStateUpdate>> statefulVerify(
 		ExecutionContext context,
 		CMValidationState validationState,

@@ -106,10 +106,12 @@ public final class SubstateDeserialization {
 		return SubstateIndex.create(classToByte(substateClass), substateClass);
 	}
 
+	//TODO:TD: make return type generic
 	public Particle deserialize(byte[] b) throws DeserializeException {
 		return deserialize(ByteBuffer.wrap(b));
 	}
 
+	//TODO:TD: make return type generic
 	public Particle deserialize(ByteBuffer buf) throws DeserializeException {
 		var typeByte = buf.get();
 		var deserializer = byteToDeserializer.get(typeByte);

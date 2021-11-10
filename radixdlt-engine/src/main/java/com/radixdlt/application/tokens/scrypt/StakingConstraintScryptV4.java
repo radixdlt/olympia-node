@@ -102,6 +102,8 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		this.minimumStake = minimumStake;
 	}
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	@Override
 	public void main(Loader os) {
 		os.substate(

@@ -96,6 +96,7 @@ public final class SubstateId {
 
 	public static SubstateId ofVirtualSubstate(SubstateId substateId, byte[] key) {
 		if (substateId.isVirtual()) {
+			//TODO:TD: provide meaningful message
 			throw new IllegalArgumentException();
 		}
 		byte[] id = new byte[BYTES + key.length];

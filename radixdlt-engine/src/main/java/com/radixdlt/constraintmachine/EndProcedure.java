@@ -68,6 +68,7 @@ import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
 import java.util.function.Function;
 
+//TODO:TD: class uses lambdas instead of polymorphism
 public class EndProcedure<S extends ReducerState> implements Procedure {
 	private final Class<S> reducerStateClass;
 	private final Function<S, Authorization> authorization;

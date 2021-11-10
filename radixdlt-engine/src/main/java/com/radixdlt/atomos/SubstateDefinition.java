@@ -88,6 +88,7 @@ public final class SubstateDefinition<T extends Particle> {
 	private final KeySerializer keySerializer;
 	private final VirtualMapper virtualSerializer;
 
+	//TODO:TD: refactor constructors into chain instead of initializing all fields in each constructor
 	public SubstateDefinition(
 		Class<T> substateClass,
 		byte typeByte,

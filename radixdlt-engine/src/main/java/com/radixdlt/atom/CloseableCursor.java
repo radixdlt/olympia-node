@@ -192,6 +192,7 @@ public interface CloseableCursor<T> extends Iterator<T>, Closeable {
 
 			@Override
 			public T next() {
+				//TODO:TD: provide meaningful message
 				throw new NoSuchElementException();
 			}
 		};

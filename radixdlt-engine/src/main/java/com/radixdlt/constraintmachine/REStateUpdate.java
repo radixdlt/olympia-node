@@ -92,6 +92,7 @@ public final class REStateUpdate {
 
 	public static REStateUpdate of(REOp op, SubstateId substateId, byte typeByte, Object parsed, Supplier<ByteBuffer> stateBuf) {
 		if (op != REOp.DOWN && op != REOp.UP) {
+			//TODO:TD: provide meaningful message
 			throw new IllegalArgumentException();
 		}
 		return new REStateUpdate(op, substateId, typeByte, parsed, stateBuf);

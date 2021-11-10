@@ -69,6 +69,7 @@ import com.radixdlt.identifiers.REAddr;
 
 import java.util.function.Supplier;
 
+//TODO:TD: class uses lambdas instead of polymorphism
 public class SystemCallProcedure<S extends ReducerState> implements Procedure {
 	private final Class<S> reducerStateClass;
 	private final REAddr addr;

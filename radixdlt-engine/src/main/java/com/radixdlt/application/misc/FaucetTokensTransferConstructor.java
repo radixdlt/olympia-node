@@ -98,6 +98,7 @@ public class FaucetTokensTransferConstructor implements ActionConstructor<Faucet
 				.forEachRemaining(t -> map.merge(t.getResourceAddr(), t.getAmount(), UInt256::add));
 		}
 
+		//TODO:TD: AMOUNT_TO_TRANSFER always converted to subunits. Move .toSubunits() to constant declaration
 		var toSend = map.entrySet().stream()
 			.filter(e -> e.getValue().compareTo(AMOUNT_TO_TRANSFER.toSubunits()) >= 0)
 			.collect(Collectors.toList());

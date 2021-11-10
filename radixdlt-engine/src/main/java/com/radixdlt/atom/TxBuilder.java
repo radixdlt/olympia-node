@@ -245,6 +245,7 @@ public final class TxBuilder {
 			try {
 				return (T) deserialization.deserialize(rawSubstate.getData());
 			} catch (DeserializeException e) {
+				//TODO:TD: include original exception
 				throw new IllegalStateException();
 			}
 		} else {
@@ -299,6 +300,7 @@ public final class TxBuilder {
 			try {
 				return (T) deserialization.deserialize(rawSubstate.getData());
 			} catch (DeserializeException e) {
+				//TODO:TD: include original exception
 				throw new IllegalStateException();
 			}
 		} else {
@@ -328,8 +330,10 @@ public final class TxBuilder {
 		var rawSubstate = remoteSubstate.get(mapKey).orElseThrow();
 		down(SubstateId.fromBytes(rawSubstate.getId()));
 		try {
+			//TODO:TD: casting could be eliminated by tweating .deserialize() return type
 			return (T) deserialization.deserialize(rawSubstate.getData());
 		} catch (DeserializeException e) {
+			//TODO:TD: include original exception
 			throw new IllegalStateException();
 		}
 	}
@@ -349,6 +353,7 @@ public final class TxBuilder {
 		try {
 			return (T) deserialization.deserialize(rawSubstate.getData());
 		} catch (DeserializeException e) {
+			//TODO:TD: include original exception
 			throw new IllegalStateException();
 		}
 	}
