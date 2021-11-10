@@ -66,9 +66,6 @@ package com.radixdlt.api.core.metrics;
 import com.radixdlt.api.service.SystemConfigService;
 import com.radixdlt.api.Endpoints;
 import com.radixdlt.api.service.network.NetworkInfoService;
-import com.radixdlt.api.service.ValidatorInfoService;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
@@ -84,7 +81,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.utils.UInt384;
-import com.radixdlt.utils.functional.Functions;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -130,7 +126,6 @@ public class MetricsService {
 	private final SystemCounters systemCounters;
 	private final InfoSupplier infoSupplier;
 	private final SystemConfigService systemConfigService;
-	private final ValidatorInfoService validatorInfoService;
 	private final NetworkInfoService networkInfoService;
 	private final Addressing addressing;
 	private final InMemorySystemInfo inMemorySystemInfo;
@@ -143,7 +138,6 @@ public class MetricsService {
 		SystemCounters systemCounters,
 		InfoSupplier infoSupplier,
 		SystemConfigService systemConfigService,
-		ValidatorInfoService validatorInfoService,
 		NetworkInfoService networkInfoService,
 		InMemorySystemInfo inMemorySystemInfo,
 		@Self BFTNode self,
@@ -153,7 +147,6 @@ public class MetricsService {
 		this.systemCounters = systemCounters;
 		this.infoSupplier = infoSupplier;
 		this.systemConfigService = systemConfigService;
-		this.validatorInfoService = validatorInfoService;
 		this.networkInfoService = networkInfoService;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.self = self;
@@ -183,7 +176,6 @@ public class MetricsService {
 			.orElse(0);
 
 		appendCounter(builder, "total_validators", totalValidators);
-		appendCounter(builder, "validator_total_stake", getTotalStake());
 
 		appendJMXCounters(builder);
 
@@ -194,12 +186,6 @@ public class MetricsService {
 			"Special metric used to convey information about the current node using labels. Value will always be 0.",
 			0.0
 		);
-	}
-
-	private UInt384 getTotalStake() {
-		return validatorInfoService.getValidatorStakeData(self.getKey())
-			.map(ValidatorStakeData::getTotalStake).map(UInt384::from)
-			.fold(f -> UInt384.ZERO, Functions::identity);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -220,12 +206,8 @@ public class MetricsService {
 
 	private String prepareNodeInfo() {
 		var builder = new StringBuilder("nodeinfo{");
-		var registered = validatorInfoService.getNextEpochRegisteredFlag(self.getKey())
-			.fold(f -> false, ValidatorRegisteredCopy::isRegistered);
-
 		addEndpontStatuses(builder);
 		appendField(builder, "owner_address", addressing.forAccounts().of(REAddr.ofPubKeyAccount(self.getKey())));
-		appendField(builder, "validator_registered", registered);
 		addBranchAndCommit(builder);
 		addValidatorAddress(builder);
 		addAccumulatorState(builder);
@@ -269,11 +251,6 @@ public class MetricsService {
 
 	private void exportCounters(StringBuilder builder) {
 		EXPORT_LIST.forEach(counterType -> generateCounterEntry(counterType, builder));
-
-		validatorInfoService.getUptime(self.getKey()).onSuccess(uptime -> {
-			appendCounter(builder, COUNTER_PREFIX + "radix_engine_cur_epoch_completed_proposals", uptime.getProposalsCompleted());
-			appendCounter(builder, COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals", uptime.getProposalsMissed());
-		});
 	}
 
 	private void generateCounterEntry(CounterType counterType, StringBuilder builder) {

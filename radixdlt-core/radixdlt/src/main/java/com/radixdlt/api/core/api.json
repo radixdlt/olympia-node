@@ -39,66 +39,6 @@
       "name": "sign",
       "x-displayName": "Sign Transaction",
       "description": "Sign a Transaction with the node's private key"
-    },
-    {
-      "name": "objects",
-      "x-displayName": "Objects",
-      "description": "\n## Committed Transaction\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransaction\" />\n\n## Committed Transaction Metadata\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransactionMetadata\" />"
-    },
-    {
-      "name": "identifiers",
-      "x-displayName": "Identifiers",
-      "description": "\n ## Committed State Identifier\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedStateIdentifier\" />\n\n## Address Identifier\n<SchemaDefinition schemaRef=\"#/components/schemas/AddressIdentifier\" />"
-    },
-    {
-      "name": "operation_group",
-      "x-displayName": "Operation Group",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/OperationGroup\" />"
-    },
-    {
-      "name": "operation",
-      "x-displayName": "Operation",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/Operation\" />"
-    },
-    {
-      "name": "amount",
-      "x-displayName": "Amount",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/ResourceAmount\" />"
-    },
-    {
-      "name": "data",
-      "x-displayName": "Data",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/Data\" />"
-    },
-    {
-      "name": "substate",
-      "x-displayName": "Substate",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/Substate\" />"
-    },
-    {
-      "name": "data_object",
-      "x-displayName": "Object",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/DataObject\" />"
-    },
-    {
-      "name": "public_key",
-      "x-displayName": "Public Key",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/PublicKey\" />"
-    },
-    {
-      "name": "address_identifier",
-      "x-displayName": "Address Identifier",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/AddressIdentifier\" />"
-    },
-    {
-      "name": "sub_address_identifier",
-      "x-displayName": "Subaddress Identifier",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/SubAddress\" />"
-    },
-    {
-      "name": "resource_identifier",
-      "x-displayName": "Resource Identifier",
-      "description": "<SchemaDefinition schemaRef=\"#/components/schemas/ResourceIdentifier\" />"
     }
   ],
   "x-tagGroups": [
@@ -184,22 +124,22 @@
     },
     "/address": {
       "post": {
-        "summary": "Get Address Balance",
+        "summary": "Get Address Info",
         "tags": [ "address" ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/AddressBalanceRequest" }
+              "schema": { "$ref": "#/components/schemas/AddressRequest" }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Address Balances",
+            "description": "Address Balances and Data",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AddressBalanceResponse" }
+                "schema": { "$ref": "#/components/schemas/AddressResponse" }
               }
             }
           },
@@ -874,7 +814,7 @@
             "$ref": "#/components/schemas/LongNumber"
           },
           "limit": {
-            "description": "The maximum number of transactions that will be returned. Must be >= 1.",
+            "description": "The maximum number of transactions that will be returned. Must be >= 0.",
             "$ref": "#/components/schemas/LongNumber"
           }
         },

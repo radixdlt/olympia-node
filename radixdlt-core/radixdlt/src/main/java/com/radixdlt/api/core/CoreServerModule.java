@@ -80,7 +80,6 @@ import com.radixdlt.api.core.network.NetworkApiModule;
 import com.radixdlt.api.core.sign.SignApiModule;
 import com.radixdlt.api.core.system.SystemApiModule;
 import com.radixdlt.api.core.transactions.TransactionIndexApiModule;
-import com.radixdlt.api.core.validation.ValidatorApiModule;
 import com.radixdlt.api.core.version.VersionApiModule;
 import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.api.util.Controller;
@@ -131,7 +130,6 @@ public final class CoreServerModule extends AbstractModule {
 		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
 
 		install(new SystemApiModule(NodeServer.class, "/system"));
-		install(new ValidatorApiModule(NodeServer.class, "/validator"));
 		install(new HealthApiModule(NodeServer.class, "/health"));
 		install(new VersionApiModule(NodeServer.class, "/version"));
 		install(new DeveloperApiModule(NodeServer.class, "/developer"));
