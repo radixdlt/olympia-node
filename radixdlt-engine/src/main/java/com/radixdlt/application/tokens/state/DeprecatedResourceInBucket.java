@@ -68,6 +68,7 @@ import com.radixdlt.identifiers.REAddr;
 
 import java.util.Optional;
 
+//TODO:TD: remove unused class
 public class DeprecatedResourceInBucket {
 	private final REAddr resourceAddr;
 	// Bucket

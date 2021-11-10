@@ -113,7 +113,7 @@ public final class TwoActorEntry {
 		}
 
 		// TODO: Because of betanetV1/V2 can't rely on ordering
-		// TODO: Fix for mainnet
+		// TODO:TD: Fix for mainnet (is it fixed?)
 		var resourceAddrs = bucketAccounting.keySet().stream()
 			.map(Bucket::resourceAddr)
 			.distinct()

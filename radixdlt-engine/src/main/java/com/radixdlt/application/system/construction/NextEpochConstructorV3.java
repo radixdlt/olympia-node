@@ -163,6 +163,8 @@ public final class NextEpochConstructorV3 implements ActionConstructor<NextEpoch
 		}
 	}
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method - more than one responsibility
 	@Override
 	public void construct(NextEpoch action, TxBuilder txBuilder) throws TxBuilderException {
 		var closedRound = txBuilder.downSystem(RoundData.class);

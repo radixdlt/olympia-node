@@ -65,6 +65,7 @@
 package org.radix.utils;
 
 @FunctionalInterface
+//TODO:TD: move somewhere under com.radixdlt; perhaps worth to join with com.radixdlt.utils.functional.ThrowingSupplier
 public interface InterruptibleSupplier<T> {
 	T get() throws InterruptedException;
 }

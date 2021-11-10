@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+//TODO:TD: perhaps worth to move somewhere else, as this is the only used class in whole subproject
 public class AWSSecrets {
 	private static final Boolean DEFAULT_ENABLE_AWS_SECRETS = false;
 	private static final Boolean DEFAULT_RECREATE_AWS_SECRETS = false;

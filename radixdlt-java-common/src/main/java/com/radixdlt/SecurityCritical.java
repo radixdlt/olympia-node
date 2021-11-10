@@ -75,6 +75,7 @@ import java.lang.annotation.Target;
  */
 @Documented
 @Target(ElementType.TYPE)
+//TODO:TD: check if this still relevant
 public @interface SecurityCritical {
 	/**
 	 * Returns the kinds of security critical things this annotation is flagging.

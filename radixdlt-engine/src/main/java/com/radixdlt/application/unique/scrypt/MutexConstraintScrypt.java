@@ -71,6 +71,7 @@ import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
 
+//TODO:TD: fix variable naming
 public class MutexConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(Loader os) {

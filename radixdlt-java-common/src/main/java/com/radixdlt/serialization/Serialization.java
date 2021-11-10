@@ -92,6 +92,7 @@ import org.json.JSONObject;
 /**
  * Serialization class that handles conversion to/from DSON and JSON.
  */
+//TODO:TD: cleanup; JSON serialization is not used anymore
 public class Serialization {
 
 	/**
@@ -115,6 +116,7 @@ public class Serialization {
 
 	// Constructor set up to be dependency injection capable at some future date
 	@VisibleForTesting
+	//TODO:TD: not created directly anymore
 	Serialization(SerializerIds idLookup, SerializationPolicy policy) {
 		this.idLookup = idLookup;
 

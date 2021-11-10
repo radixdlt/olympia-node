@@ -84,6 +84,7 @@ import com.radixdlt.utils.KeyComparator;
 
 import java.util.TreeMap;
 
+//TODO:TD: fix variable naming across the class
 public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 	private final long maxRounds;
 
@@ -113,6 +114,8 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	@Override
 	public void main(Loader os) {
 
@@ -120,6 +123,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 			new SubstateDefinition<>(
 				ValidatorBFTData.class,
 				SubstateTypeId.VALIDATOR_BFT_DATA.id(),
+				//TODO:TD: lambda deserves dedicated method
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var key = REFieldSerialization.deserializeKey(buf);
@@ -127,6 +131,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 					var proposalsMissed = REFieldSerialization.deserializeNonNegativeLong(buf);
 					return new ValidatorBFTData(key, proposalsCompleted, proposalsMissed);
 				},
+				//TODO:TD: lambda deserves dedicated method
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
@@ -146,6 +151,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 		os.procedure(new DownProcedure<>(
 			EndPrevRound.class, ValidatorBFTData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
+			//TODO:TD: lambda deserves dedicated method
 			(d, s, r, c) -> {
 				var closedRound = s.getClosedRound().getView();
 				var next = new StartValidatorBFTUpdate(closedRound);

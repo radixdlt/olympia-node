@@ -206,6 +206,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			return next(context);
 		}
 
+		//TODO:TD: too long method - more than one responsibility
 		ReducerState next(ExecutionContext context) {
 			if (validatorBFTData.isEmpty()) {
 				return new PreparingUnstake(updatingEpoch, updatingValidators, preparingStake);
@@ -234,6 +235,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				return next(context);
 			}
 
+			//TODO:TD: too complex lambda, deserves dedicated method
 			return new LoadingStake(k, validatorStakeData -> {
 				int rakePercentage = validatorStakeData.getRakePercentage();
 				final UInt256 rakedEmissions;
@@ -545,7 +547,9 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
+		//TODO:TD: code duplication
 		ReducerState prepareRakeUpdates(IndexedSubstateIterator<ValidatorFeeCopy> indexedSubstateIterator) throws ProcedureException {
+			//TODO:TD: start
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
 			var expectedPrefix = new byte[2 + Long.BYTES];
 			expectedPrefix[0] = 0;
@@ -553,6 +557,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			Longs.copyTo(expectedEpoch, expectedPrefix, 2);
 			indexedSubstateIterator.verifyPostTypePrefixEquals(expectedPrefix);
 			var iter = indexedSubstateIterator.iterator();
+			//TODO:TD: end - repeated 3 times
 			while (iter.hasNext()) {
 				var preparedRakeUpdate = iter.next();
 				// Sanity check
@@ -574,6 +579,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var k = preparingRakeUpdates.firstKey();
 			var validatorUpdate = preparingRakeUpdates.remove(k);
 			if (!validatorsScratchPad.containsKey(k)) {
+				//TODO:TD: lambda deserves dedicated method
 				return new LoadingStake(k, validatorStake -> {
 					validatorsScratchPad.put(k, validatorStake);
 					validatorStake.setRakePercentage(validatorUpdate.getRakePercentage());
@@ -621,6 +627,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
+		//TODO:TD: code duplication
 		ReducerState prepareValidatorUpdate(IndexedSubstateIterator<ValidatorOwnerCopy> indexedSubstateIterator) throws ProcedureException {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
 			var expectedPrefix = new byte[2 + Long.BYTES];
@@ -645,6 +652,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var k = preparingOwnerUpdates.firstKey();
 			var validatorUpdate = preparingOwnerUpdates.remove(k);
 			if (!validatorsScratchPad.containsKey(k)) {
+				//TODO:TD: lambda deserves dedicated method
 				return new LoadingStake(k, validatorStake -> {
 					validatorsScratchPad.put(k, validatorStake);
 					validatorStake.setOwnerAddr(validatorUpdate.getOwner());
@@ -701,6 +709,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			this.validatorsScratchPad = validatorsScratchPad;
 		}
 
+		//TODO:TD: code duplication
 		ReducerState prepareRegisterUpdates(IndexedSubstateIterator<ValidatorRegisteredCopy> indexedSubstateIterator) throws ProcedureException {
 			var expectedEpoch = updatingEpoch.prevEpoch.getEpoch() + 1;
 			var expectedPrefix = new byte[2 + Long.BYTES];
@@ -726,6 +735,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			var k = preparingRegisteredUpdates.firstKey();
 			var validatorUpdate = preparingRegisteredUpdates.remove(k);
 			if (!validatorsScratchPad.containsKey(k)) {
+				//TODO:TD: lambda deserves dedicated method
 				return new LoadingStake(k, validatorStake -> {
 					validatorsScratchPad.put(k, validatorStake);
 					validatorStake.setRegistered(validatorUpdate.isRegistered());
@@ -758,13 +768,16 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 	}
 
 
+	//TODO:TD: do we really need it?
 	private void registerGenesisTransitions(Loader os) {
 
 	}
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	private void epochUpdate(Loader os) {
 		// Epoch Update
-		os.procedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(				//TODO:TD: it's better to use dedicated named instance
 			EndPrevRound.class, EpochData.class,
 			d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(d, s, r, c) -> {
@@ -778,7 +791,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			}
 		));
 
-		os.procedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
 			ExittingStake.class, UpdatingEpoch.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> {
@@ -786,101 +799,101 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 				return ReducerResult.incomplete(exittingStake.process(d));
 			}
 		));
-		os.procedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
 			ProcessExittingStake.class, TokensInAccount.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.unlock(u))
 		));
 
-		os.procedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
 			ValidatorBFTData.class, RewardingValidators.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.process(d, c))
 		));
 
-		os.procedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
 			PreparedUnstakeOwnership.class, PreparingUnstake.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.unstakes(d))
 		));
-		os.procedure(new DownProcedure<>(
+		os.procedure(new DownProcedure<>(				//TODO:TD: it's better to use dedicated named instance
 			LoadingStake.class, ValidatorStakeData.class,
 			d -> d.bucket().withdrawAuthorization(),
 			(d, s, r, c) -> ReducerResult.incomplete(s.startUpdate(d))
 		));
-		os.procedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
 			Unstaking.class, ExittingStake.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.exit(u))
 		));
-		os.procedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
 			PreparedStake.class, PreparingStake.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareStakes(d))
 		));
-		os.procedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
 			ValidatorFeeCopy.class, PreparingRakeUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareRakeUpdates(d))
 		));
-		os.procedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
 			ResetRakeUpdate.class, ValidatorFeeCopy.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
 
-		os.procedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
 			ValidatorOwnerCopy.class, PreparingOwnerUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareValidatorUpdate(d))
 		));
-		os.procedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
 			ResetOwnerUpdate.class, ValidatorOwnerCopy.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
 
-		os.procedure(new ShutdownAllProcedure<>(
+		os.procedure(new ShutdownAllProcedure<>(		//TODO:TD: it's better to use dedicated named instance
 			ValidatorRegisteredCopy.class, PreparingRegisteredUpdate.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.prepareRegisterUpdates(d))
 		));
-		os.procedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
 			ResetRegisteredUpdate.class, ValidatorRegisteredCopy.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.reset(u))
 		));
 
-		os.procedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
 			Staking.class, StakeOwnership.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.stake(u))
 		));
-		os.procedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
 			UpdatingValidatorStakes.class, ValidatorStakeData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.updateStake(u))
 		));
 
-		os.procedure(new ReadIndexProcedure<>(
+		os.procedure(new ReadIndexProcedure<>(			//TODO:TD: it's better to use dedicated named instance
 			CreatingNextValidatorSet.class, ValidatorStakeData.class,
 			() -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, d, c, r) -> ReducerResult.incomplete(s.readIndex(d, c))
 		));
 
-		os.procedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
 			BootupValidator.class, ValidatorBFTData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.bootUp(u))
 		));
 
-		os.procedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
 			StartingNextEpoch.class, EpochData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> ReducerResult.incomplete(s.nextEpoch(u))
 		));
 
-		os.procedure(new UpProcedure<>(
+		os.procedure(new UpProcedure<>(					//TODO:TD: it's better to use dedicated named instance
 			StartingEpochRound.class, RoundData.class,
 			u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> { }),
 			(s, u, c, r) -> {
@@ -893,13 +906,16 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 		));
 	}
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	@Override
 	public void main(Loader os) {
 
 		os.substate(
-			new SubstateDefinition<>(
+			new SubstateDefinition<>(	//TODO:TD: it's better to use dedicated named instance
 				ValidatorStakeData.class,
 				SubstateTypeId.VALIDATOR_STAKE_DATA.id(),
+				//TODO:TD: lambda deserves dedicated method
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var isRegistered = REFieldSerialization.deserializeBoolean(buf);
@@ -910,6 +926,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					var ownerAddress = REFieldSerialization.deserializeAccountREAddr(buf);
 					return ValidatorStakeData.create(delegate, amount, ownership, rakePercentage, ownerAddress, isRegistered);
 				},
+				//TODO:TD: lambda deserves dedicated method
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeBoolean(buf, s.isRegistered());
@@ -925,9 +942,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			)
 		);
 		os.substate(
-			new SubstateDefinition<>(
+			new SubstateDefinition<>(	//TODO:TD: it's better to use dedicated named instance
 				StakeOwnership.class,
 				SubstateTypeId.STAKE_OWNERSHIP.id(),
+				//TODO:TD: lambda deserves dedicated method
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
@@ -935,6 +953,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new StakeOwnership(delegate, owner, amount);
 				},
+				//TODO:TD: lambda deserves dedicated method
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
@@ -944,9 +963,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 			)
 		);
 		os.substate(
-			new SubstateDefinition<>(
+			new SubstateDefinition<>(	//TODO:TD: it's better to use dedicated named instance
 				ExittingStake.class,
 				SubstateTypeId.EXITTING_STAKE.id(),
+				//TODO:TD: lambda deserves dedicated method
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var epochUnlocked = REFieldSerialization.deserializeNonNegativeLong(buf);
@@ -955,6 +975,7 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new ExittingStake(epochUnlocked, delegate, owner, amount);
 				},
+				//TODO:TD: lambda deserves dedicated method
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					buf.putLong(s.getEpochUnlocked());

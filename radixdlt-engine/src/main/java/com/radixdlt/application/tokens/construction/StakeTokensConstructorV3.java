@@ -87,6 +87,8 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 		this.minimumStake = minimumStake;
 	}
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	@Override
 	public void construct(StakeTokens action, TxBuilder builder) throws TxBuilderException {
 		if (action.amount().compareTo(minimumStake) < 0) {

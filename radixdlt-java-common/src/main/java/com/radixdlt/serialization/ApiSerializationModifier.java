@@ -80,6 +80,7 @@ import java.io.IOException;
  * A Jackson bean serialization modifier that handles adding the "hid" property to output data
  * for classes annotated with @SerializeWithHid annotation.
  */
+//TODO:TD: check if this still relevant
 public class ApiSerializationModifier extends BeanSerializerModifier {
 
     private final JacksonCborMapper hashDsonMapper;

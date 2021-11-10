@@ -81,6 +81,7 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
 		this.feeTable = feeTable;
 	}
 
+	//TODO:TD: too long method, more than one responsibility
 	@Override
 	public void construct(FeeReserveComplete action, TxBuilder builder) throws TxBuilderException {
 		var feeReserve = Optional.ofNullable(builder.getFeeReserve()).orElse(UInt256.ZERO);

@@ -108,11 +108,14 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		defineMintTransferBurn(os);
 	}
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	private void registerParticles(Loader os) {
 		os.substate(
 			new SubstateDefinition<>(
 				TokenResource.class,
 				SubstateTypeId.TOKEN_RESOURCE.id(),
+				//TODO:TD: lambda deserves dedicated method
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var addr = REFieldSerialization.deserializeResourceAddr(buf);
@@ -124,6 +127,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 					var minter = REFieldSerialization.deserializeOptionalKey(buf);
 					return new TokenResource(addr, granularity, isMutable, minter.orElse(null));
 				},
+				//TODO:TD: lambda deserves dedicated method
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeREAddr(buf, s.getAddr());
@@ -138,6 +142,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			new SubstateDefinition<>(
 				TokenResourceMetadata.class,
 				SubstateTypeId.TOKEN_RESOURCE_METADATA.id(),
+				//TODO:TD: lambda deserves dedicated method
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var addr = REFieldSerialization.deserializeResourceAddr(buf);
@@ -148,6 +153,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 					var iconUrl = REFieldSerialization.deserializeUrl(buf);
 					return new TokenResourceMetadata(addr, symbol, name, description, iconUrl, url);
 				},
+				//TODO:TD: lambda deserves dedicated method
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeREAddr(buf, s.getAddr());
@@ -164,6 +170,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 			new SubstateDefinition<>(
 				TokensInAccount.class,
 				SubstateTypeId.TOKENS.id(),
+				//TODO:TD: lambda deserves dedicated method
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var holdingAddr = REFieldSerialization.deserializeAccountREAddr(buf);
@@ -171,6 +178,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new TokensInAccount(holdingAddr, addr, amount);
 				},
+				//TODO:TD: lambda deserves dedicated method
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeREAddr(buf, s.getHoldingAddr());
@@ -211,10 +219,13 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		}
 	}
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	private void defineTokenCreation(Loader os) {
 		os.procedure(new UpProcedure<>(
 			SystemConstraintScrypt.REAddrClaim.class, TokenResource.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			//TODO:TD: lambda deserves dedicated method
 			(s, u, c, r) -> {
 				if (!u.getAddr().equals(s.getAddr())) {
 					throw new ProcedureException("Addresses don't match");
@@ -261,10 +272,13 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		));
 	}
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method, comments below should be calls to separate methods (or should use separate instances of procedures)
 	private void defineMintTransferBurn(Loader os) {
 		// Mint
 		os.procedure(new UpProcedure<>(
 			VoidReducerState.class, TokensInAccount.class,
+			//TODO:TD: lambda deserves dedicated method
 			u -> {
 				if (u.getResourceAddr().isNativeToken()) {
 					return new Authorization(PermissionLevel.SYSTEM, (r, c) -> { });
@@ -284,6 +298,7 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 		// Burn
 		os.procedure(new EndProcedure<>(
 			TokenHoldingBucket.class,
+			//TODO:TD: lambda deserves dedicated method
 			s -> new Authorization(PermissionLevel.USER, (r, c) -> {
 				if (s.isEmpty()) {
 					return;

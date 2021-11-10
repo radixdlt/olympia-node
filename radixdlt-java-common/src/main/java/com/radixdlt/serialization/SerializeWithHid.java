@@ -78,5 +78,6 @@ import java.lang.annotation.Inherited;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
+//TODO:TD: check if this is still relevant
 public @interface SerializeWithHid {
 }

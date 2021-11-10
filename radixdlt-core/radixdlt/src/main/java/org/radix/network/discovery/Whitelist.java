@@ -75,6 +75,7 @@ import com.radixdlt.properties.RuntimeProperties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+//TODO: remove unused code https://radixdlt.atlassian.net/browse/NT-8
 public class Whitelist {
 	private static final Logger networkLog = LogManager.getLogger();
 

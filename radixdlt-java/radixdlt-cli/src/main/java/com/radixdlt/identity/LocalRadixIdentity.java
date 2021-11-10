@@ -67,6 +67,7 @@ package com.radixdlt.identity;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 
+//TODO:TD: check if this still relevant, seems not referenced at all
 public class LocalRadixIdentity {
     private final ECKeyPair myKey;
 

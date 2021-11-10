@@ -70,6 +70,7 @@ import java.util.Map;
 /**
  * Helpers for creating maps used by the serializer for ephemeral data.
  */
+//TODO:TD: check if this still relevant, used only in tests; java.util.Map has replacements for all methods below
 public final class MapHelper {
 
 	private MapHelper() {

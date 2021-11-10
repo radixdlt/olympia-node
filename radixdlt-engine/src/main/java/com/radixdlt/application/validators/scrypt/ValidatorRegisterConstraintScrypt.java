@@ -117,11 +117,14 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	@Override
 	public void main(Loader os) {
 		os.substate(new SubstateDefinition<>(
 			ValidatorRegisteredCopy.class,
 			SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id(),
+			//TODO:TD: lambda deserves dedicated method
 			buf -> {
 				REFieldSerialization.deserializeReservedByte(buf);
 				var epochUpdate = REFieldSerialization.deserializeOptionalNonNegativeLong(buf);
@@ -129,6 +132,7 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 				var flag = REFieldSerialization.deserializeBoolean(buf);
 				return new ValidatorRegisteredCopy(epochUpdate, key, flag);
 			},
+			//TODO:TD: lambda deserves dedicated method
 			(s, buf) -> {
 				REFieldSerialization.serializeReservedByte(buf);
 				REFieldSerialization.serializeOptionalLong(buf, s.getEpochUpdate());
@@ -142,6 +146,7 @@ public class ValidatorRegisterConstraintScrypt implements ConstraintScrypt {
 
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, ValidatorRegisteredCopy.class,
+			//TODO:TD: lambda deserves dedicated method
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {

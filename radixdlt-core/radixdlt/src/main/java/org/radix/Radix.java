@@ -96,6 +96,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 
+//TODO:TD: move somewhere under com.radixdlt
 public final class Radix {
 	private static final Logger log = LogManager.getLogger();
 

@@ -75,6 +75,7 @@ public class FeeReserveCompleteException extends TxBuilderException {
 		this.expectedFee = expectedFee;
 	}
 
+	//TODO:TD: avoid passing business data in exceptions
 	public UInt256 getExpectedFee() {
 		return expectedFee;
 	}

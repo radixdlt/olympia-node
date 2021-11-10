@@ -77,6 +77,7 @@ import javax.net.ssl.X509ExtendedTrustManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+//TODO: remove unused code https://radixdlt.atlassian.net/browse/NT-8
 class SSLFix {
 
 	private SSLFix() {

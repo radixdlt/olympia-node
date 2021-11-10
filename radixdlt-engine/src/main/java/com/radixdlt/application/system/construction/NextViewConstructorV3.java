@@ -76,6 +76,8 @@ import com.radixdlt.utils.KeyComparator;
 import java.util.TreeMap;
 
 public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
+
+	//TODO:TD: too long method - more than one responsibility
 	@Override
 	public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
 		var prevRound = txBuilder.downSystem(RoundData.class);

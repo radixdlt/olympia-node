@@ -92,6 +92,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedList;
 
+//TODO:TD: fix variable naming across the class
 public final class SystemConstraintScrypt implements ConstraintScrypt {
 	private static class AllocatingSystem implements ReducerState {
 	}
@@ -157,12 +158,14 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			new SubstateDefinition<>(
 				VirtualParent.class,
 				SubstateTypeId.VIRTUAL_PARENT.id(),
+				//TODO:TD: lambda deserves dedicated method
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var data = new byte[buf.remaining()];
 					buf.get(data);
 					return new VirtualParent(data);
 				},
+				//TODO:TD: lambda deserves dedicated method
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					buf.put(s.getData());
@@ -174,6 +177,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			VoidReducerState.class, VirtualParent.class,
 			u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> { }),
+			//TODO:TD: lambda deserves dedicated method
 			(s, u, c, r) -> {
 				if (u.getData().length != 1) {
 					throw new ProcedureException("Invalid data: " + Bytes.toHexString(u.getData()));
@@ -205,6 +209,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			new SubstateDefinition<>(
 				RoundData.class,
 				SubstateTypeId.ROUND_DATA.id(),
+				//TODO:TD: lambda deserves dedicated method
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var view = REFieldSerialization.deserializeNonNegativeLong(buf);
@@ -223,6 +228,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			new SystemCallProcedure<>(
 				TokenHoldingBucket.class, REAddr.ofSystem(),
 				() -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+				//TODO:TD: lambda deserves dedicated method
 				(s, d, c) -> {
 					var id = d.get(0);
 					var syscall = Syscall.of(id).orElseThrow(() -> new ProcedureException("Invalid call type " + id));
@@ -242,6 +248,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			new SystemCallProcedure<>(
 				VoidReducerState.class, REAddr.ofSystem(),
 				() -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+				//TODO:TD: lambda deserves dedicated method
 				(s, d, c) -> {
 					var id = d.get(0);
 					var syscall = Syscall.of(id).orElseThrow(() -> new ProcedureException("Invalid call type " + id));
@@ -282,6 +289,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 		os.procedure(new DownProcedure<>(
 			REAddrClaimStart.class, UnclaimedREAddr.class,
+			//TODO:TD: lambda deserves dedicated method
 			d -> {
 				final PermissionLevel permissionLevel;
 				if (d.getAddr().isNativeToken() || d.getAddr().isSystem()) {

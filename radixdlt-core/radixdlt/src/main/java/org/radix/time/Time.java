@@ -66,6 +66,7 @@ package org.radix.time;
 
 import com.radixdlt.properties.RuntimeProperties;
 
+//TODO:TD: more somewhere under com.radixdlt
 public final class Time {
 
 	private static NtpService ntpServiceInstance;

@@ -86,6 +86,7 @@ public final class ValidatorSystemMetadata implements ValidatorData {
 		return data;
 	}
 
+	//TODO:TD: unused method
 	public HashCode getAsHash() {
 		return HashCode.fromBytes(data);
 	}

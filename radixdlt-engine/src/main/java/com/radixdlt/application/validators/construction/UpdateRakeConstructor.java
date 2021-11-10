@@ -89,6 +89,7 @@ public final class UpdateRakeConstructor implements ActionConstructor<UpdateVali
 		this.maxRakeIncrease = maxRakeIncrease;
 	}
 
+	//TODO:TD: too long method, more than one responsibility
 	@Override
 	public void construct(UpdateValidatorFee action, TxBuilder builder) throws TxBuilderException {
 		builder.down(ValidatorFeeCopy.class, action.validatorKey());

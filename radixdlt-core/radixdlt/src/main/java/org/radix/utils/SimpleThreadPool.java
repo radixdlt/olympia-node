@@ -76,6 +76,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @param <T> The type this class will be handling
  */
+//TODO:TD: move somewhere under com.radixdlt
 public class SimpleThreadPool<T> {
 	private final Logger log;
 

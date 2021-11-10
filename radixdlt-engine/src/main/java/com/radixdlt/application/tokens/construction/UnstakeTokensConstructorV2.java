@@ -78,6 +78,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import java.nio.ByteBuffer;
 
 public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	@Override
 	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
 		var validatorStake = txBuilder.find(ValidatorStakeData.class, action.from());
@@ -97,6 +99,7 @@ public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeToke
 		buf.put(action.accountAddr().getBytes());
 		if (buf.hasRemaining()) {
 			// Sanity
+			//TODO:TD: provide meaningful message
 			throw new IllegalStateException();
 		}
 

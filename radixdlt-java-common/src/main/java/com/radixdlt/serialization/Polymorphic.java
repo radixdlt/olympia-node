@@ -64,6 +64,7 @@
 
 package com.radixdlt.serialization;
 
+//TODO:TD: check if this still relevant, used only in tests
 public interface Polymorphic {
 
 }

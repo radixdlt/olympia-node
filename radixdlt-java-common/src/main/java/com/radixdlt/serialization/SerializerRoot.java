@@ -76,5 +76,7 @@ import java.lang.annotation.Target;
 @Documented
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
+//TODO:TD: check if this still relevant, used only in tests
+// may require deeper cleanup of Serialization class
 public @interface SerializerRoot {
 }

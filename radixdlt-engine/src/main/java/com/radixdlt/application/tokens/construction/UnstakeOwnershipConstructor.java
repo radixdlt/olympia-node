@@ -77,6 +77,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import java.nio.ByteBuffer;
 
 public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwnership> {
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	@Override
 	public void construct(UnstakeOwnership action, TxBuilder txBuilder) throws TxBuilderException {
 		if (action.amount().isZero()) {
@@ -90,6 +92,7 @@ public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwn
 		buf.put(action.accountAddr().getBytes());
 		if (buf.hasRemaining()) {
 			// Sanity
+			//TODO:TD: provide meaningful message
 			throw new IllegalStateException();
 		}
 

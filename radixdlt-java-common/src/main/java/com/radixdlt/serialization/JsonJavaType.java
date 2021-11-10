@@ -71,6 +71,7 @@ import java.util.Objects;
  * Opaque wrapper for {@link JavaType} to allow distinguishing between
  * JSON and DSON mapper.
  */
+//TODO:TD: check if this still relevant
 public class JsonJavaType {
 	private final JavaType type;
 

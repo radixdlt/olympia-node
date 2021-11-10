@@ -108,6 +108,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			new SubstateDefinition<>(
 				PreparedStake.class,
 				SubstateTypeId.PREPARED_STAKE.id(),
+				//TODO:TD: lambda deserves dedicated method
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
@@ -115,6 +116,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new PreparedStake(amount, owner, delegate);
 				},
+				//TODO:TD: lambda deserves dedicated method
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
@@ -128,6 +130,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 			new SubstateDefinition<>(
 				PreparedUnstakeOwnership.class,
 				SubstateTypeId.PREPARED_UNSTAKE.id(),
+				//TODO:TD: lambda deserves dedicated method
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var delegate = REFieldSerialization.deserializeKey(buf);
@@ -135,6 +138,7 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 					var amount = REFieldSerialization.deserializeNonZeroUInt256(buf);
 					return new PreparedUnstakeOwnership(delegate, owner, amount);
 				},
+				//TODO:TD: lambda deserves dedicated method
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeKey(buf, s.getDelegateKey());
@@ -200,6 +204,8 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 		}
 	}
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method, comments below actually should be separate methods
 	private void defineStaking(Loader os) {
 		// Stake
 		os.procedure(new ReadProcedure<>(

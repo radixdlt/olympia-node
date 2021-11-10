@@ -125,18 +125,22 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		}
 	}
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	@Override
 	public void main(Loader os) {
 		os.substate(
 			new SubstateDefinition<>(
 				ValidatorSystemMetadata.class,
 				SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(),
+				//TODO:TD: lambda deserves dedicated method
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var key = REFieldSerialization.deserializeKey(buf);
 					var bytes = REFieldSerialization.deserializeFixedLengthBytes(buf, 32);
 					return new ValidatorSystemMetadata(key, bytes);
 				},
+				//TODO:TD: lambda deserves dedicated method
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
@@ -173,6 +177,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 			new SubstateDefinition<>(
 				ValidatorMetaData.class,
 				SubstateTypeId.VALIDATOR_META_DATA.id(),
+				//TODO:TD: lambda deserves dedicated method
 				buf -> {
 					REFieldSerialization.deserializeReservedByte(buf);
 					var key = REFieldSerialization.deserializeKey(buf);
@@ -180,6 +185,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 					var url = REFieldSerialization.deserializeUrl(buf);
 					return new ValidatorMetaData(key, name, url);
 				},
+				//TODO:TD: lambda deserves dedicated method
 				(s, buf) -> {
 					REFieldSerialization.serializeReservedByte(buf);
 					REFieldSerialization.serializeKey(buf, s.getValidatorKey());
@@ -194,6 +200,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, ValidatorMetaData.class,
+			//TODO:TD: lambda deserves dedicated method
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {
@@ -208,6 +215,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		os.procedure(new UpProcedure<>(
 			UpdatingValidatorInfo.class, ValidatorMetaData.class,
 			u -> new Authorization(PermissionLevel.USER, (r, c) -> { }),
+			//TODO:TD: lambda deserves dedicated method
 			(s, u, c, r) -> {
 				if (!Objects.equals(s.prevState.getValidatorKey(), u.getValidatorKey())) {
 					throw new ProcedureException(String.format(
@@ -222,16 +230,20 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 		registerRakeUpdates(os);
 	}
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	public void registerRakeUpdates(Loader os) {
 		os.substate(new SubstateDefinition<>(
 			AllowDelegationFlag.class,
 			SubstateTypeId.VALIDATOR_ALLOW_DELEGATION_FLAG.id(),
+			//TODO:TD: lambda deserves dedicated method
 			buf -> {
 				REFieldSerialization.deserializeReservedByte(buf);
 				var key = REFieldSerialization.deserializeKey(buf);
 				var flag = REFieldSerialization.deserializeBoolean(buf);
 				return new AllowDelegationFlag(key, flag);
 			},
+			//TODO:TD: lambda deserves dedicated method
 			(s, buf) -> {
 				REFieldSerialization.serializeReservedByte(buf);
 				REFieldSerialization.serializeKey(buf, s.getValidatorKey());
@@ -244,6 +256,7 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
 
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, AllowDelegationFlag.class,
+			//TODO:TD: lambda deserves dedicated method
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {

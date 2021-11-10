@@ -163,11 +163,14 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 	}
 
 
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	@Override
 	public void main(Loader os) {
 		os.substate(new SubstateDefinition<>(
 			ValidatorFeeCopy.class,
 			SubstateTypeId.VALIDATOR_RAKE_COPY.id(),
+			//TODO:TD: lambda deserves dedicated method
 			buf -> {
 				REFieldSerialization.deserializeReservedByte(buf);
 				OptionalLong epochUpdate = REFieldSerialization.deserializeOptionalNonNegativeLong(buf);
@@ -179,6 +182,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 
 				return new ValidatorFeeCopy(epochUpdate, key, curRakePercentage);
 			},
+			//TODO:TD: lambda deserves dedicated method
 			(s, buf) -> {
 				REFieldSerialization.serializeReservedByte(buf);
 				REFieldSerialization.serializeOptionalLong(buf, s.getEpochUpdate());
@@ -192,6 +196,7 @@ public final class ValidatorUpdateRakeConstraintScrypt implements ConstraintScry
 
 		os.procedure(new DownProcedure<>(
 			VoidReducerState.class, ValidatorFeeCopy.class,
+			//TODO:TD: lambda deserves dedicated method
 			d -> new Authorization(
 				PermissionLevel.USER,
 				(r, c) -> {

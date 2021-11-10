@@ -91,6 +91,7 @@ public final class BurnTokenConstructor implements ActionConstructor<BurnToken> 
 		var index = SubstateIndex.create(buf.array(), TokensInAccount.class);
 		var change = txBuilder.downFungible(
 			index,
+			//TODO:TD: fix variable naming
 			p -> p.getResourceAddr().equals(action.resourceAddr())
 				&& p.getHoldingAddr().equals(action.from()),
 			action.amount(),

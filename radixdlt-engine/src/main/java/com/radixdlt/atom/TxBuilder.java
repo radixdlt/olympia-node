@@ -494,6 +494,7 @@ public final class TxBuilder {
 					}
 
 				} catch (DeserializeException e) {
+					//TODO:TD: pass cause to rethrown exception
 					throw new IllegalStateException();
 				}
 			}

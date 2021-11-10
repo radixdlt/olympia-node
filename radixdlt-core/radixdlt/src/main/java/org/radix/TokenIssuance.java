@@ -72,6 +72,7 @@ import com.radixdlt.utils.UInt256;
 /**
  * An initial issuance of tokens to the specified key.
  */
+//TODO:TD: move somewhere under com.radixdlt
 public final class TokenIssuance {
 	private final ECPublicKey receiver;
 	private final UInt256 amount;

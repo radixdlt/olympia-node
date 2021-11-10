@@ -89,6 +89,7 @@ public final class StakeOwnershipBucket implements Bucket {
 	public Authorization withdrawAuthorization() {
 		return new Authorization(
 			PermissionLevel.USER,
+			//TODO:TD: fix variable naming
 			(r, c) -> {
 				try {
 					owner.verifyWithdrawAuthorization(c.key());

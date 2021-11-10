@@ -73,6 +73,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializeWithHid
+//TODO:TD: move somewhere under com.radixdlt; consider merging into Message as there are no other usages
 public abstract class BasicContainer {
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)

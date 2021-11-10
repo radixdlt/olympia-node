@@ -79,6 +79,8 @@ import org.apache.logging.log4j.Logger;
 /**
  * Some utility methods dealing with streams and closeables.
  */
+//TODO:TD: Only one method is actually used (toString(InputStream)). Remove others and cleanup implementation
+// For reference: https://stackoverflow.com/questions/309424/how-do-i-read-convert-an-inputstream-into-a-string-in-java
 public final class IOUtils {
 	private IOUtils() {
 		throw new IllegalStateException("Can't construct");

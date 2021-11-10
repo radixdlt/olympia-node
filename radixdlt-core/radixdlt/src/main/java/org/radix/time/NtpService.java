@@ -71,6 +71,8 @@ import java.net.InetAddress;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+//TODO:TD: cleanup/refactor and move somewhere under com.radixdlt.
+//TODO: consider reworking it into async service using Netty
 public class NtpService {
 	private static final Logger log = LogManager.getLogger();
 

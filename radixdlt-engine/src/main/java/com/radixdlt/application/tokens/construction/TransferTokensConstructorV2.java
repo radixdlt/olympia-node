@@ -76,6 +76,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import java.nio.ByteBuffer;
 
 public class TransferTokensConstructorV2 implements ActionConstructor<TransferToken> {
+	//TODO:TD: fix variable naming
+	//TODO:TD: too long method
 	@Override
 	public void construct(TransferToken action, TxBuilder txBuilder) throws TxBuilderException {
 		if (action.amount().isZero()) {
