@@ -7,11 +7,20 @@ info:
     This API provides endpoints for both RadixCore node management and support
     for lite client integration.
 
+    # Introduction
+
+    This API is NOT intended to be available to the public web. In particular,
+    exposing `/sign` can result in loss of funds.
+
     # Lite Client Integration
 
     Lite clients can make use of the lite client endpoints in order to gain either
     a full view or a partial view (for example, only track asset balances) of what's
     occuring on ledger transaction by transaction.
+
+    ## Flow of Operations
+
+    ![Lite Client Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/lite_client_sequence.png)
 
     ## Rosetta API
 
@@ -30,8 +39,6 @@ info:
       Rosetta
 
     Future versions of the api will aim towards a fully-compliant Rosetta API.
-
-    ## Flow of Operations
 
   license:
     name: Apache 2.0
