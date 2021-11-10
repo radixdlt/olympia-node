@@ -711,7 +711,7 @@
         },
         "example": {
           "transaction_identifier": {
-            "hash": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842",
+            "hash": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842"
           },
           "duplicate": false
         }
@@ -821,12 +821,13 @@
             "type": "object",
             "properties": {
               "state_version": {
+                "description": "Incrementing state version for every committed transaction beginning with 0.",
                 "$ref": "#/components/schemas/LongNumber"
               }
             }
           },
           "limit": {
-            "description": "The maximum number of transactions that will be returned. Must be >= 0.",
+            "description": "The maximum number of transactions that will be returned.",
             "$ref": "#/components/schemas/LongNumber"
           }
         },
