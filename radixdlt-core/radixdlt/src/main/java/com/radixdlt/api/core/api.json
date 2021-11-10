@@ -819,13 +819,7 @@
         "properties": {
           "committed_state_identifier": {
             "description": "The state identifier point from which to begin returning transactions from",
-            "type": "object",
-            "properties": {
-              "state_version": {
-                "description": "Incrementing state version for every committed transaction beginning with 0.",
-                "$ref": "#/components/schemas/LongNumber"
-              }
-            }
+            "$ref": "#/components/schemas/PartialCommittedStateIdentifier"
           },
           "limit": {
             "description": "The maximum number of transactions that will be returned.",
@@ -1480,6 +1474,15 @@
           "transaction_accumulator": {
             "description": "Accumulator hash representing all transactions which occurred up to `state_version`. Hex encoded.",
             "type": "string"
+          }
+        }
+      },
+      "PartialCommittedStateIdentifier": {
+        "type": "object",
+        "properties": {
+          "state_version": {
+            "description": "The `state_version` represents some valid committed state on ledger (similar to block height).",
+            "$ref": "#/components/schemas/LongNumber"
           }
         }
       },
