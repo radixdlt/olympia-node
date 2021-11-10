@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.account;
+package com.radixdlt.api.core.address;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
@@ -84,12 +84,12 @@ import org.json.JSONObject;
 import java.util.List;
 import java.util.function.Function;
 
-public class AccountBalanceHandler implements ApiHandler<AddressIdentifier> {
+public class AddressBalanceHandler implements ApiHandler<AddressIdentifier> {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final Addressing addressing;
 
 	@Inject
-	AccountBalanceHandler(
+	AddressBalanceHandler(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		Addressing addressing
 	) {

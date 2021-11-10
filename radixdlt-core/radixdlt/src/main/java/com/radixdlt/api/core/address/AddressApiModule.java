@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.account;
+package com.radixdlt.api.core.address;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.MapBinder;
@@ -69,11 +69,11 @@ import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
 
-public final class AccountApiModule extends AbstractModule {
+public final class AddressApiModule extends AbstractModule {
 	private final Class<? extends Annotation> annotationType;
 	private final String path;
 
-	public AccountApiModule(Class<? extends Annotation> annotationType, String path) {
+	public AddressApiModule(Class<? extends Annotation> annotationType, String path) {
 		this.annotationType = annotationType;
 		this.path = path;
 	}
@@ -83,6 +83,6 @@ public final class AccountApiModule extends AbstractModule {
 		var routeBinder = MapBinder.newMapBinder(
 			binder(), String.class, HttpHandler.class, annotationType
 		);
-		routeBinder.addBinding(path + "/balance").to(AccountBalanceHandler.class);
+		routeBinder.addBinding(path).to(AddressBalanceHandler.class);
 	}
 }

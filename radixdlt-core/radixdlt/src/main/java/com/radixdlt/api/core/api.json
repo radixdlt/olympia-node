@@ -18,17 +18,17 @@
     {
       "name": "network",
       "x-displayName": "Network",
-      "description": "Get info regarding the node and network"
+      "description": "Get info about the node and network"
     },
     {
-      "name": "account",
-      "x-displayName": "Account",
-      "description": "Retrieve regarding an account"
+      "name": "address",
+      "x-displayName": "Address",
+      "description": "Get info about an address"
     },
     {
       "name": "transactions",
       "x-displayName": "Transactions",
-      "description": "Retrieve stream of committed transactions"
+      "description": "Get stream of committed transactions"
     },
     {
       "name": "construction",
@@ -104,7 +104,7 @@
   "x-tagGroups": [
     {
       "name": "Data API",
-      "tags": [ "network", "account", "transactions" ]
+      "tags": [ "network", "address", "transactions" ]
     },
     {
       "name": "Construction API",
@@ -182,25 +182,24 @@
         }
       }
     },
-
-    "/account/balance": {
+    "/address": {
       "post": {
-        "summary": "Get Account Balances",
-        "tags": [ "account" ],
+        "summary": "Get Address Balance",
+        "tags": [ "address" ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/AccountBalanceRequest" }
+              "schema": { "$ref": "#/components/schemas/AddressBalanceRequest" }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Account Balances",
+            "description": "Address Balances",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AccountBalanceResponse" }
+                "schema": { "$ref": "#/components/schemas/AddressBalanceResponse" }
               }
             }
           },
@@ -525,7 +524,7 @@
       },
       "SignRequest": {
         "type": "object",
-        "required": [ "unsigned_transaction" ],
+        "required": [ "public_key", "unsigned_transaction" ],
         "properties": {
           "public_key": {
             "description": "The public key which represents the private key to sign with",
@@ -544,7 +543,7 @@
           "signed_transaction": { "type": "string" }
         }
       },
-      "AccountBalanceRequest": {
+      "AddressBalanceRequest": {
         "type": "object",
         "required": [ "address_identifier" ],
         "properties": {
@@ -559,7 +558,7 @@
           }
         }
       },
-      "AccountBalanceResponse": {
+      "AddressBalanceResponse": {
         "type": "object",
         "required": [ "balances" ],
         "properties": {

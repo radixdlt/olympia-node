@@ -69,7 +69,7 @@ import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.account.AccountApiModule;
+import com.radixdlt.api.core.address.AddressApiModule;
 import com.radixdlt.api.core.chaos.ChaosApiModule;
 import com.radixdlt.api.core.construction.ConstructionApiModule;
 import com.radixdlt.api.core.developer.DeveloperApiModule;
@@ -146,7 +146,7 @@ public final class CoreServerModule extends AbstractModule {
 			install(new ChaosApiModule(NodeServer.class, "/chaos"));
 		}
 
-		install(new AccountApiModule(NodeServer.class, "/account"));
+		install(new AddressApiModule(NodeServer.class, "/address"));
 		install(new NetworkApiModule(NodeServer.class, "/network"));
 		install(new SignApiModule(NodeServer.class, "/sign"));
 		if (transactionsEnable) {
