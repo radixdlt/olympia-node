@@ -55,7 +55,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: integration tests
-        run: ./gradlew integrationTest --refresh-dependencies
+        run: ./gradlew integrationTest --refresh-dependencies --parallel
   rcnet-testing:
     name: RCNet live network testing
     if: github.ref == 'refs/heads/develop'
