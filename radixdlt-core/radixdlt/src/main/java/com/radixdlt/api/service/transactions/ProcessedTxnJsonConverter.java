@@ -277,7 +277,9 @@ public final class ProcessedTxnJsonConverter {
 		var operationJson = new JSONObject()
 			.put("type", SUBSTATE_TYPE_ID_STRING_MAP.get(SubstateTypeId.valueOf(update.typeByte())).getFirst().name)
 			.put("substate", new JSONObject()
-				.put("substate_identifier", Bytes.toHexString(substateId.asBytes()))
+				.put("substate_identifier", new JSONObject()
+					.put("identifier", Bytes.toHexString(substateId.asBytes()))
+				)
 				.put("substate_operation", update.isBootUp() ? "BOOTUP" : "SHUTDOWN")
 			)
 			.putOpt("metadata", update.isShutDown() ? null : new JSONObject()
@@ -328,7 +330,7 @@ public final class ProcessedTxnJsonConverter {
 				operationJson
 					.put("data", new JSONObject()
 						.put("action", update.isBootUp() ? "CREATE" : "DELETE")
-						.put("object", getDataObject(VALIDATOR_STAKE_DATA, validatorStakeData))
+						.put("data_object", getDataObject(VALIDATOR_STAKE_DATA, validatorStakeData))
 					);
 			} else {
 				throw new IllegalStateException("Unknown vault " + bucket);

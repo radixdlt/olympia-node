@@ -106,12 +106,12 @@ public class SubmitTransactionHandler implements ApiHandler<Txn> {
 			// We need to block here as we need to complete the request in the same thread
 			var success = completableFuture.get();
 			return new JSONObject()
-				.put("transactionIdentifier", success.getTxn().getId())
+				.put("transactionIdentifier", new JSONObject().put("hash", success.getTxn().getId()))
 				.put("duplicate", false);
 		} catch (ExecutionException e) {
 			if (e.getCause() instanceof MempoolDuplicateException) {
 				return new JSONObject()
-					.put("transactionIdentifier", txn.getId())
+					.put("transactionIdentifier", new JSONObject().put("hash", txn.getId()))
 					.put("duplicate", true);
 			}
 

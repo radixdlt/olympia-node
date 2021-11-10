@@ -218,7 +218,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 				.put("state_version", stateVersion - 1)
 				.put("transaction_accumulator", Bytes.toHexString(this.accumulator.asBytes()))
 			)
-			.put("transaction_identifier", txn.getTxnId())
+			.put("transaction_identifier", new JSONObject().put("hash", txn.getTxnId()))
 			.put("metadata", new JSONObject()
 				.put("hex", Bytes.toHexString(txn.getTxn().getPayload()))
 				.put("fee", fee)

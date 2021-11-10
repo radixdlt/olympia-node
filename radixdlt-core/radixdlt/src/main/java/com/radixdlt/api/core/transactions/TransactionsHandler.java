@@ -89,11 +89,12 @@ class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 	@Override
 	public TransactionsRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
 		var limit = requestReader.getOptUnsignedLong("limit").orElse(1);
-		var index = requestReader.getOptUnsignedLong("index").orElse(0);
-		if (index < 0) {
+		var stateVersion = requestReader.getJsonObject("committed_state_identifier", r -> r.getOptUnsignedLong("state_version"))
+			.orElse(0);
+		if (stateVersion < 0) {
 			throw new InvalidParametersException("/index", "Index must be >= 0");
 		}
-		return new TransactionsRequest(index, limit);
+		return new TransactionsRequest(stateVersion, limit);
 	}
 
 	@Override
@@ -104,6 +105,20 @@ class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 				.map(txnId -> txnStore.getTransactionJSON(txnId).orElseThrow())
 				.forEach(transactions::put);
 		}
-		return jsonObject().put("transactions", transactions);
+
+		var committedStateIdentifier = transactions.getJSONObject(0).get("previous_committed_state_identifier");
+		var nextCommittedStateIdentifier = transactions.isEmpty()
+			? committedStateIdentifier
+			: transactions.getJSONObject(transactions.length() - 1).get("committed_state_identifier");
+
+		for (int i = 0; i < transactions.length(); i++) {
+			transactions.getJSONObject(i).remove("previous_committed_state_identifier");
+			transactions.getJSONObject(i).remove("committed_state_identifier");
+		}
+
+		return jsonObject()
+			.put("committed_state_identifier", committedStateIdentifier)
+			.put("next_committed_state_identifier", nextCommittedStateIdentifier)
+			.put("transactions", transactions);
 	}
 }

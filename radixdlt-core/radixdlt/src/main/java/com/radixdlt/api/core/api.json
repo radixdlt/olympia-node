@@ -698,15 +698,22 @@
       },
       "ConstructionSubmitResponse": {
         "type": "object",
-        "required": [ "transaction_identifier" ],
+        "required": [ "transaction_identifier", "duplicate" ],
         "properties": {
           "transaction_identifier": {
             "description": "The unique hashed identifier of the transaction submitted",
-            "type": "string"
+            "$ref": "#/components/schemas/TransactionIdentifier"
+          },
+          "duplicate": {
+            "description": "true, if the transaction is a duplicate of an existring transaction in the mempool",
+            "type": "boolean"
           }
         },
         "example": {
-          "transaction_identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842"
+          "transaction_identifier": {
+            "hash": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842",
+          },
+          "duplicate": false
         }
       },
       "ConstructionBuildSuccessResponse": {
@@ -809,9 +816,14 @@
         "description": "A request to retrieve a sublist of committed transactions to the ledger.",
         "type": "object",
         "properties": {
-          "index": {
-            "description": "The index of the committed transaction to start with. Must be >= 0.",
-            "$ref": "#/components/schemas/LongNumber"
+          "committed_state_identifier": {
+            "description": "The state identifier point from which to begin returning transactions from",
+            "type": "object",
+            "properties": {
+              "state_version": {
+                "$ref": "#/components/schemas/LongNumber"
+              }
+            }
           },
           "limit": {
             "description": "The maximum number of transactions that will be returned. Must be >= 0.",
@@ -819,21 +831,40 @@
           }
         },
         "example": {
-          "index": 0,
+          "committed_state_identifier": {
+            "state_version": 0
+          },
           "limit": 1
         }
       },
       "CommittedTransactionsResponse": {
         "description": "A response of committed transactions which specifies the state updates which have occurred on ledger.",
         "type": "object",
-        "required": [ "transactions" ],
+        "required": [ "committed_state_identifier", "next_committed_state_identifier", "transactions" ],
         "properties": {
+          "committed_state_identifier": {
+            "description": "The committed ledger state identifier from which this transaction list starts from",
+            "$ref": "#/components/schemas/CommittedStateIdentifier"
+          },
           "transactions": {
+            "description": "A committed transactions list starting from the `committed_state_identifier`",
             "type": "array",
             "items": { "$ref": "#/components/schemas/CommittedTransaction" }
+          },
+          "next_committed_state_identifier": {
+            "description": "The next ledger state identifier following the commit of this transaction list",
+            "$ref": "#/components/schemas/CommittedStateIdentifier"
           }
         },
         "example": {
+          "committed_state_identifier": {
+            "state_version": 40897,
+            "transaction_accumulator": "dd61e3e2c9cdda8bf8973ea7d6dd4e6482c569fff45f0ca5e2bfd196f5bae4c9"
+          },
+          "next_committed_state_identifier": {
+            "state_version": 40898,
+            "transaction_accumulator": "5ea573f2e31640d177047d14122f1015c262f0d14d522596068784406aa1d88f"
+          },
           "transactions": [
             {
               "metadata": {
@@ -845,15 +876,9 @@
                 "hex": "07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf",
                 "timestamp": 1627407310726
               },
-              "committed_state_identifier": {
-                "state_version": 40898,
-                "transaction_accumulator": "5ea573f2e31640d177047d14122f1015c262f0d14d522596068784406aa1d88f"
+              "transaction_identifier": {
+                "hash": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842"
               },
-              "previous_committed_state_identifier": {
-                "state_version": 40897,
-                "transaction_accumulator": "dd61e3e2c9cdda8bf8973ea7d6dd4e6482c569fff45f0ca5e2bfd196f5bae4c9"
-              },
-              "transaction_identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842",
               "operation_groups": [
                 {
                   "metadata": {
@@ -874,7 +899,9 @@
                         "value": "-2400000000000000000000000000"
                       },
                       "substate": {
-                        "substate_identifier": "030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c",
+                        "substate_identifier": {
+                          "identifier": "030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c"
+                        },
                         "substate_operation": "SHUTDOWN"
                       },
                       "address_identifier": {
@@ -894,7 +921,9 @@
                         "value": "2399999999928000000000000000"
                       },
                       "substate": {
-                        "substate_identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000",
+                        "substate_identifier": {
+                          "identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000"
+                        },
                         "substate_operation": "BOOTUP"
                       },
                       "address_identifier": {
@@ -924,7 +953,9 @@
                         "value": "-2399999999928000000000000000"
                       },
                       "substate": {
-                        "substate_identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000",
+                        "substate_identifier": {
+                          "identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000"
+                        },
                         "substate_operation": "SHUTDOWN"
                       },
                       "address_identifier": {
@@ -944,7 +975,9 @@
                         "value": "2375999999928000000000000000"
                       },
                       "substate": {
-                        "substate_identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000001",
+                        "substate_identifier": {
+                          "identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000001"
+                        },
                         "substate_operation": "BOOTUP"
                       },
                       "address_identifier": {
@@ -964,7 +997,9 @@
                         "value": "24000000000000000000000000"
                       },
                       "substate": {
-                        "substate_identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002",
+                        "substate_identifier": {
+                          "identifier": "ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002"
+                        },
                         "substate_operation": "BOOTUP"
                       },
                       "address_identifier": {
@@ -983,23 +1018,13 @@
         "description": "A transaction which has been committed on ledger at some index.",
         "type": "object",
         "required": [
-          "committed_state_identifier",
-          "previous_committed_state_identifier",
           "transaction_identifier",
           "operation_groups",
           "metadata"
         ],
         "properties": {
-          "committed_state_identifier": {
-            "description": "A unique ledger state identifier following the commit of this transaction.",
-            "$ref": "#/components/schemas/CommittedStateIdentifier"
-          },
-          "previous_committed_state_identifier": {
-            "description": "The preceding ledger state identifier. Used for detecting forks.",
-            "$ref": "#/components/schemas/CommittedStateIdentifier"
-          },
           "transaction_identifier": {
-            "description": "The 32-byte unique identifier for the transaction, hex encoded.",
+            "description": "The unique identifier for the transaction",
             "$ref": "#/components/schemas/TransactionIdentifier"
           },
           "operation_groups": {
@@ -1098,10 +1123,22 @@
             "type": "string",
             "enum": [ "BOOTUP", "SHUTDOWN" ]
           },
-          "substate_identifier": {
-            "description": "Hex encoded unique identifier for the substate",
-            "type": "string"
-          }
+          "substate_identifier": { "$ref": "#/components/schemas/SubstateIdentifier" }
+        }
+      },
+      "TransactionIdentifier": {
+        "type": "object",
+        "required": [ "hash" ],
+        "properties": {
+          "hash": { "$ref": "#/components/schemas/TransactionIdentifierHash" }
+        }
+      },
+      "SubstateIdentifier": {
+        "description": "Hex encoded unique identifier for the substate",
+        "type": "object",
+        "required": [ "identifier" ],
+        "properties": {
+          "identifier": { "type": "string" }
         }
       },
       "OperationMetadata": {
@@ -1123,7 +1160,7 @@
       },
       "Data": {
         "type": "object",
-        "required": [ "action", "object" ],
+        "required": [ "action", "data_object" ],
         "properties": {
           "action": {
             "description": "Data action to take on `object`",
@@ -1554,7 +1591,7 @@
         "type": "string",
         "pattern": "^-?[0-9]+$"
       },
-      "TransactionIdentifier": {
+      "TransactionIdentifierHash": {
         "type": "string",
         "pattern": "^[0123456789abcdef]{64}$",
         "maxLength": 64,
