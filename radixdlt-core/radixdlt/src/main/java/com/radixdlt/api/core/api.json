@@ -406,7 +406,8 @@
           "current_state_identifier",
           "current_state_epoch",
           "current_state_round",
-          "current_state_timestamp"
+          "current_state_timestamp",
+          "node_identifiers"
         ],
         "properties": {
           "genesis_state_identifier": {
@@ -649,7 +650,7 @@
       },
       "ConstructionFinalizeRequest": {
         "type": "object",
-        "required": [ "unsigned_transaction" ],
+        "required": [ "unsigned_transaction", "signature" ],
         "properties": {
           "unsigned_transaction": {
             "description": "Hex encoded unsigned transaction",
@@ -1087,10 +1088,10 @@
       },
       "Operation": {
         "type": "object",
-        "required": [ "type", "address_identifier" ],
+        "required": [ "type" ],
         "properties": {
           "type": {
-            "description": "The type of substate in this operation",
+            "description": "The type of operation: Resource, Data, or ResourceAndData",
             "type": "string"
           },
           "address_identifier": {
@@ -1447,6 +1448,7 @@
       },
       "PublicKey": {
         "type": "object",
+        "required": [ "hex" ],
         "properties": {
           "hex": {
             "description": "Compressed ECSDA Public Key hex encoded",
@@ -1565,6 +1567,7 @@
       },
       "Bech32HRPs": {
         "type": "object",
+        "required": [ "account_hrp", "validator_hrp", "node_hrp", "resource_hrp_suffix" ],
         "properties": {
           "account_hrp": { "type": "string" },
           "validator_hrp": { "type": "string" },
