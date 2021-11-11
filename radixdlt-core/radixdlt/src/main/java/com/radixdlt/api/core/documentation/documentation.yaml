@@ -475,8 +475,8 @@ components:
               "$ref": "#/components/schemas/PublicKey"
       example:
         pre_genesis_state_identifier:
-          state_version: 0,
-          transaction_accumulator: 0000000000000000000000000000000000000000000000000000000000000000
+          state_version: 0
+          transaction_accumulator: "0000000000000000000000000000000000000000000000000000000000000000"
         current_state_timestamp: 1627452363772
         current_state_identifier:
           state_version: 322001
