@@ -235,7 +235,7 @@ public final class ProcessedTxnJsonConverter {
 				objectJson.put("registered", preparedValidatorRegistered.isRegistered());
 			} else if (substate instanceof ValidatorOwnerCopy) {
 				var preparedValidatorOwner = (ValidatorOwnerCopy) substate;
-				objectJson.put("registered", addressing.forAccounts().of(preparedValidatorOwner.getOwner()));
+				objectJson.put("owner", addressing.forAccounts().of(preparedValidatorOwner.getOwner()));
 			} else if (substate instanceof ValidatorFeeCopy) {
 				var preparedValidatorFee = (ValidatorFeeCopy) substate;
 				objectJson.put("fee", preparedValidatorFee.getRakePercentage());
@@ -321,6 +321,7 @@ public final class ProcessedTxnJsonConverter {
 						subAddressJson.put("address", "exiting_unstakes")
 							.put("metadata", new JSONObject()
 								.put("validator", addressing.forValidators().of(bucket.getValidatorKey()))
+								.put("unlock_epoch", bucket.getEpochUnlock())
 							);
 					}
 				}
