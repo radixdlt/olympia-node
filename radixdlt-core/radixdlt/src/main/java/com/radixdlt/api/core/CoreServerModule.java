@@ -73,7 +73,6 @@ import com.radixdlt.api.core.address.AddressApiModule;
 import com.radixdlt.api.core.chaos.ChaosApiModule;
 import com.radixdlt.api.core.construction.ConstructionApiModule;
 import com.radixdlt.api.core.developer.DeveloperApiModule;
-import com.radixdlt.api.core.faucet.FaucetApiModule;
 import com.radixdlt.api.core.health.HealthApiModule;
 import com.radixdlt.api.core.metrics.MetricsApiModule;
 import com.radixdlt.api.core.network.NetworkApiModule;
@@ -105,7 +104,6 @@ public final class CoreServerModule extends AbstractModule {
 	private final String bindAddress;
 	private final boolean transactionsEnable;
 	private final boolean metricsEnable;
-	private final boolean faucetEnable;
 	private final boolean chaosEnable;
 
 	public CoreServerModule(
@@ -113,14 +111,12 @@ public final class CoreServerModule extends AbstractModule {
 		String bindAddress,
 		boolean transactionsEnable,
 		boolean metricsEnable,
-		boolean faucetEnable,
 		boolean chaosEnable
 	) {
 		this.port = port;
 		this.bindAddress = bindAddress;
 		this.transactionsEnable = transactionsEnable;
 		this.metricsEnable = metricsEnable;
-		this.faucetEnable = faucetEnable;
 		this.chaosEnable = chaosEnable;
 	}
 
@@ -136,9 +132,6 @@ public final class CoreServerModule extends AbstractModule {
 
 		if (metricsEnable) {
 			install(new MetricsApiModule(NodeServer.class, "/metrics"));
-		}
-		if (faucetEnable) {
-			install(new FaucetApiModule(NodeServer.class, "/faucet"));
 		}
 		if (chaosEnable) {
 			install(new ChaosApiModule(NodeServer.class, "/chaos"));

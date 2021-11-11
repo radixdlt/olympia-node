@@ -110,13 +110,11 @@ public final class ApiModule extends AbstractModule {
 
 		var metricsEnable = properties.get("api.metrics.enable", false);
 		endpointStatus.put("metrics", metricsEnable);
-		var faucetEnable = properties.get("api.faucet.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("faucet", faucetEnable);
 		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
 		endpointStatus.put("chaos", chaosEnable);
 		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
 		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new CoreServerModule(port, bindAddress, transactionsEnable, metricsEnable, faucetEnable, chaosEnable));
+		install(new CoreServerModule(port, bindAddress, transactionsEnable, metricsEnable, chaosEnable));
 		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
 	}
 }
