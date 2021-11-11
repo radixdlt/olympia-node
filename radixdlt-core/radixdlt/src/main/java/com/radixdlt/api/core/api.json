@@ -1,12 +1,12 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "version": "1.0.0",
+    "version": "0.9.0",
     "title": "Radix Core API",
-    "description": "API which helps with node management as well as support for lite clients such as exchanges.",
+    "description": "This API provides endpoints for both RadixCore node management and support\nfor middleware integration (such as exchanges).\n\n# Introduction\n\nWelcome to the Radix Core API Preview. This Preview API is intended for\nexchanges to be able to begin integrating with the Radix network.\n\n:::warning\n\nThis API is NOT intended to be available on the public web and is designed\nto be used in private networks mainly for node management and integration.\nIn particular, endpoints in the Signing API if accessed by the public can\nresult in loss of funds.\n\n:::\n\n# Rosetta API\n\nMuch of the design decisions of the Data API and Construction API endpoints is\ninspired from [Rosetta API](https://www.rosetta-api.org/) most notably:\n  * Use of a JSON-Based RPC protocol on top of HTTP Post requests\n  * Use of Operations, Amounts, and Identifiers to express generic asset movement\n\nThere are a few notable exceptions to note:\n  * Fetching of ledger data is through a Transaction stream rather than a\n  Block stream\n  * Use of `AddressIdentifier` rather than `AccountIdentifier`\n  * Use of `OperationGroup` rather than `related_operations` to express related\n  operations\n  * Construction endpoints are mostly online rather than offline as required by\n  Rosetta\n\nFuture versions of the api will aim towards a fully-compliant Rosetta API.\n\n# Transaction Operations\n\nSimilar to the [Rosetta API](https://www.rosetta-api.org/), both reading and\nwriting to the ledger use the same Address and Operation objects.\n\nEvery state change is expressed as an Operation which operates on a single\nAddressIdentifier. A transfer thus requires atleast two Operations, one which debits\nthe sender and one which credits the receiver.\n\nThese operations are then grouped into OperationGroups which represent a well formed\naccounting entry where credits and debits are equivalent (unless minting or burning).\n",
     "license": {
-      "name":"Apache 2.0",
-      "url":"http://www.apache.org/licenses/LICENSE-2.0.html"
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
     }
   },
   "servers": [
@@ -15,6 +15,16 @@
     }
   ],
   "tags": [
+    {
+      "name": "data_overview",
+      "x-displayName": "Data API Overview",
+      "description": "Clients can make use of the Data API endpoints in order to synchronize\neither a full or partial view (for example, only track XRD asset balances) of\nwhat's occuring on ledger transaction by transaction.\n\n## Sequence Flow\n\nSynchronization involves only using the Data API. Assuming the client has a\ndatabase which they are updating, below is a generic flow of operations on\nhow to synchronize via the Data API.\n\n![Lite Client Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/lite_client_flow.png '#width=500px;')\n\n## StateIdentifier\n\nThe Radix Olympia network has no concept of blocks, instead transactions are\nmanaged in a flat ordered list. A hash chain is formed from these transactions\nwhich represents a point in time of the ledger with a valid committed state.\n\n![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/state_identifiers.png '#width=500px;')\n\nAlong with the hash and the index of the hash in the hash chain, this forms a\nState Identifier.\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedStateIdentifier\" exampleRef=\"#/components/examples/CommittedStateIdentifier\" showReadOnly={true} showWriteOnly={true} />\n"
+    },
+    {
+      "name": "construction_overview",
+      "x-displayName": "Construction API Overview",
+      "description": "Clients can make use of the Construction API endpoints to construct and submit\ntransactions to the network.\n\nThe Radix Olympia network currently has six actions a non-validator may enact:\n1. Transfer Tokens\n2. Stake XRD to a Validator\n3. Unstake XRD from a Validator\n4. Create a new Token Definition\n5. Mint Tokens\n6. Burn Tokens\n\nAnd five actions which are reserved for validators:\n1. Set Validator Owner\n2. Set Validator Registration\n3. Set Validator Fee\n4. Set Validator Metadata\n5. Set Validator AllowDelegation Flag\n"
+    },
     {
       "name": "network",
       "x-displayName": "Network",
@@ -44,15 +54,25 @@
   "x-tagGroups": [
     {
       "name": "Data API",
-      "tags": [ "network", "address", "transactions" ]
+      "tags": [
+        "data_overview",
+        "network",
+        "address",
+        "transactions"
+      ]
     },
     {
       "name": "Construction API",
-      "tags": [ "construction" ]
+      "tags": [
+        "construction_overview",
+        "construction"
+      ]
     },
     {
       "name": "Signing API",
-      "tags": [ "sign" ]
+      "tags": [
+        "sign"
+      ]
     }
   ],
   "paths": {
@@ -60,12 +80,16 @@
       "post": {
         "summary": "Get Network Configuration",
         "description": "Returns the network configuration of the network the node is connected to.",
-        "tags": [ "network" ],
+        "tags": [
+          "network"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/NetworkConfigurationRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/NetworkConfigurationRequest"
+              }
             }
           }
         },
@@ -74,7 +98,9 @@
             "description": "Network Configuration",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/NetworkConfigurationResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkConfigurationResponse"
+                }
               }
             }
           },
@@ -82,7 +108,9 @@
             "description": "An unexpected error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
               }
             }
           }
@@ -93,12 +121,16 @@
       "post": {
         "summary": "Get Network Status",
         "description": "Returns the current state and status of the ledger.",
-        "tags": [ "network" ],
+        "tags": [
+          "network"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/NetworkStatusRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/NetworkStatusRequest"
+              }
             }
           }
         },
@@ -107,7 +139,9 @@
             "description": "Network Status",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/NetworkStatusResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkStatusResponse"
+                }
               }
             }
           },
@@ -115,7 +149,9 @@
             "description": "An Unexpected Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
               }
             }
           }
@@ -125,12 +161,16 @@
     "/address": {
       "post": {
         "summary": "Get Address Info",
-        "tags": [ "address" ],
+        "tags": [
+          "address"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/AddressRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/AddressRequest"
+              }
             }
           }
         },
@@ -139,7 +179,9 @@
             "description": "Address Balances and Data",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AddressResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/AddressResponse"
+                }
               }
             }
           },
@@ -147,7 +189,9 @@
             "description": "Unexpected error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
               }
             }
           }
@@ -158,12 +202,16 @@
       "post": {
         "summary": "Get Committed Transactions",
         "description": "Returns an ordered sublist of committed transactions. This endpoint is designed for lite clients to sync with the state of the ledger.",
-        "tags": [ "transactions" ],
+        "tags": [
+          "transactions"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CommittedTransactionsRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/CommittedTransactionsRequest"
+              }
             }
           }
         },
@@ -172,7 +220,9 @@
             "description": "Sublist of Committed Transactions",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CommittedTransactionsResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/CommittedTransactionsResponse"
+                }
               }
             }
           },
@@ -180,7 +230,9 @@
             "description": "An Unexpected Error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
               }
             }
           }
@@ -190,12 +242,16 @@
     "/construction/build": {
       "post": {
         "summary": "Build Transaction",
-        "tags": [ "construction" ],
+        "tags": [
+          "construction"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/ConstructionBuildRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/ConstructionBuildRequest"
+              }
             }
           }
         },
@@ -204,7 +260,9 @@
             "description": "An unsigned transaction",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ConstructionBuildResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ConstructionBuildResponse"
+                }
               }
             }
           },
@@ -212,7 +270,9 @@
             "description": "Unexpected error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
               }
             }
           }
@@ -222,12 +282,16 @@
     "/construction/parse": {
       "post": {
         "summary": "Parse Transaction",
-        "tags": [ "construction" ],
+        "tags": [
+          "construction"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/ConstructionParseRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/ConstructionParseRequest"
+              }
             }
           }
         },
@@ -236,7 +300,9 @@
             "description": "An unsigned transaction",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ConstructionParseResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ConstructionParseResponse"
+                }
               }
             }
           },
@@ -244,7 +310,9 @@
             "description": "Unexpected error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
               }
             }
           }
@@ -254,12 +322,16 @@
     "/construction/finalize": {
       "post": {
         "summary": "Finalize Transaction",
-        "tags": [ "construction" ],
+        "tags": [
+          "construction"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/ConstructionFinalizeRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/ConstructionFinalizeRequest"
+              }
             }
           }
         },
@@ -268,7 +340,9 @@
             "description": "An unsigned transaction",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ConstructionFinalizeResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ConstructionFinalizeResponse"
+                }
               }
             }
           },
@@ -276,7 +350,9 @@
             "description": "Unexpected error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
               }
             }
           }
@@ -286,12 +362,16 @@
     "/construction/submit": {
       "post": {
         "summary": "Submit Transaction",
-        "tags": [ "construction" ],
+        "tags": [
+          "construction"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/ConstructionSubmitRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/ConstructionSubmitRequest"
+              }
             }
           }
         },
@@ -300,7 +380,9 @@
             "description": "An unsigned transaction",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ConstructionSubmitResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ConstructionSubmitResponse"
+                }
               }
             }
           },
@@ -308,7 +390,9 @@
             "description": "Unexpected error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
               }
             }
           }
@@ -318,12 +402,16 @@
     "/sign": {
       "post": {
         "summary": "Sign Transaction",
-        "tags": [ "sign" ],
+        "tags": [
+          "sign"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/SignRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/SignRequest"
+              }
             }
           }
         },
@@ -332,7 +420,9 @@
             "description": "Signed Transaction",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SignResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/SignResponse"
+                }
               }
             }
           },
@@ -340,7 +430,9 @@
             "description": "Unexpected error",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/UnexpectedError" }
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
               }
             }
           }
@@ -352,8 +444,7 @@
     "schemas": {
       "NetworkConfigurationRequest": {
         "type": "object",
-        "example": {
-        }
+        "example": {}
       },
       "NetworkConfigurationResponse": {
         "type": "object",
@@ -366,10 +457,17 @@
           "version": {
             "description": "Different versions regarding the node, network and api",
             "type": "object",
-            "required": [ "core_version", "api_version" ],
+            "required": [
+              "core_version",
+              "api_version"
+            ],
             "properties": {
-              "core_version": { "type": "string" },
-              "api_version": { "type": "string" }
+              "core_version": {
+                "type": "string"
+              },
+              "api_version": {
+                "type": "string"
+              }
             }
           },
           "network_identifier": {
@@ -396,12 +494,12 @@
       },
       "NetworkStatusRequest": {
         "type": "object",
-        "example": {
-        }
+        "example": {}
       },
       "NetworkStatusResponse": {
         "type": "object",
         "required": [
+          "pre_genesis_state_identifier",
           "genesis_state_identifier",
           "current_state_identifier",
           "current_state_epoch",
@@ -410,6 +508,10 @@
           "node_identifiers"
         ],
         "properties": {
+          "pre_genesis_state_identifier": {
+            "description": "The ledger state identifier before the genesis transaction",
+            "$ref": "#/components/schemas/CommittedStateIdentifier"
+          },
           "genesis_state_identifier": {
             "description": "The ledger state identifier after the genesis transaction",
             "$ref": "#/components/schemas/CommittedStateIdentifier"
@@ -433,11 +535,21 @@
           "node_identifiers": {
             "description": "The address identifiers associated with this node's private key",
             "type": "object",
-            "required": [ "account_address_identifier", "validator_address_identifier", "public_key" ],
+            "required": [
+              "account_address_identifier",
+              "validator_address_identifier",
+              "public_key"
+            ],
             "properties": {
-              "account_address_identifier": { "$ref": "#/components/schemas/AddressIdentifier" },
-              "validator_address_identifier": { "$ref": "#/components/schemas/AddressIdentifier" },
-              "public_key": { "$ref": "#/components/schemas/PublicKey" }
+              "account_address_identifier": {
+                "$ref": "#/components/schemas/AddressIdentifier"
+              },
+              "validator_address_identifier": {
+                "$ref": "#/components/schemas/AddressIdentifier"
+              },
+              "public_key": {
+                "$ref": "#/components/schemas/PublicKey"
+              }
             }
           }
         },
@@ -465,7 +577,10 @@
       },
       "SignRequest": {
         "type": "object",
-        "required": [ "public_key", "unsigned_transaction" ],
+        "required": [
+          "public_key",
+          "unsigned_transaction"
+        ],
         "properties": {
           "public_key": {
             "description": "The public key which represents the private key to sign with",
@@ -479,14 +594,20 @@
       },
       "SignResponse": {
         "type": "object",
-        "required": [ "signed_transaction" ],
+        "required": [
+          "signed_transaction"
+        ],
         "properties": {
-          "signed_transaction": { "type": "string" }
+          "signed_transaction": {
+            "type": "string"
+          }
         }
       },
       "AddressRequest": {
         "type": "object",
-        "required": [ "address_identifier" ],
+        "required": [
+          "address_identifier"
+        ],
         "properties": {
           "address_identifier": {
             "description": "Address to get balance of",
@@ -501,17 +622,24 @@
       },
       "AddressResponse": {
         "type": "object",
-        "required": [ "balances", "data_objects" ],
+        "required": [
+          "balances",
+          "data_objects"
+        ],
         "properties": {
           "balances": {
             "description": "Balances associated with the address",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/ResourceAmount" }
+            "items": {
+              "$ref": "#/components/schemas/ResourceAmount"
+            }
           },
           "data_objects": {
             "description": "Data associated with the address",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/DataObject" }
+            "items": {
+              "$ref": "#/components/schemas/DataObject"
+            }
           }
         },
         "example": {
@@ -543,12 +671,17 @@
       },
       "ConstructionBuildRequest": {
         "type": "object",
-        "required": [ "operation_groups", "fee_payer" ],
+        "required": [
+          "operation_groups",
+          "fee_payer"
+        ],
         "properties": {
           "operation_groups": {
             "description": "Operation groups which describe the intent of the request",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/OperationGroup" }
+            "items": {
+              "$ref": "#/components/schemas/OperationGroup"
+            }
           },
           "fee_payer": {
             "description": "The address where fees will be subtracted from",
@@ -601,9 +734,13 @@
       },
       "ConstructionBuildResponse": {
         "type": "object",
-        "required": [ "result" ],
+        "required": [
+          "result"
+        ],
         "properties": {
-          "result": { "type": "string" }
+          "result": {
+            "type": "string"
+          }
         },
         "discriminator": {
           "propertyName": "result",
@@ -615,7 +752,10 @@
       },
       "ConstructionParseRequest": {
         "type": "object",
-        "required": [ "transaction", "signed" ],
+        "required": [
+          "transaction",
+          "signed"
+        ],
         "properties": {
           "transaction": {
             "description": "Hex encoded transaction to parse",
@@ -633,24 +773,33 @@
       },
       "ConstructionParseResponse": {
         "type": "object",
-        "required": [ "operation_groups" ],
+        "required": [
+          "operation_groups"
+        ],
         "properties": {
           "operation_groups": {
             "description": "The parsed operation groups",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/OperationGroup" }
+            "items": {
+              "$ref": "#/components/schemas/OperationGroup"
+            }
           },
           "metadata": {
             "type": "object",
             "properties": {
-              "fee": { "$ref": "#/components/schemas/BigInteger" }
+              "fee": {
+                "$ref": "#/components/schemas/BigInteger"
+              }
             }
           }
         }
       },
       "ConstructionFinalizeRequest": {
         "type": "object",
-        "required": [ "unsigned_transaction", "signature" ],
+        "required": [
+          "unsigned_transaction",
+          "signature"
+        ],
         "properties": {
           "unsigned_transaction": {
             "description": "Hex encoded unsigned transaction",
@@ -673,7 +822,9 @@
       },
       "ConstructionFinalizeResponse": {
         "type": "object",
-        "required": [ "signed_transaction" ],
+        "required": [
+          "signed_transaction"
+        ],
         "properties": {
           "signed_transaction": {
             "description": "Hex encoded signed transaction which can be submitted",
@@ -686,7 +837,9 @@
       },
       "ConstructionSubmitRequest": {
         "type": "object",
-        "required": [ "signed_transaction" ],
+        "required": [
+          "signed_transaction"
+        ],
         "properties": {
           "signed_transaction": {
             "description": "Hex encoded signed transaction to be submitted",
@@ -699,7 +852,10 @@
       },
       "ConstructionSubmitResponse": {
         "type": "object",
-        "required": [ "transaction_identifier", "duplicate" ],
+        "required": [
+          "transaction_identifier",
+          "duplicate"
+        ],
         "properties": {
           "transaction_identifier": {
             "description": "The unique hashed identifier of the transaction submitted",
@@ -719,10 +875,16 @@
       },
       "ConstructionBuildSuccessResponse": {
         "allOf": [
-          { "$ref": "#/components/schemas/ConstructionBuildResponse" },
+          {
+            "$ref": "#/components/schemas/ConstructionBuildResponse"
+          },
           {
             "type": "object",
-            "required": [ "fee", "unsigned_transaction", "payload_to_sign" ],
+            "required": [
+              "fee",
+              "unsigned_transaction",
+              "payload_to_sign"
+            ],
             "properties": {
               "unsigned_transaction": {
                 "description": "Hex encoded unsigned transaction",
@@ -738,68 +900,118 @@
       },
       "ConstructionBuildErrorResponse": {
         "allOf": [
-          { "$ref": "#/components/schemas/ConstructionBuildResponse" },
+          {
+            "$ref": "#/components/schemas/ConstructionBuildResponse"
+          },
           {
             "type": "object",
-            "required": [ "details" ],
+            "required": [
+              "details"
+            ],
             "properties": {
-              "details": { "$ref": "#/components/schemas/ConstructionBuildError" }
+              "details": {
+                "$ref": "#/components/schemas/ConstructionBuildError"
+              }
             }
           }
         ]
       },
       "ConstructionBuildErrorMessageTooLong": {
         "type": "object",
-        "required": [ "limit", "actual" ],
+        "required": [
+          "limit",
+          "actual"
+        ],
         "properties": {
-          "limit": { "type": "integer" },
-          "actual": { "type": "integer" }
+          "limit": {
+            "type": "integer"
+          },
+          "actual": {
+            "type": "integer"
+          }
         }
       },
       "ConstructionBuildErrorNotEnoughResources": {
         "type": "object",
-        "required": [ "requested", "available" ],
+        "required": [
+          "requested",
+          "available"
+        ],
         "properties": {
-          "requested": { "$ref": "#/components/schemas/BigInteger" },
-          "available": { "$ref": "#/components/schemas/BigInteger" }
+          "requested": {
+            "$ref": "#/components/schemas/BigInteger"
+          },
+          "available": {
+            "$ref": "#/components/schemas/BigInteger"
+          }
         }
       },
       "ConstructionBuildErrorMinimumStake": {
         "type": "object",
-        "required": [ "requested", "minimum" ],
+        "required": [
+          "requested",
+          "minimum"
+        ],
         "properties": {
-          "requested": { "$ref": "#/components/schemas/BigInteger" },
-          "minimum": { "$ref": "#/components/schemas/BigInteger" }
+          "requested": {
+            "$ref": "#/components/schemas/BigInteger"
+          },
+          "minimum": {
+            "$ref": "#/components/schemas/BigInteger"
+          }
         }
       },
       "ConstructionBuildErrorCouldNotConstructFees": {
         "type": "object",
-        "required": [ "requested", "minimum" ],
+        "required": [
+          "requested",
+          "minimum"
+        ],
         "properties": {
-          "attempts": { "type": "integer" }
+          "attempts": {
+            "type": "integer"
+          }
         }
       },
       "ConstructionBuildErrorAboveMaximumRakeIncrease": {
         "type": "object",
-        "required": [ "requested", "minimum" ],
+        "required": [
+          "requested",
+          "minimum"
+        ],
         "properties": {
-          "limit": { "$ref": "#/components/schemas/BigInteger" },
-          "attempted": { "$ref": "#/components/schemas/BigInteger" }
+          "limit": {
+            "$ref": "#/components/schemas/BigInteger"
+          },
+          "attempted": {
+            "$ref": "#/components/schemas/BigInteger"
+          }
         }
       },
       "ConstructionBuildErrorInvalidStakePermissions": {
         "type": "object",
-        "required": [ "requested", "minimum" ],
+        "required": [
+          "requested",
+          "minimum"
+        ],
         "properties": {
-          "owner": { "$ref": "#/components/schemas/AccountAddress" },
-          "user": { "$ref": "#/components/schemas/AccountAddress" }
+          "owner": {
+            "$ref": "#/components/schemas/AccountAddress"
+          },
+          "user": {
+            "$ref": "#/components/schemas/AccountAddress"
+          }
         }
       },
       "ConstructionBuildError": {
         "type": "object",
-        "required": [ "errorType" ],
+        "required": [
+          "errorType"
+        ],
         "properties": {
-          "errorType": { "type": "string" }
+          "errorType": {
+            "type": "string"
+          }
         },
         "discriminator": {
           "propertyName": "errorType",
@@ -836,7 +1048,10 @@
       "CommittedTransactionsResponse": {
         "description": "A response of committed transactions which specifies the state updates which have occurred on ledger.",
         "type": "object",
-        "required": [ "committed_state_identifier", "transactions" ],
+        "required": [
+          "committed_state_identifier",
+          "transactions"
+        ],
         "properties": {
           "committed_state_identifier": {
             "description": "The committed ledger state identifier from which this transaction list starts from",
@@ -845,7 +1060,9 @@
           "transactions": {
             "description": "A committed transactions list starting from the `committed_state_identifier`",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/CommittedTransaction" }
+            "items": {
+              "$ref": "#/components/schemas/CommittedTransaction"
+            }
           }
         },
         "example": {
@@ -1027,7 +1244,9 @@
           "operation_groups": {
             "description": "Transactions are split into operation groups which are roughly equivalent to ledger accounting entries where all credits have an equivalent debit amount.",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/OperationGroup" }
+            "items": {
+              "$ref": "#/components/schemas/OperationGroup"
+            }
           },
           "metadata": {
             "description": "Metadata about the transaction like size and fee paid",
@@ -1035,10 +1254,14 @@
           }
         }
       },
-
       "CommittedTransactionMetadata": {
         "type": "object",
-        "required": [ "size", "hex", "fee", "timestamp" ],
+        "required": [
+          "size",
+          "hex",
+          "fee",
+          "timestamp"
+        ],
         "properties": {
           "size": {
             "description": "The size of the transaction in bytes",
@@ -1068,12 +1291,16 @@
       },
       "OperationGroup": {
         "type": "object",
-        "required": [ "operations" ],
+        "required": [
+          "operations"
+        ],
         "properties": {
           "operations": {
             "description": "A group of operations representing a complete state update",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/Operation" }
+            "items": {
+              "$ref": "#/components/schemas/Operation"
+            }
           },
           "metadata": {
             "description": "Metadata for the operation group",
@@ -1083,7 +1310,9 @@
       },
       "Operation": {
         "type": "object",
-        "required": [ "type" ],
+        "required": [
+          "type"
+        ],
         "properties": {
           "type": {
             "description": "The type of operation: Resource, Data, or ResourceAndData",
@@ -1113,29 +1342,45 @@
       },
       "Substate": {
         "type": "object",
-        "required": [ "substate_identifier", "substate_operation" ],
+        "required": [
+          "substate_identifier",
+          "substate_operation"
+        ],
         "properties": {
           "substate_operation": {
             "description": "The type of substate operation (equivalent to UTXO create/spend)",
             "type": "string",
-            "enum": [ "BOOTUP", "SHUTDOWN" ]
+            "enum": [
+              "BOOTUP",
+              "SHUTDOWN"
+            ]
           },
-          "substate_identifier": { "$ref": "#/components/schemas/SubstateIdentifier" }
+          "substate_identifier": {
+            "$ref": "#/components/schemas/SubstateIdentifier"
+          }
         }
       },
       "TransactionIdentifier": {
         "type": "object",
-        "required": [ "hash" ],
+        "required": [
+          "hash"
+        ],
         "properties": {
-          "hash": { "$ref": "#/components/schemas/TransactionIdentifierHash" }
+          "hash": {
+            "$ref": "#/components/schemas/TransactionIdentifierHash"
+          }
         }
       },
       "SubstateIdentifier": {
         "description": "Hex encoded unique identifier for the substate",
         "type": "object",
-        "required": [ "identifier" ],
+        "required": [
+          "identifier"
+        ],
         "properties": {
-          "identifier": { "type": "string" }
+          "identifier": {
+            "type": "string"
+          }
         }
       },
       "OperationMetadata": {
@@ -1143,7 +1388,10 @@
       },
       "ResourceAmount": {
         "type": "object",
-        "required": [ "value", "resource_identifier" ],
+        "required": [
+          "value",
+          "resource_identifier"
+        ],
         "properties": {
           "value": {
             "description": "A signed big integer representing an amount of resources in 10^18 subunits",
@@ -1157,12 +1405,18 @@
       },
       "Data": {
         "type": "object",
-        "required": [ "action", "data_object" ],
+        "required": [
+          "action",
+          "data_object"
+        ],
         "properties": {
           "action": {
             "description": "Data action to take on `object`",
             "type": "string",
-            "enum": [ "CREATE", "DELETE" ]
+            "enum": [
+              "CREATE",
+              "DELETE"
+            ]
           },
           "data_object": {
             "description": "The object of the data action",
@@ -1172,7 +1426,9 @@
       },
       "DataObject": {
         "type": "object",
-        "required": [ "type" ],
+        "required": [
+          "type"
+        ],
         "properties": {
           "type": {
             "description": "Type of Object",
@@ -1201,10 +1457,14 @@
       },
       "TokenData": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "$ref": "#/components/schemas/DataObject"
+          },
           {
             "type": "object",
-            "required": [ "isMutable" ],
+            "required": [
+              "isMutable"
+            ],
             "properties": {
               "granularity": {
                 "description": "The granularity of a token given subunits of 10^18 (ie a granularity of 10^17 means that the token can be split into 0.1 chunks but no less.",
@@ -1224,10 +1484,14 @@
       },
       "TokenMetadata": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "$ref": "#/components/schemas/DataObject"
+          },
           {
             "type": "object",
-            "required": [ "symbol" ],
+            "required": [
+              "symbol"
+            ],
             "properties": {
               "symbol": {
                 "description": "The symbol of the token (not unique in the system)",
@@ -1255,20 +1519,28 @@
       },
       "VirtualParentData": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" }
+          {
+            "$ref": "#/components/schemas/DataObject"
+          }
         ]
       },
       "UnclaimedRadixEngineAddressData": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" }
+          {
+            "$ref": "#/components/schemas/DataObject"
+          }
         ]
       },
       "RoundData": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "$ref": "#/components/schemas/DataObject"
+          },
           {
             "type": "object",
-            "required": [ "round" ],
+            "required": [
+              "round"
+            ],
             "properties": {
               "round": {
                 "description": "The round of the system",
@@ -1280,10 +1552,14 @@
       },
       "EpochData": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "$ref": "#/components/schemas/DataObject"
+          },
           {
             "type": "object",
-            "required": [ "epoch" ],
+            "required": [
+              "epoch"
+            ],
             "properties": {
               "epoch": {
                 "description": "The epoch of the system",
@@ -1295,10 +1571,14 @@
       },
       "PreparedValidatorRegistered": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "$ref": "#/components/schemas/DataObject"
+          },
           {
             "type": "object",
-            "required": [ "registered" ],
+            "required": [
+              "registered"
+            ],
             "properties": {
               "registered": {
                 "description": "The registered flag of the validator which will be updated by the end of `epoch`",
@@ -1314,10 +1594,14 @@
       },
       "PreparedValidatorOwner": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "$ref": "#/components/schemas/DataObject"
+          },
           {
             "type": "object",
-            "required": [ "owner" ],
+            "required": [
+              "owner"
+            ],
             "properties": {
               "owner": {
                 "description": "The owner of the validator which will be updated by the end of `epoch`",
@@ -1333,10 +1617,14 @@
       },
       "PreparedValidatorFee": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "$ref": "#/components/schemas/DataObject"
+          },
           {
             "type": "object",
-            "required": [ "fee" ],
+            "required": [
+              "fee"
+            ],
             "properties": {
               "fee": {
                 "description": "The fee of the validator which will be updated in a future epoch",
@@ -1352,10 +1640,15 @@
       },
       "ValidatorMetadata": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "$ref": "#/components/schemas/DataObject"
+          },
           {
             "type": "object",
-            "required": [ "name", "url" ],
+            "required": [
+              "name",
+              "url"
+            ],
             "properties": {
               "name": {
                 "description": "The name for the validator",
@@ -1371,10 +1664,15 @@
       },
       "ValidatorBFTData": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "$ref": "#/components/schemas/DataObject"
+          },
           {
             "type": "object",
-            "required": [ "proposals_completed", "proposals_missed" ],
+            "required": [
+              "proposals_completed",
+              "proposals_missed"
+            ],
             "properties": {
               "proposals_completed": {
                 "description": "The number of completed proposals by this validator as a leader in the current epoch",
@@ -1390,10 +1688,14 @@
       },
       "ValidatorAllowDelegation": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "$ref": "#/components/schemas/DataObject"
+          },
           {
             "type": "object",
-            "required": [ "allow_delegation" ],
+            "required": [
+              "allow_delegation"
+            ],
             "properties": {
               "allow_delegation": {
                 "description": "Flag indicating whether stakers besides the owner of the validator can stake to this validator",
@@ -1405,10 +1707,16 @@
       },
       "ValidatorData": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "$ref": "#/components/schemas/DataObject"
+          },
           {
             "type": "object",
-            "required": [ "owner", "registered", "fee" ],
+            "required": [
+              "owner",
+              "registered",
+              "fee"
+            ],
             "properties": {
               "owner": {
                 "description": "The owner of the validator who receives the fees when others stake to the validator",
@@ -1428,10 +1736,14 @@
       },
       "ValidatorSystemMetadata": {
         "allOf": [
-          { "$ref": "#/components/schemas/DataObject" },
+          {
+            "$ref": "#/components/schemas/DataObject"
+          },
           {
             "type": "object",
-            "required": [ "data" ],
+            "required": [
+              "data"
+            ],
             "properties": {
               "data": {
                 "description": "A hex encoded byte array",
@@ -1443,7 +1755,9 @@
       },
       "PublicKey": {
         "type": "object",
-        "required": [ "hex" ],
+        "required": [
+          "hex"
+        ],
         "properties": {
           "hex": {
             "description": "Compressed ECSDA Public Key hex encoded",
@@ -1453,10 +1767,17 @@
       },
       "NetworkIdentifier": {
         "type": "object",
-        "required": [ "id", "name" ],
+        "required": [
+          "id",
+          "name"
+        ],
         "properties": {
-          "id": { "type": "integer" },
-          "name": { "type": "string" }
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
         },
         "example": {
           "id": 1,
@@ -1465,7 +1786,10 @@
       },
       "CommittedStateIdentifier": {
         "type": "object",
-        "required": [ "state_version", "transaction_accumulator" ],
+        "required": [
+          "state_version",
+          "transaction_accumulator"
+        ],
         "properties": {
           "state_version": {
             "description": "The `state_version` represents some valid committed state on ledger (similar to block height).",
@@ -1479,16 +1803,25 @@
       },
       "PartialCommittedStateIdentifier": {
         "type": "object",
+        "required": [
+          "state_version"
+        ],
         "properties": {
           "state_version": {
             "description": "The `state_version` represents some valid committed state on ledger (similar to block height).",
             "$ref": "#/components/schemas/LongNumber"
+          },
+          "transaction_accumulator": {
+            "description": "Accumulator hash representing all transactions which occurred up to `state_version`. Hex encoded.",
+            "type": "string"
           }
         }
       },
       "AddressIdentifier": {
         "type": "object",
-        "required": [ "address" ],
+        "required": [
+          "address"
+        ],
         "properties": {
           "address": {
             "description": "The top level identifier for an address",
@@ -1502,7 +1835,9 @@
       },
       "SubAddress": {
         "type": "object",
-        "required": [ "address" ],
+        "required": [
+          "address"
+        ],
         "properties": {
           "address": {
             "description": "The subaddress",
@@ -1516,7 +1851,9 @@
       },
       "ResourceIdentifier": {
         "type": "object",
-        "required": [ "type" ],
+        "required": [
+          "type"
+        ],
         "properties": {
           "type": {
             "description": "The type of resource",
@@ -1533,10 +1870,14 @@
       },
       "TokenResourceIdentifier": {
         "allOf": [
-          { "$ref": "#/components/schemas/ResourceIdentifier" },
+          {
+            "$ref": "#/components/schemas/ResourceIdentifier"
+          },
           {
             "type": "object",
-            "required": [ "rri" ],
+            "required": [
+              "rri"
+            ],
             "properties": {
               "rri": {
                 "description": "The RRI of the token",
@@ -1548,10 +1889,14 @@
       },
       "StakeOwnershipResourceIdentifier": {
         "allOf": [
-          { "$ref": "#/components/schemas/ResourceIdentifier" },
+          {
+            "$ref": "#/components/schemas/ResourceIdentifier"
+          },
           {
             "type": "object",
-            "required": [ "validator" ],
+            "required": [
+              "validator"
+            ],
             "properties": {
               "validator": {
                 "description": "The validator associated with this stake ownership",
@@ -1563,20 +1908,40 @@
       },
       "Signature": {
         "type": "object",
-        "required": [ "public_key", "bytes" ],
+        "required": [
+          "public_key",
+          "bytes"
+        ],
         "properties": {
-          "public_key": { "$ref": "#/components/schemas/PublicKey" },
-          "bytes": { "type": "string" }
+          "public_key": {
+            "$ref": "#/components/schemas/PublicKey"
+          },
+          "bytes": {
+            "type": "string"
+          }
         }
       },
       "Bech32HRPs": {
         "type": "object",
-        "required": [ "account_hrp", "validator_hrp", "node_hrp", "resource_hrp_suffix" ],
+        "required": [
+          "account_hrp",
+          "validator_hrp",
+          "node_hrp",
+          "resource_hrp_suffix"
+        ],
         "properties": {
-          "account_hrp": { "type": "string" },
-          "validator_hrp": { "type": "string" },
-          "node_hrp": { "type": "string" },
-          "resource_hrp_suffix": { "type": "string" }
+          "account_hrp": {
+            "type": "string"
+          },
+          "validator_hrp": {
+            "type": "string"
+          },
+          "node_hrp": {
+            "type": "string"
+          },
+          "resource_hrp_suffix": {
+            "type": "string"
+          }
         }
       },
       "AccountAddress": {
@@ -1608,28 +1973,42 @@
       "InternalServerError": {
         "type": "object",
         "properties": {
-          "exception": { "type": "string" },
-          "cause": { "type": "string" }
+          "exception": {
+            "type": "string"
+          },
+          "cause": {
+            "type": "string"
+          }
         }
       },
       "InvalidJsonError": {
         "type": "object",
         "properties": {
-          "cause": { "type": "string" }
+          "cause": {
+            "type": "string"
+          }
         }
       },
       "InvalidRequestError": {
         "type": "object",
         "properties": {
-          "pointer": { "type": "string" },
-          "cause": { "type": "string" }
+          "pointer": {
+            "type": "string"
+          },
+          "cause": {
+            "type": "string"
+          }
         }
       },
       "UnexpectedError": {
         "type": "object",
-        "required": [ "message" ],
+        "required": [
+          "message"
+        ],
         "properties": {
-          "message": { "type": "string" }
+          "message": {
+            "type": "string"
+          }
         },
         "discriminator": {
           "propertyName": "message",

@@ -10,7 +10,18 @@ info:
     # Introduction
 
     Welcome to the Radix Core API Preview. This Preview API is intended for
-    exchanges to be able to begin integrating with the Radix network.
+    exchanges to be able to begin integrating with the Radix network. In particular,
+    the following endpoints will be frozen or at the very least backwards
+    compatible to version 1.0.0 of the Radix Core API:
+    * `/network/configuration`
+    * `/network/status`
+    * `/transactions`
+    * `/construction/build`
+    * `/construction/parse`
+    * `/construction/finalize`
+    * `/construction/submit`
+
+    All other endpoints may change upon 1.0.0 release.
 
     :::warning
 
@@ -21,7 +32,7 @@ info:
 
     :::
 
-    # Rosetta API
+    # Rosetta
 
     Much of the design decisions of the Data API and Construction API endpoints is
     inspired from [Rosetta API](https://www.rosetta-api.org/) most notably:
@@ -39,17 +50,87 @@ info:
 
     Future versions of the api will aim towards a fully-compliant Rosetta API.
 
+    # Data API Overview
+
+    Clients can make use of the Data API endpoints in order to synchronize
+    either a full or partial view (for example, only track XRD asset balances) of
+    what's occuring on ledger transaction by transaction.
+
+    ## Sequence Flow
+
+    Synchronization involves only using the Data API. Assuming the client has a
+    database which they are updating, below is a generic flow of operations on
+    how to synchronize via the Data API.
+
+    ![Lite Client Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/lite_client_flow.png '#width=500px;')
+
+    ## State Identifier
+
+    The Radix Olympia network has no concept of blocks, instead transactions are
+    managed in a flat ordered list. A hash chain is formed from these transactions
+    which represents a point in time of the ledger with a valid committed state.
+
+    ![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/state_identifiers.png '#width=500px;')
+
+    Along with the transaction accumulator hash and the index of the hash in the hash
+    chain, this forms a State Identifier:
+    <SchemaDefinition schemaRef="#/components/schemas/CommittedStateIdentifier" exampleRef="#/components/examples/CommittedStateIdentifier" showReadOnly={true} showWriteOnly={true} />
+
+    # Construction API Overview
+
+    Clients can make use of the Construction API endpoints to construct and submit
+    transactions to the network.
+
+    ## Sequence Flow
+
+    ## Operation Construction Details
+
+    The Radix Olympia network currently has six actions a non-validator may enact:
+    1. Transfer Tokens
+    2. Stake XRD to a Validator
+    3. Unstake XRD from a Validator
+    4. Create a new Token Definition
+    5. Mint Tokens
+    6. Burn Tokens
+
+    And five actions which are reserved for validators:
+    1. Set Validator Owner
+    2. Set Validator Registration
+    3. Set Validator Fee
+    4. Set Validator Metadata
+    5. Set Validator AllowDelegation Flag
+
     # Transaction Operations
 
     Similar to the [Rosetta API](https://www.rosetta-api.org/), both reading and
     writing to the ledger use the same Address and Operation objects.
 
     Every state change is expressed as an Operation which operates on a single
-    AddressIdentifier. A transfer thus requires atleast two Operations, one which debits
+    AddressIdentifier. Any state change which consists of two addresses (such as
+    a token transfer) thus requires atleast two Operations, one which debits
     the sender and one which credits the receiver.
+
+    Each Operation is also associated with a single Amount update and/or a single Data
+    update.
 
     These operations are then grouped into OperationGroups which represent a well formed
     accounting entry where credits and debits are equivalent (unless minting or burning).
+
+    A Transaction then consists of one or more OperationGroups.
+
+    ![Transaction Operations](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/transaction_operations.png '#width=500px;')
+
+    ## Address Identifier
+
+    <SchemaDefinition schemaRef="#/components/schemas/AddressIdentifier" showReadOnly={true} showWriteOnly={true} />
+
+    ## Amount
+
+    <SchemaDefinition schemaRef="#/components/schemas/ResourceAmount" showReadOnly={true} showWriteOnly={true} />
+
+    ## Resource Identifier
+
+    <SchemaDefinition schemaRef="#/components/schemas/ResourceIdentifier" showReadOnly={true} showWriteOnly={true} />
 
   license:
     name: Apache 2.0
@@ -57,54 +138,6 @@ info:
 servers:
   - url: localhost:3333
 tags:
-  - name: data_overview
-    x-displayName: Data API Overview
-    description: |
-      Clients can make use of the Data API endpoints in order to synchronize
-      either a full or partial view (for example, only track XRD asset balances) of
-      what's occuring on ledger transaction by transaction.
-
-      ## Sequence Flow
-
-      Synchronization involves only using the Data API. Assuming the client has a
-      database which they are updating, below is a generic flow of operations on
-      how to synchronize via the Data API.
-
-      ![Lite Client Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/lite_client_flow.png '#width=500px;')
-
-      ## StateIdentifier
-
-      The Radix Olympia network has no concept of blocks, instead transactions are
-      managed in a flat ordered list. A hash chain is formed from these transactions
-      which represents a point in time of the ledger with a valid committed state.
-
-      ![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/state_identifiers.png '#width=500px;')
-
-      Along with the hash and the index of the hash in the hash chain, this forms a
-      State Identifier.
-      <SchemaDefinition schemaRef="#/components/schemas/CommittedStateIdentifier" exampleRef="#/components/examples/CommittedStateIdentifier" showReadOnly={true} showWriteOnly={true} />
-
-  - name: construction_overview
-    x-displayName: Construction API Overview
-    description: |
-      Clients can make use of the Construction API endpoints to construct and submit
-      transactions to the network.
-
-      The Radix Olympia network currently has six actions a non-validator may enact:
-      1. Transfer Tokens
-      2. Stake XRD to a Validator
-      3. Unstake XRD from a Validator
-      4. Create a new Token Definition
-      5. Mint Tokens
-      6. Burn Tokens
-
-      And five actions which are reserved for validators:
-      1. Set Validator Owner
-      2. Set Validator Registration
-      3. Set Validator Fee
-      4. Set Validator Metadata
-      5. Set Validator AllowDelegation Flag
-
   - name: network
     x-displayName: Network
     description: Get info about the node and network
@@ -123,13 +156,11 @@ tags:
 x-tagGroups:
   - name: Data API
     tags:
-      - data_overview
       - network
       - address
       - transactions
   - name: Construction API
     tags:
-      - construction_overview
       - construction
   - name: Signing API
     tags:
@@ -443,6 +474,9 @@ components:
             public_key:
               "$ref": "#/components/schemas/PublicKey"
       example:
+        pre_genesis_state_identifier:
+          state_version: 0,
+          transaction_accumulator: 0000000000000000000000000000000000000000000000000000000000000000
         current_state_timestamp: 1627452363772
         current_state_identifier:
           state_version: 322001
@@ -1281,6 +1315,9 @@ components:
           description: Accumulator hash representing all transactions which occurred
             up to `state_version`. Hex encoded.
           type: string
+      example:
+        state_version: 0
+        transaction_accumulator: 0000000000000000000000000000000000000000000000000000000000000000
     PartialCommittedStateIdentifier:
       type: object
       required:
