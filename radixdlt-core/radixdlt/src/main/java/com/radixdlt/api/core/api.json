@@ -3,7 +3,7 @@
   "info": {
     "version": "0.9.0",
     "title": "Radix Core API",
-    "description": "This API provides endpoints for both RadixCore node management and support\nfor middleware integration (such as exchanges).\n\n# Introduction\n\nWelcome to the Radix Core API Preview. This Preview API is intended for\nexchanges to be able to begin integrating with the Radix network.\n\n:::warning\n\nThis API is NOT intended to be available on the public web and is designed\nto be used in private networks mainly for node management and integration.\nIn particular, endpoints in the Signing API if accessed by the public can\nresult in loss of funds.\n\n:::\n\n# Rosetta API\n\nMuch of the design decisions of the Data API and Construction API endpoints is\ninspired from [Rosetta API](https://www.rosetta-api.org/) most notably:\n  * Use of a JSON-Based RPC protocol on top of HTTP Post requests\n  * Use of Operations, Amounts, and Identifiers to express generic asset movement\n\nThere are a few notable exceptions to note:\n  * Fetching of ledger data is through a Transaction stream rather than a\n  Block stream\n  * Use of `AddressIdentifier` rather than `AccountIdentifier`\n  * Use of `OperationGroup` rather than `related_operations` to express related\n  operations\n  * Construction endpoints are mostly online rather than offline as required by\n  Rosetta\n\nFuture versions of the api will aim towards a fully-compliant Rosetta API.\n\n# Transaction Operations\n\nSimilar to the [Rosetta API](https://www.rosetta-api.org/), both reading and\nwriting to the ledger use the same Address and Operation objects.\n\nEvery state change is expressed as an Operation which operates on a single\nAddressIdentifier. A transfer thus requires atleast two Operations, one which debits\nthe sender and one which credits the receiver.\n\nThese operations are then grouped into OperationGroups which represent a well formed\naccounting entry where credits and debits are equivalent (unless minting or burning).\n",
+    "description": "This API provides endpoints for both RadixCore node management and support\nfor middleware integration (such as exchanges).\n\n# Introduction\n\nWelcome to the Radix Core API Preview. This Preview API is intended for\nexchanges to be able to begin integrating with the Radix network. In particular,\nthe following endpoints will be frozen or at the very least backwards\ncompatible to version 1.0.0 of the Radix Core API:\n* `/network/configuration`\n* `/network/status`\n* `/transactions`\n* `/construction/build`\n* `/construction/parse`\n* `/construction/finalize`\n* `/construction/submit`\n\nAll other endpoints may change upon 1.0.0 release.\n\n:::warning\n\nThis API is NOT intended to be available on the public web and is designed\nto be used in private networks mainly for node management and integration.\nIn particular, endpoints in the Signing API if accessed by the public can\nresult in loss of funds.\n\n:::\n\n# Rosetta\n\nMuch of the design decisions of the Data API and Construction API endpoints is\ninspired from [Rosetta API](https://www.rosetta-api.org/) most notably:\n  * Use of a JSON-Based RPC protocol on top of HTTP Post requests\n  * Use of Operations, Amounts, and Identifiers to express generic asset movement\n\nThere are a few notable exceptions to note:\n  * Fetching of ledger data is through a Transaction stream rather than a\n  Block stream\n  * Use of `AddressIdentifier` rather than `AccountIdentifier`\n  * Use of `OperationGroup` rather than `related_operations` to express related\n  operations\n  * Even though the Radix Ledger is UTXO based Construction endpoints does coin\n  selection on behalf of the caller. This has the unfortunate effect of not\n  being able to support high frequency transactions from a single address due to\n  UTXO spend conflicts. This will be addressed in future updates.\n  * Construction endpoints are mostly online rather than offline as required by\n  Rosetta\n\nFuture versions of the api will aim towards a fully-compliant Rosetta API.\n\n# Data API Overview\n\nClients can make use of the Data API endpoints in order to synchronize\neither a full or partial view (for example, only track XRD asset balances) of\nwhat's occuring on ledger transaction by transaction.\n\n## Sequence Flow\n\nSynchronization involves only using the Data API. Assuming the client has a\ndatabase which they are updating, below is a generic flow of operations on\nhow to synchronize via the Data API.\n\n![Data Sequence Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/data_sequence_flow.png)\n\n## State Identifier\n\nThe Radix Olympia network has no concept of blocks, instead transactions are\nmanaged in a flat ordered list. A hash chain is formed from these transactions\nwhich represents a point in time of the ledger with a valid committed state.\n\n![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/state_identifiers.png '#width=500px;')\n\nAlong with the transaction accumulator hash and the index of the hash in the hash\nchain, this forms a State Identifier:\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedStateIdentifier\" exampleRef=\"#/components/examples/CommittedStateIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n# Construction API Overview\n\nClients can make use of the Construction API endpoints to construct and submit\ntransactions to the network.\n\n## Sequence Flow\n\nThe following sequence flow allows for integrators to construct transactions\non behalf of clients or for their own use without ever holding the actual private\nkey.\n\nUnlike the Rosetta Construction API [specification](https://www.rosetta-api.org/docs/construction_api_introduction.html),\nthis Construction API selects the UTXOs on behalf of the caller. This has the unfortunate\nside effect of not being able to support high frequency transactions from a single\naddress due to UTXO conflicts. This will be addressed in a future release.\n\n![Construction Sequence Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/construction_sequence_flow.png)\n\n\n## Operation Construction Details\n\nThe Radix Olympia network currently has six actions a non-validator may enact:\n1. Transfer Tokens\n2. Stake XRD to a Validator\n3. Unstake XRD from a Validator\n4. Create a new Token Definition\n5. Mint Tokens\n6. Burn Tokens\n\nAnd five actions which are reserved for validators:\n1. Set Validator Owner\n2. Set Validator Registration\n3. Set Validator Fee\n4. Set Validator Metadata\n5. Set Validator AllowDelegation Flag\n\n# Transaction Operations\n\nSimilar to the [Rosetta API](https://www.rosetta-api.org/), both reading and\nwriting to the ledger use the same Address and Operation objects.\n\nEvery state change is expressed as an Operation which operates on a single\nAddressIdentifier. Any state change which consists of two addresses (such as\na token transfer) thus requires atleast two Operations, one which debits\nthe sender and one which credits the receiver.\n\nEach Operation is also associated with a single Amount update and/or a single Data\nupdate.\n\nThese operations are then grouped into OperationGroups which represent a well formed\naccounting entry where credits and debits are equivalent (unless minting or burning).\n\nA Transaction then consists of one or more OperationGroups.\n\n![Transaction Operations](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/transaction_operations.png '#width=500px;')\n\n## Address Identifier\n\n<SchemaDefinition schemaRef=\"#/components/schemas/AddressIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n## Amount\n\n<SchemaDefinition schemaRef=\"#/components/schemas/ResourceAmount\" showReadOnly={true} showWriteOnly={true} />\n\n## Resource Identifier\n\n<SchemaDefinition schemaRef=\"#/components/schemas/ResourceIdentifier\" showReadOnly={true} showWriteOnly={true} />\n",
     "license": {
       "name": "Apache 2.0",
       "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
@@ -15,16 +15,6 @@
     }
   ],
   "tags": [
-    {
-      "name": "data_overview",
-      "x-displayName": "Data API Overview",
-      "description": "Clients can make use of the Data API endpoints in order to synchronize\neither a full or partial view (for example, only track XRD asset balances) of\nwhat's occuring on ledger transaction by transaction.\n\n## Sequence Flow\n\nSynchronization involves only using the Data API. Assuming the client has a\ndatabase which they are updating, below is a generic flow of operations on\nhow to synchronize via the Data API.\n\n![Lite Client Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/lite_client_flow.png '#width=500px;')\n\n## StateIdentifier\n\nThe Radix Olympia network has no concept of blocks, instead transactions are\nmanaged in a flat ordered list. A hash chain is formed from these transactions\nwhich represents a point in time of the ledger with a valid committed state.\n\n![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/state_identifiers.png '#width=500px;')\n\nAlong with the hash and the index of the hash in the hash chain, this forms a\nState Identifier.\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedStateIdentifier\" exampleRef=\"#/components/examples/CommittedStateIdentifier\" showReadOnly={true} showWriteOnly={true} />\n"
-    },
-    {
-      "name": "construction_overview",
-      "x-displayName": "Construction API Overview",
-      "description": "Clients can make use of the Construction API endpoints to construct and submit\ntransactions to the network.\n\nThe Radix Olympia network currently has six actions a non-validator may enact:\n1. Transfer Tokens\n2. Stake XRD to a Validator\n3. Unstake XRD from a Validator\n4. Create a new Token Definition\n5. Mint Tokens\n6. Burn Tokens\n\nAnd five actions which are reserved for validators:\n1. Set Validator Owner\n2. Set Validator Registration\n3. Set Validator Fee\n4. Set Validator Metadata\n5. Set Validator AllowDelegation Flag\n"
-    },
     {
       "name": "network",
       "x-displayName": "Network",
@@ -55,7 +45,6 @@
     {
       "name": "Data API",
       "tags": [
-        "data_overview",
         "network",
         "address",
         "transactions"
@@ -64,7 +53,6 @@
     {
       "name": "Construction API",
       "tags": [
-        "construction_overview",
         "construction"
       ]
     },
@@ -554,6 +542,10 @@
           }
         },
         "example": {
+          "pre_genesis_state_identifier": {
+            "state_version": 0,
+            "transaction_accumulator": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
           "current_state_timestamp": 1627452363772,
           "current_state_identifier": {
             "state_version": 322001,
@@ -1799,6 +1791,10 @@
             "description": "Accumulator hash representing all transactions which occurred up to `state_version`. Hex encoded.",
             "type": "string"
           }
+        },
+        "example": {
+          "state_version": 0,
+          "transaction_accumulator": 0
         }
       },
       "PartialCommittedStateIdentifier": {
@@ -1845,7 +1841,18 @@
           },
           "metadata": {
             "description": "Any additional data required to drill down to a particular address is added here",
-            "type": "object"
+            "type": "#/components/schemas/SubAddressMetadata"
+          }
+        }
+      },
+      "SubAddressMetadata": {
+        "type": "object",
+        "properties": {
+          "validator": {
+            "$ref": "#/components/schemas/ValidatorAddress"
+          },
+          "epoch_unlock": {
+            "$ref": "#/components/schemas/LongNumber"
           }
         }
       },

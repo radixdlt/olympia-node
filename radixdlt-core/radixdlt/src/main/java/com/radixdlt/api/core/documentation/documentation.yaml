@@ -45,6 +45,10 @@ info:
       * Use of `AddressIdentifier` rather than `AccountIdentifier`
       * Use of `OperationGroup` rather than `related_operations` to express related
       operations
+      * Even though the Radix Ledger is UTXO based Construction endpoints does coin
+      selection on behalf of the caller. This has the unfortunate effect of not
+      being able to support high frequency transactions from a single address due to
+      UTXO spend conflicts. This will be addressed in future updates.
       * Construction endpoints are mostly online rather than offline as required by
       Rosetta
 
@@ -62,7 +66,7 @@ info:
     database which they are updating, below is a generic flow of operations on
     how to synchronize via the Data API.
 
-    ![Lite Client Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/lite_client_flow.png '#width=500px;')
+    ![Data Sequence Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/data_sequence_flow.png)
 
     ## State Identifier
 
@@ -82,6 +86,18 @@ info:
     transactions to the network.
 
     ## Sequence Flow
+
+    The following sequence flow allows for integrators to construct transactions
+    on behalf of clients or for their own use without ever holding the actual private
+    key.
+
+    Unlike the Rosetta Construction API [specification](https://www.rosetta-api.org/docs/construction_api_introduction.html),
+    this Construction API selects the UTXOs on behalf of the caller. This has the unfortunate
+    side effect of not being able to support high frequency transactions from a single
+    address due to UTXO conflicts. This will be addressed in a future release.
+
+    ![Construction Sequence Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/construction_sequence_flow.png)
+
 
     ## Operation Construction Details
 
@@ -1354,7 +1370,14 @@ components:
         metadata:
           description: Any additional data required to drill down to a particular
             address is added here
-          type: object
+          type: "#/components/schemas/SubAddressMetadata"
+    SubAddressMetadata:
+      type: object
+      properties:
+        validator:
+          "$ref": "#/components/schemas/ValidatorAddress"
+        epoch_unlock:
+          "$ref": "#/components/schemas/LongNumber"
     ResourceIdentifier:
       type: object
       required:
