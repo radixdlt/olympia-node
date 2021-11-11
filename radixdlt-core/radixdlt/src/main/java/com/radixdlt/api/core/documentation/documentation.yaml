@@ -101,8 +101,21 @@ tags:
       Along with the transaction accumulator hash and the index of the hash in the hash
       chain, this forms a State Identifier:
       <SchemaDefinition schemaRef="#/components/schemas/CommittedStateIdentifier" exampleRef="#/components/examples/CommittedStateIdentifier" showReadOnly={true} showWriteOnly={true} />
-  - name: transaction_operations
-    x-displayName: Transaction Operations
+  - name: transaction
+    x-displayName: Transaction
+    description: |
+      A Transaction consists of one or more OperationGroups, each of which consist of
+      one or more Operations.
+
+      ![Transaction Operations](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/transaction_operations.png '#width=500px;')
+
+      A Committed Transaction has additional information such as the StateIdentifier
+      which resulted after committing the transaction.
+
+      <SchemaDefinition schemaRef="#/components/schemas/CommittedTransaction" showReadOnly={true} showWriteOnly={true} />
+
+  - name: operation_group
+    x-displayName: Operation Group
     description: |
       Similar to the [Rosetta API](https://www.rosetta-api.org/), both reading and
       writing to the ledger use the same Address and Operation objects.
@@ -112,31 +125,19 @@ tags:
       a token transfer) thus requires atleast two Operations, one which debits
       the sender and one which credits the receiver.
 
+      Unlike Rosetta, operations are more explicitly linked via OperationGroups. Each
+      operation group then represents a well formed accounting entry where credits
+      and debits are equivalent (unless minting or burning occurred).
+
+      <SchemaDefinition schemaRef="#/components/schemas/OperationGroup" showReadOnly={true} showWriteOnly={true} />
+
+  - name: operation
+    x-displayName: Operation
+    description: |
       Each Operation is also associated with a single Amount update and/or a single Data
       update.
 
-      These operations are then grouped into OperationGroups which represent a well formed
-      accounting entry where credits and debits are equivalent (unless minting or burning).
-
-      A Transaction then consists of one or more OperationGroups.
-
-      ![Transaction Operations](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/transaction_operations.png '#width=500px;')
-
-      ## Committed Transaction
-
-      <SchemaDefinition schemaRef="#/components/schemas/CommittedTransaction" showReadOnly={true} showWriteOnly={true} />
-
-      ## Address Identifier
-
-      <SchemaDefinition schemaRef="#/components/schemas/AddressIdentifier" showReadOnly={true} showWriteOnly={true} />
-
-      ## Amount
-
-      <SchemaDefinition schemaRef="#/components/schemas/ResourceAmount" showReadOnly={true} showWriteOnly={true} />
-
-      ## Resource Identifier
-
-      <SchemaDefinition schemaRef="#/components/schemas/ResourceIdentifier" showReadOnly={true} showWriteOnly={true} />
+      <SchemaDefinition schemaRef="#/components/schemas/Operation" showReadOnly={true} showWriteOnly={true} />
 
   - name: network
     x-displayName: Network
@@ -157,7 +158,9 @@ x-tagGroups:
   - name: Model
     tags:
       - state_identifier
-      - transaction_operations
+      - transaction
+      - operation_group
+      - operation
   - name: Data API
     tags:
       - network
