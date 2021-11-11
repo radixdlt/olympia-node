@@ -89,9 +89,10 @@ info:
 servers:
   - url: localhost:3333
 tags:
-  - name: state_identifier
-    x-displayName: State Identifier
+  - name: model
+    x-displayName: Model
     description: |
+      ## State Identifier
       The Radix Olympia network has no concept of blocks, instead transactions are
       managed in a flat ordered list. A hash chain is formed from these transactions
       which represents a point in time of the ledger with a valid committed state.
@@ -101,9 +102,8 @@ tags:
       Along with the transaction accumulator hash and the index of the hash in the hash
       chain, this forms a State Identifier:
       <SchemaDefinition schemaRef="#/components/schemas/CommittedStateIdentifier" exampleRef="#/components/examples/CommittedStateIdentifier" showReadOnly={true} showWriteOnly={true} />
-  - name: transaction
-    x-displayName: Transaction
-    description: |
+
+      ## Transaction
       A Transaction consists of one or more OperationGroups, each of which consist of
       one or more Operations.
 
@@ -114,9 +114,8 @@ tags:
 
       <SchemaDefinition schemaRef="#/components/schemas/CommittedTransaction" showReadOnly={true} showWriteOnly={true} />
 
-  - name: operation_group
-    x-displayName: Operation Group
-    description: |
+      ## Operation Group
+
       Similar to the [Rosetta API](https://www.rosetta-api.org/), both reading and
       writing to the ledger use the same Address and Operation objects.
 
@@ -131,9 +130,8 @@ tags:
 
       <SchemaDefinition schemaRef="#/components/schemas/OperationGroup" showReadOnly={true} showWriteOnly={true} />
 
-  - name: operation
-    x-displayName: Operation
-    description: |
+      ## Operation
+
       Similar to the [Rosetta API](https://www.rosetta-api.org/), Operations operate
       on a single AddressIdentifier.
 
@@ -145,19 +143,16 @@ tags:
 
       <SchemaDefinition schemaRef="#/components/schemas/Operation" showReadOnly={true} showWriteOnly={true} />
 
-  - name: address_identifier
-    x-displayName: Address Identifier
-    description: |
+      ## Address
+
       <SchemaDefinition schemaRef="#/components/schemas/AddressIdentifier" showReadOnly={true} showWriteOnly={true} />
 
-  - name: amount
-    x-displayName: Amount
-    description: |
+      ## Amount
+
       <SchemaDefinition schemaRef="#/components/schemas/ResourceAmount" showReadOnly={true} showWriteOnly={true} />
 
-  - name: data
-    x-displayName: Amount
-    description: |
+      ## Data Update
+
       <SchemaDefinition schemaRef="#/components/schemas/Data" showReadOnly={true} showWriteOnly={true} />
 
 
@@ -179,13 +174,7 @@ tags:
 x-tagGroups:
   - name: Model
     tags:
-      - state_identifier
-      - transaction
-      - operation_group
-      - operation
-      - address_identifier
-      - amount
-      - data
+      - model
   - name: Data API
     tags:
       - network
