@@ -1841,7 +1841,7 @@
           },
           "metadata": {
             "description": "Any additional data required to drill down to a particular address is added here",
-            "type": "#/components/schemas/SubAddressMetadata"
+            "$ref": "#/components/schemas/SubAddressMetadata"
           }
         }
       },
