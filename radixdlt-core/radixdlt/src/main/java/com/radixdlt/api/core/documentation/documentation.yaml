@@ -170,18 +170,32 @@ tags:
   - name: structure
     x-displayName: Structure
     description: |
-      With just the model description, you have all the info you need to create a working system that can track
-      assets and balances and allow for asset transfers.
+      With just the object descriptions, you have all the info needed to integrate a system that can track
+      generics assets and balances of addresses and allow for generic asset transfer.
 
-      To be able to do more than that though you need to understand more of the structure and relationships of
+      For more sophisticated use, such as staking, you need to understand the structure and relationships of
       specific addresses, resources, and data. For example, to stake XRD to a validator you must transfer XRD
       from your account address to your `prepared_staked` subaddress.
 
-      Overall, there are four main types of address identifiers: a resource address (or rri), an account address,
-      a validator address, and the system address. Only certain resources and data objects can be stored in each
-      given address/subaddress.
+      The following is a high level table describing which resources and data objects are allowed for a given
+      address identifier.
 
       ![Structure](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/structure.png '#width=500px;')
+
+      There are four types of entities:
+      | Entity | Description |
+      | ------ | ----------- |
+      | Account | a regular public key account which can contain token balances and contain
+      StakeOwnership, which represents a delegated amount of stake to a specific validator. Subaddresses under
+      an account-address contain assets which the account-address owns but is currently locked by the system. |
+      | Validator | an entity representing a validating node on the network. The subaddress `system` holds XRD
+      tokens which have been staked to this validator. |
+      | Token | An entity representing a token |
+      | System | An entity representing system level data such as current epoch and round |
+
+      ## User Actions
+
+      ## System Actions
 
   - name: network
     x-displayName: Network
@@ -1403,7 +1417,7 @@ components:
         metadata:
           description: Any additional data required to drill down to a particular
             address is added here
-          type: "#/components/schemas/SubAddressMetadata"
+          "$ref": "#/components/schemas/SubAddressMetadata"
     SubAddressMetadata:
       type: object
       properties:
