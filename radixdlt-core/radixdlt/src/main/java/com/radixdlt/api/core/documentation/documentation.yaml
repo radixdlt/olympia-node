@@ -108,14 +108,14 @@ tags:
       A Transaction consists of one or more OperationGroups, each of which consist of
       one or more Operations.
 
-      ![Transaction Operations](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/transaction_operations.png '#width=500px;')
+      ![Transaction Operations](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/transaction_operations.png)
 
       A Committed Transaction has additional information such as the StateIdentifier
       which resulted after committing the transaction.
 
       <SchemaDefinition schemaRef="#/components/schemas/CommittedTransaction" showReadOnly={true} showWriteOnly={true} />
 
-      ## Operation Group
+      ## OperationGroup
 
       Similar to the [Rosetta API](https://www.rosetta-api.org/), both reading and
       writing to the ledger use the same Address and Operation objects.

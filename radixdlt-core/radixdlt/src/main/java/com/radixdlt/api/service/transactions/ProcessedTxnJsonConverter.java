@@ -374,8 +374,14 @@ public final class ProcessedTxnJsonConverter {
 				operationJson.put("address_identifier", addressIdentifierJson);
 			} else if (update.getParsed() instanceof UnclaimedREAddr) {
 				var unclaimedREAddr = (UnclaimedREAddr) update.getParsed();
-				var rri = tokenAddressToRri.apply(unclaimedREAddr.getAddr());
-				var addressIdentifierJson = new JSONObject().put("address", rri);
+				var addr = unclaimedREAddr.getAddr();
+				final JSONObject addressIdentifierJson;
+				if (!addr.isSystem()) {
+					var rri = tokenAddressToRri.apply(unclaimedREAddr.getAddr());
+					addressIdentifierJson = new JSONObject().put("address", rri);
+				} else {
+					addressIdentifierJson = new JSONObject().put("address", "system");
+				}
 				operationJson.put("address_identifier", addressIdentifierJson);
 			} else {
 				operationJson.put("address_identifier", new JSONObject()
