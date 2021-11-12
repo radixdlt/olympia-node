@@ -89,8 +89,8 @@ info:
 servers:
   - url: localhost:3333
 tags:
-  - name: model
-    x-displayName: Model
+  - name: objects
+    x-displayName: Objects
     description: |
       ## State Identifier
       The Radix Olympia network has no concept of blocks, instead transactions are
@@ -104,6 +104,7 @@ tags:
       <SchemaDefinition schemaRef="#/components/schemas/CommittedStateIdentifier" exampleRef="#/components/examples/CommittedStateIdentifier" showReadOnly={true} showWriteOnly={true} />
 
       ## Transaction
+
       A Transaction consists of one or more OperationGroups, each of which consist of
       one or more Operations.
 
@@ -132,29 +133,55 @@ tags:
 
       ## Operation
 
-      Similar to the [Rosetta API](https://www.rosetta-api.org/), Operations operate
-      on a single AddressIdentifier.
+      Operations operate on a single AddressIdentifier and are associated with a single Amount
+      update and/or a single Data update.
 
-      Each Operation is also associated with a single Amount update and/or a single Data
-      update.
-
-      * An Amount represents either a positive or negative change in balance of some token.
-      * A Data Update represents either the creation or deletion of a data object.
+      * The `amount` property represents either a positive or negative change in balance of some token.
+      * The `data` property represents either the creation or deletion of a data object.
 
       <SchemaDefinition schemaRef="#/components/schemas/Operation" showReadOnly={true} showWriteOnly={true} />
 
-      ## Address
+      ## Address Identifier
+
+      An Address Identifier uniquely describes an address which may have arbitrary balances and arbitrary data
+      objects. An Address Identifier may further specify a Sub Address which should be treated as a separate
+      unique Identifier.
 
       <SchemaDefinition schemaRef="#/components/schemas/AddressIdentifier" showReadOnly={true} showWriteOnly={true} />
 
       ## Amount
 
+      A signed amount of a resource.
+
       <SchemaDefinition schemaRef="#/components/schemas/ResourceAmount" showReadOnly={true} showWriteOnly={true} />
+
+      ## Resource Identifier
+
+      A Resource Identifier uniquely describes either some token or stake ownership of a validator.
+
+      <SchemaDefinition schemaRef="#/components/schemas/ResourceIdentifier" showReadOnly={true} showWriteOnly={true} />
 
       ## Data Update
 
+      A Data update is the creation or destruction of a data object.
+
       <SchemaDefinition schemaRef="#/components/schemas/Data" showReadOnly={true} showWriteOnly={true} />
 
+  - name: structure
+    x-displayName: Structure
+    description: |
+      With just the model description, you have all the info you need to create a working system that can track
+      assets and balances and allow for asset transfers.
+
+      To be able to do more than that though you need to understand more of the structure and relationships of
+      specific addresses, resources, and data. For example, to stake XRD to a validator you must transfer XRD
+      from your account address to your `prepared_staked` subaddress.
+
+      Overall, there are four main types of address identifiers: a resource address (or rri), an account address,
+      a validator address, and the system address. Only certain resources and data objects can be stored in each
+      given address/subaddress.
+
+      ![Structure](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/structure.png '#width=500px;')
 
   - name: network
     x-displayName: Network
@@ -174,7 +201,8 @@ tags:
 x-tagGroups:
   - name: Model
     tags:
-      - model
+      - objects
+      - structure
   - name: Data API
     tags:
       - network
@@ -1083,7 +1111,7 @@ components:
         - data_object
       properties:
         action:
-          description: Data action to take on `object`
+          description: Data action to take on `data_object`
           type: string
           enum:
             - CREATE

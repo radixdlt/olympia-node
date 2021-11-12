@@ -71,6 +71,7 @@ import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;
 import com.radixdlt.application.system.state.SystemData;
+import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.ResourceInBucket;
@@ -370,6 +371,11 @@ public final class ProcessedTxnJsonConverter {
 				var validatorData = (ValidatorData) update.getParsed();
 				var addressIdentifierJson = new JSONObject()
 					.put("address", addressing.forValidators().of(validatorData.getValidatorKey()));
+				operationJson.put("address_identifier", addressIdentifierJson);
+			} else if (update.getParsed() instanceof UnclaimedREAddr) {
+				var unclaimedREAddr = (UnclaimedREAddr) update.getParsed();
+				var rri = tokenAddressToRri.apply(unclaimedREAddr.getAddr());
+				var addressIdentifierJson = new JSONObject().put("address", rri);
 				operationJson.put("address_identifier", addressIdentifierJson);
 			} else {
 				operationJson.put("address_identifier", new JSONObject()
