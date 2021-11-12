@@ -195,7 +195,27 @@ tags:
     x-displayName: Actions
     description: |
 
+      There are further restrictions on which resource movement and data updates and how operations must
+      be combined. The following describes at a high level what user actions (ledger updates that can be
+      submitted as a transaction) are available.
+
       ![User Actions](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/user_actions.png '#width=500px;')
+
+      1. **Transfer** of any token resource (including the native token XRD) from an account to another
+      account may be done by debiting an amount from the sending account and crediting the same amount
+      to the receiving account.
+      2. **Staking** may be started by transferring XRD from an account to a `prepared_stake` entity
+      with a specific validator. Once XRD is in this entity, at some point the system will move this
+      XRD to a Validator entity and mint StakeOwnership into the originating account.
+      3. **Unstaking** may be started by transfering StakeOwnership from an account to a `prepared_unstake`
+      entity. Once StakeOwnership is in this entity, at some point the system will destroy this
+      StakeOwnership and transfer XRD from the Validator entity into your `exiting_stake` entity. Once
+      the unlocking period is over the system will move that XRD from the `exiting_stake` entity into your
+      account.
+      4. **Validator Updates** may be started by destroying the current data object and creating a new
+      data object with the same type.
+      5. **New Token Definitions** may be created by destroying an `UnclaimedREAddr` and creating a
+      `TokenData` and `TokenMetadata` data object.
 
   - name: network
     x-displayName: Network
