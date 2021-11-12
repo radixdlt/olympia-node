@@ -42,12 +42,12 @@ info:
     There are a few notable exceptions to note:
       * Fetching of ledger data is through a Transaction stream rather than a
       Block stream
-      * Use of `AddressIdentifier` rather than `AccountIdentifier`
+      * Use of `EntityIdentifier` rather than `AccountIdentifier`
       * Use of `OperationGroup` rather than `related_operations` to express related
       operations
       * Even though the Radix Ledger is UTXO based Construction endpoints does coin
       selection on behalf of the caller. This has the unfortunate effect of not
-      being able to support high frequency transactions from a single address due to
+      being able to support high frequency transactions from a single account due to
       UTXO spend conflicts. This will be addressed in future updates.
       * Construction endpoints are mostly online rather than offline as required by
       Rosetta
@@ -81,7 +81,7 @@ info:
     Unlike the Rosetta Construction API [specification](https://www.rosetta-api.org/docs/construction_api_introduction.html),
     this Construction API selects the UTXOs on behalf of the caller. This has the unfortunate
     side effect of not being able to support high frequency transactions from a single
-    address due to UTXO conflicts. This will be addressed in a future release.
+    account due to UTXO conflicts. This will be addressed in a future release.
 
   license:
     name: Apache 2.0
@@ -121,7 +121,7 @@ tags:
       writing to the ledger use the same Address and Operation objects.
 
       Every state change is expressed as an Operation which operates on a single
-      AddressIdentifier. Any state change which consists of two addresses (such as
+      Entity. Any state change which consists of two accounts (such as
       a token transfer) thus requires atleast two Operations, one which debits
       the sender and one which credits the receiver.
 
@@ -133,7 +133,7 @@ tags:
 
       ## Operation
 
-      Operations operate on a single AddressIdentifier and are associated with a single Amount
+      Operations operate on a single Entity and are associated with a single Amount
       update and/or a single Data update.
 
       * The `amount` property represents either a positive or negative change in balance of some token.
@@ -141,13 +141,13 @@ tags:
 
       <SchemaDefinition schemaRef="#/components/schemas/Operation" showReadOnly={true} showWriteOnly={true} />
 
-      ## Address Identifier
+      ## Entity Identifier
 
-      An Address Identifier uniquely describes an address which may have arbitrary balances and arbitrary data
-      objects. An Address Identifier may further specify a Sub Address which should be treated as a separate
-      unique Identifier.
+      An Entity Identifier uniquely describes an entity which may have arbitrary balances and arbitrary data
+      objects. An Entity Identifier may further specify a Sub Address which should be treated as a separate
+      unique entity.
 
-      <SchemaDefinition schemaRef="#/components/schemas/AddressIdentifier" showReadOnly={true} showWriteOnly={true} />
+      <SchemaDefinition schemaRef="#/components/schemas/EntityIdentifier" showReadOnly={true} showWriteOnly={true} />
 
       ## Amount
 
@@ -171,14 +171,14 @@ tags:
     x-displayName: Structure
     description: |
       With just the object descriptions, you have all the info needed to integrate a system that can track
-      generics assets and balances of addresses and allow for generic asset transfer.
+      generics assets and balances of entities and allow for generic asset transfer.
 
       For more sophisticated use, such as staking, you need to understand the structure and relationships of
-      specific addresses, resources, and data. For example, to stake XRD to a validator you must transfer XRD
+      specific entities, resources, and data. For example, to stake XRD to a validator you must transfer XRD
       from your account address to your `prepared_staked` subaddress.
 
       The following is a high level table describing which resources and data objects are allowed for a given
-      address identifier.
+      entity identifier.
 
       ![Structure](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/structure.png '#width=500px;')
 
@@ -200,9 +200,9 @@ tags:
   - name: network
     x-displayName: Network
     description: Get info about the node and network
-  - name: address
-    x-displayName: Address
-    description: Get info about an address
+  - name: entity
+    x-displayName: Entity
+    description: Get info about an entity
   - name: transactions
     x-displayName: Transactions
     description: Get stream of committed transactions
@@ -221,7 +221,7 @@ x-tagGroups:
   - name: Data API
     tags:
       - network
-      - address
+      - entity
       - transactions
   - name: Construction API
     tags:
@@ -281,24 +281,24 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
-  "/address":
+  "/entity":
     post:
-      summary: Get Address Info
+      summary: Get Entity Info
       tags:
-        - address
+        - entity
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/AddressRequest"
+              "$ref": "#/components/schemas/EntityRequest"
       responses:
         '200':
-          description: Address Balances and Data
+          description: Entity Balances and Data
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/AddressResponse"
+                "$ref": "#/components/schemas/EntityResponse"
         '500':
           description: Unexpected error
           content:
@@ -523,18 +523,18 @@ components:
             increase
           "$ref": "#/components/schemas/LongNumber"
         node_identifiers:
-          description: The address identifiers associated with this node's private
+          description: The entity identifiers associated with this node's private
             key
           type: object
           required:
-            - account_address_identifier
-            - validator_address_identifier
+            - account_entity_identifier
+            - validator_entity_identifier
             - public_key
           properties:
-            account_address_identifier:
-              "$ref": "#/components/schemas/AddressIdentifier"
-            validator_address_identifier:
-              "$ref": "#/components/schemas/AddressIdentifier"
+            account_entity_identifier:
+              "$ref": "#/components/schemas/EntityIdentifier"
+            validator_entity_identifier:
+              "$ref": "#/components/schemas/EntityIdentifier"
             public_key:
               "$ref": "#/components/schemas/PublicKey"
       example:
@@ -551,9 +551,9 @@ components:
           state_version: 1
           transaction_accumulator: 1e62415e5fd95c63aff69142f1359cc6a981ff7169c128d266f45adf614d09b0
         node_identifiers:
-          account_address_identifier:
+          account_entity_identifier:
             address: rdx1qspmwn5n0qyz685f20aevh4wglxxzg9k5t5vql20s4jqa7kj8hz0njclnh0mf
-          validator_address_identifier:
+          validator_entity_identifier:
             address: rv1qwm5aymcpqk3az2nlwt9atj8e3sjpd4zarq86nu9vs80453acnuuklp5yl2
     SignRequest:
       type: object
@@ -574,30 +574,30 @@ components:
       properties:
         signed_transaction:
           type: string
-    AddressRequest:
+    EntityRequest:
       type: object
       required:
-        - address_identifier
+        - entity_identifier
       properties:
-        address_identifier:
-          description: Address to get balance of
-          "$ref": "#/components/schemas/AddressIdentifier"
+        entity_identifier:
+          description: Entity to get balance of
+          "$ref": "#/components/schemas/EntityIdentifier"
       example:
-        address_identifier:
+        entity_identifier:
           address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
-    AddressResponse:
+    EntityResponse:
       type: object
       required:
         - balances
         - data_objects
       properties:
         balances:
-          description: Balances associated with the address
+          description: Balances associated with the entity
           type: array
           items:
             "$ref": "#/components/schemas/ResourceAmount"
         data_objects:
-          description: Data associated with the address
+          description: Data associated with the entity
           type: array
           items:
             "$ref": "#/components/schemas/DataObject"
@@ -643,7 +643,7 @@ components:
         operation_groups:
           - operations:
               - type: Resource
-                address_identifier:
+                entity_identifier:
                   address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
                 amount:
                   resource_identifier:
@@ -651,7 +651,7 @@ components:
                     rri: xrd_rr1qy5wfsfh
                   value: "-1500"
               - type: Resource
-                address_identifier:
+                entity_identifier:
                   address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
                 amount:
                   resource_identifier:
@@ -921,7 +921,7 @@ components:
                       substate_identifier:
                         identifier: 030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c
                       substate_operation: SHUTDOWN
-                    address_identifier:
+                    entity_identifier:
                       address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
                     type: Resource
                   - metadata:
@@ -935,7 +935,7 @@ components:
                       substate_identifier:
                         identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000
                       substate_operation: BOOTUP
-                    address_identifier:
+                    entity_identifier:
                       address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
                     type: Resource
               - metadata:
@@ -955,7 +955,7 @@ components:
                       substate_identifier:
                         identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000
                       substate_operation: SHUTDOWN
-                    address_identifier:
+                    entity_identifier:
                       address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
                     type: Resource
                   - metadata:
@@ -969,7 +969,7 @@ components:
                       substate_identifier:
                         identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000001
                       substate_operation: BOOTUP
-                    address_identifier:
+                    entity_identifier:
                       address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
                     type: Resource
                   - metadata:
@@ -983,7 +983,7 @@ components:
                       substate_identifier:
                         identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002
                       substate_operation: BOOTUP
-                    address_identifier:
+                    entity_identifier:
                       address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
                     type: Resource
     CommittedTransaction:
@@ -1060,17 +1060,17 @@ components:
         type:
           description: 'The type of operation: Resource, Data, or ResourceAndData'
           type: string
-        address_identifier:
-          description: The address on which the operation is acting on.
-          "$ref": "#/components/schemas/AddressIdentifier"
+        entity_identifier:
+          description: The entity on which the operation is acting on.
+          "$ref": "#/components/schemas/EntityIdentifier"
         substate:
           description: The substate (similar to UTXO) which this operation represents
           "$ref": "#/components/schemas/Substate"
         amount:
-          description: A balance change on the address represented by the `address_identifier`
+          description: A balance change on the entity represented by the `entity_identifier`
           "$ref": "#/components/schemas/ResourceAmount"
         data:
-          description: A data update on the address represented by the `address_identifier`
+          description: A data update on the entity represented by the `entity_identifier`
           "$ref": "#/components/schemas/Data"
         metadata:
           description: Metadata for the operation
@@ -1395,16 +1395,16 @@ components:
           description: Accumulator hash representing all transactions which occurred
             up to `state_version`. Hex encoded.
           type: string
-    AddressIdentifier:
+    EntityIdentifier:
       type: object
       required:
         - address
       properties:
         address:
-          description: The top level identifier for an address
+          description: The top level identifier for an entity
           type: string
         sub_address:
-          description: Further drill down into an address. Can be treated as an entirely
+          description: Further drill down into an entity. Can be treated as an entirely
             separate address from `address` or as a child of `address`.
           "$ref": "#/components/schemas/SubAddress"
     SubAddress:
