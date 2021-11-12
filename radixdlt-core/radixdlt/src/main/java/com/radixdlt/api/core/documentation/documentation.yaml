@@ -183,19 +183,19 @@ tags:
       ![Structure](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/structure.png '#width=500px;')
 
       There are four types of entities:
-      | Entity | Description |
-      | ------ | ----------- |
-      | Account | a regular public key account which can contain token balances and contain
+      * **Account**, which is a regular public key account which can contain token balances and contain
       StakeOwnership, which represents a delegated amount of stake to a specific validator. Subaddresses under
-      an account-address contain assets which the account-address owns but is currently locked by the system. |
-      | Validator | an entity representing a validating node on the network. The subaddress `system` holds XRD
-      tokens which have been staked to this validator. |
-      | Token | An entity representing a token |
-      | System | An entity representing system level data such as current epoch and round |
+      an account-address contain assets which the account-address owns but is currently locked by the system.
+      * **Validator**, an entity representing a validating node on the network. The subaddress `system` holds XRD
+      tokens which have been staked to this validator.
+      * **Token**, an entity representing a token
+      * **System**, an entity representing system level data such as current epoch and round
 
-      ## User Actions
+  - name: actions
+    x-displayName: Actions
+    description: |
 
-      ## System Actions
+      ![User Actions](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/user_actions.png '#width=500px;')
 
   - name: network
     x-displayName: Network
@@ -217,6 +217,7 @@ x-tagGroups:
     tags:
       - objects
       - structure
+      - actions
   - name: Data API
     tags:
       - network
