@@ -61,118 +61,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.address;
+package com.radixdlt.api.core.construction;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
-import com.radixdlt.api.core.construction.EntityIdentifier;
-import com.radixdlt.api.core.construction.KeyQuery;
-import com.radixdlt.api.core.construction.ResourceQuery;
-import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
-import com.radixdlt.application.tokens.Bucket;
-import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.UInt256;
 
 import java.util.List;
-import java.util.function.Function;
+import java.util.Optional;
+import java.util.function.Supplier;
 
-public class AddressHandler implements ApiHandler<EntityIdentifier> {
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final Addressing addressing;
-	private final ProcessedTxnJsonConverter converter;
+public interface EntityIdentifier {
+	Optional<REAddr> getAccountAddress();
+	void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) throws TxBuilderException;
+	List<ResourceQuery> getResourceQueries();
+	List<KeyQuery> getKeyQueries();
 
-	@Inject
-	AddressHandler(
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		ProcessedTxnJsonConverter converter,
-		Addressing addressing
-	) {
-		this.radixEngine = radixEngine;
-		this.converter = converter;
-		this.addressing = addressing;
+	private static EntityIdentifier fromAccountAddress(REAddr accountAddress, JsonObjectReader reader) throws InvalidParametersException {
+		return reader
+			.getOptJsonObject("sub_address", r -> {
+				var subAddress = r.getString("address");
+				switch (subAddress) {
+					case "prepared_stake":
+						return PreparedStakeVaultEntityIdentifier.from(
+							accountAddress,
+							r.getJsonObject("metadata").getValidatorIdentifier("validator")
+						);
+					case "prepared_unstake":
+						return PreparedUnstakeVaultEntityIdentifier.from(
+							accountAddress,
+							r.getJsonObject("metadata")
+						);
+					default:
+						throw new InvalidParametersException("/address", "Invalid Sub Address: " + subAddress);
+				}
+			})
+			.orElseGet(() -> AccountVaultEntityIdentifier.from(accountAddress));
 	}
 
-	@Override
-	public Addressing addressing() {
-		return addressing;
-	}
-
-	@Override
-	public EntityIdentifier parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return requestReader.getJsonObject("address_identifier", EntityIdentifier::from);
-	}
-
-	private JSONObject bucketToResourceJson(Bucket bucket, Function<REAddr, String> addressToRri) {
-		if (bucket.resourceAddr() != null) {
-			return new JSONObject()
-				.put("type", "token")
-				.put("rri", addressToRri.apply(bucket.resourceAddr())
-			);
+	static EntityIdentifier from(JsonObjectReader reader) throws InvalidParametersException {
+		var accountAddress = reader.tryAccountAddress("address");
+		if (accountAddress.isPresent()) {
+			return fromAccountAddress(accountAddress.get(), reader);
 		}
 
-		return new JSONObject()
-			.put("type", "stake_ownership")
-			.put("validator", addressing.forValidators().of(bucket.getValidatorKey()));
-	}
-
-	private JSONArray getBalances(
-		List<ResourceQuery> resourceQueries,
-		Function<REAddr, String> addressToRri
-	) {
-		var balances = new JSONArray();
-		for (var resourceQuery : resourceQueries) {
-			var index = resourceQuery.getIndex();
-			var bucketPredicate = resourceQuery.getPredicate();
-			radixEngine.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
-				.forEach((bucket, amount) -> {
-					var json = new JSONObject()
-						.put("resource_identifier", bucketToResourceJson(bucket, addressToRri))
-						.put("value", amount.toString());
-					balances.put(json);
-				});
+		var validatorKey = reader.tryValidatorIdentifier("address");
+		if (validatorKey.isPresent()) {
+			return ValidatorEntityIdentifier.from(validatorKey.get());
 		}
-		return balances;
-	}
 
-	private JSONArray getObjects(
-		List<KeyQuery> keyQueries
-	) {
-		var objects = new JSONArray();
-		for (var keyQuery : keyQueries) {
-			var substate = radixEngine.get(keyQuery.getKey()).or(keyQuery.getVirtualSubstate());
-			substate.map(s -> converter.getDataObject(keyQuery.getTypeId(), s)).ifPresent(objects::put);
-		}
-		return objects;
-	}
-
-	@Override
-	public JSONObject handleRequest(EntityIdentifier entityIdentifier) throws Exception {
-		Function<REAddr, String> addressToRri = addr -> {
-			var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-			var substate = radixEngine.get(mapKey).orElseThrow();
-			var tokenResource = (TokenResourceMetadata) substate;
-			return addressing.forResources().of(tokenResource.getSymbol(), addr);
-		};
-
-		// TODO: need to fetch these in a single database transaction and retrieve version as well
-		var balances = getBalances(
-			entityIdentifier.getResourceQueries(),
-			addressToRri
-		);
-		var objects = getObjects(entityIdentifier.getKeyQueries());
-
-		return new JSONObject()
-			.put("balances", balances)
-			.put("data_objects", objects);
+		return TokenEntityIdentifier.from(reader.getResource("address"));
 	}
 }

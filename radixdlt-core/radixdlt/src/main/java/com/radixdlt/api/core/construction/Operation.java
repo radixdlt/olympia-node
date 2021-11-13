@@ -69,22 +69,22 @@ import com.radixdlt.api.archive.JsonObjectReader;
 import java.util.Optional;
 
 public class Operation {
-	private final AddressIdentifier addressIdentifier;
+	private final EntityIdentifier entityIdentifier;
 	private final ResourceAmount amount;
 	private final DataUpdate dataUpdate;
 
 	private Operation(
-		AddressIdentifier addressIdentifier,
+		EntityIdentifier entityIdentifier,
 		ResourceAmount amount,
 		DataUpdate dataUpdate
 	) {
-		this.addressIdentifier = addressIdentifier;
+		this.entityIdentifier = entityIdentifier;
 		this.amount = amount;
 		this.dataUpdate = dataUpdate;
 	}
 
-	public Optional<AddressIdentifier> getAddressIdentifier() {
-		return Optional.ofNullable(addressIdentifier);
+	public EntityIdentifier getEntityIdentifier() {
+		return entityIdentifier;
 	}
 
 	public Optional<ResourceAmount> getAmount() {
@@ -96,9 +96,9 @@ public class Operation {
 	}
 
 	public static Operation from(JsonObjectReader reader) throws InvalidParametersException {
-		var addressIdentifier = reader.getOptJsonObject("address_identifier", AddressIdentifier::from).orElse(null);
+		var entityIdentifier = reader.getJsonObject("entity_identifier", EntityIdentifier::from);
 		var amount = reader.getOptJsonObject("amount", ResourceAmount::from).orElse(null);
 		var data = reader.getOptJsonObject("data", DataUpdate::from).orElse(null);
-		return new Operation(addressIdentifier, amount, data);
+		return new Operation(entityIdentifier, amount, data);
 	}
 }

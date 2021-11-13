@@ -85,11 +85,14 @@ public final class PreparedValidatorOwner implements DataObject {
 	@Override
 	public void bootUp(
 		TxBuilder builder,
-		REAddr feePayer,
+		EntityIdentifier entityIdentifier,
 		DataObject.RelatedOperationFetcher fetcher,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {
-		var validatorKey = feePayer.publicKey().orElseThrow();
+		if (!(entityIdentifier instanceof ValidatorEntityIdentifier)) {
+			throw new IllegalStateException();
+		}
+		var validatorKey = ((ValidatorEntityIdentifier) entityIdentifier).getValidatorKey();
 		builder.down(ValidatorOwnerCopy.class, validatorKey);
 		var curEpoch = builder.readSystem(EpochData.class);
 		builder.up(new ValidatorOwnerCopy(

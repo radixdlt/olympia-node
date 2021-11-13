@@ -69,7 +69,6 @@ import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 
 import java.util.OptionalLong;
@@ -85,11 +84,14 @@ public final class PreparedValidatorRegistered implements DataObject {
 	@Override
 	public void bootUp(
 		TxBuilder builder,
-		REAddr feePayer,
+		EntityIdentifier entityIdentifier,
 		DataObject.RelatedOperationFetcher fetcher,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {
-		var validatorKey = feePayer.publicKey().orElseThrow();
+		if (!(entityIdentifier instanceof ValidatorEntityIdentifier)) {
+			throw new IllegalStateException();
+		}
+		var validatorKey = ((ValidatorEntityIdentifier) entityIdentifier).getValidatorKey();
 		builder.down(ValidatorRegisteredCopy.class, validatorKey);
 		var curEpoch = builder.readSystem(EpochData.class);
 		builder.up(new ValidatorRegisteredCopy(OptionalLong.of(curEpoch.getEpoch() + 1), validatorKey, registered));

@@ -84,11 +84,11 @@ import java.util.function.Supplier;
 
 import static com.radixdlt.atom.SubstateTypeId.PREPARED_STAKE;
 
-public class PreparedStakeVaultAddressIdentifier implements AddressIdentifier {
+public class PreparedStakeVaultEntityIdentifier implements EntityIdentifier {
 	private final REAddr accountAddress;
 	private final ECPublicKey validatorKey;
 
-	PreparedStakeVaultAddressIdentifier(REAddr accountAddress, ECPublicKey validatorKey) {
+	PreparedStakeVaultEntityIdentifier(REAddr accountAddress, ECPublicKey validatorKey) {
 		this.accountAddress = accountAddress;
 		this.validatorKey = validatorKey;
 	}
@@ -148,7 +148,7 @@ public class PreparedStakeVaultAddressIdentifier implements AddressIdentifier {
 	}
 
 
-	public static PreparedStakeVaultAddressIdentifier from(REAddr accountAddress, ECPublicKey validatorKey) {
-		return new PreparedStakeVaultAddressIdentifier(accountAddress, validatorKey);
+	public static PreparedStakeVaultEntityIdentifier from(REAddr accountAddress, ECPublicKey validatorKey) {
+		return new PreparedStakeVaultEntityIdentifier(accountAddress, validatorKey);
 	}
 }

@@ -63,77 +63,69 @@
 
 package com.radixdlt.api.core.construction;
 
-import com.radixdlt.api.archive.InvalidParametersException;
-import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.radixdlt.atom.SubstateTypeId.PREPARED_UNSTAKE;
+import static com.radixdlt.atom.SubstateTypeId.*;
 
-public class PreparedUnstakeVaultAddressIdentifier implements AddressIdentifier {
-	private final REAddr accountAddress;
+public class ValidatorEntityIdentifier implements EntityIdentifier {
 	private final ECPublicKey validatorKey;
 
-	PreparedUnstakeVaultAddressIdentifier(REAddr accountAddress, ECPublicKey validatorKey) {
-		this.accountAddress = accountAddress;
+	private ValidatorEntityIdentifier(ECPublicKey validatorKey) {
 		this.validatorKey = validatorKey;
+	}
+
+	public static ValidatorEntityIdentifier from(ECPublicKey validatorKey) {
+		return new ValidatorEntityIdentifier(validatorKey);
+	}
+
+	public ECPublicKey getValidatorKey() {
+		return validatorKey;
 	}
 
 	@Override
 	public Optional<REAddr> getAccountAddress() {
-		return Optional.of(accountAddress);
+		return Optional.empty();
 	}
 
 	@Override
-	public void bootUp(
-		TxBuilder txBuilder,
-		UInt256 amount,
-		ResourceIdentifier resourceIdentifier,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		if (!(resourceIdentifier instanceof StakeOwnershipResourceIdentifier)) {
-			throw new InvalidResourceIdentifierException("Can only store validator ownership in prepared_unstake address");
-		}
-		var stakeOwnershipResourceIdentifier = (StakeOwnershipResourceIdentifier) resourceIdentifier;
-		var stakeOwnershipKey = stakeOwnershipResourceIdentifier.getValidatorKey();
-		var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount);
-		txBuilder.up(substate);
+	public void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) {
+		throw new IllegalStateException();
 	}
 
 	@Override
 	public List<ResourceQuery> getResourceQueries() {
-
-		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
-		buf.put(PREPARED_UNSTAKE.id());
-		buf.put((byte) 0); // Reserved byte
-		buf.put(validatorKey.getCompressedBytes());
-		buf.put(accountAddress.getBytes());
-		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), PreparedUnstakeOwnership.class);
-		return List.of(ResourceQuery.from(index));
+		var index = SubstateIndex.<ResourceInBucket>create(VALIDATOR_STAKE_DATA.id(), ValidatorStakeData.class);
+		return List.of(ResourceQuery.from(index, b -> b.bucket().getValidatorKey().equals(validatorKey)));
 	}
 
 	@Override
 	public List<KeyQuery> getKeyQueries() {
-		return List.of();
-	}
-
-	public static PreparedUnstakeVaultAddressIdentifier from(
-		REAddr accountAddress,
-		JsonObjectReader metadataReader
-	) throws InvalidParametersException {
-		var validatorKey = metadataReader.getValidatorIdentifier("validator");
-		return new PreparedUnstakeVaultAddressIdentifier(accountAddress, validatorKey);
+		return List.of(
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_META_DATA, ValidatorMetaData::createVirtual),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_STAKE_DATA, ValidatorStakeData::createVirtual),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_BFT_DATA),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_ALLOW_DELEGATION_FLAG, AllowDelegationFlag::createVirtual),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_REGISTERED_FLAG_COPY, ValidatorRegisteredCopy::createVirtual),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_RAKE_COPY, ValidatorFeeCopy::createVirtual),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_OWNER_COPY, ValidatorOwnerCopy::createVirtual),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_SYSTEM_META_DATA, ValidatorSystemMetadata::createVirtual)
+		);
 	}
 }

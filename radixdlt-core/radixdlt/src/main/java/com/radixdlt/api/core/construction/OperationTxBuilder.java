@@ -99,14 +99,14 @@ public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 		var amountMaybe = operation.getAmount();
 		if (amountMaybe.isPresent()) {
 			var amount = amountMaybe.get();
-			var addressIdentifier = operation.getAddressIdentifier().orElseThrow();
+			var entityIdentifier = operation.getEntityIdentifier();
 			var resourceIdentifier = amount.getResourceIdentifier();
 			var compare = amount.getValue().compareTo(BigInteger.ZERO);
 			if (compare > 0) {
 				var actionAmount = UInt256.from(amount.getValue().toString());
-				addressIdentifier.bootUp(txBuilder, actionAmount, resourceIdentifier, config);
+				entityIdentifier.bootUp(txBuilder, actionAmount, resourceIdentifier, config);
 			} else if (compare < 0) {
-				var accountAddress = addressIdentifier.getAccountAddress()
+				var accountAddress = entityIdentifier.getAccountAddress()
 					.orElseThrow(() -> new InvalidAddressIdentifierException("Spending resources can only occur from account addresses."));
 				var actionAmount = UInt256.from(amount.getValue().toString().substring(1));
 				var retrieval = resourceIdentifier.substateRetrieval(accountAddress);
@@ -116,7 +116,7 @@ public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 					actionAmount
 				);
 				if (!change.isZero()) {
-					addressIdentifier.bootUp(txBuilder, change, resourceIdentifier, config);
+					entityIdentifier.bootUp(txBuilder, change, resourceIdentifier, config);
 				}
 			}
 		}
@@ -138,7 +138,7 @@ public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 			};
 			dataUpdate.getDataObject().bootUp(
 				txBuilder,
-				request.getFeePayer(),
+				operation.getEntityIdentifier(),
 				fetcher,
 				config
 			);

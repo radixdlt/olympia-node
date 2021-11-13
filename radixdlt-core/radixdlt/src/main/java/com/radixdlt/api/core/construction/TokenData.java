@@ -67,10 +67,9 @@ import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
@@ -80,20 +79,18 @@ import java.util.function.Supplier;
 public final class TokenData implements DataObject {
 	private final UInt256 granularity;
 	private final boolean isMutable;
-	private final REAddr owner;
-	private final UInt256 value;
+	private final ECPublicKey owner;
 
-	private TokenData(UInt256 granularity, boolean isMutable, REAddr owner, UInt256 value) {
+	private TokenData(UInt256 granularity, boolean isMutable, ECPublicKey owner) {
 		this.granularity = granularity;
 		this.isMutable = isMutable;
 		this.owner = owner;
-		this.value = value;
 	}
 
 	@Override
 	public void bootUp(
 		TxBuilder builder,
-		REAddr feePayer,
+		EntityIdentifier entityIdentifier,
 		DataObject.RelatedOperationFetcher fetcher,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {
@@ -106,34 +103,23 @@ public final class TokenData implements DataObject {
 			throw new IllegalStateException();
 		}
 
-		if (isMutable != (value == null)) {
+		if (!(entityIdentifier instanceof TokenEntityIdentifier)) {
 			throw new IllegalStateException();
 		}
-
-		var address = feePayer.publicKey().orElseThrow();
-		var tokenOwner = owner == null
-			? (isMutable ? address : null)
-			: owner.publicKey().orElseThrow();
+		var tokenAddr = ((TokenEntityIdentifier) entityIdentifier).getTokenAddr();
 		var tokenMetadata = fetcher.get(TokenMetadata.class);
 		var symbol = tokenMetadata.getSymbol();
-		var tokenAddress = REAddr.ofHashedKey(address, symbol);
 
 		builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8));
-		builder.downREAddr(tokenAddress);
-		var tokenResource = new TokenResource(tokenAddress, UInt256.ONE, isMutable, tokenOwner);
+		builder.downREAddr(tokenAddr);
+		var tokenResource = new TokenResource(tokenAddr, UInt256.ONE, isMutable, owner);
 		builder.up(tokenResource);
-
-		if (value != null) {
-			var fixedTokens = new TokensInAccount(feePayer, tokenAddress, value);
-			builder.up(fixedTokens);
-		}
 	}
 
 	public static TokenData from(JsonObjectReader reader, JsonObjectReader metadataReader) throws InvalidParametersException {
 		var granularity = reader.getOptNonZeroAmount("granularity").orElse(null);
 		var isMutable = reader.getBoolean("is_mutable");
-		var owner = reader.getOptAccountAddress("owner").orElse(null);
-		var value = metadataReader.getOptNonZeroAmount("fixed_supply_amount").orElse(null);
-		return new TokenData(granularity, isMutable, owner, value);
+		var owner = reader.getPubKey("owner");
+		return new TokenData(granularity, isMutable, owner);
 	}
 }

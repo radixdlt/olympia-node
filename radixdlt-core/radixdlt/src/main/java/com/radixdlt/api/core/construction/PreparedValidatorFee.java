@@ -72,7 +72,6 @@ import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintS
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 
 import java.util.OptionalLong;
@@ -88,12 +87,14 @@ public final class PreparedValidatorFee implements DataObject {
 	@Override
 	public void bootUp(
 		TxBuilder builder,
-		REAddr feePayer,
+		EntityIdentifier entityIdentifier,
 		DataObject.RelatedOperationFetcher fetcher,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {
-		var validatorKey = feePayer.publicKey().orElseThrow();
-
+		if (!(entityIdentifier instanceof ValidatorEntityIdentifier)) {
+			throw new IllegalStateException();
+		}
+		var validatorKey = ((ValidatorEntityIdentifier) entityIdentifier).getValidatorKey();
 		builder.down(ValidatorFeeCopy.class, validatorKey);
 		var curRakePercentage = builder.read(ValidatorStakeData.class, validatorKey)
 			.getRakePercentage();

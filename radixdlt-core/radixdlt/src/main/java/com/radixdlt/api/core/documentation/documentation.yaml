@@ -1152,6 +1152,7 @@ components:
       type: object
       required:
         - type
+        - entity_identifier
       properties:
         type:
           description: 'The type of operation: Resource, Data, or ResourceAndData'

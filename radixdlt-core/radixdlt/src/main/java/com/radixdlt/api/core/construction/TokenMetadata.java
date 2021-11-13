@@ -68,7 +68,6 @@ import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 
 import java.util.function.Supplier;
@@ -95,14 +94,16 @@ public class TokenMetadata implements DataObject {
 	@Override
 	public void bootUp(
 		TxBuilder builder,
-		REAddr feePayer,
+		EntityIdentifier entityIdentifier,
 		DataObject.RelatedOperationFetcher fetcher,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {
-		var address = feePayer.publicKey().orElseThrow();
-		var tokenAddress = REAddr.ofHashedKey(address, symbol);
+		if (!(entityIdentifier instanceof TokenEntityIdentifier)) {
+			throw new IllegalStateException();
+		}
+		var tokenAddr = ((TokenEntityIdentifier) entityIdentifier).getTokenAddr();
 		builder.up(new TokenResourceMetadata(
-			tokenAddress,
+			tokenAddr,
 			symbol,
 			name,
 			description,

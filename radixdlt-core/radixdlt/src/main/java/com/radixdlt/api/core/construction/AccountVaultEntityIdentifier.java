@@ -63,57 +63,72 @@
 
 package com.radixdlt.api.core.construction;
 
-import com.radixdlt.api.archive.InvalidParametersException;
-import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
+import org.bouncycastle.util.Arrays;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public interface AddressIdentifier {
-	Optional<REAddr> getAccountAddress();
-	void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) throws TxBuilderException;
-	List<ResourceQuery> getResourceQueries();
-	List<KeyQuery> getKeyQueries();
+import static com.radixdlt.atom.SubstateTypeId.STAKE_OWNERSHIP;
+import static com.radixdlt.atom.SubstateTypeId.TOKENS;
 
-	private static AddressIdentifier fromAccountAddress(REAddr accountAddress, JsonObjectReader reader) throws InvalidParametersException {
-		return reader
-			.getOptJsonObject("sub_address", r -> {
-				var subAddress = r.getString("address");
-				switch (subAddress) {
-					case "prepared_stake":
-						return PreparedStakeVaultAddressIdentifier.from(
-							accountAddress,
-							r.getJsonObject("metadata").getValidatorIdentifier("validator")
-						);
-					case "prepared_unstake":
-						return PreparedUnstakeVaultAddressIdentifier.from(
-							accountAddress,
-							r.getJsonObject("metadata")
-						);
-					default:
-						throw new InvalidParametersException("/address", "Invalid Sub Address: " + subAddress);
-				}
-			})
-			.orElseGet(() -> AccountVaultAddressIdentifier.from(accountAddress));
+public class AccountVaultEntityIdentifier implements EntityIdentifier {
+	private final REAddr accountAddress;
+
+	private AccountVaultEntityIdentifier(REAddr accountAddress) {
+		this.accountAddress = accountAddress;
 	}
 
-	static AddressIdentifier from(JsonObjectReader reader) throws InvalidParametersException {
-		var accountAddress = reader.tryAccountAddress("address");
-		if (accountAddress.isPresent()) {
-			return fromAccountAddress(accountAddress.get(), reader);
-		}
+	@Override
+	public Optional<REAddr> getAccountAddress() {
+		return Optional.of(accountAddress);
+	}
 
-		var validatorKey = reader.tryValidatorIdentifier("address");
-		if (validatorKey.isPresent()) {
-			return ValidatorAddressIdentifier.from(validatorKey.get());
+	@Override
+	public void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) {
+		final Particle substate;
+		if (resourceIdentifier instanceof TokenResourceIdentifier) {
+			var tokenResourceIdentifier = (TokenResourceIdentifier) resourceIdentifier;
+			var tokenAddress = tokenResourceIdentifier.getTokenAddress();
+			substate = new TokensInAccount(accountAddress, tokenAddress, amount);
+		} else if (resourceIdentifier instanceof StakeOwnershipResourceIdentifier) {
+			var stakeOwnershipResourceIdentifier = (StakeOwnershipResourceIdentifier) resourceIdentifier;
+			substate = new StakeOwnership(stakeOwnershipResourceIdentifier.getValidatorKey(), accountAddress, amount);
+		} else {
+			throw new IllegalStateException("Unknown resource identifier: " + resourceIdentifier);
 		}
+		txBuilder.up(substate);
+	}
 
-		throw new InvalidParametersException("/address", "Invalid address");
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+		var tokenIndex = SubstateIndex.<ResourceInBucket>create(
+			Arrays.concatenate(new byte[]{TOKENS.id(), 0}, accountAddress.getBytes()),
+			TokensInAccount.class
+		);
+		// Unfortunately we prefixed Stakeownership in the wrong order so we'll need to do a scan
+		var ownershipIndex = SubstateIndex.<ResourceInBucket>create(STAKE_OWNERSHIP.id(), StakeOwnership.class);
+		return List.of(
+			ResourceQuery.from(tokenIndex),
+			ResourceQuery.from(ownershipIndex, b -> b.bucket().getOwner().equals(accountAddress))
+		);
+	}
+
+	@Override
+	public List<KeyQuery> getKeyQueries() {
+		return List.of();
+	}
+
+	public static AccountVaultEntityIdentifier from(REAddr address) {
+		return new AccountVaultEntityIdentifier(address);
 	}
 }
