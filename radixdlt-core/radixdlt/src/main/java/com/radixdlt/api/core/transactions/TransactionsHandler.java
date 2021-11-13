@@ -67,8 +67,11 @@ import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.api.core.network.NetworkIdentifier;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.utils.Bytes;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -76,14 +79,17 @@ import org.json.JSONObject;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
 class TransactionsHandler implements ApiHandler<TransactionsRequest> {
+	private final Network network;
 	private final BerkeleyTransactionsByIdStore txnStore;
 	private final BerkeleyTransactionIndexStore store;
 
 	@Inject
 	TransactionsHandler(
+		@NetworkId int networkId,
 		BerkeleyTransactionIndexStore store,
 		BerkeleyTransactionsByIdStore txnStore
 	) {
+		this.network = Network.ofId(networkId).orElseThrow();
 		this.store = store;
 		this.txnStore = txnStore;
 	}
@@ -92,11 +98,16 @@ class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 	public TransactionsRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
 		var limit = requestReader.getOptUnsignedLong("limit").orElse(1);
 		var stateIdentifier = requestReader.getJsonObject("committed_state_identifier", PartialStateIdentifier::from);
-		return new TransactionsRequest(stateIdentifier, limit);
+		var networkIdentifier = requestReader.getJsonObject("network_identifier", NetworkIdentifier::from);
+		return new TransactionsRequest(networkIdentifier, stateIdentifier, limit);
 	}
 
 	@Override
 	public JSONObject handleRequest(TransactionsRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network)) {
+			throw new IllegalStateException();
+		}
+
 		var stateIdentifier = request.getStateIdentifier();
 		var previousStateVersion = stateIdentifier.getStateVersion() - 1;
 		final JSONObject committedStateIdentifier;

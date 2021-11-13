@@ -63,13 +63,25 @@
 
 package com.radixdlt.api.core.transactions;
 
+import com.radixdlt.api.core.network.NetworkIdentifier;
+
 public final class TransactionsRequest {
+	private final NetworkIdentifier networkIdentifier;
 	private final PartialStateIdentifier stateIdentifier;
 	private final long limit;
 
-	public TransactionsRequest(PartialStateIdentifier stateIdentifier, long limit) {
+	public TransactionsRequest(
+		NetworkIdentifier networkIdentifier,
+		PartialStateIdentifier stateIdentifier,
+		long limit
+	) {
+		this.networkIdentifier = networkIdentifier;
 		this.stateIdentifier = stateIdentifier;
 		this.limit = limit;
+	}
+
+	public NetworkIdentifier getNetworkIdentifier() {
+		return networkIdentifier;
 	}
 
 	public PartialStateIdentifier getStateIdentifier() {

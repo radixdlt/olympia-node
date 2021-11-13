@@ -958,7 +958,11 @@ components:
       description: A request to retrieve a sublist of committed transactions to the
         ledger.
       type: object
+      required:
+        - network_identifier
       properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
         committed_state_identifier:
           description: The state identifier point from which to begin returning transactions
             from
