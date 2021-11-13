@@ -89,6 +89,19 @@ info:
 servers:
   - url: localhost:3333
 tags:
+  - name: entities
+    x-displayName: Entities and Operations
+    description: |
+      Entities represent something that can hold resource balances and data objects.
+      A public key account is the simplest example of an entity.
+
+      ![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/entity.png '#width=500px;')
+
+      At the simplest level of abstraction, each Operation in a Transaction is simply
+      either a resource balance change or a data object update in an entity.
+
+      ![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/operation.png '#width=500px;')
+
   - name: objects
     x-displayName: Objects
     description: |
@@ -235,9 +248,10 @@ tags:
 x-tagGroups:
   - name: Model
     tags:
-      - objects
+      - entities
       - structure
       - actions
+      - objects
   - name: Data API
     tags:
       - network
