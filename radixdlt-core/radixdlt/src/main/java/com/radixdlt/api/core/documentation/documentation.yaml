@@ -103,7 +103,7 @@ tags:
       ![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/operation.png '#width=500px;')
 
   - name: objects
-    x-displayName: Objects
+    x-displayName: Objects and Identifiers
     description: |
       ## State Identifier
       The Radix Olympia network has no concept of blocks, instead transactions are
@@ -725,7 +725,7 @@ components:
             "$ref": "#/components/schemas/OperationGroup"
         fee_payer:
           description: The address where fees will be subtracted from
-          "$ref": "#/components/schemas/AccountAddress"
+          "$ref": "#/components/schemas/EntityIdentifier"
         message:
           description: An optional message encoded in hex
           type: string
@@ -735,7 +735,8 @@ components:
             such as when verifying transactions in an offline environment
           type: boolean
       example:
-        fee_payer: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+        fee_payer:
+          address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
         operation_groups:
           - operations:
               - type: Resource
