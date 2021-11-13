@@ -63,30 +63,48 @@
 
 package com.radixdlt.api.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+public class DeriveHandler implements ApiHandler<DeriveRequest> {
+	private final Addressing addressing;
 
-public final class ConstructionApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
-
-	public ConstructionApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	DeriveHandler(Addressing addressing) {
+		this.addressing = addressing;
 	}
 
 	@Override
-	protected void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path + "/derive").to(DeriveHandler.class);
-		routeBinder.addBinding(path + "/build").to(BuildTransactionHandler.class);
-		routeBinder.addBinding(path + "/parse").to(ParseTransactionHandler.class);
-		routeBinder.addBinding(path + "/finalize").to(FinalizeTransactionHandler.class);
-		routeBinder.addBinding(path + "/submit").to(SubmitTransactionHandler.class);
+	public DeriveRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return DeriveRequest.from(requestReader);
+	}
+
+	@Override
+	public JSONObject handleRequest(DeriveRequest request) throws Exception {
+		if (request.getEntityType() == DeriveRequest.EntityType.ACCOUNT) {
+			var reAddr = REAddr.ofPubKeyAccount(request.getPublicKey());
+			return new JSONObject()
+				.put("entity_identifier", new JSONObject()
+					.put("address", addressing.forAccounts().of(reAddr))
+				);
+		} else if (request.getEntityType() == DeriveRequest.EntityType.VALIDATOR) {
+			return new JSONObject()
+				.put("entity_identifier", new JSONObject()
+					.put("address", addressing.forValidators().of(request.getPublicKey()))
+				);
+		} else if (request.getEntityType() == DeriveRequest.EntityType.TOKEN) {
+			var reAddr = REAddr.ofHashedKey(request.getPublicKey(), request.getSymbol());
+			return new JSONObject()
+				.put("entity_identifier", new JSONObject()
+					.put("address", addressing.forResources().of(request.getSymbol(), reAddr))
+				);
+		} else {
+			throw new IllegalStateException();
+		}
 	}
 }

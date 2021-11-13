@@ -63,30 +63,64 @@
 
 package com.radixdlt.api.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.Pair;
 
-import java.lang.annotation.Annotation;
+import java.util.Arrays;
 
-public final class ConstructionApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+public class DeriveRequest {
+	enum EntityType {
+		ACCOUNT("Account"), VALIDATOR("Validator"), TOKEN("Token");
 
-	public ConstructionApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+		private final String name;
+		EntityType(String name) {
+			this.name = name;
+		}
+
+		static EntityType from(String type) {
+			return Arrays.stream(EntityType.values())
+				.filter(e -> e.name.equals(type))
+				.findFirst()
+				.orElseThrow();
+		}
 	}
 
-	@Override
-	protected void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path + "/derive").to(DeriveHandler.class);
-		routeBinder.addBinding(path + "/build").to(BuildTransactionHandler.class);
-		routeBinder.addBinding(path + "/parse").to(ParseTransactionHandler.class);
-		routeBinder.addBinding(path + "/finalize").to(FinalizeTransactionHandler.class);
-		routeBinder.addBinding(path + "/submit").to(SubmitTransactionHandler.class);
+	private final ECPublicKey publicKey;
+	private final EntityType entityType;
+	private final String symbol;
+
+	private DeriveRequest(ECPublicKey publicKey, EntityType entityType, String symbol) {
+		this.publicKey = publicKey;
+		this.entityType = entityType;
+		this.symbol = symbol;
+	}
+
+	public ECPublicKey getPublicKey() {
+		return publicKey;
+	}
+
+	public EntityType getEntityType() {
+		return entityType;
+	}
+
+	public String getSymbol() {
+		return symbol;
+	}
+
+	public static DeriveRequest from(JsonObjectReader reader) throws InvalidParametersException {
+		var publicKey = reader.getJsonObject("public_key", r -> r.getPubKey("hex"));
+		var typeAndSymbol = reader.<Pair<EntityType, String>>getJsonObject("metadata", r -> {
+			var typeString = r.getString("type");
+			var type = EntityType.from(typeString);
+			if (type != EntityType.TOKEN) {
+				return Pair.of(type, null);
+			} else {
+				return Pair.of(type, r.getString("symbol"));
+			}
+		});
+
+		return new DeriveRequest(publicKey, typeAndSymbol.getFirst(), typeAndSymbol.getSecond());
 	}
 }

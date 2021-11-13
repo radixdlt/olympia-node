@@ -351,6 +351,24 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
+  "/construction/derive":
+    post:
+      summary: Derive Entity Identifier
+      tags:
+        - construction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ConstructionDeriveRequest"
+      responses:
+        '200':
+          description: Entity Identifier
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ConstructionDeriveResponse"
   "/construction/build":
     post:
       summary: Build Transaction
@@ -636,6 +654,50 @@ components:
               type: stake_ownership
             value: '15000000000000000000000'
         data_objects: []
+    ConstructionDeriveRequest:
+      type: object
+      required:
+        - public_key
+        - metadata
+      properties:
+        public_key:
+          "$ref": "#/components/schemas/PublicKey"
+        metadata:
+          "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+    ConstructionDeriveResponse:
+      type: object
+      required:
+        - entity_identifier
+      properties:
+        entity_identifier:
+          "$ref": "#/components/schemas/EntityIdentifier"
+    ConstructionDeriveRequestMetadata:
+      type: object
+      properties:
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          Account: "#/components/schemas/ConstructionDeriveRequestMetadataAccount"
+          Validator: "#/components/schemas/ConstructionDeriveRequestMetadataValidator"
+          Token: "#/components/schemas/ConstructionDeriveRequestMetadataToken"
+    ConstructionDeriveRequestMetadataAccount:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+    ConstructionDeriveRequestMetadataValidator:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+    ConstructionDeriveRequestMetadataToken:
+      allOf:
+        - "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+        - type: object
+          required:
+            - symbol
+          properties:
+            symbol:
+              type:
+                string
     ConstructionBuildRequest:
       type: object
       required:
