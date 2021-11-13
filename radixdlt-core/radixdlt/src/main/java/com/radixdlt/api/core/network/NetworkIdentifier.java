@@ -63,93 +63,24 @@
 
 package com.radixdlt.api.core.network;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.utils.Bytes;
-import org.json.JSONObject;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-
-final class NetworkStatusHandler implements ApiHandler<NetworkIdentifier> {
+public class NetworkIdentifier {
 	private final Network network;
-	private final REAddr accountAddress;
-	private final ECPublicKey validatorKey;
-	private final InMemorySystemInfo inMemorySystemInfo;
-	private final AccumulatorState genesisAccumulatorState;
-	private final Addressing addressing;
 
-	@Inject
-	NetworkStatusHandler(
-		@NetworkId int networkId,
-		@Self REAddr accountAddress,
-		@Self ECPublicKey validatorKey,
-		InMemorySystemInfo inMemorySystemInfo,
-		@Genesis Txn genesisTxn,
-		LedgerAccumulator ledgerAccumulator,
-		Addressing addressing
-	) {
-		this.network = Network.ofId(networkId).orElseThrow();
-		this.accountAddress = accountAddress;
-		this.validatorKey = validatorKey;
-		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
-			new AccumulatorState(0, HashUtils.zero256()), genesisTxn.getId().asHashCode()
-		);
-		this.addressing = addressing;
+	private NetworkIdentifier(Network network) {
+		this.network = network;
 	}
 
-	@Override
-	public NetworkIdentifier parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		return reader.getJsonObject("network_identifier", NetworkIdentifier::from);
+	public Network getNetwork() {
+		return network;
 	}
 
-	@Override
-	public JSONObject handleRequest(NetworkIdentifier request) {
-		if (!request.getNetwork().equals(this.network)) {
-			throw new IllegalStateException();
-		}
-
-		var currentProof = inMemorySystemInfo.getCurrentProof();
-		return jsonObject()
-			.put("pre_genesis_state_identifier", new JSONObject()
-				.put("state_version", 0)
-				.put("transaction_accumulator", Bytes.toHexString(HashUtils.zero256().asBytes()))
-			)
-			.put("genesis_state_identifier", new JSONObject()
-				.put("state_version", genesisAccumulatorState.getStateVersion())
-				.put("transaction_accumulator", Bytes.toHexString(genesisAccumulatorState.getAccumulatorHash().asBytes()))
-			)
-			.put("current_state_identifier", new JSONObject()
-				.put("state_version", currentProof.getStateVersion())
-				.put("transaction_accumulator", Bytes.toHexString(currentProof.getAccumulatorState().getAccumulatorHash().asBytes()))
-			)
-			.put("current_state_epoch", currentProof.getEpoch())
-			.put("current_state_round", currentProof.getView().number())
-			.put("current_state_timestamp", currentProof.timestamp())
-			.put("node_identifiers", new JSONObject()
-				.put("account_address_identifier", new JSONObject()
-					.put("address", addressing.forAccounts().of(accountAddress))
-				)
-				.put("validator_address_identifier", new JSONObject()
-					.put("address", addressing.forValidators().of(validatorKey))
-				)
-				.put("public_key", new JSONObject()
-					.put("hex", validatorKey.toHex())
-				)
-			);
+	public static NetworkIdentifier from(JsonObjectReader reader) throws InvalidParametersException {
+		var name = reader.getString("network");
+		var network = Network.ofName(name).orElseThrow();
+		return new NetworkIdentifier(network);
 	}
 }

@@ -76,7 +76,6 @@ import static org.radix.Radix.SYSTEM_VERSION_KEY;
 import static org.radix.Radix.VERSION_STRING_KEY;
 
 class NetworkConfigurationHandler implements ApiHandler<Void> {
-	private final int networkId;
 	private final Network network;
 	private final InfoSupplier infoSupplier;
 
@@ -85,7 +84,6 @@ class NetworkConfigurationHandler implements ApiHandler<Void> {
 		@NetworkId int networkId,
 		InfoSupplier infoSupplier
 	) {
-		this.networkId = networkId;
 		this.network = Network.ofId(networkId).orElseThrow();
 		this.infoSupplier = infoSupplier;
 	}
@@ -103,8 +101,7 @@ class NetworkConfigurationHandler implements ApiHandler<Void> {
 				.put("api_version", "0.9.0")
 			)
 			.put("network_identifier", new JSONObject()
-				.put("id", networkId)
-				.put("name", network.name().toLowerCase())
+				.put("network", network.name().toLowerCase())
 			)
 			.put("bech32_human_readable_parts", new JSONObject()
 				.put("account_hrp", network.getAccountHrp())

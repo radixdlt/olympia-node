@@ -534,8 +534,7 @@ components:
           "$ref": "#/components/schemas/Bech32HRPs"
       example:
         network_identifier:
-          id: 1
-          name: mainnet
+          network: mainnet
         bech32_human_readable_parts:
           account_hrp: rdx
           validator_hrp: rv
@@ -543,7 +542,12 @@ components:
           resource_hrp_suffix: _rr
     NetworkStatusRequest:
       type: object
-      example: {}
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+      example:
+        network_identifier:
+          network: mainnet
     NetworkStatusResponse:
       type: object
       required:
@@ -1456,16 +1460,12 @@ components:
     NetworkIdentifier:
       type: object
       required:
-        - id
-        - name
+        - network
       properties:
-        id:
-          type: integer
-        name:
+        network:
           type: string
       example:
-        id: 1
-        name: mainnet
+        network: mainnet
     CommittedStateIdentifier:
       type: object
       required:
