@@ -675,9 +675,12 @@ components:
     ConstructionDeriveRequest:
       type: object
       required:
+        - network_identifier
         - public_key
         - metadata
       properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
         public_key:
           "$ref": "#/components/schemas/PublicKey"
         metadata:
@@ -719,9 +722,12 @@ components:
     ConstructionBuildRequest:
       type: object
       required:
+        - network_identifier
         - operation_groups
         - fee_payer
       properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
         operation_groups:
           description: Operation groups which describe the intent of the request
           type: array

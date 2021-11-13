@@ -65,24 +65,34 @@ package com.radixdlt.api.core.construction;
 
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.api.core.network.NetworkIdentifier;
+import com.radixdlt.networks.Network;
 
 public final class ParseTransactionRequest {
+	private final NetworkIdentifier networkIdentifier;
 	private final byte[] transaction;
 	private final boolean signed;
 
 	private ParseTransactionRequest(
+		NetworkIdentifier networkIdentifier,
 		byte[] transaction,
 		boolean signed
 	) {
+		this.networkIdentifier = networkIdentifier;
 		this.transaction = transaction;
 		this.signed = signed;
 	}
 
 	public static ParseTransactionRequest from(JsonObjectReader reader) throws InvalidParametersException {
 		return new ParseTransactionRequest(
+			reader.getJsonObject("network_identifier", NetworkIdentifier::from),
 			reader.getHexBytes("transaction"),
 			reader.getBoolean("signed")
 		);
+	}
+
+	public Network getNetwork() {
+		return networkIdentifier.getNetwork();
 	}
 
 	public byte[] getTransaction() {

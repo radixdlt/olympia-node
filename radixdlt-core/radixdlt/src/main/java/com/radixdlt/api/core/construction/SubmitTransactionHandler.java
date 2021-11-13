@@ -78,26 +78,34 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import org.json.JSONObject;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-public class SubmitTransactionHandler implements ApiHandler<Txn> {
+public class SubmitTransactionHandler implements ApiHandler<SubmitTransactionRequest> {
+	private final Network network;
 	private final EventDispatcher<MempoolAdd> dispatcher;
 
 	@Inject
-	SubmitTransactionHandler(EventDispatcher<MempoolAdd> mempoolAddEventDispatcher) {
+	SubmitTransactionHandler(
+		@NetworkId int networkId,
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
+	) {
+		this.network = Network.ofId(networkId).orElseThrow();
 		this.dispatcher = mempoolAddEventDispatcher;
 	}
 
 	@Override
-	public Txn parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return Txn.create(requestReader.getHexBytes("signed_transaction"));
+	public SubmitTransactionRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return SubmitTransactionRequest.from(requestReader);
 	}
 
 	@Override
-	public JSONObject handleRequest(Txn txn) throws Exception {
+	public JSONObject handleRequest(SubmitTransactionRequest request) throws Exception {
+		var txn = request.getTxn();
 		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
 

@@ -79,6 +79,8 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import org.json.JSONObject;
 
@@ -86,16 +88,19 @@ import java.util.List;
 import java.util.function.Function;
 
 public class ParseTransactionHandler implements ApiHandler<ParseTransactionRequest> {
+	private final Network network;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final ProcessedTxnJsonConverter converter;
 	private final Addressing addressing;
 
 	@Inject
 	ParseTransactionHandler(
+		@NetworkId int networkId,
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
 		ProcessedTxnJsonConverter converter,
 		Addressing addressing
 	) {
+		this.network = Network.ofId(networkId).orElseThrow();
 		this.radixEngineProvider = radixEngineProvider;
 		this.converter = converter;
 		this.addressing = addressing;
@@ -109,6 +114,10 @@ public class ParseTransactionHandler implements ApiHandler<ParseTransactionReque
 
 	@Override
 	public JSONObject handleRequest(ParseTransactionRequest request) throws Exception {
+		if (!request.getNetwork().equals(this.network)) {
+			throw new IllegalStateException();
+		}
+
 		REProcessedTxn processed;
 		try {
 			processed = radixEngineProvider.get().test(request.getTransaction(), request.isSigned());

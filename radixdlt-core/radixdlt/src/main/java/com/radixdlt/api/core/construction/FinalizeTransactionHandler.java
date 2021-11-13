@@ -69,10 +69,20 @@ import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.utils.Bytes;
 import org.json.JSONObject;
 
 public final class FinalizeTransactionHandler implements ApiHandler<FinalizeTransactionRequest> {
+	private final Network network;
+
+	public FinalizeTransactionHandler(
+		@NetworkId int networkId
+	) {
+		this.network = Network.ofId(networkId).orElseThrow();
+	}
+
 	@Override
 	public FinalizeTransactionRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
 		return FinalizeTransactionRequest.from(requestReader);
@@ -80,6 +90,10 @@ public final class FinalizeTransactionHandler implements ApiHandler<FinalizeTran
 
 	@Override
 	public JSONObject handleRequest(FinalizeTransactionRequest request) throws Exception {
+		if (!request.getNetwork().equals(this.network)) {
+			throw new IllegalStateException();
+		}
+
 		var sig = request.getSignature();
 		var rawSig = sig.getECDSASignature();
 		var pubKey = sig.getPublicKey();

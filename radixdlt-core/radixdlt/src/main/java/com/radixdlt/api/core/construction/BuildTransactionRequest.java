@@ -65,28 +65,37 @@ package com.radixdlt.api.core.construction;
 
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.api.core.network.NetworkIdentifier;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Network;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 public class BuildTransactionRequest {
+	private final NetworkIdentifier networkIdentifier;
 	private final REAddr feePayer;
 	private final List<OperationGroup> operationGroups;
 	private final byte[] message;
 	private final boolean disableResourceAllocateAndDestroy;
 
 	private BuildTransactionRequest(
+		NetworkIdentifier networkIdentifier,
 		REAddr feePayer,
 		List<OperationGroup> operationGroups,
 		byte[] message,
 		boolean disableResourceAllocateAndDestroy
 	) {
+		this.networkIdentifier = networkIdentifier;
 		this.feePayer = Objects.requireNonNull(feePayer);
 		this.operationGroups = Objects.requireNonNull(operationGroups);
 		this.message = message;
 		this.disableResourceAllocateAndDestroy = disableResourceAllocateAndDestroy;
+	}
+
+	public Network getNetwork() {
+		return networkIdentifier.getNetwork();
 	}
 
 	public REAddr getFeePayer() {
@@ -106,11 +115,14 @@ public class BuildTransactionRequest {
 	}
 
 	public static BuildTransactionRequest from(JsonObjectReader reader) throws InvalidParametersException {
+		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier::from);
 		var feePayer = reader.getJsonObject("fee_payer", EntityIdentifier::from).getAccountAddress()
 			.orElseThrow();
 		var operationGroups = reader.getList("operation_groups", OperationGroup::from);
 		var message = reader.getHexBytes("message");
 		var disableResourceAllocateAndDestroy = reader.getOptBoolean("disable_resource_allocate_and_destroy", false);
-		return new BuildTransactionRequest(feePayer, operationGroups, message, disableResourceAllocateAndDestroy);
+		return new BuildTransactionRequest(
+			networkIdentifier, feePayer, operationGroups, message, disableResourceAllocateAndDestroy
+		);
 	}
 }

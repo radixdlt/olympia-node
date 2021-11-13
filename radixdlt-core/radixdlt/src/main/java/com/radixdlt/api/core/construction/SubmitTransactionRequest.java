@@ -63,59 +63,35 @@
 
 package com.radixdlt.api.core.construction;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.api.core.network.NetworkIdentifier;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
-import org.json.JSONObject;
 
-public class DeriveHandler implements ApiHandler<DeriveRequest> {
-	private final Network network;
-	private final Addressing addressing;
+public class SubmitTransactionRequest {
+	private final NetworkIdentifier networkIdentifier;
+	private final Txn txn;
 
-	@Inject
-	DeriveHandler(
-		@NetworkId int networkId,
-		Addressing addressing
+	private SubmitTransactionRequest(
+		NetworkIdentifier networkIdentifier,
+		Txn txn
 	) {
-		this.network = Network.ofId(networkId).orElseThrow();
-		this.addressing = addressing;
+		this.networkIdentifier = networkIdentifier;
+		this.txn = txn;
 	}
 
-	@Override
-	public DeriveRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return DeriveRequest.from(requestReader);
+	public Network getNetwork() {
+		return networkIdentifier.getNetwork();
 	}
 
-	@Override
-	public JSONObject handleRequest(DeriveRequest request) throws Exception {
-		if (!request.getNetwork().equals(this.network)) {
-			throw new IllegalStateException();
-		}
+	public Txn getTxn() {
+		return txn;
+	}
 
-		if (request.getEntityType() == DeriveRequest.EntityType.ACCOUNT) {
-			var reAddr = REAddr.ofPubKeyAccount(request.getPublicKey());
-			return new JSONObject()
-				.put("entity_identifier", new JSONObject()
-					.put("address", addressing.forAccounts().of(reAddr))
-				);
-		} else if (request.getEntityType() == DeriveRequest.EntityType.VALIDATOR) {
-			return new JSONObject()
-				.put("entity_identifier", new JSONObject()
-					.put("address", addressing.forValidators().of(request.getPublicKey()))
-				);
-		} else if (request.getEntityType() == DeriveRequest.EntityType.TOKEN) {
-			var reAddr = REAddr.ofHashedKey(request.getPublicKey(), request.getSymbol());
-			return new JSONObject()
-				.put("entity_identifier", new JSONObject()
-					.put("address", addressing.forResources().of(request.getSymbol(), reAddr))
-				);
-		} else {
-			throw new IllegalStateException();
-		}
+	public static SubmitTransactionRequest from(JsonObjectReader reader) throws InvalidParametersException {
+		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier::from);
+		var signedTransaction = Txn.create(reader.getHexBytes("signed_transaction"));
+		return new SubmitTransactionRequest(networkIdentifier, signedTransaction);
 	}
 }

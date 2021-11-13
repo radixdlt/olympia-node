@@ -65,7 +65,9 @@ package com.radixdlt.api.core.construction;
 
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.api.core.network.NetworkIdentifier;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.networks.Network;
 import com.radixdlt.utils.Pair;
 
 import java.util.Arrays;
@@ -87,14 +89,25 @@ public class DeriveRequest {
 		}
 	}
 
+	private final NetworkIdentifier networkIdentifier;
 	private final ECPublicKey publicKey;
 	private final EntityType entityType;
 	private final String symbol;
 
-	private DeriveRequest(ECPublicKey publicKey, EntityType entityType, String symbol) {
+	private DeriveRequest(
+		NetworkIdentifier networkIdentifier,
+		ECPublicKey publicKey,
+		EntityType entityType,
+		String symbol
+	) {
+		this.networkIdentifier = networkIdentifier;
 		this.publicKey = publicKey;
 		this.entityType = entityType;
 		this.symbol = symbol;
+	}
+
+	public Network getNetwork() {
+		return networkIdentifier.getNetwork();
 	}
 
 	public ECPublicKey getPublicKey() {
@@ -110,6 +123,7 @@ public class DeriveRequest {
 	}
 
 	public static DeriveRequest from(JsonObjectReader reader) throws InvalidParametersException {
+		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier::from);
 		var publicKey = reader.getJsonObject("public_key", r -> r.getPubKey("hex"));
 		var typeAndSymbol = reader.<Pair<EntityType, String>>getJsonObject("metadata", r -> {
 			var typeString = r.getString("type");
@@ -121,6 +135,6 @@ public class DeriveRequest {
 			}
 		});
 
-		return new DeriveRequest(publicKey, typeAndSymbol.getFirst(), typeAndSymbol.getSecond());
+		return new DeriveRequest(networkIdentifier, publicKey, typeAndSymbol.getFirst(), typeAndSymbol.getSecond());
 	}
 }

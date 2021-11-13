@@ -77,6 +77,8 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Bytes;
@@ -86,13 +88,16 @@ final class BuildTransactionHandler implements ApiHandler<BuildTransactionReques
 	private final Addressing addressing;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final Forks forks;
+	private final Network network;
 
 	@Inject
 	BuildTransactionHandler(
+		@NetworkId int networkId,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		Forks forks,
 		Addressing addressing
 	) {
+		this.network = Network.ofId(networkId).orElseThrow();
 		this.radixEngine = radixEngine;
 		this.forks = forks;
 		this.addressing = addressing;
@@ -116,6 +121,10 @@ final class BuildTransactionHandler implements ApiHandler<BuildTransactionReques
 
 	@Override
 	public JSONObject handleRequest(BuildTransactionRequest request) throws TxBuilderException {
+		if (!request.getNetwork().equals(this.network)) {
+			throw new IllegalStateException();
+		}
+
 		var operationTxBuilder = OperationTxBuilder.from(request, forks);
 		var feePayer = request.getFeePayer();
 		var disableResourceAllocateAndDestroy = request.isDisableResourceAllocateAndDestroy();
