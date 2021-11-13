@@ -797,7 +797,7 @@ components:
           type: object
           properties:
             fee:
-              "$ref": "#/components/schemas/BigInteger"
+              "$ref": "#/components/schemas/ResourceAmount"
     ConstructionFinalizeRequest:
       type: object
       required:
@@ -858,7 +858,6 @@ components:
         - "$ref": "#/components/schemas/ConstructionBuildResponse"
         - type: object
           required:
-            - fee
             - unsigned_transaction
             - payload_to_sign
           properties:
@@ -993,7 +992,11 @@ components:
               size: 360
               signed_by:
                 hex: 02aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b6
-              fee: '72000000000000000'
+              fee:
+                resource:
+                  rri: xrd_rr1qy5wfsfh
+                  type: Token
+                value: '72000000000000000'
               hex: 07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf
               timestamp: 1627407310726
             committed_state_identifier:
@@ -1124,8 +1127,8 @@ components:
           description: The raw transaction bytes in hex encoding
           type: string
         fee:
-          description: The fee paid in XRD subunits (10^18) for the transaction
-          "$ref": "#/components/schemas/BigInteger"
+          description: The fee paid for the transaction
+          "$ref": "#/components/schemas/ResourceAmount"
         timestamp:
           description: Timestamp which the transaction was committed on
           "$ref": "#/components/schemas/LongNumber"
@@ -1363,7 +1366,7 @@ components:
             - fee
           properties:
             fee:
-              description: The fee of the validator which will be updated in a future
+              description: The fee percentage of the validator which will be updated in the future
                 epoch
               type: integer
             epoch:
