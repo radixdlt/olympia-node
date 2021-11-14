@@ -1,0 +1,39 @@
+version: '2.2'
+services:
+  core:
+    image: radixdlt/radixdlt-core:develop
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${RADIXDLT_NODE_API_PORT}:3333"
+      - "${RADIXDLT_CLIENT_API_PORT}:8080"
+    mem_limit: 12000m
+    cap_add:
+      - NET_ADMIN
+    environment:
+      RADIXDLT_NETWORK_SEEDS_REMOTE: "${RADIXDLT_NETWORK_NODE}"
+      RADIXDLT_LOG_LEVEL: debug
+      JAVA_OPTS: -server -Xms8g -Xmx8g -XX:+HeapDumpOnOutOfMemoryError -XX:+UseCompressedOops -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector
+      RADIXDLT_VALIDATOR_KEY_LOCATION: "/home/radixdlt/node-keystore.ks"
+      RADIXDLT_ARCHIVE_API_ENABLE : "true"
+      RADIXDLT_CONSTRUCT_API_ENABLE : "true"
+      RADIXDLT_ACCOUNT_API_ENABLE: "true"
+      RADIXDLT_HEALTH_API_ENABLE: "true"
+      RADIXDLT_SYSTEM_API_ENABLE: "true"
+      RADIXDLT_METRICS_API_ENABLE: "true"
+      RADIXDLT_VALIDATION_API_ENABLE: "true"
+      RADIXDLT_VERSION_API_ENABLE: "true"
+      RADIXDLT_UNIVERSE_ENABLE: "true"
+      RADIXDLT_TRANSACTIONS_API_ENABLE: "true"
+      RADIXDLT_NODE_API_PORT: 3333
+      RADIXDLT_CLIENT_API_PORT: 8080
+      RADIXDLT_UNIVERSE_API_ENABLE: "true"
+      RADIXDLT_NETWORK_ID: "${RADIXDLT_NETWORK_ID}"
+      RADIX_NODE_KEYSTORE_PASSWORD: "${RADIXDLT_NODE_KEY_PASSWORD}"
+    #     If you want use same user from your host, you can pass LOCAL_USER_ID enviroment variable, else it will default to 999.
+    #     Command `id` will show your uid of the user from terminal. Replace it with <uid of local user> and uncomment the below line
+    #      LOCAL_USER_ID: <uid of local user>
+
+    volumes:
+      -  "./node/ledger:/home/radixdlt/RADIXDB"
+      -  "./node/keystore.ks:/home/radixdlt/node-keystore.ks"

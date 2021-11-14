@@ -26,40 +26,20 @@ $ ./gradlew clean build
 ```
 
 ### Running integration tests
+
+Integration tests take quite a while to run (over an hour on most machines).
+
+They are typically run as part of a PR.
+
 ```shell
 $ ./gradlew integrationTest
 ```
 
-### Launching local network
+### Run configurations
 
-Change directory to `radixdlt-core/docker`. Then run following command:
+There are a variety of [run configurations](./run-configurations), depending on how you'd like to test your code:
 
-```shell
-$ ./scripts/rundocker.sh <number-of-nodes>
-```
-
-Where `<number-of-nodes>` is any value between 2 and 5. This value defined number 
-of validators in the network. Each validator has enabled all endpoints by default.
-
-### Launching local network for more than 5 nodes
-
-If you want to launch network with more than 5 nodes, then you can generate necessary
-docker-compose configuration file using dedicated script - `generate-yml.sh`. 
-
-For example, following command generates configuration file for network with 15 nodes:
-```shell
-$ ./scripts/generate-yml.sh -n 15 -p 8080
-```
-For more information about this script, run it without parameters.
-
-__WARNING__: Each node consumes considerable resources, so running large network requires quite capable hardware.
-
-### IntelliJ IDEA Troubleshooting
-In some cases IntelliJ IDEA may deny to load project properly. Usually this happens if you have installed more than one Java version.
-If you meet this issue, check following configuration options:
- - `Project Structure -> Project Settings -> Project`, make sure `Project SDK` and `Project Language Level` is set to Java 11.
- - `Project Structure -> Project Settings -> Modules`, make sure that every module has `Language Level` set to Java 11 (`Project default`)  
- - `Settings -> Build,Execution, Deployment -> Build Tools -> Gradle`, make sure that `Gradle JVM` is set to `Project JDK`. 
-
-Once you have all settings fixed, force reloading of the Gradle configuration (you may ignore `jmh` dependency errors) and then rebuild project.
-
+* [Launching a local network in Docker](./run-configurations/launching-a-local-network-in-docker.md)
+* [Connecting to a live network via Docker](./run-configurations/connecting-to-a-live-network-in-docker.md)
+* Connecting to a live network without Docker
+* Running with nginx in front of the node (to replicate a more production-like setup)
