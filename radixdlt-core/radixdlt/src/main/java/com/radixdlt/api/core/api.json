@@ -16,9 +16,14 @@
   ],
   "tags": [
     {
+      "name": "entities",
+      "x-displayName": "Entities and Operations",
+      "description": "Entities represent something that can hold resource balances and data objects.\nA public key account is the simplest example of an entity.\n\n![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/entity.png '#width=500px;')\n\nAt the simplest level of abstraction, each Operation in a Transaction is simply\neither a resource balance change or a data object update in an entity.\n\n![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/operation.png '#width=500px;')\n"
+    },
+    {
       "name": "objects",
-      "x-displayName": "Objects",
-      "description": "## State Identifier\nThe Radix Olympia network has no concept of blocks, instead transactions are\nmanaged in a flat ordered list. A hash chain is formed from these transactions\nwhich represents a point in time of the ledger with a valid committed state.\n\n![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/state_identifiers.png '#width=500px;')\n\nAlong with the transaction accumulator hash and the index of the hash in the hash\nchain, this forms a State Identifier:\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedStateIdentifier\" exampleRef=\"#/components/examples/CommittedStateIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n## Transaction\n\nA Transaction consists of one or more OperationGroups, each of which consist of\none or more Operations.\n\n![Transaction Operations](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/transaction_operations.png '#width=500px;')\n\nA Committed Transaction has additional information such as the StateIdentifier\nwhich resulted after committing the transaction.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransaction\" showReadOnly={true} showWriteOnly={true} />\n\n## Operation Group\n\nSimilar to the [Rosetta API](https://www.rosetta-api.org/), both reading and\nwriting to the ledger use the same Address and Operation objects.\n\nEvery state change is expressed as an Operation which operates on a single\nEntity. Any state change which consists of two accounts (such as\na token transfer) thus requires atleast two Operations, one which debits\nthe sender and one which credits the receiver.\n\nUnlike Rosetta, operations are more explicitly linked via Operation Groups. Each\nOperation Group then represents a well formed accounting entry where credits\nand debits are equivalent (unless minting or burning occurred).\n\n<SchemaDefinition schemaRef=\"#/components/schemas/OperationGroup\" showReadOnly={true} showWriteOnly={true} />\n\n## Operation\n\nOperations operate on a single Entity and are associated with a single Amount\nupdate and/or a single Data update.\n\n* The `amount` property represents either a positive or negative change in balance of some token.\n* The `data` property represents either the creation or deletion of a data object.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/Operation\" showReadOnly={true} showWriteOnly={true} />\n\n## Entity Identifier\n\nAn Entity Identifier uniquely describes an entity which may have arbitrary balances and arbitrary data\nobjects. An Entity Identifier may further specify a Sub Address which should be treated as a separate\nunique entity.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/EntityIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n## Amount\n\nA signed amount of a resource.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/ResourceAmount\" showReadOnly={true} showWriteOnly={true} />\n\n## Resource Identifier\n\nA Resource Identifier uniquely describes either some token or stake ownership of a validator.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/ResourceIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n## Data Update\n\nA Data update is the creation or destruction of a data object.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/Data\" showReadOnly={true} showWriteOnly={true} />\n"
+      "x-displayName": "Objects and Identifiers",
+      "description": "## State Identifier\nThe Radix Olympia network has no concept of blocks, instead transactions are\nmanaged in a flat ordered list. A hash chain is formed from these transactions\nwhich represents a point in time of the ledger with a valid committed state.\n\n![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/state_identifiers.png '#width=500px;')\n\nAlong with the transaction accumulator hash and the index of the hash in the hash\nchain, this forms a State Identifier:\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedStateIdentifier\" exampleRef=\"#/components/examples/CommittedStateIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n## Transaction\n\nA Transaction consists of one or more OperationGroups, each of which consist of\none or more Operations.\n\n![Transaction Operations](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/transaction_operations.png)\n\nA Committed Transaction has additional information such as the StateIdentifier\nwhich resulted after committing the transaction.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransaction\" showReadOnly={true} showWriteOnly={true} />\n\n## OperationGroup\n\nSimilar to the [Rosetta API](https://www.rosetta-api.org/), both reading and\nwriting to the ledger use the same Address and Operation objects.\n\nEvery state change is expressed as an Operation which operates on a single\nEntity. Any state change which consists of two accounts (such as\na token transfer) thus requires atleast two Operations, one which debits\nthe sender and one which credits the receiver.\n\nUnlike Rosetta, operations are more explicitly linked via Operation Groups. Each\nOperation Group then represents a well formed accounting entry where credits\nand debits are equivalent (unless minting or burning occurred).\n\n<SchemaDefinition schemaRef=\"#/components/schemas/OperationGroup\" showReadOnly={true} showWriteOnly={true} />\n\n## Operation\n\nOperations operate on a single Entity and are associated with a single Amount\nupdate and/or a single Data update.\n\n* The `amount` property represents either a positive or negative change in balance of some token.\n* The `data` property represents either the creation or deletion of a data object.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/Operation\" showReadOnly={true} showWriteOnly={true} />\n\n## Entity Identifier\n\nAn Entity Identifier uniquely describes an entity which may have arbitrary balances and arbitrary data\nobjects. An Entity Identifier may further specify a Sub Address which should be treated as a separate\nunique entity.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/EntityIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n## Amount\n\nA signed amount of a resource.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/ResourceAmount\" showReadOnly={true} showWriteOnly={true} />\n\n## Resource Identifier\n\nA Resource Identifier uniquely describes either some token or stake ownership of a validator.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/ResourceIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n## Data Update\n\nA Data update is the creation or destruction of a data object.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/Data\" showReadOnly={true} showWriteOnly={true} />\n"
     },
     {
       "name": "structure",
@@ -28,7 +33,7 @@
     {
       "name": "actions",
       "x-displayName": "Actions",
-      "description": "\n![User Actions](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/user_actions.png '#width=500px;')\n"
+      "description": "\nThere are further restrictions on which resource movement and data updates and how operations must\nbe combined. The following describes at a high level what user actions (ledger updates that can be\nsubmitted as a transaction) are available.\n\n![User Actions](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/user_actions.png '#width=500px;')\n\n1. **Transfer** of any token resource (including the native token XRD) from an account to another\naccount may be done by debiting an amount from the sending account and crediting the same amount\nto the receiving account.\n2. **Staking** may be started by transferring XRD from an account to a `prepared_stake` entity\nwith a specific validator. Once XRD is in this entity, at some point the system will move this\nXRD to a Validator entity and mint StakeOwnership into the originating account.\n3. **Unstaking** may be started by transfering StakeOwnership from an account to a `prepared_unstake`\nentity. Once StakeOwnership is in this entity, at some point the system will destroy this\nStakeOwnership and transfer XRD from the Validator entity into your `exiting_stake` entity. Once\nthe unlocking period is over the system will move that XRD from the `exiting_stake` entity into your\naccount.\n4. **Validator Updates** may be started by destroying the current data object and creating a new\ndata object with the same type.\n5. **New Token Definitions** may be created by destroying an `UnclaimedREAddr` and creating a\n`TokenData` and `TokenMetadata` data object.\n"
     },
     {
       "name": "network",
@@ -60,9 +65,10 @@
     {
       "name": "Model",
       "tags": [
-        "objects",
+        "entities",
         "structure",
-        "actions"
+        "actions",
+        "objects"
       ]
     },
     {
@@ -243,6 +249,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UnexpectedError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/construction/derive": {
+      "post": {
+        "summary": "Derive Entity Identifier",
+        "tags": [
+          "construction"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConstructionDeriveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Entity Identifier",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConstructionDeriveResponse"
                 }
               }
             }
@@ -492,8 +528,7 @@
         },
         "example": {
           "network_identifier": {
-            "id": 1,
-            "name": "mainnet"
+            "network": "mainnet"
           },
           "bech32_human_readable_parts": {
             "account_hrp": "rdx",
@@ -505,7 +540,16 @@
       },
       "NetworkStatusRequest": {
         "type": "object",
-        "example": {}
+        "properties": {
+          "network_identifier": {
+            "$ref": "#/components/schemas/NetworkIdentifier"
+          }
+        },
+        "example": {
+          "network_identifier": {
+            "network": "mainnet"
+          }
+        }
       },
       "NetworkStatusResponse": {
         "type": "object",
@@ -684,13 +728,95 @@
           "data_objects": []
         }
       },
+      "ConstructionDeriveRequest": {
+        "type": "object",
+        "required": [
+          "network_identifier",
+          "public_key",
+          "metadata"
+        ],
+        "properties": {
+          "network_identifier": {
+            "$ref": "#/components/schemas/NetworkIdentifier"
+          },
+          "public_key": {
+            "$ref": "#/components/schemas/PublicKey"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+          }
+        }
+      },
+      "ConstructionDeriveResponse": {
+        "type": "object",
+        "required": [
+          "entity_identifier"
+        ],
+        "properties": {
+          "entity_identifier": {
+            "$ref": "#/components/schemas/EntityIdentifier"
+          }
+        }
+      },
+      "ConstructionDeriveRequestMetadata": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          }
+        },
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "Account": "#/components/schemas/ConstructionDeriveRequestMetadataAccount",
+            "Validator": "#/components/schemas/ConstructionDeriveRequestMetadataValidator",
+            "Token": "#/components/schemas/ConstructionDeriveRequestMetadataToken"
+          }
+        }
+      },
+      "ConstructionDeriveRequestMetadataAccount": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+          }
+        ]
+      },
+      "ConstructionDeriveRequestMetadataValidator": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+          }
+        ]
+      },
+      "ConstructionDeriveRequestMetadataToken": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
+          },
+          {
+            "type": "object",
+            "required": [
+              "symbol"
+            ],
+            "properties": {
+              "symbol": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
       "ConstructionBuildRequest": {
         "type": "object",
         "required": [
+          "network_identifier",
           "operation_groups",
           "fee_payer"
         ],
         "properties": {
+          "network_identifier": {
+            "$ref": "#/components/schemas/NetworkIdentifier"
+          },
           "operation_groups": {
             "description": "Operation groups which describe the intent of the request",
             "type": "array",
@@ -700,7 +826,7 @@
           },
           "fee_payer": {
             "description": "The address where fees will be subtracted from",
-            "$ref": "#/components/schemas/AccountAddress"
+            "$ref": "#/components/schemas/EntityIdentifier"
           },
           "message": {
             "description": "An optional message encoded in hex",
@@ -712,7 +838,9 @@
           }
         },
         "example": {
-          "fee_payer": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88",
+          "fee_payer": {
+            "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+          },
           "operation_groups": [
             {
               "operations": [
@@ -803,7 +931,7 @@
             "type": "object",
             "properties": {
               "fee": {
-                "$ref": "#/components/schemas/BigInteger"
+                "$ref": "#/components/schemas/ResourceAmount"
               }
             }
           }
@@ -896,7 +1024,6 @@
           {
             "type": "object",
             "required": [
-              "fee",
               "unsigned_transaction",
               "payload_to_sign"
             ],
@@ -1043,7 +1170,13 @@
       "CommittedTransactionsRequest": {
         "description": "A request to retrieve a sublist of committed transactions to the ledger.",
         "type": "object",
+        "required": [
+          "network_identifier"
+        ],
         "properties": {
+          "network_identifier": {
+            "$ref": "#/components/schemas/NetworkIdentifier"
+          },
           "committed_state_identifier": {
             "description": "The state identifier point from which to begin returning transactions from",
             "$ref": "#/components/schemas/PartialCommittedStateIdentifier"
@@ -1092,7 +1225,13 @@
                 "signed_by": {
                   "hex": "02aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b6"
                 },
-                "fee": "72000000000000000",
+                "fee": {
+                  "resource": {
+                    "rri": "xrd_rr1qy5wfsfh",
+                    "type": "Token"
+                  },
+                  "value": "72000000000000000"
+                },
                 "hex": "07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf",
                 "timestamp": 1627407310726
               },
@@ -1287,8 +1426,8 @@
             "type": "string"
           },
           "fee": {
-            "description": "The fee paid in XRD subunits (10^18) for the transaction",
-            "$ref": "#/components/schemas/BigInteger"
+            "description": "The fee paid for the transaction",
+            "$ref": "#/components/schemas/ResourceAmount"
           },
           "timestamp": {
             "description": "Timestamp which the transaction was committed on",
@@ -1326,7 +1465,8 @@
       "Operation": {
         "type": "object",
         "required": [
-          "type"
+          "type",
+          "entity_identifier"
         ],
         "properties": {
           "type": {
@@ -1642,7 +1782,7 @@
             ],
             "properties": {
               "fee": {
-                "description": "The fee of the validator which will be updated in a future epoch",
+                "description": "The fee percentage of the validator which will be updated in the future epoch",
                 "type": "integer"
               },
               "epoch": {
@@ -1783,20 +1923,15 @@
       "NetworkIdentifier": {
         "type": "object",
         "required": [
-          "id",
-          "name"
+          "network"
         ],
         "properties": {
-          "id": {
-            "type": "integer"
-          },
-          "name": {
+          "network": {
             "type": "string"
           }
         },
         "example": {
-          "id": 1,
-          "name": "mainnet"
+          "network": "mainnet"
         }
       },
       "CommittedStateIdentifier": {

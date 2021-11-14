@@ -70,7 +70,6 @@ import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
 import com.radixdlt.api.archive.construction.InvalidTransactionException;
 import com.radixdlt.api.archive.construction.StateConflictException;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
@@ -105,6 +104,10 @@ public class SubmitTransactionHandler implements ApiHandler<SubmitTransactionReq
 
 	@Override
 	public JSONObject handleRequest(SubmitTransactionRequest request) throws Exception {
+		if (!request.getNetwork().equals(this.network)) {
+			throw new IllegalStateException();
+		}
+
 		var txn = request.getTxn();
 		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 		var mempoolAdd = MempoolAdd.create(txn, completableFuture);

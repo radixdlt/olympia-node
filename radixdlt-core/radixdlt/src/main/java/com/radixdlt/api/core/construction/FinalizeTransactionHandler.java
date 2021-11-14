@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.core.construction;
 
+import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
@@ -77,6 +78,7 @@ import org.json.JSONObject;
 public final class FinalizeTransactionHandler implements ApiHandler<FinalizeTransactionRequest> {
 	private final Network network;
 
+	@Inject
 	public FinalizeTransactionHandler(
 		@NetworkId int networkId
 	) {
