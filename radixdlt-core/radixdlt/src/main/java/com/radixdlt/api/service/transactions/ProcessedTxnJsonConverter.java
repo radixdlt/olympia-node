@@ -307,19 +307,19 @@ public final class ProcessedTxnJsonConverter {
 			if (bucket.getOwner() != null) {
 				entityIdentifier.put("address", addressing.forAccounts().of(bucket.getOwner()));
 				if (bucket.getValidatorKey() != null) {
-					var subAddressJson = new JSONObject();
-					entityIdentifier.put("sub_address", subAddressJson);
+					var subEntityJson = new JSONObject();
+					entityIdentifier.put("sub_entity", subEntityJson);
 					if (bucket.getEpochUnlock() == null) {
-						subAddressJson
+						subEntityJson
 							.put("address", "prepared_stakes")
 							.put("metadata", new JSONObject()
 								.put("validator", addressing.forValidators().of(bucket.getValidatorKey()))
 							);
 					} else if (bucket.getEpochUnlock() == 0L) {
 						// Don't add validator as validator is already part of resource
-						subAddressJson.put("address", "prepared_unstakes");
+						subEntityJson.put("address", "prepared_unstakes");
 					} else {
-						subAddressJson.put("address", "exiting_unstakes")
+						subEntityJson.put("address", "exiting_unstakes")
 							.put("metadata", new JSONObject()
 								.put("validator", addressing.forValidators().of(bucket.getValidatorKey()))
 								.put("unlock_epoch", bucket.getEpochUnlock())
@@ -329,7 +329,9 @@ public final class ProcessedTxnJsonConverter {
 			} else if (update.getParsed() instanceof ValidatorStakeData) {
 				var validatorStakeData = (ValidatorStakeData) update.getParsed();
 				entityIdentifier.put("address", addressing.forValidators().of(bucket.getValidatorKey()));
-				entityIdentifier.put("sub_address", "system");
+				entityIdentifier.put("sub_entity", new JSONObject()
+					.put("address", "system")
+				);
 
 				operationJson
 					.put("data", new JSONObject()
@@ -374,7 +376,9 @@ public final class ProcessedTxnJsonConverter {
 				var entityIdentifierJson = new JSONObject()
 					.put("address", addressing.forValidators().of(validatorData.getValidatorKey()));
 				if (validatorData instanceof ValidatorBFTData) {
-					entityIdentifierJson.put("sub_address", "system");
+					entityIdentifierJson.put("sub_entity", new JSONObject()
+						.put("address", "system")
+					);
 				}
 				operationJson.put("entity_identifier", entityIdentifierJson);
 			} else if (update.getParsed() instanceof UnclaimedREAddr) {

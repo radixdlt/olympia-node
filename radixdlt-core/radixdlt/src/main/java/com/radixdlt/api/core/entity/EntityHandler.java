@@ -67,7 +67,6 @@ import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
-import com.radixdlt.api.core.construction.EntityIdentifier;
 import com.radixdlt.api.core.construction.KeyQuery;
 import com.radixdlt.api.core.construction.ResourceQuery;
 import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;

@@ -194,7 +194,7 @@ tags:
 
       For more sophisticated use, such as staking, you need to understand the structure and relationships of
       specific entities, resources, and data. For example, to stake XRD to a validator you must transfer XRD
-      from your account address to your `prepared_staked` subaddress.
+      from your account address to your `prepared_staked` subentity.
 
       The following is a high level table describing which resources and data objects are allowed for a given
       entity identifier.
@@ -206,7 +206,7 @@ tags:
       StakeOwnership, which represents a delegated amount of stake to a specific validator. Subaddresses under
       an account-address contain assets which the account-address owns but is currently locked by the system.
       An account is represented by its Bech32 account address.
-      * **Validator**, an entity representing a validating node on the network. The subaddress `system` holds XRD
+      * **Validator**, an entity representing a validating node on the network. The subentity `system` holds XRD
       tokens which have been staked to this validator. A validator is represented by its Bech32 validator address.
       * **Token**, an entity representing a token, represented by its Radix Resource Identifier ("RRI").
       * **System**, an entity representing system level data such as current epoch and round, represented by the string "system".
@@ -1678,23 +1678,23 @@ components:
         address:
           description: The top level identifier for an entity.
           type: string
-        sub_address:
+        sub_entity:
           description: Further drill down into an entity. Can be treated as an entirely
             separate address from `address` or as a child of `address`.
-          "$ref": "#/components/schemas/SubAddress"
-    SubAddress:
+          "$ref": "#/components/schemas/SubEntity"
+    SubEntity:
       type: object
       required:
         - address
       properties:
         address:
-          description: The subaddress.
+          description: The subentity.
           type: string
         metadata:
           description: Any additional data required to drill down to a particular
             address is added here.
-          "$ref": "#/components/schemas/SubAddressMetadata"
-    SubAddressMetadata:
+          "$ref": "#/components/schemas/SubEntityMetadata"
+    SubEntityMetadata:
       type: object
       properties:
         validator:
