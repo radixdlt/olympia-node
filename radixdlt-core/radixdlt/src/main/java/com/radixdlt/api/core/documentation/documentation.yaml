@@ -225,7 +225,7 @@ tags:
       The Account and Validator HRPs and the Token HRP suffix for the current network should be fetched from the
       `/network/configuration` endpoint.
 
-      It likely will not be necessary to actually decode the data parts of the Bech32 addresses, but if you do need to,
+      It likely will not be necessary to actually decode the data parts of the Bech32 encodings, but if you do need to,
       you should be warned that Radix addresses are *not* Segwit addresses. Many Bech32 libraries assume a Segwit
       encoding, so may fail to extract the data from a Radix address.
 
