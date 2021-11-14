@@ -12,6 +12,7 @@ info:
     exchanges to be able to begin integrating with the Radix network. In particular,
     the following endpoints will be frozen or at the very least backwards
     compatible to version 1.0.0 of the Radix Core API:
+
     * `/network/configuration`
     * `/network/status`
     * `/transactions`
@@ -21,16 +22,15 @@ info:
     * `/construction/finalize`
     * `/construction/submit`
 
-    All other endpoints may change upon 1.0.0 release.
+    All other endpoints may change by the 1.0.0 release, and further endpoints
+    (such as mempool contents) will likely be added.
 
-    :::warning
-
-    This API is NOT intended to be available on the public web and is designed
-    to be used in private networks mainly for node management and integration.
-    In particular, endpoints in the Signing API if accessed by the public can
-    result in loss of funds.
-
-    :::
+    > WARNING
+    >
+    > This API is __NOT__ intended to be available on the public web and is designed
+    > to be used in private networks mainly for node management and integration.
+    > In particular, endpoints in the Signing API if accessed by the public can
+    > result in loss of funds.
 
     # Radix Network Gateway
 
