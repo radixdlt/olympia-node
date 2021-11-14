@@ -329,6 +329,8 @@ public final class ProcessedTxnJsonConverter {
 			} else if (update.getParsed() instanceof ValidatorStakeData) {
 				var validatorStakeData = (ValidatorStakeData) update.getParsed();
 				entityIdentifier.put("address", addressing.forValidators().of(bucket.getValidatorKey()));
+				entityIdentifier.put("sub_address", "system");
+
 				operationJson
 					.put("data", new JSONObject()
 						.put("action", update.isBootUp() ? "CREATE" : "DELETE")
@@ -371,6 +373,9 @@ public final class ProcessedTxnJsonConverter {
 				var validatorData = (ValidatorData) update.getParsed();
 				var entityIdentifierJson = new JSONObject()
 					.put("address", addressing.forValidators().of(validatorData.getValidatorKey()));
+				if (validatorData instanceof ValidatorBFTData) {
+					entityIdentifierJson.put("sub_address", "system");
+				}
 				operationJson.put("entity_identifier", entityIdentifierJson);
 			} else if (update.getParsed() instanceof UnclaimedREAddr) {
 				var unclaimedREAddr = (UnclaimedREAddr) update.getParsed();

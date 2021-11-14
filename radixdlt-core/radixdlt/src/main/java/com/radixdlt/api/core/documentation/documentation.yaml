@@ -16,6 +16,7 @@ info:
     * `/network/configuration`
     * `/network/status`
     * `/transactions`
+    * `/construction/derive`
     * `/construction/build`
     * `/construction/parse`
     * `/construction/finalize`
