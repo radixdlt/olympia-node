@@ -3,15 +3,14 @@ info:
   version: 0.9.0
   title: Radix Core API
   description: |
-    This API provides endpoints for both RadixCore node management and integration
-    support.
+    This API provides endpoints for node management and integrations.
 
     # Introduction
 
     Welcome to the Radix Core API Preview. This Preview API is intended for
-    exchanges to be able to begin integrating with the Radix network. In particular,
-    the following endpoints will be frozen or at the very least backwards
-    compatible to version 1.0.0 of the Radix Core API:
+    integrators to be able to begin integrating with the Radix network. In
+    particular, the following endpoints will maintain backwards compatibility
+    once version 1.0.0 is released:
 
     * `/network/configuration`
     * `/network/status`
@@ -28,23 +27,17 @@ info:
 
     > WARNING
     >
-    > This API is __NOT__ intended to be available on the public web and is designed
-    > to be used in private networks mainly for node management and integration.
+    > The Core API is __NOT__ intended to be available on the public web. It is
+    > mainly designed to be accessed in a private network.
     > In particular, endpoints in the Signing API if accessed by the public can
     > result in loss of funds.
 
-    > NOTE
-    >
-    > We are building our own service against the Core API, and will be able to publish
-    > the preview source code for this soon. Other integrators will be able to run this service,
-    > or use the source code as a reference implementation to develop their own integrations.
-
     # Rosetta
 
-    Much of the design decisions of the Data API and Construction API endpoints is
-    inspired from [Rosetta API](https://www.rosetta-api.org/) most notably:
+    The Data API and Construction API is inspired from [Rosetta API](https://www.rosetta-api.org/)
+    most notably:
       * Use of a JSON-Based RPC protocol on top of HTTP Post requests
-      * Use of Operations, Amounts, and Identifiers to express generic asset movement
+      * Use of Operations, Amounts, and Identifiers to express asset movement
 
     There are a few notable exceptions to note:
       * Fetching of ledger data is through a Transaction stream rather than a
@@ -52,41 +45,29 @@ info:
       * Use of `EntityIdentifier` rather than `AccountIdentifier`
       * Use of `OperationGroup` rather than `related_operations` to express related
       operations
-      * Even though the Radix Ledger is UTXO based, Construction endpoints perform coin
-      selection on behalf of the caller. This has the unfortunate effect of not
-      being able to support high frequency transactions from a single account due to
-      UTXO spend conflicts. This will be addressed in future updates.
-      * Construction endpoints are mostly online rather than offline as required by
-      Rosetta
+      * Construction endpoints perform coin selection on behalf of the caller.
+      This has the unfortunate effect of not being able to support high frequency
+      transactions from a single account. This will be addressed in future updates.
+      * Construction endpoints are online rather than offline as required by Rosetta
 
     Future versions of the api will aim towards a fully-compliant Rosetta API.
 
-    # Data API Sequence Flow
+    # Data API Flow
 
-    Clients can make use of the Data API endpoints to synchronize
-    either a full or partial view (for example, to only track XRD asset balances) of
+    Integrators can make use of the Data API to synchronize a full or partial view of
     the ledger, transaction by transaction.
 
-    Synchronization involves only using the Data API. Assuming the client has a
-    database which they are updating, below is a generic flow of operations on
-    how to synchronize via the Data API.
+    ![Data API Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/data_sequence_flow.png)
 
-    ![Data Sequence Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/data_sequence_flow.png)
+    # Construction API Flow
 
+    Integrators can make use of the Construction API to construct and submit transactions
+    to the network.
 
-    # Construction API Sequence Flow
-
-    Clients can make use of the Construction API endpoints to construct and submit
-    transactions to the network.
-
-    The following sequence flow allows for integrators to construct transactions
-    on behalf of clients or for their own use without ever holding the actual private
-    key.
-
-    ![Construction Sequence Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/construction_sequence_flow.png)
+    ![Construction API Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/construction_sequence_flow.png)
 
     Unlike the Rosetta Construction API [specification](https://www.rosetta-api.org/docs/construction_api_introduction.html),
-    this Construction API selects the UTXOs on behalf of the caller. This has the unfortunate
+    this Construction API selects UTXOs on behalf of the caller. This has the unfortunate
     side effect of not being able to support high frequency transactions from a single
     account due to UTXO conflicts. This will be addressed in a future release.
   license:
@@ -99,12 +80,15 @@ tags:
     x-displayName: Entities
     description: |
       Entities represent something that can hold resource balances and data objects.
-      A public key account is the simplest example of an entity.
+      For example, a public key account is an entity which can hold token balances
+      on behalf of a private key holder.
 
       ![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/entity.png '#width=500px;')
 
-      At the simplest level of abstraction, each Operation in a Transaction is simply
-      either a resource balance change or a data object update in an entity.
+      An Operation is an update which occurs on an Entity. There are two types of
+      Operations:
+      * A **Resource** Operation which is a balance change on an Entity
+      * A **Data** Operation which is a data object update on an Entity
 
       ![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/operation.png '#width=500px;')
   - name: objects
