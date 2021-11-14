@@ -32,6 +32,12 @@ info:
 
     :::
 
+    # Radix Network Gateway
+
+    We are building our own service against the Core API, and will be able to publish
+    the preview source code for this soon. Other integrators will be able to run this service,
+    or use the source code as a reference implementation to develop their own integrations.
+
     # Rosetta
 
     Much of the design decisions of the Data API and Construction API endpoints is
