@@ -207,19 +207,20 @@ tags:
 
       ## Bech32 Addressing
 
-      Account addresses, Validator addresses and Token RRIs are all [Bech32 addresses](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki).
+      Account addresses, Validator addresses and Token RRIs are all [Bech32 encoded](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki).
 
-      A Bech32 address consists of a prefix which is a human readable ASCII part "HRP", followed by the character '1',
-      followed by encoded data, as 32 values (5 bits) per character.
+      A Bech32 encoding consists of a prefix which is an ASCII human readable part "HRP", followed by the character '1',
+      followed by an encoded data payload, encoded as 32 values (5 bits) per character.
 
       Assuming an address is legal, you can extract its HRP as the string before the last '1'. This can be used to
       distinguish between Account, Validator and Token/RRI addresses.
 
-      * **Accounts** Have a fixed HRP for a given Radix network. This is `rdx` on mainnet. The data part encodes the account's public key.
-      * **Validators** Have a fixed HRP for a given Radix network. This is `rv` on mainnet. The data part encodes the validator's public key.
-      * **Tokens** Have an HRP of `[Symbol][Suffix]` where the suffix is fixed for a given Radix network.
-        This suffix is `_rr` on mainnet. For example, the mainnet address of the native token, XRD, is `xrd_rr1qy5wfsfh`.
-        The data part encodes the token's unique radix engine address on ledger.
+      * **Accounts** have a fixed HRP for a given Radix network. This is `rdx` on mainnet. The data part encodes the account's public key.
+      * **Validators** have a fixed HRP for a given Radix network. This is `rv` on mainnet. The data part encodes the validator's public key.
+      * **Tokens** have an HRP of the token's (not necessarily unique) symbol, followed by a suffix.
+        The suffix is fixed for a given Radix network, and is `_rr` on mainnet.
+        As an example, the mainnet address of the native token, XRD, is `xrd_rr1qy5wfsfh`.
+        The data part of the Bech32 encoding encodes the token's unique radix engine address on ledger.
 
       The Account and Validator HRPs and the Token HRP suffix for the current network should be fetched from the
       `/network/configuration` endpoint.
@@ -236,10 +237,10 @@ tags:
 
       ## The native token: XRD
 
-      XRD is Radix ledger's native token, used for staking and to pay fees. It is the only token allowed with
-      the symbol `xrd`, and has a reserved radix engine address of `1` (`01` in hex).
+      XRD is Radix ledger's native token, used for staking and to pay transaction fees. It has the symbol `xrd`, and
+      no other token is permitted to use this symbol. It has a reserved radix engine address of `1` (`01` in hex).
 
-      On mainnet, its RRI is xrd_rr1qy5wfsfh.
+      On mainnet, its RRI is `xrd_rr1qy5wfsfh`.
 
   - name: actions
     x-displayName: Actions
