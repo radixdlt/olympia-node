@@ -421,7 +421,7 @@ public final class ProcessedTxnJsonConverter {
 		BiFunction<ECPublicKey, UInt384, UInt384> computeStakeFromOwnership
 	) {
 		var amtByteArray = entry.amount().toByteArray();
-		var amt = UInt256.from(amtByteArray);
+		var amount = UInt256.from(amtByteArray);
 		var from = entry.from();
 		var to = entry.to();
 		var result = new JSONObject();
@@ -452,7 +452,7 @@ public final class ProcessedTxnJsonConverter {
 						.put("type", ActionType.STAKE.toString());
 				}
 			} else if (fromBucket instanceof StakeOwnershipBucket) {
-				amt = computeStakeFromOwnership.apply(fromBucket.getValidatorKey(), UInt384.from(amt)).getLow();
+				amount = computeStakeFromOwnership.apply(fromBucket.getValidatorKey(), UInt384.from(amount)).getLow();
 				result
 					.put("to", addressing.forAccounts().of(toBucket.getOwner()))
 					.put("validator", addressing.forValidators().of(fromBucket.getValidatorKey()))
@@ -464,7 +464,12 @@ public final class ProcessedTxnJsonConverter {
 		}
 
 		return result
-			.put("amount", amt)
-			.put("rri", addrToRri.apply(entry.resourceAddr().orElse(REAddr.ofNativeToken())));
+			.put("amount", new JSONObject()
+				.put("value", amount.toString())
+				.put("resource_identifier", new JSONObject()
+					.put("type", "Token")
+					.put("rri", addrToRri.apply(entry.resourceAddr().orElse(REAddr.ofNativeToken())))
+				)
+			);
 	}
 }

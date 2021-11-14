@@ -1608,11 +1608,8 @@ components:
           description: "The type of this action: TRANSFER, STAKE, UNSTAKE, MINT, BURN, UNKNOWN."
           type: string
         amount:
-          description: A non-negative big integer representing an amount of resources in 10^18 subunits.
-          "$ref": "#/components/schemas/BigInteger"
-        rri:
-          description: The Radix Resource Identifier of the resource.
-          "$ref": "#/components/schemas/ResourceIdentifier"
+          description: A non-negative amount of resource.
+          "$ref": "#/components/schemas/ResourceAmount"
         from:
           description: If relevant, the account address from which the resource came.
           "$ref": "#/components/schemas/AccountAddress"
