@@ -3,8 +3,8 @@ info:
   version: 0.9.0
   title: Radix Core API
   description: |
-    This API provides endpoints for both RadixCore node management and support
-    for middleware integration (such as exchanges).
+    This API provides endpoints for both RadixCore node management and integration
+    support.
 
     # Introduction
 
@@ -33,11 +33,11 @@ info:
     > In particular, endpoints in the Signing API if accessed by the public can
     > result in loss of funds.
 
-    # Radix Network Gateway
-
-    We are building our own service against the Core API, and will be able to publish
-    the preview source code for this soon. Other integrators will be able to run this service,
-    or use the source code as a reference implementation to develop their own integrations.
+    > NOTE
+    >
+    > We are building our own service against the Core API, and will be able to publish
+    > the preview source code for this soon. Other integrators will be able to run this service,
+    > or use the source code as a reference implementation to develop their own integrations.
 
     # Rosetta
 
@@ -211,6 +211,9 @@ tags:
       * **Token**, an entity representing a token, represented by its Radix Resource Identifier ("RRI").
       * **System**, an entity representing system level data such as current epoch and round, represented by the string "system".
 
+  - name: addressing
+    x-displayName: Addressing
+    description: |
       ## Bech32 Address Encoding
 
       Account addresses, Validator addresses and Token RRIs are all [Bech32 encoded](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki).
@@ -293,6 +296,7 @@ x-tagGroups:
     tags:
       - entities
       - structure
+      - addressing
       - actions
       - objects
   - name: Data API
