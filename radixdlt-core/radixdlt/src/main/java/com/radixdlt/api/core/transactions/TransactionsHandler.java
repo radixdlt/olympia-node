@@ -97,7 +97,7 @@ class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 	@Override
 	public TransactionsRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
 		var limit = requestReader.getOptUnsignedLong("limit").orElse(1);
-		var stateIdentifier = requestReader.getJsonObject("committed_state_identifier", PartialStateIdentifier::from);
+		var stateIdentifier = requestReader.getJsonObject("state_identifier", PartialStateIdentifier::from);
 		var networkIdentifier = requestReader.getJsonObject("network_identifier", NetworkIdentifier::from);
 		return new TransactionsRequest(networkIdentifier, stateIdentifier, limit);
 	}
@@ -137,7 +137,7 @@ class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 		}
 
 		return jsonObject()
-			.put("committed_state_identifier", committedStateIdentifier)
+			.put("state_identifier", committedStateIdentifier)
 			.put("transactions", transactions);
 	}
 }

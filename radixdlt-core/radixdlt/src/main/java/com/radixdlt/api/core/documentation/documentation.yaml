@@ -1,4 +1,4 @@
----
+
 openapi: 3.1.0
 info:
   version: 0.9.0
@@ -112,7 +112,7 @@ tags:
 
       Along with the transaction accumulator hash and the index of the hash in the hash
       chain, this forms a State Identifier:
-      <SchemaDefinition schemaRef="#/components/schemas/CommittedStateIdentifier" exampleRef="#/components/examples/CommittedStateIdentifier" showReadOnly={true} showWriteOnly={true} />
+      <SchemaDefinition schemaRef="#/components/schemas/StateIdentifier" exampleRef="#/components/examples/StateIdentifier" showReadOnly={true} showWriteOnly={true} />
 
       ## Transaction
 
@@ -556,13 +556,13 @@ components:
       properties:
         pre_genesis_state_identifier:
           description: The ledger state identifier before the genesis transaction
-          "$ref": "#/components/schemas/CommittedStateIdentifier"
+          "$ref": "#/components/schemas/StateIdentifier"
         genesis_state_identifier:
           description: The ledger state identifier after the genesis transaction
-          "$ref": "#/components/schemas/CommittedStateIdentifier"
+          "$ref": "#/components/schemas/StateIdentifier"
         current_state_identifier:
           description: The current ledger state identifier
-          "$ref": "#/components/schemas/CommittedStateIdentifier"
+          "$ref": "#/components/schemas/StateIdentifier"
         current_state_epoch:
           description: The current ledger state epoch
           "$ref": "#/components/schemas/LongNumber"
@@ -983,17 +983,17 @@ components:
       properties:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
-        committed_state_identifier:
+        state_identifier:
           description: The state identifier point from which to begin returning transactions
             from
-          "$ref": "#/components/schemas/PartialCommittedStateIdentifier"
+          "$ref": "#/components/schemas/PartialStateIdentifier"
         limit:
           description: The maximum number of transactions that will be returned.
           "$ref": "#/components/schemas/LongNumber"
       example:
         network_identifier:
           network: mainnet
-        committed_state_identifier:
+        state_identifier:
           state_version: 40897
         limit: 1
     CommittedTransactionsResponse:
@@ -1001,20 +1001,20 @@ components:
         updates which have occurred on ledger.
       type: object
       required:
-        - committed_state_identifier
+        - state_identifier
         - transactions
       properties:
-        committed_state_identifier:
+        state_identifier:
           description: The committed ledger state identifier from which this transaction
             list starts from
-          "$ref": "#/components/schemas/CommittedStateIdentifier"
+          "$ref": "#/components/schemas/StateIdentifier"
         transactions:
-          description: A committed transactions list starting from the `committed_state_identifier`
+          description: A committed transactions list starting from the `state_identifier`
           type: array
           items:
             "$ref": "#/components/schemas/CommittedTransaction"
       example:
-        committed_state_identifier:
+        state_identifier:
           state_version: 40897
           transaction_accumulator: dd61e3e2c9cdda8bf8973ea7d6dd4e6482c569fff45f0ca5e2bfd196f5bae4c9
         transactions:
@@ -1131,7 +1131,7 @@ components:
         committed_state_identifier:
           description: The next ledger state identifier following the commit of this
             transaction
-          "$ref": "#/components/schemas/CommittedStateIdentifier"
+          "$ref": "#/components/schemas/StateIdentifier"
         operation_groups:
           description: Transactions are split into operation groups which are roughly
             equivalent to ledger accounting entries where all credits have an equivalent
@@ -1492,7 +1492,7 @@ components:
           type: string
       example:
         network: mainnet
-    CommittedStateIdentifier:
+    StateIdentifier:
       type: object
       required:
         - state_version
@@ -1509,7 +1509,7 @@ components:
       example:
         state_version: 0
         transaction_accumulator: "0000000000000000000000000000000000000000000000000000000000000000"
-    PartialCommittedStateIdentifier:
+    PartialStateIdentifier:
       type: object
       required:
         - state_version
