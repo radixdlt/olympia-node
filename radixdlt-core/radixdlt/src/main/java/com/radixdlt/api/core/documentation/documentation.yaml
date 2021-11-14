@@ -199,10 +199,48 @@ tags:
       * **Account**, which is a regular public key account which can contain token balances and contain
       StakeOwnership, which represents a delegated amount of stake to a specific validator. Subaddresses under
       an account-address contain assets which the account-address owns but is currently locked by the system.
+      An account is represented by its Bech32 account address.
       * **Validator**, an entity representing a validating node on the network. The subaddress `system` holds XRD
-      tokens which have been staked to this validator.
-      * **Token**, an entity representing a token
-      * **System**, an entity representing system level data such as current epoch and round
+      tokens which have been staked to this validator. A validator is represented by its Bech32 validator address.
+      * **Token**, an entity representing a token, represented by its Radix Resource Identifier ("RRI").
+      * **System**, an entity representing system level data such as current epoch and round, represnted by the string "system"
+
+      ## Bech32 Addressing
+
+      Account addresses, Validator addresses and Token RRIs are all [Bech32 addresses](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki).
+
+      A Bech32 address consists of a prefix which is a human readable ASCII part "HRP", followed by the character '1',
+      followed by encoded data, as 32 values (5 bits) per character.
+
+      Assuming an address is legal, you can extract its HRP as the string before the last '1'. This can be used to
+      distinguish between Account, Validator and Token/RRI addresses.
+
+      * **Accounts** Have a fixed HRP for a given Radix network. This is `rdx` on mainnet. The data part encodes the account's public key.
+      * **Validators** Have a fixed HRP for a given Radix network. This is `rv` on mainnet. The data part encodes the validator's public key.
+      * **Tokens** Have an HRP of `[Symbol][Suffix]` where the suffix is fixed for a given Radix network.
+        This suffix is `_rr` on mainnet. For example, the mainnet address of the native token, XRD, is `xrd_rr1qy5wfsfh`.
+        The data part encodes the token's unique radix engine address on ledger.
+
+      The Account and Validator HRPs and the Token HRP suffix for the current network should be fetched from the
+      `/network/configuration` endpoint.
+
+      It likely will not be necessary to actually decode the data parts of the Bech32 addresses, but if you do need to,
+      you should be warned that Radix addresses are *not* Segwit addresses. Many Bech32 libraries assume a Segwit
+      encoding, so may fail to extract the data from a Radix address.
+
+      In particular, the Segwit encoding assumes the first 5-bit-character of the 5-bit-per-character encoded data is a
+      witness version, and that this is followed by the witness programme bytes, encoded into 5-bit chunks, padded
+      with zeroes if necessary. Radix encoding just encodes its data bytes into 5-bit chunks with padded zeroes -
+      _without_ an initial 1 character version prefix. In other words, the padding and interpretation of the encoded
+      data differs between Radix and Segwit addresses.
+
+      ## The native token: XRD
+
+      XRD is Radix ledger's native token, used for staking and to pay fees. It is the only token allowed with
+      the symbol `xrd`, and has a reserved radix engine address of `1` (`01` in hex).
+
+      On mainnet, its RRI is xrd_rr1qy5wfsfh.
+
   - name: actions
     x-displayName: Actions
     description: |
