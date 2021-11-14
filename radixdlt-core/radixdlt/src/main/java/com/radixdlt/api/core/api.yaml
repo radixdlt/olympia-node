@@ -202,13 +202,13 @@ tags:
       * **Validator**, an entity representing a validating node on the network. The subaddress `system` holds XRD
       tokens which have been staked to this validator. A validator is represented by its Bech32 validator address.
       * **Token**, an entity representing a token, represented by its Radix Resource Identifier ("RRI").
-      * **System**, an entity representing system level data such as current epoch and round, represnted by the string "system"
+      * **System**, an entity representing system level data such as current epoch and round, represented by the string "system".
 
-      ## Bech32 Addressing
+      ## Bech32 Address Encoding
 
       Account addresses, Validator addresses and Token RRIs are all [Bech32 encoded](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki).
 
-      A Bech32 encoding consists of a prefix which is an ASCII human readable part "HRP", followed by the character '1',
+      A Bech32 encoding consists of a prefix which is an ASCII human readable part "HRP", followed by the character "1",
       followed by an encoded data payload, encoded as 32 values (5 bits) per character.
 
       Assuming an address is legal, you can extract its HRP as the string before the last '1'. This can be used to
