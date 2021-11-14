@@ -104,7 +104,7 @@ tags:
   - name: objects
     x-displayName: Objects
     description: |
-      ## State Identifier
+      ## State Identifiers
       The Radix Olympia network has no concept of blocks, instead transactions are
       managed in a flat ordered list. A hash chain is formed from these transactions
       which represents a point in time of the ledger with a valid committed state.
