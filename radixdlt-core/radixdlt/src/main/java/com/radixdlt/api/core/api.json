@@ -3,7 +3,7 @@
   "info": {
     "version": "0.9.0",
     "title": "Radix Core API",
-    "description": "This API provides endpoints for both RadixCore node management and support\nfor middleware integration (such as exchanges).\n\n# Introduction\n\nWelcome to the Radix Core API Preview. This Preview API is intended for\nexchanges to be able to begin integrating with the Radix network. In particular,\nthe following endpoints will be frozen or at the very least backwards\ncompatible to version 1.0.0 of the Radix Core API:\n* `/network/configuration`\n* `/network/status`\n* `/transactions`\n* `/construction/build`\n* `/construction/parse`\n* `/construction/finalize`\n* `/construction/submit`\n\nAll other endpoints may change upon 1.0.0 release.\n\n:::warning\n\nThis API is NOT intended to be available on the public web and is designed\nto be used in private networks mainly for node management and integration.\nIn particular, endpoints in the Signing API if accessed by the public can\nresult in loss of funds.\n\n:::\n\n# Rosetta\n\nMuch of the design decisions of the Data API and Construction API endpoints is\ninspired from [Rosetta API](https://www.rosetta-api.org/) most notably:\n  * Use of a JSON-Based RPC protocol on top of HTTP Post requests\n  * Use of Operations, Amounts, and Identifiers to express generic asset movement\n\nThere are a few notable exceptions to note:\n  * Fetching of ledger data is through a Transaction stream rather than a\n  Block stream\n  * Use of `EntityIdentifier` rather than `AccountIdentifier`\n  * Use of `OperationGroup` rather than `related_operations` to express related\n  operations\n  * Even though the Radix Ledger is UTXO based Construction endpoints does coin\n  selection on behalf of the caller. This has the unfortunate effect of not\n  being able to support high frequency transactions from a single account due to\n  UTXO spend conflicts. This will be addressed in future updates.\n  * Construction endpoints are mostly online rather than offline as required by\n  Rosetta\n\nFuture versions of the api will aim towards a fully-compliant Rosetta API.\n\n# Data API Sequence Flow\n\nClients can make use of the Data API endpoints in order to synchronize\neither a full or partial view (for example, only track XRD asset balances) of\nwhat's occuring on ledger transaction by transaction.\n\nSynchronization involves only using the Data API. Assuming the client has a\ndatabase which they are updating, below is a generic flow of operations on\nhow to synchronize via the Data API.\n\n![Data Sequence Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/data_sequence_flow.png)\n\n\n# Construction API Sequence Flow\n\nClients can make use of the Construction API endpoints to construct and submit\ntransactions to the network.\n\nThe following sequence flow allows for integrators to construct transactions\non behalf of clients or for their own use without ever holding the actual private\nkey.\n\n![Construction Sequence Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/construction_sequence_flow.png)\n\nUnlike the Rosetta Construction API [specification](https://www.rosetta-api.org/docs/construction_api_introduction.html),\nthis Construction API selects the UTXOs on behalf of the caller. This has the unfortunate\nside effect of not being able to support high frequency transactions from a single\naccount due to UTXO conflicts. This will be addressed in a future release.\n",
+    "description": "This API provides endpoints for both RadixCore node management and support\nfor middleware integration (such as exchanges).\n\n# Introduction\n\nWelcome to the Radix Core API Preview. This Preview API is intended for\nexchanges to be able to begin integrating with the Radix network. In particular,\nthe following endpoints will be frozen or at the very least backwards\ncompatible to version 1.0.0 of the Radix Core API:\n* `/network/configuration`\n* `/network/status`\n* `/transactions`\n* `/construction/derive`\n* `/construction/build`\n* `/construction/parse`\n* `/construction/finalize`\n* `/construction/submit`\n\nAll other endpoints may change upon 1.0.0 release.\n\n:::warning\n\nThis API is NOT intended to be available on the public web and is designed\nto be used in private networks mainly for node management and integration.\nIn particular, endpoints in the Signing API if accessed by the public can\nresult in loss of funds.\n\n:::\n\n# Rosetta\n\nMuch of the design decisions of the Data API and Construction API endpoints is\ninspired from [Rosetta API](https://www.rosetta-api.org/) most notably:\n  * Use of a JSON-Based RPC protocol on top of HTTP Post requests\n  * Use of Operations, Amounts, and Identifiers to express generic asset movement\n\nThere are a few notable exceptions to note:\n  * Fetching of ledger data is through a Transaction stream rather than a\n  Block stream\n  * Use of `EntityIdentifier` rather than `AccountIdentifier`\n  * Use of `OperationGroup` rather than `related_operations` to express related\n  operations\n  * Even though the Radix Ledger is UTXO based, Construction endpoints perform coin\n  selection on behalf of the caller. This has the unfortunate effect of not\n  being able to support high frequency transactions from a single account due to\n  UTXO spend conflicts. This will be addressed in future updates.\n  * Construction endpoints are mostly online rather than offline as required by\n  Rosetta\n\nFuture versions of the api will aim towards a fully-compliant Rosetta API.\n\n# Data API Sequence Flow\n\nClients can make use of the Data API endpoints to synchronize\neither a full or partial view (for example, to only track XRD asset balances) of\nthe ledger, transaction by transaction.\n\nSynchronization involves only using the Data API. Assuming the client has a\ndatabase which they are updating, below is a generic flow of operations on\nhow to synchronize via the Data API.\n\n![Data Sequence Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/data_sequence_flow.png)\n\n\n# Construction API Sequence Flow\n\nClients can make use of the Construction API endpoints to construct and submit\ntransactions to the network.\n\nThe following sequence flow allows for integrators to construct transactions\non behalf of clients or for their own use without ever holding the actual private\nkey.\n\n![Construction Sequence Flow](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/construction_sequence_flow.png)\n\nUnlike the Rosetta Construction API [specification](https://www.rosetta-api.org/docs/construction_api_introduction.html),\nthis Construction API selects the UTXOs on behalf of the caller. This has the unfortunate\nside effect of not being able to support high frequency transactions from a single\naccount due to UTXO conflicts. This will be addressed in a future release.\n",
     "license": {
       "name": "Apache 2.0",
       "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
@@ -17,13 +17,13 @@
   "tags": [
     {
       "name": "entities",
-      "x-displayName": "Entities and Operations",
+      "x-displayName": "Entities",
       "description": "Entities represent something that can hold resource balances and data objects.\nA public key account is the simplest example of an entity.\n\n![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/entity.png '#width=500px;')\n\nAt the simplest level of abstraction, each Operation in a Transaction is simply\neither a resource balance change or a data object update in an entity.\n\n![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/operation.png '#width=500px;')\n"
     },
     {
       "name": "objects",
-      "x-displayName": "Objects and Identifiers",
-      "description": "## State Identifier\nThe Radix Olympia network has no concept of blocks, instead transactions are\nmanaged in a flat ordered list. A hash chain is formed from these transactions\nwhich represents a point in time of the ledger with a valid committed state.\n\n![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/state_identifiers.png '#width=500px;')\n\nAlong with the transaction accumulator hash and the index of the hash in the hash\nchain, this forms a State Identifier:\n<SchemaDefinition schemaRef=\"#/components/schemas/StateIdentifier\" exampleRef=\"#/components/examples/StateIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n## Transaction\n\nA Transaction consists of one or more OperationGroups, each of which consist of\none or more Operations.\n\n![Transaction Operations](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/transaction_operations.png)\n\nA Committed Transaction has additional information such as the StateIdentifier\nwhich resulted after committing the transaction.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransaction\" showReadOnly={true} showWriteOnly={true} />\n\n## OperationGroup\n\nSimilar to the [Rosetta API](https://www.rosetta-api.org/), both reading and\nwriting to the ledger use the same Address and Operation objects.\n\nEvery state change is expressed as an Operation which operates on a single\nEntity. Any state change which consists of two accounts (such as\na token transfer) thus requires atleast two Operations, one which debits\nthe sender and one which credits the receiver.\n\nUnlike Rosetta, operations are more explicitly linked via Operation Groups. Each\nOperation Group then represents a well formed accounting entry where credits\nand debits are equivalent (unless minting or burning occurred).\n\n<SchemaDefinition schemaRef=\"#/components/schemas/OperationGroup\" showReadOnly={true} showWriteOnly={true} />\n\n## Operation\n\nOperations operate on a single Entity and are associated with a single Amount\nupdate and/or a single Data update.\n\n* The `amount` property represents either a positive or negative change in balance of some token.\n* The `data` property represents either the creation or deletion of a data object.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/Operation\" showReadOnly={true} showWriteOnly={true} />\n\n## Entity Identifier\n\nAn Entity Identifier uniquely describes an entity which may have arbitrary balances and arbitrary data\nobjects. An Entity Identifier may further specify a Sub Address which should be treated as a separate\nunique entity.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/EntityIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n## Amount\n\nA signed amount of a resource.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/ResourceAmount\" showReadOnly={true} showWriteOnly={true} />\n\n## Resource Identifier\n\nA Resource Identifier uniquely describes either some token or stake ownership of a validator.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/ResourceIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n## Data Update\n\nA Data update is the creation or destruction of a data object.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/Data\" showReadOnly={true} showWriteOnly={true} />\n"
+      "x-displayName": "Objects",
+      "description": "## State Identifier\nThe Radix Olympia network has no concept of blocks, instead transactions are\nmanaged in a flat ordered list. A hash chain is formed from these transactions\nwhich represents a point in time of the ledger with a valid committed state.\n\n![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/state_identifiers.png '#width=500px;')\n\nAlong with the transaction accumulator hash and the index of the hash in the hash\nchain, this forms a State Identifier:\n<SchemaDefinition schemaRef=\"#/components/schemas/StateIdentifier\" exampleRef=\"#/components/examples/StateIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n## Transaction\n\nA Transaction consists of one or more OperationGroups, each of which consist of\none or more Operations.\n\n![Transaction Operations](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/transaction_operations.png)\n\nA Committed Transaction has additional information such as the StateIdentifier\nwhich resulted after committing the transaction.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/CommittedTransaction\" showReadOnly={true} showWriteOnly={true} />\n\n## OperationGroup\n\nSimilar to the [Rosetta API](https://www.rosetta-api.org/), both reading and\nwriting to the ledger use the same Address and Operation objects.\n\nEvery state change is expressed as an Operation which operates on a single\nEntity. Any state change which consists of two accounts (such as\na token transfer) thus requires at least two Operations, one which debits\nthe sender and one which credits the receiver.\n\nUnlike Rosetta, operations are more explicitly linked via Operation Groups. Each\nOperation Group then represents a well formed accounting entry where credits\nand debits are equivalent (unless minting or burning occurred).\n\n<SchemaDefinition schemaRef=\"#/components/schemas/OperationGroup\" showReadOnly={true} showWriteOnly={true} />\n\n## Operation\n\nOperations operate on a single Entity and are associated with a single Amount\nupdate and/or a single Data update.\n\n* The `amount` property represents either a positive or negative change in balance of some token.\n* The `data` property represents either the creation or deletion of a data object.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/Operation\" showReadOnly={true} showWriteOnly={true} />\n\n## Entity Identifier\n\nAn Entity Identifier uniquely describes an entity which may have arbitrary balances and arbitrary data\nobjects. An Entity Identifier may further specify a Sub Address which should be treated as a separate\nunique entity.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/EntityIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n## Amount\n\nA signed amount of a resource.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/ResourceAmount\" showReadOnly={true} showWriteOnly={true} />\n\n## Resource Identifier\n\nA Resource Identifier uniquely describes either some token or stake ownership of a validator.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/ResourceIdentifier\" showReadOnly={true} showWriteOnly={true} />\n\n## Data Update\n\nA Data update is the creation or destruction of a data object.\n\nAt any given time, an address will have up to one created-but-not-deleted data object of each type.\n\n<SchemaDefinition schemaRef=\"#/components/schemas/Data\" showReadOnly={true} showWriteOnly={true} />\n"
     },
     {
       "name": "structure",
@@ -38,27 +38,27 @@
     {
       "name": "network",
       "x-displayName": "Network",
-      "description": "Get info about the node and network"
+      "description": "Get info about the node and network."
     },
     {
       "name": "entity",
       "x-displayName": "Entity",
-      "description": "Get info about an entity"
+      "description": "Get info about an entity."
     },
     {
       "name": "transactions",
       "x-displayName": "Transactions",
-      "description": "Get stream of committed transactions"
+      "description": "Get the stream of committed transactions."
     },
     {
       "name": "construction",
       "x-displayName": "Construction",
-      "description": "Construct a transaction for submission"
+      "description": "Construct a transaction for submission."
     },
     {
       "name": "sign",
       "x-displayName": "Sign Transaction",
-      "description": "Sign a Transaction with the node's private key"
+      "description": "Sign a Transaction with the node's private key."
     }
   ],
   "x-tagGroups": [
@@ -177,7 +177,8 @@
     },
     "/entity": {
       "post": {
-        "summary": "Get Entity Info",
+        "summary": "Get Entity Information",
+        "description": "Gets the balances and data assosciated with an entity at the current state of the ledger.",
         "tags": [
           "entity"
         ],
@@ -502,7 +503,7 @@
         ],
         "properties": {
           "version": {
-            "description": "Different versions regarding the node, network and api",
+            "description": "Different versions regarding the node, network and api.",
             "type": "object",
             "required": [
               "core_version",
@@ -518,11 +519,11 @@
             }
           },
           "network_identifier": {
-            "description": "Id and name of network",
+            "description": "The name of the network.",
             "$ref": "#/components/schemas/NetworkIdentifier"
           },
           "bech32_human_readable_parts": {
-            "description": "The unique bech32 hrps used for addressing",
+            "description": "The unique bech32 hrps used for addressing.",
             "$ref": "#/components/schemas/Bech32HRPs"
           }
         },
@@ -564,31 +565,31 @@
         ],
         "properties": {
           "pre_genesis_state_identifier": {
-            "description": "The ledger state identifier before the genesis transaction",
+            "description": "The ledger state identifier before the genesis transaction.",
             "$ref": "#/components/schemas/StateIdentifier"
           },
           "genesis_state_identifier": {
-            "description": "The ledger state identifier after the genesis transaction",
+            "description": "The ledger state identifier after the genesis transaction.",
             "$ref": "#/components/schemas/StateIdentifier"
           },
           "current_state_identifier": {
-            "description": "The current ledger state identifier",
+            "description": "The current ledger state identifier.",
             "$ref": "#/components/schemas/StateIdentifier"
           },
           "current_state_epoch": {
-            "description": "The current ledger state epoch",
+            "description": "The current ledger state epoch.",
             "$ref": "#/components/schemas/LongNumber"
           },
           "current_state_round": {
-            "description": "The current ledger state round",
+            "description": "The current ledger state round (in the current epoch).",
             "$ref": "#/components/schemas/LongNumber"
           },
           "current_state_timestamp": {
-            "description": "The current ledger state timestamp, not guaranteed to always increase",
+            "description": "The current ledger state timestamp, not guaranteed to always increase.",
             "$ref": "#/components/schemas/LongNumber"
           },
           "node_identifiers": {
-            "description": "The entity identifiers associated with this node's private key",
+            "description": "The entity identifiers associated with this node's private key.",
             "type": "object",
             "required": [
               "account_entity_identifier",
@@ -646,11 +647,11 @@
             "$ref": "#/components/schemas/NetworkIdentifier"
           },
           "public_key": {
-            "description": "The public key which represents the private key to sign with",
+            "description": "The public key corresponding to the private key which should be used to sign.",
             "$ref": "#/components/schemas/PublicKey"
           },
           "unsigned_transaction": {
-            "description": "Hex encoded unsigned transaction to sign",
+            "description": "Hex encoded unsigned transaction to sign.",
             "type": "string"
           }
         }
@@ -673,7 +674,7 @@
         ],
         "properties": {
           "entity_identifier": {
-            "description": "Entity to get balance of",
+            "description": "The Entity for which current balance and data information will be retrieved.",
             "$ref": "#/components/schemas/EntityIdentifier"
           }
         },
@@ -691,14 +692,14 @@
         ],
         "properties": {
           "balances": {
-            "description": "Balances associated with the entity",
+            "description": "Balances associated with the entity.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ResourceAmount"
             }
           },
           "data_objects": {
-            "description": "Data associated with the entity",
+            "description": "Data associated with the entity.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DataObject"
@@ -834,22 +835,22 @@
             "$ref": "#/components/schemas/NetworkIdentifier"
           },
           "operation_groups": {
-            "description": "Operation groups which describe the intent of the request",
+            "description": "Operation groups which describe the intent of the request.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OperationGroup"
             }
           },
           "fee_payer": {
-            "description": "The address where fees will be subtracted from",
+            "description": "The address from which fees will be subtracted.",
             "$ref": "#/components/schemas/EntityIdentifier"
           },
           "message": {
-            "description": "An optional message encoded in hex",
+            "description": "An optional message payload encoded in hex with the Radix message encoding scheme.",
             "type": "string"
           },
           "disable_resource_allocate_and_destroy": {
-            "description": "Disallow minting and burning of tokens (except for fees). Useful for verification of transactions without additional substate data info such as when verifying transactions in an offline environment",
+            "description": "Disallow minting and burning of tokens (except for fees). Useful for verification of transactions without needing to fetch additional substate data, such as when verifying transactions in an offline environment.",
             "type": "boolean"
           }
         },
@@ -924,7 +925,7 @@
             "$ref": "#/components/schemas/NetworkIdentifier"
           },
           "transaction": {
-            "description": "Hex encoded transaction to parse",
+            "description": "Hex encoded transaction to parse.",
             "type": "string"
           },
           "signed": {
@@ -947,7 +948,7 @@
         ],
         "properties": {
           "operation_groups": {
-            "description": "The parsed operation groups",
+            "description": "The parsed operation groups.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OperationGroup"
@@ -975,11 +976,11 @@
             "$ref": "#/components/schemas/NetworkIdentifier"
           },
           "unsigned_transaction": {
-            "description": "Hex encoded unsigned transaction",
+            "description": "Hex encoded unsigned transaction.",
             "type": "string"
           },
           "signature": {
-            "description": "The signature for the unsigned transaction",
+            "description": "The signature for the unsigned transaction.",
             "$ref": "#/components/schemas/Signature"
           }
         },
@@ -1003,7 +1004,7 @@
         ],
         "properties": {
           "signed_transaction": {
-            "description": "Hex encoded signed transaction which can be submitted",
+            "description": "Hex encoded signed transaction which can be submitted.",
             "type": "string"
           }
         },
@@ -1022,7 +1023,7 @@
             "$ref": "#/components/schemas/NetworkIdentifier"
           },
           "signed_transaction": {
-            "description": "Hex encoded signed transaction to be submitted",
+            "description": "Hex encoded signed transaction to be submitted.",
             "type": "string"
           }
         },
@@ -1041,11 +1042,11 @@
         ],
         "properties": {
           "transaction_identifier": {
-            "description": "The unique hashed identifier of the transaction submitted",
+            "description": "The unique hashed identifier of the transaction submitted.",
             "$ref": "#/components/schemas/TransactionIdentifier"
           },
           "duplicate": {
-            "description": "true, if the transaction is a duplicate of an existring transaction in the mempool",
+            "description": "Is true if the transaction is a duplicate of an existing transaction in the mempool.",
             "type": "boolean"
           }
         },
@@ -1069,11 +1070,11 @@
             ],
             "properties": {
               "unsigned_transaction": {
-                "description": "Hex encoded unsigned transaction",
+                "description": "Hex encoded unsigned transaction.",
                 "type": "string"
               },
               "payload_to_sign": {
-                "description": "Hex encoded hash payload to sign",
+                "description": "Hex encoded hash payload to sign.",
                 "type": "string"
               }
             }
@@ -1208,7 +1209,7 @@
         }
       },
       "CommittedTransactionsRequest": {
-        "description": "A request to retrieve a sublist of committed transactions to the ledger.",
+        "description": "A request to retrieve a sublist of committed transactions from the ledger.",
         "type": "object",
         "required": [
           "network_identifier"
@@ -1218,7 +1219,7 @@
             "$ref": "#/components/schemas/NetworkIdentifier"
           },
           "state_identifier": {
-            "description": "The state identifier point from which to begin returning transactions from",
+            "description": "The state identifier point from which transactions should be returned. For example, if you specify a `state_version` of 10, the first transaction in the response will take the ledger from a `state_version` of 10 to 11, and so have a commited `state_version` of 11. The ledger starts from a `state_version` of 0, with the first transaction being the genesis transaction.",
             "$ref": "#/components/schemas/PartialStateIdentifier"
           },
           "limit": {
@@ -1245,11 +1246,11 @@
         ],
         "properties": {
           "state_identifier": {
-            "description": "The committed ledger state identifier from which this transaction list starts from",
+            "description": "The committed ledger state identifier from which this transaction list starts from.",
             "$ref": "#/components/schemas/StateIdentifier"
           },
           "transactions": {
-            "description": "A committed transactions list starting from the `state_identifier`",
+            "description": "A committed transactions list starting from the `state_identifier`.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CommittedTransaction"
@@ -1421,7 +1422,7 @@
         }
       },
       "CommittedTransaction": {
-        "description": "A transaction which has been committed on ledger at some index.",
+        "description": "A transaction which has been committed on ledger.",
         "type": "object",
         "required": [
           "transaction_identifier",
@@ -1431,11 +1432,11 @@
         ],
         "properties": {
           "transaction_identifier": {
-            "description": "The unique identifier for the transaction",
+            "description": "The unique identifier for the transaction.",
             "$ref": "#/components/schemas/TransactionIdentifier"
           },
           "committed_state_identifier": {
-            "description": "The next ledger state identifier following the commit of this transaction",
+            "description": "The ledger state identifier following the commit of this transaction.",
             "$ref": "#/components/schemas/StateIdentifier"
           },
           "operation_groups": {
@@ -1446,7 +1447,7 @@
             }
           },
           "metadata": {
-            "description": "Metadata about the transaction like size and fee paid",
+            "description": "Metadata about the transaction, such as size and fee paid.",
             "$ref": "#/components/schemas/CommittedTransactionMetadata"
           }
         }
@@ -1461,27 +1462,27 @@
         ],
         "properties": {
           "size": {
-            "description": "The size of the transaction in bytes",
+            "description": "The size of the transaction in bytes.",
             "type": "integer"
           },
           "hex": {
-            "description": "The raw transaction bytes in hex encoding",
+            "description": "The raw transaction bytes in hex encoding.",
             "type": "string"
           },
           "fee": {
-            "description": "The fee paid for the transaction",
+            "description": "The fee paid for the transaction.",
             "$ref": "#/components/schemas/ResourceAmount"
           },
           "timestamp": {
-            "description": "Timestamp which the transaction was committed on",
+            "description": "Timestamp when the transaction was committed.",
             "$ref": "#/components/schemas/LongNumber"
           },
           "signed_by": {
-            "description": "Optional public key which signed the transaction. If empty, then the transaction was produced by the system",
+            "description": "Optional public key which signed the transaction. If empty, then the transaction was produced by the system.",
             "$ref": "#/components/schemas/PublicKey"
           },
           "message": {
-            "description": "Optional hex encoded byte array in the transaction",
+            "description": "Optional hex encoded byte array in the transaction.",
             "type": "string"
           }
         }
@@ -1493,14 +1494,14 @@
         ],
         "properties": {
           "operations": {
-            "description": "A group of operations representing a complete state update",
+            "description": "A group of operations representing a complete state update.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Operation"
             }
           },
           "metadata": {
-            "description": "Metadata for the operation group",
+            "description": "Metadata for the operation group.",
             "type": "object"
           }
         }
@@ -1513,7 +1514,7 @@
         ],
         "properties": {
           "type": {
-            "description": "The type of operation: Resource, Data, or ResourceAndData",
+            "description": "The type of operation: Resource, Data, or ResourceAndData.",
             "type": "string"
           },
           "entity_identifier": {
@@ -1521,19 +1522,19 @@
             "$ref": "#/components/schemas/EntityIdentifier"
           },
           "substate": {
-            "description": "The substate (similar to UTXO) which this operation represents",
+            "description": "The substate (similar to UTXO) which this operation represents.",
             "$ref": "#/components/schemas/Substate"
           },
           "amount": {
-            "description": "A balance change on the entity represented by the `entity_identifier`",
+            "description": "A balance change on the entity represented by the `entity_identifier`.",
             "$ref": "#/components/schemas/ResourceAmount"
           },
           "data": {
-            "description": "A data update on the entity represented by the `entity_identifier`",
+            "description": "A data update on the entity represented by the `entity_identifier`.",
             "$ref": "#/components/schemas/Data"
           },
           "metadata": {
-            "description": "Metadata for the operation",
+            "description": "Metadata for the operation.",
             "$ref": "#/components/schemas/OperationMetadata"
           }
         }
@@ -1546,7 +1547,7 @@
         ],
         "properties": {
           "substate_operation": {
-            "description": "The type of substate operation (equivalent to UTXO create/spend)",
+            "description": "The type of substate operation (equivalent to UTXO create/spend).",
             "type": "string",
             "enum": [
               "BOOTUP",
@@ -1570,7 +1571,7 @@
         }
       },
       "SubstateIdentifier": {
-        "description": "Hex encoded unique identifier for the substate",
+        "description": "Hex encoded unique identifier for the substate.",
         "type": "object",
         "required": [
           "identifier"
@@ -1592,11 +1593,11 @@
         ],
         "properties": {
           "value": {
-            "description": "A signed big integer representing an amount of resources in 10^18 subunits",
+            "description": "A signed big integer representing an amount of resources in 10^18 subunits.",
             "$ref": "#/components/schemas/BigInteger"
           },
           "resource_identifier": {
-            "description": "The resource this amount represents",
+            "description": "The resource this amount represents.",
             "$ref": "#/components/schemas/ResourceIdentifier"
           }
         }
@@ -1609,7 +1610,7 @@
         ],
         "properties": {
           "action": {
-            "description": "Data action to take on `data_object`",
+            "description": "Data action to take on `data_object`.",
             "type": "string",
             "enum": [
               "CREATE",
@@ -1617,7 +1618,7 @@
             ]
           },
           "data_object": {
-            "description": "The object of the data action",
+            "description": "The object of the data action.",
             "$ref": "#/components/schemas/DataObject"
           }
         }
@@ -1629,7 +1630,7 @@
         ],
         "properties": {
           "type": {
-            "description": "Type of Object",
+            "description": "The type of the data object. Each address may own up to one current object of a given type.",
             "type": "string"
           }
         },
@@ -1669,11 +1670,11 @@
                 "$ref": "#/components/schemas/BigInteger"
               },
               "is_mutable": {
-                "description": "If true, the `owner` is able to mint/burn tokens. Otherwise, the token is a fixed supply token",
+                "description": "If true, the `owner` is able to mint/burn tokens. Otherwise, the token is a fixed supply token.",
                 "type": "boolean"
               },
               "owner": {
-                "description": "The owner of the token (only available for mutable tokens) who can mint/burn",
+                "description": "The owner of the token who can mint/burn. This is only available for mutable tokens.",
                 "$ref": "#/components/schemas/AccountAddress"
               }
             }
@@ -1692,23 +1693,23 @@
             ],
             "properties": {
               "symbol": {
-                "description": "The symbol of the token (not unique in the system)",
+                "description": "The symbol of the token (not unique in the system).",
                 "type": "string"
               },
               "name": {
-                "description": "The name of the token",
+                "description": "The name of the token.",
                 "type": "string"
               },
               "description": {
-                "description": "Description describing the token",
+                "description": "Description describing the token.",
                 "type": "string"
               },
               "url": {
-                "description": "A url which points to more info about the token",
+                "description": "A url which points to more information about the token.",
                 "type": "string"
               },
               "icon_url": {
-                "description": "A url which points to the icon of the token",
+                "description": "A url which points to the icon of the token.",
                 "type": "string"
               }
             }
@@ -1741,7 +1742,7 @@
             ],
             "properties": {
               "round": {
-                "description": "The round of the system",
+                "description": "The round of the system.",
                 "$ref": "#/components/schemas/LongNumber"
               }
             }
@@ -1760,7 +1761,7 @@
             ],
             "properties": {
               "epoch": {
-                "description": "The epoch of the system",
+                "description": "The epoch of the system.",
                 "$ref": "#/components/schemas/LongNumber"
               }
             }
@@ -1779,11 +1780,11 @@
             ],
             "properties": {
               "registered": {
-                "description": "The registered flag of the validator which will be updated by the end of `epoch`",
+                "description": "The registered flag of the validator which will be updated by the end of `epoch`.",
                 "type": "boolean"
               },
               "epoch": {
-                "description": "Optional field, when non-empty describes the epoch the `registered` flag will update, otherwise no update is scheduled",
+                "description": "Optional field, when non-empty describes the epoch the `registered` flag will update, otherwise no update is scheduled.",
                 "$ref": "#/components/schemas/LongNumber"
               }
             }
@@ -1802,11 +1803,11 @@
             ],
             "properties": {
               "owner": {
-                "description": "The owner of the validator which will be updated by the end of `epoch`",
+                "description": "The owner of the validator which will be updated by the end of `epoch`.",
                 "$ref": "#/components/schemas/AccountAddress"
               },
               "epoch": {
-                "description": "Optional field, when non-empty describes the epoch the `owner` field will update, otherwise no update is scheduled",
+                "description": "Optional field, when non-empty describes the epoch the `owner` field will update, otherwise no update is scheduled.",
                 "$ref": "#/components/schemas/LongNumber"
               }
             }
@@ -1825,11 +1826,11 @@
             ],
             "properties": {
               "fee": {
-                "description": "The fee percentage of the validator which will be updated in the future epoch",
+                "description": "The fee percentage of the validator which will be updated in the future epoch.",
                 "type": "integer"
               },
               "epoch": {
-                "description": "Optional field, when non-empty describes the epoch the `fee` field will update, otherwise no update is scheduled",
+                "description": "Optional field, when non-empty describes the epoch the `fee` field will update, otherwise no update is scheduled.",
                 "$ref": "#/components/schemas/LongNumber"
               }
             }
@@ -1849,11 +1850,11 @@
             ],
             "properties": {
               "name": {
-                "description": "The name for the validator",
+                "description": "The name for the validator.",
                 "type": "string"
               },
               "url": {
-                "description": "A url which points to more info about the validator",
+                "description": "A url which points to more information about the validator.",
                 "type": "string"
               }
             }
@@ -1873,11 +1874,11 @@
             ],
             "properties": {
               "proposals_completed": {
-                "description": "The number of completed proposals by this validator as a leader in the current epoch",
+                "description": "The number of completed proposals by this validator as a leader in the current epoch.",
                 "$ref": "#/components/schemas/LongNumber"
               },
               "proposals_missed": {
-                "description": "The number of missed proposals by this validator as a leader in the current epoch",
+                "description": "The number of missed proposals by this validator as a leader in the current epoch.",
                 "$ref": "#/components/schemas/LongNumber"
               }
             }
@@ -1896,7 +1897,7 @@
             ],
             "properties": {
               "allow_delegation": {
-                "description": "Flag indicating whether stakers besides the owner of the validator can stake to this validator",
+                "description": "Flag indicating whether stakers besides the owner of the validator can stake to this validator.",
                 "type": "boolean"
               }
             }
@@ -1917,15 +1918,15 @@
             ],
             "properties": {
               "owner": {
-                "description": "The owner of the validator who receives the fees when others stake to the validator",
+                "description": "The owner of the validator who receives the fees when others stake to the validator.",
                 "$ref": "#/components/schemas/AccountAddress"
               },
               "registered": {
-                "description": "Flag indicating whether a validator is registered to be part of the validator set",
+                "description": "Flag indicating whether a validator is registered to be part of the validator set.",
                 "type": "boolean"
               },
               "fee": {
-                "description": "The fee percentage of the validator in 0.01% subunits (ie 10000 == 100%)",
+                "description": "The fee percentage of the validator in 0.01% subunits (ie 10000 == 100%).",
                 "type": "integer"
               }
             }
@@ -1944,7 +1945,7 @@
             ],
             "properties": {
               "data": {
-                "description": "A hex encoded byte array",
+                "description": "A hex encoded byte array.",
                 "type": "string"
               }
             }
@@ -1958,7 +1959,7 @@
         ],
         "properties": {
           "hex": {
-            "description": "Compressed ECSDA Public Key hex encoded",
+            "description": "Compressed ECSDA Public Key hex encoded.",
             "type": "string"
           }
         }
@@ -2021,7 +2022,7 @@
         ],
         "properties": {
           "address": {
-            "description": "The top level identifier for an entity",
+            "description": "The top level identifier for an entity.",
             "type": "string"
           },
           "sub_address": {
@@ -2037,11 +2038,11 @@
         ],
         "properties": {
           "address": {
-            "description": "The subaddress",
+            "description": "The subaddress.",
             "type": "string"
           },
           "metadata": {
-            "description": "Any additional data required to drill down to a particular address is added here",
+            "description": "Any additional data required to drill down to a particular address is added here.",
             "$ref": "#/components/schemas/SubAddressMetadata"
           }
         }
@@ -2064,7 +2065,7 @@
         ],
         "properties": {
           "type": {
-            "description": "The type of resource",
+            "description": "The type of resource.",
             "type": "string"
           }
         },
@@ -2088,7 +2089,7 @@
             ],
             "properties": {
               "rri": {
-                "description": "The RRI of the token",
+                "description": "The Radix Resource Identifier \"RRI\" of the token.",
                 "$ref": "#/components/schemas/RRI"
               }
             }
@@ -2107,7 +2108,7 @@
             ],
             "properties": {
               "validator": {
-                "description": "The validator associated with this stake ownership",
+                "description": "The validator associated with this stake ownership.",
                 "$ref": "#/components/schemas/ValidatorAddress"
               }
             }
@@ -2225,6 +2226,14 @@
             "INVALID_JSON": "#/components/schemas/InvalidJsonError",
             "INVALID_REQUEST": "#/components/schemas/InvalidRequestError"
           }
+        }
+      }
+    },
+    "examples": {
+      "StateIdentifier": {
+        "value": {
+          "state_version": 46001,
+          "transaction_accumulator": "2892a2359c37ab02116d46f742c684234d5aa9658682815f8221fc0b613101e0"
         }
       }
     }

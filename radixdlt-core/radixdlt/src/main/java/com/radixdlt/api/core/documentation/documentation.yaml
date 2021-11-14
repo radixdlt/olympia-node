@@ -46,7 +46,7 @@ info:
       * Use of `EntityIdentifier` rather than `AccountIdentifier`
       * Use of `OperationGroup` rather than `related_operations` to express related
       operations
-      * Even though the Radix Ledger is UTXO based Construction endpoints does coin
+      * Even though the Radix Ledger is UTXO based, Construction endpoints perform coin
       selection on behalf of the caller. This has the unfortunate effect of not
       being able to support high frequency transactions from a single account due to
       UTXO spend conflicts. This will be addressed in future updates.
@@ -57,9 +57,9 @@ info:
 
     # Data API Sequence Flow
 
-    Clients can make use of the Data API endpoints in order to synchronize
-    either a full or partial view (for example, only track XRD asset balances) of
-    what's occuring on ledger transaction by transaction.
+    Clients can make use of the Data API endpoints to synchronize
+    either a full or partial view (for example, to only track XRD asset balances) of
+    the ledger, transaction by transaction.
 
     Synchronization involves only using the Data API. Assuming the client has a
     database which they are updating, below is a generic flow of operations on
@@ -134,7 +134,7 @@ tags:
 
       Every state change is expressed as an Operation which operates on a single
       Entity. Any state change which consists of two accounts (such as
-      a token transfer) thus requires atleast two Operations, one which debits
+      a token transfer) thus requires at least two Operations, one which debits
       the sender and one which credits the receiver.
 
       Unlike Rosetta, operations are more explicitly linked via Operation Groups. Each
@@ -176,6 +176,8 @@ tags:
       ## Data Update
 
       A Data update is the creation or destruction of a data object.
+
+      At any given time, an address will have up to one created-but-not-deleted data object of each type.
 
       <SchemaDefinition schemaRef="#/components/schemas/Data" showReadOnly={true} showWriteOnly={true} />
   - name: structure
@@ -228,19 +230,19 @@ tags:
       `TokenData` and `TokenMetadata` data object.
   - name: network
     x-displayName: Network
-    description: Get info about the node and network
+    description: Get info about the node and network.
   - name: entity
     x-displayName: Entity
-    description: Get info about an entity
+    description: Get info about an entity.
   - name: transactions
     x-displayName: Transactions
-    description: Get stream of committed transactions
+    description: Get the stream of committed transactions.
   - name: construction
     x-displayName: Construction
-    description: Construct a transaction for submission
+    description: Construct a transaction for submission.
   - name: sign
     x-displayName: Sign Transaction
-    description: Sign a Transaction with the node's private key
+    description: Sign a Transaction with the node's private key.
 x-tagGroups:
   - name: Model
     tags:
@@ -313,7 +315,8 @@ paths:
                 "$ref": "#/components/schemas/UnexpectedError"
   "/entity":
     post:
-      summary: Get Entity Info
+      summary: Get Entity Information
+      description: Gets the balances and data assosciated with an entity at the current state of the ledger.
       tags:
         - entity
       requestBody:
@@ -512,7 +515,7 @@ components:
         - bech32_human_readable_parts
       properties:
         version:
-          description: Different versions regarding the node, network and api
+          description: Different versions regarding the node, network and api.
           type: object
           required:
             - core_version
@@ -523,10 +526,10 @@ components:
             api_version:
               type: string
         network_identifier:
-          description: Id and name of network
+          description: The name of the network.
           "$ref": "#/components/schemas/NetworkIdentifier"
         bech32_human_readable_parts:
-          description: The unique bech32 hrps used for addressing
+          description: The unique bech32 hrps used for addressing.
           "$ref": "#/components/schemas/Bech32HRPs"
       example:
         network_identifier:
@@ -556,27 +559,27 @@ components:
         - node_identifiers
       properties:
         pre_genesis_state_identifier:
-          description: The ledger state identifier before the genesis transaction
+          description: The ledger state identifier before the genesis transaction.
           "$ref": "#/components/schemas/StateIdentifier"
         genesis_state_identifier:
-          description: The ledger state identifier after the genesis transaction
+          description: The ledger state identifier after the genesis transaction.
           "$ref": "#/components/schemas/StateIdentifier"
         current_state_identifier:
-          description: The current ledger state identifier
+          description: The current ledger state identifier.
           "$ref": "#/components/schemas/StateIdentifier"
         current_state_epoch:
-          description: The current ledger state epoch
+          description: The current ledger state epoch.
           "$ref": "#/components/schemas/LongNumber"
         current_state_round:
-          description: The current ledger state round
+          description: The current ledger state round (in the current epoch).
           "$ref": "#/components/schemas/LongNumber"
         current_state_timestamp:
           description: The current ledger state timestamp, not guaranteed to always
-            increase
+            increase.
           "$ref": "#/components/schemas/LongNumber"
         node_identifiers:
           description: The entity identifiers associated with this node's private
-            key
+            key.
           type: object
           required:
             - account_entity_identifier
@@ -617,10 +620,10 @@ components:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
         public_key:
-          description: The public key which represents the private key to sign with
+          description: The public key corresponding to the private key which should be used to sign.
           "$ref": "#/components/schemas/PublicKey"
         unsigned_transaction:
-          description: Hex encoded unsigned transaction to sign
+          description: Hex encoded unsigned transaction to sign.
           type: string
     SignResponse:
       type: object
@@ -635,7 +638,7 @@ components:
         - entity_identifier
       properties:
         entity_identifier:
-          description: Entity to get balance of
+          description: The Entity for which current balance and data information will be retrieved.
           "$ref": "#/components/schemas/EntityIdentifier"
       example:
         entity_identifier:
@@ -647,12 +650,12 @@ components:
         - data_objects
       properties:
         balances:
-          description: Balances associated with the entity
+          description: Balances associated with the entity.
           type: array
           items:
             "$ref": "#/components/schemas/ResourceAmount"
         data_objects:
-          description: Data associated with the entity
+          description: Data associated with the entity.
           type: array
           items:
             "$ref": "#/components/schemas/DataObject"
@@ -735,20 +738,20 @@ components:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
         operation_groups:
-          description: Operation groups which describe the intent of the request
+          description: Operation groups which describe the intent of the request.
           type: array
           items:
             "$ref": "#/components/schemas/OperationGroup"
         fee_payer:
-          description: The address where fees will be subtracted from
+          description: The address from which fees will be subtracted.
           "$ref": "#/components/schemas/EntityIdentifier"
         message:
-          description: An optional message encoded in hex
+          description: An optional message payload encoded in hex with the Radix message encoding scheme.
           type: string
         disable_resource_allocate_and_destroy:
           description: Disallow minting and burning of tokens (except for fees). Useful
-            for verification of transactions without additional substate data info
-            such as when verifying transactions in an offline environment
+            for verification of transactions without needing to fetch additional substate data,
+            such as when verifying transactions in an offline environment.
           type: boolean
       example:
         network_identifier:
@@ -795,7 +798,7 @@ components:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
         transaction:
-          description: Hex encoded transaction to parse
+          description: Hex encoded transaction to parse.
           type: string
         signed:
           description: Whether the transaction is signed or not. If not signed, parsing
@@ -812,7 +815,7 @@ components:
         - operation_groups
       properties:
         operation_groups:
-          description: The parsed operation groups
+          description: The parsed operation groups.
           type: array
           items:
             "$ref": "#/components/schemas/OperationGroup"
@@ -831,10 +834,10 @@ components:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
         unsigned_transaction:
-          description: Hex encoded unsigned transaction
+          description: Hex encoded unsigned transaction.
           type: string
         signature:
-          description: The signature for the unsigned transaction
+          description: The signature for the unsigned transaction.
           "$ref": "#/components/schemas/Signature"
       example:
         network_identifier:
@@ -850,7 +853,7 @@ components:
         - signed_transaction
       properties:
         signed_transaction:
-          description: Hex encoded signed transaction which can be submitted
+          description: Hex encoded signed transaction which can be submitted.
           type: string
       example:
         signed_transaction: 07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf
@@ -863,7 +866,7 @@ components:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
         signed_transaction:
-          description: Hex encoded signed transaction to be submitted
+          description: Hex encoded signed transaction to be submitted.
           type: string
       example:
         network_identifier:
@@ -876,11 +879,11 @@ components:
         - duplicate
       properties:
         transaction_identifier:
-          description: The unique hashed identifier of the transaction submitted
+          description: The unique hashed identifier of the transaction submitted.
           "$ref": "#/components/schemas/TransactionIdentifier"
         duplicate:
-          description: true, if the transaction is a duplicate of an existring transaction
-            in the mempool
+          description: Is true if the transaction is a duplicate of an existing transaction
+            in the mempool.
           type: boolean
       example:
         transaction_identifier:
@@ -895,10 +898,10 @@ components:
             - payload_to_sign
           properties:
             unsigned_transaction:
-              description: Hex encoded unsigned transaction
+              description: Hex encoded unsigned transaction.
               type: string
             payload_to_sign:
-              description: Hex encoded hash payload to sign
+              description: Hex encoded hash payload to sign.
               type: string
     ConstructionBuildErrorResponse:
       allOf:
@@ -984,7 +987,7 @@ components:
           ABOVE_MAXIMUM_RAKE_INCREASE: "#/components/schemas/ConstructionBuildErrorAboveMaximumRakeIncrease"
           INVALID_STAKE_PERMISSIONS: "#/components/schemas/ConstructionBuildErrorInvalidStakePermissions"
     CommittedTransactionsRequest:
-      description: A request to retrieve a sublist of committed transactions to the
+      description: A request to retrieve a sublist of committed transactions from the
         ledger.
       type: object
       required:
@@ -993,8 +996,10 @@ components:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
         state_identifier:
-          description: The state identifier point from which to begin returning transactions
-            from
+          description: The state identifier point from which transactions should be returned.
+            For example, if you specify a `state_version` of 10, the first transaction in the response
+            will take the ledger from a `state_version` of 10 to 11, and so have a commited `state_version` of 11.
+            The ledger starts from a `state_version` of 0, with the first transaction being the genesis transaction.
           "$ref": "#/components/schemas/PartialStateIdentifier"
         limit:
           description: The maximum number of transactions that will be returned.
@@ -1015,10 +1020,10 @@ components:
       properties:
         state_identifier:
           description: The committed ledger state identifier from which this transaction
-            list starts from
+            list starts from.
           "$ref": "#/components/schemas/StateIdentifier"
         transactions:
-          description: A committed transactions list starting from the `state_identifier`
+          description: A committed transactions list starting from the `state_identifier`.
           type: array
           items:
             "$ref": "#/components/schemas/CommittedTransaction"
@@ -1126,7 +1131,7 @@ components:
                       address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
                     type: Resource
     CommittedTransaction:
-      description: A transaction which has been committed on ledger at some index.
+      description: A transaction which has been committed on ledger.
       type: object
       required:
         - transaction_identifier
@@ -1135,11 +1140,11 @@ components:
         - metadata
       properties:
         transaction_identifier:
-          description: The unique identifier for the transaction
+          description: The unique identifier for the transaction.
           "$ref": "#/components/schemas/TransactionIdentifier"
         committed_state_identifier:
-          description: The next ledger state identifier following the commit of this
-            transaction
+          description: The ledger state identifier following the commit of this
+            transaction.
           "$ref": "#/components/schemas/StateIdentifier"
         operation_groups:
           description: Transactions are split into operation groups which are roughly
@@ -1149,7 +1154,7 @@ components:
           items:
             "$ref": "#/components/schemas/OperationGroup"
         metadata:
-          description: Metadata about the transaction like size and fee paid
+          description: Metadata about the transaction, such as size and fee paid.
           "$ref": "#/components/schemas/CommittedTransactionMetadata"
     CommittedTransactionMetadata:
       type: object
@@ -1160,23 +1165,23 @@ components:
         - timestamp
       properties:
         size:
-          description: The size of the transaction in bytes
+          description: The size of the transaction in bytes.
           type: integer
         hex:
-          description: The raw transaction bytes in hex encoding
+          description: The raw transaction bytes in hex encoding.
           type: string
         fee:
-          description: The fee paid for the transaction
+          description: The fee paid for the transaction.
           "$ref": "#/components/schemas/ResourceAmount"
         timestamp:
-          description: Timestamp which the transaction was committed on
+          description: Timestamp when the transaction was committed.
           "$ref": "#/components/schemas/LongNumber"
         signed_by:
           description: Optional public key which signed the transaction. If empty,
-            then the transaction was produced by the system
+            then the transaction was produced by the system.
           "$ref": "#/components/schemas/PublicKey"
         message:
-          description: Optional hex encoded byte array in the transaction
+          description: Optional hex encoded byte array in the transaction.
           type: string
     OperationGroup:
       type: object
@@ -1184,12 +1189,12 @@ components:
         - operations
       properties:
         operations:
-          description: A group of operations representing a complete state update
+          description: A group of operations representing a complete state update.
           type: array
           items:
             "$ref": "#/components/schemas/Operation"
         metadata:
-          description: Metadata for the operation group
+          description: Metadata for the operation group.
           type: object
     Operation:
       type: object
@@ -1198,22 +1203,22 @@ components:
         - entity_identifier
       properties:
         type:
-          description: 'The type of operation: Resource, Data, or ResourceAndData'
+          description: 'The type of operation: Resource, Data, or ResourceAndData.'
           type: string
         entity_identifier:
           description: The entity on which the operation is acting on.
           "$ref": "#/components/schemas/EntityIdentifier"
         substate:
-          description: The substate (similar to UTXO) which this operation represents
+          description: The substate (similar to UTXO) which this operation represents.
           "$ref": "#/components/schemas/Substate"
         amount:
-          description: A balance change on the entity represented by the `entity_identifier`
+          description: A balance change on the entity represented by the `entity_identifier`.
           "$ref": "#/components/schemas/ResourceAmount"
         data:
-          description: A data update on the entity represented by the `entity_identifier`
+          description: A data update on the entity represented by the `entity_identifier`.
           "$ref": "#/components/schemas/Data"
         metadata:
-          description: Metadata for the operation
+          description: Metadata for the operation.
           "$ref": "#/components/schemas/OperationMetadata"
     Substate:
       type: object
@@ -1222,7 +1227,7 @@ components:
         - substate_operation
       properties:
         substate_operation:
-          description: The type of substate operation (equivalent to UTXO create/spend)
+          description: The type of substate operation (equivalent to UTXO create/spend).
           type: string
           enum:
             - BOOTUP
@@ -1237,7 +1242,7 @@ components:
         hash:
           "$ref": "#/components/schemas/TransactionIdentifierHash"
     SubstateIdentifier:
-      description: Hex encoded unique identifier for the substate
+      description: Hex encoded unique identifier for the substate.
       type: object
       required:
         - identifier
@@ -1254,10 +1259,10 @@ components:
       properties:
         value:
           description: A signed big integer representing an amount of resources in
-            10^18 subunits
+            10^18 subunits.
           "$ref": "#/components/schemas/BigInteger"
         resource_identifier:
-          description: The resource this amount represents
+          description: The resource this amount represents.
           "$ref": "#/components/schemas/ResourceIdentifier"
     Data:
       type: object
@@ -1266,13 +1271,13 @@ components:
         - data_object
       properties:
         action:
-          description: Data action to take on `data_object`
+          description: Data action to take on `data_object`.
           type: string
           enum:
             - CREATE
             - DELETE
         data_object:
-          description: The object of the data action
+          description: The object of the data action.
           "$ref": "#/components/schemas/DataObject"
     DataObject:
       type: object
@@ -1280,7 +1285,8 @@ components:
         - type
       properties:
         type:
-          description: Type of Object
+          description: The type of the data object. Each address may own up to one current
+            object of a given type.
           type: string
       discriminator:
         propertyName: type
@@ -1313,11 +1319,11 @@ components:
               "$ref": "#/components/schemas/BigInteger"
             is_mutable:
               description: If true, the `owner` is able to mint/burn tokens. Otherwise,
-                the token is a fixed supply token
+                the token is a fixed supply token.
               type: boolean
             owner:
-              description: The owner of the token (only available for mutable tokens)
-                who can mint/burn
+              description: The owner of the token who can mint/burn.
+                This is only available for mutable tokens.
               "$ref": "#/components/schemas/AccountAddress"
     TokenMetadata:
       allOf:
@@ -1327,19 +1333,19 @@ components:
             - symbol
           properties:
             symbol:
-              description: The symbol of the token (not unique in the system)
+              description: The symbol of the token (not unique in the system).
               type: string
             name:
-              description: The name of the token
+              description: The name of the token.
               type: string
             description:
-              description: Description describing the token
+              description: Description describing the token.
               type: string
             url:
-              description: A url which points to more info about the token
+              description: A url which points to more information about the token.
               type: string
             icon_url:
-              description: A url which points to the icon of the token
+              description: A url which points to the icon of the token.
               type: string
     VirtualParentData:
       allOf:
@@ -1355,7 +1361,7 @@ components:
             - round
           properties:
             round:
-              description: The round of the system
+              description: The round of the system.
               "$ref": "#/components/schemas/LongNumber"
     EpochData:
       allOf:
@@ -1365,7 +1371,7 @@ components:
             - epoch
           properties:
             epoch:
-              description: The epoch of the system
+              description: The epoch of the system.
               "$ref": "#/components/schemas/LongNumber"
     PreparedValidatorRegistered:
       allOf:
@@ -1376,11 +1382,11 @@ components:
           properties:
             registered:
               description: The registered flag of the validator which will be updated
-                by the end of `epoch`
+                by the end of `epoch`.
               type: boolean
             epoch:
               description: Optional field, when non-empty describes the epoch the `registered`
-                flag will update, otherwise no update is scheduled
+                flag will update, otherwise no update is scheduled.
               "$ref": "#/components/schemas/LongNumber"
     PreparedValidatorOwner:
       allOf:
@@ -1391,11 +1397,11 @@ components:
           properties:
             owner:
               description: The owner of the validator which will be updated by the end
-                of `epoch`
+                of `epoch`.
               "$ref": "#/components/schemas/AccountAddress"
             epoch:
               description: Optional field, when non-empty describes the epoch the `owner`
-                field will update, otherwise no update is scheduled
+                field will update, otherwise no update is scheduled.
               "$ref": "#/components/schemas/LongNumber"
     PreparedValidatorFee:
       allOf:
@@ -1406,11 +1412,11 @@ components:
           properties:
             fee:
               description: The fee percentage of the validator which will be updated
-                in the future epoch
+                in the future epoch.
               type: integer
             epoch:
               description: Optional field, when non-empty describes the epoch the `fee`
-                field will update, otherwise no update is scheduled
+                field will update, otherwise no update is scheduled.
               "$ref": "#/components/schemas/LongNumber"
     ValidatorMetadata:
       allOf:
@@ -1421,10 +1427,10 @@ components:
             - url
           properties:
             name:
-              description: The name for the validator
+              description: The name for the validator.
               type: string
             url:
-              description: A url which points to more info about the validator
+              description: A url which points to more information about the validator.
               type: string
     ValidatorBFTData:
       allOf:
@@ -1436,11 +1442,11 @@ components:
           properties:
             proposals_completed:
               description: The number of completed proposals by this validator as a
-                leader in the current epoch
+                leader in the current epoch.
               "$ref": "#/components/schemas/LongNumber"
             proposals_missed:
               description: The number of missed proposals by this validator as a leader
-                in the current epoch
+                in the current epoch.
               "$ref": "#/components/schemas/LongNumber"
     ValidatorAllowDelegation:
       allOf:
@@ -1451,7 +1457,7 @@ components:
           properties:
             allow_delegation:
               description: Flag indicating whether stakers besides the owner of the
-                validator can stake to this validator
+                validator can stake to this validator.
               type: boolean
     ValidatorData:
       allOf:
@@ -1464,15 +1470,15 @@ components:
           properties:
             owner:
               description: The owner of the validator who receives the fees when others
-                stake to the validator
+                stake to the validator.
               "$ref": "#/components/schemas/AccountAddress"
             registered:
               description: Flag indicating whether a validator is registered to be part
-                of the validator set
+                of the validator set.
               type: boolean
             fee:
               description: The fee percentage of the validator in 0.01% subunits (ie
-                10000 == 100%)
+                10000 == 100%).
               type: integer
     ValidatorSystemMetadata:
       allOf:
@@ -1482,7 +1488,7 @@ components:
             - data
           properties:
             data:
-              description: A hex encoded byte array
+              description: A hex encoded byte array.
               type: string
     PublicKey:
       type: object
@@ -1490,7 +1496,7 @@ components:
         - hex
       properties:
         hex:
-          description: Compressed ECSDA Public Key hex encoded
+          description: Compressed ECSDA Public Key hex encoded.
           type: string
     NetworkIdentifier:
       type: object
@@ -1537,7 +1543,7 @@ components:
         - address
       properties:
         address:
-          description: The top level identifier for an entity
+          description: The top level identifier for an entity.
           type: string
         sub_address:
           description: Further drill down into an entity. Can be treated as an entirely
@@ -1549,11 +1555,11 @@ components:
         - address
       properties:
         address:
-          description: The subaddress
+          description: The subaddress.
           type: string
         metadata:
           description: Any additional data required to drill down to a particular
-            address is added here
+            address is added here.
           "$ref": "#/components/schemas/SubAddressMetadata"
     SubAddressMetadata:
       type: object
@@ -1568,7 +1574,7 @@ components:
         - type
       properties:
         type:
-          description: The type of resource
+          description: The type of resource.
           type: string
       discriminator:
         propertyName: type
@@ -1583,7 +1589,7 @@ components:
             - rri
           properties:
             rri:
-              description: The RRI of the token
+              description: The Radix Resource Identifier "RRI" of the token.
               "$ref": "#/components/schemas/RRI"
     StakeOwnershipResourceIdentifier:
       allOf:
@@ -1593,7 +1599,7 @@ components:
             - validator
           properties:
             validator:
-              description: The validator associated with this stake ownership
+              description: The validator associated with this stake ownership.
               "$ref": "#/components/schemas/ValidatorAddress"
     Signature:
       type: object
