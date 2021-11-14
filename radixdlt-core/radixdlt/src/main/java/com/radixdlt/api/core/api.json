@@ -637,10 +637,14 @@
       "SignRequest": {
         "type": "object",
         "required": [
+          "network_identifier",
           "public_key",
           "unsigned_transaction"
         ],
         "properties": {
+          "network_identifier": {
+            "$ref": "#/components/schemas/NetworkIdentifier"
+          },
           "public_key": {
             "description": "The public key which represents the private key to sign with",
             "$ref": "#/components/schemas/PublicKey"
@@ -838,6 +842,9 @@
           }
         },
         "example": {
+          "network_identifier": {
+            "network": "mainnet"
+          },
           "fee_payer": {
             "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
           },
@@ -896,10 +903,14 @@
       "ConstructionParseRequest": {
         "type": "object",
         "required": [
+          "network_identifier",
           "transaction",
           "signed"
         ],
         "properties": {
+          "network_identifier": {
+            "$ref": "#/components/schemas/NetworkIdentifier"
+          },
           "transaction": {
             "description": "Hex encoded transaction to parse",
             "type": "string"
@@ -910,6 +921,9 @@
           }
         },
         "example": {
+          "network_identifier": {
+            "network": "mainnet"
+          },
           "transaction": "0d000107ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002010021000000000000000000000000000000000000000000000000000101ed50bab1800002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e80000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e7f6a02004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000000000000000000000000009600",
           "signed": false
         }
@@ -940,10 +954,14 @@
       "ConstructionFinalizeRequest": {
         "type": "object",
         "required": [
+          "network_identifier",
           "unsigned_transaction",
           "signature"
         ],
         "properties": {
+          "network_identifier": {
+            "$ref": "#/components/schemas/NetworkIdentifier"
+          },
           "unsigned_transaction": {
             "description": "Hex encoded unsigned transaction",
             "type": "string"
@@ -954,6 +972,9 @@
           }
         },
         "example": {
+          "network_identifier": {
+            "network": "mainnet"
+          },
           "unsigned_transaction": "0d000107ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002010021000000000000000000000000000000000000000000000000000101ed50bab1800002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e80000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e7f6a02004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000000000000000000000000009600",
           "signature": {
             "public_key": {
@@ -981,15 +1002,22 @@
       "ConstructionSubmitRequest": {
         "type": "object",
         "required": [
+          "network_identifier",
           "signed_transaction"
         ],
         "properties": {
+          "network_identifier": {
+            "$ref": "#/components/schemas/NetworkIdentifier"
+          },
           "signed_transaction": {
             "description": "Hex encoded signed transaction to be submitted",
             "type": "string"
           }
         },
         "example": {
+          "network_identifier": {
+            "network": "mainnet"
+          },
           "signed_transaction": "07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf"
         }
       },
@@ -1187,6 +1215,9 @@
           }
         },
         "example": {
+          "network_identifier": {
+            "network": "mainnet"
+          },
           "committed_state_identifier": {
             "state_version": 40897
           },
