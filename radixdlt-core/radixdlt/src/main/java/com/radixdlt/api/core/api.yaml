@@ -335,7 +335,8 @@ paths:
   "/network/status":
     post:
       summary: Get Network Status
-      description: Returns the current state and status of the ledger.
+      description: Returns the current state and status of the node's copy of the ledger.
+        If the node is syncing, the `current_state_X` responses may be behind the global ledger.
       tags:
         - network
       requestBody:
@@ -609,17 +610,17 @@ components:
           description: The ledger state identifier after the genesis transaction.
           "$ref": "#/components/schemas/StateIdentifier"
         current_state_identifier:
-          description: The current ledger state identifier.
+          description: The current state identifier at the top of the node's copy of the ledger.
           "$ref": "#/components/schemas/StateIdentifier"
         current_state_epoch:
-          description: The current ledger state epoch.
+          description: The current ledger epoch at the top of the node's copy of the ledger.
           "$ref": "#/components/schemas/LongNumber"
         current_state_round:
-          description: The current ledger state round (in the current epoch).
+          description: The current ledger state round (in the current epoch) at the top of the node's copy of the ledger.
           "$ref": "#/components/schemas/LongNumber"
         current_state_timestamp:
-          description: The current ledger state timestamp, not guaranteed to always
-            increase.
+          description: The current ledger state timestamp at the top of the node's copy of the ledger.
+            This timestamp is not guaranteed to always increase.
           "$ref": "#/components/schemas/LongNumber"
         node_identifiers:
           description: The entity identifiers associated with this node's private
