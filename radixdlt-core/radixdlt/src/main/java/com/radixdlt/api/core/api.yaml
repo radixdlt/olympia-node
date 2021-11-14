@@ -362,7 +362,7 @@ paths:
   "/entity":
     post:
       summary: Get Entity Information
-      description: Gets the balances and data assosciated with an entity at the current state of the ledger.
+      description: Gets the balances and data objects at an entity at the current state of the ledger.
       tags:
         - entity
       requestBody:
@@ -705,12 +705,17 @@ components:
     EntityRequest:
       type: object
       required:
+        - network_identifier
         - entity_identifier
       properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
         entity_identifier:
           description: The Entity for which current balance and data information will be retrieved.
           "$ref": "#/components/schemas/EntityIdentifier"
       example:
+        network_identifier:
+          network: mainnet
         entity_identifier:
           address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
     EntityResponse:
