@@ -61,28 +61,118 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.address;
+package com.radixdlt.api.core.entity;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.api.core.construction.EntityIdentifier;
+import com.radixdlt.api.core.construction.KeyQuery;
+import com.radixdlt.api.core.construction.ResourceQuery;
+import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
+import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+import java.util.List;
+import java.util.function.Function;
 
-public final class AddressApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+public class EntityHandler implements ApiHandler<EntityIdentifier> {
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final Addressing addressing;
+	private final ProcessedTxnJsonConverter converter;
 
-	public AddressApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	EntityHandler(
+		RadixEngine<LedgerAndBFTProof> radixEngine,
+		ProcessedTxnJsonConverter converter,
+		Addressing addressing
+	) {
+		this.radixEngine = radixEngine;
+		this.converter = converter;
+		this.addressing = addressing;
 	}
 
 	@Override
-	protected void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
+	public Addressing addressing() {
+		return addressing;
+	}
+
+	@Override
+	public EntityIdentifier parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return requestReader.getJsonObject("entity_identifier", EntityIdentifier::from);
+	}
+
+	private JSONObject bucketToResourceJson(Bucket bucket, Function<REAddr, String> addressToRri) {
+		if (bucket.resourceAddr() != null) {
+			return new JSONObject()
+				.put("type", "token")
+				.put("rri", addressToRri.apply(bucket.resourceAddr())
+			);
+		}
+
+		return new JSONObject()
+			.put("type", "stake_ownership")
+			.put("validator", addressing.forValidators().of(bucket.getValidatorKey()));
+	}
+
+	private JSONArray getBalances(
+		List<ResourceQuery> resourceQueries,
+		Function<REAddr, String> addressToRri
+	) {
+		var balances = new JSONArray();
+		for (var resourceQuery : resourceQueries) {
+			var index = resourceQuery.getIndex();
+			var bucketPredicate = resourceQuery.getPredicate();
+			radixEngine.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
+				.forEach((bucket, amount) -> {
+					var json = new JSONObject()
+						.put("resource_identifier", bucketToResourceJson(bucket, addressToRri))
+						.put("value", amount.toString());
+					balances.put(json);
+				});
+		}
+		return balances;
+	}
+
+	private JSONArray getObjects(
+		List<KeyQuery> keyQueries
+	) {
+		var objects = new JSONArray();
+		for (var keyQuery : keyQueries) {
+			var substate = radixEngine.get(keyQuery.getKey()).or(keyQuery.getVirtualSubstate());
+			substate.map(s -> converter.getDataObject(keyQuery.getTypeId(), s)).ifPresent(objects::put);
+		}
+		return objects;
+	}
+
+	@Override
+	public JSONObject handleRequest(EntityIdentifier entityIdentifier) throws Exception {
+		Function<REAddr, String> addressToRri = addr -> {
+			var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+			var substate = radixEngine.get(mapKey).orElseThrow();
+			var tokenResource = (TokenResourceMetadata) substate;
+			return addressing.forResources().of(tokenResource.getSymbol(), addr);
+		};
+
+		// TODO: need to fetch these in a single database transaction and retrieve version as well
+		var balances = getBalances(
+			entityIdentifier.getResourceQueries(),
+			addressToRri
 		);
-		routeBinder.addBinding(path).to(AddressHandler.class);
+		var objects = getObjects(entityIdentifier.getKeyQueries());
+
+		return new JSONObject()
+			.put("balances", balances)
+			.put("data_objects", objects);
 	}
 }

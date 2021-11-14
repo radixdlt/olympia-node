@@ -749,6 +749,18 @@
           "metadata": {
             "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
           }
+        },
+        "example": {
+          "network_identifier": {
+            "network": "mainnet"
+          },
+          "public_key": {
+            "hex": "03b74e9378082d1e8953fb965eae47cc6120b6a2e8c07d4f85640efad23dc4f9cb"
+          },
+          "metadata": {
+            "type": "Token",
+            "symbol": "test"
+          }
         }
       },
       "ConstructionDeriveResponse": {

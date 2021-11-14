@@ -245,6 +245,22 @@ public final class JsonObjectReader {
 		}
 	}
 
+	public Optional<byte[]> getOptHexBytes(String key) throws InvalidParametersException {
+		byte[] bytes;
+		try {
+			if (!jsonObject.has(key)) {
+				return Optional.empty();
+			}
+			String hex = jsonObject.getString(key);
+			bytes = Bytes.fromHexString(hex);
+		} catch (JSONException | IllegalArgumentException e) {
+			throw new InvalidParametersException("/" + key, e);
+		}
+
+		return Optional.of(bytes);
+	}
+
+
 	public Optional<byte[]> getOptHexBytes(String key, int fixedLength) throws InvalidParametersException {
 		byte[] bytes;
 		try {

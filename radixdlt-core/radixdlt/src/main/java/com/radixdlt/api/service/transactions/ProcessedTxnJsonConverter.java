@@ -303,12 +303,12 @@ public final class ProcessedTxnJsonConverter {
 					.put("rri", rri);
 			}
 
-			final JSONObject addressIdentifier = new JSONObject();
+			final JSONObject entityIdentifier = new JSONObject();
 			if (bucket.getOwner() != null) {
-				addressIdentifier.put("address", addressing.forAccounts().of(bucket.getOwner()));
+				entityIdentifier.put("address", addressing.forAccounts().of(bucket.getOwner()));
 				if (bucket.getValidatorKey() != null) {
 					var subAddressJson = new JSONObject();
-					addressIdentifier.put("sub_address", subAddressJson);
+					entityIdentifier.put("sub_address", subAddressJson);
 					if (bucket.getEpochUnlock() == null) {
 						subAddressJson
 							.put("address", "prepared_stakes")
@@ -328,7 +328,7 @@ public final class ProcessedTxnJsonConverter {
 				}
 			} else if (update.getParsed() instanceof ValidatorStakeData) {
 				var validatorStakeData = (ValidatorStakeData) update.getParsed();
-				addressIdentifier.put("address", addressing.forValidators().of(bucket.getValidatorKey()));
+				entityIdentifier.put("address", addressing.forValidators().of(bucket.getValidatorKey()));
 				operationJson
 					.put("data", new JSONObject()
 						.put("action", update.isBootUp() ? "CREATE" : "DELETE")
@@ -344,7 +344,7 @@ public final class ProcessedTxnJsonConverter {
 					.put("resource_identifier", resourceIdentifier)
 				);
 			}
-			operationJson.put("address_identifier", addressIdentifier);
+			operationJson.put("entity_identifier", entityIdentifier);
 		} else {
 
 			var dataObject = getDataObject(SubstateTypeId.valueOf(update.typeByte()), (Particle) update.getParsed());
@@ -357,34 +357,34 @@ public final class ProcessedTxnJsonConverter {
 				// A bit of a super hack to get the rri
 				var resourceData = (ResourceData) update.getParsed();
 				var rri = tokenAddressToRri.apply(resourceData.getAddr());
-				var addressIdentifierJson = new JSONObject().put("address", rri);
-				operationJson.put("address_identifier", addressIdentifierJson);
+				var entityIdentifierJson = new JSONObject().put("address", rri);
+				operationJson.put("entity_identifier", entityIdentifierJson);
 			} else if (update.getParsed() instanceof SystemData) {
-				var addressIdentifierJson = new JSONObject().put("address", "system");
-				operationJson.put("address_identifier", addressIdentifierJson);
+				var entityIdentifierJson = new JSONObject().put("address", "system");
+				operationJson.put("entity_identifier", entityIdentifierJson);
 			} else if (update.getParsed() instanceof ValidatorUpdatingData) {
 				var validatorUpdatingData = (ValidatorUpdatingData) update.getParsed();
-				var addressIdentifierJson = new JSONObject()
+				var entityIdentifierJson = new JSONObject()
 					.put("address", addressing.forValidators().of(validatorUpdatingData.getValidatorKey()));
-				operationJson.put("address_identifier", addressIdentifierJson);
+				operationJson.put("entity_identifier", entityIdentifierJson);
 			} else if (update.getParsed() instanceof ValidatorData) {
 				var validatorData = (ValidatorData) update.getParsed();
-				var addressIdentifierJson = new JSONObject()
+				var entityIdentifierJson = new JSONObject()
 					.put("address", addressing.forValidators().of(validatorData.getValidatorKey()));
-				operationJson.put("address_identifier", addressIdentifierJson);
+				operationJson.put("entity_identifier", entityIdentifierJson);
 			} else if (update.getParsed() instanceof UnclaimedREAddr) {
 				var unclaimedREAddr = (UnclaimedREAddr) update.getParsed();
 				var addr = unclaimedREAddr.getAddr();
-				final JSONObject addressIdentifierJson;
+				final JSONObject entityIdentifierJson;
 				if (!addr.isSystem()) {
 					var rri = tokenAddressToRri.apply(unclaimedREAddr.getAddr());
-					addressIdentifierJson = new JSONObject().put("address", rri);
+					entityIdentifierJson = new JSONObject().put("address", rri);
 				} else {
-					addressIdentifierJson = new JSONObject().put("address", "system");
+					entityIdentifierJson = new JSONObject().put("address", "system");
 				}
-				operationJson.put("address_identifier", addressIdentifierJson);
+				operationJson.put("entity_identifier", entityIdentifierJson);
 			} else {
-				operationJson.put("address_identifier", new JSONObject()
+				operationJson.put("entity_identifier", new JSONObject()
 					.put("address", "system")
 				);
 			}

@@ -119,7 +119,7 @@ public class BuildTransactionRequest {
 		var feePayer = reader.getJsonObject("fee_payer", EntityIdentifier::from).getAccountAddress()
 			.orElseThrow();
 		var operationGroups = reader.getList("operation_groups", OperationGroup::from);
-		var message = reader.getHexBytes("message");
+		var message = reader.getOptHexBytes("message").orElse(null);
 		var disableResourceAllocateAndDestroy = reader.getOptBoolean("disable_resource_allocate_and_destroy", false);
 		return new BuildTransactionRequest(
 			networkIdentifier, feePayer, operationGroups, message, disableResourceAllocateAndDestroy

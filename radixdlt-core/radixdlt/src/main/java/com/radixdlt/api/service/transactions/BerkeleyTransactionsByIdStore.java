@@ -218,7 +218,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 			.put("metadata", new JSONObject()
 				.put("hex", Bytes.toHexString(txn.getTxn().getPayload()))
 				.put("fee", new JSONObject()
-					.put("resource", new JSONObject()
+					.put("resource_identifier", new JSONObject()
 						.put("type", "Token")
 						.put("rri", addressToRri.apply(REAddr.ofNativeToken()))
 					)
