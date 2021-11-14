@@ -127,7 +127,7 @@ tags:
 
       <SchemaDefinition schemaRef="#/components/schemas/CommittedTransaction" showReadOnly={true} showWriteOnly={true} />
 
-      ## OperationGroup
+      ## Operation Group
 
       Similar to the [Rosetta API](https://www.rosetta-api.org/), both reading and
       writing to the ledger use the same Address and Operation objects.
