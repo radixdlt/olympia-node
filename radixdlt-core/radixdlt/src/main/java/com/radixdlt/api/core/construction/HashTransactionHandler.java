@@ -63,31 +63,24 @@
 
 package com.radixdlt.api.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.archive.ApiHandler;
+import com.radixdlt.api.archive.InvalidParametersException;
+import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.atom.Txn;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
-
-public final class ConstructionApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
-
-	public ConstructionApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+public class HashTransactionHandler implements ApiHandler<Txn> {
+	@Override
+	public Txn parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		var bytes = requestReader.getHexBytes("signed_transaction");
+		return Txn.create(bytes);
 	}
 
 	@Override
-	protected void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path + "/derive").to(DeriveHandler.class);
-		routeBinder.addBinding(path + "/build").to(BuildTransactionHandler.class);
-		routeBinder.addBinding(path + "/parse").to(ParseTransactionHandler.class);
-		routeBinder.addBinding(path + "/finalize").to(FinalizeTransactionHandler.class);
-		routeBinder.addBinding(path + "/hash").to(HashTransactionHandler.class);
-		routeBinder.addBinding(path + "/submit").to(SubmitTransactionHandler.class);
+	public JSONObject handleRequest(Txn request) throws Exception {
+		return new JSONObject()
+			.put("transaction_identifier", new JSONObject()
+				.put("hash", request.getId())
+			);
 	}
 }
