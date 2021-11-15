@@ -8,6 +8,6 @@ ledger for that node.
 
 ## Getting set-up
 
-* Copy the `livenet-docker-template` folder to a new folder of your choosing outside this repository, and give 
-  that folder a sensible name, eg `radix-stokenet-node` for a stokenet node.
+* Copy the [livenet-docker-template](./livenet-docker-template) folder to a new folder of your choosing
+ outside this repository, and give that folder a sensible name, eg `radix-stokenet-node` for a stokenet node.
 * Follow the instructions in the [README in that folder](./livenet-docker-template).
