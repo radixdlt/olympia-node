@@ -8,9 +8,19 @@ The node's files will be mounted under `./node/`.
 
 ## First time set-up
 
-* Copy `node-variables.template.sh` to `node-variables.sh` and update the variables inside.
+Before starting, ensure this template folder has been copied outside the radixdlt repository,
+and given a sensible name describing the node you will run.
+
+Then, start a terminal in the copied folder.
+
+* Create and update `node-variables.sh`:
+  * Run `cp node-variables.template.sh node-variables.sh`
+  * Edit `node-variables.sh` to update the configuration inside.
 * Run `chmod +x generate-key.sh` and `chmod +x start-node.sh`
 * Run `./generate-key.sh` to generate a public/private keystore at `./node/keystore.ks`.
+
+You are now prepared and ready to start the node - but we just need to build the correct image
+that you wish the node to run from.
 
 ## Create a docker image of a development build
 
