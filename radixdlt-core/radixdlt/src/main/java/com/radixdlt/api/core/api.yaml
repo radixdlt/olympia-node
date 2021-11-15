@@ -83,39 +83,39 @@ tags:
       For example, a public key account is an entity which can hold token balances
       on behalf of a private key holder.
 
-      ![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/entity.png '#width=500px;')
+      ![Entity](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/entity.png '#width=500px;')
 
       An Operation is an update which occurs on an Entity. There are two types of
       Operations:
       * A **Resource** Operation which is a balance change on an Entity
       * A **Data** Operation which is a data object update on an Entity
 
-      ![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/operation.png '#width=500px;')
+      ![Operation](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/operation.png '#width=500px;')
   - name: objects
     x-displayName: Objects
     description: |
       ## State Identifiers
-      The Radix Olympia network has no concept of blocks, instead transactions are
+      The Radix Olympia network has no concept of blocks. Instead transactions are
       managed in a flat ordered list. A hash chain is formed from these transactions
-      which represents a point in time of the ledger with a valid committed state.
+      called a Transaction Accumulator. A Transaction Accumulator represents a point
+      in time of the ledger with a valid state.
 
       ![State Identifiers](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/state_identifiers.png '#width=500px;')
 
-      Along with the transaction accumulator hash and the index of the hash in the hash
-      chain, this forms a State Identifier:
+      The transaction accumulator along with the index forms a State Identifier.
       <SchemaDefinition schemaRef="#/components/schemas/StateIdentifier" exampleRef="#/components/examples/StateIdentifier" showReadOnly={true} showWriteOnly={true} />
 
       ## Transactions
 
-      A Transaction consists of one or more OperationGroups, each of which consist of
-      one or more Operations.
+      A Transaction is an atomic state update to the ledger. It consists of one or
+      more OperationGroups, each of which consist of one or more Operations.
 
       ![Transaction Operations](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/transaction_operations.png)
 
-      A Committed Transaction has additional information such as the StateIdentifier
-      which resulted after committing the transaction.
+      A Committed Transaction has additional information such as the State Identifier
+      which results after committing the transaction.
 
-      <SchemaDefinition schemaRef="#/components/schemas/CommittedTransaction" showReadOnly={true} showWriteOnly={true} />
+      <SchemaDefinition schemaRef="#/components/schemas/CommittedTransaction" exampleRef="#/components/examples/CommittedTransaction" showReadOnly={true} showWriteOnly={true} />
 
       ## Operation Groups
 
@@ -131,7 +131,7 @@ tags:
       Operation Group then represents a well formed accounting entry where credits
       and debits are equivalent (unless minting or burning occurred).
 
-      <SchemaDefinition schemaRef="#/components/schemas/OperationGroup" showReadOnly={true} showWriteOnly={true} />
+      <SchemaDefinition schemaRef="#/components/schemas/OperationGroup" exampleRef="#/components/examples/OperationGroup" showReadOnly={true} showWriteOnly={true} />
 
       ## Operations
 
@@ -141,7 +141,7 @@ tags:
       * The `amount` property represents either a positive or negative change in balance of some token.
       * The `data` property represents either the creation or deletion of a data object.
 
-      <SchemaDefinition schemaRef="#/components/schemas/Operation" showReadOnly={true} showWriteOnly={true} />
+      <SchemaDefinition schemaRef="#/components/schemas/Operation" exampleRef="#/components/examples/Operation" showReadOnly={true} showWriteOnly={true} />
 
       ## Entity Identifiers
 
@@ -149,19 +149,19 @@ tags:
       objects. An Entity Identifier may further specify a Sub Address which should be treated as a separate
       unique entity.
 
-      <SchemaDefinition schemaRef="#/components/schemas/EntityIdentifier" showReadOnly={true} showWriteOnly={true} />
+      <SchemaDefinition schemaRef="#/components/schemas/EntityIdentifier" exampleRef="#/components/examples/EntityIdentifier" showReadOnly={true} showWriteOnly={true} />
 
       ## Amounts
 
       A signed amount of a resource.
 
-      <SchemaDefinition schemaRef="#/components/schemas/ResourceAmount" showReadOnly={true} showWriteOnly={true} />
+      <SchemaDefinition schemaRef="#/components/schemas/ResourceAmount" exampleRef="#/components/examples/ResourceAmount" showReadOnly={true} showWriteOnly={true} />
 
       ## Resource Identifiers
 
       A Resource Identifier uniquely describes either some token or stake ownership of a validator.
 
-      <SchemaDefinition schemaRef="#/components/schemas/ResourceIdentifier" showReadOnly={true} showWriteOnly={true} />
+      <SchemaDefinition schemaRef="#/components/schemas/ResourceIdentifier" exampleRef="#/components/examples/ResourceIdentifier" showReadOnly={true} showWriteOnly={true} />
 
       ## Data Updates
 
@@ -169,37 +169,33 @@ tags:
 
       At any given time, an address will have up to one created-but-not-deleted data object of each type.
 
-      <SchemaDefinition schemaRef="#/components/schemas/Data" showReadOnly={true} showWriteOnly={true} />
+      <SchemaDefinition schemaRef="#/components/schemas/Data" exampleRef="#/components/examples/Data" showReadOnly={true} showWriteOnly={true} />
   - name: structure
     x-displayName: Structure
     description: |
-      With just the object descriptions, you have all the info needed to integrate a system that can track
-      generics assets and balances of entities and allow for generic asset transfer.
-
-      For more sophisticated use, such as staking, you need to understand the structure and relationships of
-      specific entities, resources, and data. For example, to stake XRD to a validator you must transfer XRD
-      from your account address to your `prepared_staked` subentity.
+      There are different types of entities on Radix, each of which can contain certain resources and data
+      objects.
 
       The following is a high level table describing which resources and data objects are allowed for a given
-      entity identifier.
+      entity.
 
       ![Structure](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/documentation/structure.png '#width=500px;')
 
-      There are four types of entities:
-      * **Account**, which is a regular public key account which can contain token balances and contain
-      StakeOwnership, which represents a delegated amount of stake to a specific validator. Subaddresses under
+      Overall, there are four main types of entities on Radix:
+      * **Account** is a regular public key account which can contain token balances and contain
+      StakeOwnership, which represents a delegated amount of stake to a specific validator. Subentities under
       an account-address contain assets which the account-address owns but is currently locked by the system.
       An account is represented by its Bech32 account address.
-      * **Validator**, an entity representing a validating node on the network. The subentity `system` holds XRD
+      * **Validator** is an entity representing a validating node on the network. The subentity `system` holds XRD
       tokens which have been staked to this validator. A validator is represented by its Bech32 validator address.
-      * **Token**, an entity representing a token, represented by its Radix Resource Identifier ("RRI").
-      * **System**, an entity representing system level data such as current epoch and round, represented by the string "system".
+      * **Token** is an entity representing a Token Definition, represented by its Radix Resource Identifier ("RRI").
+      * **System** is an entity representing system level data such as current epoch and round, represented by the string "system".
+
+
 
   - name: addressing
     x-displayName: Addressing
     description: |
-      ## Bech32 Address Encoding
-
       Account addresses, Validator addresses and Token RRIs are all [Bech32 encoded](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki).
 
       A Bech32 encoding consists of a prefix which is an ASCII human readable part "HRP", followed by the character "1",
@@ -227,13 +223,6 @@ tags:
       with zeroes if necessary. Radix encoding just encodes its data bytes into 5-bit chunks with padded zeroes -
       _without_ an initial 1 character version prefix. In other words, the padding and interpretation of the encoded
       data differs between Radix and Segwit addresses.
-
-      ## The native token: XRD
-
-      XRD is Radix ledger's native token, used for staking and to pay transaction fees. It has the symbol `xrd`, and
-      no other token is permitted to use this symbol. It has a reserved radix engine address of `1` (`01` in hex).
-
-      On mainnet, its RRI is `xrd_rr1qy5wfsfh`.
 
   - name: actions
     x-displayName: Actions
@@ -765,6 +754,9 @@ components:
       properties:
         entity_identifier:
           "$ref": "#/components/schemas/EntityIdentifier"
+      example:
+        entity_identifier:
+          address: test_rr1q0xjsd8e3ud8dexqntmse9n0mcjhepfr7y404dd3tfqqngerma
     ConstructionDeriveRequestMetadata:
       type: object
       properties:
@@ -851,6 +843,10 @@ components:
         mapping:
           SUCCESS: "#/components/schemas/ConstructionBuildSuccessResponse"
           ERROR: "#/components/schemas/ConstructionBuildErrorResponse"
+      example:
+        result: SUCCESS
+        unsigned_transaction: 07ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842000000020100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a636aa8c02c00000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a636aa8c02bfa2402004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b60100000000000000000000000000000000000000000000000000000000000005dc00
+        payload_to_sign: 06f82577392151638e059f31b16e52b056358ff9b7b72bedef21d701dc3ffa0f
     ConstructionParseRequest:
       type: object
       required:
@@ -887,6 +883,100 @@ components:
           properties:
             fee:
               "$ref": "#/components/schemas/ResourceAmount"
+      example:
+        metadata:
+          resource_identifier:
+            rri: xrd_rr1qy5wfsfh
+            type: Token
+          value: '72600000000000000'
+        operation_groups:
+          - metadata:
+              action:
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: '72600000000000000'
+                from: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                type: BurnTokens
+            operations:
+              - amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "-24000000000000000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002
+                  substate_operation: SHUTDOWN
+                entity_identifier:
+                  address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                type: Resource
+              - metadata:
+                  substate_data_hex: 06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e8000
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: '23999999927400000000000000'
+                substate:
+                  substate_identifier:
+                    identifier: e05bc84170aa74bcb0c7ed0393dc489afd8dbd761f68246d2f8de362b942707800000000
+                  substate_operation: BOOTUP
+                entity_identifier:
+                  address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                type: Resource
+          - metadata:
+              action:
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: '150'
+                from: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                to: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                type: TokenTransfer
+            operations:
+              - amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "-23999999927400000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: e05bc84170aa74bcb0c7ed0393dc489afd8dbd761f68246d2f8de362b942707800000000
+                  substate_operation: SHUTDOWN
+                entity_identifier:
+                  address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                type: Resource
+              - metadata:
+                  substate_data_hex: 06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a6148f65d4e7f6a
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: '23999999927399999999999850'
+                substate:
+                  substate_identifier:
+                    identifier: e05bc84170aa74bcb0c7ed0393dc489afd8dbd761f68246d2f8de362b942707800000001
+                  substate_operation: BOOTUP
+                entity_identifier:
+                  address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                type: Resource
+              - metadata:
+                  substate_data_hex: 06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b6010000000000000000000000000000000000000000000000000000000000000096
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: '150'
+                substate:
+                  substate_identifier:
+                    identifier: e05bc84170aa74bcb0c7ed0393dc489afd8dbd761f68246d2f8de362b942707800000002
+                  substate_operation: BOOTUP
+                entity_identifier:
+                  address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                type: Resource
     ConstructionFinalizeRequest:
       type: object
       required:
@@ -1801,3 +1891,200 @@ components:
       value:
         state_version: 46001
         transaction_accumulator: 2892a2359c37ab02116d46f742c684234d5aa9658682815f8221fc0b613101e0
+    CommittedTransaction:
+      value:
+        metadata:
+          size: 360
+          signed_by:
+            hex: 02aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b6
+          fee:
+            resource_identifier:
+              rri: xrd_rr1qy5wfsfh
+              type: Token
+            value: "72000000000000000"
+          hex: 07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf
+          timestamp: 1627407310726
+        committed_state_identifier:
+          state_version: 40898
+          transaction_accumulator: 5ea573f2e31640d177047d14122f1015c262f0d14d522596068784406aa1d88f
+        transaction_identifier:
+          hash: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
+        operation_groups:
+          - metadata:
+              action:
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "72000000000000000"
+                from: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                type: BurnTokens
+            operations:
+              - amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "-2400000000000000000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: 030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c
+                  substate_operation: SHUTDOWN
+                entity_identifier:
+                  address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                type: Resource
+              - metadata:
+                  substate_data_hex: 06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c0000
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "2399999999928000000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000
+                  substate_operation: BOOTUP
+                entity_identifier:
+                  address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                type: Resource
+          - metadata:
+              action:
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "24000000000000000000000000"
+                from: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                to: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                type: TokenTransfer
+            operations:
+              - amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "-2399999999928000000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000
+                  substate_operation: SHUTDOWN
+                entity_identifier:
+                  address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                type: Resource
+              - metadata:
+                  substate_data_hex: 06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c0000
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "2375999999928000000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000001
+                  substate_operation: BOOTUP
+                entity_identifier:
+                  address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+                type: Resource
+              - metadata:
+                  substate_data_hex: 06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000
+                amount:
+                  resource_identifier:
+                    rri: xrd_rr1qy5wfsfh
+                    type: Token
+                  value: "24000000000000000000000000"
+                substate:
+                  substate_identifier:
+                    identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002
+                  substate_operation: BOOTUP
+                entity_identifier:
+                  address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+                type: Resource
+    OperationGroup:
+      value:
+        metadata:
+          action:
+            amount:
+              resource_identifier:
+                rri: xrd_rr1qy5wfsfh
+                type: Token
+              value: "24000000000000000000000000"
+            from: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+            to: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+            type: TokenTransfer
+        operations:
+          - amount:
+              resource_identifier:
+                rri: xrd_rr1qy5wfsfh
+                type: Token
+              value: "-2399999999928000000000000000"
+            substate:
+              substate_identifier:
+                identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000000
+              substate_operation: SHUTDOWN
+            entity_identifier:
+              address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+            type: Resource
+          - metadata:
+              substate_data_hex: 06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c0000
+            amount:
+              resource_identifier:
+                rri: xrd_rr1qy5wfsfh
+                type: Token
+              value: "2375999999928000000000000000"
+            substate:
+              substate_identifier:
+                identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000001
+              substate_operation: BOOTUP
+            entity_identifier:
+              address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+            type: Resource
+          - metadata:
+              substate_data_hex: 06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000
+            amount:
+              resource_identifier:
+                rri: xrd_rr1qy5wfsfh
+                type: Token
+              value: "24000000000000000000000000"
+            substate:
+              substate_identifier:
+                identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000002
+              substate_operation: BOOTUP
+            entity_identifier:
+              address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+            type: Resource
+    Operation:
+      value:
+        metadata:
+          substate_data_hex: 06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c0000
+        amount:
+          resource_identifier:
+            rri: xrd_rr1qy5wfsfh
+            type: Token
+          value: "2375999999928000000000000000"
+        substate:
+          substate_identifier:
+            identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d9933719381184200000001
+          substate_operation: BOOTUP
+        entity_identifier:
+          address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+        type: Resource
+    EntityIdentifier:
+      value:
+        address: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+        sub_entity:
+          address: prepared_stake
+    ResourceAmount:
+      value:
+        resource_identifier:
+          rri: xrd_rr1qy5wfsfh
+          type: Token
+        value: "2375999999928000000000000000"
+    ResourceIdentifier:
+      value:
+        rri: xrd_rr1qy5wfsfh
+        type: Token
+    Data:
+      value:
+        action: CREATE
+        data_object:
+          round: 0
+          type: RoundData
+          timestamp: 1627330381600
