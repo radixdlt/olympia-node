@@ -989,7 +989,8 @@ components:
           description: Hex encoded unsigned transaction.
           type: string
         signature:
-          description: The signature for the unsigned transaction.
+          description: The signature object containing the public key and signature of the `unsigned_transaction` bytes,
+            as detailed in the Signature object schema.
           "$ref": "#/components/schemas/Signature"
       example:
         network_identifier:
@@ -1686,6 +1687,10 @@ components:
           "$ref": "#/components/schemas/PublicKey"
         bytes:
           type: string
+          description: An ECDSA signature of the `unsigned_transaction` transaction bytes with the given `public_key`.
+            The signature uses the secp256k1 curve, and operates on the hash given by `SHA256(SHA256(unsigned_transaction))`
+            (that is __two rounds__ of SHA256).
+            This signature should be encoded in DER format, and then encoded as a hex string.
     Bech32HRPs:
       type: object
       required:
