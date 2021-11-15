@@ -247,19 +247,14 @@ tags:
       data object with the same type.
       5. **New Token Definitions** may be created by destroying an `UnclaimedREAddr` and creating a
       `TokenData` and `TokenMetadata` data object.
-  - name: example
-    x-displayName: XRD Transfer Example
+  - name: xrd_transfer_example
+    x-displayName: XRD Transfer
     description: |
       Given the described model let us go through an example of how an XRD transfer transaction may look like.
 
       For the purpose of our example, let's say we want to:
-      ```
-      Transfer 10.5XRD
-      From
-      rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
-      To
-      rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
-      ```
+      > TRANSFER 10.5 XRD FROM rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+      TO rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
 
       ## Entity Identifiers
 
@@ -279,6 +274,127 @@ tags:
         "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
       }
       ```
+
+      ## Resource Identifiers
+
+      Next we will need the Resource Identifier for the XRD Token which will be transferred.
+      XRD is Radix ledger's native token, used for staking and to pay fees. It is the only
+      token allowed with the symbol `xrd`, and has a reserved radix engine address of `1`
+      (`01` in hex).
+
+      On mainnet, its RRI is xrd_rr1qy5wfsfh and it's resource identifier is:
+      ```
+      {
+        "type": "Token",
+        "rri": "xrd_rr1qy5wfsfh"
+      }
+      ```
+
+      ## Amounts
+
+      Given our resource identifier we can now create resource balance changes. This will
+      be expressed as a Resource Amount. All amounts are expressed as `10^-18` subunits.
+      Thus, since we are transferring `1.5 XRD` this translates to a value of
+      `1500000000000000000` or the following amounts:
+
+      Sender Amount:
+      ```
+      {
+        "resource_identifier": {
+          "type": "Token",
+          "rri": "xrd_rr1qy5wfsfh"
+        },
+        "value": "-1500000000000000000"
+      }
+      ```
+
+      Receiver Amount:
+      ```
+      {
+        "resource_identifier": {
+          "type": "Token",
+          "rri": "xrd_rr1qy5wfsfh"
+        },
+        "value": "1500000000000000000"
+      }
+      ```
+
+      ## Operations
+
+      We now combine our amounts with our Entity Identifiers to create Operations.
+      `"Resource"` is the type of our Operation since we are manipulation resource balances.
+
+      Sender Operation:
+      ```
+      {
+        "type": "Resource",
+        "entity_identifier": {
+          "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+        },
+        "amount": {
+          "resource_identifier": {
+            "type": "Token",
+            "rri": "xrd_rr1qy5wfsfh"
+          },
+          "value": "-1500000000000000000"
+        }
+      }
+      ```
+
+      Receiver Operation:
+      ```
+      {
+        "type": "Resource",
+        "entity_identifier": {
+          "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
+        },
+        "amount": {
+          "resource_identifier": {
+            "type": "Token",
+            "rri": "xrd_rr1qy5wfsfh"
+          },
+          "value": "1500000000000000000"
+        }
+      }
+      ```
+
+      ## Operation Group
+
+      We then combine operations into a group. Note that the sender operation must be first.
+
+      ```
+      {
+        "operations": [
+          {
+            "type": "Resource",
+            "entity_identifier": {
+              "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+            },
+            "amount": {
+              "resource_identifier": {
+                "type": "Token",
+                "rri": "xrd_rr1qy5wfsfh"
+              },
+              "value": "-1500"
+            }
+          },
+          {
+            "type": "Resource",
+            "entity_identifier": {
+              "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
+            },
+            "amount": {
+              "resource_identifier": {
+                "type": "Token",
+                "rri": "xrd_rr1qy5wfsfh"
+              },
+              "value": "1500"
+            }
+          }
+        ]
+      }
+      ```
+
   - name: network
     x-displayName: Network
     description: Get info about the node and network.
@@ -299,7 +415,9 @@ x-tagGroups:
       - addressing
       - actions
       - objects
-      - example
+  - name: Examples
+    tags:
+      - xrd_transfer_example
   - name: Data API
     tags:
       - network
