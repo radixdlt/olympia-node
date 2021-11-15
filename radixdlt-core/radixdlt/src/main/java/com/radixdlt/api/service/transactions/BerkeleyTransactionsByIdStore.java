@@ -208,6 +208,17 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		var txnId = txn.getTxnId();
 		var key = new DatabaseEntry(txnId.getBytes());
 		var fee = txn.getFeePaid();
+		final JSONObject feeObject;
+		if (!fee.isZero()) {
+			feeObject = new JSONObject()
+				.put("resource_identifier", new JSONObject()
+					.put("type", "Token")
+					.put("rri", addressToRri.apply(REAddr.ofNativeToken()))
+				)
+				.put("value", fee.toString());
+		} else {
+			feeObject = null;
+		}
 		var messageHex = txn.getMsg().map(Bytes::toHexString);
 		var jsonString = new JSONObject()
 			.put("committed_state_identifier", new JSONObject()
@@ -217,13 +228,7 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 			.put("transaction_identifier", new JSONObject().put("hash", txn.getTxnId()))
 			.put("metadata", new JSONObject()
 				.put("hex", Bytes.toHexString(txn.getTxn().getPayload()))
-				.put("fee", new JSONObject()
-					.put("resource_identifier", new JSONObject()
-						.put("type", "Token")
-						.put("rri", addressToRri.apply(REAddr.ofNativeToken()))
-					)
-					.put("value", fee.toString())
-				)
+				.putOpt("fee", feeObject)
 				.put("size", txn.getTxn().getPayload().length)
 				.put("timestamp", timestamp.get().toEpochMilli())
 				.putOpt("signed_by", txn.getSignedBy()

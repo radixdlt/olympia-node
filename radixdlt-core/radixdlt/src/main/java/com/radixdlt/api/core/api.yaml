@@ -1242,8 +1242,6 @@ components:
       required:
         - size
         - hex
-        - fee
-        - timestamp
       properties:
         size:
           description: The size of the transaction in bytes.
@@ -1252,11 +1250,9 @@ components:
           description: The raw transaction bytes in hex encoding.
           type: string
         fee:
-          description: The fee paid for the transaction.
+          description: The fee paid for the transaction. If empty,
+            then the transaction was produced by the system.
           "$ref": "#/components/schemas/ResourceAmount"
-        timestamp:
-          description: Timestamp when the transaction was committed.
-          "$ref": "#/components/schemas/LongNumber"
         signed_by:
           description: Optional public key which signed the transaction. If empty,
             then the transaction was produced by the system.
