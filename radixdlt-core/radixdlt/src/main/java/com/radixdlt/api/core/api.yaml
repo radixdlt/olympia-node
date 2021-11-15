@@ -1276,7 +1276,7 @@ components:
             "$ref": "#/components/schemas/Operation"
         metadata:
           description: Metadata for the operation group.
-          "$ref": "#/components/schemas/OperationGroupMetadata"
+          type: object
     Operation:
       type: object
       required:
@@ -1300,7 +1300,7 @@ components:
           "$ref": "#/components/schemas/Data"
         metadata:
           description: Metadata for the operation.
-          "$ref": "#/components/schemas/OperationMetadata"
+          type: object
     Substate:
       type: object
       required:
@@ -1330,8 +1330,6 @@ components:
       properties:
         identifier:
           type: string
-    OperationMetadata:
-      type: object
     ResourceAmount:
       type: object
       required:
@@ -1571,34 +1569,6 @@ components:
             data:
               description: A hex encoded byte array.
               type: string
-    OperationGroupMetadata:
-      type: object
-      properties:
-        action:
-          description: An inferred action which created this operation group.
-          "$ref": "#/components/schemas/InferredAction"
-    InferredAction:
-      type: object
-      required:
-        - type
-        - amount
-        - rri
-      properties:
-        type:
-          description: "The type of this action: TRANSFER, STAKE, UNSTAKE, MINT, BURN, UNKNOWN."
-          type: string
-        amount:
-          description: A non-negative amount of resource.
-          "$ref": "#/components/schemas/ResourceAmount"
-        from:
-          description: If relevant, the account address from which the resource came.
-          "$ref": "#/components/schemas/AccountAddress"
-        to:
-          description: If relevant, the account address to which the resource was sent.
-          "$ref": "#/components/schemas/AccountAddress"
-        validator:
-          description: For stake actions, the validator address that the XRD was staked from/to.
-          "$ref": "#/components/schemas/ValidatorAddress"
     PublicKey:
       type: object
       required:
