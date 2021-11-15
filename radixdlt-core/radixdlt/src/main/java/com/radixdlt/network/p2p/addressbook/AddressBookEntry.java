@@ -194,6 +194,8 @@ public final class AddressBookEntry {
 	}
 
 	public AddressBookEntry withLatestConnectionStatusForUri(RadixNodeUri uri, LatestConnectionStatus latestConnectionStatus) {
+		Objects.requireNonNull(latestConnectionStatus);
+
 		final var maybeExistingAddress = this.knownAddresses.stream()
 			.filter(e -> e.getUri().equals(uri))
 			.findAny();
