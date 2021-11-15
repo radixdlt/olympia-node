@@ -114,8 +114,8 @@ public class AsyncRadixApiNetworkTest {
 		+ "\"radix://dn1qwkdfp8z7rrlv5cf45tc4864n277p9ukjax90ec5cd03zr0uylxtuxr0wk5@172.20.0.6:30000\"}]}],\""
 		+ "id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 	public static final String ADDRESS_BOOK = "{\"result\":[{\"address\":\"dn1qfwtmurydewmf64rnrektuh20g8r6svm0cpnpcuua"
-		+ "y4ammw2cnumcfppt2p\",\"knownAddresses\":[{\"blacklisted\":false,\"lastSuccessfulConnection\":"
-		+ "\"2021-07-22T09:39:56.222123Z\",\"uri\":\"radix://dn1qfwtmurydewmf64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumcfp"
+		+ "y4ammw2cnumcfppt2p\",\"knownAddresses\":[{\"blacklisted\":false,\"latestConnectionStatus\":"
+		+ "\"UNKNOWN\",\"uri\":\"radix://dn1qfwtmurydewmf64rnrektuh20g8r6svm0cpnpcuuay4ammw2cnumcfp"
 		+ "pt2p@172.18.0.3:30000\"}],\"banned\":false}],\"id\":\"2\",\"jsonrpc\":\"2.0\"}\n";
 
 	private final HttpClient client = mock(HttpClient.class);

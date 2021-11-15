@@ -62,76 +62,14 @@
  * permissions under this License.
  */
 
-package com.radixdlt.client.lib.dto;
+package com.radixdlt.network.p2p;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-import java.util.Objects;
-
-public class KnownAddress {
-	private final String uri;
-	private final boolean blacklisted;
-	private final String latestConnectionStatus;
-
-	private KnownAddress(String uri, boolean blacklisted, String latestConnectionStatus) {
-		this.uri = uri;
-		this.blacklisted = blacklisted;
-		this.latestConnectionStatus = latestConnectionStatus;
-	}
-
-	@JsonCreator
-	public static KnownAddress create(
-		@JsonProperty(value = "uri", required = true) String uri,
-		@JsonProperty(value = "blacklisted", required = true) Boolean blacklisted,
-		@JsonProperty("latestConnectionStatus") String latestConnectionStatus
-	) {
-		return new KnownAddress(
-			uri,
-			blacklisted != null && blacklisted,
-			latestConnectionStatus
-		);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-
-		if (!(o instanceof KnownAddress)) {
-			return false;
-		}
-
-		var that = (KnownAddress) o;
-		return blacklisted == that.blacklisted
-			&& uri.equals(that.uri)
-			&& latestConnectionStatus.equals(that.latestConnectionStatus);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(uri, blacklisted, latestConnectionStatus);
-	}
-
-	@Override
-	public String toString() {
-		return "{"
-			+ "uri='" + uri + '\''
-			+ ", blacklisted=" + blacklisted
-			+ ", latestConnectionStatus=" + latestConnectionStatus
-			+ '}';
-	}
-
-	public String getUri() {
-		return uri;
-	}
-
-	public boolean isBlacklisted() {
-		return blacklisted;
-	}
-
-	public String getLastSuccessfulConnection() {
-		return latestConnectionStatus;
+public final class RadixNodeUriTest {
+	@Test
+	public void equals_test() {
+		EqualsVerifier.forClass(RadixNodeUri.class).verify();
 	}
 }

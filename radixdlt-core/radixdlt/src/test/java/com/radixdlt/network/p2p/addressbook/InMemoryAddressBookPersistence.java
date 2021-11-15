@@ -62,76 +62,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.client.lib.dto;
+package com.radixdlt.network.p2p.addressbook;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.network.p2p.NodeId;
 
-import java.util.Objects;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class KnownAddress {
-	private final String uri;
-	private final boolean blacklisted;
-	private final String latestConnectionStatus;
+public final class InMemoryAddressBookPersistence implements AddressBookPersistence {
+	private final Map<NodeId, AddressBookEntry> entries = new ConcurrentHashMap<>();
 
-	private KnownAddress(String uri, boolean blacklisted, String latestConnectionStatus) {
-		this.uri = uri;
-		this.blacklisted = blacklisted;
-		this.latestConnectionStatus = latestConnectionStatus;
-	}
-
-	@JsonCreator
-	public static KnownAddress create(
-		@JsonProperty(value = "uri", required = true) String uri,
-		@JsonProperty(value = "blacklisted", required = true) Boolean blacklisted,
-		@JsonProperty("latestConnectionStatus") String latestConnectionStatus
-	) {
-		return new KnownAddress(
-			uri,
-			blacklisted != null && blacklisted,
-			latestConnectionStatus
-		);
+	@Override
+	public void open() {
+		// no-op
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-
-		if (!(o instanceof KnownAddress)) {
-			return false;
-		}
-
-		var that = (KnownAddress) o;
-		return blacklisted == that.blacklisted
-			&& uri.equals(that.uri)
-			&& latestConnectionStatus.equals(that.latestConnectionStatus);
+	public void reset() {
+		entries.clear();
 	}
 
 	@Override
-	public int hashCode() {
-		return Objects.hash(uri, blacklisted, latestConnectionStatus);
+	public void close() {
+		// no-op
 	}
 
 	@Override
-	public String toString() {
-		return "{"
-			+ "uri='" + uri + '\''
-			+ ", blacklisted=" + blacklisted
-			+ ", latestConnectionStatus=" + latestConnectionStatus
-			+ '}';
+	public boolean saveEntry(AddressBookEntry entry) {
+		entries.put(entry.getNodeId(), entry);
+		return true;
 	}
 
-	public String getUri() {
-		return uri;
+	@Override
+	public boolean removeEntry(NodeId nodeId) {
+		entries.remove(nodeId);
+		return true;
 	}
 
-	public boolean isBlacklisted() {
-		return blacklisted;
-	}
-
-	public String getLastSuccessfulConnection() {
-		return latestConnectionStatus;
+	@Override
+	public ImmutableList<AddressBookEntry> getAllEntries() {
+		return ImmutableList.copyOf(entries.values());
 	}
 }

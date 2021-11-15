@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,76 +62,66 @@
  * permissions under this License.
  */
 
-package com.radixdlt.client.lib.dto;
+package com.radixdlt.api.util;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.counters.SystemCounters;
+import org.json.JSONObject;
 
-import java.util.Objects;
+import java.util.List;
 
-public class KnownAddress {
-	private final String uri;
-	private final boolean blacklisted;
-	private final String latestConnectionStatus;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
-	private KnownAddress(String uri, boolean blacklisted, String latestConnectionStatus) {
-		this.uri = uri;
-		this.blacklisted = blacklisted;
-		this.latestConnectionStatus = latestConnectionStatus;
+public final class CountersJsonFormatter {
+
+	private CountersJsonFormatter() {
 	}
 
-	@JsonCreator
-	public static KnownAddress create(
-		@JsonProperty(value = "uri", required = true) String uri,
-		@JsonProperty(value = "blacklisted", required = true) Boolean blacklisted,
-		@JsonProperty("latestConnectionStatus") String latestConnectionStatus
-	) {
-		return new KnownAddress(
-			uri,
-			blacklisted != null && blacklisted,
-			latestConnectionStatus
-		);
+	public static JSONObject countersToJson(SystemCounters counters, List<SystemCounters.CounterType> types, boolean skipTopLevel) {
+		var result = jsonObject();
+		types.forEach(counterType -> counterToJson(result, counters, counterType, skipTopLevel));
+		return result;
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
+	public static void counterToJson(JSONObject obj, SystemCounters systemCounters, SystemCounters.CounterType type, boolean skipTopLevel) {
+		var ptr = obj;
+		var iterator = List.of(type.jsonPath().split("\\.")).listIterator();
+
+		if (skipTopLevel && iterator.hasNext()) {
+			iterator.next();
 		}
 
-		if (!(o instanceof KnownAddress)) {
-			return false;
+		while (iterator.hasNext()) {
+			var element = toCamelCase(iterator.next());
+
+			if (ptr.has(element)) {
+				ptr = ptr.getJSONObject(element);
+			} else {
+				if (iterator.hasNext()) {
+					var newObj = jsonObject();
+					ptr.put(element, newObj);
+					ptr = newObj;
+				} else {
+					ptr.put(element, systemCounters.get(type));
+				}
+			}
+		}
+	}
+
+	public static String toCamelCase(String input) {
+		var output = new StringBuilder();
+
+		boolean upCaseNext = false;
+
+		for (var chr : input.toCharArray()) {
+			if (chr == '_') {
+				upCaseNext = true;
+				continue;
+			}
+
+			output.append(upCaseNext ? Character.toUpperCase(chr) : chr);
+			upCaseNext = false;
 		}
 
-		var that = (KnownAddress) o;
-		return blacklisted == that.blacklisted
-			&& uri.equals(that.uri)
-			&& latestConnectionStatus.equals(that.latestConnectionStatus);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(uri, blacklisted, latestConnectionStatus);
-	}
-
-	@Override
-	public String toString() {
-		return "{"
-			+ "uri='" + uri + '\''
-			+ ", blacklisted=" + blacklisted
-			+ ", latestConnectionStatus=" + latestConnectionStatus
-			+ '}';
-	}
-
-	public String getUri() {
-		return uri;
-	}
-
-	public boolean isBlacklisted() {
-		return blacklisted;
-	}
-
-	public String getLastSuccessfulConnection() {
-		return latestConnectionStatus;
+		return output.toString();
 	}
 }
