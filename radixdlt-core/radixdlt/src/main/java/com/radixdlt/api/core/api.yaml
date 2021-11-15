@@ -3,7 +3,7 @@ info:
   version: 0.9.0
   title: Radix Core API
   description: |
-    This API provides endpoints for node management and integrations.
+    This API provides endpoints for radix network integrators.
 
     # Introduction
 
@@ -262,9 +262,6 @@ tags:
   - name: construction
     x-displayName: Construction
     description: Construct a transaction for submission.
-  - name: sign
-    x-displayName: Sign Transaction
-    description: Sign a Transaction with the node's private key.
 x-tagGroups:
   - name: Model
     tags:
@@ -281,9 +278,6 @@ x-tagGroups:
   - name: Construction API
     tags:
       - construction
-  - name: Signing API
-    tags:
-      - sign
 paths:
   "/network/configuration":
     post:
@@ -529,30 +523,6 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
-  "/sign":
-    post:
-      summary: Sign Transaction
-      tags:
-        - sign
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              "$ref": "#/components/schemas/SignRequest"
-      responses:
-        '200':
-          description: Signed Transaction
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/SignResponse"
-        '500':
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/UnexpectedError"
 components:
   schemas:
     NetworkConfigurationRequest:
@@ -661,28 +631,6 @@ components:
             address: rdx1qspmwn5n0qyz685f20aevh4wglxxzg9k5t5vql20s4jqa7kj8hz0njclnh0mf
           validator_entity_identifier:
             address: rv1qwm5aymcpqk3az2nlwt9atj8e3sjpd4zarq86nu9vs80453acnuuklp5yl2
-    SignRequest:
-      type: object
-      required:
-        - network_identifier
-        - public_key
-        - unsigned_transaction
-      properties:
-        network_identifier:
-          "$ref": "#/components/schemas/NetworkIdentifier"
-        public_key:
-          description: The public key corresponding to the private key which should be used to sign.
-          "$ref": "#/components/schemas/PublicKey"
-        unsigned_transaction:
-          description: Hex encoded unsigned transaction to sign.
-          type: string
-    SignResponse:
-      type: object
-      required:
-        - signed_transaction
-      properties:
-        signed_transaction:
-          type: string
     EntityRequest:
       type: object
       required:
