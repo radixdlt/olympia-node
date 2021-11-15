@@ -1688,9 +1688,9 @@ components:
         bytes:
           type: string
           description: An ECDSA signature of the `unsigned_transaction` transaction bytes with the given `public_key`.
-            The signature uses the secp256k1 curve, and operates on the hash given by `SHA256(SHA256(unsigned_transaction))`
-            (that is __two rounds__ of SHA256).
-            This signature should be encoded in DER format, and then encoded as a hex string.
+            The ECDSA signature should be creating using the secp256k1 curve, and operate on the hash given by
+            `SHA256(SHA256(unsigned_transaction))` (note that __two rounds__ of SHA256 are used).
+            The signature should be encoded in DER format, and then encoded as a hex string.
     Bech32HRPs:
       type: object
       required:
