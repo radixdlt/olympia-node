@@ -119,13 +119,13 @@ public class EntityHandler implements ApiHandler<EntityRequest> {
 	private JSONObject bucketToResourceJson(Bucket bucket, Function<REAddr, String> addressToRri) {
 		if (bucket.resourceAddr() != null) {
 			return new JSONObject()
-				.put("type", "token")
+				.put("type", "Token")
 				.put("rri", addressToRri.apply(bucket.resourceAddr())
 			);
 		}
 
 		return new JSONObject()
-			.put("type", "stake_ownership")
+			.put("type", "StakeOwnership")
 			.put("validator", addressing.forValidators().of(bucket.getValidatorKey()));
 	}
 
