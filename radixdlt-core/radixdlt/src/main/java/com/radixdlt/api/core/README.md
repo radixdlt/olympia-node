@@ -17,19 +17,7 @@ network such as stokenet or mainnet.
 
 ## Version Notes
 
-The current version 0.9.0 of the Core API is a preview of the API
-intended to allow integrators to begin integrating the Radix ledger.
-In particular the following endpoints will be backwards compatible
-once 1.0.0 is released:
-
-* `/network/configuration`
-* `/network/status`
-* `/transactions`
-* `/construction/derive`
-* `/construction/build`
-* `/construction/parse`
-* `/construction/finalize`
-* `/construction/hash`
-* `/construction/submit`
- 
-All other endpoints may change by the 1.0.0 release, and further endpoints (such as mempool contents) will be added.
+All endpoints in Version 0.9.0 are intended to be backwards compatible
+with version 1.0.0 once released so that there is little risk that clients
+working with this spec will break once 1.0.0 is released. Additional endpoints
+(such as retrieving mempool contents) are planned to be added.

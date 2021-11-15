@@ -7,23 +7,15 @@ info:
 
     # Introduction
 
-    Welcome to the Radix Core API Preview. This Preview API is intended for
-    integrators to be able to begin integrating with the Radix network. In
-    particular, the following endpoints will maintain backwards compatibility
-    once version 1.0.0 is released:
+    Welcome to the Radix Core API version 0.9.0 for Integrators. Version 0.9.0
+    is intended for integrators who wish to begin the process of integrating
+    the Radix ledger into their own systems.
 
-    * `/network/configuration`
-    * `/network/status`
-    * `/transactions`
-    * `/construction/derive`
-    * `/construction/build`
-    * `/construction/parse`
-    * `/construction/finalize`
-    * `/construction/hash`
-    * `/construction/submit`
-
-    All other endpoints may change by the 1.0.0 release, and further endpoints
-    (such as mempool contents) will likely be added.
+    The Core API is separated into two:
+    * The **Data API** is a read-only api which allows integrators to view and
+    sync to the state of the ledger.
+    * The **Construction API** allows integrators to construct and submit a
+    transaction to the network on behalf of a key holder.
 
     > WARNING
     >
@@ -32,7 +24,13 @@ info:
     > In particular, endpoints in the Signing API if accessed by the public can
     > result in loss of funds.
 
-    # Rosetta
+    ## Backwards Compatibility
+    All endpoints in Version 0.9.0 are intended to be backwards compatible
+    with version 1.0.0 once released so that there is little risk that clients
+    working with this spec will break once 1.0.0 is released. Additional endpoints
+    (such as retrieving mempool contents) are planned to be added.
+
+    ## Rosetta
 
     The Data API and Construction API is inspired from [Rosetta API](https://www.rosetta-api.org/)
     most notably:
