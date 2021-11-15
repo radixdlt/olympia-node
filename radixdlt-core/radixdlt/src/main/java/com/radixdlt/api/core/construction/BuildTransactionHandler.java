@@ -67,14 +67,7 @@ import com.google.inject.Inject;
 import com.radixdlt.api.archive.ApiHandler;
 import com.radixdlt.api.archive.InvalidParametersException;
 import com.radixdlt.api.archive.JsonObjectReader;
-import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
-import com.radixdlt.application.tokens.construction.MinimumStakeException;
-import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
-import com.radixdlt.atom.MessageTooLongException;
-import com.radixdlt.atom.NotEnoughResourcesException;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
@@ -113,12 +106,6 @@ final class BuildTransactionHandler implements ApiHandler<BuildTransactionReques
 		return BuildTransactionRequest.from(reader);
 	}
 
-	private static JSONObject errorObject(JSONObject details) {
-		return new JSONObject()
-			.put("result", "ERROR")
-			.put("details", details);
-	}
-
 	@Override
 	public JSONObject handleRequest(BuildTransactionRequest request) throws TxBuilderException {
 		if (!request.getNetwork().equals(this.network)) {
@@ -128,55 +115,9 @@ final class BuildTransactionHandler implements ApiHandler<BuildTransactionReques
 		var operationTxBuilder = OperationTxBuilder.from(request, forks);
 		var feePayer = request.getFeePayer();
 		var disableResourceAllocateAndDestroy = request.isDisableResourceAllocateAndDestroy();
-		TxBuilder builder;
-		try {
-			builder = radixEngine.constructWithFees(operationTxBuilder, disableResourceAllocateAndDestroy, feePayer);
-		} catch (MessageTooLongException e) {
-			return errorObject(
-				new JSONObject()
-					.put("error_type", "MESSAGE_TOO_LONG")
-					.put("limit", 255)
-					.put("actual", e.getAttemptedLength())
-			);
-		} catch (NotEnoughResourcesException e) {
-			return errorObject(
-				new JSONObject()
-					.put("error_type", "NOT_ENOUGH_RESOURCES")
-					.put("requested", e.getRequested())
-					.put("available", e.getAvailable())
-			);
-		} catch (MinimumStakeException e) {
-			return errorObject(
-				new JSONObject()
-					.put("error_type", "BELOW_MINIMUM_STAKE")
-					.put("requested", e.getAttempt())
-					.put("minimum", e.getMinimumStake())
-			);
-		} catch (FeeConstructionException e) {
-			return errorObject(
-				new JSONObject()
-					.put("error_type", "COULD_NOT_CONSTRUCT_FEES")
-					.put("attempts", e.getAttempts())
-			);
-		} catch (InvalidRakeIncreaseException e) {
-			return errorObject(
-				new JSONObject()
-					.put("error_type", "ABOVE_MAXIMUM_RAKE_INCREASE")
-					.put("limit", e.getMaxRakeIncrease())
-					.put("attempted", e.getIncreaseAttempt())
-			);
-		} catch (DelegateStakePermissionException e) {
-			return errorObject(
-				new JSONObject()
-					.put("error_type", "INVALID_STAKE_PERMISSIONS")
-					.put("owner", addressing.forAccounts().of(e.getOwner()))
-					.put("user", addressing.forAccounts().of(e.getUser()))
-			);
-		}
-
+		var builder = radixEngine.constructWithFees(operationTxBuilder, disableResourceAllocateAndDestroy, feePayer);
 		var unsignedTransaction = builder.buildForExternalSign();
 		return new JSONObject()
-			.put("result", "SUCCESS")
 			.put("unsigned_transaction", Bytes.toHexString(unsignedTransaction.blob()))
 			.put("payload_to_sign", Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
 	}

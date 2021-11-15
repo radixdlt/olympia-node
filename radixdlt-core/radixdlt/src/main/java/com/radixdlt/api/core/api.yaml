@@ -834,17 +834,16 @@ components:
     ConstructionBuildResponse:
       type: object
       required:
-        - result
-      properties:
-        result:
-          type: string
-      discriminator:
-        propertyName: result
-        mapping:
-          SUCCESS: "#/components/schemas/ConstructionBuildSuccessResponse"
-          ERROR: "#/components/schemas/ConstructionBuildErrorResponse"
+        - unsigned_transaction
+        - payload_to_sign
+        properties:
+          unsigned_transaction:
+            description: Hex encoded unsigned transaction.
+            type: string
+          payload_to_sign:
+            description: Hex encoded hash payload to sign.
+            type: string
       example:
-        result: SUCCESS
         unsigned_transaction: 07ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842000000020100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a636aa8c02c00000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a636aa8c02bfa2402004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b60100000000000000000000000000000000000000000000000000000000000005dc00
         payload_to_sign: 06f82577392151638e059f31b16e52b056358ff9b7b72bedef21d701dc3ffa0f
     ConstructionParseRequest:
@@ -1068,103 +1067,6 @@ components:
         transaction_identifier:
           hash: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
         duplicate: false
-    ConstructionBuildSuccessResponse:
-      allOf:
-        - "$ref": "#/components/schemas/ConstructionBuildResponse"
-        - type: object
-          required:
-            - unsigned_transaction
-            - payload_to_sign
-          properties:
-            unsigned_transaction:
-              description: Hex encoded unsigned transaction.
-              type: string
-            payload_to_sign:
-              description: Hex encoded hash payload to sign.
-              type: string
-    ConstructionBuildErrorResponse:
-      allOf:
-        - "$ref": "#/components/schemas/ConstructionBuildResponse"
-        - type: object
-          required:
-            - details
-          properties:
-            details:
-              "$ref": "#/components/schemas/ConstructionBuildError"
-    ConstructionBuildErrorMessageTooLong:
-      type: object
-      required:
-        - limit
-        - actual
-      properties:
-        limit:
-          type: integer
-        actual:
-          type: integer
-    ConstructionBuildErrorNotEnoughResources:
-      type: object
-      required:
-        - requested
-        - available
-      properties:
-        requested:
-          "$ref": "#/components/schemas/BigInteger"
-        available:
-          "$ref": "#/components/schemas/BigInteger"
-    ConstructionBuildErrorMinimumStake:
-      type: object
-      required:
-        - requested
-        - minimum
-      properties:
-        requested:
-          "$ref": "#/components/schemas/BigInteger"
-        minimum:
-          "$ref": "#/components/schemas/BigInteger"
-    ConstructionBuildErrorCouldNotConstructFees:
-      type: object
-      required:
-        - requested
-        - minimum
-      properties:
-        attempts:
-          type: integer
-    ConstructionBuildErrorAboveMaximumRakeIncrease:
-      type: object
-      required:
-        - requested
-        - minimum
-      properties:
-        limit:
-          "$ref": "#/components/schemas/BigInteger"
-        attempted:
-          "$ref": "#/components/schemas/BigInteger"
-    ConstructionBuildErrorInvalidStakePermissions:
-      type: object
-      required:
-        - requested
-        - minimum
-      properties:
-        owner:
-          "$ref": "#/components/schemas/AccountAddress"
-        user:
-          "$ref": "#/components/schemas/AccountAddress"
-    ConstructionBuildError:
-      type: object
-      required:
-        - errorType
-      properties:
-        errorType:
-          type: string
-      discriminator:
-        propertyName: errorType
-        mapping:
-          MESSAGE_TOO_LONG: "#/components/schemas/ConstructionBuildErrorMessageTooLong"
-          NOT_ENOUGH_RESOURCES: "#/components/schemas/ConstructionBuildErrorNotEnoughResources"
-          BELOW_MINIMUM_STAKE: "#/components/schemas/ConstructionBuildErrorMinimumStake"
-          COULD_NOT_CONSTRUCT_FEES: "#/components/schemas/ConstructionBuildErrorCouldNotConstructFees"
-          ABOVE_MAXIMUM_RAKE_INCREASE: "#/components/schemas/ConstructionBuildErrorAboveMaximumRakeIncrease"
-          INVALID_STAKE_PERMISSIONS: "#/components/schemas/ConstructionBuildErrorInvalidStakePermissions"
     CommittedTransactionsRequest:
       description: A request to retrieve a sublist of committed transactions from the
         ledger.
