@@ -66,7 +66,7 @@ package com.radixdlt.network.p2p;
 
 import com.radixdlt.network.p2p.transport.PeerChannel;
 
-public interface PeerEvent {
+public sealed interface PeerEvent {
 
 	final class PeerConnected implements PeerEvent {
 		private final PeerChannel channel;
