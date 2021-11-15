@@ -1435,9 +1435,13 @@ components:
         - type: object
           required:
             - round
+            - timestamp
           properties:
             round:
               description: The round of the system.
+              "$ref": "#/components/schemas/LongNumber"
+            timestamp:
+              description: Timestamp
               "$ref": "#/components/schemas/LongNumber"
     EpochData:
       allOf:
