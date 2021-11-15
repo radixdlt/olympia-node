@@ -1,22 +1,16 @@
 ## Development Environment Setup
 
 ### Prerequisites
-- Java 11 SDK installed. If you have several versions installed, it is preferred to have Java 11 set as default version. 
-- more or less recent Linux or MacOS (Windows WSL2 may work, but not tested)
-- git 2.27+
-- docker version 20.10+
-- docker-compose version 1.25+
-
-Two last prerequisites are necessary only if you plan to launch local network. 
+- Have the Java 11 SDK installed. If you have several versions installed, set your PATH to point at Java 11. 
+- Use a recent verson of Linux or MacOS (Windows WSL2 may work, but it has not been tested)
+- Git v2.27+
+- Docker v20.10+
+- Docker Compose v1.25+
 
 ### Getting code
-There are two options, depending on the need/desire to contribute.
 
-#### You plan to contribute
-In this case you need to fork the main repository https://github.com/radixdlt/radixdlt into your account and then clone it locally.
-
-#### You don't plan to contribute
-Just clone the main repo at https://github.com/radixdlt/radixdlt
+* If you intend to contribute, fork the main repository https://github.com/radixdlt/radixdlt into your account and then clone it locally.
+* Otherwise, just clone the main repo at https://github.com/radixdlt/radixdlt
 
 ### Building code
 Use following command to build binaries and run unit tests:

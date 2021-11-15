@@ -10,7 +10,7 @@ Documentation can be found [here](https://redocly.github.io/redoc/?url=https://r
 
 The Core API is currently on beta and not yet released. To develop
 against these new APIs, you will need to checkout the `feature/open-api` branch
-and [run a node](../../../../../../../../../docs/development) connect to a live
+and [run a node](../../../../../../../../../docs/development) connected to a live
 network such as stokenet or mainnet.
 
 ## Version Notes
