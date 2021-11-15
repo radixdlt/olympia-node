@@ -652,7 +652,7 @@ components:
           state_version: 322001
           transaction_accumulator: e31f8314a67236076ad6d46391e93a93d7b9d34de2062acc620541c09dd69f95
         current_state_epoch: 1
-        current_state_view: 321991
+        current_state_round: 321991
         genesis_state_identifier:
           state_version: 1
           transaction_accumulator: 1e62415e5fd95c63aff69142f1359cc6a981ff7169c128d266f45adf614d09b0
