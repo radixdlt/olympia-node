@@ -6,8 +6,7 @@ The OpenAPI 3.1.0 specification be found [here](api.yaml). If 3.0.x is required,
 
 Documentation can be found [here](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml).
 
-The Core API runs as part of the private Node API, which by default runs on port 3333.
-__The Core API should NOT be publicly exposed__.
+The Core API runs by default on port 3333. __The Core API should NOT be publicly exposed__.
 
 ## Running a Node
 
