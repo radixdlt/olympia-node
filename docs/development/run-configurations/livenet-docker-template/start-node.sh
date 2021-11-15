@@ -7,4 +7,4 @@ cd "$SCRIPT_DIR"
 
 source ./node-variables.sh
 
-docker-compose -f radix-develop-compose.yml up -d
+docker-compose up

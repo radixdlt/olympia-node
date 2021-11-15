@@ -6,6 +6,10 @@ This requires docker-compose to be installed locally.
 
 The node's files will be mounted under `./node/`.
 
+To be clear, this is _not_ the recommended set-up for a production node - which is given at
+[https://docs.radixdlt.com](https://docs.radixdlt.com/main/node/introduction.html). In particular,
+we are not setting up nginx, and not allowing inbound connections to our node.
+
 ## First time set-up
 
 Before starting, ensure this template folder has been copied outside the radixdlt repository,
@@ -46,13 +50,12 @@ Run `./start-node.sh` to start the most recently created version of the `radixdl
 using the configuration at `node-variables.sh`.
 
 Some notes:
-* You will need to call docker directly to stop the node when you're done (eg through docker desktop).
 * The ledger will be mounted to `./node/ledger` by default.
 * The node will start syncing whilst active, and the ledger may consume a lot of disk space over time.
 
 ### Checking your running node is running okay
 
-You can test it's working with a few example requests:
+You can test it's working with a few example requests from a different terminal:
 
 Network Configuration:
 ```
