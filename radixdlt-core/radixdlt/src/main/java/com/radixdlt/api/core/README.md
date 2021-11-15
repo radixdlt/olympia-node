@@ -2,16 +2,23 @@
 
 The Core API provides endpoints for node management and integration support.
 
-OpenAPI 3.1.0 specification be found [here](api.yaml). If 3.0.x is required, the version can simply be downgraded.
+The OpenAPI 3.1.0 specification be found [here](api.yaml). If 3.0.x is required, the version can simply be downgraded.
 
 Documentation can be found [here](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml).
 
-To develop against these new APIs, we recommend running a node connected to stokenet or
-mainnet - follow "Connecting to a live network via Docker" in [this README](../../../../../../../../../docs/development).
+## Running a Node
 
-Version 0.9.0 is a preview of the API intended to allow integrators to
-begin integrating the Radix ledger. In particular the following
-endpoints will be backwards compatible once 1.0.0 is released:
+The Core API is currently on beta and not yet released. To develop
+against these new APIs, you will need to checkout the `feature/open-api` branch
+and [run a node](../../../../../../../../../docs/development) connect to a live
+network such as stokenet or mainnet.
+
+## Version Notes
+
+The current version 0.9.0 of the Core API is a preview of the API
+intended to allow integrators to begin integrating the Radix ledger.
+In particular the following endpoints will be backwards compatible
+once 1.0.0 is released:
 
 * `/network/configuration`
 * `/network/status`

@@ -836,13 +836,13 @@ components:
       required:
         - unsigned_transaction
         - payload_to_sign
-        properties:
-          unsigned_transaction:
-            description: Hex encoded unsigned transaction.
-            type: string
-          payload_to_sign:
-            description: Hex encoded hash payload to sign.
-            type: string
+      properties:
+        unsigned_transaction:
+          description: Hex encoded unsigned transaction.
+          type: string
+        payload_to_sign:
+          description: Hex encoded hash payload to sign.
+          type: string
       example:
         unsigned_transaction: 07ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842000000020100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a636aa8c02c00000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a636aa8c02bfa2402004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b60100000000000000000000000000000000000000000000000000000000000005dc00
         payload_to_sign: 06f82577392151638e059f31b16e52b056358ff9b7b72bedef21d701dc3ffa0f
