@@ -37,7 +37,8 @@ info:
     The Data API and Construction API is inspired from [Rosetta API](https://www.rosetta-api.org/)
     most notably:
       * Use of a JSON-Based RPC protocol on top of HTTP Post requests
-      * Use of Operations, Amounts, and Identifiers to express asset movement
+      * Use of Operations, Amounts, and Identifiers as universal language to
+      express asset movement for reading and writing
 
     There are a few notable exceptions to note:
       * Fetching of ledger data is through a Transaction stream rather than a
@@ -390,6 +391,7 @@ paths:
   "/construction/derive":
     post:
       summary: Derive Entity Identifier
+      description: Returns the entity identifier for an account, validator, or token given a public key
       tags:
         - construction
       requestBody:
@@ -480,6 +482,7 @@ paths:
   "/construction/hash":
     post:
       summary: Get Transaction Hash
+      description: Get the transaction identifier of a signed transaction
       tags:
         - construction
       requestBody:
@@ -504,6 +507,7 @@ paths:
   "/construction/submit":
     post:
       summary: Submit Transaction
+      description: Submit a transaction to the mempool
       tags:
         - construction
       requestBody:
@@ -734,10 +738,13 @@ components:
         - metadata
       properties:
         network_identifier:
+          description: The network identifier
           "$ref": "#/components/schemas/NetworkIdentifier"
         public_key:
+          description: Public key to be derived from
           "$ref": "#/components/schemas/PublicKey"
         metadata:
+          descriptin: Data which specifies the type of entity to derive
           "$ref": "#/components/schemas/ConstructionDeriveRequestMetadata"
       example:
         network_identifier:
@@ -782,6 +789,7 @@ components:
             - symbol
           properties:
             symbol:
+              description: The symbol of the token
               type: string
     ConstructionBuildRequest:
       type: object
@@ -1019,7 +1027,7 @@ components:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
         signed_transaction:
-          description: Hex encoded unsigned transaction
+          description: Hex encoded signed transaction
           type: string
       example:
         network_identifier:
@@ -1691,10 +1699,9 @@ components:
           "$ref": "#/components/schemas/PublicKey"
         bytes:
           type: string
-          description: An ECDSA signature of the `unsigned_transaction` transaction bytes with the given `public_key`.
-            The ECDSA signature should be creating using the secp256k1 curve, and operate on the hash given by
-            `SHA256(SHA256(unsigned_transaction))` (note that __two rounds__ of SHA256 are used).
-            The signature should be encoded in DER format, and then encoded as a hex string.
+          description: An ECDSA signature of with the given `public_key`. The ECDSA signature
+            should be created using the secp256k1 curve and should be encoded in DER format, and
+            then encoded as a hex string.
     Bech32HRPs:
       type: object
       required:
