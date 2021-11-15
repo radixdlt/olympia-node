@@ -5,7 +5,7 @@ info:
   description: |
     This API provides endpoints for radix network integrators.
 
-    # Introduction
+    # Overview
 
     Welcome to the Radix Core API version 0.9.0 for Integrators. Version 0.9.0
     is intended for integrators who wish to begin the process of integrating
@@ -20,9 +20,7 @@ info:
     > WARNING
     >
     > The Core API is __NOT__ intended to be available on the public web. It is
-    > mainly designed to be accessed in a private network.
-    > In particular, endpoints in the Signing API if accessed by the public can
-    > result in loss of funds.
+    > mainly designed to be accessed in a private network for integration use.
 
     ## Backwards Compatibility
     All endpoints in Version 0.9.0 are intended to be backwards compatible
@@ -69,6 +67,7 @@ info:
     this Construction API selects UTXOs on behalf of the caller. This has the unfortunate
     side effect of not being able to support high frequency transactions from a single
     account due to UTXO conflicts. This will be addressed in a future release.
+
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -248,6 +247,38 @@ tags:
       data object with the same type.
       5. **New Token Definitions** may be created by destroying an `UnclaimedREAddr` and creating a
       `TokenData` and `TokenMetadata` data object.
+  - name: example
+    x-displayName: XRD Transfer Example
+    description: |
+      Given the described model let us go through an example of how an XRD transfer transaction may look like.
+
+      For the purpose of our example, let's say we want to:
+      ```
+      Transfer 10.5XRD
+      From
+      rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+      To
+      rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+      ```
+
+      ## Entity Identifiers
+
+      First we need to specify the entities identifiers to be used. In our case,
+      we have two entity identifiers, one for the sender and one for the receiver.
+
+      Sender Entity Identifier:
+      ```
+      {
+        "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+      }
+      ```
+
+      Receiver Entity Identifier:
+      ```
+      {
+        "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
+      }
+      ```
   - name: network
     x-displayName: Network
     description: Get info about the node and network.
@@ -268,6 +299,7 @@ x-tagGroups:
       - addressing
       - actions
       - objects
+      - example
   - name: Data API
     tags:
       - network
