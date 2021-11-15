@@ -221,8 +221,8 @@ tags:
       In particular, the Segwit encoding assumes the first 5-bit-character of the 5-bit-per-character encoded data is a
       witness version, and that this is followed by the witness programme bytes, encoded into 5-bit chunks, padded
       with zeroes if necessary. Radix encoding just encodes its data bytes into 5-bit chunks with padded zeroes -
-      _without_ an initial 1 character version prefix. In other words, the padding and interpretation of the encoded
-      data differs between Radix and Segwit addresses.
+      _without_ an initial single character version prefix. In other words, the padding and interpretation of the
+      encoded data differs between Radix and Segwit addresses.
 
   - name: actions
     x-displayName: Actions
