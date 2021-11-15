@@ -52,6 +52,9 @@ using the configuration at `node-variables.sh`.
 Some notes:
 * The ledger will be mounted to `./node/ledger` by default.
 * The node will start syncing whilst active, and the ledger may consume a lot of disk space over time.
+* If for some reason the node stops, the docker-compose file is set to restart it.
+  You will, however, lose the log stream in your terminal, and such a restarted node will need to be
+  shut down manually through docker / docker-compose / docker-desktop when you wish to shut it down.
 
 ### Checking your running node is running okay
 
