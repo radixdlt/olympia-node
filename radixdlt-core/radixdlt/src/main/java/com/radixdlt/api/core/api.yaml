@@ -3,7 +3,7 @@ info:
   version: 0.9.0
   title: Radix Core API
   description: |
-    This API provides endpoints for radix network integrators.
+    This API provides endpoints for Radix network integrators.
 
     # Overview
 
@@ -22,8 +22,10 @@ info:
     * The **Construction API** allows integrators to construct and submit a
     transaction to the network on behalf of a key holder.
 
-    The Core API is primarily designed for network integrations, where integrators
-    will run their own full node.
+    The Core API is primarily designed for network integrations such as exchanges,
+    ledger analytics providers, or hosted ledger data dashboards where detailed
+    ledger data is required and the integrator can be expected to run their node
+    to provide the Core API for their own consumption.
 
     The Core API is not a full replacement for the current Node and Archive
     [APIs](https://docs.radixdlt.com). We are also working on a public-facing
@@ -94,8 +96,8 @@ info:
     account due to UTXO conflicts. This will be addressed in a future release.
 
   license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
+    name: The Radix License, Version 1.0
+    url: https://www.radixfoundation.org/licenses/LICENSE-v1
 servers:
   - url: localhost:3333
 tags:
