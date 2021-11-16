@@ -22,20 +22,20 @@ info:
     * The **Construction API** allows integrators to construct and submit a
     transaction to the network on behalf of a key holder.
 
-    The Core API is not a full replacement for the current Node and Archive APIs
-    (as currently documented at docs.radixdlt.com), but is intended to be the
-    main private API exposed by a node. We are also working on a public-facing
-    Gateway API that will be part of a full "new API", but is yet to be finalised.
-
     The Core API is primarily designed for network integrations, where integrators
     will run their own full node.
 
+    The Core API is not a full replacement for the current Node and Archive
+    [APIs](https://docs.radixdlt.com). We are also working on a public-facing
+    Gateway API that will be part of a full "new API", but is yet to be finalised.
+
     We should stress that this API is in preview, and should __not__ be deployed
-    into production until v1 has been finalised in an official Radix node release.
+    into production until version 1.0.0 has been finalised in an official Radix node
+    release.
 
     ## Backwards Compatibility
 
-    The openapi specification of all endpoints in Version 0.9.0 is intended to be
+    The OpenAPI specification of all endpoints in Version 0.9.0 is intended to be
     backwards compatible with version 1.0.0 once released, so that there is little
     risk that clients working with this spec will break after the release of 1.0.0.
     Additional endpoints (such as retrieving mempool contents) are planned to be added.
@@ -61,9 +61,9 @@ info:
 
     Future versions of the api will aim towards a fully-compliant Rosetta API.
 
-    ## Reference Implementation
+    ## Client Reference Implementation
 
-    We are currently working on a reference implementation of a client to the Core API
+    We are currently working on a client reference implementation to the Core API
     and hope to have this available to share with you soon.
 
     ## Client Code Generation
@@ -71,7 +71,7 @@ info:
     We have found success with generating clients against the [api.yaml specification](https://raw.githubusercontent.com/radixdlt/radixdlt/feature/open-api/radixdlt-core/radixdlt/src/main/java/com/radixdlt/api/core/api.yaml)
     in the core folder. See https://openapi-generator.tech/ for more details.
 
-    The openapi generator only supports openapi version 3.0.0 at present, but you can
+    The OpenAPI generator only supports openapi version 3.0.0 at present, but you can
     change 3.1.0 to 3.0.0 in the first line of the spec without affecting generation.
 
     # Data API Flow
@@ -118,7 +118,7 @@ tags:
     x-displayName: Objects
     description: |
       ## State Identifiers
-      The Radix Olympia network has no concept of blocks. Instead transactions are
+      The Radix network has no concept of blocks. Instead transactions are
       managed in a flat ordered list. A hash chain is formed from these transactions
       called a Transaction Accumulator. A Transaction Accumulator represents a point
       in time of the ledger with a valid state.
@@ -644,105 +644,178 @@ tags:
     x-displayName: Track XRD Balances
     description: |
 
-      This example walks through how to interpret the committed transfers and balances from the Transactions API,
-      for the purposes of tracking account balances and UTXOs.
+      This example walks through how to track XRD balances across accounts.
+      To simplify things, we've code generated a client in java using openapigenerator.
 
-      ## Retrieve transactions
+      ## Make a Transactions Request
 
-      Perform a call to the `/transactions` address, eg the following call gets the first 100 transactions from the
-      ledger. Be sure to match the `network_identifier` with the network the node is using.
+      Let's start by performing a call to `/transactions` with `state_version=0`. This
+      will retrieve transactions including the genesis transaction.
 
-      ```
-      {
-        "network_identifier": {
-          "network": "mainnet"
-        },
-        "state_identifier": {
-          "state_version": 0
-        },
-        "limit": 100
+      Be sure to match the `network_identifier` with the network the node is using.
+
+      ```java
+      TransactionsApi api = new TransactionsApi();
+
+      void request() {
+        long stateVersion = 0;
+        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
+          .networkIdentifier(new NetworkIdentifier().network("mainnet"))
+          .limit(1000L)
+          .stateIdentifier(new PartialStateIdentifier().stateVersion(stateVersion));
+        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
       }
       ```
 
-      You will receive a `state_identifer` corresponding to the ledger state before the first committed transactions
-      was committed, and a list of committed transactions.
+      ## Get XRD Balance changes
 
-      Detailed overview of the schema is contained in the Data API/Transactions section, but for now, we'll continue
-      the example by extracting out only account balance changes.
+      Let's now expand our code to extract any XRD balance changes.
 
-      ## Extracting out only account token balance changes
+      We do this by filtering for operations which involve XRD resource amounts and
+      then collecting the total amount of balance change for a given entity.
 
-      The format of a transaction will correspond to the object in the `unsigned_transaction` example above,
-      with some additional data fields related to the signing and commitment process, which is irrelevant for our
-      use case.
+      ```java
+      TransactionsApi api = new TransactionsApi();
 
-      To extract account token balances from a transaction, we can flatmap to all operations across all operation
-      groups, and filter to operations which:
+      boolean isXrd(Operation operation) {
+        if (operation.getAmount() == null) {
+          return false;
+        }
+        ResourceIdentifier identifier = op.getAmount().getResourceIdentifier();
+        if (!(identifier instanceof TokenResourceIdentifier)) {
+          return false;
+        }
+        TokenResourceIdentifier tokenResourceIdentifier = (TokenResourceIdentifier) identifier;
+        return tokenResourceIdentifier.getRri().equals("xrd_rr1qy5wfsfh");
+      }
 
-      * __Concern an account entity__ - that is, have an `entity_identifier` which has an address starting `rdx1`,
-        and no `sub_entity`. We filter out sub-entities because these are separate entities/balances to the
-        core account, used by the system for staking.
-        For more information, and to support non-mainnet addresses, see the Structure and Addressing sections.
-      * __Concern the XRD token__ - that is, they have an `amount`, and this has an `amount.resource_identifier.type` of `Token`.
-        In this case, we only care about one particular token, XRD, so you can further filter on
-        `amount.resource_identifier.rri` here. EG the `rri` of XRD on mainnet is `xrd_rr1qy5wfsfh`.
+      Map<EntityIdentifier, BigInteger> getXrdBalanceChanges() {
+        long nextStateVersion = 0;
+        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
+          .networkIdentifier(new NetworkIdentifier().network("mainnet"))
+          .limit(1000L)
+          .stateIdentifier(new PartialStateIdentifier().stateVersion(nextStateVersion));
+        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
+        return response.getTransactions().stream()
+          .flatMap(txn -> txn.getOperationGroups().stream())
+          .flatMap(group -> group.getOperations().stream())
+          .filter(this::isXrd)
+          .collect(Collectors.groupingBy(
+            Operation::getEntityIdentifier,
+            Collectors.mapping(
+              op -> new BigInteger(op.getAmount().getValue()),
+              Collectors.reducing(BigInteger.ZERO, BigInteger::add)
+            )
+          ));
+      }
+      ```
 
-      Let `account_address = operation.entity_identifier.address`, and `balance_change = operation.amount.value`.
+      ## Update Balance Store
 
-      Then, group by `account_address` and sum each `balance_change` against that `account_address` from all the
-      operations in that transaction. This gives us the change in XRD balance in that account due to the transaction,
-      in units of 10^(-18).
+      We can now start updating some balance store given that we have balance changes.
 
-      This can form the basis of tracking the account balance over time.
+      In this example we simply use a map from entity to balance, in your system you may
+      store these changes in a database.
 
-      ## Advanced
+      ```java
+      TransactionsApi api = new TransactionsApi();
+      Map<EntityIdentifier, BigInteger> balances = new HashMap<>();
 
-      ### Tracking multiple tokens
+      boolean isXrd(Operation operation) {
+        if (operation.getAmount() == null) {
+          return false;
+        }
+        ResourceIdentifier identifier = op.getAmount().getResourceIdentifier();
+        if (!(identifier instanceof TokenResourceIdentifier)) {
+          return false;
+        }
+        TokenResourceIdentifier tokenResourceIdentifier = (TokenResourceIdentifier) identifier;
+        return tokenResourceIdentifier.getRri().equals("xrd_rr1qy5wfsfh");
+      }
 
-      If you relax the filter on `amount.resource_identifier.rri` to no longer just match to XRD, you can track these
-      changes in parallel.
+      void update() throws ApiException {
+        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
+          .networkIdentifier(new NetworkIdentifier().network("mainnet"))
+          .limit(1000L)
+          .stateIdentifier(new PartialStateIdentifier().stateVersion(currentStateVersion));
+        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
+        List<CommittedTransaction> txns = response.getTransactions();
+        Map<EntityIdentifier, BigInteger> balanceChanges = txns.stream()
+          .flatMap(txn -> txn.getOperationGroups().stream())
+          .flatMap(group -> group.getOperations().stream())
+          .filter(this::isXrd)
+          .collect(Collectors.groupingBy(
+            Operation::getEntityIdentifier,
+            Collectors.mapping(
+              op -> new BigInteger(op.getAmount().getValue()),
+              Collectors.reducing(BigInteger.ZERO, BigInteger::add)
+            )
+          ));
 
-      Letting `token_rri = operation.amount.resource_identifier.rri`, you can group by `(account_address, token_rri)`
-      during the sum, and get balance changes for each account/token combination.
+        balanceChanges.forEach((identifier, value) -> balances.merge(identifier, value, BigInteger::add));
+      }
+      ```
 
-      ### Supporting networks other than mainnet
+      ## Continual Sync
 
-      See the Addressing section for details on determining non-mainnet addresses.
+      So far we've only been requesting for the initial 1000 transactions on ledger. We will now want to
+      continually sync as the ledger progresses.
 
-      ### Tracking UTXOs
+      To do this, we will keep our own current stateVersion and update it with the latest stateVersion
+      we've seen.
 
-      The `operation.substate.substate_identifier.identifier` gives a hex-encoded identifier for the UTXO used in that
-      transaction. If `operation.substate.substate_operation` is `BOOTUP`, the UTXO was created, and if `SHUTDOWN`, it
-      was spent.
+      We can now add continually check for updates on ledger and keep our own state up to date. This can
+      easily look something like a cronjob process which periodically updates a local database.
 
-      This can be used to track live UTXOs.
+      ```java
+      TransactionsApi api = new TransactionsApi();
+      Map<EntityIdentifier, BigInteger> balances = new HashMap<>();
+      long currentStateVersion = 0;
 
-      ### Consistency checks
+      boolean isXrd(Operation operation) {
+        if (operation.getAmount() == null) {
+          return false;
+        }
+        ResourceIdentifier identifier = operation.getAmount().getResourceIdentifier();
+        if (!(identifier instanceof TokenResourceIdentifier)) {
+          return false;
+        }
+        TokenResourceIdentifier tokenResourceIdentifier = (TokenResourceIdentifier) identifier;
+        return tokenResourceIdentifier.getRri().equals("xrd_rr1qy5wfsfh");
+      }
 
-      Before saving a copy of a transaction to an index, you should check that the parent accumulator matches the
-      accumulator you have on record. Whilst we don't anticipate a need to rollback the ledger, this accumulator
-      check could be used to detect this (and can be used to rollback an index to the point where the accumulators
-      agree).
+      void update() throws ApiException {
+        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
+          .networkIdentifier(new NetworkIdentifier().network("mainnet"))
+          .limit(1000L)
+          .stateIdentifier(new PartialStateIdentifier().stateVersion(currentStateVersion));
+        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
+        List<CommittedTransaction> txns = response.getTransactions();
+        Map<EntityIdentifier, BigInteger> balanceChanges = txns.stream()
+          .flatMap(txn -> txn.getOperationGroups().stream())
+          .flatMap(group -> group.getOperations().stream())
+          .filter(this::isXrd)
+          .collect(Collectors.groupingBy(
+            Operation::getEntityIdentifier,
+            Collectors.mapping(
+              op -> new BigInteger(op.getAmount().getValue()),
+              Collectors.reducing(BigInteger.ZERO, BigInteger::add)
+            )
+          ));
 
-      If you wish to also check the consistency of this accumulator, the following should be true:
+        if (!txns.isEmpty()) {
+          currentStateVersion = txns.get(txns.size() - 1).getCommittedStateIdentifier().getStateVersion();
+        }
+        balanceChanges.forEach((identifier, value) -> balances.merge(identifier, value, BigInteger::add));
+      }
 
-      `post_transaction_state_accumulator = SHA256(SHA256(pre_transaction_state_accumulator | transaction_identifier_hash)`
-
-      Where `|` is the byte concatenation operator. Note that this uses two rounds of SHA256. The first maps from
-      64 bytes to 32 bytes, the second from 32 bytes to 32 bytes.
-
-      ### Timestamps
-
-      If you care about the timestamps that various transactions were committed, you can filter for operations which
-      have a `data` part, with a `data.action` of `CREATE`, and a `data.data_object.type` of `RoundData`.
-
-      Then, `data.data_object.timestamp` gives a UNIX timestamp in milliseconds, which captures a timestamp of when
-      this transaction was committed to ledger. This timestamp is _not_ guaranteed to be increasing.
-
-      Not every transaction will have such a `RoundData` operation, for example, due to multiple transactions being
-      committed in the same consensus round, so the current timestamp should be kept track of as you iterate forward
-      through the transactions on the ledger, until you see another new created `RoundData` operation,
-      which replaces the timestamp.
+      void main() throws Exception {
+        while (true) {
+          update();
+          Thread.sleep(1000L);
+        }
+      }
+      ```
 
   - name: network
     x-displayName: Network
