@@ -248,7 +248,7 @@ tags:
       5. **New Token Definitions** may be created by destroying an `UnclaimedREAddr` and creating a
       `TokenData` and `TokenMetadata` data object.
   - name: xrd_transfer_example
-    x-displayName: XRD Transfer
+    x-displayName: Perform XRD Transfer
     description: |
       Given the described model let us go through an example of how an XRD transfer transaction may look like.
 
@@ -327,7 +327,7 @@ tags:
       ## Operations
 
       We now combine our amounts with our Entity Identifiers to create Operations.
-      `"Resource"` is the type of our Operation since we are manipulation resource balances.
+      `"Resource"` is the type of our Operation since we are manipulating resource balances.
 
       Sender Operation:
       ```
@@ -402,11 +402,12 @@ tags:
 
       ## Fee Payer
 
-      The last thing we need to add is the fee payer entity, in this case it will be the same
-      entity as the sender.
+      The last thing we need to add is to specify the fee payer account entity identifier.
+      In this case it will be the same account as the sender.
 
       We can now also add the `network_identifier` and with this structure we can submit this
-      to `/construction/build`.
+      to `/construction/build`. This `network_identifier` needs to match the network identifier
+      of the node.
 
       ```
         {
@@ -595,7 +596,7 @@ tags:
       * There are two operation groups now as opposed to one, the first operation group contains the operations for
       the fee, which should be paid by the `fee_payer` passed into `/construction/build`
       * The second operation group contains more than the two original operations. What occurred here is the node
-      selected destroyed and created certain UTXOs (specified by the `substate` property) to perform the intent
+      selected specific UTXOs to destroy and create (specified by the `substate` property) to perform the intent
       of the operations initially passed in. That is, the balance changes of each entity should still be equivalent
       to the original operations.
 
@@ -605,8 +606,88 @@ tags:
       `/construction/finalize` in order to get a `signed_transaction`. This can then be submitted to
       `construction/submit`. You have successfully submitted a XRD transfer transaction!
 
+  - name: read_transaction_api_example
+    x-displayName: Interpreting committed transfers and balances from the Transactions API
+    description: |
 
+      ## Retrieve transactions
 
+      Perform a call to the `/transactions` address, eg the following call gets the first 100 transactions from the
+      ledger. Be sure to match the `network_identifier` with the network the node is using.
+
+      ```
+      {
+        "network_identifier": {
+          "network": "mainnet"
+        },
+        "state_identifier": {
+          "state_version": 0
+        },
+        "limit": 100
+      }
+      ```
+
+      You will receive a `state_identifer` for identifier of the pre-state before the transactions were committed,
+      and a list of committed transactions.
+
+      Detailed overview of the schema is contained in the Data API/Transactions section, but for now, we'll continue
+      the example by extracting out only account balance changes.
+
+      ## Extracting out only account token balance changes
+
+      The format of a transaction will look like the `unsigned_transaction` example above, with some additional
+      metadata fields (eg `signed_by` for non-system transactions, and `message`).
+
+      Let's flatmap over all Operations in OperationGroups, and filter to operations which:
+      * __Concern an account entity__ - that is, have an entity_identifier which has an address starting `rdx1`,
+        and no `sub_entity`. (NB - see the Addressing section for supporting non-mainnet addresses).
+        We filter out sub-entities because these are separate entities/balances to the main account,
+        used by the system for staking.
+      * __Concern a token__ - that is, they have an `amount`, with an `amount.resource_identifier` of type `Token`.
+        This eg filters out StakeOwnership balance changes.
+
+      Let `account_address = operation.entity_identifier.address`,
+      `token_rri = operation.amount.resource_identifier.rri` and
+      `balance_change = operation.amount.value`.
+
+      Then, grouping by the tuple `(account_address, token_rri)` and summing each `balance_change` across all operations,
+      we can track the change in the account's balance for a given token across the transaction (or multiple transactions).
+
+      ## Advanced
+
+      ### Tracking UTXOs
+
+      The `operation.substate.substate_identifier.identifier` gives a hex-encoded identifier for the UTXO used in that
+      transaction. If `operation.substate.substate_operation` is `BOOTUP`, the UTXO was created, and if `SHUTDOWN`, it
+      was spent.
+
+      This can be used to track live UTXOs.
+
+      ### Consistency checks
+
+      Before saving a copy of a transaction to an index, you should check that the parent accumulator matches the
+      accumulator you have on record. Whilst we don't anticipate a need to rollback the ledger, this accumulator
+      check should be used to detect this (and can be used to rollback an index to the point where the accumulators
+      agree).
+
+      If you wish to also check the consistency of this accumulator, the following should be true:
+
+      `post_transaction_state_accumulator = SHA256(SHA256(pre_transaction_state_accumulator | transaction_identifier_hash)`
+
+      Where `|` is the byte concatenation operator. Note that this uses two rounds of SHA256. The first maps from
+      64 bytes to 32 bytes, the second from 32 bytes to 32 bytes.
+
+      ### Timestamps
+
+      If you care about the timestamps that various transactions were committed, you can filter for operations which
+      have a `data` part, with an `action` of `CREATE`, and a `data_object.type` of `RoundData`.
+
+      Then, `operation.data.data_object.timestamp` gives a UNIX timestamp in milliseconds, which captures the rough time
+      this transaction was committed to ledger.
+
+      Not every transaction will have such an operation (if multiple transactions were committed in the same consensus
+      round), so the current timestamp should be kept track of as you iterate forward through the ledger, until you see
+      another new created `RoundData` operation, which replaces the timestamp.
 
   - name: network
     x-displayName: Network
@@ -720,8 +801,14 @@ paths:
   "/transactions":
     post:
       summary: Get Committed Transactions
-      description: Returns an ordered sublist of committed transactions. This endpoint
+      description: |
+        Returns an ordered sublist of committed transactions. This endpoint
         is designed for lite clients to sync with the state of the ledger.
+
+        The example response demonstrates a transfer transaction.
+
+        There is a more detailed worked example of reading this endpoint in the
+        examples section.
       tags:
         - transactions
       requestBody:
@@ -1755,10 +1842,10 @@ components:
             - timestamp
           properties:
             round:
-              description: The round of the system.
+              description: The round of the system in the current epoch (ie resets to 0 at the start of the next epoch).
               "$ref": "#/components/schemas/LongNumber"
             timestamp:
-              description: Timestamp
+              description: A unix timestamp in milliseconds.
               "$ref": "#/components/schemas/LongNumber"
     EpochData:
       allOf:
@@ -1768,7 +1855,7 @@ components:
             - epoch
           properties:
             epoch:
-              description: The epoch of the system.
+              description: The epoch number of the system.
               "$ref": "#/components/schemas/LongNumber"
     PreparedValidatorRegistered:
       allOf:
