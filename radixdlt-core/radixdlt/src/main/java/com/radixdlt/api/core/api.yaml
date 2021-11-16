@@ -712,6 +712,7 @@ x-tagGroups:
   - name: Examples
     tags:
       - xrd_transfer_example
+      - read_transaction_api_example
   - name: Data API
     tags:
       - network
