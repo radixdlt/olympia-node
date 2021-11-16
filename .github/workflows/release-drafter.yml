@@ -1,6 +1,7 @@
 name: Release Drafter
 on:
  push:
+   pull_request:
    # branches to consider in the event; optional, defaults to all
    branches:
      - develop
@@ -11,3 +12,4 @@ jobs:
      - uses: release-drafter/release-drafter@v5
        env:
          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+         PREVIOUS_TAG: 1.0.1
