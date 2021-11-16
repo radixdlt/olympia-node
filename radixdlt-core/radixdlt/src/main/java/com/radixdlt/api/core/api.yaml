@@ -647,35 +647,40 @@ tags:
       This example walks through how to track XRD balances across accounts.
       To simplify things, we've code generated a client in java using openapigenerator.
 
-      ## Make a Transactions Request
+      ## Get Transactions
 
-      Let's start by performing a call to `/transactions` with `state_version=0`. This
-      will retrieve transactions including the genesis transaction.
+      Let's start by performing a call to `/transactions` with `state_version` of `0`. This
+      will retrieve all transactions from the beginning, including the genesis transaction.
+      We will also set `limit` to `1000` so that we retrieve 1000 transactions at most at a time.
 
-      Be sure to match the `network_identifier` with the network the node is using.
+      Be sure to also match the `network_identifier` with the network the node is using.
 
       ```java
       TransactionsApi api = new TransactionsApi();
+      NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
 
       void request() {
-        long stateVersion = 0;
+        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(0L);
+
         CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
-          .networkIdentifier(new NetworkIdentifier().network("mainnet"))
+          .networkIdentifier(networkIdentifier)
           .limit(1000L)
-          .stateIdentifier(new PartialStateIdentifier().stateVersion(stateVersion));
+          .stateIdentifier(stateIdentifier);
+
         CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
       }
       ```
 
       ## Get XRD Balance changes
 
-      Let's now expand our code to extract any XRD balance changes.
+      Let's now expand our code to extract all XRD balance changes.
 
       We do this by filtering for operations which involve XRD resource amounts and
       then collecting the total amount of balance change for a given entity.
 
       ```java
       TransactionsApi api = new TransactionsApi();
+      NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
 
       boolean isXrd(Operation operation) {
         if (operation.getAmount() == null) {
@@ -689,15 +694,8 @@ tags:
         return tokenResourceIdentifier.getRri().equals("xrd_rr1qy5wfsfh");
       }
 
-      Map<EntityIdentifier, BigInteger> getXrdBalanceChanges() {
-        long nextStateVersion = 0;
-        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
-          .networkIdentifier(new NetworkIdentifier().network("mainnet"))
-          .limit(1000L)
-          .stateIdentifier(new PartialStateIdentifier().stateVersion(nextStateVersion));
-        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
-        return response.getTransactions().stream()
-          .flatMap(txn -> txn.getOperationGroups().stream())
+      Map<EntityIdentifier, BigInteger> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
+        return operationGroups
           .flatMap(group -> group.getOperations().stream())
           .filter(this::isXrd)
           .collect(Collectors.groupingBy(
@@ -707,6 +705,23 @@ tags:
               Collectors.reducing(BigInteger.ZERO, BigInteger::add)
             )
           ));
+      }
+
+      void request() {
+        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(0L);
+
+        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
+          .networkIdentifier(networkIdentifier)
+          .limit(1000L)
+          .stateIdentifier(stateIdentifier);
+
+        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
+
+        // Extract out operation groups
+        Stream<OperationGroup> operationGroups = response.getTransactions().stream()
+          .flatMap(txn -> txn.getOperationGroups().stream());
+
+        Map<EntityIdentifier, BigInteger> balanceChanges = operationGroupsToBalanceChanges(operationGroups);
       }
       ```
 
@@ -719,6 +734,7 @@ tags:
 
       ```java
       TransactionsApi api = new TransactionsApi();
+      NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
       Map<EntityIdentifier, BigInteger> balances = new HashMap<>();
 
       boolean isXrd(Operation operation) {
@@ -733,15 +749,8 @@ tags:
         return tokenResourceIdentifier.getRri().equals("xrd_rr1qy5wfsfh");
       }
 
-      void update() throws ApiException {
-        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
-          .networkIdentifier(new NetworkIdentifier().network("mainnet"))
-          .limit(1000L)
-          .stateIdentifier(new PartialStateIdentifier().stateVersion(currentStateVersion));
-        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
-        List<CommittedTransaction> txns = response.getTransactions();
-        Map<EntityIdentifier, BigInteger> balanceChanges = txns.stream()
-          .flatMap(txn -> txn.getOperationGroups().stream())
+      Map<EntityIdentifier, BigInteger> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
+        return operationGroups
           .flatMap(group -> group.getOperations().stream())
           .filter(this::isXrd)
           .collect(Collectors.groupingBy(
@@ -751,7 +760,25 @@ tags:
               Collectors.reducing(BigInteger.ZERO, BigInteger::add)
             )
           ));
+      }
 
+      void update() throws ApiException {
+        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(0L);
+
+        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
+          .networkIdentifier(networkIdentifier)
+          .limit(1000L)
+          .stateIdentifier(stateIdentifier);
+
+        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
+
+        // Extract out operation groups
+        Stream<OperationGroup> operationGroups = response.getTransactions().stream()
+          .flatMap(txn -> txn.getOperationGroups().stream());
+
+        Map<EntityIdentifier, BigInteger> balanceChanges = operationGroupsToBalanceChanges(operationGroups);
+
+        // Update balances in memory
         balanceChanges.forEach((identifier, value) -> balances.merge(identifier, value, BigInteger::add));
       }
       ```
@@ -769,14 +796,15 @@ tags:
 
       ```java
       TransactionsApi api = new TransactionsApi();
-      Map<EntityIdentifier, BigInteger> balances = new HashMap<>();
+      NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
       long currentStateVersion = 0;
+      Map<EntityIdentifier, BigInteger> balances = new HashMap<>();
 
       boolean isXrd(Operation operation) {
         if (operation.getAmount() == null) {
           return false;
         }
-        ResourceIdentifier identifier = operation.getAmount().getResourceIdentifier();
+        ResourceIdentifier identifier = op.getAmount().getResourceIdentifier();
         if (!(identifier instanceof TokenResourceIdentifier)) {
           return false;
         }
@@ -784,15 +812,8 @@ tags:
         return tokenResourceIdentifier.getRri().equals("xrd_rr1qy5wfsfh");
       }
 
-      void update() throws ApiException {
-        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
-          .networkIdentifier(new NetworkIdentifier().network("mainnet"))
-          .limit(1000L)
-          .stateIdentifier(new PartialStateIdentifier().stateVersion(currentStateVersion));
-        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
-        List<CommittedTransaction> txns = response.getTransactions();
-        Map<EntityIdentifier, BigInteger> balanceChanges = txns.stream()
-          .flatMap(txn -> txn.getOperationGroups().stream())
+      Map<EntityIdentifier, BigInteger> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
+        return operationGroups
           .flatMap(group -> group.getOperations().stream())
           .filter(this::isXrd)
           .collect(Collectors.groupingBy(
@@ -802,7 +823,25 @@ tags:
               Collectors.reducing(BigInteger.ZERO, BigInteger::add)
             )
           ));
+      }
 
+      void update() throws ApiException {
+        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(currentStateVersion);
+
+        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
+          .networkIdentifier(networkIdentifier)
+          .limit(1000L)
+          .stateIdentifier(stateIdentifier);
+
+        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
+
+        // Extract out operation groups
+        Stream<OperationGroup> operationGroups = response.getTransactions().stream()
+          .flatMap(txn -> txn.getOperationGroups().stream());
+
+        Map<EntityIdentifier, BigInteger> balanceChanges = operationGroupsToBalanceChanges(operationGroups);
+
+        // Update stateVersion and balances, on a database these must be updated atomically together
         if (!txns.isEmpty()) {
           currentStateVersion = txns.get(txns.size() - 1).getCommittedStateIdentifier().getStateVersion();
         }
