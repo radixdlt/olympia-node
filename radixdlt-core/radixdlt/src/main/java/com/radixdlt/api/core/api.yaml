@@ -239,6 +239,9 @@ tags:
         The suffix is fixed for a given Radix network, and is `_rr` on mainnet.
         As an example, the mainnet address of the native token, XRD, is `xrd_rr1qy5wfsfh`.
         The data part of the Bech32 encoding encodes the token's unique radix engine address on ledger.
+        This radix engine address is hex `01` for XRD,
+        and presently, hex `03 | SHA256(SHA256(signer_public_key_compressed_33_bytes | symbol_in_utf8_bytes)`
+        for user-created tokens, where | denotes the byte concatenation operator.
 
       The Account and Validator HRPs and the Token HRP suffix for the current network should be fetched from the
       `/network/configuration` endpoint.
@@ -704,21 +707,7 @@ tags:
 
       ### Supporting networks other than mainnet
 
-      See the Addressing section for details on determining non-mainnet addresses. To get the token RRI for XRD for
-      a given network, you can make a call to `/construction/derive` with:
-
-      ```
-        "network_identifier": {
-          "network": "mainnet"
-        },
-        "public_key": {
-          "hex": "01"
-        },
-        "metadata": {
-          "type": "Token",
-          "symbol": "xrd"
-        }
-      ```
+      See the Addressing section for details on determining non-mainnet addresses.
 
       ### Tracking UTXOs
 
