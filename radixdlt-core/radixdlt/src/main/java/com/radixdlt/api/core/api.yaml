@@ -607,8 +607,11 @@ tags:
       `construction/submit`. You have successfully submitted a XRD transfer transaction!
 
   - name: read_transaction_api_example
-    x-displayName: Interpreting committed transfers and balances from the Transactions API
+    x-displayName: Read Committed Transactions
     description: |
+
+      This example walks through how to interpret the committed transfers and balances from the Transactions API,
+      for the purposes of tracking account balances and UTXOs.
 
       ## Retrieve transactions
 
@@ -645,6 +648,8 @@ tags:
         used by the system for staking.
       * __Concern a token__ - that is, they have an `amount`, with an `amount.resource_identifier` of type `Token`.
         This eg filters out StakeOwnership balance changes.
+        If you also only care about a particular token, such as XRD, you can further filter on
+        `amount.resource_identifier.rri` here.
 
       Let `account_address = operation.entity_identifier.address`,
       `token_rri = operation.amount.resource_identifier.rri` and
