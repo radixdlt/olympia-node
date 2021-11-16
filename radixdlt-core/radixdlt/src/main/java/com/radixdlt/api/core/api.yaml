@@ -599,6 +599,12 @@ tags:
       of the operations initially passed in. That is, the balance changes of each entity should still be equivalent
       to the original operations.
 
+      ## Signed Transaction
+
+      Once `payload_to_sign` has been signed, the original payload along with signature can be sent to
+      `/construction/finalize` in order to get a `signed_transaction`. This can then be submitted to
+      `construction/submit`. You have successfully submitted a XRD transfer transaction!
+
 
 
 
