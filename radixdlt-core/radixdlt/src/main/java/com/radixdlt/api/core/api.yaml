@@ -702,7 +702,7 @@ tags:
       Letting `token_rri = operation.amount.resource_identifier.rri`, you can group by `(account_address, token_rri)`
       during the sum, and get balance changes for each account/token combination.
 
-      ## Supporting networks other than mainnet
+      ### Supporting networks other than mainnet
 
       See the Addressing section for details on determining non-mainnet addresses. To get the token RRI for XRD for
       a given network, you can make a call to `/construction/derive` with:
