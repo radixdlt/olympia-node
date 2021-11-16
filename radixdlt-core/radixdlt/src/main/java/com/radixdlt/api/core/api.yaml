@@ -284,7 +284,7 @@ tags:
       5. **New Token Definitions** may be created by destroying an `UnclaimedREAddr` and creating a
       `TokenData` and `TokenMetadata` data object.
   - name: xrd_transfer_example
-    x-displayName: Perform XRD Transfer
+    x-displayName: Send XRD
     description: |
       Given the described model let us go through an example of how an XRD transfer transaction may look like.
 
@@ -880,7 +880,7 @@ tags:
       ```
 
   - name: track_all_balances_example
-    x-displayName: Track All Resource Balances
+    x-displayName: Track All Balances
     description: |
       Building off of the Track XRD Balances example, we can simply remove the filter on only tracking XRD
       and build a complete mapping of assets owned by every entity `Entity -> Resource -> Amount`.
