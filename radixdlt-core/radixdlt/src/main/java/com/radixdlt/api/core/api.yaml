@@ -651,13 +651,13 @@ tags:
       To extract account token balances from a transaction, we can flatmap to all operations across all operation
       groups, and filter to operations which:
 
-      * __Concern an account entity__ - that is, have an entity_identifier which has an address starting `rdx1`,
+      * __Concern an account entity__ - that is, have an `entity_identifier` which has an address starting `rdx1`,
         and no `sub_entity`. We filter out sub-entities because these are separate entities/balances to the
         core account, used by the system for staking.
         For more information, and to support non-mainnet addresses, see the Structure and Addressing sections.
-      * __Concern a token__ - that is, they have an `amount`, with an `amount.resource_identifier` of type `Token`.
+      * __Concern a token__ - that is, they have an `amount`, and this has an `amount.resource_identifier.type` of `Token`.
         If you also only care about a particular token, such as XRD, you can further filter on
-        `amount.resource_identifier.rri` here.
+        `amount.resource_identifier.rri` here. EG the `rri` of XRD on mainnet is `xrd_rr1qy5wfsfh`.
 
       Let `account_address = operation.entity_identifier.address`,
       `token_rri = operation.amount.resource_identifier.rri` and
@@ -680,7 +680,7 @@ tags:
 
       Before saving a copy of a transaction to an index, you should check that the parent accumulator matches the
       accumulator you have on record. Whilst we don't anticipate a need to rollback the ledger, this accumulator
-      check should be used to detect this (and can be used to rollback an index to the point where the accumulators
+      check could be used to detect this (and can be used to rollback an index to the point where the accumulators
       agree).
 
       If you wish to also check the consistency of this accumulator, the following should be true:
@@ -693,14 +693,15 @@ tags:
       ### Timestamps
 
       If you care about the timestamps that various transactions were committed, you can filter for operations which
-      have a `data` part, with an `action` of `CREATE`, and a `data_object.type` of `RoundData`.
+      have a `data` part, with a `data.action` of `CREATE`, and a `data.data_object.type` of `RoundData`.
 
-      Then, `operation.data.data_object.timestamp` gives a UNIX timestamp in milliseconds, which captures the rough time
-      this transaction was committed to ledger.
+      Then, `data.data_object.timestamp` gives a UNIX timestamp in milliseconds, which captures a timestamp of when
+      this transaction was committed to ledger. This timestamp is _not_ guaranteed to be increasing.
 
-      Not every transaction will have such an operation (if multiple transactions were committed in the same consensus
-      round), so the current timestamp should be kept track of as you iterate forward through the ledger, until you see
-      another new created `RoundData` operation, which replaces the timestamp.
+      Not every transaction will have such a `RoundData` operation, for example, due to multiple transactions being
+      committed in the same consensus round, so the current timestamp should be kept track of as you iterate forward
+      through the transactions on the ledger, until you see another new created `RoundData` operation,
+      which replaces the timestamp.
 
   - name: network
     x-displayName: Network
