@@ -663,7 +663,7 @@ tags:
         "state_identifier": {
           "state_version": 0
         },
-        "limit": 100
+        "limit": 1000
       }
       ```
 
@@ -878,7 +878,7 @@ tags:
       ```
 
   - name: track_all_balances_example
-    x-displayName: Track All Balances
+    x-displayName: Track All Resource Balances
     description: |
       Building off of the Track XRD Balances example, we can simply remove the filter on only tracking XRD
       and build a complete mapping of assets owned by every entity `Entity -> Resource -> Amount`.
@@ -889,17 +889,21 @@ tags:
       long currentStateVersion = 0;
       Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balances = new HashMap<>();
 
-      Map<EntityIdentifier, BigInteger> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
+      Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
         return operationGroups
           .flatMap(group -> group.getOperations().stream())
           .filter(operation -> operation.getAmount() != null)
           .collect(Collectors.groupingBy(
             Operation::getEntityIdentifier,
-            Collectors.mapping(
-              op -> new BigInteger(op.getAmount().getValue()),
-              Collectors.reducing(BigInteger.ZERO, BigInteger::add)
+            Collectors.groupingBy(
+              op -> op.getAmount().getResourceIdentifier(),
+              Collectors.mapping(
+                op -> new BigInteger(op.getAmount().getValue()),
+                Collectors.reducing(BigInteger.ZERO, BigInteger::add)
+              )
             )
-          ));
+          )
+        );
       }
 
       void update() throws ApiException {
@@ -916,7 +920,7 @@ tags:
         Stream<OperationGroup> operationGroups = response.getTransactions().stream()
           .flatMap(txn -> txn.getOperationGroups().stream());
 
-        Map<EntityIdentifier, BigInteger> balanceChanges = operationGroupsToBalanceChanges(operationGroups);
+        Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balanceChanges = operationGroupsToBalanceChanges(operationGroups);
 
         // Update stateVersion and balances, on a database these must be updated atomically together
         if (!txns.isEmpty()) {
