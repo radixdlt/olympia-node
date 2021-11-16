@@ -253,8 +253,13 @@ tags:
       Given the described model let us go through an example of how an XRD transfer transaction may look like.
 
       For the purpose of our example, let's say we want to:
-      > TRANSFER 10.5 XRD FROM rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
-      TO rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+      > TRANSFER
+      > 10.5 XRD
+      > FROM
+      > rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+      > TO
+      > rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
+
 
       ## Entity Identifiers
 
@@ -375,7 +380,7 @@ tags:
                 "type": "Token",
                 "rri": "xrd_rr1qy5wfsfh"
               },
-              "value": "-1500"
+              "value": "-1500000000000000000"
             }
           },
           {
@@ -388,12 +393,214 @@ tags:
                 "type": "Token",
                 "rri": "xrd_rr1qy5wfsfh"
               },
-              "value": "1500"
+              "value": "1500000000000000000"
             }
           }
         ]
       }
       ```
+
+      ## Fee Payer
+
+      The last thing we need to add is the fee payer entity, in this case it will be the same
+      entity as the sender.
+
+      We can now also add the `network_identifier` and with this structure we can submit this
+      to `/construction/build`.
+
+      ```
+        {
+          "network_identifier": {
+            "network": "mainnet"
+          },
+          "fee_payer": {
+            "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+          },
+          "operation_groups": [
+            {
+              "operations": [
+                {
+                  "type": "Resource",
+                  "entity_identifier": {
+                    "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+                  },
+                  "amount": {
+                    "resource_identifier": {
+                      "type": "Token",
+                      "rri": "xrd_rr1qy5wfsfh"
+                    },
+                    "value": "-1500000000000000000"
+                  }
+                },
+                {
+                  "type": "Resource",
+                  "entity_identifier": {
+                    "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
+                  },
+                  "amount": {
+                    "resource_identifier": {
+                      "type": "Token",
+                      "rri": "xrd_rr1qy5wfsfh"
+                    },
+                    "value": "1500000000000000000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ```
+
+      ## Unsigned Transaction
+
+      After submitting to `/construction/build`, the output will look something like:
+
+      ```
+      {
+        "unsigned_transaction": "074db58b950fcf446140dd945c6adfd06daa0b520f7eddf0467583d96babff579d000000020100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab010000000000000000000000000000000000000000004f68ca6c8d0d7e082c00000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab010000000000000000000000000000000000000000004f68ca57bbfb708d16000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b60100000000000000000000000000000000000000000000000014d1120d7b16000000",
+        "payload_to_sign": "e2d702dde0c7731229e96be53faef0b74c34e2e68ebaefa5e4ae6a63d400c449"
+      }
+      ```
+
+      We can pass in `unsigned_transaction` to `/construction/parse` in order to see what the transaction looks like:
+      ```
+      {
+        "metadata": {
+          "fee": {
+            "resource_identifier": {
+              "rri": "xrd_rr1qy5wfsfh",
+              "type": "Token"
+            },
+            "value": "72000000000000000"
+          }
+        },
+        "operation_groups": [
+          {
+            "operations": [
+              {
+                "amount": {
+                  "resource_identifier": {
+                    "rri": "xrd_rr1qy5wfsfh",
+                    "type": "Token"
+                  },
+                  "value": "-96000000000000000000000000"
+                },
+                "substate": {
+                  "substate_identifier": {
+                    "identifier": "4db58b950fcf446140dd945c6adfd06daa0b520f7eddf0467583d96babff579d00000002"
+                  },
+                  "substate_operation": "SHUTDOWN"
+                },
+                "entity_identifier": {
+                  "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+                },
+                "type": "Resource"
+              },
+              {
+                "metadata": {
+                  "substate_data_hex": "06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab010000000000000000000000000000000000000000004f68ca6c8d0d7e082c0000"
+                },
+                "amount": {
+                  "resource_identifier": {
+                    "rri": "xrd_rr1qy5wfsfh",
+                    "type": "Token"
+                  },
+                  "value": "95999999928000000000000000"
+                },
+                "substate": {
+                  "substate_identifier": {
+                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b8115371c05c6565f9fb6a4900000000"
+                  },
+                  "substate_operation": "BOOTUP"
+                },
+                "entity_identifier": {
+                  "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+                },
+                "type": "Resource"
+              }
+            ]
+          },
+          {
+            "operations": [
+              {
+                "amount": {
+                  "resource_identifier": {
+                    "rri": "xrd_rr1qy5wfsfh",
+                    "type": "Token"
+                  },
+                  "value": "-95999999928000000000000000"
+                },
+                "substate": {
+                  "substate_identifier": {
+                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b8115371c05c6565f9fb6a4900000000"
+                  },
+                  "substate_operation": "SHUTDOWN"
+                },
+                "entity_identifier": {
+                  "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+                },
+                "type": "Resource"
+              },
+              {
+                "metadata": {
+                  "substate_data_hex": "06000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab010000000000000000000000000000000000000000004f68ca57bbfb708d160000"
+                },
+                "amount": {
+                  "resource_identifier": {
+                    "rri": "xrd_rr1qy5wfsfh",
+                    "type": "Token"
+                  },
+                  "value": "95999998428000000000000000"
+                },
+                "substate": {
+                  "substate_identifier": {
+                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b8115371c05c6565f9fb6a4900000001"
+                  },
+                  "substate_operation": "BOOTUP"
+                },
+                "entity_identifier": {
+                  "address": "rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88"
+                },
+                "type": "Resource"
+              },
+              {
+                "metadata": {
+                  "substate_data_hex": "06000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b60100000000000000000000000000000000000000000000000014d1120d7b160000"
+                },
+                "amount": {
+                  "resource_identifier": {
+                    "rri": "xrd_rr1qy5wfsfh",
+                    "type": "Token"
+                  },
+                  "value": "1500000000000000000"
+                },
+                "substate": {
+                  "substate_identifier": {
+                    "identifier": "65f61dba3ed40a438c4694e8947f73530c1c6ca6b8115371c05c6565f9fb6a4900000002"
+                  },
+                  "substate_operation": "BOOTUP"
+                },
+                "entity_identifier": {
+                  "address": "rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33"
+                },
+                "type": "Resource"
+              }
+            ]
+          }
+        ]
+      }
+      ```
+
+      A couple of things to note above:
+      * There are two operation groups now as opposed to one, the first operation group contains the operations for
+      the fee, which should be paid by the `fee_payer` passed into `/construction/build`
+      * The second operation group contains more than the two original operations. What occurred here is the node
+      selected destroyed and created certain UTXOs (specified by the `substate` property) to perform the intent
+      of the operations initially passed in. That is, the balance changes of each entity should still be equivalent
+      to the original operations.
+
+
+
 
   - name: network
     x-displayName: Network

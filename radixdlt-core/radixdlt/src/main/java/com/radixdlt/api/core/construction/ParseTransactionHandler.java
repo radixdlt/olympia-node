@@ -150,11 +150,13 @@ public class ParseTransactionHandler implements ApiHandler<ParseTransactionReque
 		if (!processed.getFeePaid().isZero()) {
 			var rri = addressToRri.apply(REAddr.ofNativeToken());
 			metadata = new JSONObject()
-				.put("resource_identifier", new JSONObject()
-					.put("rri", rri)
-					.put("type", "Token")
-				)
-				.put("value", processed.getFeePaid().toString());
+				.put("fee", new JSONObject()
+					.put("resource_identifier", new JSONObject()
+						.put("rri", rri)
+						.put("type", "Token")
+					)
+					.put("value", processed.getFeePaid().toString())
+				);
 		} else {
 			metadata = null;
 		}
