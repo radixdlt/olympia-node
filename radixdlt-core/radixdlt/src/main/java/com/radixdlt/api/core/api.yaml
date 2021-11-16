@@ -2093,6 +2093,13 @@ components:
     VirtualParentData:
       allOf:
         - "$ref": "#/components/schemas/DataObject"
+        - type: object
+          required:
+            - child_type
+          properties:
+            child_type:
+              description: The type of the children under this parent
+              type: string
     UnclaimedRadixEngineAddressData:
       allOf:
         - "$ref": "#/components/schemas/DataObject"

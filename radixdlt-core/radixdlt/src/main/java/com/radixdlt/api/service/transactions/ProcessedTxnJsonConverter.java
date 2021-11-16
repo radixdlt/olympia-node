@@ -74,6 +74,7 @@ import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.application.tokens.state.ResourceData;
@@ -266,7 +267,12 @@ public final class ProcessedTxnJsonConverter {
 			} else {
 				throw new IllegalStateException("Unknown validator data " + substate);
 			}
+		} else if (substate instanceof VirtualParent) {
+			var virtualParent = (VirtualParent) substate;
+			var childType = SubstateTypeId.valueOf(virtualParent.getData()[0]);
+			objectJson.put("child_type", SUBSTATE_TYPE_ID_STRING_MAP.get(childType).getSecond());
 		}
+
 		return objectJson;
 	}
 
@@ -392,10 +398,12 @@ public final class ProcessedTxnJsonConverter {
 					entityIdentifierJson = new JSONObject().put("address", "system");
 				}
 				operationJson.put("entity_identifier", entityIdentifierJson);
-			} else {
+			} else if (update.getParsed() instanceof VirtualParent) {
 				operationJson.put("entity_identifier", new JSONObject()
 					.put("address", "system")
 				);
+			} else {
+				throw new IllegalStateException();
 			}
 		}
 
