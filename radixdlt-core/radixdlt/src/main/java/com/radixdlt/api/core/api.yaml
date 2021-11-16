@@ -696,8 +696,29 @@ tags:
 
       ### Tracking multiple tokens
 
-      You could choose not to filter on XRD rri, and instead also let `token_rri = operation.amount.resource_identifier.rri`
-      and group by (account_address, token_rri) during the sum, to get balance changes for that account/token combination.
+      If you relax the filter on `amount.resource_identifier.rri` to no longer just match to XRD, you can track these
+      changes in parallel.
+
+      Letting `token_rri = operation.amount.resource_identifier.rri`, you can group by `(account_address, token_rri)`
+      during the sum, and get balance changes for each account/token combination.
+
+      ## Supporting networks other than mainnet
+
+      See the Addressing section for details on determining non-mainnet addresses. To get the token RRI for XRD for
+      a given network, you can make a call to `/construction/derive` with:
+
+      ```
+        "network_identifier": {
+          "network": "mainnet"
+        },
+        "public_key": {
+          "hex": "01"
+        },
+        metadata: {
+          "type": "Token",
+          "symbol": "xrd"
+        }
+      ```
 
       ### Tracking UTXOs
 
