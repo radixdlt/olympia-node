@@ -714,7 +714,7 @@ tags:
         "public_key": {
           "hex": "01"
         },
-        metadata: {
+        "metadata": {
           "type": "Token",
           "symbol": "xrd"
         }
