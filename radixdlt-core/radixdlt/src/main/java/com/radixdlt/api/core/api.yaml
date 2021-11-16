@@ -638,7 +638,7 @@ tags:
       `construction/submit`. You have successfully submitted a XRD transfer transaction!
 
   - name: read_transaction_api_example
-    x-displayName: Read Committed Transactions
+    x-displayName: Track XRD Balances
     description: |
 
       This example walks through how to interpret the committed transfers and balances from the Transactions API,
@@ -680,18 +680,24 @@ tags:
         and no `sub_entity`. We filter out sub-entities because these are separate entities/balances to the
         core account, used by the system for staking.
         For more information, and to support non-mainnet addresses, see the Structure and Addressing sections.
-      * __Concern a token__ - that is, they have an `amount`, and this has an `amount.resource_identifier.type` of `Token`.
-        If you also only care about a particular token, such as XRD, you can further filter on
+      * __Concern the XRD token__ - that is, they have an `amount`, and this has an `amount.resource_identifier.type` of `Token`.
+        In this case, we only care about one particular token, XRD, so you can further filter on
         `amount.resource_identifier.rri` here. EG the `rri` of XRD on mainnet is `xrd_rr1qy5wfsfh`.
 
-      Let `account_address = operation.entity_identifier.address`,
-      `token_rri = operation.amount.resource_identifier.rri` and
-      `balance_change = operation.amount.value`.
+      Let `account_address = operation.entity_identifier.address`, and `balance_change = operation.amount.value`.
 
-      Then, grouping by the tuple `(account_address, token_rri)` and summing each `balance_change` across all operations,
-      we can track the change in the account's balance for a given token across the transaction (or multiple transactions).
+      Then, group by `account_address` and sum each `balance_change` against that `account_address` from all the
+      operations in that transaction. This gives us the change in XRD balance in that account due to the transaction,
+      in units of 10^(-18).
+
+      This can form the basis of tracking the account balance over time.
 
       ## Advanced
+
+      ### Tracking multiple tokens
+
+      You could choose not to filter on XRD rri, and instead also let `token_rri = operation.amount.resource_identifier.rri`
+      and group by (account_address, token_rri) during the sum, to get balance changes for that account/token combination.
 
       ### Tracking UTXOs
 
