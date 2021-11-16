@@ -640,20 +640,34 @@ tags:
       `/construction/finalize` in order to get a `signed_transaction`. This can then be submitted to
       `construction/submit`. You have successfully submitted a XRD transfer transaction!
 
-  - name: read_transaction_api_example
+  - name: track_xrd_example
     x-displayName: Track XRD Balances
     description: |
 
       This example walks through how to track XRD balances across accounts.
-      To simplify things, we've code generated a client in java using openapigenerator.
+      To simplify things, we've included client code generated in java using openapigenerator.
 
       ## Get Transactions
 
-      Let's start by performing a call to `/transactions` with `state_version` of `0`. This
-      will retrieve all transactions from the beginning, including the genesis transaction.
-      We will also set `limit` to `1000` so that we retrieve 1000 transactions at most at a time.
+      Let's start by performing a call to `/transactions` with `state_version` of `0` and `limit`
+      of `1000`. This will retrieve the first 1000 transactions on ledger, including the genesis
+      transaction.
 
       Be sure to also match the `network_identifier` with the network the node is using.
+
+      ```
+      {
+        "network_identifier": {
+          "network": "mainnet"
+        },
+        "state_identifier": {
+          "state_version": 0
+        },
+        "limit": 100
+      }
+      ```
+
+      The corresponding java client code looks like:
 
       ```java
       TransactionsApi api = new TransactionsApi();
@@ -675,8 +689,15 @@ tags:
 
       Let's now expand our code to extract all XRD balance changes.
 
-      We do this by filtering for operations which involve XRD resource amounts and
-      then collecting the total amount of balance change for a given entity.
+      To extract account token balances from a transaction, we can flatmap to all operations across all operation
+      groups, and filter to operations which concern the XRD token, that is, they have an `amount`, and has an
+      `amount.resource_identifier.type` of `Token`, and further the `rri` of the token is `xrd_rr1qy5wfsfh`
+
+      Then, we group by `entity_identifier` and sum each `balance_change` against that `entity_identifier` from all the
+      operations in that transaction. This gives us the change in XRD balance in that entity due to the transaction,
+      in units of 10^(-18).
+
+      This can form the basis of tracking the account balance over time.
 
       ```java
       TransactionsApi api = new TransactionsApi();
@@ -729,8 +750,8 @@ tags:
 
       We can now start updating some balance store given that we have balance changes.
 
-      In this example we simply use a map from entity to balance, in your system you may
-      store these changes in a database.
+      In this example we simply use a hash map from entity to balance. In your system you may
+      store these changes in a persistent database.
 
       ```java
       TransactionsApi api = new TransactionsApi();
@@ -856,6 +877,73 @@ tags:
       }
       ```
 
+  - name: track_all_balances_example
+    x-displayName: Track All Balances
+    description: |
+      Building off of the Track XRD Balances example, we can simply remove the filter on only tracking XRD
+      and build a complete mapping of assets owned by every entity `Entity -> Resource -> Amount`.
+
+      ```java
+      TransactionsApi api = new TransactionsApi();
+      NetworkIdentifier networkIdentifier = new NetworkIdentifier().network("mainnet");
+      long currentStateVersion = 0;
+      Map<EntityIdentifier, Map<ResourceIdentifier, BigInteger>> balances = new HashMap<>();
+
+      Map<EntityIdentifier, BigInteger> operationGroupsToBalanceChanges(Stream<OperationGroup> operationGroups) {
+        return operationGroups
+          .flatMap(group -> group.getOperations().stream())
+          .filter(operation -> operation.getAmount() != null)
+          .collect(Collectors.groupingBy(
+            Operation::getEntityIdentifier,
+            Collectors.mapping(
+              op -> new BigInteger(op.getAmount().getValue()),
+              Collectors.reducing(BigInteger.ZERO, BigInteger::add)
+            )
+          ));
+      }
+
+      void update() throws ApiException {
+        PartialStateIdentifier stateIdentifier = new PartialStateIdentifier().stateVersion(currentStateVersion);
+
+        CommittedTransactionsRequest committedTransactionsRequest = new CommittedTransactionsRequest()
+          .networkIdentifier(networkIdentifier)
+          .limit(1000L)
+          .stateIdentifier(stateIdentifier);
+
+        CommittedTransactionsResponse response = api.transactionsPost(committedTransactionsRequest);
+
+        // Extract out operation groups
+        Stream<OperationGroup> operationGroups = response.getTransactions().stream()
+          .flatMap(txn -> txn.getOperationGroups().stream());
+
+        Map<EntityIdentifier, BigInteger> balanceChanges = operationGroupsToBalanceChanges(operationGroups);
+
+        // Update stateVersion and balances, on a database these must be updated atomically together
+        if (!txns.isEmpty()) {
+          currentStateVersion = txns.get(txns.size() - 1).getCommittedStateIdentifier().getStateVersion();
+        }
+        balanceChanges.forEach((identifier, balanceMap) -> {
+          balanceMap.forEach((resource, value) ->
+            balances.merge(identifier, Map.of(resource, value), (b0, b1) ->
+              Stream.concat(b0.entrySet().stream(), b1.entrySet().stream()).collect(
+                Collectors.groupingBy(
+                  Map.Entry::getKey,
+                  Collectors.mapping(Map.Entry::getValue, Collectors.reducing(BigInteger.ZERO, BigInteger::add))
+                )
+              )
+            )
+          );
+        });
+      }
+
+      void main() throws Exception {
+        while (true) {
+          update();
+          Thread.sleep(1000L);
+        }
+      }
+      ```
+
   - name: network
     x-displayName: Network
     description: Get info about the node and network.
@@ -878,8 +966,9 @@ x-tagGroups:
       - objects
   - name: Examples
     tags:
+      - track_xrd_example
+      - track_all_balances_example
       - xrd_transfer_example
-      - read_transaction_api_example
   - name: Data API
     tags:
       - network
