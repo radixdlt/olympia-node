@@ -950,6 +950,68 @@ tags:
       }
       ```
 
+      ## Advanced
+
+      ### Filtering to just account balances
+
+      The above examples pull through the balances for any Entity, but typically you'll just want to pull down
+      usable balances in an account - that is, balances against an account entity.
+
+      To do this, we can check filter `entity_identifier` to those which have an `address` starting `rdx1`,
+      and no `sub_entity`. We filter out sub-entities because these are separate entities/balances to the
+      core account, used by the system for staking.
+
+      For more information, and to support non-mainnet addresses, see the Structure and Addressing sections.
+
+      ### Tracking multiple tokens
+
+      If you relax the filter on `amount.resource_identifier.rri` to no longer just match to XRD, you can track these
+      changes in parallel.
+
+      Letting `token_rri = operation.amount.resource_identifier.rri`, you can group by `(account_address, token_rri)`
+      during the sum, and get balance changes for each account/token combination.
+
+      ### Supporting networks other than mainnet
+
+      See the Addressing section for details on determining non-mainnet addresses.
+
+      ### Tracking UTXOs
+
+      The `operation.substate.substate_identifier.identifier` gives a hex-encoded identifier for the UTXO used in that
+      transaction. If `operation.substate.substate_operation` is `BOOTUP`, the UTXO was created, and if `SHUTDOWN`, it
+      was spent.
+
+      This can be used to track live UTXOs.
+
+      ### Consistency checks
+
+      Before saving a copy of a transaction to an index, you should check that the parent accumulator matches the
+      accumulator you have on record. Whilst we don't anticipate a need to rollback the ledger, this accumulator
+      check could be used to detect this (and can be used to rollback an index to the point where the accumulators
+      agree).
+
+      If you wish to also check the consistency of this accumulator, the following should be true:
+
+      `post_transaction_state_accumulator = SHA256(SHA256(pre_transaction_state_accumulator | transaction_identifier_hash)`
+
+      Where `|` is the byte concatenation operator. Note that this uses two rounds of SHA256. The first maps from
+      64 bytes to 32 bytes, the second from 32 bytes to 32 bytes.
+
+      ### Timestamps
+
+      If you care about the timestamps that various transactions were committed, you can filter for operations which
+      have a `data` part, with a `data.action` of `CREATE`, and a `data.data_object.type` of `RoundData`.
+
+      Then, `data.data_object.timestamp` gives a UNIX timestamp in milliseconds, which captures a timestamp of when
+      this transaction was committed to ledger. This timestamp is derived as an average of the timestamp of all
+      the validators performing consensus. As a consequence of this, it is _not_ guaranteed to be increasing, and it
+      may be affected by Byzantine nodes.
+
+      Not every transaction will have such a `RoundData` operation, for example, due to multiple transactions being
+      committed in the same consensus round, so the current timestamp should be kept track of as you iterate forward
+      through the transactions on the ledger, until you see another new created `RoundData` operation,
+      which replaces the timestamp.
+
   - name: network
     x-displayName: Network
     description: Get info about the node and network.
