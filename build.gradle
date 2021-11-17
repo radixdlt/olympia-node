@@ -147,7 +147,7 @@ allprojects {
         }
         java {
             // don't need to set target, it is inferred from java
-            targetExclude('**/openapitools/**/*.java')
+            targetExclude('**/openapitools/**/*.java', '**/store/tree/serialization/rlp/*.java')
             // apply a specific flavor of google-java-format
             googleJavaFormat('1.13.0').reflowLongStrings()
 
@@ -235,18 +235,6 @@ subprojects {
 
         tasks.withType(Test) {
             systemProperty "file.encoding", "UTF-8"
-        }
-
-        tasks.named("checkstyleMain") {
-            configFile = rootProject.file('config/checkstyle/checkstyle.xml')
-            exclude "**/org/radix/**/*.java"
-            exclude "**/openapitools/**/*.java"
-        }
-
-        tasks.named("checkstyleTest") {
-            configFile = rootProject.file('config/checkstyle/checkstyle_test.xml')
-            exclude "**/org/radix/**/*.java"
-            exclude "**/openapitools/**/*.java"
         }
     }
 
