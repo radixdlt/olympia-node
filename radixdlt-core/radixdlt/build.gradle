@@ -126,14 +126,6 @@ classes {
     dependsOn(versionFile)
 }
 
-checkstyleIntegrationTest {
-    configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
-}
-
-checkstyleJmh {
-    configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
-}
-
 jar {
     manifest {
         attributes 'Multi-Release': 'true'
