@@ -73,6 +73,7 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,5 +98,17 @@ public class MempoolAddMessageTest {
 				.suppress(Warning.NONFINAL_FIELDS)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException() {
+		new MempoolAddMessage(null);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithListOfNullsThrowsException() {
+		var list = new ArrayList<byte[]>();
+		list.add(null);
+		new MempoolAddMessage(list);
 	}
 }

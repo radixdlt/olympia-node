@@ -73,9 +73,9 @@ import org.radix.serialization.SerializeMessageObject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class GetPeersResponseMessageTest extends SerializeMessageObject<GetPeersMessage> {
+public class GetPeersMessageTest extends SerializeMessageObject<GetPeersMessage> {
 
-	public GetPeersResponseMessageTest() {
+	public GetPeersMessageTest() {
 		super(GetPeersMessage.class, GetPeersMessage::new);
 	}
 
@@ -94,5 +94,4 @@ public class GetPeersResponseMessageTest extends SerializeMessageObject<GetPeers
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();
 	}
-
 }

@@ -64,9 +64,7 @@
 
 package com.radixdlt.consensus;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
@@ -75,6 +73,9 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class LedgerHeaderTest {
 	private LedgerHeader ledgerHeader;
@@ -98,13 +99,28 @@ public class LedgerHeaderTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(LedgerHeader.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
 	}
 
 	@Test
 	public void sensibleToString() {
 		String s = this.ledgerHeader.toString();
 		AssertionsForClassTypes.assertThat(s).contains("12345");
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void deserializationWithWrongEpochThrowsException() {
+		new LedgerHeader(-1L, 1L, mock(AccumulatorState.class), 1L, ImmutableSet.of());
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void deserializationWithWrongViewThrowsException() {
+		new LedgerHeader(1L, -1L, mock(AccumulatorState.class), 1L, ImmutableSet.of());
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullAccumulatorStateThrowsException() {
+		new LedgerHeader(1L, 1L, null, 1L, ImmutableSet.of());
 	}
 }

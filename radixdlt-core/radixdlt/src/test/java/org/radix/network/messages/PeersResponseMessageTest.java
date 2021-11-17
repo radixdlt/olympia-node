@@ -95,4 +95,16 @@ public class PeersResponseMessageTest extends SerializeMessageObject<PeersRespon
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
+
+	@Test
+	public void deserializationWithNullIsSafe() {
+		var peersResponseMessageWithNull = new PeersResponseMessage(null);
+
+		assertThat(peersResponseMessageWithNull.getPeers()).isEqualTo(ImmutableSet.of());
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullElementsInSetThrowsException() {
+		new PeersResponseMessage(ImmutableSet.of(null));
+	}
 }

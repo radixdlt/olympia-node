@@ -64,10 +64,6 @@
 
 package com.radixdlt.consensus;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.bft.View;
@@ -76,6 +72,10 @@ import com.radixdlt.ledger.AccumulatorState;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class LedgerProofTest {
 	private OrderByEpochAndVersionComparator headerComparator;
@@ -217,5 +217,20 @@ public class LedgerProofTest {
 		);
 		assertThat(headerComparator.compare(s0, s1)).isZero();
 		assertThat(headerComparator.compare(s1, s0)).isZero();
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException1() {
+		new LedgerProof(null, mock(LedgerHeader.class), mock(TimestampedECDSASignatures.class));
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException2() {
+		new LedgerProof(mock(HashCode.class), null, mock(TimestampedECDSASignatures.class));
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException3() {
+		new LedgerProof(mock(HashCode.class), mock(LedgerHeader.class), null);
 	}
 }

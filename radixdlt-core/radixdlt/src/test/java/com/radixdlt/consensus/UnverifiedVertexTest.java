@@ -67,11 +67,14 @@ package com.radixdlt.consensus;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -108,4 +111,37 @@ public class UnverifiedVertexTest {
 		assertEquals(View.of(1234567892L), this.testObject.getView());
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException() throws PublicKeyException {
+		var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
+		UnverifiedVertex.create(null, 1, List.of(), proposer, false);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void deserializationWithInvalidViewThrowsException() throws PublicKeyException {
+		var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
+		UnverifiedVertex.create(mock(QuorumCertificate.class), -1, List.of(), proposer, false);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithInvalidTxnListThrowsException() throws PublicKeyException {
+		var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
+		var list = new ArrayList<byte[]>();
+		list.add(null);
+		UnverifiedVertex.create(mock(QuorumCertificate.class), 1, list, proposer, false);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void deserializationWithInvalidCombinationOfProposerTimeoutAndTxnListThrowsException() throws PublicKeyException {
+		var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
+		var list = new ArrayList<byte[]>();
+		list.add(new byte[0]);
+		UnverifiedVertex.create(mock(QuorumCertificate.class), 1, list, proposer, true);
+	}
+
+	@Test(expected = PublicKeyException.class)
+	public void deserializationWithInvalidPublicKeyThrowsException() throws PublicKeyException {
+		var proposer = new byte[] {0x00};
+		UnverifiedVertex.create(mock(QuorumCertificate.class), 1, List.of(), proposer, false);
+	}
 }

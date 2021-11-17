@@ -112,6 +112,10 @@ public final class TimestampedECDSASignature {
 	}
 
 	private TimestampedECDSASignature(long timestamp, ECDSASignature signature) {
+		if (timestamp <= 0) {	//we don't expect timestamps before epoch or at the start of the epoch
+			throw new IllegalArgumentException("Timestamp before epoch: " + timestamp);
+		}
+
 		this.timestamp = timestamp;
 		this.signature = Objects.requireNonNull(signature);
 	}

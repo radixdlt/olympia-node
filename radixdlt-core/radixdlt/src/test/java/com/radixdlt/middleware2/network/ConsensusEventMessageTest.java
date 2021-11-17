@@ -118,4 +118,9 @@ public class ConsensusEventMessageTest {
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();
 	}
+
+	@Test(expected = IllegalStateException.class)
+	public void deserializationWithBothNullParametersThrowsException() {
+		new ConsensusEventMessage(null, null);
+	}
 }

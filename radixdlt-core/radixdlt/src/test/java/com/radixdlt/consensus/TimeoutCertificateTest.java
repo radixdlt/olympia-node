@@ -69,6 +69,8 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 import org.radix.serialization.SerializeMessageObject;
 
+import static org.mockito.Mockito.mock;
+
 public class TimeoutCertificateTest extends SerializeMessageObject<TimeoutCertificate> {
 
     public TimeoutCertificateTest() {
@@ -82,6 +84,21 @@ public class TimeoutCertificateTest extends SerializeMessageObject<TimeoutCertif
     @Test
     public void equalsTest() {
         EqualsVerifier.forClass(TimeoutCertificate.class)
-            .verify();
+                .verify();
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void deserializationWithNullThrowsException() {
+        TimeoutCertificate.serializerCreate(1, 1, null);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void deserializationWithInvalidEpochThrowsException() {
+        TimeoutCertificate.serializerCreate(-1, 1, mock(TimestampedECDSASignatures.class));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void deserializationWithInvalidViewThrowsException() {
+        TimeoutCertificate.serializerCreate(1, -1, mock(TimestampedECDSASignatures.class));
     }
 }

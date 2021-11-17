@@ -89,6 +89,7 @@ public final class GetVerticesResponseMessage extends Message {
 		@JsonProperty(value = "vertices", required = true) List<UnverifiedVertex> vertices
 	) {
 		this.vertices = Objects.requireNonNull(vertices);
+		vertices.forEach(Objects::requireNonNull);
 	}
 
 	public List<UnverifiedVertex> getVertices() {

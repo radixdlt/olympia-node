@@ -66,6 +66,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.serialization.DsonOutput;
@@ -97,7 +98,8 @@ public final class TimeoutCertificate {
 	private final TimestampedECDSASignatures signatures;
 
 	@JsonCreator
-	private static TimeoutCertificate serializerCreate(
+	@VisibleForTesting
+	static TimeoutCertificate serializerCreate(
 		@JsonProperty("epoch") long epoch,
 		@JsonProperty("view") long view,
 		@JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures

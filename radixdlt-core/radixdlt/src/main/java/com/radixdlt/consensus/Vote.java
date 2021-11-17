@@ -66,6 +66,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.hash.HashCode;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -115,18 +116,17 @@ public final class Vote implements ConsensusEvent {
 	private final Optional<ECDSASignature> timeoutSignature;
 
 	@JsonCreator
+	@VisibleForTesting
 	Vote(
 		@JsonProperty(value = "author", required = true) byte[] author,
-		@JsonProperty("vote_data") VoteData voteData,
+		@JsonProperty(value = "vote_data", required = true) VoteData voteData,
 		@JsonProperty("ts") long timestamp,
-		@JsonProperty("signature") ECDSASignature signature,
-		@JsonProperty("high_qc") HighQC highQC,
+		@JsonProperty(value = "signature", required = true) ECDSASignature signature,
+		@JsonProperty(value = "high_qc", required = true) HighQC highQC,
 		@JsonProperty("timeout_signature") ECDSASignature timeoutSignature
 	) throws PublicKeyException {
 		this(
-			BFTNode.fromPublicKeyBytes(requireNonNull(author)),
-			voteData,
-			timestamp,
+			BFTNode.fromPublicKeyBytes(requireNonNull(author)), voteData, timestamp,
 			signature, highQC, Optional.ofNullable(timeoutSignature)
 		);
 	}
@@ -139,6 +139,10 @@ public final class Vote implements ConsensusEvent {
 		HighQC highQC,
 		Optional<ECDSASignature> timeoutSignature
 	) {
+		if (timestamp <= 0) {
+			throw new IllegalArgumentException("Timestamp before epoch:" + timestamp);
+		}
+
 		this.author = requireNonNull(author);
 		this.voteData = requireNonNull(voteData);
 		this.timestamp = timestamp;

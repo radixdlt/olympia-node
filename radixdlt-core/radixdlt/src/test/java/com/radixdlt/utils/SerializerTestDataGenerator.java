@@ -103,7 +103,7 @@ public class SerializerTestDataGenerator {
 		return new Vote(
 			BFTNode.random(),
 			randomVoteData(),
-			random.nextLong(),
+			Math.abs(random.nextLong()) + 1,
 			randomECDSASignature(),
 			randomHighQC(),
 			Optional.of(randomECDSASignature())
@@ -121,10 +121,8 @@ public class SerializerTestDataGenerator {
 			LedgerHeader.create(
 				Math.abs(random.nextLong()),
 				randomView(),
-				new AccumulatorState(
-					random.nextLong(), HashCode.fromLong(random.nextLong())
-				),
-				random.nextLong(),
+				new AccumulatorState(Math.abs(random.nextLong()) + 1, HashCode.fromLong(random.nextLong())),
+				Math.abs(random.nextLong()) + 1,
 				BFTValidatorSet.from(
 					ImmutableSet.<BFTValidator>builder()
 						.add(BFTValidator.from(BFTNode.random(), UInt256.from(random.nextLong())))

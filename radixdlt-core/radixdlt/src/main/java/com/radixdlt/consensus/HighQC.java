@@ -103,7 +103,8 @@ public final class HighQC {
 	private final TimeoutCertificate highestTC;
 
 	@JsonCreator
-	private static HighQC serializerCreate(
+	@VisibleForTesting
+	static HighQC serializerCreate(
 		@JsonProperty(value = "highest_qc", required = true) QuorumCertificate highestQC,
 		@JsonProperty("committed_qc") QuorumCertificate highestCommittedQC,
 		@JsonProperty("highest_tc") TimeoutCertificate highestTC

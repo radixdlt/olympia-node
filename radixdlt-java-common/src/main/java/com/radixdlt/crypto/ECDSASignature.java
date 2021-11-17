@@ -81,6 +81,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An <a href="https://en.wikipedia.org/wiki/
  * Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a> signature represented as
@@ -101,8 +103,8 @@ public final class ECDSASignature {
 	private static final ECDSASignature ZERO_SIGNATURE = new ECDSASignature(BigInteger.ZERO, BigInteger.ZERO, 0);
 
 	private ECDSASignature(BigInteger r, BigInteger s, int v) {
-		this.r = Objects.requireNonNull(r);
-		this.s = Objects.requireNonNull(s);
+		this.r = requireNonNull(r);
+		this.s = requireNonNull(s);
 		this.v = ((v & 1) == 0 ? (byte) 0x00 : (byte) 0x01);
 	}
 
@@ -112,15 +114,15 @@ public final class ECDSASignature {
 		@JsonProperty(value = "s", required = true) byte[] s,
 		@JsonProperty(value = "v", required = true) int v
 	) {
-		return create(new BigInteger(1, r), new BigInteger(1, s), v);
+		return create(new BigInteger(1, requireNonNull(r)), new BigInteger(1, requireNonNull(s)), v);
 	}
 
 	/**
 	 * Constructs a signature with the given components. Does NOT automatically canonicalise the signature.
 	 */
 	public static ECDSASignature create(BigInteger r, BigInteger s, int v) {
-		Objects.requireNonNull(r);
-		Objects.requireNonNull(s);
+		requireNonNull(r);
+		requireNonNull(s);
 
 		return new ECDSASignature(r, s, v);
 	}

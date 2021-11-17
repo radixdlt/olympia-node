@@ -71,6 +71,7 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class GetVerticesRequestMessageTest {
 	@Test
@@ -92,4 +93,13 @@ public class GetVerticesRequestMessageTest {
 				.verify();
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException() {
+		new GetVerticesRequestMessage(null, 1);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void deserializationWithInvalidCountThrowsException() {
+		new GetVerticesRequestMessage(mock(HashCode.class), 0);
+	}
 }

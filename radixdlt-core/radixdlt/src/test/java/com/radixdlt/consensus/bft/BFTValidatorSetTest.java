@@ -132,41 +132,41 @@ public class BFTValidatorSetTest {
 
 		// 2 signatures for 4 validators -> fail
 		ValidationState vst1 = vs.newValidationState();
-		assertTrue(vst1.addSignature(node1, 0L, k1.sign(message)));
+		assertTrue(vst1.addSignature(node1, 1L, k1.sign(message)));
 		assertFalse(vst1.complete());
-		assertTrue(vst1.addSignature(node2, 0L, k2.sign(message)));
+		assertTrue(vst1.addSignature(node2, 1L, k2.sign(message)));
 		assertFalse(vst1.complete());
 		assertEquals(2, vst1.signatures().count());
 
 		// 3 signatures for 4 validators -> pass
 		ValidationState vst2 = vs.newValidationState();
-		assertTrue(vst2.addSignature(node1, 0L, k1.sign(message)));
+		assertTrue(vst2.addSignature(node1, 1L, k1.sign(message)));
 		assertFalse(vst1.complete());
-		assertTrue(vst2.addSignature(node2, 0L, k2.sign(message)));
+		assertTrue(vst2.addSignature(node2, 1L, k2.sign(message)));
 		assertFalse(vst1.complete());
-		assertTrue(vst2.addSignature(node3, 0L, k3.sign(message)));
+		assertTrue(vst2.addSignature(node3, 1L, k3.sign(message)));
 		assertTrue(vst2.complete());
 		assertEquals(3, vst2.signatures().count());
 
 		// 2 signatures + 1 signature not from set for 4 validators -> fail
 		ValidationState vst3 = vs.newValidationState();
-		assertTrue(vst3.addSignature(node1, 0L, k1.sign(message)));
+		assertTrue(vst3.addSignature(node1, 1L, k1.sign(message)));
 		assertFalse(vst3.complete());
-		assertTrue(vst3.addSignature(node2, 0L, k2.sign(message)));
+		assertTrue(vst3.addSignature(node2, 1L, k2.sign(message)));
 		assertFalse(vst3.complete());
-		assertFalse(vst3.addSignature(node5, 0L, k5.sign(message)));
+		assertFalse(vst3.addSignature(node5, 1L, k5.sign(message)));
 		assertFalse(vst3.complete());
 		assertEquals(2, vst3.signatures().count());
 
 		// 3 signatures + 1 signature not from set for 4 validators -> pass
 		ValidationState vst4 = vs.newValidationState();
-		assertTrue(vst4.addSignature(node1, 0L, k1.sign(message)));
+		assertTrue(vst4.addSignature(node1, 1L, k1.sign(message)));
 		assertFalse(vst3.complete());
-		assertTrue(vst4.addSignature(node2, 0L, k2.sign(message)));
+		assertTrue(vst4.addSignature(node2, 1L, k2.sign(message)));
 		assertFalse(vst3.complete());
-		assertFalse(vst4.addSignature(node5, 0L, k5.sign(message)));
+		assertFalse(vst4.addSignature(node5, 1L, k5.sign(message)));
 		assertFalse(vst3.complete());
-		assertTrue(vst4.addSignature(node3, 0L, k3.sign(message)));
+		assertTrue(vst4.addSignature(node3, 1L, k3.sign(message)));
 		assertTrue(vst4.complete());
 		assertEquals(3, vst4.signatures().count());
 	}
@@ -185,7 +185,7 @@ public class BFTValidatorSetTest {
 		BFTValidatorSet vs = BFTValidatorSet.from(ImmutableSet.of(v1, v2));
 		HashCode message = HashUtils.random256();
 		ValidationState vst1 = vs.newValidationState();
-		assertTrue(vst1.addSignature(node1, 0L, k1.sign(message)));
+		assertTrue(vst1.addSignature(node1, 1L, k1.sign(message)));
 		assertTrue(vst1.complete());
 		assertEquals(1, vst1.signatures().count());
 	}

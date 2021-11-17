@@ -64,14 +64,13 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.ECDSASignature;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 import org.radix.serialization.SerializeObject;
 
-import com.radixdlt.crypto.ECDSASignature;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
-
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class TimestampedECDSASignatureTest extends SerializeObject<TimestampedECDSASignature> {
 	public TimestampedECDSASignatureTest() {
@@ -91,5 +90,15 @@ public class TimestampedECDSASignatureTest extends SerializeObject<TimestampedEC
 
 	private static TimestampedECDSASignature create() {
 		return TimestampedECDSASignature.from(1L, ECDSASignature.zeroSignature());
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException() {
+		TimestampedECDSASignature.from(1, null);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void deserializationWithInvalidTimestampThrowsException() {
+		TimestampedECDSASignature.from(0, mock(ECDSASignature.class));
 	}
 }

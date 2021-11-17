@@ -103,4 +103,14 @@ public class GetVerticesErrorResponseMessageTest {
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();
 	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException1() {
+		new GetVerticesErrorResponseMessage(null, mock(GetVerticesRequestMessage.class));
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException2() {
+		new GetVerticesErrorResponseMessage(mock(HighQC.class), null);
+	}
 }
