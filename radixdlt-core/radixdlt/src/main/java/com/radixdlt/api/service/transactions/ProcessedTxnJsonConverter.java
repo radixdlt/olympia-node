@@ -106,6 +106,7 @@ import java.math.BigInteger;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -321,7 +322,7 @@ public final class ProcessedTxnJsonConverter {
 							.put("metadata", new JSONObject()
 								.put("validator", addressing.forValidators().of(bucket.getValidatorKey()))
 							);
-					} else if (bucket.resourceAddr() == null && bucket.getEpochUnlock() == 0L) {
+					} else if (bucket.resourceAddr() == null && Objects.equals(bucket.getEpochUnlock(), 0L)) {
 						var subEntityJson = new JSONObject();
 						entityIdentifier.put("sub_entity", subEntityJson);
 						// Don't add validator as validator is already part of resource
