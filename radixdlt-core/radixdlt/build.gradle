@@ -134,6 +134,12 @@ checkstyleJmh {
     configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
 }
 
+jar {
+    manifest {
+        attributes 'Multi-Release': 'true'
+    }
+}
+
 test {
     testLogging {
         events "passed", "skipped", "failed"
