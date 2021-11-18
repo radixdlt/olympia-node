@@ -80,8 +80,7 @@ public record InboundMessage(long receiveTime, NodeId source, byte[] message) {
 		if (this == obj) {
 			return true;
 		}
-		if (obj instanceof InboundMessage) {
-			final var other = (InboundMessage) obj;
+		if (obj instanceof InboundMessage other) {
 			return receiveTime == other.receiveTime
 				&& Objects.equals(this.source, other.source)
 				&& Arrays.equals(this.message, other.message);

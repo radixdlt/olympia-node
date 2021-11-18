@@ -66,7 +66,9 @@ package com.radixdlt.network.messaging;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Stopwatch;
 import com.google.inject.Provider;
 import com.radixdlt.api.util.MovingAverage;
 import com.radixdlt.network.p2p.NodeId;
@@ -173,7 +175,7 @@ final class MessageCentralImpl implements MessageCentral {
 		avgMessageQueuedTime.update(messageQueuedTime);
 		totalMessageQueuedTime = Math.max(totalMessageQueuedTime + messageQueuedTime, 0L);
 		updateCounters();
-		final var processingStart = System.currentTimeMillis();
+		final var processingStopwatch = Stopwatch.createStarted();
 		try {
 			return this.messagePreprocessor.process(inboundMessage).fold(
 				error -> {
@@ -183,7 +185,7 @@ final class MessageCentralImpl implements MessageCentral {
 					return Optional.empty();
 				},
 				messageFromPeer -> {
-					final var messageProcessingTime = System.currentTimeMillis() - processingStart;
+					final var messageProcessingTime = processingStopwatch.elapsed(TimeUnit.MILLISECONDS);
 					avgMessageProcessingTime.update(messageProcessingTime);
 					totalMessageProcessingTime = Math.max(totalMessageProcessingTime + messageProcessingTime, 0L);
 					updateCounters();
