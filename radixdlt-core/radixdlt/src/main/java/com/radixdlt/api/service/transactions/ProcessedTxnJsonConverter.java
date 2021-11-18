@@ -332,7 +332,7 @@ public final class ProcessedTxnJsonConverter {
 						subEntityJson.put("address", "exiting_unstakes")
 							.put("metadata", new JSONObject()
 								.put("validator", addressing.forValidators().of(bucket.getValidatorKey()))
-								.put("unlock_epoch", bucket.getEpochUnlock())
+								.put("epoch_unlock", bucket.getEpochUnlock())
 							);
 					}
 				}
