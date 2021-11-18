@@ -13,4 +13,4 @@ source ./node-variables.sh
 mkdir -p ./node/logs
 touch ./node/logs/radixdlt-core.log
 docker-compose up -d
-tail -f ./node/logs/radixdlt-core.log
+tail -n0 -f ./node/logs/radixdlt-core.log
