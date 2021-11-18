@@ -64,18 +64,16 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.atom.Txn;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
-import org.radix.network.messaging.Message;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import org.radix.network.messaging.Message;
+
+import java.util.List;
+import java.util.Objects;
 
 @SerializerId2("message.mempool.add")
 public final class MempoolAddMessage extends Message {
@@ -83,17 +81,20 @@ public final class MempoolAddMessage extends Message {
 	@DsonOutput(Output.ALL)
 	private final List<byte[]> txns;
 
-	MempoolAddMessage() {
-		// Serializer only
-		this.txns = null;
+	@JsonCreator
+	public MempoolAddMessage(
+		@JsonProperty(value = "txns", required = true) List<byte[]> txns
+	) {
+		this.txns = Objects.requireNonNull(txns);
+		this.txns.forEach(Objects::requireNonNull);
 	}
 
-	public MempoolAddMessage(List<Txn> txns) {
-		this.txns = txns.stream().map(Txn::getPayload).collect(Collectors.toList());
+	public static MempoolAddMessage from(List<Txn> txns) {
+		return new MempoolAddMessage(txns.stream().map(Txn::getPayload).toList());
 	}
 
 	public List<Txn> getTxns() {
-		return txns == null ? List.of() : txns.stream().map(Txn::create).collect(Collectors.toList());
+		return txns == null ? List.of() : txns.stream().map(Txn::create).toList();
 	}
 
 	@Override
@@ -106,12 +107,10 @@ public final class MempoolAddMessage extends Message {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		MempoolAddMessage that = (MempoolAddMessage) o;
-		return Objects.equals(getTxns(), that.getTxns())
-				&& Objects.equals(getTimestamp(), that.getTimestamp());
+
+		return (o instanceof MempoolAddMessage that)
+			   && Objects.equals(getTxns(), that.getTxns())
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override

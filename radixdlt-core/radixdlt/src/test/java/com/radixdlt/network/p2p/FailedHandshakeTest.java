@@ -67,7 +67,6 @@ package com.radixdlt.network.p2p;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.network.p2p.test.DeterministicP2PNetworkTest;
-import com.radixdlt.networks.Network;
 import org.junit.After;
 import org.junit.Test;
 
@@ -92,7 +91,7 @@ public final class FailedHandshakeTest extends DeterministicP2PNetworkTest {
 		final var messedUpUri = RadixNodeUri.fromUri(new URI(
 			String.format(
 				"radix://%s@%s:%s",
-				NodeAddressing.of(Network.LOCALNET.getNodeHrp(), ECKeyPair.generateNew().getPublicKey()),
+				NodeAddressing.of(correctUri.getNetworkNodeHrp(), ECKeyPair.generateNew().getPublicKey()),
 				correctUri.getHost(),
 				correctUri.getPort()
 			)

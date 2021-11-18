@@ -86,6 +86,7 @@ import java.util.Optional;
  * BFT validation logic, any messages which must be sent to other nodes
  * are then forwarded to the BFT sender.
  */
+//TODO: cleanup TODOs https://radixdlt.atlassian.net/browse/NT-7
 public final class BFTEventReducer implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 
@@ -226,6 +227,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			return;
 		}
 
+		//TODO: rework to eliminate uncovered cases and use pattern matching switch
 		final VoteProcessingResult result = this.pendingVotes.insertVote(vote, this.validatorSet);
 
 		if (result instanceof VoteProcessingResult.VoteAccepted) {

@@ -68,20 +68,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTSyncer;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexChain;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.ViewQuorumReached;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
 import com.radixdlt.consensus.bft.ViewVotingResult.FormedTC;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
@@ -96,26 +87,13 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.annotation.Nullable;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import static java.util.function.Predicate.not;
 
@@ -238,6 +216,7 @@ public final class BFTSync implements BFTSyncer {
 			this.runOnThreads.add(Thread.currentThread().getName());
 
 			final HighQC highQC;
+			//TODO: extract into dedicated method, this method has too many responsibilities
 			if (viewQuorumReached.votingResult() instanceof FormedQC) {
 				highQC = HighQC.from(
 						((FormedQC) viewQuorumReached.votingResult()).getQC(),
@@ -249,7 +228,8 @@ public final class BFTSync implements BFTSyncer {
 						this.vertexStore.highQC().highestCommittedQC(),
 						Optional.of(((FormedTC) viewQuorumReached.votingResult()).getTC()));
 			} else {
-				throw new IllegalArgumentException("Unknown voting result: " + viewQuorumReached.votingResult());
+				//TODO: cleanup this mess
+				throw new IllegalStateException("Unknown voting result: " + viewQuorumReached.votingResult());
 			}
 
 			syncToQC(highQC, viewQuorumReached.lastAuthor());
@@ -375,7 +355,7 @@ public final class BFTSync implements BFTSyncer {
 		var syncIds = syncRequestState.syncIds.stream()
 			.filter(syncing::containsKey)
 			.distinct()
-			.collect(Collectors.toList());
+			.toList();
 
 		//noinspection UnstableApiUsage
 		for (var syncId : syncIds) {
@@ -564,6 +544,7 @@ public final class BFTSync implements BFTSyncer {
 				if (syncState == null) {
 					continue; // sync requirements already satisfied by another sync
 				}
+				//TODO: replace with enhanced switch
 				switch (syncState.syncStage) {
 					case GET_COMMITTED_VERTICES:
 						processVerticesResponseForCommittedSync(syncState, sender, response);

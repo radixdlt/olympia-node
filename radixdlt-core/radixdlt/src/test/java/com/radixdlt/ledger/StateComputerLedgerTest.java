@@ -64,6 +64,41 @@
 
 package com.radixdlt.ledger;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.TypedMocks;
+import com.radixdlt.utils.UInt256;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -71,41 +106,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
-import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.TypedMocks;
-
-import com.radixdlt.utils.UInt256;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
-import org.junit.Before;
-import org.junit.Test;
 
 public class StateComputerLedgerTest {
 
@@ -215,7 +215,7 @@ public class StateComputerLedgerTest {
 		genesisIsEndOfEpoch(true);
 		when(stateComputer.prepare(any(), any(), anyLong()))
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
-		var unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()), BFTNode.random(), false);
+		var unverifiedVertex = UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTxn), BFTNode.random());
 		var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
 		// Act
@@ -236,7 +236,7 @@ public class StateComputerLedgerTest {
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
 
 		// Act
-		var unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), List.of(nextTxn.getPayload()), BFTNode.random(), false);
+		var unverifiedVertex = UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTxn), BFTNode.random());
 		var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 		Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 

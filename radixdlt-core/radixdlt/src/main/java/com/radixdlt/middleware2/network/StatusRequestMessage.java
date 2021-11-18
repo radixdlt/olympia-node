@@ -64,6 +64,7 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
 
@@ -74,6 +75,9 @@ import java.util.Objects;
  */
 @SerializerId2("message.sync.status_request")
 public final class StatusRequestMessage extends Message {
+	@JsonCreator
+	public StatusRequestMessage() {
+	}
 
 	@Override
 	public String toString() {
@@ -85,11 +89,9 @@ public final class StatusRequestMessage extends Message {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof StatusRequestMessage)) {
-			return false;
-		}
-		StatusRequestMessage that = (StatusRequestMessage) o;
-		return Objects.equals(getTimestamp(), that.getTimestamp());
+
+		return (o instanceof StatusRequestMessage that)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override

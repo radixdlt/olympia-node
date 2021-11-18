@@ -1,4 +1,4 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix DLT Ltd incorporated in England.
  *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
@@ -62,60 +62,66 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.api.util;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
-import org.junit.Test;
+import com.radixdlt.counters.SystemCounters;
+import org.json.JSONObject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
+import java.util.List;
 
-public class ConsensusEventMessageTest {
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
-	@Test
-	public void sensibleToStringProposal() {
-		Proposal m = mock(Proposal.class);
-		ConsensusEventMessage msg1 = new ConsensusEventMessage(m);
-		String s1 = msg1.toString();
+public final class CountersJsonFormatter {
 
-		assertThat(s1)
-			.contains(ConsensusEventMessage.class.getSimpleName())
-			.contains(m.toString());
-
-		assertTrue(msg1.getConsensusMessage() instanceof Proposal);
+	private CountersJsonFormatter() {
 	}
 
-	@Test
-	public void sensibleToStringVote() {
-		Vote m = mock(Vote.class);
-		ConsensusEventMessage msg1 = new ConsensusEventMessage(m);
-		String s1 = msg1.toString();
-		assertThat(s1)
-			.contains(ConsensusEventMessage.class.getSimpleName())
-			.contains(m.toString());
-
-		assertTrue(msg1.getConsensusMessage() instanceof Vote);
+	public static JSONObject countersToJson(SystemCounters counters, List<SystemCounters.CounterType> types, boolean skipTopLevel) {
+		var result = jsonObject();
+		types.forEach(counterType -> counterToJson(result, counters, counterType, skipTopLevel));
+		return result;
 	}
 
-	@Test(expected = IllegalStateException.class)
-	public void failedConsensusMessage() {
-		ConsensusEventMessage msg1 = new ConsensusEventMessage((Proposal) null);
-		assertNotNull(msg1.getConsensusMessage());
+	public static void counterToJson(JSONObject obj, SystemCounters systemCounters, SystemCounters.CounterType type, boolean skipTopLevel) {
+		var ptr = obj;
+		var iterator = List.of(type.jsonPath().split("\\.")).listIterator();
+
+		if (skipTopLevel && iterator.hasNext()) {
+			iterator.next();
+		}
+
+		while (iterator.hasNext()) {
+			var element = toCamelCase(iterator.next());
+
+			if (ptr.has(element)) {
+				ptr = ptr.getJSONObject(element);
+			} else {
+				if (iterator.hasNext()) {
+					var newObj = jsonObject();
+					ptr.put(element, newObj);
+					ptr = newObj;
+				} else {
+					ptr.put(element, systemCounters.get(type));
+				}
+			}
+		}
 	}
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(ConsensusEventMessage.class)
-				.withIgnoredFields("instance")
-				.suppress(Warning.NONFINAL_FIELDS)
-				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-				.verify();
+	public static String toCamelCase(String input) {
+		var output = new StringBuilder();
+
+		boolean upCaseNext = false;
+
+		for (var chr : input.toCharArray()) {
+			if (chr == '_') {
+				upCaseNext = true;
+				continue;
+			}
+
+			output.append(upCaseNext ? Character.toUpperCase(chr) : chr);
+			upCaseNext = false;
+		}
+
+		return output.toString();
 	}
 }

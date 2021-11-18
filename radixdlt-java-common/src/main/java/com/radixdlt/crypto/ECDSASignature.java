@@ -64,11 +64,6 @@
 
 package com.radixdlt.crypto;
 
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.DLSequence;
-import org.bouncycastle.util.encoders.Hex;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
@@ -77,6 +72,10 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.DLSequence;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -109,9 +108,9 @@ public final class ECDSASignature {
 
 	@JsonCreator
 	public static ECDSASignature deserialize(
-		@JsonProperty("r") byte[] r,
-		@JsonProperty("s") byte[] s,
-		@JsonProperty("v") int v
+		@JsonProperty(value = "r", required = true) byte[] r,
+		@JsonProperty(value = "s", required = true) byte[] s,
+		@JsonProperty(value = "v", required = true) int v
 	) {
 		return create(new BigInteger(1, r), new BigInteger(1, s), v);
 	}
@@ -175,15 +174,10 @@ public final class ECDSASignature {
 			return true;
 		}
 
-		if (o instanceof ECDSASignature) {
-			var signature = (ECDSASignature) o;
-
-			return Objects.equals(r, signature.r)
-				&& Objects.equals(s, signature.s)
-				&& Objects.equals(v, signature.v);
-		}
-
-		return false;
+		return (o instanceof ECDSASignature signature)
+			   && Objects.equals(r, signature.r)
+			   && Objects.equals(s, signature.s)
+			   && Objects.equals(v, signature.v);
 	}
 
 	@Override

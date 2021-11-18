@@ -64,8 +64,6 @@
 
 package com.radixdlt.middleware2.network;
 
-import org.radix.network.messaging.Message;
-
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -75,11 +73,11 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.p2p.NodeId;
-
-import java.util.Objects;
-
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import org.radix.network.messaging.Message;
+
+import java.util.Objects;
 
 /**
  * BFT Network sending and receiving layer used on top of the MessageCentral
@@ -93,6 +91,7 @@ public final class MessageCentralBFTNetwork {
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 	}
 
+	//TODO: cleanup unnecessary code duplication and "fat" lambdas
 	public Flowable<RemoteEvent<Vote>> remoteVotes() {
 		return remoteBftEvents()
 			.filter(m -> m.getMessage().getConsensusMessage() instanceof Vote)

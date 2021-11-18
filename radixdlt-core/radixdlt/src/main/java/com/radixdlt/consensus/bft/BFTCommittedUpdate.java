@@ -73,7 +73,7 @@ import java.util.Objects;
  * Vertex Store update of committed vertices
  */
 public final class BFTCommittedUpdate {
-	private final ImmutableSet<HashCode> pruned;	//TODO: remove unused
+	private final ImmutableSet<HashCode> pruned;	//TODO: remove unused https://radixdlt.atlassian.net/browse/NT-5
 	private final ImmutableList<PreparedVertex> committed;
 	private final VerifiedVertexStoreState vertexStoreState;
 

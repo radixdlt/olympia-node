@@ -63,6 +63,9 @@
 
 package com.radixdlt.api.node.developer;
 
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.discovery.DiscoverPeers;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
@@ -120,18 +123,24 @@ public final class DeveloperHandler {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final BerkeleyLedgerEntryStore engineStore;
 	private final Addressing addressing;
+	private final AddressBook addressBook;
+	private final EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher;
 
 	@Inject
 	public DeveloperHandler(
 		GenesisBuilder genesisBuilder,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		BerkeleyLedgerEntryStore engineStore,
-		Addressing addressing
+		Addressing addressing,
+		AddressBook addressBook,
+		EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher
 	) {
 		this.genesisBuilder = genesisBuilder;
 		this.radixEngine = radixEngine;
 		this.addressing = addressing;
 		this.engineStore = engineStore;
+		this.addressBook = addressBook;
+		this.discoverPeersEventDispatcher = discoverPeersEventDispatcher;
 	}
 
 	private Result<VerifiedTxnsAndProof> build(String message, List<TransactionAction> steps) {
@@ -454,6 +463,12 @@ public final class DeveloperHandler {
 				}
 			)
 		);
+	}
+
+	public JSONObject clearAddressBook(JSONObject request) {
+		this.addressBook.clear();
+		this.discoverPeersEventDispatcher.dispatch(DiscoverPeers.create());
+		return jsonObject();
 	}
 
 	private static Failure toFailure(Throwable e) {
