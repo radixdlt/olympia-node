@@ -327,7 +327,7 @@ public final class ProcessedTxnJsonConverter {
 						entityIdentifier.put("sub_entity", subEntityJson);
 						// Don't add validator as validator is already part of resource
 						subEntityJson.put("address", "prepared_unstakes");
-					} else if (bucket.resourceAddr() != null && bucket.getEpochUnlock() != null){
+					} else if (bucket.resourceAddr() != null && bucket.getEpochUnlock() != null) {
 						var subEntityJson = new JSONObject();
 						entityIdentifier.put("sub_entity", subEntityJson);
 						subEntityJson.put("address", "exiting_unstakes")
