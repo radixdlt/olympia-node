@@ -64,6 +64,8 @@
 
 package com.radixdlt.atom;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 
@@ -78,6 +80,7 @@ public final class Txn {
 		this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
 	}
 
+	@JsonCreator
 	public static Txn create(byte[] payload) {
 		return new Txn(payload);
 	}
@@ -86,6 +89,7 @@ public final class Txn {
 		return id;
 	}
 
+	@JsonValue
 	public byte[] getPayload() {
 		return payload;
 	}

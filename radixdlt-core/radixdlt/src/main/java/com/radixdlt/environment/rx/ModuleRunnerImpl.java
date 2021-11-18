@@ -96,8 +96,8 @@ import java.util.stream.Collectors;
  */
 public final class ModuleRunnerImpl implements ModuleRunner {
 	private static final Logger logger = LogManager.getLogger();
-	private final Scheduler singleThreadScheduler;
-	private final ScheduledExecutorService executorService;
+	private Scheduler singleThreadScheduler;
+	private ScheduledExecutorService executorService;
 	private final String threadName;
 	private final Object startLock = new Object();
 	private CompositeDisposable compositeDisposable;
@@ -135,8 +135,6 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 		this.threadName = threadName;
 		this.startProcessors = startProcessors;
 		this.subscriptions = subscriptions;
-		this.executorService = 	Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
-		this.singleThreadScheduler = Schedulers.from(this.executorService);
 		this.onStart = onStart;
 	}
 
@@ -208,6 +206,9 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 				return;
 			}
 
+			this.executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
+			this.singleThreadScheduler = Schedulers.from(this.executorService);
+
 			logger.info("Starting Runner: {}", this.threadName);
 
 			this.executorService.submit(() -> startProcessors.forEach(StartProcessor::start));
@@ -215,7 +216,6 @@ public final class ModuleRunnerImpl implements ModuleRunner {
 				.map(s -> s.subscribe(singleThreadScheduler))
 				.collect(Collectors.toList());
 			this.compositeDisposable = new CompositeDisposable(disposables);
-
 
 			this.onStart.forEach(f -> f.accept(this.executorService));
 		}
