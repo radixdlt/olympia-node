@@ -64,21 +64,27 @@
 
 package com.radixdlt.acceptance.staking;
 
-import com.radixdlt.test.RadixNetworkTest;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.assertions.Assertions;
 import com.radixdlt.client.lib.dto.ValidatorDTO;
+import com.radixdlt.test.RadixNetworkTest;
+import com.radixdlt.test.utils.TestingUtils;
+import com.radixdlt.utils.UInt256;
+import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.util.Lists;
+import org.awaitility.Durations;
 import org.junit.Assert;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertTrue;
 
 public class Staking extends RadixNetworkTest {
@@ -86,15 +92,26 @@ public class Staking extends RadixNetworkTest {
     private static final Logger logger = LogManager.getLogger();
 
     private List<ValidatorDTO> validatorsBuffer = Lists.newArrayList();
+    private ValidatorDTO firstValidator;
+    private Amount stakedAmount;
+
+    @Before
+    public void update_validator_information() {
+        updateValidatorInformation();
+    }
 
     @Given("I have an account with funds at a suitable Radix network")
     public void i_have_an_account_with_funds_at_a_suitable_radix_network() {
-        faucet(account1, Amount.ofTokens(120));
+        faucet(account1, Amount.ofTokens(110));
+    }
+
+    @Given("I have an account with {int} XRD at a suitable Radix network")
+    public void i_have_an_account_with_xrd_at_a_suitable_radix_network(int tokens) {
+        faucet(account1, Amount.ofTokens(tokens));
     }
 
     @When("I request validator information")
     public void i_request_validator_information() {
-        updateValidatorInformation();
         logger.info("Found {} validators", validatorsBuffer.size());
     }
 
@@ -106,25 +123,26 @@ public class Staking extends RadixNetworkTest {
             totalDelegatedStakeAcrossNetwork > 0);
     }
 
-    @When("I stake {int}XRD to a validator")
-    public void i_stake_xrd_to_a_validator(int stake) {
-        updateValidatorInformation();
-        // this test is hardcoded to use the 1st validator
-        account1.stake(validatorsBuffer.get(0).getAddress(), Amount.ofTokens(stake));
+    @When("I stake {int} XRD to a validator")
+    public void i_stake_xrd_to_a_validator(int tokens) {
+        this.stakedAmount = Amount.ofTokens(tokens);
+        account1.stake(firstValidator.getAddress(), stakedAmount, Optional.empty());
     }
 
-    @Then("I observe that the validator has {int}XRD more stake")
-    public void i_observe_that_validator_having_xrd_more_stake(int stake) {
-        Amount expectedStake = Amount.ofTokens(5);
-        var previousStake = validatorsBuffer.get(0).getTotalDelegatedStake();
-        updateValidatorInformation();
-        var difference = validatorsBuffer.get(0).getTotalDelegatedStake().subtract(previousStake);
-        assertEquals(difference, expectedStake.toSubunits());
+    @When("I unstake {int} XRD from the same validator")
+    public void i_unstake_xrd_from_the_same_validator(int tokensToUnstake) {
+        account1.unstake(firstValidator.getAddress(), Amount.ofTokens(tokensToUnstake), Optional.empty());
     }
 
-    @When("I unstake {int}XRD from the same validator")
-    public void i_unstake_xrd_from_the_same_validator(Integer unstake) {
-        throw new io.cucumber.java.PendingException();
+    @Then("I observe that the validator has {int} XRD more stake")
+    public void i_observe_that_validator_having_xrd_more_stake(int stakeTokens) {
+        var expectedStake = Amount.ofTokens(stakeTokens);
+        var previousStake = firstValidator.getTotalDelegatedStake();
+        await().pollInterval(Durations.ONE_SECOND).atMost(Durations.ONE_MINUTE).until(() -> {
+            updateValidatorInformation();
+            var difference = firstValidator.getTotalDelegatedStake().subtract(previousStake);
+            return difference.compareTo(expectedStake.toSubunits()) > -1;
+        });
     }
 
     @Then("I observe that my stake is unstaked and I got my tokens back")
@@ -132,12 +150,35 @@ public class Staking extends RadixNetworkTest {
         throw new io.cucumber.java.PendingException();
     }
 
+    @Then("I wait for {int} epochs to pass")
+    public void i_wait_for_two_epochs_to_pass(int epochsToWait) {
+        TestingUtils.waitEpochs(account1, epochsToWait);
+    }
+
+    @Then("I cannot immediately unstake {int} XRD")
+    public void i_cannot_immediately_unstake_xrd(int tokensToUnstake) {
+        Assertions.runExpectingRadixApiException(() ->
+            account1.unstake(firstValidator.getAddress(), Amount.ofTokens(tokensToUnstake), Optional.empty()),
+            "Not enough balance for transfer"
+        );
+    }
+
+    @Then("I receive some emissions")
+    public void i_receive_xrd_in_emissions() {
+        var latestStakedAmount = account1.account().stakes(account1.getAddress()).stream()
+            .filter(stakePositions -> stakePositions.getValidator().equals(firstValidator.getAddress()))
+            .collect(Collectors.toList()).get(0).getAmount();
+        var difference = latestStakedAmount.subtract(stakedAmount.toSubunits());
+        assertTrue("No emissions were received", difference.compareTo(UInt256.ZERO) > 0);
+    }
+
     private void updateValidatorInformation() {
         validatorsBuffer.clear();
-        validatorsBuffer = account1.validator().list(1000, Optional.empty()).getValidators();
+        validatorsBuffer = account1.validator().list(10000, Optional.empty()).getValidators();
         if (validatorsBuffer.isEmpty()) {
             Assert.fail("No validators were found in the network, test cannot proceed.");
         }
+        firstValidator = validatorsBuffer.get(0);
     }
 
 }

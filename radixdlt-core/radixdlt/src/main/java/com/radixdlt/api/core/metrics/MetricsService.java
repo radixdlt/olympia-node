@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.core.metrics;
 
+import com.radixdlt.api.service.NetworkingService;
 import com.radixdlt.api.service.SystemConfigService;
 import com.radixdlt.api.Endpoints;
 import com.radixdlt.api.service.network.NetworkInfoService;
@@ -126,6 +127,7 @@ public class MetricsService {
 	private final SystemCounters systemCounters;
 	private final InfoSupplier infoSupplier;
 	private final SystemConfigService systemConfigService;
+	private final NetworkingService networkingService;
 	private final NetworkInfoService networkInfoService;
 	private final Addressing addressing;
 	private final InMemorySystemInfo inMemorySystemInfo;
@@ -138,6 +140,7 @@ public class MetricsService {
 		SystemCounters systemCounters,
 		InfoSupplier infoSupplier,
 		SystemConfigService systemConfigService,
+		NetworkingService networkingService,
 		NetworkInfoService networkInfoService,
 		InMemorySystemInfo inMemorySystemInfo,
 		@Self BFTNode self,
@@ -147,6 +150,7 @@ public class MetricsService {
 		this.systemCounters = systemCounters;
 		this.infoSupplier = infoSupplier;
 		this.systemConfigService = systemConfigService;
+		this.networkingService = networkingService;
 		this.networkInfoService = networkInfoService;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.self = self;
@@ -168,7 +172,7 @@ public class MetricsService {
 		appendCounter(builder, "info_configuration_pacemakermaxexponent", pacemakerMaxExponent(snapshot));
 		appendCounter(builder, "info_epochmanager_currentview_view", currentView(snapshot));
 		appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpoch(snapshot));
-		appendCounter(builder, "total_peers", systemConfigService.getNetworkingPeersCount());
+		appendCounter(builder, "total_peers", networkingService.getPeersCount());
 
 		var totalValidators = inMemorySystemInfo.getEpochProof().getNextValidatorSet()
 			.map(BFTValidatorSet::getValidators)

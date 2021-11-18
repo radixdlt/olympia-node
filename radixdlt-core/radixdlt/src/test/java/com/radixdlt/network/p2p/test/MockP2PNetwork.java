@@ -68,7 +68,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Key;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
@@ -81,6 +80,7 @@ import com.radixdlt.serialization.Serialization;
 import java.security.SecureRandom;
 import java.util.Optional;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.SocketChannel;
@@ -116,7 +116,8 @@ final class MockP2PNetwork {
 			ECKeyOps.fromKeyPair(clientPeer.keyPair),
 			clientPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() { }),
 			Optional.of(serverPeerUri),
-			clientSocketChannel
+			clientSocketChannel,
+			Optional.empty()
 		);
 
 		final var serverChannel = new PeerChannel(
@@ -129,18 +130,19 @@ final class MockP2PNetwork {
 			ECKeyOps.fromKeyPair(serverPeer.keyPair),
 			serverPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() { }),
 			Optional.empty(),
-			serverSocketChannel
+			serverSocketChannel,
+			Optional.empty()
 		);
 
 		when(clientSocketChannel.writeAndFlush(any())).thenAnswer(inv -> {
 			final var rawData = inv.getArgument(0);
-			serverChannel.channelRead0(null, (byte[]) rawData);
+			serverChannel.channelRead0(null, (ByteBuf) rawData);
 			return null;
 		});
 
 		when(serverSocketChannel.writeAndFlush(any())).thenAnswer(inv -> {
 			final var rawData = inv.getArgument(0);
-			clientChannel.channelRead0(null, (byte[]) rawData);
+			clientChannel.channelRead0(null, (ByteBuf) rawData);
 			return null;
 		});
 
@@ -160,11 +162,7 @@ final class MockP2PNetwork {
 			return null;
 		});
 
-		try {
-			serverChannel.channelActive(null);
-			clientChannel.channelActive(null);
-		} catch (PublicKeyException e) {
-			throw new RuntimeException(e);
-		}
+		serverChannel.channelActive(null);
+		clientChannel.channelActive(null);
 	}
 }

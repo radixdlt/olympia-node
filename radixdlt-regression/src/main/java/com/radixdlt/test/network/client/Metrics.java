@@ -11,6 +11,10 @@ public class Metrics {
 
     private final Map<String, Double> metrics;
 
+    public Metrics() {
+        this("");
+    }
+
     public Metrics(String text) {
         metrics = Maps.newHashMap();
         for (var line : text.split("\\R")) {
@@ -29,6 +33,18 @@ public class Metrics {
 
     public int getView() {
         return metrics.get("info_epochmanager_currentview_view").intValue();
+    }
+
+    public long getTargetVersion() {
+        return metrics.get("info_counters_sync_target_state_version").longValue();
+    }
+
+    public long getCurrentVersion() {
+        return metrics.get("info_counters_ledger_state_version").longValue();
+    }
+
+    public long getVersionDiff() {
+        return metrics.get("info_counters_sync_target_current_diff").longValue();
     }
 
 }

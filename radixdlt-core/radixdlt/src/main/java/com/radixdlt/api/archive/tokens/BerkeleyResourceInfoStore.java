@@ -184,7 +184,7 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 				var supply = new BigInteger(accountingJson.getString("currentSupply"), 10);
 				var change = e.getValue();
 				var newSupply = supply.add(change);
-				accountingJson.put("currentSupply", newSupply);
+				accountingJson.put("currentSupply", newSupply.toString());
 				if (change.signum() > 0) {
 					var minted = new BigInteger(accountingJson.getString("totalMinted"), 10);
 					var newMinted = minted.add(change);

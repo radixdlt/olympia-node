@@ -64,20 +64,18 @@
 
 package com.radixdlt.middleware2.network;
 
-import org.radix.network.messaging.Message;
-
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.p2p.NodeId;
-
-import java.util.Objects;
-
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import org.radix.network.messaging.Message;
+
 import javax.inject.Inject;
+import java.util.Objects;
 
 /**
  * Network layer for the mempool
@@ -92,7 +90,7 @@ public final class MessageCentralMempool {
 
 	public RemoteEventDispatcher<MempoolAdd> mempoolAddRemoteEventDispatcher() {
 		return (receiver, msg) -> {
-			MempoolAddMessage message = new MempoolAddMessage(msg.getTxns());
+			MempoolAddMessage message = MempoolAddMessage.from(msg.getTxns());
 			this.send(message, receiver);
 		};
 	}

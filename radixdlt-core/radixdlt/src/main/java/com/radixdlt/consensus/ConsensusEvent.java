@@ -71,6 +71,7 @@ import com.radixdlt.consensus.bft.View;
  * A consensus event which requires syncing to be effectively
  * processed
  */
+//TODO: make interface sealed
 public interface ConsensusEvent {
 
 	/**

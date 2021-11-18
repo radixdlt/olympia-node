@@ -64,11 +64,12 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.ledger.DtoTxnsAndProof;
 import org.radix.network.messaging.Message;
 
 import java.util.Objects;
@@ -78,18 +79,15 @@ import java.util.Objects;
  */
 @SerializerId2("message.sync.sync_response")
 public final class SyncResponseMessage extends Message {
-
 	@JsonProperty("commands")
 	@DsonOutput(Output.ALL)
 	private final DtoTxnsAndProof commands;
 
-	SyncResponseMessage() {
-		// Serializer only
-		this.commands = null;
-	}
-
-	public SyncResponseMessage(DtoTxnsAndProof commands) {
-		this.commands = commands;
+	@JsonCreator
+	public SyncResponseMessage(
+		@JsonProperty(value = "commands", required = true) DtoTxnsAndProof commands
+	) {
+		this.commands = Objects.requireNonNull(commands);
 	}
 
 	public DtoTxnsAndProof getCommands() {
@@ -106,12 +104,10 @@ public final class SyncResponseMessage extends Message {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		SyncResponseMessage that = (SyncResponseMessage) o;
-		return Objects.equals(commands, that.commands)
-				&& Objects.equals(getTimestamp(), that.getTimestamp());
+
+		return (o instanceof SyncResponseMessage that)
+			   && Objects.equals(commands, that.commands)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override

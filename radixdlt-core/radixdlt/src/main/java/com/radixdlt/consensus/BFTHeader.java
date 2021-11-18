@@ -64,19 +64,21 @@
 
 package com.radixdlt.consensus;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
-import java.util.Objects;
-
-import javax.annotation.concurrent.Immutable;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.DsonOutput.Output;
+
+import javax.annotation.concurrent.Immutable;
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * The bft header which gets voted upon by consensus.
@@ -88,7 +90,7 @@ public final class BFTHeader {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private View view;
+	private final View view;
 
 	@JsonProperty("vertex_id")
 	@DsonOutput(Output.ALL)
@@ -98,30 +100,28 @@ public final class BFTHeader {
 	@DsonOutput(Output.ALL)
 	private final LedgerHeader ledgerHeader;
 
-	BFTHeader() {
-		// Serializer only
-		this.view = null;
-		this.vertexId = null;
-		this.ledgerHeader = null;
-	}
-
 	// TODO: Move command output to a more opaque data structure
 	public BFTHeader(
 		View view, // consensus data
 		HashCode vertexId, // consensus data
 		LedgerHeader ledgerHeader
 	) {
-		this.view = view;
-		this.vertexId = vertexId;
-		this.ledgerHeader = ledgerHeader;
+		this.view = requireNonNull(view);
+		this.vertexId = requireNonNull(vertexId);
+		this.ledgerHeader = requireNonNull(ledgerHeader);
+	}
+
+	@JsonCreator
+	public static BFTHeader create(
+		@JsonProperty("view") long number,
+		@JsonProperty(value = "vertex_id", required = true) HashCode vertexId,
+		@JsonProperty(value = "ledger_header", required = true) LedgerHeader ledgerHeader
+	) {
+		return new BFTHeader(View.of(number), vertexId, ledgerHeader);
 	}
 
 	public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
-		return new BFTHeader(
-			View.genesis(),
-			HashUtils.zero256(),
-			ledgerHeader
-		);
+		return new BFTHeader(View.genesis(), HashUtils.zero256(), ledgerHeader);
 	}
 
 	public LedgerHeader getLedgerHeader() {
@@ -138,13 +138,8 @@ public final class BFTHeader {
 
 	@JsonProperty("view")
 	@DsonOutput(Output.ALL)
-	private Long getSerializerView() {
-		return this.view == null ? null : this.view.number();
-	}
-
-	@JsonProperty("view")
-	private void setSerializerView(Long number) {
-		this.view = number == null ? null : View.of(number);
+	private long getSerializerView() {
+		return view.number();
 	}
 
 	@Override
@@ -157,14 +152,11 @@ public final class BFTHeader {
 		if (o == this) {
 			return true;
 		}
-		if (o instanceof BFTHeader) {
-			BFTHeader other = (BFTHeader) o;
-			return
-				Objects.equals(this.view, other.view)
-				&& Objects.equals(this.vertexId, other.vertexId)
-				&& Objects.equals(this.ledgerHeader, other.ledgerHeader);
-		}
-		return false;
+
+		return (o instanceof BFTHeader other)
+			   && Objects.equals(this.view, other.view)
+			   && Objects.equals(this.vertexId, other.vertexId)
+			   && Objects.equals(this.ledgerHeader, other.ledgerHeader);
 	}
 
 	@Override

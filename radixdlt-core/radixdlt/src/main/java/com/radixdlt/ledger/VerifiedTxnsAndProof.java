@@ -107,6 +107,7 @@ public final class VerifiedTxnsAndProof {
 		return proof;
 	}
 
+	//TODO: remove unused deserialization from JSONObject https://radixdlt.atlassian.net/browse/NT-4
 	public static VerifiedTxnsAndProof fromJSON(Addressing addressing, JSONObject json) throws DeserializeException {
 		var txnArray = json.getJSONArray("txns");
 		var txns = new ArrayList<Txn>();

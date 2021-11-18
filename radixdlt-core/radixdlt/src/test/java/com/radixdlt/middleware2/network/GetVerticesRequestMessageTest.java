@@ -64,13 +64,13 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class GetVerticesRequestMessageTest {
 	@Test

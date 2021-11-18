@@ -64,15 +64,6 @@
 
 package com.radixdlt;
 
-import static com.radixdlt.crypto.ECDSASignature.zeroSignature;
-import static com.radixdlt.utils.TypedMocks.rmock;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
@@ -86,69 +77,77 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.consensus.TimestampedECDSASignature;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.VertexRequestTimeout;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimestampedECDSASignature;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.junit.Before;
-import org.junit.Test;
+import static com.radixdlt.crypto.ECDSASignature.zeroSignature;
+import static com.radixdlt.utils.TypedMocks.rmock;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class ConsensusModuleTest {
 	@Inject
@@ -255,7 +254,7 @@ public class ConsensusModuleTest {
 	}
 
 	private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(QuorumCertificate parent, BFTNode bftNode, Txn txn) {
-		var unverifiedVertex = new UnverifiedVertex(parent, View.of(1), List.of(txn.getPayload()), bftNode, false);
+		var unverifiedVertex = UnverifiedVertex.create(parent, View.of(1), List.of(txn), bftNode);
 		var hash = hasher.hash(unverifiedVertex);
 		var verifiedVertex = new VerifiedVertex(unverifiedVertex, hash);
 		var next = new BFTHeader(

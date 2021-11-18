@@ -62,30 +62,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment.rx;
+package com.radixdlt.network.p2p.addressbook;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import io.reactivex.rxjava3.core.Flowable;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.network.p2p.NodeId;
 
-import java.util.Objects;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Provides remote event flowables from the rx environment
- * @param <T> the class of the remote event
- */
-public final class RemoteEventsProvider<T> implements Provider<Flowable<RemoteEvent<T>>> {
-    @Inject
-    private Provider<RxRemoteEnvironment> rxEnvironmentProvider;
-    private final Class<T> c;
+public final class InMemoryAddressBookPersistence implements AddressBookPersistence {
+	private final Map<NodeId, AddressBookEntry> entries = new ConcurrentHashMap<>();
 
-    RemoteEventsProvider(Class<T> c) {
-        this.c = Objects.requireNonNull(c);
-    }
+	@Override
+	public void open() {
+		// no-op
+	}
 
-    @Override
-    public Flowable<RemoteEvent<T>> get() {
-        RxRemoteEnvironment e = rxEnvironmentProvider.get();
-        return e.remoteEvents(c);
-    }
+	@Override
+	public void reset() {
+		entries.clear();
+	}
+
+	@Override
+	public void close() {
+		// no-op
+	}
+
+	@Override
+	public boolean saveEntry(AddressBookEntry entry) {
+		entries.put(entry.getNodeId(), entry);
+		return true;
+	}
+
+	@Override
+	public boolean removeEntry(NodeId nodeId) {
+		entries.remove(nodeId);
+		return true;
+	}
+
+	@Override
+	public ImmutableList<AddressBookEntry> getAllEntries() {
+		return ImmutableList.copyOf(entries.values());
+	}
 }

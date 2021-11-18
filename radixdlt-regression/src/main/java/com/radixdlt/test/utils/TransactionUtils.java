@@ -1,6 +1,5 @@
 package com.radixdlt.test.utils;
 
-import com.radixdlt.test.account.Account;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.client.lib.api.AccountAddress;
 import com.radixdlt.client.lib.api.TransactionRequest;
@@ -9,8 +8,8 @@ import com.radixdlt.client.lib.api.sync.RadixApiException;
 import com.radixdlt.client.lib.dto.TransactionDTO;
 import com.radixdlt.client.lib.dto.TransactionStatus;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.test.account.Account;
 import com.radixdlt.utils.UInt256;
-import org.awaitility.Durations;
 import org.awaitility.core.ConditionTimeoutException;
 
 import java.time.Duration;
@@ -25,14 +24,14 @@ import static org.awaitility.Awaitility.await;
  */
 public final class TransactionUtils {
 
-    public static final Duration DEFAULT_TX_CONFIRMATION_PATIENCE = Durations.ONE_MINUTE;
+    public static final Duration DEFAULT_TX_CONFIRMATION_PATIENCE = Duration.ofMinutes(1);
 
     private TransactionUtils() {
 
     }
 
-    public static TransactionRequest createTransferRequest(AccountAddress from, AccountAddress to, String tokenRri,
-                                                           UInt256 amount, Optional<String> message) {
+    public static TransactionRequest createTokenTransferRequest(AccountAddress from, AccountAddress to, String tokenRri,
+                                                                UInt256 amount, Optional<String> message) {
         return message.map(s -> TransactionRequest.createBuilder(from)
             .transfer(from, to, amount, tokenRri)
             .message(s)
@@ -41,37 +40,83 @@ public final class TransactionUtils {
             .build());
     }
 
-    public static TransactionRequest createUnstakingRequest(AccountAddress from, ValidatorAddress unstakeFrom,
-                                                            UInt256 stake) {
-        return TransactionRequest.createBuilder(from)
-            .unstake(from, unstakeFrom, stake)
-            .build();
+    public static TransactionRequest createStakingRequest(AccountAddress from, ValidatorAddress unstakeFrom,
+                                                            Amount stake, Optional<String> message) {
+        return message.map(s -> TransactionRequest.createBuilder(from)
+            .stake(from, unstakeFrom, stake.toSubunits())
+            .message(s)
+            .build()).orElseGet(() -> TransactionRequest.createBuilder(from)
+            .stake(from, unstakeFrom, stake.toSubunits())
+            .build());
     }
 
-    /**
-     * Stakes the given amount and waits for transaction confirmation
-     */
-    public static TransactionRequest createStakingRequest(AccountAddress from, ValidatorAddress to, Amount amount) {
-        return TransactionRequest.createBuilder(from)
-            .stake(from, to, amount.toSubunits())
-            .build();
+    public static TransactionRequest createUnstakingRequest(AccountAddress from, ValidatorAddress unstakeFrom,
+                                                            Amount stake, Optional<String> message) {
+        return message.map(s -> TransactionRequest.createBuilder(from)
+            .unstake(from, unstakeFrom, stake.toSubunits())
+            .message(s)
+            .build()).orElseGet(() -> TransactionRequest.createBuilder(from)
+            .unstake(from, unstakeFrom, stake.toSubunits())
+            .build());
+    }
+
+    public static TransactionRequest createMintRequest(AccountAddress from, Amount amount, String rri, Optional<String> message) {
+        return message.map(s -> TransactionRequest.createBuilder(from)
+            .mint(from, amount.toSubunits(), rri)
+            .message(s)
+            .build()).orElseGet(() -> TransactionRequest.createBuilder(from)
+            .mint(from, amount.toSubunits(), rri)
+            .build());
+    }
+
+    public static TransactionRequest createBurnRequest(AccountAddress from, Amount amount, String rri, Optional<String> message) {
+        return message.map(s -> TransactionRequest.createBuilder(from)
+            .burn(from, amount.toSubunits(), rri)
+            .message(s)
+            .build()).orElseGet(() -> TransactionRequest.createBuilder(from)
+            .burn(from, amount.toSubunits(), rri)
+            .build());
     }
 
     /**
      * Stakes tokens and waits for transaction confirmation
      */
-    public static AID stake(Account sender, ValidatorAddress to, Amount amount) {
-        var request = createStakingRequest(sender.getAddress(), to, amount);
-        return finalizeAndSubmitTransaction(sender, request, true);
+    public static AID stake(Account account, ValidatorAddress to, Amount amount, Optional<String> message) {
+        var request = createStakingRequest(account.getAddress(), to, amount, message);
+        return buildFinalizeAndSubmitTransaction(account, request, true);
+    }
+
+    /**
+     * Unstakes tokens and waits for transaction confirmation
+     */
+    public static AID unstake(Account account, ValidatorAddress validatorAddress, Amount amount, Optional<String> message) {
+        var request = createUnstakingRequest(account.getAddress(), validatorAddress, amount, message);
+        return buildFinalizeAndSubmitTransaction(account, request, true);
+    }
+
+    /**
+     * Mints tokens and waits for transaction confirmation
+     */
+    public static AID mint(Account account, Amount amount, String rri, Optional<String> message) {
+        var request = createMintRequest(account.getAddress(), amount, rri, message);
+        return buildFinalizeAndSubmitTransaction(account, request, true);
+    }
+
+    /**
+     * Burns tokens and waits for transaction confirmation
+     */
+    public static AID burn(Account account, Amount amount, String rri, Optional<String> message) {
+        var request = createBurnRequest(account.getAddress(), amount, rri, message);
+        return buildFinalizeAndSubmitTransaction(account, request, true);
     }
 
     /**
      * Executes an XRD transfer and waits for transaction confirmation
      */
     public static AID nativeTokenTransfer(Account sender, Account receiver, Amount amount, Optional<String> message) {
-        var request = TransactionUtils.createTransferRequest(sender.getAddress(), receiver.getAddress(),
+        var request = TransactionUtils.createTokenTransferRequest(sender.getAddress(), receiver.getAddress(),
             sender.getNativeToken().getRri(), amount.toSubunits(), message);
-        return finalizeAndSubmitTransaction(sender, request, true);
+        return buildFinalizeAndSubmitTransaction(sender, request, true);
     }
 
     /**
@@ -83,15 +128,24 @@ public final class TransactionUtils {
         var request = TransactionRequest.createBuilder(creator.getAddress())
             .createFixed(creator.getAddress(), key, symbol, name, description, iconUrl, tokenUrl, supply.toSubunits())
             .build();
-        return finalizeAndSubmitTransaction(creator, request, true);
+        return buildFinalizeAndSubmitTransaction(creator, request, true);
     }
+
+    public static AID createMutableSupplyToken(Account creator, String symbol, String name, String description,
+                                               String iconUrl, String tokenUrl) {
+        var key = creator.getKeyPair().getPublicKey();
+        var request = TransactionRequest.createBuilder(creator.getAddress())
+            .createMutable(key, symbol, name, Optional.of(description), Optional.of(iconUrl), Optional.of(tokenUrl)).build();
+        return buildFinalizeAndSubmitTransaction(creator, request, true);
+    }
+
 
     /**
      * Builds, finalizes and submits a transaction. Can optionally wait for it to become CONFIRMED
      *
      * @return the {@link AID} of the submitted transaction
      */
-    public static AID finalizeAndSubmitTransaction(Account account, TransactionRequest request, boolean waitForConfirmation) {
+    public static AID buildFinalizeAndSubmitTransaction(Account account, TransactionRequest request, boolean waitForConfirmation) {
         var keyPair = account.getKeyPair();
         var builtTransaction = account.transaction().build(request);
         var finalizedTransaction = account.transaction().finalize(builtTransaction.toFinalized(keyPair), false);
@@ -115,7 +169,7 @@ public final class TransactionUtils {
                 return true;
             });
         } catch (ConditionTimeoutException e) {
-            throw new TestFailureException("Transaction " + txId + " was not found");
+            throw new TestFailureException("Transaction " + txId + " was not found within " + DEFAULT_TX_CONFIRMATION_PATIENCE);
         }
         return transaction.get();
     }
@@ -130,7 +184,7 @@ public final class TransactionUtils {
                 return status.getStatus().equals(TransactionStatus.CONFIRMED);
             });
         } catch (ConditionTimeoutException e) {
-            throw new TestFailureException("Transaction was not CONFIRMED within " + DEFAULT_TX_CONFIRMATION_PATIENCE);
+            throw new TestFailureException("Transaction (" + txId + ") was not CONFIRMED within " + patience);
         }
     }
 

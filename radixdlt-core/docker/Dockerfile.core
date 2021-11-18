@@ -1,15 +1,20 @@
-FROM ubuntu:20.04
+FROM ubuntu:21.04
 MAINTAINER radixdlt <devops@radixdlt.com>
 
+#https://issueexplorer.com/issue/tianon/docker-brew-ubuntu-core/207
+#bug https://bugs.launchpad.net/cloud-images/+bug/1928218
+COPY apt-config/sources.list /etc/apt/
+COPY apt-config/99own /etc/apt/apt.conf.d/
+
 RUN apt-get -y update > /dev/null && \
-    apt-get -y --no-install-recommends install net-tools iptables iproute2 gettext-base curl tcpdump strace attr software-properties-common > /dev/null && \
+    apt-get -y --no-install-recommends install apt-utils net-tools iptables iproute2 gettext-base curl tcpdump strace attr software-properties-common > /dev/null && \
     apt-get clean > /dev/null && \
     rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
 
 COPY scripts/fix-vulnerabilities.sh /tmp
 RUN /tmp/fix-vulnerabilities.sh
 
-RUN apt-get -y --no-install-recommends install openjdk-11-jdk
+RUN apt-get -y --no-install-recommends install openjdk-17-jdk
 
 # set entrypoint and default command
 ENTRYPOINT [ "/opt/radixdlt/config_radixdlt.sh" ]
@@ -33,6 +38,7 @@ ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_UNIVERSE_API_ENABLE=false \
     RADIXDLT_VERSION_API_ENABLE=false \
     RADIXDLT_TRANSACTIONS_API_ENABLE=false \
+    RADIXDLT_NETWORK_USE_PROXY_PROTOCOL=false \
     RADIXDLT_ARCHIVE_API_PORT=8080 \
     RADIXDLT_HTTP_NODE_BIND_ADDRESS=0.0.0.0 \
     RADIXDLT_HTTP_ARCHIVE_BIND_ADDRESS=0.0.0.0 \

@@ -62,15 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.acceptance.token_contraints;
-import org.junit.runner.RunWith;
+package com.radixdlt.acceptance.multi_action_transactions;
 
+import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
 import io.cucumber.junit.CucumberOptions.SnippetType;
-import io.cucumber.junit.Cucumber;
+import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(snippets = SnippetType.UNDERSCORE, monochrome = true, plugin = { "pretty" })
-public class RunTokenConstraints {
+public class RunMultiActionTransactions {
 	// Stub for running cucumber tests
 }

@@ -65,9 +65,6 @@ package com.radixdlt.api.service;
 
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.network.p2p.addressbook.AddressBook;
-import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -81,8 +78,6 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.network.p2p.P2PConfig;
-import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForkConfig;
@@ -95,11 +90,12 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
 import static com.radixdlt.api.util.JsonRpcUtil.fromMap;
 import static com.radixdlt.api.util.JsonRpcUtil.wrapArray;
+
+import static com.radixdlt.api.util.CountersJsonFormatter.countersToJson;
 
 
 public class SystemConfigService {
@@ -203,12 +199,9 @@ public class SystemConfigService {
 	private final JSONObject bftConfiguration;
 	private final JSONObject syncConfiguration;
 	private final JSONObject checkpointsConfiguration;
-	private final JSONObject networkingConfiguration;
 
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final SystemCounters systemCounters;
-	private final PeersView peersView;
-	private final AddressBook addressBook;
 	private final Addressing addressing;
 
 	@Inject
@@ -224,15 +217,10 @@ public class SystemConfigService {
 		SyncConfig syncConfig,
 		InMemorySystemInfo inMemorySystemInfo,
 		SystemCounters systemCounters,
-		PeersView peersView,
-		AddressBook addressBook,
-		P2PConfig p2PConfig,
 		Addressing addressing
 	) {
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.systemCounters = systemCounters;
-		this.peersView = peersView;
-		this.addressBook = addressBook;
 		this.addressing = addressing;
 
 		radixEngineConfiguration = prepareRadixEngineConfiguration(forks);
@@ -241,7 +229,6 @@ public class SystemConfigService {
 		bftConfiguration = prepareBftConfiguration(pacemakerTimeout, bftSyncPatienceMillis);
 		syncConfiguration = syncConfig.asJson();
 		checkpointsConfiguration = prepareCheckpointsConfiguration(genesis);
-		networkingConfiguration = prepareNetworkingConfiguration(p2PConfig, self);
 	}
 
 	public JSONObject getApiConfiguration() {
@@ -294,92 +281,12 @@ public class SystemConfigService {
 		return countersToJson(systemCounters, SYNC_COUNTERS, true);
 	}
 
-	public JSONObject getNetworkingConfiguration() {
-		return networkingConfiguration;
-	}
-
-	public JSONArray getNetworkingPeers() {
-		var peerArray = jsonArray();
-
-		peersView.peers()
-			.map(this::peerToJson)
-			.forEach(peerArray::put);
-
-		return peerArray;
-	}
-
-	public JSONArray getNetworkingAddressBook() {
-		final var entriesArray = jsonArray();
-		addressBook.knownPeers().values().forEach(v -> entriesArray.put(addressBookEntryToJson(v)));
-		return entriesArray;
-	}
-
-	public long getNetworkingPeersCount() {
-		return peersView.peers().count();
-	}
-
-	public JSONObject getNetworkingData() {
-		return countersToJson(systemCounters, NETWORKING_COUNTERS, false);
-	}
-
 	public JSONObject getCheckpoints() {
 		return checkpointsConfiguration;
 	}
 
 	public AccumulatorState accumulatorState() {
 		return inMemorySystemInfo.getCurrentProof().getAccumulatorState();
-	}
-
-	@VisibleForTesting
-	static JSONObject countersToJson(SystemCounters counters, List<CounterType> types, boolean skipTopLevel) {
-		var result = jsonObject();
-		types.forEach(counterType -> counterToJson(result, counters, counterType, skipTopLevel));
-		return result;
-	}
-
-	@VisibleForTesting
-	static void counterToJson(JSONObject obj, SystemCounters systemCounters, CounterType type, boolean skipTopLevel) {
-		var ptr = obj;
-		var iterator = List.of(type.jsonPath().split("\\.")).listIterator();
-
-		if (skipTopLevel && iterator.hasNext()) {
-			iterator.next();
-		}
-
-		while (iterator.hasNext()) {
-			var element = toCamelCase(iterator.next());
-
-			if (ptr.has(element)) {
-				ptr = ptr.getJSONObject(element);
-			} else {
-				if (iterator.hasNext()) {
-					var newObj = jsonObject();
-					ptr.put(element, newObj);
-					ptr = newObj;
-				} else {
-					ptr.put(element, systemCounters.get(type));
-				}
-			}
-		}
-	}
-
-	@VisibleForTesting
-	static String toCamelCase(String input) {
-		var output = new StringBuilder();
-
-		boolean upCaseNext = false;
-
-		for (var chr : input.toCharArray()) {
-			if (chr == '_') {
-				upCaseNext = true;
-				continue;
-			}
-
-			output.append(upCaseNext ? Character.toUpperCase(chr) : chr);
-			upCaseNext = false;
-		}
-
-		return output.toString();
 	}
 
 	@VisibleForTesting
@@ -420,60 +327,4 @@ public class SystemConfigService {
 			.put("txn", fromCollection(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
 			.put("proof", genesis.getProof().asJSON(addressing));
 	}
-
-	private JSONObject prepareNetworkingConfiguration(P2PConfig p2PConfig, ECPublicKey self) {
-		return jsonObject()
-			.put("defaultPort", p2PConfig.defaultPort())
-			.put("discoveryInterval", p2PConfig.discoveryInterval())
-			.put("listenAddress", p2PConfig.listenAddress())
-			.put("listenPort", p2PConfig.listenPort())
-			.put("broadcastPort", p2PConfig.broadcastPort())
-			.put("peerConnectionTimeout", p2PConfig.peerConnectionTimeout())
-			.put("maxInboundChannels", p2PConfig.maxInboundChannels())
-			.put("maxOutboundChannels", p2PConfig.maxOutboundChannels())
-			.put("channelBufferSize", p2PConfig.channelBufferSize())
-			.put("peerLivenessCheckInterval", p2PConfig.peerLivenessCheckInterval())
-			.put("pingTimeout", p2PConfig.pingTimeout())
-			.put("seedNodes", fromCollection(p2PConfig.seedNodes(), seedNode -> seedNode))
-			.put("nodeAddress", addressing.forNodes().of(self));
-	}
-
-	private JSONObject peerToJson(PeersView.PeerInfo peer) {
-		var channelsJson = jsonArray();
-		var peerJson = jsonObject().put("address", addressing.forNodes().of(peer.getNodeId().getPublicKey()));
-
-		peer.getChannels().forEach(channel -> {
-			var channelJson = jsonObject()
-				.put("type", channel.isOutbound() ? "out" : "in")
-				.put("localPort", channel.getSocketAddress().getPort())
-				.put("ip", channel.getSocketAddress().getAddress().getHostAddress());
-
-			channel.getUri().ifPresent(uri -> channelJson.put("uri", uri.toString()));
-			channelsJson.put(channelJson);
-		});
-		peerJson.put("channels", channelsJson);
-		return peerJson;
-	}
-
-	private JSONObject addressBookEntryToJson(AddressBookEntry e) {
-		final var knownAddressesArray = jsonArray();
-
-		e.getKnownAddresses().forEach(addr -> {
-			final var addrObj = jsonObject()
-				.put("uri", addr.getUri())
-				.put("blacklisted", addr.blacklisted());
-			addr.getLastSuccessfulConnection().ifPresent(ts -> addrObj.put("lastSuccessfulConnection", ts));
-			knownAddressesArray.put(addrObj);
-		});
-
-		final var entryObj = jsonObject()
-			.put("address", addressing.forNodes().of(e.getNodeId().getPublicKey()))
-			.put("banned", e.isBanned())
-			.put("knownAddresses", knownAddressesArray);
-
-		e.bannedUntil().ifPresent(bannedUntil -> entryObj.put("bannedUntil", bannedUntil));
-
-		return entryObj;
-	}
 }
-

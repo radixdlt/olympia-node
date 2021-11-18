@@ -64,13 +64,17 @@
 
 package org.radix.network.messages;
 
-import org.radix.network.messaging.Message;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.radixdlt.serialization.SerializerId2;
+import org.radix.network.messaging.Message;
 
 import java.util.Objects;
 
 @SerializerId2("p2p.discovery.get_peers")
 public final class GetPeersMessage extends Message {
+	@JsonCreator
+	public GetPeersMessage() {
+	}
 
 	@Override
 	public String toString() {
@@ -82,15 +86,13 @@ public final class GetPeersMessage extends Message {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		final var that = (GetPeersMessage) o;
-		return Objects.equals(getTimestamp(), that.getTimestamp());
+
+		return (o instanceof GetPeersMessage that)
+			   && Objects.equals(getTimestamp(), that.getTimestamp());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getTimestamp());
+		return Objects.hashCode(getTimestamp());
 	}
 }

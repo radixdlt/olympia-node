@@ -64,8 +64,6 @@
 
 package com.radixdlt.mempool.messages;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.HashUtils;
@@ -77,12 +75,14 @@ import org.junit.Test;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class MempoolAddMessageTest {
 	private MempoolAddMessage message;
 
 	@Before
 	public void setUp() {
-		this.message = new MempoolAddMessage(List.of(Txn.create(new byte[0])));
+		this.message = MempoolAddMessage.from(List.of(Txn.create(new byte[0])));
 	}
 
 	@Test

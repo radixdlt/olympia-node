@@ -87,6 +87,7 @@ public final class TransactionDTO {
 	private final UInt256 fee;
 	private final String message;
 	private final List<Action> actions;
+	private final List<Event> events;
 	private final byte[] raw;
 
 	private TransactionDTO(
@@ -97,6 +98,7 @@ public final class TransactionDTO {
 		UInt256 fee,
 		String message,
 		List<Action> actions,
+		List<Event> events,
 		byte[] raw
 	) {
 		this.txID = txID;
@@ -106,6 +108,7 @@ public final class TransactionDTO {
 		this.fee = fee;
 		this.message = message;
 		this.actions = actions;
+		this.events = events;
 		this.raw = raw;
 	}
 
@@ -117,10 +120,10 @@ public final class TransactionDTO {
 		@JsonProperty(value = "fee", required = true) UInt256 fee,
 		@JsonProperty(value = "message", required = false) String message,
 		@JsonProperty(value = "actions", required = true) List<Action> actions,
+		@JsonProperty(value = "events", required = true) List<Event> events,
 		@JsonProperty(value = "raw", required = true) String blob,
 		@JsonProperty(value = "stateVersion", required = true) long stateVersion,
-		@JsonProperty(value = "accountingEntries", required = true) List<Object> entries,
-		@JsonProperty(value = "events", required = true) List<Object> events
+		@JsonProperty(value = "accountingEntries", required = true) List<Object> entries
 	) {
 		requireNonNull(txID);
 		requireNonNull(sentAt);
@@ -128,7 +131,7 @@ public final class TransactionDTO {
 		requireNonNull(actions);
 		requireNonNull(blob);
 
-		return new TransactionDTO(txID, stateVersion, size, sentAt, fee, message, actions, Hex.decode(blob));
+		return new TransactionDTO(txID, stateVersion, size, sentAt, fee, message, actions, events, Hex.decode(blob));
 	}
 
 	@Override
@@ -149,12 +152,13 @@ public final class TransactionDTO {
 			&& fee.equals(that.fee)
 			&& Objects.equals(message, that.message)
 			&& Arrays.equals(raw, that.raw)
-			&& actions.equals(that.actions);
+			&& actions.equals(that.actions)
+			&& events.equals(that.events);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(txID, stateVersion, size, sentAt, fee, message, actions, Arrays.hashCode(raw));
+		return Objects.hash(txID, stateVersion, size, sentAt, fee, message, actions, events, Arrays.hashCode(raw));
 	}
 
 	@Override
@@ -167,6 +171,7 @@ public final class TransactionDTO {
 			+ ", fee=" + fee
 			+ ", message='" + message + '\''
 			+ ", actions=" + actions
+			+ ", events=" + events
 			+ ", raw=" + Hex.toHexString(raw)
 			+ ')';
 	}
@@ -189,6 +194,10 @@ public final class TransactionDTO {
 
 	public List<Action> getActions() {
 		return actions;
+	}
+
+	public List<Event> getEvents() {
+		return events;
 	}
 
 	public byte[] getRaw() {

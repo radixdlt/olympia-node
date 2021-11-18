@@ -81,6 +81,7 @@ import java.util.regex.Pattern;
  * We have our own image with ansible and several playbook. We use this image via docker.
  * This class has the docker commands needed to utilize these playbooks.
  */
+@SuppressWarnings("deprecation")
 public class AnsibleImageWrapper {
 
     private static final Logger logger = LogManager.getLogger();
@@ -115,6 +116,7 @@ public class AnsibleImageWrapper {
     /**
      * The key needs to be copied to a volume, which is created with the help of a temp dummy container
      */
+    @SuppressWarnings("deprecation") // CmdHelper is a placeholder
     private void copyfileToNamedVolume(String localFileLocation) {
         CmdHelper.runCommand(String.format("docker container create --name dummy -v %s:%s curlimages/curl:7.70.0",
                 KEY_VOLUME_NAME_USED_FOR_COPYING, "/ansible/ssh"));
@@ -123,10 +125,12 @@ public class AnsibleImageWrapper {
         CmdHelper.runCommand("docker rm -f dummy");
     }
 
+    @SuppressWarnings("deprecation") // CmdHelper is a placeholder
     private void pullImage() {
         CmdHelper.runCommand("docker pull " + image);
     }
 
+    @SuppressWarnings("deprecation") // CmdHelper is a placeholder
     public String runPlaybook(String playbook, String options, String tag) {
         String awsAccessKeyId = System.getenv("AWS_ACCESS_KEY_ID");
         String awsSecretAccessKey = System.getenv("AWS_SECRET_ACCESS_KEY");
@@ -177,6 +181,7 @@ public class AnsibleImageWrapper {
         return addressList.get(new Random().nextInt(addressList.size()));
     }
 
+    @SuppressWarnings("deprecation") // CmdHelper is a placeholder
     public void tearDown() {
         CmdHelper.runCommand("docker volume rm -f " + KEY_VOLUME_NAME_USED_FOR_COPYING);
     }

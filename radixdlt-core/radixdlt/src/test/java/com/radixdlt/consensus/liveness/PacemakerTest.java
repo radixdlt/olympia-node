@@ -65,19 +65,26 @@
 package com.radixdlt.consensus.liveness;
 
 import com.google.common.collect.ImmutableSet;
-
-import java.util.Optional;
-
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -86,26 +93,16 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.utils.TimeSupplier;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.counters.SystemCounters;
 import org.mockito.ArgumentCaptor;
+
+import java.util.Optional;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 public class PacemakerTest {
 
@@ -199,6 +196,8 @@ public class PacemakerTest {
 		BFTInsertUpdate bftInsertUpdate = mock(BFTInsertUpdate.class);
 		when(bftInsertUpdate.getHeader()).thenReturn(bftHeader);
 		PreparedVertex preparedVertex = mock(PreparedVertex.class);
+		when(preparedVertex.getView()).thenReturn(view);
+		when(preparedVertex.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
 		VerifiedVertexStoreState vertexStoreState = mock(VerifiedVertexStoreState.class);
 		when(vertexStoreState.getHighQC()).thenReturn(highQC);
 		when(bftInsertUpdate.getInserted()).thenReturn(preparedVertex);

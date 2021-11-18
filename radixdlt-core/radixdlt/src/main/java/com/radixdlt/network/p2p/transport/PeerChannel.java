@@ -67,7 +67,6 @@ package com.radixdlt.network.p2p.transport;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.NodeId;
@@ -85,7 +84,10 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
 import com.radixdlt.utils.functional.Result;
-import io.netty.channel.Channel;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
@@ -96,7 +98,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.SecureRandom;
@@ -112,7 +113,7 @@ import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
  * creating the frame and message codec
  * and forwarding the messages to MessageCentral.
  */
-public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
+public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 	private static final Logger log = LogManager.getLogger();
 
 	enum ChannelState {
@@ -130,7 +131,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	private final Optional<RadixNodeUri> uri;
 	private final AuthHandshaker authHandshaker;
 	private final boolean isInitiator;
-	private final Channel nettyChannel;
+	private final SocketChannel nettyChannel;
+	private Optional<InetSocketAddress> remoteAddress;
 
 	private ChannelState state = ChannelState.INACTIVE;
 	private NodeId remoteNodeId;
@@ -148,7 +150,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		ECKeyOps ecKeyOps,
 		EventDispatcher<PeerEvent> peerEventDispatcher,
 		Optional<RadixNodeUri> uri,
-		SocketChannel nettyChannel
+		SocketChannel nettyChannel,
+		Optional<InetSocketAddress> remoteAddress
 	) {
 		this.counters = Objects.requireNonNull(counters);
 		this.addressing = Objects.requireNonNull(addressing);
@@ -157,6 +160,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		uri.ifPresent(u -> this.remoteNodeId = u.getNodeId());
 		this.authHandshaker = new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId);
 		this.nettyChannel = Objects.requireNonNull(nettyChannel);
+		this.remoteAddress = Objects.requireNonNull(remoteAddress);
 
 		this.isInitiator = uri.isPresent();
 
@@ -169,19 +173,23 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 					log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this.toString());
 				},
 				BackpressureOverflowStrategy.DROP_LATEST);
+
+		if (this.nettyChannel.isActive()) {
+			this.init();
+		}
 	}
 
 	private void initHandshake(NodeId remoteNodeId) {
 		final var initiatePacket = authHandshaker.initiate(remoteNodeId.getPublicKey());
 		log.trace("Sending auth initiate to {}", this.toString());
-		this.write(initiatePacket);
+		this.write(Unpooled.wrappedBuffer(initiatePacket));
 	}
 
 	public Flowable<InboundMessage> inboundMessages() {
 		return inboundMessages;
 	}
 
-	private void handleHandshakeData(byte[] data) throws IOException {
+	private void handleHandshakeData(ByteBuf data) throws IOException {
 		if (this.isInitiator) {
 			log.trace("Auth response from {}", this.toString());
 			final var handshakeResult = this.authHandshaker.handleResponseMessage(data);
@@ -189,7 +197,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		} else {
 			log.trace("Auth initiate from {}", this.toString());
 			final var result = this.authHandshaker.handleInitialMessage(data);
-			this.write(result.getFirst());
+			this.write(Unpooled.wrappedBuffer(result.getFirst()));
 			this.finalizeHandshake(result.getSecond());
 		}
 	}
@@ -210,7 +218,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		}
 	}
 
-	private void handleMessage(byte[] buf) throws IOException {
+	private void handleMessage(ByteBuf buf) throws IOException {
 		synchronized (this.lock) {
 			final var maybeFrame = this.frameCodec.tryReadSingleFrame(buf);
 			maybeFrame.ifPresentOrElse(
@@ -221,18 +229,27 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 	}
 
 	@Override
-	public void channelActive(ChannelHandlerContext ctx) throws PublicKeyException {
+	public void channelActive(ChannelHandlerContext ctx) {
+		// if we weren't able to determine peer's address earlier, it should be available now
+		if (this.remoteAddress.isEmpty()) {
+			this.remoteAddress = Optional.ofNullable(this.nettyChannel.remoteAddress());
+		}
+
+		if (this.state == ChannelState.INACTIVE) {
+			this.init();
+		}
+	}
+
+	private void init() {
+		log.trace("Init: {}", this.toString());
 		this.state = ChannelState.AUTH_HANDSHAKE;
-
-		log.trace("Active: {}", this.toString());
-
 		if (this.isInitiator) {
 			this.initHandshake(this.remoteNodeId);
 		}
 	}
 
 	@Override
-	public void channelRead0(ChannelHandlerContext ctx, byte[] buf) throws Exception {
+	public void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
 		switch (this.state) {
 			case INACTIVE:
 				throw new RuntimeException("Unexpected read on inactive channel");
@@ -265,7 +282,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		ctx.close();
 	}
 
-	private void write(byte[] data) {
+	private void write(ByteBuf data) {
 		this.nettyChannel.writeAndFlush(data);
 	}
 
@@ -275,9 +292,12 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 				return IO_ERROR.result();
 			} else {
 				try {
-					final var baos = new ByteArrayOutputStream();
-					this.frameCodec.writeFrame(data, baos);
-					this.write(baos.toByteArray());
+					// we don't need to release the buffer manually as this is done by Netty (in writeAndFlush)
+					final var buf = PooledByteBufAllocator.DEFAULT.buffer(data.length);
+					try (var out = new ByteBufOutputStream(buf)) {
+						this.frameCodec.writeFrame(data, out);
+					}
+					this.write(buf);
 					this.outMessagesStats.tick();
 					return Result.ok(new Object());
 				} catch (IOException e) {
@@ -313,24 +333,22 @@ public final class PeerChannel extends SimpleChannelInboundHandler<byte[]> {
 		return this.uri;
 	}
 
-	public InetSocketAddress getRemoteSocketAddress() {
-		return (InetSocketAddress) this.nettyChannel.remoteAddress();
+	public String getHost() {
+		return remoteAddress.map(InetSocketAddress::getHostString).orElse("?");
+	}
+
+	public int getPort() {
+		return remoteAddress.map(InetSocketAddress::getPort).orElse(0);
 	}
 
 	@Override
 	public String toString() {
-		final var hostString = nettyChannel.remoteAddress() instanceof InetSocketAddress
-			? ((InetSocketAddress) nettyChannel.remoteAddress()).getHostString()
-			: "?";
-		final var port = nettyChannel.remoteAddress() instanceof InetSocketAddress
-			? ((InetSocketAddress) nettyChannel.remoteAddress()).getPort()
-			: 0;
 		return String.format(
 			"{%s %s@%s:%s | %s}",
 			isInitiator ? "<-" : "->",
 			remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "?",
-			hostString,
-			port,
+			getHost(),
+			getPort(),
 			state
 		);
 	}

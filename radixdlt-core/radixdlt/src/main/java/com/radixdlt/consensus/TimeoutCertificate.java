@@ -99,14 +99,19 @@ public final class TimeoutCertificate {
 	@JsonCreator
 	private static TimeoutCertificate serializerCreate(
 		@JsonProperty("epoch") long epoch,
-		@JsonProperty("view") Long view,
-		@JsonProperty("signatures") TimestampedECDSASignatures signatures
+		@JsonProperty("view") long view,
+		@JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures
 	) {
 		return new TimeoutCertificate(epoch, View.of(view), signatures);
 	}
 
 	public TimeoutCertificate(long epoch, View view, TimestampedECDSASignatures signatures) {
 		this.epoch = epoch;
+
+		if (epoch < 0) {
+			throw new IllegalArgumentException("Epoch can't be < 0");
+		}
+
 		this.view = Objects.requireNonNull(view);
 		this.signatures = Objects.requireNonNull(signatures);
 	}
