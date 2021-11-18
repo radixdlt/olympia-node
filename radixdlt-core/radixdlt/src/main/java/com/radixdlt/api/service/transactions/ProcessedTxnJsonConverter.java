@@ -312,23 +312,27 @@ public final class ProcessedTxnJsonConverter {
 			final JSONObject entityIdentifier = new JSONObject();
 			if (bucket.getOwner() != null) {
 				entityIdentifier.put("address", addressing.forAccounts().of(bucket.getOwner()));
-				if (bucket.getValidatorKey() != null && bucket.resourceAddr() != null) {
-					var subEntityJson = new JSONObject();
-					entityIdentifier.put("sub_entity", subEntityJson);
-					if (bucket.getEpochUnlock() == null) {
+				if (bucket.getValidatorKey() != null) {
+					if (bucket.resourceAddr() != null && bucket.getEpochUnlock() == null) {
+						var subEntityJson = new JSONObject();
+						entityIdentifier.put("sub_entity", subEntityJson);
 						subEntityJson
 							.put("address", "prepared_stakes")
 							.put("metadata", new JSONObject()
 								.put("validator", addressing.forValidators().of(bucket.getValidatorKey()))
 							);
-					} else if (bucket.getEpochUnlock() == 0L) {
+					} else if (bucket.resourceAddr() == null && bucket.getEpochUnlock() == 0L) {
+						var subEntityJson = new JSONObject();
+						entityIdentifier.put("sub_entity", subEntityJson);
 						// Don't add validator as validator is already part of resource
 						subEntityJson.put("address", "prepared_unstakes");
-					} else {
+					} else if (bucket.resourceAddr() != null && bucket.getEpochUnlock() != null){
+						var subEntityJson = new JSONObject();
+						entityIdentifier.put("sub_entity", subEntityJson);
 						subEntityJson.put("address", "exiting_unstakes")
 							.put("metadata", new JSONObject()
 								.put("validator", addressing.forValidators().of(bucket.getValidatorKey()))
-								.put("unlock_epoch", bucket.getEpochUnlock())
+								.put("epoch_unlock", bucket.getEpochUnlock())
 							);
 					}
 				}
