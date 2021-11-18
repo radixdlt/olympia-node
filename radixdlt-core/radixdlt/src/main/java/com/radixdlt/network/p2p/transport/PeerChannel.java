@@ -219,10 +219,12 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 	}
 
 	private void handleMessage(ByteBuf buf) throws IOException {
+		final var receiveTime = System.currentTimeMillis();
+
 		synchronized (this.lock) {
 			final var maybeFrame = this.frameCodec.tryReadSingleFrame(buf);
 			maybeFrame.ifPresentOrElse(
-				frame -> inboundMessageSink.onNext(InboundMessage.of(remoteNodeId, frame)),
+				frame -> inboundMessageSink.onNext(new InboundMessage(receiveTime, remoteNodeId, frame)),
 				() -> log.error("Failed to read a complete frame: {}", this.toString())
 			);
 		}

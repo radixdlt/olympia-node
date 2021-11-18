@@ -68,6 +68,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import com.google.inject.Provider;
+import com.radixdlt.api.util.MovingAverage;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
@@ -101,6 +102,11 @@ final class MessageCentralImpl implements MessageCentral {
 
 	private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
 	private final RateLimiter discardedInboundMessagesLogRateLimiter = RateLimiter.create(1.0);
+
+	private final MovingAverage avgMessageQueuedTime = MovingAverage.create(5L);
+	private final MovingAverage avgMessageProcessingTime = MovingAverage.create(5L);
+	private long totalMessageQueuedTime = 0L;
+	private long totalMessageProcessingTime = 0L;
 
 	private final Observable<MessageFromPeer<Message>> peerMessages;
 
@@ -163,6 +169,11 @@ final class MessageCentralImpl implements MessageCentral {
 	}
 
 	private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
+		final var messageQueuedTime = System.currentTimeMillis() - inboundMessage.receiveTime();
+		avgMessageQueuedTime.update(messageQueuedTime);
+		totalMessageQueuedTime = Math.max(totalMessageQueuedTime + messageQueuedTime, 0L);
+		updateCounters();
+		final var processingStart = System.currentTimeMillis();
 		try {
 			return this.messagePreprocessor.process(inboundMessage).fold(
 				error -> {
@@ -172,6 +183,10 @@ final class MessageCentralImpl implements MessageCentral {
 					return Optional.empty();
 				},
 				messageFromPeer -> {
+					final var messageProcessingTime = System.currentTimeMillis() - processingStart;
+					avgMessageProcessingTime.update(messageProcessingTime);
+					totalMessageProcessingTime = Math.max(totalMessageProcessingTime + messageProcessingTime, 0L);
+					updateCounters();
 					if (log.isTraceEnabled()) {
 						log.trace("Received from {}: {}", messageFromPeer.getSource(), messageFromPeer.getMessage());
 					}
@@ -183,6 +198,13 @@ final class MessageCentralImpl implements MessageCentral {
 			log.error(msg, ex);
 			return Optional.empty();
 		}
+	}
+
+	private void updateCounters() {
+		this.counters.set(CounterType.MESSAGES_INBOUND_AVG_QUEUED_TIME, avgMessageQueuedTime.asLong());
+		this.counters.set(CounterType.MESSAGES_INBOUND_TOTAL_QUEUED_TIME, totalMessageQueuedTime);
+		this.counters.set(CounterType.MESSAGES_INBOUND_AVG_PROCESSING_TIME, avgMessageProcessingTime.asLong());
+		this.counters.set(CounterType.MESSAGES_INBOUND_TOTAL_PROCESSING_TIME, totalMessageProcessingTime);
 	}
 
 	@Override

@@ -83,7 +83,7 @@ public class InboundMessageTest {
 
 	@Before
 	public void setUp() {
-		this.inboundMessage = InboundMessage.of(nodeId, this.message);
+		this.inboundMessage = new InboundMessage(0L, nodeId, this.message);
 	}
 
 	@Test
@@ -99,10 +99,5 @@ public class InboundMessageTest {
 	@Test
 	public void testMessage() {
 		assertThat(inboundMessage.message()).isEqualTo(message);
-	}
-
-	@Test
-	public void testToString() {
-		assertThat(inboundMessage.toString()).contains("000102030405060708090a"); // Message data in hex
 	}
 }

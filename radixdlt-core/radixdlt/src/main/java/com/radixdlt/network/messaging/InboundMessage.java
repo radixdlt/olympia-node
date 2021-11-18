@@ -65,56 +65,14 @@
 package com.radixdlt.network.messaging;
 
 import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.utils.Bytes;
 
 import java.util.Arrays;
 import java.util.Objects;
 
-/**
- * A raw message received from a peer, before decoding.
- */
-public final class InboundMessage {
-	private final NodeId source;
-	private final byte[] message;
-
-	/**
-	 * Creates an inbound message with the specified source and message.
-	 *
-	 * @param source The source of the message.
-	 * @param message The message received.
-	 * @return a constructed {@code InboundMessage}
-	 */
-	public static InboundMessage of(NodeId source, byte[] message) {
-		return new InboundMessage(source, message);
-	}
-
-	private InboundMessage(NodeId source, byte[] message) {
-		// Null checking not performed for high-frequency interface
-		this.source = source;
-		this.message = message;
-	}
-
-	/**
-	 * Returns the source of the message.
-	 *
-	 * @return the source of the message.
-	 */
-	public NodeId source() {
-		return source;
-	}
-
-	/**
-	 * Returns the message.
-	 *
-	 * @return the message.
-	 */
-	public byte[] message() {
-		return message;
-	}
-
+public record InboundMessage(long receiveTime, NodeId source, byte[] message) {
 	@Override
 	public int hashCode() {
-		return Arrays.hashCode(message) * 31 + Objects.hashCode(source);
+		return Objects.hash(receiveTime, source, Arrays.hashCode(message));
 	}
 
 	@Override
@@ -124,13 +82,15 @@ public final class InboundMessage {
 		}
 		if (obj instanceof InboundMessage) {
 			final var other = (InboundMessage) obj;
-			return Objects.equals(this.source, other.source) && Arrays.equals(this.message, other.message);
+			return receiveTime == other.receiveTime
+				&& Objects.equals(this.source, other.source)
+				&& Arrays.equals(this.message, other.message);
 		}
 		return false;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s]", getClass().getSimpleName(), source, Bytes.toHexString(message));
+		return String.format("%s[receiveTime=%s,source=%s]", getClass().getSimpleName(), receiveTime, source);
 	}
 }
