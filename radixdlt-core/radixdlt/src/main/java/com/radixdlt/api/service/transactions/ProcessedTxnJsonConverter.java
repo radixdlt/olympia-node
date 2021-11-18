@@ -312,7 +312,7 @@ public final class ProcessedTxnJsonConverter {
 			final JSONObject entityIdentifier = new JSONObject();
 			if (bucket.getOwner() != null) {
 				entityIdentifier.put("address", addressing.forAccounts().of(bucket.getOwner()));
-				if (bucket.getValidatorKey() != null) {
+				if (bucket.getValidatorKey() != null && bucket.resourceAddr() != null) {
 					var subEntityJson = new JSONObject();
 					entityIdentifier.put("sub_entity", subEntityJson);
 					if (bucket.getEpochUnlock() == null) {
