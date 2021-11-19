@@ -80,6 +80,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
+import org.radix.time.Time;
 import org.radix.utils.SimpleThreadPool;
 
 import com.google.common.util.concurrent.RateLimiter;
@@ -171,7 +172,7 @@ final class MessageCentralImpl implements MessageCentral {
 	}
 
 	private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
-		final var messageQueuedTime = System.currentTimeMillis() - inboundMessage.receiveTime();
+		final var messageQueuedTime = Time.currentTimestamp() - inboundMessage.receiveTime();
 		avgMessageQueuedTime.update(messageQueuedTime);
 		totalMessageQueuedTime = Math.max(totalMessageQueuedTime + messageQueuedTime, 0L);
 		updateCounters();
@@ -185,13 +186,7 @@ final class MessageCentralImpl implements MessageCentral {
 					return Optional.empty();
 				},
 				messageFromPeer -> {
-					final var messageProcessingTime = processingStopwatch.elapsed(TimeUnit.MILLISECONDS);
-					avgMessageProcessingTime.update(messageProcessingTime);
-					totalMessageProcessingTime = Math.max(totalMessageProcessingTime + messageProcessingTime, 0L);
-					updateCounters();
-					if (log.isTraceEnabled()) {
-						log.trace("Received from {}: {}", messageFromPeer.getSource(), messageFromPeer.getMessage());
-					}
+					logPreprocessedMessageAndUpdateCounters(messageFromPeer, processingStopwatch);
 					return Optional.of(messageFromPeer);
 				}
 			);
@@ -199,6 +194,16 @@ final class MessageCentralImpl implements MessageCentral {
 			final var msg = String.format("Message preprocessing from %s failed", inboundMessage.source());
 			log.error(msg, ex);
 			return Optional.empty();
+		}
+	}
+
+	private <T> void logPreprocessedMessageAndUpdateCounters(MessageFromPeer<T> message, Stopwatch processingStopwatch) {
+		final var messageProcessingTime = processingStopwatch.elapsed(TimeUnit.MILLISECONDS);
+		avgMessageProcessingTime.update(messageProcessingTime);
+		totalMessageProcessingTime = Math.max(totalMessageProcessingTime + messageProcessingTime, 0L);
+		updateCounters();
+		if (log.isTraceEnabled()) {
+			log.trace("Received from {}: {}", message.getSource(), message.getMessage());
 		}
 	}
 

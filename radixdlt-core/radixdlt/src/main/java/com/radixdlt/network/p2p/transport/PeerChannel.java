@@ -97,6 +97,7 @@ import io.reactivex.rxjava3.processors.PublishProcessor;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.radix.time.Time;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -219,7 +220,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 	}
 
 	private void handleMessage(ByteBuf buf) throws IOException {
-		final var receiveTime = System.currentTimeMillis();
+		final var receiveTime = Time.currentTimestamp();
 
 		synchronized (this.lock) {
 			final var maybeFrame = this.frameCodec.tryReadSingleFrame(buf);
