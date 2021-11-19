@@ -95,6 +95,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServerConnection;
@@ -329,9 +330,12 @@ public class MetricsService {
 
 		void readCounter(MBeanServerConnection connection, StringBuilder builder) {
 			try {
-				var objectName = connection.queryNames(new ObjectName(objectNameString), null)
-					.iterator()
-					.next();
+				var objectNames = connection.queryNames(new ObjectName(objectNameString), null);
+				if (Objects.isNull(objectNames) || objectNames.size() == 0) {
+					log.warn("{} does not have any names", objectNameString);
+					return;
+				}
+				var objectName = objectNames.iterator().next();
 
 				var attributes = connection.getAttributes(objectName, metricAttributes).asList();
 
