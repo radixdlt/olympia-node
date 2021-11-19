@@ -63,28 +63,27 @@
 
 package com.radixdlt.api.node.metrics;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.google.inject.Inject;
+import com.radixdlt.api.Endpoints;
 import com.radixdlt.api.node.account.AccountInfoService;
 import com.radixdlt.api.service.NetworkingService;
 import com.radixdlt.api.service.SystemConfigService;
-import com.radixdlt.api.Endpoints;
-import com.radixdlt.api.service.network.NetworkInfoService;
 import com.radixdlt.api.service.ValidatorInfoService;
+import com.radixdlt.api.service.network.NetworkInfoService;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.google.inject.Inject;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.middleware2.InfoSupplier;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Functions;
 
@@ -95,7 +94,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServerConnection;
