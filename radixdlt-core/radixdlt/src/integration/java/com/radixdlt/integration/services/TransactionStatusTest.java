@@ -66,10 +66,10 @@ package com.radixdlt.integration.services;
 
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.archive.transaction.TransactionStatus;
+import com.radixdlt.api.gateway.transaction.TransactionStatus;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
-import com.radixdlt.api.archive.transaction.TransactionStatusService;
-import com.radixdlt.api.archive.transaction.TransactionStatusServiceModule;
+import com.radixdlt.api.gateway.transaction.TransactionStatusService;
+import com.radixdlt.api.gateway.transaction.TransactionStatusServiceModule;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
@@ -120,7 +120,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.api.archive.transaction.TransactionStatus.NOT_FOUND;
+import static com.radixdlt.api.gateway.transaction.TransactionStatus.NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 

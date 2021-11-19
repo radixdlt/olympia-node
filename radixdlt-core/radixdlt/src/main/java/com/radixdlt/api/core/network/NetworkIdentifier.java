@@ -63,8 +63,8 @@
 
 package com.radixdlt.api.core.network;
 
-import com.radixdlt.api.archive.InvalidParametersException;
-import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.networks.Network;
 
 public class NetworkIdentifier {

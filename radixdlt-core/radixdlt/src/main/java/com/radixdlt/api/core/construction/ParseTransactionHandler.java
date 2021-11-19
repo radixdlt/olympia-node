@@ -65,10 +65,10 @@ package com.radixdlt.api.core.construction;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.api.archive.ApiHandler;
-import com.radixdlt.api.archive.InvalidParametersException;
-import com.radixdlt.api.archive.JsonObjectReader;
-import com.radixdlt.api.archive.construction.InvalidTransactionException;
+import com.radixdlt.api.gateway.ApiHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.gateway.construction.InvalidTransactionException;
 import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;

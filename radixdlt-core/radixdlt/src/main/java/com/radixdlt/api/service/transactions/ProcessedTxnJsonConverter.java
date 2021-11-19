@@ -66,7 +66,7 @@ package com.radixdlt.api.service.transactions;
 import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
-import com.radixdlt.api.archive.construction.ActionType;
+import com.radixdlt.api.gateway.construction.ActionType;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;
@@ -465,14 +465,14 @@ public final class ProcessedTxnJsonConverter {
 				} else {
 					result
 						.put("from", addressing.forAccounts().of(fromBucket.getOwner()))
-						.put("validator", addressing.forValidators().of(toBucket.getValidatorKey()))
+						.put("to", addressing.forValidators().of(toBucket.getValidatorKey()))
 						.put("type", ActionType.STAKE.toString());
 				}
 			} else if (fromBucket instanceof StakeOwnershipBucket) {
 				amount = computeStakeFromOwnership.apply(fromBucket.getValidatorKey(), UInt384.from(amount)).getLow();
 				result
 					.put("to", addressing.forAccounts().of(toBucket.getOwner()))
-					.put("validator", addressing.forValidators().of(fromBucket.getValidatorKey()))
+					.put("from", addressing.forValidators().of(fromBucket.getValidatorKey()))
 					.put("type", ActionType.UNSTAKE.toString());
 			} else {
 				return new JSONObject()
@@ -483,10 +483,7 @@ public final class ProcessedTxnJsonConverter {
 		return result
 			.put("amount", new JSONObject()
 				.put("value", amount.toString())
-				.put("resource_identifier", new JSONObject()
-					.put("type", "Token")
-					.put("rri", addrToRri.apply(entry.resourceAddr().orElse(REAddr.ofNativeToken())))
-				)
+				.put("rri", addrToRri.apply(entry.resourceAddr().orElse(REAddr.ofNativeToken())))
 			);
 	}
 }

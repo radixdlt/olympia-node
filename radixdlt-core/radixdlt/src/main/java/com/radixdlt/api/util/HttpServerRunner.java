@@ -63,7 +63,7 @@
 
 package com.radixdlt.api.util;
 
-import com.radixdlt.api.archive.ApiErrorCode;
+import com.radixdlt.api.gateway.ApiErrorCode;
 import com.radixdlt.api.core.metrics.MetricsHandler;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.networks.Addressing;

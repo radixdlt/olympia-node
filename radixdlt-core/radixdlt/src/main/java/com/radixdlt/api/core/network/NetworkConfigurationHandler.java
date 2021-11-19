@@ -64,8 +64,8 @@
 package com.radixdlt.api.core.network;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.archive.ApiHandler;
-import com.radixdlt.api.archive.JsonObjectReader;
+import com.radixdlt.api.gateway.ApiHandler;
+import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;

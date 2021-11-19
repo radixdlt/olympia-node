@@ -65,7 +65,7 @@ package com.radixdlt.api;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.api.archive.ArchiveServerModule;
+import com.radixdlt.api.gateway.ArchiveServerModule;
 import com.radixdlt.api.core.CoreServerModule;
 import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
 import com.radixdlt.api.service.network.NetworkInfoServiceModule;
