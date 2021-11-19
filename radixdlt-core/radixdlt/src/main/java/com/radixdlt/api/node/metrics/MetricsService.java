@@ -330,12 +330,9 @@ public class MetricsService {
 
 		void readCounter(MBeanServerConnection connection, StringBuilder builder) {
 			try {
-				var objectNames = connection.queryNames(new ObjectName(objectNameString), null);
-				if (Objects.isNull(objectNames) || objectNames.size() == 0) {
-					log.warn("{} does not have any names", objectNameString);
-					return;
-				}
-				var objectName = objectNames.iterator().next();
+				var objectName = connection.queryNames(new ObjectName(objectNameString), null)
+					.iterator()
+					.next();
 
 				var attributes = connection.getAttributes(objectName, metricAttributes).asList();
 
@@ -362,8 +359,8 @@ public class MetricsService {
 						appendCounter(builder, outName, (Number) attribute.getValue());
 					}
 				}
-			} catch (InstanceNotFoundException | ReflectionException | IOException | MalformedObjectNameException e) {
-				log.error("Error while retrieving JMX metric " + objectNameString, e);
+			} catch (InstanceNotFoundException | ReflectionException | IOException | MalformedObjectNameException | NullPointerException e) {
+				log.warn("Error while retrieving JMX metric " + objectNameString, e);
 			}
 		}
 	}
