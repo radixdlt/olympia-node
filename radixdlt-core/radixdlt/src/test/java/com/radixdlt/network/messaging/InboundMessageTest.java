@@ -71,8 +71,6 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-
 public class InboundMessageTest {
 
 	private final NodeId nodeId = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
@@ -84,11 +82,6 @@ public class InboundMessageTest {
 	@Before
 	public void setUp() {
 		this.inboundMessage = new InboundMessage(0L, nodeId, this.message);
-	}
-
-	@Test
-	public void equalsContract() {
-	    EqualsVerifier.forClass(InboundMessage.class).verify();
 	}
 
 	@Test

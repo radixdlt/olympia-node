@@ -66,30 +66,4 @@ package com.radixdlt.network.messaging;
 
 import com.radixdlt.network.p2p.NodeId;
 
-import java.util.Arrays;
-import java.util.Objects;
-
-public record InboundMessage(long receiveTime, NodeId source, byte[] message) {
-	@Override
-	public int hashCode() {
-		return Objects.hash(receiveTime, source, Arrays.hashCode(message));
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj instanceof InboundMessage other) {
-			return receiveTime == other.receiveTime
-				&& Objects.equals(this.source, other.source)
-				&& Arrays.equals(this.message, other.message);
-		}
-		return false;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s[receiveTime=%s,source=%s]", getClass().getSimpleName(), receiveTime, source);
-	}
-}
+public record InboundMessage(long receiveTime, NodeId source, byte[] message) { }
