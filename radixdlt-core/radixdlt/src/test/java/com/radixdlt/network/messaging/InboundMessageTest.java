@@ -71,8 +71,6 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-
 public class InboundMessageTest {
 
 	private final NodeId nodeId = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
@@ -83,12 +81,7 @@ public class InboundMessageTest {
 
 	@Before
 	public void setUp() {
-		this.inboundMessage = InboundMessage.of(nodeId, this.message);
-	}
-
-	@Test
-	public void equalsContract() {
-	    EqualsVerifier.forClass(InboundMessage.class).verify();
+		this.inboundMessage = new InboundMessage(0L, nodeId, this.message);
 	}
 
 	@Test
@@ -99,10 +92,5 @@ public class InboundMessageTest {
 	@Test
 	public void testMessage() {
 		assertThat(inboundMessage.message()).isEqualTo(message);
-	}
-
-	@Test
-	public void testToString() {
-		assertThat(inboundMessage.toString()).contains("000102030405060708090a"); // Message data in hex
 	}
 }
