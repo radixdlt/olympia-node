@@ -69,14 +69,21 @@ import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONObject;
 
 final class AccountBalancesHandler implements ApiHandler<REAddr> {
+	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Addressing addressing;
 	private final BerkeleyAccountInfoStore store;
 
 	@Inject
-	AccountBalancesHandler(Addressing addressing, BerkeleyAccountInfoStore store) {
+	AccountBalancesHandler(
+		InMemorySystemInfo inMemorySystemInfo,
+		Addressing addressing,
+		BerkeleyAccountInfoStore store
+	) {
+		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.addressing = addressing;
 		this.store = store;
 	}
@@ -93,6 +100,8 @@ final class AccountBalancesHandler implements ApiHandler<REAddr> {
 
 	@Override
 	public JSONObject handleRequest(REAddr addr) {
-		return store.getAccountInfo(addr);
+		return new JSONObject()
+			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
+			.put("account_balances", store.getAccountInfo(addr));
 	}
 }

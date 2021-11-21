@@ -69,15 +69,22 @@ import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 final class TokenApiHandler implements ApiHandler<REAddr> {
+	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Addressing addressing;
 	private final BerkeleyResourceInfoStore store;
 
 	@Inject
-	TokenApiHandler(Addressing addressing, BerkeleyResourceInfoStore store) {
+	TokenApiHandler(
+		InMemorySystemInfo inMemorySystemInfo,
+		Addressing addressing,
+		BerkeleyResourceInfoStore store
+	) {
+		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.addressing = addressing;
 		this.store = store;
 	}
@@ -97,6 +104,7 @@ final class TokenApiHandler implements ApiHandler<REAddr> {
 		var tokenJson = store.getResourceInfo(addr)
 			.map(o -> new JSONArray().put(o)).orElse(new JSONArray());
 		return new JSONObject()
+			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
 			.put("token", tokenJson);
 	}
 }

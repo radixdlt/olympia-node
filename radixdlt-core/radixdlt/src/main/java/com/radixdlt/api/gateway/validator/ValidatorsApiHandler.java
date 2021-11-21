@@ -68,20 +68,24 @@ import com.radixdlt.api.gateway.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 class ValidatorsApiHandler implements ApiHandler<Void> {
+	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Addressing addressing;
 	private final BerkeleyValidatorStore validatorStore;
 	private final BerkeleyValidatorUptimeStore uptimeStore;
 
 	@Inject
 	ValidatorsApiHandler(
+		InMemorySystemInfo inMemorySystemInfo,
 		Addressing addressing,
 		BerkeleyValidatorStore validatorStore,
 		BerkeleyValidatorUptimeStore uptimeStore
 	) {
+		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.addressing = addressing;
 		this.validatorStore = validatorStore;
 		this.uptimeStore = uptimeStore;
@@ -96,7 +100,9 @@ class ValidatorsApiHandler implements ApiHandler<Void> {
 	public JSONObject handleRequest(Void request) {
 		var validatorsJson = fetchValidators(0, 1000);
 
-		return new JSONObject().put("validators", validatorsJson);
+		return new JSONObject()
+			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
+			.put("validators", validatorsJson);
 	}
 
 	@Override

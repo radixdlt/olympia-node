@@ -63,8 +63,6 @@
 
 package com.radixdlt.api.gateway.transaction;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
 import com.radixdlt.api.gateway.AccountTransactionTransformer;
 import com.radixdlt.api.gateway.ApiHandler;
@@ -72,24 +70,22 @@ import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.time.Duration;
-
 final class TransactionHandler implements ApiHandler<AID> {
-	private final Cache<AID, TransactionStatus> cache = CacheBuilder.newBuilder()
-		.maximumSize(100000)
-		.expireAfterAccess(Duration.ofMinutes(10))
-		.build();
 	private final AccountTransactionTransformer transactionTransformer;
 	private final BerkeleyTransactionsByIdStore store;
+	private final InMemorySystemInfo inMemorySystemInfo;
 
 	@Inject
 	TransactionHandler(
+		InMemorySystemInfo inMemorySystemInfo,
 		AccountTransactionTransformer transactionTransformer,
 		BerkeleyTransactionsByIdStore store
 	) {
+		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.transactionTransformer = transactionTransformer;
 		this.store = store;
 	}
@@ -105,6 +101,7 @@ final class TransactionHandler implements ApiHandler<AID> {
 			.map(transactionTransformer::map)
 			.map(json -> new JSONArray().put(json)).orElse(new JSONArray());
 		return new JSONObject()
+			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
 			.put("transaction", transactionJson);
 	}
 }

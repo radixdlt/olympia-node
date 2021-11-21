@@ -70,6 +70,7 @@ import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -77,6 +78,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 class AccountTransactionsHandler implements ApiHandler<AccountTransactionsRequest> {
 	private final AccountTransactionTransformer transactionTransformer;
+	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Addressing addressing;
 	private final BerkeleyAccountTxHistoryStore txHistoryStore;
 	private final BerkeleyTransactionsByIdStore txByIdStore;
@@ -84,11 +86,13 @@ class AccountTransactionsHandler implements ApiHandler<AccountTransactionsReques
 	@Inject
 	AccountTransactionsHandler(
 		AccountTransactionTransformer transactionTransformer,
+		InMemorySystemInfo inMemorySystemInfo,
 		Addressing addressing,
 		BerkeleyAccountTxHistoryStore txHistoryStore,
 		BerkeleyTransactionsByIdStore txByIdStore
 	) {
 		this.transactionTransformer = transactionTransformer;
+		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.addressing = addressing;
 		this.txHistoryStore = txHistoryStore;
 		this.txByIdStore = txByIdStore;
@@ -127,6 +131,7 @@ class AccountTransactionsHandler implements ApiHandler<AccountTransactionsReques
 		}
 
 		return result
+			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
 			.put("total_count", txnArray.length())
 			.put("transactions", txnArray);
 	}

@@ -69,14 +69,21 @@ import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONObject;
 
 final class AccountUnstakesHandler implements ApiHandler<REAddr> {
+	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Addressing addressing;
 	private final BerkeleyAccountInfoStore store;
 
 	@Inject
-	AccountUnstakesHandler(Addressing addressing, BerkeleyAccountInfoStore store) {
+	AccountUnstakesHandler(
+		InMemorySystemInfo inMemorySystemInfo,
+		Addressing addressing,
+		BerkeleyAccountInfoStore store
+	) {
+		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.addressing = addressing;
 		this.store = store;
 	}
@@ -95,6 +102,7 @@ final class AccountUnstakesHandler implements ApiHandler<REAddr> {
 	public JSONObject handleRequest(REAddr addr) {
 		var stakes = store.getAccountUnstakes(addr);
 		return new JSONObject()
+			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
 			.put("unstakes", stakes);
 	}
 }

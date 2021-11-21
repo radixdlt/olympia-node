@@ -68,18 +68,22 @@ import com.radixdlt.api.gateway.ApiHandler;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONObject;
 
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
 final class NetworkHandler implements ApiHandler<Void> {
-	private final int networkId;
+	private final InMemorySystemInfo inMemorySystemInfo;
 	private final String networkName;
 
 	@Inject
-	NetworkHandler(@NetworkId int networkId) {
-		this.networkId = networkId;
+	NetworkHandler(
+		@NetworkId int networkId,
+		InMemorySystemInfo inMemorySystemInfo
+	) {
 		this.networkName = Network.ofId(networkId).map(n -> n.name().toLowerCase()).orElse("unknown");
+		this.inMemorySystemInfo = inMemorySystemInfo;
 	}
 
 	@Override
@@ -90,6 +94,7 @@ final class NetworkHandler implements ApiHandler<Void> {
 	@Override
 	public JSONObject handleRequest(Void request) {
 		return jsonObject()
+			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
 			.put("network", networkName);
 	}
 }

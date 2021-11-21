@@ -69,18 +69,22 @@ import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONObject;
 
 import java.util.TreeMap;
 
 public class TransactionRulesHandler implements ApiHandler<Void> {
-	private final ForkConfig forkConfig;
+	private final InMemorySystemInfo inMemorySystemInfo;
+	private final TreeMap<Long, ForkConfig> forks;
 
 	@Inject
 	private TransactionRulesHandler(
+		InMemorySystemInfo inMemorySystemInfo,
 		TreeMap<Long, ForkConfig> forks
 	) {
-		this.forkConfig = forks.lastEntry().getValue();
+		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.forks = forks;
 	}
 
 	@Override
@@ -90,7 +94,11 @@ public class TransactionRulesHandler implements ApiHandler<Void> {
 
 	@Override
 	public JSONObject handleRequest(Void request) throws Exception {
+		var currentEpoch = inMemorySystemInfo.getCurrentProof().getEpoch();
+		var forkConfig = forks.floorEntry(currentEpoch).getValue();
+
 		return new JSONObject()
+			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
 			.put("transaction_rules", new JSONObject()
 				.put("maximum_message_length", forkConfig.getConfig().getMaxTxnSize())
 				.put("minimum_stake", forkConfig.getConfig().getMinimumStake().toSubunits().toString())

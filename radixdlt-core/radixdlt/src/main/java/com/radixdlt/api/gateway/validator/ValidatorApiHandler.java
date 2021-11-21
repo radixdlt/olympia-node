@@ -69,19 +69,23 @@ import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONObject;
 
 final class ValidatorApiHandler implements ApiHandler<ECPublicKey> {
+	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Addressing addressing;
 	private final BerkeleyValidatorStore validatorStore;
 	private final BerkeleyValidatorUptimeStore uptimeStore;
 
 	@Inject
 	ValidatorApiHandler(
+		InMemorySystemInfo inMemorySystemInfo,
 		Addressing addressing,
 		BerkeleyValidatorStore validatorStore,
 		BerkeleyValidatorUptimeStore uptimeStore
 	) {
+		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.addressing = addressing;
 		this.validatorStore = validatorStore;
 		this.uptimeStore = uptimeStore;
@@ -103,7 +107,9 @@ final class ValidatorApiHandler implements ApiHandler<ECPublicKey> {
 				.put("uptime_percentage", uptime.toPercentageString()
 			)
 		);
-		return new JSONObject().put("validator", validatorJson);
+		return new JSONObject()
+			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
+			.put("validator", validatorJson);
 	}
 
 	@Override
