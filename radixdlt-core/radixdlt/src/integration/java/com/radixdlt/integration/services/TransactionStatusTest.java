@@ -66,7 +66,6 @@ package com.radixdlt.integration.services;
 
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.gateway.transaction.TransactionStatus;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.api.gateway.transaction.TransactionStatusService;
 import com.radixdlt.api.gateway.transaction.TransactionStatusServiceModule;
@@ -120,9 +119,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.api.gateway.transaction.TransactionStatus.NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 
 public class TransactionStatusTest {
 	private static final int NUM_NODES = 10;
@@ -222,23 +219,27 @@ public class TransactionStatusTest {
 		var txBuilder = radixEngine.construct(request);
 		var txn = txBuilder.signAndBuild(nodeKeys.get(0)::sign);
 		var service = deterministicRunner.getNode(0).getInstance(TransactionStatusService.class);
-		assertEquals(NOT_FOUND, service.getTransactionStatus(txn.getId()));
+		assertThat(service.getTransactionStatus(txn.getId())).isEmpty();
 
 		var dispatcher = this.deterministicRunner.getNode(0)
 			.getInstance(Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() { }));
 
 
 		dispatcher.dispatch(MempoolAdd.create(txn));
-		TransactionStatus lastStatus = null;
+		String lastStatus = null;
 		for (int i = 0; i < 20; i++) {
 			for (int j = 0; j < 100; j++) {
 				deterministicRunner.processNext();
 				// Check that once confirmed, status does not change
-				var status = service.getTransactionStatus(txn.getId());
-				if (status != TransactionStatus.COMMITTED) {
-					assertThat(lastStatus).isNotEqualTo(TransactionStatus.COMMITTED);
+				var json = service.getTransactionStatus(txn.getId());
+				if (json.isPresent()) {
+					var status = json.get().getJSONObject("transaction_status").getString("status");
+					if (!status.equals("CONFIRMED")) {
+						assertThat(lastStatus).isNotEqualTo("CONFIRMED");
+					}
 				}
-				lastStatus = status;
+
+				lastStatus = json.map(s -> s.getJSONObject("transaction_status").getString("status")).orElse("NOT_FOUND");
 			}
 			// TODO: allow network to dispatch to itself rather than forcing it here
 			dispatcher.dispatch(MempoolAdd.create(txn));

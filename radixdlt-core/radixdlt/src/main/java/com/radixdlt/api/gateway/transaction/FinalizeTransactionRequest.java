@@ -63,29 +63,49 @@
 
 package com.radixdlt.api.gateway.transaction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
 
-import java.lang.annotation.Annotation;
+final class FinalizeTransactionRequest {
+	private final byte[] unsignedTransaction;
+	private final ECDSASignature signature;
+	private final ECPublicKey pubKey;
+	private final boolean submit;
 
-public final class TransactionStatusAndLookupApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
-
-	public TransactionStatusAndLookupApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	private FinalizeTransactionRequest(
+		byte[] unsignedTransaction,
+		ECDSASignature signature,
+		ECPublicKey pubKey,
+		boolean submit
+	) {
+		this.unsignedTransaction = unsignedTransaction;
+		this.signature = signature;
+		this.pubKey = pubKey;
+		this.submit = submit;
 	}
 
-	@Override
-	public void configure() {
-		install(new TransactionStatusServiceModule());
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
+	public static FinalizeTransactionRequest create(
+		byte[] unsignedTransaction,
+		ECDSASignature signature,
+		ECPublicKey pubKey,
+		boolean submit
+	) {
+		return new FinalizeTransactionRequest(unsignedTransaction, signature, pubKey, submit);
+	}
 
-		routeBinder.addBinding(path + "/status").to(TransactionStatusHandler.class);
-		routeBinder.addBinding(path).to(TransactionHandler.class);
+	public boolean isSubmit() {
+		return submit;
+	}
+
+	public byte[] getUnsignedTransaction() {
+		return unsignedTransaction;
+	}
+
+	public ECDSASignature getSignature() {
+		return signature;
+	}
+
+	public ECPublicKey getPubKey() {
+		return pubKey;
 	}
 }

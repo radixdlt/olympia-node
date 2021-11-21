@@ -61,12 +61,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.construction;
+package com.radixdlt.api.gateway.transaction;
 
-import com.radixdlt.engine.RadixEngineException;
+import com.google.inject.Inject;
+import com.radixdlt.api.gateway.ApiHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
+import com.radixdlt.statecomputer.forks.ForkConfig;
+import org.json.JSONObject;
 
-public class InvalidTransactionException extends Exception {
-	public InvalidTransactionException(RadixEngineException cause) {
-		super(cause);
+import java.util.TreeMap;
+
+public class TransactionRulesHandler implements ApiHandler<Void> {
+	private final ForkConfig forkConfig;
+
+	@Inject
+	private TransactionRulesHandler(
+		TreeMap<Long, ForkConfig> forks
+	) {
+		this.forkConfig = forks.lastEntry().getValue();
+	}
+
+	@Override
+	public Void parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return null;
+	}
+
+	@Override
+	public JSONObject handleRequest(Void request) throws Exception {
+		return new JSONObject()
+			.put("transaction_rules", new JSONObject()
+				.put("maximum_message_length", forkConfig.getConfig().getMaxTxnSize())
+				.put("minimum_stake", forkConfig.getConfig().getMinimumStake().toSubunits().toString())
+				.put("maximum_validator_fee_increase", ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE)
+			);
 	}
 }

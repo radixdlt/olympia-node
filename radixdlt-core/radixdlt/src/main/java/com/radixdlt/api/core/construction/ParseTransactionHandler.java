@@ -68,42 +68,30 @@ import com.google.inject.Provider;
 import com.radixdlt.api.gateway.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.gateway.construction.InvalidTransactionException;
+import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
 import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
-import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import org.json.JSONObject;
 
-import java.util.List;
-import java.util.function.Function;
-
 public class ParseTransactionHandler implements ApiHandler<ParseTransactionRequest> {
 	private final Network network;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final ProcessedTxnJsonConverter converter;
-	private final Addressing addressing;
 
 	@Inject
 	ParseTransactionHandler(
 		@NetworkId int networkId,
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		ProcessedTxnJsonConverter converter,
-		Addressing addressing
+		ProcessedTxnJsonConverter converter
 	) {
 		this.network = Network.ofId(networkId).orElseThrow();
 		this.radixEngineProvider = radixEngineProvider;
 		this.converter = converter;
-		this.addressing = addressing;
 	}
 
 
@@ -125,44 +113,6 @@ public class ParseTransactionHandler implements ApiHandler<ParseTransactionReque
 			throw new InvalidTransactionException(e);
 		}
 
-		Function<REAddr, String> addressToRri = addr -> {
-			var localMetadata = processed.getGroupedStateUpdates().stream()
-				.flatMap(List::stream)
-				.map(REStateUpdate::getParsed)
-				.filter(TokenResourceMetadata.class::isInstance)
-				.map(TokenResourceMetadata.class::cast)
-				.filter(r -> r.getAddr().equals(addr))
-				.findFirst();
-
-			var tokenMetadata = localMetadata.orElseGet(() -> {
-				var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-				var substate = radixEngineProvider.get().get(mapKey).orElseThrow();
-				// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-				return (TokenResourceMetadata) substate;
-			});
-
-			return addressing.forResources().of(tokenMetadata.getSymbol(), addr);
-		};
-
-		var operationGroups = converter.getOperationGroups(processed, addressToRri, null);
-
-		JSONObject metadata;
-		if (!processed.getFeePaid().isZero()) {
-			var rri = addressToRri.apply(REAddr.ofNativeToken());
-			metadata = new JSONObject()
-				.put("fee", new JSONObject()
-					.put("resource_identifier", new JSONObject()
-						.put("rri", rri)
-						.put("type", "Token")
-					)
-					.put("value", processed.getFeePaid().toString())
-				);
-		} else {
-			metadata = null;
-		}
-
-		return new JSONObject()
-			.putOpt("metadata", metadata)
-			.put("operation_groups", operationGroups);
+		return converter.getTransaction(processed);
 	}
 }

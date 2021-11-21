@@ -61,43 +61,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.construction;
+package com.radixdlt.api.gateway.transaction;
 
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt256;
 
-final class FinalizeTransactionRequest {
-	private final byte[] unsignedTransaction;
-	private final ECDSASignature signature;
-	private final ECPublicKey pubKey;
+public final class TokenAmount {
+	private final REAddr tokenAddress;
+	private final UInt256 amount;
 
-	private FinalizeTransactionRequest(
-		byte[] unsignedTransaction,
-		ECDSASignature signature,
-		ECPublicKey pubKey
-	) {
-		this.unsignedTransaction = unsignedTransaction;
-		this.signature = signature;
-		this.pubKey = pubKey;
+	private TokenAmount(REAddr tokenAddress, UInt256 amount) {
+		this.tokenAddress = tokenAddress;
+		this.amount = amount;
 	}
 
-	public static FinalizeTransactionRequest create(
-		byte[] unsignedTransaction,
-		ECDSASignature signature,
-		ECPublicKey pubKey
-	) {
-		return new FinalizeTransactionRequest(unsignedTransaction, signature, pubKey);
+	public REAddr getTokenAddress() {
+		return tokenAddress;
 	}
 
-	public byte[] getUnsignedTransaction() {
-		return unsignedTransaction;
+	public UInt256 getAmount() {
+		return amount;
 	}
 
-	public ECDSASignature getSignature() {
-		return signature;
-	}
-
-	public ECPublicKey getPubKey() {
-		return pubKey;
+	public static TokenAmount from(JsonObjectReader reader) throws InvalidParametersException {
+		var tokenAddress = reader.getResource("rri");
+		var amount = reader.getAmount("value");
+		return new TokenAmount(tokenAddress, amount);
 	}
 }

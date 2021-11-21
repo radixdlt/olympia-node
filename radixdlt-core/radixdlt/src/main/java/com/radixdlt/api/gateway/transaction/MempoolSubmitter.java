@@ -61,43 +61,61 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.construction;
+package com.radixdlt.api.gateway.transaction;
 
+import com.google.common.base.Throwables;
 import com.google.inject.Inject;
-import com.radixdlt.api.gateway.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.crypto.ECKeyUtils;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolRejectedException;
 import org.json.JSONObject;
 
-final class FinalizeTransactionHandler implements ApiHandler<FinalizeTransactionRequest> {
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+public class MempoolSubmitter {
+	private final EventDispatcher<MempoolAdd> dispatcher;
 
 	@Inject
-	FinalizeTransactionHandler() {
+	MempoolSubmitter(EventDispatcher<MempoolAdd> mempoolAddEventDispatcher) {
+		this.dispatcher = mempoolAddEventDispatcher;
 	}
 
-	@Override
-	public FinalizeTransactionRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		var unsignedTransaction = requestReader.getHexBytes("unsignedTransaction");
-		var signatureReader = requestReader.getJsonObject("signature");
-		var signature = signatureReader.getDERSignature("bytes");
-		var pubKey = signatureReader.getPubKey("publicKey");
-		return FinalizeTransactionRequest.create(unsignedTransaction, signature, pubKey);
-	}
+	public JSONObject submitToMempool(Txn txn) throws Exception {
+		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
+		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
 
-	@Override
-	public JSONObject handleRequest(FinalizeTransactionRequest request) {
-		var unsignedTransaction = request.getUnsignedTransaction();
-		var signature = request.getSignature();
-		var recoverable = ECKeyUtils.toRecoverableSig(
-			signature, HashUtils.sha256(unsignedTransaction).asBytes(), request.getPubKey());
+		dispatcher.dispatch(mempoolAdd);
+		try {
+			// We need to block here as we need to complete the request in the same thread
+			var success = completableFuture.get();
+			return new JSONObject()
+				.put("transactionIdentifier", success.getTxn().getId())
+				.put("duplicate", false);
+		} catch (ExecutionException e) {
+			if (e.getCause() instanceof MempoolDuplicateException) {
+				return new JSONObject()
+					.put("transactionIdentifier", txn.getId())
+					.put("duplicate", true);
+			}
 
-		var txn = TxLowLevelBuilder.newBuilder(unsignedTransaction).sig(recoverable).build();
-		return new JSONObject()
-			.put("signedTransaction", Bytes.toHexString(txn.getPayload()))
-			.put("transactionIdentifier", txn.getId());
+			if (e.getCause() instanceof MempoolRejectedException) {
+				var ex = (MempoolRejectedException) e.getCause();
+				var reException = (RadixEngineException) ex.getCause();
+
+				var cause = Throwables.getRootCause(reException);
+				if (cause instanceof SubstateNotFoundException) {
+					throw new StateConflictException(reException);
+				}
+
+				throw new InvalidTransactionException(reException);
+			}
+			throw e;
+		}
 	}
 }

@@ -61,71 +61,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.construction;
+package com.radixdlt.api.gateway.transaction;
 
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import com.radixdlt.api.gateway.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolRejectedException;
 import org.json.JSONObject;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
 final class SubmitTransactionHandler implements ApiHandler<Txn> {
-	private final EventDispatcher<MempoolAdd> dispatcher;
+	private final MempoolSubmitter mempoolSubmitter;
 
 	@Inject
-	SubmitTransactionHandler(EventDispatcher<MempoolAdd> mempoolAddEventDispatcher) {
-		this.dispatcher = mempoolAddEventDispatcher;
+	SubmitTransactionHandler(MempoolSubmitter mempoolSubmitter) {
+		this.mempoolSubmitter = mempoolSubmitter;
 	}
 
 	@Override
 	public Txn parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		var bytes = requestReader.getHexBytes("signedTransaction");
+		var bytes = requestReader.getHexBytes("signed_transaction");
 		return Txn.create(bytes);
 	}
 
 	@Override
 	public JSONObject handleRequest(Txn txn) throws Exception {
-		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
-
-		dispatcher.dispatch(mempoolAdd);
-		try {
-			// We need to block here as we need to complete the request in the same thread
-			var success = completableFuture.get();
-			return new JSONObject()
-				.put("transactionIdentifier", success.getTxn().getId())
-				.put("duplicate", false);
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof MempoolDuplicateException) {
-				return new JSONObject()
-					.put("transactionIdentifier", txn.getId())
-					.put("duplicate", true);
-			}
-
-			if (e.getCause() instanceof MempoolRejectedException) {
-				var ex = (MempoolRejectedException) e.getCause();
-				var reException = (RadixEngineException) ex.getCause();
-
-				var cause = Throwables.getRootCause(reException);
-				if (cause instanceof SubstateNotFoundException) {
-					throw new StateConflictException(reException);
-				}
-
-				throw new InvalidTransactionException(reException);
-			}
-			throw e;
-		}
+		return mempoolSubmitter.submitToMempool(txn);
 	}
 }

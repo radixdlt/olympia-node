@@ -88,6 +88,10 @@ public final class MempoolAddSuccess {
 		return txn;
 	}
 
+	public <T> T getProcessedTxn(Class<T> processedTxnClass) {
+		return processedTxnClass.cast(processedTxn);
+	}
+
 	public Optional<BFTNode> getOrigin() {
 		return Optional.ofNullable(origin);
 	}

@@ -63,81 +63,52 @@
 
 package com.radixdlt.api.gateway.transaction;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
-import com.radixdlt.api.gateway.AccountTransactionTransformer;
-import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
-import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.api.gateway.ApiHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.crypto.ECKeyUtils;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.utils.Bytes;
 import org.json.JSONObject;
 
-import java.time.Duration;
-import java.util.Optional;
-
-public class TransactionStatusService {
-	private final Cache<AID, MempoolAddSuccess> successCache = CacheBuilder.newBuilder()
-		.maximumSize(10000)
-		.expireAfterAccess(Duration.ofMinutes(10))
-		.build();
-	private final Cache<AID, MempoolAddFailure> failureCache = CacheBuilder.newBuilder()
-		.maximumSize(10000)
-		.expireAfterAccess(Duration.ofMinutes(10))
-		.build();
-	private final BerkeleyTransactionsByIdStore store;
-	private final AccountTransactionTransformer transactionTransformer;
-	private final ProcessedTxnJsonConverter converter;
+final class FinalizeTransactionHandler implements ApiHandler<FinalizeTransactionRequest> {
+	private final MempoolSubmitter mempoolSubmitter;
 
 	@Inject
-	TransactionStatusService(
-		AccountTransactionTransformer transactionTransformer,
-		BerkeleyTransactionsByIdStore store,
-		ProcessedTxnJsonConverter converter
-	) {
-		this.transactionTransformer = transactionTransformer;
-		this.store = store;
-		this.converter = converter;
+	FinalizeTransactionHandler(MempoolSubmitter mempoolSubmitter) {
+		this.mempoolSubmitter = mempoolSubmitter;
 	}
 
-	private void onReject(MempoolAddFailure mempoolAddFailure) {
-		successCache.invalidate(mempoolAddFailure.getTxn().getId());
-		failureCache.put(mempoolAddFailure.getTxn().getId(), mempoolAddFailure);
+	@Override
+	public FinalizeTransactionRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		var unsignedTransaction = requestReader.getHexBytes("unsigned_transaction");
+		var signatureReader = requestReader.getJsonObject("signature");
+		var signature = signatureReader.getDERSignature("bytes");
+		var pubKey = signatureReader.getPubKey("public_key");
+		var submit = requestReader.getOptBoolean("submit", false);
+		return FinalizeTransactionRequest.create(unsignedTransaction, signature, pubKey, submit);
 	}
 
-	private void onSuccess(MempoolAddSuccess mempoolAddSuccess) {
-		successCache.put(mempoolAddSuccess.getTxn().getId(), mempoolAddSuccess);
-	}
+	@Override
+	public JSONObject handleRequest(FinalizeTransactionRequest request) throws Exception {
+		var unsignedTransaction = request.getUnsignedTransaction();
+		var signature = request.getSignature();
+		var recoverable = ECKeyUtils.toRecoverableSig(
+			signature, HashUtils.sha256(unsignedTransaction).asBytes(), request.getPubKey()
+		);
 
-	public EventProcessor<MempoolAddFailure> mempoolAddFailureEventProcessor() {
-		return this::onReject;
-	}
-
-	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
-		return this::onSuccess;
-	}
-
-	public Optional<JSONObject> getTransactionStatus(AID txId) {
-		var success = successCache.getIfPresent(txId);
-		var transactionJson = store.getTransactionJSON(txId)
-			.map(transactionTransformer::map);
-		if (transactionJson.isPresent()) {
-			return transactionJson;
+		var txn = TxLowLevelBuilder.newBuilder(unsignedTransaction).sig(recoverable).build();
+		final JSONObject result;
+		if (request.isSubmit()) {
+			result = mempoolSubmitter.submitToMempool(txn);
+		} else {
+			result = new JSONObject();
 		}
 
-		if (success != null) {
-			var processedTxn = success.getProcessedTxn(REProcessedTxn.class);
-			var json = converter.getTransaction(processedTxn);
-			json.put("transaction_identifier", new JSONObject().put(
-				"hash", txId.toString()
-			));
-			return Optional.of(transactionTransformer.map(json));
-		}
-
-		// TODO: Add failure case if missing dependencies
-		return Optional.empty();
+		return result
+			.put("signed_transaction", Bytes.toHexString(txn.getPayload()))
+			.put("transaction_identifier", txn.getId());
 	}
 }

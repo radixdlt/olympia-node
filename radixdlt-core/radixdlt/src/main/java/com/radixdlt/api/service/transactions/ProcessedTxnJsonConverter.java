@@ -64,9 +64,10 @@
 package com.radixdlt.api.service.transactions;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.radixdlt.accounting.REResourceAccounting;
 import com.radixdlt.accounting.TwoActorEntry;
-import com.radixdlt.api.gateway.construction.ActionType;
+import com.radixdlt.api.gateway.transaction.ActionType;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;
@@ -92,9 +93,12 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -128,6 +132,7 @@ public final class ProcessedTxnJsonConverter {
 	}
 
 	private final Addressing addressing;
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private static final Map<SubstateTypeId, Pair<OperationType, String>> SUBSTATE_TYPE_ID_STRING_MAP;
 	static {
 		SUBSTATE_TYPE_ID_STRING_MAP = new EnumMap<>(SubstateTypeId.class);
@@ -159,8 +164,54 @@ public final class ProcessedTxnJsonConverter {
 	}
 
 	@Inject
-	ProcessedTxnJsonConverter(Addressing addressing) {
+	ProcessedTxnJsonConverter(
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+		Addressing addressing
+	) {
+		this.radixEngineProvider = radixEngineProvider;
 		this.addressing = addressing;
+	}
+
+	public JSONObject getTransaction(REProcessedTxn processed) {
+		Function<REAddr, String> addressToRri = addr -> {
+			var localMetadata = processed.getGroupedStateUpdates().stream()
+				.flatMap(List::stream)
+				.map(REStateUpdate::getParsed)
+				.filter(TokenResourceMetadata.class::isInstance)
+				.map(TokenResourceMetadata.class::cast)
+				.filter(r -> r.getAddr().equals(addr))
+				.findFirst();
+
+			var tokenMetadata = localMetadata.orElseGet(() -> {
+				var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+				var substate = radixEngineProvider.get().get(mapKey).orElseThrow();
+				// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+				return (TokenResourceMetadata) substate;
+			});
+
+			return addressing.forResources().of(tokenMetadata.getSymbol(), addr);
+		};
+
+		var operationGroups = this.getOperationGroups(processed, addressToRri, null);
+
+		JSONObject metadata;
+		if (!processed.getFeePaid().isZero()) {
+			var rri = addressToRri.apply(REAddr.ofNativeToken());
+			metadata = new JSONObject()
+				.put("fee", new JSONObject()
+					.put("resource_identifier", new JSONObject()
+						.put("rri", rri)
+						.put("type", "Token")
+					)
+					.put("value", processed.getFeePaid().toString())
+				);
+		} else {
+			metadata = null;
+		}
+
+		return new JSONObject()
+			.putOpt("metadata", metadata)
+			.put("operation_groups", operationGroups);
 	}
 
 	public JSONArray getOperationGroups(

@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.construction;
+package com.radixdlt.api.gateway.transaction;
 
 import com.radixdlt.engine.RadixEngineException;
 

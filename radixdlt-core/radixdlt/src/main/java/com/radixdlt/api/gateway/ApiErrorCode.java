@@ -64,8 +64,8 @@
 package com.radixdlt.api.gateway;
 
 import com.google.common.base.Throwables;
-import com.radixdlt.api.gateway.construction.InvalidTransactionException;
-import com.radixdlt.api.gateway.construction.StateConflictException;
+import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
+import com.radixdlt.api.gateway.transaction.StateConflictException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.networks.Addressing;
 import org.json.JSONObject;

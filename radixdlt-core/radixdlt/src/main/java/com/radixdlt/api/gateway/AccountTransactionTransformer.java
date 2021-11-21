@@ -61,30 +61,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.transaction;
+package com.radixdlt.api.gateway;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.gateway.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.api.gateway.transaction.ActionType;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
-final class TransactionStatusHandler implements ApiHandler<AID> {
-	private final TransactionStatusService transactionStatusService;
+public final class AccountTransactionTransformer {
 
-	@Inject
-	TransactionStatusHandler(TransactionStatusService transactionStatusService) {
-		this.transactionStatusService = transactionStatusService;
+	public AccountTransactionTransformer() {
 	}
 
-	@Override
-	public AID parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		return reader.getTransactionIdentifier("transactionIdentifier");
-	}
+	public JSONObject map(JSONObject json) {
+		var accountTransactionJson = new JSONObject();
 
-	@Override
-	public JSONObject handleRequest(AID txnId) {
-		return transactionStatusService.getTransactionStatus(txnId).asJson();
+		Number timestamp;
+		if (json.has("metadata")) {
+			var metadataJson = json.getJSONObject("metadata");
+			metadataJson.remove("signed_by");
+			metadataJson.remove("size");
+			timestamp = (Number) metadataJson.remove("timestamp");
+			var feePaid = (JSONObject) metadataJson.remove("fee");
+			if (feePaid != null) {
+				accountTransactionJson.put("fee_paid", new JSONObject()
+					.put("value", feePaid.getString("value"))
+					.put("rri", feePaid.getJSONObject("resource_identifier").getString("rri"))
+				);
+			}
+			accountTransactionJson.put("metadata", metadataJson);
+		} else {
+			timestamp = null;
+		}
+
+		if (timestamp != null) {
+			accountTransactionJson.put("transaction_status", new JSONObject()
+				.put("status", "CONFIRMED")
+				.put("confirmed_timestamp", timestamp)
+			);
+		} else {
+			accountTransactionJson.put("transaction_status", new JSONObject()
+				.put("status", "MEMPOOL")
+			);
+		}
+
+		var accountActions = new JSONArray();
+		accountTransactionJson.put("actions", accountActions);
+		accountTransactionJson.put("transaction_identifier", json.getJSONObject("transaction_identifier").getString("hash"));
+		var operationGroups = json.getJSONArray("operation_groups");
+		for (int i = 0; i < operationGroups.length(); i++) {
+			var operationGroup = operationGroups.getJSONObject(i);
+			if (operationGroup.has("metadata")) {
+				var metadata = operationGroup.getJSONObject("metadata");
+				var actionJson = metadata.getJSONObject("action");
+				var amount = actionJson.getJSONObject("amount");
+				var rri = amount.getString("rri");
+				var type = actionJson.getString("type");
+				if (!rri.startsWith("xrd") || type.equals(ActionType.TRANSFER.toString())) {
+					accountActions.put(actionJson);
+				}
+			}
+		}
+
+		return accountTransactionJson;
 	}
 }

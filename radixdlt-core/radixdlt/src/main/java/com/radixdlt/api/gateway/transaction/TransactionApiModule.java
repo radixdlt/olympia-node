@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.construction;
+package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.MapBinder;
@@ -69,11 +69,11 @@ import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
 
-public final class ConstructionApiModule extends AbstractModule {
+public final class TransactionApiModule extends AbstractModule {
 	private final Class<? extends Annotation> annotationType;
 	private final String path;
 
-	public ConstructionApiModule(Class<? extends Annotation> annotationType, String path) {
+	public TransactionApiModule(Class<? extends Annotation> annotationType, String path) {
 		this.annotationType = annotationType;
 		this.path = path;
 	}
@@ -83,8 +83,10 @@ public final class ConstructionApiModule extends AbstractModule {
 		var routeBinder = MapBinder.newMapBinder(
 			binder(), String.class, HttpHandler.class, annotationType
 		);
+		routeBinder.addBinding(path + "/rules").to(TransactionRulesHandler.class);
 		routeBinder.addBinding(path + "/build").to(BuildTransactionHandler.class);
 		routeBinder.addBinding(path + "/finalize").to(FinalizeTransactionHandler.class);
 		routeBinder.addBinding(path + "/submit").to(SubmitTransactionHandler.class);
+		routeBinder.addBinding(path + "/status").to(TransactionHandler.class);
 	}
 }

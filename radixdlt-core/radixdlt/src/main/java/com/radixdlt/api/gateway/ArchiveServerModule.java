@@ -69,10 +69,9 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.gateway.account.AccountApiModule;
-import com.radixdlt.api.gateway.construction.ConstructionApiModule;
+import com.radixdlt.api.gateway.transaction.TransactionApiModule;
 import com.radixdlt.api.gateway.network.NetworkApiModule;
 import com.radixdlt.api.gateway.tokens.TokenApiModule;
-import com.radixdlt.api.gateway.transaction.TransactionStatusAndLookupApiModule;
 import com.radixdlt.api.gateway.validator.ValidatorApiModule;
 import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.counters.SystemCounters;
@@ -111,10 +110,9 @@ public class ArchiveServerModule extends AbstractModule {
 	public void configure() {
 		install(new AccountApiModule(ArchiveServer.class, "/account"));
 		install(new TokenApiModule(ArchiveServer.class, "/token"));
-		install(new TransactionStatusAndLookupApiModule(ArchiveServer.class, "/transaction"));
 		install(new ValidatorApiModule(ArchiveServer.class, "/validator"));
 		install(new NetworkApiModule(ArchiveServer.class, "/network"));
-		install(new ConstructionApiModule(ArchiveServer.class, "/construction"));
+		install(new TransactionApiModule(ArchiveServer.class, "/transaction"));
 	}
 
 	@ProvidesIntoMap

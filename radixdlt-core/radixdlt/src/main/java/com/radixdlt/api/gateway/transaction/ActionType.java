@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.construction;
+package com.radixdlt.api.gateway.transaction;
 
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
@@ -92,20 +92,13 @@ import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeCons
 import static com.radixdlt.errors.ApiErrors.UNKNOWN_ACTION;
 
 public enum ActionType {
-	MSG("Message") {
-		@Override
-		TxAction parseAction(JsonObjectReader reader) {
-			throw new UnsupportedOperationException();
-		}
-	},
 	TRANSFER("TransferTokens") {
 		@Override
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
 			var from = reader.getAccountAddress("from");
 			var to = reader.getAccountAddress("to");
-			var amount = reader.getNonZeroAmount("amount");
-			var resourceAddr = reader.getResource("rri");
-			return new TransferToken(resourceAddr, from, to, amount);
+			var tokenAmount = TokenAmount.from(reader.getJsonObject("amount"));
+			return new TransferToken(tokenAmount.getTokenAddress(), from, to, tokenAmount.getAmount());
 		}
 	},
 	STAKE("StakeTokens") {
@@ -113,8 +106,11 @@ public enum ActionType {
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
 			var from = reader.getAccountAddress("from");
 			var validator = reader.getValidatorIdentifier("validator");
-			var amount = reader.getNonZeroAmount("amount");
-			return new StakeTokens(from, validator, amount);
+			var tokenAmount = TokenAmount.from(reader.getJsonObject("amount"));
+			if (!tokenAmount.getTokenAddress().isNativeToken()) {
+				throw new IllegalStateException();
+			}
+			return new StakeTokens(from, validator, tokenAmount.getAmount());
 		}
 	},
 	UNSTAKE("UnstakeTokens") {
@@ -122,26 +118,27 @@ public enum ActionType {
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
 			var from = reader.getAccountAddress("from");
 			var validator = reader.getValidatorIdentifier("validator");
-			var amount = reader.getNonZeroAmount("amount");
-			return new UnstakeTokens(from, validator, amount);
+			var tokenAmount = TokenAmount.from(reader.getJsonObject("amount"));
+			if (!tokenAmount.getTokenAddress().isNativeToken()) {
+				throw new IllegalStateException();
+			}
+			return new UnstakeTokens(from, validator, tokenAmount.getAmount());
 		}
 	},
 	BURN("BurnTokens") {
 		@Override
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var resourceAddr = reader.getResource("rri");
 			var from = reader.getAccountAddress("from");
-			var amount = reader.getNonZeroAmount("amount");
-			return new BurnToken(resourceAddr, from, amount);
+			var tokenAmount = TokenAmount.from(reader.getJsonObject("amount"));
+			return new BurnToken(tokenAmount.getTokenAddress(), from, tokenAmount.getAmount());
 		}
 	},
 	MINT("MintTokens") {
 		@Override
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var resourceAddr = reader.getResource("rri");
 			var to = reader.getAccountAddress("to");
-			var amount = reader.getNonZeroAmount("amount");
-			return new MintToken(resourceAddr, to, amount);
+			var tokenAmount = TokenAmount.from(reader.getJsonObject("amount"));
+			return new MintToken(tokenAmount.getTokenAddress(), to, tokenAmount.getAmount());
 		}
 	},
 	REGISTER_VALIDATOR("RegisterValidator") {

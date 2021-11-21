@@ -61,22 +61,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.construction;
+package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.gateway.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
-import com.radixdlt.application.tokens.construction.MinimumStakeException;
-import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
-import com.radixdlt.atom.MessageTooLongException;
-import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
@@ -105,9 +100,9 @@ final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest
 	@Override
 	public TxnConstructionRequest parseRequest(JsonObjectReader reader) throws InvalidParametersException {
 		var constructionRequest = TxnConstructionRequest.create();
-		var feePayer = reader.getAccountAddress("feePayer");
+		var feePayer = reader.getAccountAddress("fee_payer");
 		constructionRequest.feePayer(feePayer);
-		if (reader.getOptBoolean("disableResourceAllocationAndDestroy", false)) {
+		if (reader.getOptBoolean("disable_token_mint_and_burn", false)) {
 			constructionRequest.disableResourceAllocAndDestroy();
 		}
 		var message = reader.getOptString("message");
@@ -123,65 +118,16 @@ final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest
 		return constructionRequest;
 	}
 
-	private static JSONObject errorObject(JSONObject details) {
-		return new JSONObject()
-			.put("result", "error")
-			.put("details", details);
-	}
-
 	@Override
 	public JSONObject handleRequest(TxnConstructionRequest request) throws TxBuilderException {
-		TxBuilder builder;
-		try {
-			builder = radixEngine.construct(request);
-		} catch (MessageTooLongException e) {
-			return errorObject(
-				new JSONObject()
-					.put("errorType", "MESSAGE_TOO_LONG")
-					.put("limit", 255)
-					.put("actual", e.getAttemptedLength())
-			);
-		} catch (NotEnoughResourcesException e) {
-			return errorObject(
-				new JSONObject()
-					.put("errorType", "NOT_ENOUGH_RESOURCES")
-					.put("requested", e.getRequested())
-					.put("available", e.getAvailable())
-			);
-		} catch (MinimumStakeException e) {
-			return errorObject(
-				new JSONObject()
-					.put("errorType", "BELOW_MINIMUM_STAKE")
-					.put("requested", e.getAttempt())
-					.put("minimum", e.getMinimumStake())
-			);
-		} catch (FeeConstructionException e) {
-			return errorObject(
-				new JSONObject()
-					.put("errorType", "COULD_NOT_CONSTRUCT_FEES")
-					.put("attempts", e.getAttempts())
-			);
-		} catch (InvalidRakeIncreaseException e) {
-			return errorObject(
-				new JSONObject()
-					.put("errorType", "ABOVE_MAXIMUM_RAKE_INCREASE")
-					.put("limit", e.getMaxRakeIncrease())
-					.put("attempted", e.getIncreaseAttempt())
-			);
-		} catch (DelegateStakePermissionException e) {
-			return errorObject(
-				new JSONObject()
-					.put("errorType", "INVALID_STAKE_PERMISSIONS")
-					.put("owner", addressing.forAccounts().of(e.getOwner()))
-					.put("user", addressing.forAccounts().of(e.getUser()))
-			);
-		}
-
+		TxBuilder builder = radixEngine.construct(request);
 		var unsignedTransaction = builder.buildForExternalSign();
 		return new JSONObject()
-			.put("result", "success")
-			.put("fee", unsignedTransaction.feesPaid().toString())
-			.put("unsignedTransaction", Bytes.toHexString(unsignedTransaction.blob()))
-			.put("payloadToSign", Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
+			.put("fee", new JSONObject()
+				.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+				.put("value", unsignedTransaction.feesPaid().toString())
+			)
+			.put("unsigned_transaction", Bytes.toHexString(unsignedTransaction.blob()))
+			.put("payload_to_sign", Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
 	}
 }

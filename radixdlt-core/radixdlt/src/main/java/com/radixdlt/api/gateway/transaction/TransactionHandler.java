@@ -63,7 +63,10 @@
 
 package com.radixdlt.api.gateway.transaction;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
+import com.radixdlt.api.gateway.AccountTransactionTransformer;
 import com.radixdlt.api.gateway.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
@@ -72,22 +75,34 @@ import com.radixdlt.identifiers.AID;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.time.Duration;
+
 final class TransactionHandler implements ApiHandler<AID> {
+	private final Cache<AID, TransactionStatus> cache = CacheBuilder.newBuilder()
+		.maximumSize(100000)
+		.expireAfterAccess(Duration.ofMinutes(10))
+		.build();
+	private final AccountTransactionTransformer transactionTransformer;
 	private final BerkeleyTransactionsByIdStore store;
 
 	@Inject
-	TransactionHandler(BerkeleyTransactionsByIdStore store) {
+	TransactionHandler(
+		AccountTransactionTransformer transactionTransformer,
+		BerkeleyTransactionsByIdStore store
+	) {
+		this.transactionTransformer = transactionTransformer;
 		this.store = store;
 	}
 
 	@Override
 	public AID parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		return reader.getTransactionIdentifier("transactionIdentifier");
+		return reader.getTransactionIdentifier("transaction_identifier");
 	}
 
 	@Override
 	public JSONObject handleRequest(AID txnId) {
 		var transactionJson = store.getTransactionJSON(txnId)
+			.map(transactionTransformer::map)
 			.map(json -> new JSONArray().put(json)).orElse(new JSONArray());
 		return new JSONObject()
 			.put("transaction", transactionJson);

@@ -64,10 +64,10 @@
 package com.radixdlt.api.gateway.account;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.gateway.AccountTransactionTransformer;
 import com.radixdlt.api.gateway.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.gateway.construction.ActionType;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
@@ -76,16 +76,19 @@ import org.json.JSONObject;
 import java.util.concurrent.atomic.AtomicLong;
 
 class AccountTransactionsHandler implements ApiHandler<AccountTransactionsRequest> {
+	private final AccountTransactionTransformer transactionTransformer;
 	private final Addressing addressing;
 	private final BerkeleyAccountTxHistoryStore txHistoryStore;
 	private final BerkeleyTransactionsByIdStore txByIdStore;
 
 	@Inject
 	AccountTransactionsHandler(
+		AccountTransactionTransformer transactionTransformer,
 		Addressing addressing,
 		BerkeleyAccountTxHistoryStore txHistoryStore,
 		BerkeleyTransactionsByIdStore txByIdStore
 	) {
+		this.transactionTransformer = transactionTransformer;
 		this.addressing = addressing;
 		this.txHistoryStore = txHistoryStore;
 		this.txByIdStore = txByIdStore;
@@ -112,33 +115,8 @@ class AccountTransactionsHandler implements ApiHandler<AccountTransactionsReques
 		txHistoryStore.getTxnIdsAssociatedWithAccount(request.getAccountAddr(), request.getCursor())
 			.limit(request.getLimit())
 			.forEach(pair -> {
-				var accountTransactionJson = new JSONObject();
 				var json = txByIdStore.getTransactionJSON(pair.getFirst()).orElseThrow();
-				var metadataJson = json.getJSONObject("metadata");
-				metadataJson.remove("signed_by");
-				var feePaid = (JSONObject) metadataJson.remove("fee");
-				accountTransactionJson.put("fee_paid", new JSONObject()
-					.put("value", feePaid.getString("value"))
-					.put("rri", feePaid.getJSONObject("resource_identifier").getString("rri"))
-				);
-				accountTransactionJson.put("metadata", metadataJson);
-				var accountActions = new JSONArray();
-				accountTransactionJson.put("actions", accountActions);
-				accountTransactionJson.put("transaction_identifier", json.getJSONObject("transaction_identifier").getString("hash"));
-				var operationGroups = json.getJSONArray("operation_groups");
-				for (int i = 0; i < operationGroups.length(); i++) {
-					var operationGroup = operationGroups.getJSONObject(i);
-					if (operationGroup.has("metadata")) {
-						var metadata = operationGroup.getJSONObject("metadata");
-						var actionJson = metadata.getJSONObject("action");
-						var amount = actionJson.getJSONObject("amount");
-						var rri = amount.getString("rri");
-						var type = actionJson.getString("type");
-						if (!rri.startsWith("xrd") || type.equals(ActionType.TRANSFER.toString())) {
-							accountActions.put(actionJson);
-						}
-					}
-				}
+				var accountTransactionJson = transactionTransformer.map(json);
 				lastOffset.set(pair.getSecond());
 				txnArray.put(accountTransactionJson);
 			});

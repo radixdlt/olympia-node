@@ -67,9 +67,7 @@ import org.json.JSONObject;
 
 public enum TransactionStatus {
 	MEMPOOL,
-	COMMITTED,
-	FAILED,
-	NOT_FOUND;
+	FAILED;
 
 	public JSONObject asJson() {
 		return new JSONObject().put("status", name());

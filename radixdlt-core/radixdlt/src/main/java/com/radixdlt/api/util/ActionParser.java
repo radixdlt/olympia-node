@@ -67,7 +67,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.gateway.construction.ActionType;
+import com.radixdlt.api.gateway.transaction.ActionType;
 import com.radixdlt.api.data.action.TransactionAction;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -128,7 +128,6 @@ public final class ActionParser {
 	private Result<TransactionAction> parseByType(ActionType type, JSONObject element) {
 		switch (type) {
 			case UNKNOWN:
-			case MSG:
 			default:
 				return UNSUPPORTED_ACTION.with(type).result();
 
