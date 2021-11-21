@@ -70,26 +70,14 @@ import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
-import com.radixdlt.atom.actions.RegisterValidator;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnregisterValidator;
 import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.atom.actions.UpdateValidatorFee;
-import com.radixdlt.atom.actions.UpdateValidatorMetadata;
-import com.radixdlt.atom.actions.UpdateValidatorOwner;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.functional.Result;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.*;
-import static com.radixdlt.errors.ApiErrors.UNKNOWN_ACTION;
 
 public enum ActionType {
 	TRANSFER("TransferTokens") {
@@ -141,95 +129,32 @@ public enum ActionType {
 			return new MintToken(tokenAmount.getTokenAddress(), to, tokenAmount.getAmount());
 		}
 	},
-	REGISTER_VALIDATOR("RegisterValidator") {
+	CREATE_TOKEN_DEFINITION("CreateTokenDefinition") {
 		@Override
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var validator = reader.getValidatorIdentifier("validator");
-			return new RegisterValidator(validator);
-		}
-	},
-	UNREGISTER_VALIDATOR("UnregisterValidator") {
-		@Override
-		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var validator = reader.getValidatorIdentifier("validator");
-			return new UnregisterValidator(validator);
-		}
-	},
-	UPDATE_VALIDATOR_METADATA("UpdateValidatorMetadata") {
-		@Override
-		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var validator = reader.getValidatorIdentifier("validator");
-			var name = reader.getOptString("name").orElse(null);
-			var url = reader.getOptString("url").orElse(null);
-			return new UpdateValidatorMetadata(validator, name, url);
-		}
-	},
-	UPDATE_VALIDATOR_FEE("UpdateValidatorFee") {
-		@Override
-		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var validator = reader.getValidatorIdentifier("validator");
-			var validatorFeeString = reader.getString("validatorFee");
-			// TODO: Move parsing to a better place
-			int validatorFee;
-			try {
-				validatorFee = (int) (Double.parseDouble(validatorFeeString) * RAKE_PERCENTAGE_GRANULARITY);
-			} catch (NumberFormatException e) {
-				throw new InvalidParametersException("/validatorFee", e);
-			}
+			var tokenSupply = TokenAmount.from(reader.getJsonObject("token_supply"));
+			var resourceAddress = tokenSupply.getTokenAddress();
+			var supply = tokenSupply.getAmount();
+			var tokenProperties = reader.getJsonObject("token_properties", TokenProperties::from);
+			var symbol = tokenProperties.getSymbol();
+			var name = tokenProperties.getName();
+			var description = tokenProperties.getDescription();
+			var iconUrl = tokenProperties.getIconUrl();
+			var url = tokenProperties.getUrl();
+			if (!tokenProperties.isSupplyMutable()) {
+				if (supply.isZero() || tokenProperties.getOwner().isPresent()) {
+					throw new IllegalStateException();
+				}
 
-			if (validatorFee < RAKE_MIN || validatorFee > RAKE_MAX) {
-				throw new InvalidParametersException("/validatorFee", "Invalid fee amount");
+				var to = reader.getAccountAddress("to");
+				return new CreateFixedToken(resourceAddress, to, symbol, name, description, iconUrl, url, supply);
+			} else {
+				if (!supply.isZero() || tokenProperties.getOwner().isEmpty()) {
+					throw new IllegalStateException();
+				}
+				var owner = tokenProperties.getOwner().orElseThrow();
+				return new CreateMutableToken(resourceAddress, symbol, name, description, iconUrl, url, owner.publicKey().orElseThrow());
 			}
-			return new UpdateValidatorFee(validator, validatorFee);
-		}
-	},
-	UPDATE_OWNER("UpdateValidatorOwnerAddress") {
-		@Override
-		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var validator = reader.getValidatorIdentifier("validator");
-			var owner = reader.getAccountAddress("owner");
-			return new UpdateValidatorOwner(validator, owner);
-		}
-	},
-	UPDATE_DELEGATION("UpdateAllowDelegationFlag") {
-		@Override
-		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var validator = reader.getValidatorIdentifier("validator");
-			var allowDelegation = reader.getBoolean("allowDelegation");
-			return new UpdateAllowDelegationFlag(validator, allowDelegation);
-		}
-	},
-	CREATE_FIXED("CreateFixedSupplyToken") {
-		@Override
-		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var to = reader.getAccountAddress("to");
-			var pubKey = reader.getPubKey("pubKey");
-			var symbol = reader.getString("symbol");
-			var resourceAddress = REAddr.ofHashedKey(pubKey, symbol);
-			var name = reader.getString("name");
-			var description = reader.getOptString("description").orElse("");
-			var iconUrl = reader.getOptString("iconUrl").orElse("");
-			var url = reader.getOptString("url").orElse("");
-			var supply = reader.getNonZeroAmount("supply");
-			return new CreateFixedToken(resourceAddress, to, symbol, name, description, iconUrl, url, supply);
-		}
-	},
-	CREATE_MUTABLE("CreateMutableSupplyToken") {
-		@Override
-		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var pubKey = reader.getPubKey("pubKey");
-			var symbol = reader.getString("symbol");
-			var name = reader.getString("name");
-			var description = reader.getOptString("description").orElse("");
-			var iconUrl = reader.getOptString("iconUrl").orElse("");
-			var url = reader.getOptString("url").orElse("");
-			return new CreateMutableToken(pubKey, symbol, name, description, iconUrl, url);
-		}
-	},
-	UNKNOWN("Other") {
-		@Override
-		TxAction parseAction(JsonObjectReader reader) {
-			throw new UnsupportedOperationException();
 		}
 	};
 
@@ -256,10 +181,4 @@ public enum ActionType {
 	}
 
 	abstract TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException;
-
-	public static Result<ActionType> fromString(String action) {
-		return Optional.ofNullable(TO_ACTION_TYPE.get(action))
-			.map(Result::ok)
-			.orElseGet(() -> UNKNOWN_ACTION.with(action).result());
-	}
 }

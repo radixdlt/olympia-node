@@ -67,37 +67,53 @@ package com.radixdlt.atom.actions;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
 public final class CreateMutableToken implements TxAction {
-	private final ECPublicKey key;
+	private final REAddr resourceAddress;
 	private final String symbol;
 	private final String name;
 	private final String description;
 	private final String iconUrl;
 	private final String tokenUrl;
+	private final ECPublicKey owner;
 
 	public CreateMutableToken(MutableTokenDefinition def) {
-		this(def.getKey(), def.getSymbol(), def.getName(), def.getDescription(), def.getIconUrl(), def.getTokenUrl());
+		this(
+			def.getResourceAddress(),
+			def.getSymbol(),
+			def.getName(),
+			def.getDescription(),
+			def.getIconUrl(),
+			def.getTokenUrl(),
+			def.getOwner()
+		);
 	}
 
 	public CreateMutableToken(
-		ECPublicKey key,
+		REAddr resourceAddress,
 		String symbol,
 		String name,
 		String description,
 		String iconUrl,
-		String tokenUrl
+		String tokenUrl,
+		ECPublicKey owner
 	) {
-		this.key = key;
+		this.resourceAddress = resourceAddress;
 		this.symbol = symbol.toLowerCase();
 		this.name = name;
 		this.description = description;
 		this.iconUrl = iconUrl;
 		this.tokenUrl = tokenUrl;
+		this.owner = owner;
 	}
 
-	public ECPublicKey getKey() {
-		return key;
+	public ECPublicKey getOwner() {
+		return owner;
+	}
+
+	public REAddr getResourceAddress() {
+		return resourceAddress;
 	}
 
 	public String getSymbol() {

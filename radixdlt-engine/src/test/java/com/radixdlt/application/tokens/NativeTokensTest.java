@@ -151,7 +151,7 @@ public class NativeTokensTest {
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
 				.action(new CreateSystem(0))
-				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null))
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
 	}

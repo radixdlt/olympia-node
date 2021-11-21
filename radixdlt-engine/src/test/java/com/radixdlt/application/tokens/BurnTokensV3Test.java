@@ -139,7 +139,7 @@ public class BurnTokensV3Test {
 		var key = ECKeyPair.generateNew();
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
+			new CreateMutableToken(tokenAddr, "test", "Name", "", "", "", key.getPublicKey())
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
 		var account = REAddr.ofPubKeyAccount(key.getPublicKey());
@@ -166,7 +166,7 @@ public class BurnTokensV3Test {
 		var key = ECKeyPair.generateNew();
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
+			new CreateMutableToken(tokenAddr, "test", "Name", "", "", "", key.getPublicKey())
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
 		var account = REAddr.ofPubKeyAccount(key.getPublicKey());
@@ -197,7 +197,7 @@ public class BurnTokensV3Test {
 		var key = ECKeyPair.generateNew();
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
+			new CreateMutableToken(tokenAddr, "test", "Name", "", "", "", key.getPublicKey())
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
 		var account = REAddr.ofPubKeyAccount(key.getPublicKey());
@@ -222,7 +222,7 @@ public class BurnTokensV3Test {
 		var key = ECKeyPair.generateNew();
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
+			new CreateMutableToken(tokenAddr, "test", "Name", "", "", "", key.getPublicKey())
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
 		var nextKey = ECKeyPair.generateNew();

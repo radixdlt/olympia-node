@@ -69,8 +69,6 @@ import com.radixdlt.network.p2p.discovery.DiscoverPeers;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.data.action.TransactionAction;
-import com.radixdlt.api.util.ActionParser;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
@@ -86,12 +84,10 @@ import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.ResourceAddressing;
 import com.radixdlt.identifiers.ValidatorAddressing;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
@@ -113,13 +109,10 @@ import java.util.stream.Collectors;
 import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.util.JsonRpcUtil.safeArray;
 import static com.radixdlt.api.util.JsonRpcUtil.withRequiredParameters;
-import static com.radixdlt.errors.ApiErrors.UNABLE_TO_PREPARE_TX;
 
 //FIXME: rework to avoid throwing exceptions and provide meaningful error codes/messages.
 public final class DeveloperHandler {
-	private final GenesisBuilder genesisBuilder;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final BerkeleyLedgerEntryStore engineStore;
 	private final Addressing addressing;
@@ -128,53 +121,17 @@ public final class DeveloperHandler {
 
 	@Inject
 	public DeveloperHandler(
-		GenesisBuilder genesisBuilder,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		BerkeleyLedgerEntryStore engineStore,
 		Addressing addressing,
 		AddressBook addressBook,
 		EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher
 	) {
-		this.genesisBuilder = genesisBuilder;
 		this.radixEngine = radixEngine;
 		this.addressing = addressing;
 		this.engineStore = engineStore;
 		this.addressBook = addressBook;
 		this.discoverPeersEventDispatcher = discoverPeersEventDispatcher;
-	}
-
-	private Result<VerifiedTxnsAndProof> build(String message, List<TransactionAction> steps) {
-		var actions = steps.stream()
-			.flatMap(TransactionAction::toAction)
-			.collect(Collectors.toList());
-
-		return Result.wrap(
-			UNABLE_TO_PREPARE_TX,
-			() -> {
-				var txn = genesisBuilder.build(message, System.currentTimeMillis(), actions);
-				var proof = genesisBuilder.generateGenesisProof(txn);
-				return VerifiedTxnsAndProof.create(List.of(txn), proof);
-			}
-		);
-	}
-
-	public JSONObject handleGenesisConstruction(JSONObject request) {
-		return withRequiredParameters(
-			request,
-			List.of("networkId", "actions", "message"),
-			params -> {
-				var message = params.getString("message");
-				var addressing = Addressing.ofNetworkId(params.getInt("networkId"));
-				var actionParserService = new ActionParser(addressing);
-
-				return safeArray(params, "actions")
-					.flatMap(actions ->
-								 actionParserService.parse(actions).flatMap(steps -> this.build(message, steps))
-									 .map(p -> jsonObject()
-										 .put("txns", fromCollection(p.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
-										 .put("proof", p.getProof().asJSON(addressing))));
-			}
-		);
 	}
 
 	private Function<Bucket, String> getKeyMapper(String groupBy) {

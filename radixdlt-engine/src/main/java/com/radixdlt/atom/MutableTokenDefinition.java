@@ -65,6 +65,7 @@
 package com.radixdlt.atom;
 
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.Objects;
 
@@ -104,7 +105,11 @@ public final class MutableTokenDefinition {
 		this.tokenUrl = null;
 	}
 
-	public ECPublicKey getKey() {
+	public REAddr getResourceAddress() {
+		return REAddr.ofHashedKey(key, symbol);
+	}
+
+	public ECPublicKey getOwner() {
 		return key;
 	}
 

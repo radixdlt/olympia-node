@@ -179,7 +179,7 @@ public class NextViewV2Test {
 		var txn = this.sut.construct(
 			TxnConstructionRequest.create()
 				.action(new CreateSystem(0))
-				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, Amount.ofTokens(10).toSubunits()))
 				.action(new StakeTokens(accountAddr, key.getPublicKey(), Amount.ofTokens(10).toSubunits()))
 				.action(new RegisterValidator(key.getPublicKey()))

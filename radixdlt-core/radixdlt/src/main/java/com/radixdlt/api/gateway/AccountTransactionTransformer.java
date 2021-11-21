@@ -67,6 +67,8 @@ import com.radixdlt.api.gateway.transaction.ActionType;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.time.Instant;
+
 public final class AccountTransactionTransformer {
 
 	public AccountTransactionTransformer() {
@@ -75,12 +77,12 @@ public final class AccountTransactionTransformer {
 	public JSONObject map(JSONObject json) {
 		var accountTransactionJson = new JSONObject();
 
-		Number timestamp;
+		Long timestamp;
 		if (json.has("metadata")) {
 			var metadataJson = json.getJSONObject("metadata");
 			metadataJson.remove("signed_by");
 			metadataJson.remove("size");
-			timestamp = (Number) metadataJson.remove("timestamp");
+			timestamp = (Long) metadataJson.remove("timestamp");
 			var feePaid = (JSONObject) metadataJson.remove("fee");
 			if (feePaid != null) {
 				accountTransactionJson.put("fee_paid", new JSONObject()
@@ -96,7 +98,7 @@ public final class AccountTransactionTransformer {
 		if (timestamp != null) {
 			accountTransactionJson.put("transaction_status", new JSONObject()
 				.put("status", "CONFIRMED")
-				.put("confirmed_timestamp", timestamp)
+				.put("confirmed_time", Instant.ofEpochMilli(timestamp).toString())
 			);
 		} else {
 			accountTransactionJson.put("transaction_status", new JSONObject()

@@ -174,7 +174,7 @@ public class TxnSizeFeeTest {
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
 				.action(new CreateSystem(0))
-				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, Amount.ofTokens(2).toSubunits()))
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);

@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,57 +61,116 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.data.action;
+package com.radixdlt.api.gateway.transaction;
 
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.UInt256;
+import org.json.JSONObject;
 
-import java.util.stream.Stream;
+import java.util.Optional;
 
-class CreateFixedTokenAction implements TransactionAction, ResourceAction {
-	private final REAddr from;
-	private final UInt256 amount;
-	private final REAddr rri;
-	private final String name;
+public final class TokenProperties {
 	private final String symbol;
-	private final String iconUrl;
-	private final String tokenUrl;
+	private final String name;
 	private final String description;
+	private final String iconUrl;
+	private final String url;
+	private final UInt256 granularity;
+	private final boolean isSupplyMutable;
+	private final REAddr owner;
 
-	CreateFixedTokenAction(
-		REAddr from,
-		UInt256 amount,
-		REAddr rri,
-		String name,
+	private TokenProperties(
 		String symbol,
+		String name,
+		String description,
 		String iconUrl,
-		String tokenUrl,
-		String description
+		String url,
+		UInt256 granularity,
+		boolean isSupplyMutable,
+		REAddr owner
 	) {
-		this.from = from;
-		this.amount = amount;
-		this.rri = rri;
-		this.name = name;
 		this.symbol = symbol;
-		this.iconUrl = iconUrl;
-		this.tokenUrl = tokenUrl;
+		this.name = name;
 		this.description = description;
+		this.iconUrl = iconUrl;
+		this.url = url;
+		this.granularity = granularity;
+		this.isSupplyMutable = isSupplyMutable;
+		this.owner = owner;
 	}
 
-	@Override
-	public Stream<TxAction> toAction() {
-		return Stream.of(new CreateFixedToken(TransactionAction.rriValue(rri), from, symbol, name, description, iconUrl, tokenUrl, amount));
+	public Optional<REAddr> getOwner() {
+		return Optional.ofNullable(owner);
 	}
 
-	@Override
+	public boolean isSupplyMutable() {
+		return isSupplyMutable;
+	}
+
 	public String getSymbol() {
 		return symbol;
 	}
 
-	@Override
-	public REAddr getAddress() {
-		return rri;
+	public String getName() {
+		return name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public String getIconUrl() {
+		return iconUrl;
+	}
+
+	public String getUrl() {
+		return iconUrl;
+	}
+
+	public static TokenProperties from(JsonObjectReader reader) throws InvalidParametersException {
+		return new TokenProperties(
+			reader.getString("symbol"),
+			reader.getString("name"),
+			reader.getOptString("description").orElse(""),
+			reader.getOptString("iconUrl").orElse(""),
+			reader.getOptString("url").orElse(""),
+			reader.getAmount("granularity"),
+			reader.getBoolean("is_supply_mutable"),
+			reader.getOptAccountAddress("owner").orElse(null)
+		);
+	}
+
+	public static TokenProperties from(ResourceCreatedEvent resourceCreated) {
+		return new TokenProperties(
+			resourceCreated.getSymbol(),
+			resourceCreated.getMetadata().getName(),
+			resourceCreated.getMetadata().getDescription(),
+			resourceCreated.getMetadata().getIconUrl(),
+			resourceCreated.getMetadata().getUrl(),
+			resourceCreated.getTokenResource().getGranularity(),
+			resourceCreated.getTokenResource().isMutable(),
+			resourceCreated.getTokenResource().getOwner().map(REAddr::ofPubKeyAccount).orElse(null)
+		);
+	}
+
+	public JSONObject toJson(Addressing addressing) {
+		var properties = new JSONObject()
+			.put("name", name)
+			.put("symbol", symbol)
+			.put("description", description)
+			.put("icon_url", iconUrl)
+			.put("url", url)
+			.put("granularity", granularity)
+			.put("is_supply_mutable", isSupplyMutable);
+
+		if (owner != null) {
+			properties.put("owner", addressing.forAccounts().of(owner));
+		}
+
+		return properties;
 	}
 }

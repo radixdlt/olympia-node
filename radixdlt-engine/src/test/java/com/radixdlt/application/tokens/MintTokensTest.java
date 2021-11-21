@@ -178,7 +178,7 @@ public final class MintTokensTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
+			new CreateMutableToken(tokenAddr, "test", "Name", "", "", "", key.getPublicKey())
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
 
@@ -197,8 +197,9 @@ public final class MintTokensTest {
 	public void authorization_failure_on_mint() throws Exception {
 		// Arrange
 		var key = ECKeyPair.generateNew();
+		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
+			new CreateMutableToken(tokenAddr, "test", "Name", "", "", "", key.getPublicKey())
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
 
@@ -220,7 +221,7 @@ public final class MintTokensTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
-			new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", "")
+			new CreateMutableToken(tokenAddr, "test", "Name", "", "", "", key.getPublicKey())
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
 

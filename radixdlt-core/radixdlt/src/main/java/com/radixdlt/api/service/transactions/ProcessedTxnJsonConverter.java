@@ -496,8 +496,7 @@ public final class ProcessedTxnJsonConverter {
 		if (from.isEmpty()) {
 			var toBucket = to.orElseThrow();
 			if (!(toBucket instanceof AccountBucket)) {
-				return new JSONObject()
-					.put("type", ActionType.UNKNOWN.toString());
+				throw new IllegalStateException();
 			}
 			result.put("to", addressing.forAccounts().of(toBucket.getOwner()));
 			result.put("type", ActionType.MINT.toString());
@@ -526,8 +525,7 @@ public final class ProcessedTxnJsonConverter {
 					.put("from", addressing.forValidators().of(fromBucket.getValidatorKey()))
 					.put("type", ActionType.UNSTAKE.toString());
 			} else {
-				return new JSONObject()
-					.put("type", ActionType.UNKNOWN.toString());
+				throw new IllegalStateException();
 			}
 		}
 

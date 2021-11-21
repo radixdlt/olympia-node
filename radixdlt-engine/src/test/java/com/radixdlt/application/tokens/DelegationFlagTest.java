@@ -208,7 +208,7 @@ public class DelegationFlagTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateMutableToken(null, "xrd", "Name", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "Name", "", "", "", null))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt))
 		).buildWithoutSignature();
 		var validatorKey = ECKeyPair.generateNew();
@@ -226,7 +226,7 @@ public class DelegationFlagTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateMutableToken(null, "xrd", "Name", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "Name", "", "", "", null))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt))
 		).buildWithoutSignature();
 		this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
@@ -245,7 +245,7 @@ public class DelegationFlagTest {
 		var accountAddr = REAddr.ofPubKeyAccount(key.getPublicKey());
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateMutableToken(null, "xrd", "Name", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "Name", "", "", "", null))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, startAmt))
 		).buildWithoutSignature();
 		var validatorKey = ECKeyPair.generateNew();

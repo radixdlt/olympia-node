@@ -67,7 +67,8 @@ import com.google.inject.Inject;
 import com.radixdlt.api.gateway.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONObject;
@@ -75,14 +76,18 @@ import org.json.JSONObject;
 import java.util.TreeMap;
 
 public class TransactionRulesHandler implements ApiHandler<Void> {
+
+	private final Addressing addressing;
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final TreeMap<Long, ForkConfig> forks;
 
 	@Inject
 	private TransactionRulesHandler(
+		Addressing addressing,
 		InMemorySystemInfo inMemorySystemInfo,
 		TreeMap<Long, ForkConfig> forks
 	) {
+		this.addressing = addressing;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.forks = forks;
 	}
@@ -100,9 +105,10 @@ public class TransactionRulesHandler implements ApiHandler<Void> {
 		return new JSONObject()
 			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
 			.put("transaction_rules", new JSONObject()
-				.put("maximum_message_length", forkConfig.getConfig().getMaxTxnSize())
-				.put("minimum_stake", forkConfig.getConfig().getMinimumStake().toSubunits().toString())
-				.put("maximum_validator_fee_increase", ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE)
+				.put("maximum_message_length", 255)
+				.put("minimum_stake", new JSONObject()
+					.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+					.put("value", forkConfig.getConfig().getMinimumStake().toSubunits().toString()))
 			);
 	}
 }

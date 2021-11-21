@@ -130,12 +130,13 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
 
 		var actions = new ArrayList<TxAction>();
 		actions.add(new CreateMutableToken(
-			null,
+			REAddr.ofNativeToken(),
 			"xrd",
 			"Rads",
 			"Radix Tokens",
 			"",
-			""
+			"",
+			null
 		));
 		var rri = REAddr.ofNativeToken();
 		try {

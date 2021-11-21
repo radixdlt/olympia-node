@@ -169,15 +169,11 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 				stakes.compute(json.getString("validator_address"), (v, obj) -> {
 					if (obj == null) {
 						return new JSONObject()
-							.put("delegated_stake", new JSONObject()
-								.put("value", estimatedStake.toString())
-								.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
-							)
+							.put("value", estimatedStake.toString())
 							.put("validator_address", json.getString("validator_address"));
 					} else {
-						var delegatedStake = obj.getJSONObject("delegated_stake");
-						var cur = new BigInteger(delegatedStake.getString("value"), 10);
-						delegatedStake.put("value", cur.add(estimatedStake).toString());
+						var cur = new BigInteger(obj.getString("value"), 10);
+						obj.put("value", cur.add(estimatedStake).toString());
 						return obj;
 					}
 				});
@@ -185,7 +181,15 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		}
 
 		var result = new JSONArray();
-		stakes.forEach((validator, json) -> result.put(json));
+		stakes.forEach((validator, json) -> result.put(
+			new JSONObject()
+				.put("validator_address", validator)
+				.put("delegated_stake", new JSONObject()
+					.put("value", json.getString("value"))
+					.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+				)
+			)
+		);
 		return result;
 	}
 

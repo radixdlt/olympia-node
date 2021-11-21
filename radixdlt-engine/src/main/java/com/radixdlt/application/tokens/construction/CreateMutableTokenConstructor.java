@@ -71,7 +71,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.identifiers.REAddr;
 
 import java.nio.charset.StandardCharsets;
 
@@ -84,17 +83,14 @@ public final class CreateMutableTokenConstructor implements ActionConstructor<Cr
 
 	@Override
 	public void construct(CreateMutableToken action, TxBuilder txBuilder) throws TxBuilderException {
-		final var reAddress = action.getKey() == null
-			? REAddr.ofNativeToken()
-			: REAddr.ofHashedKey(action.getKey(), action.getSymbol());
-
+		final var reAddress = action.getResourceAddress();
 		if (action.getSymbol().length() > maxSymbolLength) {
 			throw new SymbolLengthException(maxSymbolLength, action.getSymbol().length());
 		}
 
 		txBuilder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, action.getSymbol().getBytes(StandardCharsets.UTF_8));
 		txBuilder.downREAddr(reAddress);
-		txBuilder.up(TokenResource.createMutableSupplyResource(reAddress, action.getKey()));
+		txBuilder.up(TokenResource.createMutableSupplyResource(reAddress, action.getOwner()));
 		txBuilder.up(new TokenResourceMetadata(
 			reAddress,
 			action.getSymbol(),

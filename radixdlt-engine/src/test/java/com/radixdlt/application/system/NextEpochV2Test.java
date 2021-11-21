@@ -190,7 +190,7 @@ public class NextEpochV2Test {
 		var start = sut.construct(
 			TxnConstructionRequest.create()
 				.action(new CreateSystem(0))
-				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null))
 				.action(new MintToken(REAddr.ofNativeToken(), accountAddr, Amount.ofTokens(10).toSubunits()))
 				.action(new StakeTokens(accountAddr, key, Amount.ofTokens(10).toSubunits()))
 		).buildWithoutSignature();
@@ -215,7 +215,7 @@ public class NextEpochV2Test {
 		var start = sut.construct(
 			TxnConstructionRequest.create()
 				.action(new CreateSystem(0))
-				.action(new CreateMutableToken(null, "xrd", "xrd", "", "", ""))
+				.action(new CreateMutableToken(REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null))
 				.action(new RegisterValidator(key))
 		).buildWithoutSignature();
 		sut.execute(List.of(start), null, PermissionLevel.SYSTEM);

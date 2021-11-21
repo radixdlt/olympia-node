@@ -171,7 +171,7 @@ public class TransferTokensTest {
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", ""))
+				.action(new CreateMutableToken(tokenAddr, "test", "Name", "", "", "", key.getPublicKey()))
 				.action(new MintToken(tokenAddr, accountAddr, startAmt))
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));
@@ -193,7 +193,7 @@ public class TransferTokensTest {
 		var tokenAddr = REAddr.ofHashedKey(key.getPublicKey(), "test");
 		var txn = this.engine.construct(
 			TxnConstructionRequest.create()
-				.action(new CreateMutableToken(key.getPublicKey(), "test", "Name", "", "", ""))
+				.action(new CreateMutableToken(tokenAddr, "test", "Name", "", "", "", key.getPublicKey()))
 				.action(new MintToken(tokenAddr, accountAddr, startAmt))
 		).signAndBuild(key::sign);
 		this.engine.execute(List.of(txn));

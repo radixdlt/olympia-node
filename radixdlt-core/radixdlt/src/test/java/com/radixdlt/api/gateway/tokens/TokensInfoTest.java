@@ -205,7 +205,7 @@ public class TokensInfoTest {
 		// Assert
 		var json = store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
 		var infoJson = json.getJSONObject("info");
-		assertThat(json.getJSONObject("supply").getString("value"))
+		assertThat(json.getJSONObject("token_supply").getString("value"))
 			.isEqualTo(totalTokenAmount.toSubunits().toString());
 		assertThat(infoJson.getJSONObject("total_minted").getString("value"))
 			.isEqualTo(totalTokenAmount.toSubunits().toString());

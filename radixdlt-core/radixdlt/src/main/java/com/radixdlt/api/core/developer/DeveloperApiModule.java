@@ -103,7 +103,6 @@ public final class DeveloperApiModule extends AbstractModule {
 				"query_resource_state", handler::handleQueryResourceState,
 				"lookup_mapped_substate", handler::handleLookupMappedSubstate,
 				"scan_substates", handler::handleScanSubstates,
-				"build_genesis", handler::handleGenesisConstruction,
 				"parse_transaction", handler::handleParseTxn,
 				"parse_substate", handler::handleParseSubstate,
 				"parse_address", handler::handleParseAddress,

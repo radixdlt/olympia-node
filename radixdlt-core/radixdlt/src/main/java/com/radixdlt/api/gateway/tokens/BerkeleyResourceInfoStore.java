@@ -65,6 +65,7 @@ package com.radixdlt.api.gateway.tokens;
 
 import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.api.gateway.transaction.TokenProperties;
 import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
@@ -139,15 +140,7 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 			if (event instanceof ResourceCreatedEvent) {
 				var resourceCreated = (ResourceCreatedEvent) event;
 				var rri = addressing.forResources().of(resourceCreated.getSymbol(), resourceCreated.getTokenResource().getAddr());
-				var properties = new JSONObject()
-					.put("name", resourceCreated.getMetadata().getName())
-					.put("symbol", resourceCreated.getSymbol())
-					.put("description", resourceCreated.getMetadata().getDescription())
-					.put("icon_url", resourceCreated.getMetadata().getIconUrl())
-					.put("url", resourceCreated.getMetadata().getUrl())
-					.put("granularity", resourceCreated.getTokenResource().getGranularity())
-					.put("is_supply_mutable", resourceCreated.getTokenResource().isMutable());
-
+				var tokenProperties = TokenProperties.from(resourceCreated).toJson(addressing);
 				var info = new JSONObject()
 					.put("total_burned", new JSONObject()
 						.put("rri", rri)
@@ -160,11 +153,11 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 
 				var json = new JSONObject()
 					.put("rri", rri)
-					.put("supply", new JSONObject()
+					.put("token_supply", new JSONObject()
 						.put("rri", rri)
 						.put("value", BigInteger.ZERO.toString())
 					)
-					.put("properties", properties)
+					.put("token_properties", tokenProperties)
 					.put("info", info);
 
 				var key = new DatabaseEntry(resourceCreated.getTokenResource().getAddr().getBytes());
@@ -191,7 +184,7 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 				var jsonString = new String(value.getData(), StandardCharsets.UTF_8);
 				var json = new JSONObject(jsonString);
 				var infoJson = json.getJSONObject("info");
-				var supplyJson = json.getJSONObject("supply");
+				var supplyJson = json.getJSONObject("token_supply");
 				var supply = new BigInteger(supplyJson.getString("value"), 10);
 				var change = e.getValue();
 				var newSupply = supply.add(change);
