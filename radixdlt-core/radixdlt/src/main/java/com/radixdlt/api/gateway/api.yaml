@@ -54,7 +54,7 @@ paths:
                 "$ref": "#/components/schemas/UnexpectedError"
   "/account/balances":
     post:
-      summary: Get Token Balances
+      summary: Get Account Balances
       requestBody:
         required: true
         content:
@@ -63,7 +63,7 @@ paths:
               "$ref": "#/components/schemas/AccountBalancesRequest"
       responses:
         '200':
-          description: List of token balances
+          description: Balances of Account
           content:
             application/json:
               schema:
@@ -430,13 +430,13 @@ components:
         account_address:
           "$ref": "#/components/schemas/AccountAddress"
         cursor:
-          type: integer
+          type: string
         limit:
           type: integer
       example:
         network: mainnet
         account_address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
-        cursor: 0
+        cursor: '0'
         limit: 1
     AccountTransactionsResponse:
       type: object
@@ -452,8 +452,7 @@ components:
           type: integer
           minimum: 0
         next_cursor:
-          type: integer
-          minimum: 0
+          type: string
         transactions:
           type: array
           items:
@@ -912,6 +911,9 @@ components:
             rri: xrd_rr1qy5wfsfh
             value: '0'
           uptime:
+            epoch_range:
+              from: 1
+              to: 1
             uptime_percentage: '100.00'
             proposals_missed: 0
             proposals_completed: 108320
@@ -946,20 +948,37 @@ components:
         owner_stake:
           "$ref": "#/components/schemas/TokenAmount"
         uptime:
-          type: object
-          required:
-            - uptime_percentage
-            - proposals_missed
-            - proposals_completed
-          properties:
-            uptime_percentage:
-              type: string
-            proposals_missed:
-              type: integer
-              minimum: 0
-            proposals_completed:
-              type: integer
-              minimum: 0
+          "$ref": "#/components/schemas/ValidatorUptime"
+    ValidatorUptime:
+      type: object
+      required:
+        - epoch_range
+        - uptime_percentage
+        - proposals_missed
+        - proposals_completed
+      properties:
+        epoch_range:
+          "$ref": "#/components/schemas/EpochRange"
+        uptime_percentage:
+          type: string
+        proposals_missed:
+          type: integer
+          minimum: 0
+        proposals_completed:
+          type: integer
+          minimum: 0
+    EpochRange:
+      type: object
+      required:
+        - from
+        - to
+      properties:
+        from:
+          type: integer
+          format: int64
+        to:
+          type: integer
+          format: int64
     Token:
       type: object
       required:

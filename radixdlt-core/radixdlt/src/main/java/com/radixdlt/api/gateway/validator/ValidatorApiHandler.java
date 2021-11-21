@@ -101,12 +101,7 @@ final class ValidatorApiHandler implements ApiHandler<ECPublicKey> {
 		var validatorJson = validatorStore.getValidatorInfo(key);
 		var uptime = uptimeStore.getUptimeTwoWeeks(key);
 		validatorJson.getJSONObject("info")
-			.put("uptime", new JSONObject()
-				.put("proposals_completed", uptime.getProposalsCompleted())
-				.put("proposals_missed", uptime.getProposalsMissed())
-				.put("uptime_percentage", uptime.toPercentageString()
-			)
-		);
+			.put("uptime", uptime);
 		return new JSONObject()
 			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
 			.put("validator", validatorJson);

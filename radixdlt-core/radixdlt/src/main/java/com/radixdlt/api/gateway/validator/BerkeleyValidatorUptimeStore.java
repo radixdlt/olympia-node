@@ -164,16 +164,22 @@ public final class BerkeleyValidatorUptimeStore implements BerkeleyAdditionalSto
 		validatorUptimeByValidator.put(dbTxn, key, value);
 	}
 
-	public ValidatorUptime getUptimeTwoWeeks(ECPublicKey validatorKey) {
+	public JSONObject getUptimeTwoWeeks(ECPublicKey validatorKey) {
 		var key = new DatabaseEntry(validatorKey.getCompressedBytes());
 		var value = new DatabaseEntry();
 		var status = validatorUptimeByValidator.get(null, key, value, null);
+		JSONObject result;
 		if (status != OperationStatus.SUCCESS) {
-			return ValidatorUptime.empty();
+			result = ValidatorUptime.empty().toJSON();
+		} else {
+			result = new JSONObject(new String(value.getData(), StandardCharsets.UTF_8));
 		}
 
-		var jsonString = new String(value.getData(), StandardCharsets.UTF_8);
-		return ValidatorUptime.fromJSON(new JSONObject(jsonString));
+		return result
+			.put("epoch_range", new JSONObject()
+				.put("from", Math.max(curEpoch.get() - NUM_EPOCHS_WINDOW, 1))
+				.put("to", curEpoch.get())
+			);
 	}
 
 	@Override

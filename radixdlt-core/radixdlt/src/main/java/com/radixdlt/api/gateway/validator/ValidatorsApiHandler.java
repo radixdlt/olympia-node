@@ -121,12 +121,7 @@ class ValidatorsApiHandler implements ApiHandler<Void> {
 					var validatorKey = addressing.forValidators().parseNoErr(addrString);
 					var uptime = uptimeStore.getUptimeTwoWeeks(validatorKey);
 					json.getJSONObject("info")
-						.put("uptime", new JSONObject()
-							.put("proposals_completed", uptime.getProposalsCompleted())
-							.put("proposals_missed", uptime.getProposalsMissed())
-							.put("uptime_percentage", uptime.toPercentageString()
-						)
-					);
+						.put("uptime", uptime);
 				})
 				.forEach(validators::put);
 		}

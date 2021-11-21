@@ -89,14 +89,6 @@ public final class ValidatorUptime {
 		);
 	}
 
-	public long getProposalsCompleted() {
-		return proposalsCompleted;
-	}
-
-	public long getProposalsMissed() {
-		return proposalsMissed;
-	}
-
 	public String toPercentageString() {
 		if (proposalsCompleted == 0 && proposalsMissed == 0) {
 			return "0.00";
@@ -108,16 +100,16 @@ public final class ValidatorUptime {
 
 	public static ValidatorUptime fromJSON(JSONObject json) {
 		return new ValidatorUptime(
-			json.getLong("proposalsCompleted"),
-			json.getLong("proposalsMissed")
+			json.getLong("proposals_completed"),
+			json.getLong("proposals_missed")
 		);
 	}
 
 	public JSONObject toJSON() {
 		return new JSONObject()
-			.put("proposalsCompleted", proposalsCompleted)
-			.put("proposalsMissed", proposalsMissed)
-			.put("uptimePercentage", toPercentageString());
+			.put("proposals_completed", proposalsCompleted)
+			.put("proposals_missed", proposalsMissed)
+			.put("uptime_percentage", toPercentageString());
 	}
 
 	@Override
