@@ -107,7 +107,7 @@ class AccountTransactionsHandler implements ApiHandler<AccountTransactionsReques
 	public AccountTransactionsRequest parseRequest(JsonObjectReader reader) throws InvalidParametersException {
 		var addr = reader.getAccountAddress("account_address");
 		var limit = reader.getOptUnsignedLong("limit").orElse(10);
-		var cursor = reader.getOptUnsignedLong("cursor");
+		var cursor = reader.getOptString("cursor").stream().mapToLong(Long::parseLong).findFirst();
 
 		return new AccountTransactionsRequest(addr, limit, cursor);
 	}
@@ -127,7 +127,7 @@ class AccountTransactionsHandler implements ApiHandler<AccountTransactionsReques
 
 		var result = new JSONObject();
 		if (lastOffset.get() > 0) {
-			result.put("next_cursor", lastOffset.get() - 1);
+			result.put("next_cursor", Long.toString(lastOffset.get() - 1));
 		}
 
 		return result
