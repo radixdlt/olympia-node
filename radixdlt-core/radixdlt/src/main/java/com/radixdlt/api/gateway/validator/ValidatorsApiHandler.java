@@ -68,11 +68,10 @@ import com.radixdlt.api.gateway.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.utils.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-class ValidatorsApiHandler implements ApiHandler<Pair<Long, Long>> {
+class ValidatorsApiHandler implements ApiHandler<Void> {
 	private final Addressing addressing;
 	private final BerkeleyValidatorStore validatorStore;
 	private final BerkeleyValidatorUptimeStore uptimeStore;
@@ -89,26 +88,15 @@ class ValidatorsApiHandler implements ApiHandler<Pair<Long, Long>> {
 	}
 
 	@Override
-	public Pair<Long, Long> parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		var limit = reader.getOptUnsignedLong("limit").orElse(10);
-		var offset = reader.getOptUnsignedLong("offset").orElse(0);
-		return Pair.of(limit, offset);
+	public Void parseRequest(JsonObjectReader reader) throws InvalidParametersException {
+		return null;
 	}
 
 	@Override
-	public JSONObject handleRequest(Pair<Long, Long> request) {
-		var limit = request.getFirst();
-		var offset = request.getSecond();
-		var validatorsJson = fetchValidators(offset, limit);
+	public JSONObject handleRequest(Void request) {
+		var validatorsJson = fetchValidators(0, 1000);
 
-		var result = new JSONObject()
-			.put("validators", validatorsJson);
-
-		if (validatorsJson.length() == limit) {
-			result.put("nextOffset", offset + limit);
-		}
-
-		return result;
+		return new JSONObject().put("validators", validatorsJson);
 	}
 
 	@Override
@@ -123,13 +111,15 @@ class ValidatorsApiHandler implements ApiHandler<Pair<Long, Long>> {
 				.limit(limit)
 				.peek(json -> {
 					json.getJSONObject("stake").remove("delegators");
-					var addrString = json.getJSONObject("properties").getString("validatorAddress");
+					var addrString = json.getString("validator_address");
 					var validatorKey = addressing.forValidators().parseNoErr(addrString);
 					var uptime = uptimeStore.getUptimeTwoWeeks(validatorKey);
-					json.put("uptime", new JSONObject()
-						.put("proposalsCompleted", uptime.getProposalsCompleted())
-						.put("proposalsMissed", uptime.getProposalsMissed())
-						.put("uptimePercentage", uptime.toPercentageString())
+					json.getJSONObject("info")
+						.put("uptime", new JSONObject()
+							.put("proposals_completed", uptime.getProposalsCompleted())
+							.put("proposals_missed", uptime.getProposalsMissed())
+							.put("uptime_percentage", uptime.toPercentageString()
+						)
 					);
 				})
 				.forEach(validators::put);

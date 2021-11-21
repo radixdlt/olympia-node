@@ -90,8 +90,6 @@ final class NetworkHandler implements ApiHandler<Void> {
 	@Override
 	public JSONObject handleRequest(Void request) {
 		return jsonObject()
-			.put("network", new JSONObject()
-				.put("id", networkId)
-				.put("name", networkName));
+			.put("network", networkName);
 	}
 }

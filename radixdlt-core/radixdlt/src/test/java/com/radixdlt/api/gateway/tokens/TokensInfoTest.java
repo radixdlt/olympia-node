@@ -207,7 +207,9 @@ public class TokensInfoTest {
 		var infoJson = json.getJSONObject("info");
 		assertThat(json.getJSONObject("supply").getString("value"))
 			.isEqualTo(totalTokenAmount.toSubunits().toString());
-		assertThat(infoJson.getString("total_minted")).isEqualTo(totalTokenAmount.toSubunits().toString());
-		assertThat(infoJson.getString("total_burned")).isEqualTo(UInt256.ZERO.toString());
+		assertThat(infoJson.getJSONObject("total_minted").getString("value"))
+			.isEqualTo(totalTokenAmount.toSubunits().toString());
+		assertThat(infoJson.getJSONObject("total_burned").getString("value"))
+			.isEqualTo(UInt256.ZERO.toString());
 	}
 }

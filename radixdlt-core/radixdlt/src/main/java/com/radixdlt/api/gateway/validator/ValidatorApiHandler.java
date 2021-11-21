@@ -89,18 +89,19 @@ final class ValidatorApiHandler implements ApiHandler<ECPublicKey> {
 
 	@Override
 	public ECPublicKey parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		return reader.getValidatorIdentifier("validatorIdentifier");
+		return reader.getValidatorIdentifier("validator_address");
 	}
 
 	@Override
 	public JSONObject handleRequest(ECPublicKey key) {
 		var validatorJson = validatorStore.getValidatorInfo(key);
 		var uptime = uptimeStore.getUptimeTwoWeeks(key);
-		validatorJson.getJSONObject("stake").remove("delegators");
-		validatorJson.put("uptime", new JSONObject()
-			.put("proposalsCompleted", uptime.getProposalsCompleted())
-			.put("proposalsMissed", uptime.getProposalsMissed())
-			.put("uptimePercentage", uptime.toPercentageString())
+		validatorJson.getJSONObject("info")
+			.put("uptime", new JSONObject()
+				.put("proposals_completed", uptime.getProposalsCompleted())
+				.put("proposals_missed", uptime.getProposalsMissed())
+				.put("uptime_percentage", uptime.toPercentageString()
+			)
 		);
 		return new JSONObject().put("validator", validatorJson);
 	}

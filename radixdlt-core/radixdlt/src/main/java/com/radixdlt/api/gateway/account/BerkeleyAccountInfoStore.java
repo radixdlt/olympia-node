@@ -150,7 +150,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			var jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
 			for (int i = 0; i < jsonArray.length(); i++) {
 				var json = jsonArray.getJSONObject(i);
-				stakes.put(json.getString("validatorAddress"), json);
+				stakes.put(json.getString("validator_address"), json);
 			}
 		}
 
@@ -158,22 +158,26 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			var stakedJson = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
 			for (int i = 0; i < stakedJson.length(); i++) {
 				var json = stakedJson.getJSONObject(i);
-				var ownership = new BigInteger(json.getString("amount"), 10);
+				var ownership = new BigInteger(json.getString("value"), 10);
 				ECPublicKey validatorKey;
 				try {
-					validatorKey = addressing.forValidators().parse(json.getString("validatorAddress"));
+					validatorKey = addressing.forValidators().parse(json.getString("validator_address"));
 				} catch (DeserializeException e) {
 					throw new IllegalStateException("Unable to deserialize", e);
 				}
 				var estimatedStake = computeEstimatedStake(validatorKey, ownership);
-				stakes.compute(json.getString("validatorAddress"), (v, obj) -> {
+				stakes.compute(json.getString("validator_address"), (v, obj) -> {
 					if (obj == null) {
 						return new JSONObject()
-							.put("amount", estimatedStake.toString())
-							.put("validatorAddress", json.getString("validatorAddress"));
+							.put("delegated_stake", new JSONObject()
+								.put("value", estimatedStake.toString())
+								.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+							)
+							.put("validator_address", json.getString("validator_address"));
 					} else {
-						var cur = new BigInteger(obj.getString("amount"), 10);
-						obj.put("amount", cur.add(estimatedStake).toString());
+						var delegatedStake = obj.getJSONObject("delegated_stake");
+						var cur = new BigInteger(delegatedStake.getString("value"), 10);
+						delegatedStake.put("value", cur.add(estimatedStake).toString());
 						return obj;
 					}
 				});
@@ -199,7 +203,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 				var json = jsonArray.getJSONObject(i);
 				var epochUnlocked = json.getLong("epochUnlocked");
 				json.remove("epochUnlocked");
-				json.put("epochsUntil", epochUnlocked - curEpoch);
+				json.put("epochs_until_unlocked", epochUnlocked - curEpoch);
 			}
 		}
 
@@ -207,17 +211,39 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			var unstakeOwnershipJson = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
 			for (int i = 0; i < unstakeOwnershipJson.length(); i++) {
 				var json = unstakeOwnershipJson.getJSONObject(i);
-				var ownership = new BigInteger(json.getString("amount"), 10);
+				var ownership = new BigInteger(json.getString("value"), 10);
 				var totalStake = new BigInteger(json.getString("validatorTotalStake"), 10);
 				var totalOwnership = new BigInteger(json.getString("validatorTotalOwnership"), 10);
 				var estimatedUnstake = ownership.multiply(totalStake).divide(totalOwnership);
-				json.put("amount", estimatedUnstake.toString());
-				json.put("epochsUntil", 500); // Hardcoded for now
+				json.put("unstaking_amount", new JSONObject()
+					.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+					.put("value", estimatedUnstake.toString())
+				);
+				json.put("epochs_until_unlocked", 500); // Hardcoded for now
 				jsonArray.put(json);
 			}
 		}
 
 		return jsonArray;
+	}
+
+	private JSONObject getStakedAndUnstakingBalance(REAddr addr) {
+		var stakes = getAccountStakes(addr);
+		var lockedXrdAmount = BigInteger.ZERO;
+		for (int i = 0; i < stakes.length(); i++) {
+			var amountString = stakes.getJSONObject(i).getJSONObject("delegated_stake").getString("value");
+			lockedXrdAmount = lockedXrdAmount.add(new BigInteger(amountString));
+		}
+
+		var unstakes = getAccountUnstakes(addr);
+		for (int i = 0; i < unstakes.length(); i++) {
+			var amountString = unstakes.getJSONObject(i).getJSONObject("unstaking_amount").getString("value");
+			lockedXrdAmount = lockedXrdAmount.add(new BigInteger(amountString));
+		}
+
+		return new JSONObject()
+			.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+			.put("value", lockedXrdAmount.toString());
 	}
 
 	public JSONObject getAccountInfo(REAddr addr) {
@@ -228,10 +254,12 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 
 		if (databases.get(ResourceType.TOKEN_BALANCES).get(null, key, value, DEFAULT) == SUCCESS) {
 			var jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
-			json.put("balances", jsonArray);
+			json.put("liquid_balances", jsonArray);
 		} else {
-			json.put("balances", new JSONArray());
+			json.put("liquid_balances", new JSONArray());
 		}
+
+		json.put("staked_and_unstaking_balance", getStakedAndUnstakingBalance(addr));
 
 		return json;
 	}
@@ -328,13 +356,13 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 
 			@Override
 			Object jsonToKey(JSONObject json) {
-				return json.getString("validatorAddress");
+				return json.getString("validator_address");
 			}
 
 			@Override
 			JSONObject toJSON(BerkeleyAccountInfoStore parent, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper, Object o) {
 				var validator = (String) o;
-				return new JSONObject().put("validatorAddress", validator);
+				return new JSONObject().put("validator_address", validator);
 			}
 		},
 		STAKED_OWNERSHIP {
@@ -357,7 +385,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 
 			@Override
 			Object jsonToKey(JSONObject json) {
-				return json.getString("validatorAddress");
+				return json.getString("validator_address");
 			}
 
 			@Override
@@ -370,7 +398,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 					);
 					var stakeData = (ValidatorStakeData) parent.deserialize(mapper.apply(validatorDataKey).orElseThrow().getData());
 					return new JSONObject()
-						.put("validatorAddress", o)
+						.put("validator_address", o)
 						.put("validatorTotalStake", stakeData.getTotalStake())
 						.put("validatorTotalOwnership", stakeData.getTotalOwnership());
 				} catch (DeserializeException e) {
@@ -397,7 +425,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			}
 
 			Object jsonToKey(JSONObject json) {
-				return json.getString("validatorAddress");
+				return json.getString("validator_address");
 			}
 
 			@Override
@@ -410,7 +438,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 					);
 					var stakeData = (ValidatorStakeData) parent.deserialize(mapper.apply(validatorDataKey).orElseThrow().getData());
 					return new JSONObject()
-						.put("validatorAddress", o)
+						.put("validator_address", o)
 						.put("validatorTotalStake", stakeData.getTotalStake())
 						.put("validatorTotalOwnership", stakeData.getTotalOwnership());
 				} catch (DeserializeException e) {
@@ -439,7 +467,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			@Override
 			Object jsonToKey(JSONObject json) {
 				return Pair.of(
-					json.getString("validatorAddress"),
+					json.getString("validator_address"),
 					json.getLong("epochUnlocked")
 				);
 			}
@@ -448,7 +476,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			JSONObject toJSON(BerkeleyAccountInfoStore parent, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper, Object o) {
 				var validatorAndEpoch = (Pair<String, Long>) o;
 				return new JSONObject()
-					.put("validatorAddress", validatorAndEpoch.getFirst())
+					.put("validator_address", validatorAndEpoch.getFirst())
 					.put("epochUnlocked", validatorAndEpoch.getSecond());
 			}
 		};
@@ -487,7 +515,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 				for (int i = 0; i < jsonArray.length(); i++) {
 					var json = jsonArray.getJSONObject(i);
 					var k = resourceType.jsonToKey(json);
-					var amount = new BigInteger(json.getString("amount"), 10);
+					var amount = new BigInteger(json.getString("value"), 10);
 					preparedMap.put(k, amount);
 				}
 			}
@@ -501,7 +529,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 
 			var nextUnstakes = new JSONArray();
 			preparedMap.forEach((validator, amt) ->
-				nextUnstakes.put(resourceType.toJSON(this, mapper, validator).put("amount", amt.toString()))
+				nextUnstakes.put(resourceType.toJSON(this, mapper, validator).put("value", amt.toString()))
 			);
 
 			var nextValue = new DatabaseEntry(nextUnstakes.toString().getBytes(StandardCharsets.UTF_8));

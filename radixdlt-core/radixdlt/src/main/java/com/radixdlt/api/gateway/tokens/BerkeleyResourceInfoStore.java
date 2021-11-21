@@ -149,8 +149,14 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 					.put("is_supply_mutable", resourceCreated.getTokenResource().isMutable());
 
 				var info = new JSONObject()
-					.put("total_burned", BigInteger.ZERO.toString())
-					.put("total_minted", BigInteger.ZERO.toString());
+					.put("total_burned", new JSONObject()
+						.put("rri", rri)
+						.put("value", BigInteger.ZERO.toString())
+					)
+					.put("total_minted", new JSONObject()
+						.put("rri", rri)
+						.put("value", BigInteger.ZERO.toString())
+					);
 
 				var json = new JSONObject()
 					.put("rri", rri)
@@ -191,13 +197,15 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 				var newSupply = supply.add(change);
 				supplyJson.put("value", newSupply.toString());
 				if (change.signum() > 0) {
-					var minted = new BigInteger(infoJson.getString("total_minted"), 10);
+					var mintedJson = infoJson.getJSONObject("total_minted");
+					var minted = new BigInteger(mintedJson.getString("value"), 10);
 					var newMinted = minted.add(change);
-					infoJson.put("total_minted", newMinted.toString());
+					mintedJson.put("value", newMinted.toString());
 				} else {
-					var burned = new BigInteger(infoJson.getString("total_burned"), 10);
+					var burnedJson = infoJson.getJSONObject("total_burned");
+					var burned = new BigInteger(burnedJson.getString("value"), 10);
 					var newBurned = burned.subtract(change);
-					infoJson.put("total_burned", newBurned.toString());
+					burnedJson.put("value", newBurned.toString());
 				}
 				var newVal = new DatabaseEntry(json.toString().getBytes(StandardCharsets.UTF_8));
 				status = resourceInfoDatabase.put(dbTxn, key, newVal);

@@ -150,7 +150,7 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 						var stake = UInt256.from(stakeString);
 						buf.put(stake.toByteArray());
 
-						var validatorKey = addressing.forValidators().parseNoErr(json.getJSONObject("properties").getString("validatorAddress"));
+						var validatorKey = addressing.forValidators().parseNoErr(json.getString("validator_address"));
 						buf.put(validatorKey.getCompressedBytes());
 
 						result.setData(buf.array());
@@ -172,8 +172,26 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		}
 	}
 
+	private JSONObject mapValidator(JSONObject validatorJson) {
+		var stakeJson = validatorJson.getJSONObject("stake");
+		var ownerEstimateString = stakeJson.getString("nextEpochEstimatedOwnerStake");
+		var stakeEstimateString = stakeJson.getString("nextEpochEstimatedStake");
+		validatorJson.put("info", new JSONObject()
+			.put("owner_stake", new JSONObject()
+				.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+				.put("value", ownerEstimateString)
+			)
+		);
+		validatorJson.put("stake", new JSONObject()
+			.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+			.put("value", stakeEstimateString)
+		);
+		return validatorJson;
+	}
+
 	public JSONObject getValidatorInfo(ECPublicKey validatorKey) {
-		return getCurrentValidatorInfo(validatorKey, null, null);
+		var validatorJson = getCurrentValidatorInfo(validatorKey, null, null);
+		return mapValidator(validatorJson);
 	}
 
 	private static class ValidatorsIterator implements Iterator<JSONObject> {
@@ -222,26 +240,33 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 	public Stream<JSONObject> getValidators(long skip) {
 		var iterator = new ValidatorsIterator(orderedValidatorsDatabase, skip);
 		iterator.open();
-		return Streams.stream(iterator).onClose(iterator::close);
+		return Streams.stream(iterator)
+			.map(this::mapValidator)
+			.onClose(iterator::close);
 	}
 
 	private JSONObject getCurrentValidatorInfo(ECPublicKey validatorKey, Transaction dbTxn, LockMode lockMode) {
 		var key = new DatabaseEntry(validatorKey.getBytes());
 		var value = new DatabaseEntry();
 		var status = validatorDatabase.get(dbTxn, key, value, lockMode);
+		final JSONObject validatorJson;
 		if (status == OperationStatus.SUCCESS) {
 			var jsonString = new String(value.getData(), StandardCharsets.UTF_8);
-			return new JSONObject(jsonString);
+			validatorJson = new JSONObject(jsonString);
 		} else if (status == OperationStatus.NOTFOUND) {
-			return createValidatorInfoDefault(validatorKey);
+			validatorJson = createValidatorInfoDefault(validatorKey);
 		} else {
 			throw new IllegalStateException("Unexpected status: " + status);
 		}
+
+
+		return validatorJson;
 	}
 
 	private JSONObject createValidatorInfoDefault(ECPublicKey validatorKey) {
 		var json = new JSONObject()
-			.put("properties", new JSONObject().put("validatorAddress", addressing.forValidators().of(validatorKey)))
+			.put("validator_address", addressing.forValidators().of(validatorKey))
+			.put("properties", new JSONObject())
 			.put("stake", new JSONObject()
 				.put("delegators", new JSONObject())
 				.put("preparedStake", "0")
@@ -269,19 +294,19 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 			var copy = (ValidatorOwnerCopy) validatorData;
 			return Pair.of(
 				"properties",
-				Map.of("ownerAddress", addressing.forAccounts().of(copy.getOwner()))
+				Map.of("owner_address", addressing.forAccounts().of(copy.getOwner()))
 			);
 		} else if (validatorData instanceof AllowDelegationFlag) {
 			var allowDelegationFlag = (AllowDelegationFlag) validatorData;
 			return Pair.of(
 				"properties",
-				Map.of("externalStakeAccepted", allowDelegationFlag.allowsDelegation())
+				Map.of("external_stake_accepted", allowDelegationFlag.allowsDelegation())
 			);
 		} else if (validatorData instanceof ValidatorFeeCopy) {
 			var copy = (ValidatorFeeCopy) validatorData;
 			return Pair.of(
 				"properties",
-				Map.of("validatorFee", (double) copy.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "")
+				Map.of("validator_fee", (double) copy.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "")
 			);
 		} else if (validatorData instanceof ValidatorMetaData) {
 			var meta = (ValidatorMetaData) validatorData;
@@ -458,7 +483,7 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		var estimatedNextEpochStake = curStakeFromOwnership.add(preparedStake);
 		stakeJson.put("nextEpochEstimatedStake", estimatedNextEpochStake.toString(10));
 
-		var ownerAddress = json.getJSONObject("properties").getString("ownerAddress");
+		var ownerAddress = json.getJSONObject("properties").getString("owner_address");
 		var delegators = stakeJson.getJSONObject("delegators");
 		var ownerDelegator = getDelegatorObject(delegators, ownerAddress);
 		var estimatedOwnerStake = new BigInteger(ownerDelegator.optString("nextEpochEstimatedStake", "0"), 10);
