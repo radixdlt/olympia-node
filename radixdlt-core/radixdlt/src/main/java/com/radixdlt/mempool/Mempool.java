@@ -79,7 +79,7 @@ public interface Mempool<T> {
 	/**
 	 * Add a transaction to the local mempool.
 	 */
-	void add(Txn txn) throws MempoolRejectedException;
+	T add(Txn txn) throws MempoolRejectedException;
 
 	/**
 	 * Retrieve a list of atoms from the local mempool for processing by

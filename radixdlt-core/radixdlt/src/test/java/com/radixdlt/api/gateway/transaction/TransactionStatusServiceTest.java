@@ -217,7 +217,7 @@ public class TransactionStatusServiceTest {
 		var transfer = txBuilder.signAndBuild(hashSigner::sign);
 
 		transactionStatusService.mempoolAddSuccessEventProcessor()
-			.process(MempoolAddSuccess.create(transfer));
+			.process(MempoolAddSuccess.create(transfer, null, null));
 
 		// Assert
 		var status = transactionStatusService.getTransactionStatus(transfer.getId());

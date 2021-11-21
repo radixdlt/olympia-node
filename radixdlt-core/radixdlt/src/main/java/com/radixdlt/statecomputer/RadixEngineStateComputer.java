@@ -207,8 +207,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 	@Override
 	public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
 		mempoolAdd.getTxns().forEach(txn -> {
+			Object processedTxn;
 			try {
-				mempool.add(txn);
+				processedTxn = mempool.add(txn);
 				systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
 			} catch (MempoolDuplicateException e) {
 				// Idempotent commands
@@ -221,7 +222,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				return;
 			}
 
-			var success = MempoolAddSuccess.create(txn, origin);
+			var success = MempoolAddSuccess.create(txn, processedTxn, origin);
 			mempoolAdd.onSuccess(success); // Required for blocking web apis
 			mempoolAddSuccessEventDispatcher.dispatch(success);
 		});

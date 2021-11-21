@@ -218,7 +218,7 @@ public class MempoolTest {
 		var txn = createTxn(keyPair);
 
 		// Act
-		processor.handleMessage(self, MempoolAddSuccess.create(txn), null);
+		processor.handleMessage(self, MempoolAddSuccess.create(txn, null, null), null);
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS);
@@ -232,7 +232,7 @@ public class MempoolTest {
 		var txn = createTxn(keyPair);
 
 		// Act
-		processor.handleMessage(self, MempoolAddSuccess.create(txn, getFirstPeer()), null);
+		processor.handleMessage(self, MempoolAddSuccess.create(txn, null, getFirstPeer()), null);
 
 		// Assert
 		assertThat(systemCounters.get(CounterType.MEMPOOL_RELAYER_SENT_COUNT)).isEqualTo(NUM_PEERS - 1);

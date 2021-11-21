@@ -101,7 +101,7 @@ public final class SimpleMempool implements Mempool<Txn> {
 	}
 
 	@Override
-	public void add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
+	public Txn add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
 		if (this.data.size() >= maxSize) {
 			throw new MempoolFullException(
 				String.format("Mempool full: %s of %s items", this.data.size(), maxSize)
@@ -112,6 +112,8 @@ public final class SimpleMempool implements Mempool<Txn> {
 		}
 
 		updateCounts();
+
+		return txn;
 	}
 
 	@Override

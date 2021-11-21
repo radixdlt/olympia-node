@@ -75,10 +75,12 @@ import java.util.Optional;
  */
 public final class MempoolAddSuccess {
 	private final Txn txn;
+	private final Object processedTxn;
 	private final BFTNode origin;
 
-	private MempoolAddSuccess(Txn txn, BFTNode origin) {
+	private MempoolAddSuccess(Txn txn, Object processedTxn, BFTNode origin) {
 		this.txn = txn;
+		this.processedTxn = processedTxn;
 		this.origin = origin;
 	}
 
@@ -90,19 +92,14 @@ public final class MempoolAddSuccess {
 		return Optional.ofNullable(origin);
 	}
 
-	public static MempoolAddSuccess create(Txn txn) {
+	public static MempoolAddSuccess create(Txn txn, Object processedTxn, BFTNode origin) {
 		Objects.requireNonNull(txn);
-		return new MempoolAddSuccess(txn, null);
-	}
-
-	public static MempoolAddSuccess create(Txn txn, BFTNode origin) {
-		Objects.requireNonNull(txn);
-		return new MempoolAddSuccess(txn, origin);
+		return new MempoolAddSuccess(txn, processedTxn, origin);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(txn, origin);
+		return Objects.hash(txn, processedTxn, origin);
 	}
 
 	@Override
@@ -113,6 +110,7 @@ public final class MempoolAddSuccess {
 
 		MempoolAddSuccess other = (MempoolAddSuccess) o;
 		return Objects.equals(this.txn, other.txn)
+			&& Objects.equals(this.processedTxn, other.processedTxn)
 			&& Objects.equals(this.origin, other.origin);
 	}
 

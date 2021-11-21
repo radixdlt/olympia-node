@@ -121,7 +121,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 	}
 
 	@Override
-	public void add(Txn txn) throws MempoolRejectedException {
+	public REProcessedTxn add(Txn txn) throws MempoolRejectedException {
 		if (this.data.size() >= maxSize) {
 			throw new MempoolFullException(
 				String.format("Mempool full: %s of %s items", this.data.size(), maxSize)
@@ -148,6 +148,8 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 		this.data.put(txn.getId(), data);
 		result.getProcessedTxn().substateDependencies()
 			.forEach(substateId -> substateIndex.merge(substateId, Set.of(txn.getId()), Sets::union));
+
+		return result.getProcessedTxn();
 	}
 
 	@Override
