@@ -52,6 +52,28 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
+  "/token/native":
+    post:
+      summary: Get Native Token Info
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/TokenNativeRequest"
+      responses:
+        '200':
+          description: Token info
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/TokenNativeResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
   "/token/derive":
     post:
       summary: Derive Token RRI
@@ -797,6 +819,7 @@ components:
       type: object
       required:
         - network
+        - rri
       properties:
         network:
           type: string
@@ -806,6 +829,53 @@ components:
         network: mainnet
         rri: xrd_rr1qy5wfsfh
     TokenInfoResponse:
+      type: object
+      required:
+        - token
+        - state_version
+      properties:
+        state_version:
+          type: integer
+          format: int64
+        token:
+          type: array
+          maxItems: 1
+          items:
+            "$ref": "#/components/schemas/Token"
+      example:
+        state_version: 1
+        token:
+          - rri: xrd_rr1qy5wfsfh
+            supply:
+              rri: xrd_rr1qy5wfsfh
+              value: '12014560679861300000000000000'
+            info:
+              total_burned:
+                rri: xrd_rr1qy5wfsfh
+                value: '11437173800000000000000'
+              total_minted:
+                rri: xrd_rr1qy5wfsfh
+                value: '12014572117035100000000000000'
+            properties:
+              icon_url: https://assets.radixdlt.com/icons/icon-xrd-32x32.png
+              is_supply_mutable: true
+              symbol: xrd
+              granularity: '1'
+              name: Radix
+              description: The Radix Public Network's native token, used to pay the
+                network's required transaction fees and to secure the network through
+                staking to its validator nodes.
+              url: https://tokens.radixdlt.com
+    TokenNativeRequest:
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          type: string
+      example:
+        network: mainnet
+    TokenNativeResponse:
       type: object
       required:
         - token
@@ -1206,8 +1276,11 @@ components:
           type: string
     TokenAmount:
       type: object
+      required:
+        - value
+        - rri
       properties:
-        amount:
+        value:
           "$ref": "#/components/schemas/BigInteger"
         rri:
           "$ref": "#/components/schemas/ResourceIdentifier"

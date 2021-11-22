@@ -63,35 +63,39 @@
 
 package com.radixdlt.api.gateway.tokens;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.gateway.ApiHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+public class TokenNativeHandler implements ApiHandler<Void> {
+	private final InMemorySystemInfo inMemorySystemInfo;
+	private final BerkeleyResourceInfoStore store;
 
-public final class TokenApiModule extends AbstractModule {
-	private final String path;
-	private final Class<? extends Annotation> annotationType;
-
-	public TokenApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.path = path;
-		this.annotationType = annotationType;
+	@Inject
+	TokenNativeHandler(
+		InMemorySystemInfo inMemorySystemInfo,
+		BerkeleyResourceInfoStore store
+	) {
+		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.store = store;
 	}
 
 	@Override
-	protected void configure() {
-		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-			.addBinding().to(BerkeleyResourceInfoStore.class);
+	public Void parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return null;
+	}
 
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path).to(TokenHandler.class);
-		routeBinder.addBinding(path + "/native").to(TokenNativeHandler.class);
-		routeBinder.addBinding(path + "/derive").to(TokenDeriveHandler.class);
+	@Override
+	public JSONObject handleRequest(Void request) throws Exception {
+		var tokenJson = store.getResourceInfo(REAddr.ofNativeToken())
+			.map(o -> new JSONArray().put(o)).orElse(new JSONArray());
+		return new JSONObject()
+			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
+			.put("token", tokenJson);
 	}
 }
