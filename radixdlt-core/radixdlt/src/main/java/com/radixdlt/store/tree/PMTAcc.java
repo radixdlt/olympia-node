@@ -17,6 +17,11 @@ public class PMTAcc {
 		return newTip;
 	}
 
+	public List<PMTNode> getNewNodes() {
+		return newAcc;
+	}
+
+	// handle nulls that got added (when Ext was null) or handle them at insertion
 	public void add(PMTNode... nodes) {
 		if (newAcc != null) {
 			newAcc.addAll(Arrays.stream(nodes).toList());
@@ -25,7 +30,7 @@ public class PMTAcc {
 		}
 	}
 
-	public void remove(PMTNode node) {
+	public void mark(PMTNode node) {
 		if (oldAcc != null) {
 			oldAcc.add(node);
 		} else {
