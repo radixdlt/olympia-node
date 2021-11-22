@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,62 +61,26 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system;
+package com.radixdlt.api.core.engine;
 
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.utils.UInt256;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.MapBinder;
+import io.undertow.server.HttpHandler;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
+import java.lang.annotation.Annotation;
 
-public final class FeeTable {
-	private final Amount perByteFee;
-	private final Map<Class<? extends Particle>, UInt256> perUpSubstateFee;
+public class EngineApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
+	private final String path;
 
-	private FeeTable(Amount perByteFee, Map<Class<? extends Particle>, UInt256> perUpSubstateFee) {
-		this.perByteFee = perByteFee;
-		this.perUpSubstateFee = perUpSubstateFee;
+	public EngineApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
+		this.path = path;
 	}
 
-	public static FeeTable create(Amount perByteFee, Map<Class<? extends Particle>, Amount> perUpSubstateFee) {
-		var map = new HashMap<Class<? extends Particle>, UInt256>();
-		perUpSubstateFee.forEach((k, v) -> map.put(k, v.toSubunits()));
-		return new FeeTable(perByteFee, map);
-	}
-
-	public static FeeTable noFees() {
-		return new FeeTable(Amount.zero(), Map.of());
-	}
-
-	public UInt256 getPerByteFee() {
-		return perByteFee.toSubunits();
-	}
-
-	public Map<Class<? extends Particle>, UInt256> getPerUpSubstateFee() {
-		return perUpSubstateFee;
-	}
-
-	public JSONObject asJson(
-		Function<Class<? extends Particle>, String> substateNameMapper,
-		Function<UInt256, JSONObject> xrdAmountToJson
-	) {
-		var upSubstateFee = new JSONArray();
-		perUpSubstateFee.forEach((p, fee) -> {
-			var substateType = substateNameMapper.apply(p);
-			upSubstateFee.put(new JSONObject()
-				.put("substate_type_identifier", new JSONObject()
-					.put("type", substateType)
-				)
-				.put("fee", xrdAmountToJson.apply(fee))
-			);
-		});
-
-		return new JSONObject()
-			.put("per_byte_fee", xrdAmountToJson.apply(perByteFee.toSubunits()))
-			.put("per_up_substate_fee", upSubstateFee);
+	@Override
+	protected void configure() {
+		var binder = MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, annotationType);
+		binder.addBinding(path + "/configuration").to(EngineConfigurationHandler.class);
 	}
 }

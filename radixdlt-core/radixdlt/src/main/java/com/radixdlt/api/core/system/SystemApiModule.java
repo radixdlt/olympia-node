@@ -100,7 +100,6 @@ public final class SystemApiModule extends AbstractModule {
 		@Override
 		public Controller get() {
 			var handlers = new HashMap<String, JsonRpcHandler>();
-			handlers.put("api.get_configuration", handler::apiGetConfiguration);
 			handlers.put("api.get_data", handler::apiGetData);
 			handlers.put("bft.get_configuration", handler::bftGetConfiguration);
 			handlers.put("bft.get_data", handler::bftGetData);
@@ -108,7 +107,6 @@ public final class SystemApiModule extends AbstractModule {
 			handlers.put("mempool.get_data", handler::mempoolGetData);
 			handlers.put("ledger.get_latest_proof", handler::ledgerGetLatestProof);
 			handlers.put("ledger.get_latest_epoch_proof", handler::ledgerGetLatestEpochProof);
-			handlers.put("radix_engine.get_configuration", handler::radixEngineGetConfiguration);
 			handlers.put("radix_engine.get_data", handler::radixEngineGetData);
 			handlers.put("sync.get_configuration", handler::syncGetConfiguration);
 			handlers.put("sync.get_data", handler::syncGetData);

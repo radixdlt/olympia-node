@@ -82,10 +82,6 @@ public class SystemHandler {
 		this.networkingService = networkingService;
 	}
 
-	public JSONObject apiGetConfiguration(JSONObject request) {
-		return successResponse(request, systemConfigService.getApiConfiguration());
-	}
-
 	public JSONObject apiGetData(JSONObject request) {
 		return successResponse(request, systemConfigService.getApiData());
 	}
@@ -112,10 +108,6 @@ public class SystemHandler {
 
 	public JSONObject ledgerGetLatestEpochProof(JSONObject request) {
 		return successResponse(request, systemConfigService.getLatestEpochProof());
-	}
-
-	public JSONObject radixEngineGetConfiguration(JSONObject request) {
-		return successResponse(request, systemConfigService.getRadixEngineConfiguration());
 	}
 
 	public JSONObject radixEngineGetData(JSONObject request) {

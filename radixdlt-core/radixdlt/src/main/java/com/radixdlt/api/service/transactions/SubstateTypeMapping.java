@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,62 +61,69 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system;
+package com.radixdlt.api.service.transactions;
 
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.utils.UInt256;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.utils.Pair;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
-import java.util.function.Function;
 
-public final class FeeTable {
-	private final Amount perByteFee;
-	private final Map<Class<? extends Particle>, UInt256> perUpSubstateFee;
+import static com.radixdlt.atom.SubstateTypeId.*;
+import static com.radixdlt.api.service.transactions.SubstateTypeMapping.OperationType.*;
 
-	private FeeTable(Amount perByteFee, Map<Class<? extends Particle>, UInt256> perUpSubstateFee) {
-		this.perByteFee = perByteFee;
-		this.perUpSubstateFee = perUpSubstateFee;
+public final class SubstateTypeMapping {
+	public enum OperationType {
+		RESOURCE("Resource"),
+		DATA("Data"),
+		RESOURCE_AND_DATA("ResourceAndData");
+
+		private final String name;
+
+		OperationType(String name) {
+			this.name = name;
+		}
 	}
 
-	public static FeeTable create(Amount perByteFee, Map<Class<? extends Particle>, Amount> perUpSubstateFee) {
-		var map = new HashMap<Class<? extends Particle>, UInt256>();
-		perUpSubstateFee.forEach((k, v) -> map.put(k, v.toSubunits()));
-		return new FeeTable(perByteFee, map);
+	private static final Map<SubstateTypeId, Pair<OperationType, String>> SUBSTATE_TYPE_ID_STRING_MAP;
+	static {
+		SUBSTATE_TYPE_ID_STRING_MAP = new EnumMap<>(SubstateTypeId.class);
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VIRTUAL_PARENT, Pair.of(DATA, "VirtualParent"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(UNCLAIMED_READDR, Pair.of(DATA, "UnclaimedRadixEngineAddress"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(ROUND_DATA, Pair.of(DATA, "RoundData"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(EPOCH_DATA, Pair.of(DATA, "EpochData"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(TOKEN_RESOURCE, Pair.of(DATA, "TokenData"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(TOKEN_RESOURCE_METADATA, Pair.of(DATA, "TokenMetadata"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(TOKENS, Pair.of(RESOURCE, "Tokens"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(PREPARED_STAKE, Pair.of(RESOURCE, "PreparedStake"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(STAKE_OWNERSHIP, Pair.of(RESOURCE, "StakeOwnership"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(PREPARED_UNSTAKE, Pair.of(RESOURCE, "PreparedUnstake"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(EXITING_STAKE, Pair.of(RESOURCE, "ExitingStake"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_META_DATA, Pair.of(DATA, "ValidatorMetadata"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_STAKE_DATA, Pair.of(RESOURCE_AND_DATA, "ValidatorData"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_BFT_DATA, Pair.of(DATA, "ValidatorBFTData"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_ALLOW_DELEGATION_FLAG, Pair.of(DATA, "ValidatorAllowDelegation"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_REGISTERED_FLAG_COPY, Pair.of(DATA, "PreparedValidatorRegistered"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_RAKE_COPY, Pair.of(DATA, "PreparedValidatorFee"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_OWNER_COPY, Pair.of(DATA, "PreparedValidatorOwner"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VALIDATOR_SYSTEM_META_DATA, Pair.of(DATA, "ValidatorSystemMetadata"));
+
+		for (var id : SubstateTypeId.values()) {
+			if (!SUBSTATE_TYPE_ID_STRING_MAP.containsKey(id)) {
+				throw new IllegalStateException("No string associated with substate type id " + id);
+			}
+		}
 	}
 
-	public static FeeTable noFees() {
-		return new FeeTable(Amount.zero(), Map.of());
+	private SubstateTypeMapping() {
+		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	public UInt256 getPerByteFee() {
-		return perByteFee.toSubunits();
+	public static String getType(SubstateTypeId typeId) {
+		return SUBSTATE_TYPE_ID_STRING_MAP.get(typeId).getFirst().name;
 	}
 
-	public Map<Class<? extends Particle>, UInt256> getPerUpSubstateFee() {
-		return perUpSubstateFee;
-	}
-
-	public JSONObject asJson(
-		Function<Class<? extends Particle>, String> substateNameMapper,
-		Function<UInt256, JSONObject> xrdAmountToJson
-	) {
-		var upSubstateFee = new JSONArray();
-		perUpSubstateFee.forEach((p, fee) -> {
-			var substateType = substateNameMapper.apply(p);
-			upSubstateFee.put(new JSONObject()
-				.put("substate_type_identifier", new JSONObject()
-					.put("type", substateType)
-				)
-				.put("fee", xrdAmountToJson.apply(fee))
-			);
-		});
-
-		return new JSONObject()
-			.put("per_byte_fee", xrdAmountToJson.apply(perByteFee.toSubunits()))
-			.put("per_up_substate_fee", upSubstateFee);
+	public static String getName(SubstateTypeId typeId) {
+		return SUBSTATE_TYPE_ID_STRING_MAP.get(typeId).getSecond();
 	}
 }

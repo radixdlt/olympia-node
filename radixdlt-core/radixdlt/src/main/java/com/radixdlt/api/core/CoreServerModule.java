@@ -69,6 +69,7 @@ import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.api.core.engine.EngineApiModule;
 import com.radixdlt.api.core.entity.EntityApiModule;
 import com.radixdlt.api.core.chaos.ChaosApiModule;
 import com.radixdlt.api.core.construction.ConstructionApiModule;
@@ -144,6 +145,7 @@ public final class CoreServerModule extends AbstractModule {
 			install(new TransactionIndexApiModule(NodeServer.class, "/transactions"));
 		}
 		install(new ConstructionApiModule(NodeServer.class, "/construction"));
+		install(new EngineApiModule(NodeServer.class, "/engine"));
 	}
 
 	@ProvidesIntoMap

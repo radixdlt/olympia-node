@@ -64,7 +64,10 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.radixdlt.utils.UInt256;
 import org.json.JSONObject;
+
+import java.util.function.Function;
 
 /**
  * Configuration used for hard forks
@@ -111,11 +114,15 @@ public final class ForkConfig {
 		return new ForkConfig(this.epoch, this.name, this.version, config);
 	}
 
-	public JSONObject asJson() {
+	public JSONObject asJson(Function<UInt256, JSONObject> xrdAmountToJson) {
 		return new JSONObject()
-			.put("epoch", epoch)
-			.put("name", name)
-			.put("version", version.name().toLowerCase())
-			.put("config", config.asJson());
+			.put("fork_identifier", new JSONObject()
+				.put("epoch", epoch)
+				.put("fork", name)
+			)
+			.put("engine_identifier", new JSONObject()
+				.put("engine", version.name().toLowerCase())
+			)
+			.put("configuration", config.asJson(xrdAmountToJson));
 	}
 }

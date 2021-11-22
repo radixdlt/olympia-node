@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,62 +61,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system;
+package com.radixdlt.api.core.engine;
 
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.utils.UInt256;
+import com.google.inject.Inject;
+import com.radixdlt.api.gateway.ApiHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
+import java.util.TreeMap;
 
-public final class FeeTable {
-	private final Amount perByteFee;
-	private final Map<Class<? extends Particle>, UInt256> perUpSubstateFee;
+public class EngineConfigurationHandler implements ApiHandler<Void> {
+	private final TreeMap<Long, ForkConfig> forks;
+	private final Addressing addressing;
 
-	private FeeTable(Amount perByteFee, Map<Class<? extends Particle>, UInt256> perUpSubstateFee) {
-		this.perByteFee = perByteFee;
-		this.perUpSubstateFee = perUpSubstateFee;
-	}
-
-	public static FeeTable create(Amount perByteFee, Map<Class<? extends Particle>, Amount> perUpSubstateFee) {
-		var map = new HashMap<Class<? extends Particle>, UInt256>();
-		perUpSubstateFee.forEach((k, v) -> map.put(k, v.toSubunits()));
-		return new FeeTable(perByteFee, map);
-	}
-
-	public static FeeTable noFees() {
-		return new FeeTable(Amount.zero(), Map.of());
-	}
-
-	public UInt256 getPerByteFee() {
-		return perByteFee.toSubunits();
-	}
-
-	public Map<Class<? extends Particle>, UInt256> getPerUpSubstateFee() {
-		return perUpSubstateFee;
-	}
-
-	public JSONObject asJson(
-		Function<Class<? extends Particle>, String> substateNameMapper,
-		Function<UInt256, JSONObject> xrdAmountToJson
+	@Inject
+	public EngineConfigurationHandler(
+		TreeMap<Long, ForkConfig> forks,
+		Addressing addressing
 	) {
-		var upSubstateFee = new JSONArray();
-		perUpSubstateFee.forEach((p, fee) -> {
-			var substateType = substateNameMapper.apply(p);
-			upSubstateFee.put(new JSONObject()
-				.put("substate_type_identifier", new JSONObject()
-					.put("type", substateType)
-				)
-				.put("fee", xrdAmountToJson.apply(fee))
-			);
-		});
+		this.forks = forks;
+		this.addressing = addressing;
+	}
 
+	@Override
+	public Void parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return null;
+	}
+
+	@Override
+	public JSONObject handleRequest(Void request) throws Exception {
+		var forksJson = new JSONArray();
+		forks.forEach((epoch, config) -> {
+			forksJson.put(config.asJson(amt -> new JSONObject()
+				.put("resource", new JSONObject()
+					.put("type", "Token")
+					.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+				)
+				.put("value", amt)
+			));
+		});
 		return new JSONObject()
-			.put("per_byte_fee", xrdAmountToJson.apply(perByteFee.toSubunits()))
-			.put("per_up_substate_fee", upSubstateFee);
+			.put("forks", forksJson);
 	}
 }

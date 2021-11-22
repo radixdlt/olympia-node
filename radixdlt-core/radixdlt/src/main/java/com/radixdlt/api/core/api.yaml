@@ -1296,6 +1296,28 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
+  "/engine/configuration":
+    post:
+      summary: Get Engine Configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/EngineConfigurationRequest"
+      responses:
+        '200':
+          description: An unsigned transaction
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/EngineConfigurationResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
 components:
   schemas:
     NetworkConfigurationRequest:
@@ -1941,6 +1963,125 @@ components:
                     entity_identifier:
                       address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
                     type: Resource
+    EngineConfigurationRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+      example:
+        network_identifier:
+          network: mainnet
+    EngineConfigurationResponse:
+      type: object
+      required:
+        - forks
+      properties:
+        forks:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Fork"
+    Fork:
+      type: object
+      required:
+        - fork_identifier
+        - engine_identifier
+      properties:
+        fork_identifier:
+          "$ref": "#/components/schemas/ForkIdentifier"
+        engine_identifier:
+          "$ref": "#/components/schemas/EngineIdentifier"
+        engine_configuration:
+          "$ref": "#/components/schemas/EngineConfiguration"
+    EngineConfiguration:
+      type: object
+      required:
+        - maximum_validators
+        - token_symbol_pattern
+        - unstaking_delay_epoch_length
+        - minimum_completed_proposals_percentage
+        - maximum_transaction_size
+        - maximum_transactions_per_round
+        - validator_fee_increase_debouncer_epoch_length
+        - maximum_rounds_per_epoch
+        - minimum_stake
+        - rewards_per_proposal
+        - reserved_symbols
+        - fee_table
+      properties:
+        maximum_validators:
+          type: integer
+        token_symbol_pattern:
+          type: string
+        unstaking_delay_epoch_length:
+          type: integer
+        minimum_completed_proposals_percentage:
+          type: integer
+        maximum_transaction_size:
+          type: integer
+        maximum_transactions_per_round:
+          type: integer
+        validator_fee_increase_debouncer_epoch_length:
+          type: integer
+        maximum_rounds_per_epoch:
+          type: integer
+        minimum_stake:
+          "$ref": "#/components/schemas/ResourceAmount"
+        rewards_per_proposal:
+          "$ref": "#/components/schemas/ResourceAmount"
+        reserved_symbols:
+          type: array
+          items:
+            type: string
+        fee_table:
+          "$ref": "#/components/schemas/FeeTable"
+    FeeTable:
+      type: object
+      required:
+        - per_up_substate_fee
+        - per_byte_fee
+      properties:
+        per_up_substate_fee:
+          type: array
+          items:
+            "$ref": "#/components/schemas/UpSubstateFeeEntry"
+        per_byte_fee:
+          "$ref": "#/components/schemas/ResourceAmount"
+    UpSubstateFeeEntry:
+      type: object
+      required:
+        - substate_type_identifier
+        - fee
+      properties:
+        substate_type_identifier:
+          "$ref": "#/components/schemas/SubstateTypeIdentifier"
+        fee:
+          "$ref": "#/components/schemas/ResourceAmount"
+    SubstateTypeIdentifier:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+    EngineIdentifier:
+      type: object
+      required:
+        - engine
+      properties:
+        engine:
+          type: string
+    ForkIdentifier:
+      type: object
+      required:
+        - epoch
+        - fork
+      properties:
+        epoch:
+          "$ref": "#/components/schemas/LongNumber"
+        fork:
+          type: string
     CommittedTransaction:
       description: A transaction which has been committed on ledger.
       type: object

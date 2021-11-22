@@ -64,14 +64,18 @@
 
 package com.radixdlt.statecomputer.forks;
 
+import com.radixdlt.api.service.transactions.SubstateTypeMapping;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.utils.UInt256;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 public final class RERulesConfig {
@@ -116,22 +120,25 @@ public final class RERulesConfig {
 		this.maxValidators = maxValidators;
 	}
 
-	public JSONObject asJson() {
+	public JSONObject asJson(Function<UInt256, JSONObject> xrdAmountToJson) {
 		var reserved = new JSONArray();
 		reservedSymbols.forEach(reserved::put);
 		return new JSONObject()
-			.put("feeTable", feeTable.asJson())
-			.put("reservedSymbols", reserved)
-			.put("tokenSymbolPattern", tokenSymbolPattern.pattern())
-			.put("maxTransactionSize", maxTxnSize)
-			.put("maxTransactionsPerRound", maxSigsPerRound.orElse(0))
-			.put("maxRoundsPerEpoch", maxRounds)
-			.put("validatorFeeIncreaseDebouncerEpochLength", rakeIncreaseDebouncerEpochLength)
-			.put("minimumStake", minimumStake.toSubunits())
-			.put("unstakingDelayEpochLength", unstakingEpochDelay)
-			.put("rewardsPerProposal", rewardsPerProposal.toSubunits())
-			.put("minimumCompletedProposalsPercentage", minimumCompletedProposalsPercentage)
-			.put("maxValidators", maxValidators);
+			.put("fee_table", feeTable.asJson(
+				s -> SubstateTypeMapping.getName(SubstateTypeId.valueOf(s)),
+				xrdAmountToJson
+			))
+			.put("reserved_symbols", reserved)
+			.put("token_symbol_pattern", tokenSymbolPattern.pattern())
+			.put("maximum_transaction_size", maxTxnSize)
+			.put("maximum_transactions_per_round", maxSigsPerRound.orElse(0))
+			.put("maximum_rounds_per_epoch", maxRounds)
+			.put("validator_fee_increase_debouncer_epoch_length", rakeIncreaseDebouncerEpochLength)
+			.put("minimum_stake", xrdAmountToJson.apply(minimumStake.toSubunits()))
+			.put("unstaking_delay_epoch_length", unstakingEpochDelay)
+			.put("rewards_per_proposal", xrdAmountToJson.apply(rewardsPerProposal.toSubunits()))
+			.put("minimum_completed_proposals_percentage", minimumCompletedProposalsPercentage)
+			.put("maximum_validators", maxValidators);
 	}
 
 	public static RERulesConfig testingDefault() {

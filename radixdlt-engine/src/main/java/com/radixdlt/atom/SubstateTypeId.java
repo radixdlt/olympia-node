@@ -131,6 +131,15 @@ public enum SubstateTypeId {
 		return substateType;
 	}
 
+	public static SubstateTypeId valueOf(Class<? extends Particle> substateClass) {
+		for (var substateType : SubstateTypeId.values()) {
+			if (substateType.substateClass.equals(substateClass)) {
+				return substateType;
+			}
+		}
+		throw new IllegalArgumentException("Unknown substate class " + substateClass);
+	}
+
 	public byte id() {
 		return id;
 	}

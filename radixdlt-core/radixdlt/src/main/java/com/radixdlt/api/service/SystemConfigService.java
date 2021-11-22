@@ -69,7 +69,6 @@ import org.json.JSONObject;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.api.Endpoints;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
@@ -80,23 +79,14 @@ import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
 
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
-import static com.radixdlt.api.util.JsonRpcUtil.fromMap;
-import static com.radixdlt.api.util.JsonRpcUtil.wrapArray;
-
-import static com.radixdlt.api.util.CountersJsonFormatter.countersToJson;
-
 
 public class SystemConfigService {
 	@VisibleForTesting
@@ -193,9 +183,7 @@ public class SystemConfigService {
 		CounterType.NETWORKING_RECEIVED_BYTES
 	);
 
-	private final JSONObject radixEngineConfiguration;
 	private final JSONObject mempoolConfiguration;
-	private final JSONObject apiConfiguration;
 	private final JSONObject bftConfiguration;
 	private final JSONObject syncConfiguration;
 	private final JSONObject checkpointsConfiguration;
@@ -207,13 +195,11 @@ public class SystemConfigService {
 	@Inject
 	public SystemConfigService(
 		@Self ECPublicKey self,
-		@Endpoints Map<String, Boolean> endpointStatuses,
 		@PacemakerTimeout long pacemakerTimeout,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
 		@MempoolMaxSize int mempoolMaxSize,
 		@MempoolThrottleMs long mempoolThrottleMs,
 		@Genesis VerifiedTxnsAndProof genesis,
-		TreeMap<Long, ForkConfig> forks,
 		SyncConfig syncConfig,
 		InMemorySystemInfo inMemorySystemInfo,
 		SystemCounters systemCounters,
@@ -223,16 +209,10 @@ public class SystemConfigService {
 		this.systemCounters = systemCounters;
 		this.addressing = addressing;
 
-		radixEngineConfiguration = prepareRadixEngineConfiguration(forks);
 		mempoolConfiguration = prepareMempoolConfiguration(mempoolMaxSize, mempoolThrottleMs);
-		apiConfiguration = prepareApiConfiguration(endpointStatuses);
 		bftConfiguration = prepareBftConfiguration(pacemakerTimeout, bftSyncPatienceMillis);
 		syncConfiguration = syncConfig.asJson();
 		checkpointsConfiguration = prepareCheckpointsConfiguration(genesis);
-	}
-
-	public JSONObject getApiConfiguration() {
-		return apiConfiguration;
 	}
 
 	public JSONObject getApiData() {
@@ -265,10 +245,6 @@ public class SystemConfigService {
 		return proof == null ? new JSONObject() : proof.asJSON(addressing);
 	}
 
-	public JSONObject getRadixEngineConfiguration() {
-		return radixEngineConfiguration;
-	}
-
 	public JSONObject getRadixEngineData() {
 		return countersToJson(systemCounters, RADIX_ENGINE_COUNTERS, true);
 	}
@@ -290,21 +266,55 @@ public class SystemConfigService {
 	}
 
 	@VisibleForTesting
-	static JSONObject prepareApiConfiguration(Map<String, Boolean> statuses) {
-		var enabled = statuses.entrySet().stream()
-			.filter(Map.Entry::getValue)
-			.map(Map.Entry::getKey)
-			.collect(Collectors.toList());
-
-		return jsonObject().put(
-			"endpoints",
-			fromCollection(enabled, endpoint -> "/" + endpoint)
-		);
+	static JSONObject countersToJson(SystemCounters counters, List<CounterType> types, boolean skipTopLevel) {
+		var result = jsonObject();
+		types.forEach(counterType -> counterToJson(result, counters, counterType, skipTopLevel));
+		return result;
 	}
 
 	@VisibleForTesting
-	static JSONObject prepareRadixEngineConfiguration(TreeMap<Long, ForkConfig> forksConfigs) {
-		return wrapArray(fromMap(forksConfigs, (key, config) -> config.asJson()));
+	static void counterToJson(JSONObject obj, SystemCounters systemCounters, CounterType type, boolean skipTopLevel) {
+		var ptr = obj;
+		var iterator = List.of(type.jsonPath().split("\\.")).listIterator();
+
+		if (skipTopLevel && iterator.hasNext()) {
+			iterator.next();
+		}
+
+		while (iterator.hasNext()) {
+			var element = toCamelCase(iterator.next());
+
+			if (ptr.has(element)) {
+				ptr = ptr.getJSONObject(element);
+			} else {
+				if (iterator.hasNext()) {
+					var newObj = jsonObject();
+					ptr.put(element, newObj);
+					ptr = newObj;
+				} else {
+					ptr.put(element, systemCounters.get(type));
+				}
+			}
+		}
+	}
+
+	@VisibleForTesting
+	static String toCamelCase(String input) {
+		var output = new StringBuilder();
+
+		boolean upCaseNext = false;
+
+		for (var chr : input.toCharArray()) {
+			if (chr == '_') {
+				upCaseNext = true;
+				continue;
+			}
+
+			output.append(upCaseNext ? Character.toUpperCase(chr) : chr);
+			upCaseNext = false;
+		}
+
+		return output.toString();
 	}
 
 	@VisibleForTesting
