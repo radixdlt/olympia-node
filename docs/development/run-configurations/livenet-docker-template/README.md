@@ -15,13 +15,23 @@ we are not setting up nginx, and not allowing inbound connections to our node.
 Before starting, ensure this template folder has been copied outside the radixdlt repository,
 and given a sensible name describing the node you will run.
 
-Then, start a terminal in the copied folder.
+Then, start a terminal in the copied folder, and run:
 
-* Create and update `node-variables.sh`:
-  * Run `cp node-variables.template.sh node-variables.sh`
-  * Edit `node-variables.sh` to update the configuration inside.
-* Run `chmod +x generate-key.sh`, `chmod +x start-node.sh`, `chmod +x stop-node.sh`, `chmod +x clear-ledger.sh`
-* Run `./generate-key.sh` to generate a public/private keystore at `./node/keystore.ks`.
+```sh
+cp template.env .env
+chmod +x generate-key.sh
+chmod +x start-node.sh
+chmod +x stop-node.sh
+```
+
+Now, edit the `.env` file to fix a configuration, including setting up the `RADIXDLT_NODE_KEY_PASSWORD`
+which will be used by the key generation.
+
+Then, to generate the keys for your node, run:
+
+```sh
+./generate-key.sh  # This generates a public/private keystore at node/keystore.ks
+```
 
 You are now prepared and ready to start the node - but we just need to build the correct image
 that you wish the node to run from.
