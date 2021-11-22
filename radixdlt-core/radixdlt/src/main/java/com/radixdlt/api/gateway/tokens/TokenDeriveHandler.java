@@ -63,34 +63,40 @@
 
 package com.radixdlt.api.gateway.tokens;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.gateway.ApiHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+public class TokenDeriveHandler implements ApiHandler<TokenDeriveRequest> {
+	private final Addressing addressing;
 
-public final class TokenApiModule extends AbstractModule {
-	private final String path;
-	private final Class<? extends Annotation> annotationType;
-
-	public TokenApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.path = path;
-		this.annotationType = annotationType;
+	@Inject
+	TokenDeriveHandler(
+		Addressing addressing
+	) {
+		this.addressing = addressing;
 	}
 
 	@Override
-	protected void configure() {
-		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-			.addBinding().to(BerkeleyResourceInfoStore.class);
+	public Addressing addressing() {
+		return addressing;
+	}
 
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path).to(TokenHandler.class);
-		routeBinder.addBinding(path + "/derive").to(TokenDeriveHandler.class);
+	@Override
+	public TokenDeriveRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return TokenDeriveRequest.from(requestReader);
+	}
+
+	@Override
+	public JSONObject handleRequest(TokenDeriveRequest request) throws Exception {
+		var key = request.getAccountAddress().publicKey().orElseThrow();
+		var symbol = request.getSymbol();
+		var tokenAddress = REAddr.ofHashedKey(key, symbol);
+		return new JSONObject()
+			.put("rri", addressing.forResources().of(symbol, tokenAddress));
 	}
 }

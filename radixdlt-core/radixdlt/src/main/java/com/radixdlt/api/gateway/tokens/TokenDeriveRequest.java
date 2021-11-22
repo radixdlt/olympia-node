@@ -63,34 +63,30 @@
 
 package com.radixdlt.api.gateway.tokens;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.identifiers.REAddr;
 
-import java.lang.annotation.Annotation;
+public class TokenDeriveRequest {
+	private final REAddr accountAddress;
+	private final String symbol;
 
-public final class TokenApiModule extends AbstractModule {
-	private final String path;
-	private final Class<? extends Annotation> annotationType;
-
-	public TokenApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.path = path;
-		this.annotationType = annotationType;
+	private TokenDeriveRequest(REAddr accountAddress, String symbol) {
+		this.accountAddress = accountAddress;
+		this.symbol = symbol;
 	}
 
-	@Override
-	protected void configure() {
-		bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-			.addBinding().to(BerkeleyResourceInfoStore.class);
+	public REAddr getAccountAddress() {
+		return accountAddress;
+	}
 
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
-		);
-		routeBinder.addBinding(path).to(TokenHandler.class);
-		routeBinder.addBinding(path + "/derive").to(TokenDeriveHandler.class);
+	public String getSymbol() {
+		return symbol;
+	}
+
+	public static TokenDeriveRequest from(JsonObjectReader reader) throws InvalidParametersException {
+		var accountAddress = reader.getAccountAddress("creator_account_address");
+		var symbol = reader.getString("symbol");
+		return new TokenDeriveRequest(accountAddress, symbol);
 	}
 }

@@ -73,13 +73,13 @@ import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-final class TokenApiHandler implements ApiHandler<REAddr> {
+final class TokenHandler implements ApiHandler<REAddr> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Addressing addressing;
 	private final BerkeleyResourceInfoStore store;
 
 	@Inject
-	TokenApiHandler(
+	TokenHandler(
 		InMemorySystemInfo inMemorySystemInfo,
 		Addressing addressing,
 		BerkeleyResourceInfoStore store
