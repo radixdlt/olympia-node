@@ -72,6 +72,8 @@ import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.time.Instant;
+
 class ValidatorsApiHandler implements ApiHandler<Void> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Addressing addressing;
@@ -99,9 +101,12 @@ class ValidatorsApiHandler implements ApiHandler<Void> {
 	@Override
 	public JSONObject handleRequest(Void request) {
 		var validatorsJson = fetchValidators(0, 1000);
-
+		var proof = inMemorySystemInfo.getCurrentProof();
 		return new JSONObject()
-			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
+			.put("ledger_state", new JSONObject()
+				.put("version", proof.getStateVersion())
+				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
+			)
 			.put("validators", validatorsJson);
 	}
 

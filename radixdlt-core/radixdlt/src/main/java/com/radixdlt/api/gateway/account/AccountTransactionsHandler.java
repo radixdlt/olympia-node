@@ -74,6 +74,7 @@ import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
 
 class AccountTransactionsHandler implements ApiHandler<AccountTransactionsRequest> {
@@ -129,9 +130,12 @@ class AccountTransactionsHandler implements ApiHandler<AccountTransactionsReques
 		if (lastOffset.get() > 0) {
 			result.put("next_cursor", Long.toString(lastOffset.get() - 1));
 		}
-
+		var proof = inMemorySystemInfo.getCurrentProof();
 		return result
-			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
+			.put("ledger_state", new JSONObject()
+				.put("version", proof.getStateVersion())
+				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
+			)
 			.put("total_count", txnArray.length())
 			.put("transactions", txnArray);
 	}

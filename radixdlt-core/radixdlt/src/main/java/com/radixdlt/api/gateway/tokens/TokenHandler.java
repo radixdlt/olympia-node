@@ -73,6 +73,8 @@ import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.time.Instant;
+
 final class TokenHandler implements ApiHandler<REAddr> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Addressing addressing;
@@ -103,8 +105,12 @@ final class TokenHandler implements ApiHandler<REAddr> {
 	public JSONObject handleRequest(REAddr addr) {
 		var tokenJson = store.getResourceInfo(addr)
 			.map(o -> new JSONArray().put(o)).orElse(new JSONArray());
+		var proof = inMemorySystemInfo.getCurrentProof();
 		return new JSONObject()
-			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
+			.put("ledger_state", new JSONObject()
+				.put("version", proof.getStateVersion())
+				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
+			)
 			.put("token", tokenJson);
 	}
 }

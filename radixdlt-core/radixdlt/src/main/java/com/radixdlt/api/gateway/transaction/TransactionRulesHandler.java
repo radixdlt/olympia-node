@@ -73,6 +73,7 @@ import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONObject;
 
+import java.time.Instant;
 import java.util.TreeMap;
 
 public class TransactionRulesHandler implements ApiHandler<Void> {
@@ -101,9 +102,12 @@ public class TransactionRulesHandler implements ApiHandler<Void> {
 	public JSONObject handleRequest(Void request) throws Exception {
 		var currentEpoch = inMemorySystemInfo.getCurrentProof().getEpoch();
 		var forkConfig = forks.floorEntry(currentEpoch).getValue();
-
+		var proof = inMemorySystemInfo.getCurrentProof();
 		return new JSONObject()
-			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
+			.put("ledger_state", new JSONObject()
+				.put("version", proof.getStateVersion())
+				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
+			)
 			.put("transaction_rules", new JSONObject()
 				.put("maximum_message_length", 255)
 				.put("minimum_stake", new JSONObject()

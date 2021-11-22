@@ -72,6 +72,8 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONObject;
 
+import java.time.Instant;
+
 final class ValidatorApiHandler implements ApiHandler<ECPublicKey> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Addressing addressing;
@@ -102,8 +104,12 @@ final class ValidatorApiHandler implements ApiHandler<ECPublicKey> {
 		var uptime = uptimeStore.getUptimeTwoWeeks(key);
 		validatorJson.getJSONObject("info")
 			.put("uptime", uptime);
+		var proof = inMemorySystemInfo.getCurrentProof();
 		return new JSONObject()
-			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
+			.put("ledger_state", new JSONObject()
+				.put("version", proof.getStateVersion())
+				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
+			)
 			.put("validator", validatorJson);
 	}
 

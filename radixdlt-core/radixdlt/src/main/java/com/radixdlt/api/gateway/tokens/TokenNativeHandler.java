@@ -72,6 +72,8 @@ import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.time.Instant;
+
 public class TokenNativeHandler implements ApiHandler<Void> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final BerkeleyResourceInfoStore store;
@@ -94,8 +96,12 @@ public class TokenNativeHandler implements ApiHandler<Void> {
 	public JSONObject handleRequest(Void request) throws Exception {
 		var tokenJson = store.getResourceInfo(REAddr.ofNativeToken())
 			.map(o -> new JSONArray().put(o)).orElse(new JSONArray());
+		var proof = inMemorySystemInfo.getCurrentProof();
 		return new JSONObject()
-			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
+			.put("ledger_state", new JSONObject()
+				.put("version", proof.getStateVersion())
+				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
+			)
 			.put("token", tokenJson);
 	}
 }

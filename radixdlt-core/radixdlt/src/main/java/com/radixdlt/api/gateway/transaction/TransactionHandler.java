@@ -74,6 +74,8 @@ import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.time.Instant;
+
 final class TransactionHandler implements ApiHandler<AID> {
 	private final AccountTransactionTransformer transactionTransformer;
 	private final BerkeleyTransactionsByIdStore store;
@@ -100,8 +102,12 @@ final class TransactionHandler implements ApiHandler<AID> {
 		var transactionJson = store.getTransactionJSON(txnId)
 			.map(transactionTransformer::map)
 			.map(json -> new JSONArray().put(json)).orElse(new JSONArray());
+		var proof = inMemorySystemInfo.getCurrentProof();
 		return new JSONObject()
-			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
+			.put("ledger_state", new JSONObject()
+				.put("version", proof.getStateVersion())
+				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
+			)
 			.put("transaction", transactionJson);
 	}
 }

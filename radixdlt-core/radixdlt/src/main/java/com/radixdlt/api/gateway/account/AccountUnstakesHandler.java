@@ -72,6 +72,8 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONObject;
 
+import java.time.Instant;
+
 final class AccountUnstakesHandler implements ApiHandler<REAddr> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Addressing addressing;
@@ -101,8 +103,12 @@ final class AccountUnstakesHandler implements ApiHandler<REAddr> {
 	@Override
 	public JSONObject handleRequest(REAddr addr) {
 		var stakes = store.getAccountUnstakes(addr);
+		var proof = inMemorySystemInfo.getCurrentProof();
 		return new JSONObject()
-			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
+			.put("ledger_state", new JSONObject()
+				.put("version", proof.getStateVersion())
+				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
+			)
 			.put("unstakes", stakes);
 	}
 }

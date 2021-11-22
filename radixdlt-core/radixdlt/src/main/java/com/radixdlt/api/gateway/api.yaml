@@ -356,16 +356,17 @@ components:
     AccountBalancesResponse:
       type: object
       required:
-        - state_version
+        - ledger_state
         - account_balances
       properties:
-        state_version:
-          type: integer
-          format: int64
+        ledger_state:
+          "$ref": "#/components/schemas/LedgerState"
         account_balances:
           "$ref": "#/components/schemas/AccountBalances"
       example:
-        state_version: 1000000
+        ledger_state:
+          version: 1
+          timestamp: "2021-08-29T01:19:00.524Z"
         account_balances:
           staked_and_unstaking_balance:
             amount: '0'
@@ -402,17 +403,18 @@ components:
       type: object
       required:
         - stakes
-        - state_version
+        - ledger_state
       properties:
-        state_version:
-          type: integer
-          format: int64
+        ledger_state:
+          "$ref": "#/components/schemas/LedgerState"
         stakes:
           type: array
           items:
             "$ref": "#/components/schemas/AccountStakeEntry"
       example:
-        state_version: 1000000
+        ledger_state:
+          version: 1
+          timestamp: "2021-08-29T01:19:00.524Z"
         stakes:
           - validator_address: rv1qg923hl7f725cs06eg5gmdcy4pfvpa8mfnjcw669traquj28c96z5w0rld0
             delegated_stake:
@@ -444,18 +446,19 @@ components:
     AccountUnstakesResponse:
       type: object
       required:
-        - state_version
+        - ledger_state
         - unstakes
       properties:
-        state_version:
-          type: integer
-          format: int64
+        ledger_state:
+          "$ref": "#/components/schemas/LedgerState"
         unstakes:
           type: array
           items:
             "$ref": "#/components/schemas/AccountUnstakeEntry"
       example:
-        state_version: 1000000
+        ledger_state:
+          version: 1
+          timestamp: "2021-08-29T01:19:00.524Z"
         unstakes:
           - validator_address: rv1qg923hl7f725cs06eg5gmdcy4pfvpa8mfnjcw669traquj28c96z5w0rld0
             unstaking_amount:
@@ -497,11 +500,12 @@ components:
     AccountTransactionsResponse:
       type: object
       required:
-        - state_version
+        - ledger_state
         - transactions
         - total_count
       properties:
-        state_version:
+        ledger_state:
+          "$ref": "#/components/schemas/LedgerState"
           type: integer
           format: int64
         total_count:
@@ -514,7 +518,9 @@ components:
           items:
             "$ref": "#/components/schemas/AccountTransaction"
       example:
-        state_version: 1000000
+        ledger_state:
+          version: 1
+          timestamp: "2021-08-29T01:19:00.524Z"
         next_cursor: 0
         total_count: 1
         transactions:
@@ -625,12 +631,11 @@ components:
     TransactionRulesResponse:
       type: object
       required:
-        - state_version
+        - ledger_state
         - transaction_rules
       properties:
-        state_version:
-          type: integer
-          format: int64
+        ledger_state:
+          "$ref": "#/components/schemas/LedgerState"
         transaction_rules:
           "$ref": "#/components/schemas/TransactionRules"
     TransactionRules:
@@ -828,22 +833,34 @@ components:
       example:
         network: mainnet
         rri: xrd_rr1qy5wfsfh
+    LedgerState:
+      type: object
+      required:
+        - version
+        - timestamp
+      properties:
+        version:
+          type: integer
+          format: int64
+        timestamp:
+          type: string
     TokenInfoResponse:
       type: object
       required:
+        - ledger_state
         - token
-        - state_version
       properties:
-        state_version:
-          type: integer
-          format: int64
+        ledger_state:
+          "$ref": "#/components/schemas/LedgerState"
         token:
           type: array
           maxItems: 1
           items:
             "$ref": "#/components/schemas/Token"
       example:
-        state_version: 1
+        ledger_state:
+          version: 1
+          timestamp: "2021-08-29T01:19:00.524Z"
         token:
           - rri: xrd_rr1qy5wfsfh
             supply:
@@ -879,18 +896,19 @@ components:
       type: object
       required:
         - token
-        - state_version
+        - ledger_state
       properties:
-        state_version:
-          type: integer
-          format: int64
+        ledger_state:
+          "$ref": "#/components/schemas/LedgerState"
         token:
           type: array
           maxItems: 1
           items:
             "$ref": "#/components/schemas/Token"
       example:
-        state_version: 1
+        ledger_state:
+          version: 1
+          timestamp: "2021-08-29T01:19:00.524Z"
         token:
           - rri: xrd_rr1qy5wfsfh
             supply:
@@ -953,12 +971,11 @@ components:
     TransactionStatusResponse:
       type: object
       required:
-        - state_version
+        - ledger_state
         - transaction
       properties:
-        state_version:
-          type: integer
-          format: int64
+        ledger_state:
+          "$ref": "#/components/schemas/LedgerState"
         transaction:
           type: array
           maxItems: 1
@@ -980,16 +997,17 @@ components:
     ValidatorInfoResponse:
       type: object
       required:
-        - state_version
+        - ledger_state
         - validator
       properties:
-        state_version:
-          type: integer
-          format: int64
+        ledger_state:
+          "$ref": "#/components/schemas/LedgerState"
         validator:
           "$ref": "#/components/schemas/Validator"
       example:
-        state_version: 1000000
+        ledger_state:
+          version: 10
+          timestamp: "2021-08-29T01:19:00.524Z"
         validator:
           stake:
             exitingOwnership: '0'
@@ -1022,18 +1040,19 @@ components:
     ValidatorsResponse:
       type: object
       required:
-        - state_version
+        - ledger_state
         - validators
       properties:
-        state_version:
-          type: integer
-          format: int64
+        ledger_state:
+          "$ref": "#/components/schemas/LedgerState"
         validators:
           type: array
           items:
             "$ref": "#/components/schemas/Validator"
       example:
-        state_version: 1000000
+        ledger_state:
+          version: 1
+          timestamp: "2021-08-29T01:19:00.524Z"
         validators:
           - stake:
               exitingOwnership: '0'
