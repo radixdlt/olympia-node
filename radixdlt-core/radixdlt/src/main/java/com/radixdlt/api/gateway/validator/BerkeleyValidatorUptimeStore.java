@@ -63,7 +63,6 @@
 
 package com.radixdlt.api.gateway.validator;
 
-import com.radixdlt.api.data.ValidatorUptime;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.REProcessedTxn;

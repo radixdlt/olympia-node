@@ -76,10 +76,10 @@ import java.util.stream.IntStream;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
-import static com.radixdlt.api.data.NodeStatus.BOOTING;
-import static com.radixdlt.api.data.NodeStatus.STALLED;
-import static com.radixdlt.api.data.NodeStatus.SYNCING;
-import static com.radixdlt.api.data.NodeStatus.UP;
+import static com.radixdlt.api.service.network.NodeStatus.BOOTING;
+import static com.radixdlt.api.service.network.NodeStatus.STALLED;
+import static com.radixdlt.api.service.network.NodeStatus.SYNCING;
+import static com.radixdlt.api.service.network.NodeStatus.UP;
 import static com.radixdlt.api.service.network.NetworkInfoService.DEMAND_KEY;
 import static com.radixdlt.api.service.network.NetworkInfoService.LEDGER_KEY;
 import static com.radixdlt.api.service.network.NetworkInfoService.TARGET_KEY;

@@ -64,7 +64,6 @@
 package com.radixdlt.api.service.network;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.data.NodeStatus;
 import com.radixdlt.api.util.MovingAverage;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventProcessor;
@@ -72,11 +71,11 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 
 import java.util.EnumMap;
 
-import static com.radixdlt.api.data.NodeStatus.BOOTING;
-import static com.radixdlt.api.data.NodeStatus.OUT_OF_SYNC;
-import static com.radixdlt.api.data.NodeStatus.STALLED;
-import static com.radixdlt.api.data.NodeStatus.SYNCING;
-import static com.radixdlt.api.data.NodeStatus.UP;
+import static com.radixdlt.api.service.network.NodeStatus.BOOTING;
+import static com.radixdlt.api.service.network.NodeStatus.OUT_OF_SYNC;
+import static com.radixdlt.api.service.network.NodeStatus.STALLED;
+import static com.radixdlt.api.service.network.NodeStatus.SYNCING;
+import static com.radixdlt.api.service.network.NodeStatus.UP;
 import static com.radixdlt.api.service.network.NetworkInfoService.ValueHolder.Type.ABSOLUTE;
 import static com.radixdlt.api.service.network.NetworkInfoService.ValueHolder.Type.INCREMENTAL;
 import static com.radixdlt.counters.SystemCounters.CounterType;

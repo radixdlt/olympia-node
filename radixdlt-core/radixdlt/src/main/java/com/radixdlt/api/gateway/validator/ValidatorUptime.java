@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,60 +61,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.data;
+package com.radixdlt.api.gateway.validator;
 
 import org.json.JSONObject;
 
-import com.radixdlt.utils.UInt256;
+final class ValidatorUptime {
+	private final long proposalsCompleted;
+	private final long proposalsMissed;
 
-import java.util.List;
-
-import static org.bouncycastle.util.encoders.Hex.toHexString;
-
-import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-
-import static java.util.Objects.requireNonNull;
-
-public class PreparedTransaction {
-	private final byte[] blob;
-	private final byte[] hashToSign;
-	private final UInt256 fee;
-	private final List<JSONObject> notifications;
-
-	private PreparedTransaction(byte[] blob, byte[] hashToSign, UInt256 fee, List<JSONObject> notifications) {
-		this.blob = blob;
-		this.hashToSign = hashToSign;
-		this.fee = fee;
-		this.notifications = notifications;
+	private ValidatorUptime(long proposalsCompleted, long proposalsMissed) {
+		this.proposalsCompleted = proposalsCompleted;
+		this.proposalsMissed = proposalsMissed;
 	}
 
-	public static PreparedTransaction create(byte[] blob, byte[] hashToSign, UInt256 fee, List<JSONObject> notifications) {
-		requireNonNull(blob);
-		requireNonNull(hashToSign);
-		requireNonNull(fee);
-		requireNonNull(notifications);
-
-		return new PreparedTransaction(blob, hashToSign, fee, notifications);
+	public static ValidatorUptime create(long proposalsCompleted, long proposalsMissed) {
+		return new ValidatorUptime(proposalsCompleted, proposalsMissed);
 	}
 
-	public byte[] getBlob() {
-		return blob;
+	public static ValidatorUptime empty() {
+		return new ValidatorUptime(0, 0);
 	}
 
-	public byte[] getHashToSign() {
-		return hashToSign;
+	public ValidatorUptime merge(ValidatorUptime other) {
+		return new ValidatorUptime(
+			this.proposalsCompleted + other.proposalsCompleted,
+			this.proposalsMissed + other.proposalsMissed
+		);
 	}
 
-	public UInt256 getFee() {
-		return fee;
+	public String toPercentageString() {
+		if (proposalsCompleted == 0 && proposalsMissed == 0) {
+			return "0.00";
+		}
+		var uptimePercentage = proposalsCompleted * 10000 / (proposalsCompleted + proposalsMissed);
+		var uptimeDouble = uptimePercentage / 100.0;
+		return String.format("%.2f", uptimeDouble);
 	}
 
-	public JSONObject asJson() {
-		return jsonObject()
-			.put("fee", fee.toString())
-			.put("unsignedTransaction", toHexString(blob))
-			.put("payloadToSign", toHexString(hashToSign))
-			.put("notifications", fromCollection(notifications, v -> v));
+	public static ValidatorUptime fromJSON(JSONObject json) {
+		return new ValidatorUptime(
+			json.getLong("proposals_completed"),
+			json.getLong("proposals_missed")
+		);
+	}
+
+	public JSONObject toJSON() {
+		return new JSONObject()
+			.put("proposals_completed", proposalsCompleted)
+			.put("proposals_missed", proposalsMissed)
+			.put("uptime_percentage", toPercentageString());
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{completed=%s missed=%s}", this.getClass().getSimpleName(), proposalsCompleted, proposalsMissed);
 	}
 }
