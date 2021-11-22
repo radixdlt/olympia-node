@@ -1,6 +1,7 @@
 package com.radixdlt.store.tree;
 
 import java.util.HashMap;
+import java.util.List;
 
 public class PMTCachedStorage implements PMTStorage {
 
@@ -11,6 +12,10 @@ public class PMTCachedStorage implements PMTStorage {
 	public PMTCachedStorage() {
 		localDb = new HashMap<>();
 		localCache = new HashMap<>();
+	}
+
+	public void save(List<PMTNode> nodes) {
+		nodes.stream().forEach(n -> save(n));
 	}
 
 	public void save(PMTNode node) {
