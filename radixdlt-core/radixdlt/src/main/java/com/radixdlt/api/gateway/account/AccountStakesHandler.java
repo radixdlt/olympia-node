@@ -106,6 +106,8 @@ final class AccountStakesHandler implements ApiHandler<REAddr> {
 		var proof = inMemorySystemInfo.getCurrentProof();
 		return new JSONObject()
 			.put("ledger_state", new JSONObject()
+				.put("epoch", proof.getEpoch())
+				.put("round", proof.getView().number())
 				.put("version", proof.getStateVersion())
 				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
 			)

@@ -38,14 +38,14 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/TokenInfoRequest"
+              "$ref": "#/components/schemas/TokenRequest"
       responses:
         '200':
           description: Token info
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/TokenInfoResponse"
+                "$ref": "#/components/schemas/TokenResponse"
         '500':
           description: Unexpected error
           content:
@@ -76,7 +76,7 @@ paths:
                 "$ref": "#/components/schemas/UnexpectedError"
   "/token/derive":
     post:
-      summary: Derive Token RRI
+      summary: Derive Token Identifier
       requestBody:
         required: true
         content:
@@ -280,14 +280,14 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/ConstructionFinalizeRequest"
+              "$ref": "#/components/schemas/TransactionFinalizeRequest"
       responses:
         '200':
           description: Final Signed Transaction
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ConstructionFinalizeResponse"
+                "$ref": "#/components/schemas/TransactionFinalizeResponse"
         '500':
           description: Unexpected error
           content:
@@ -302,14 +302,14 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/ConstructionSubmitRequest"
+              "$ref": "#/components/schemas/TransactionSubmitRequest"
       responses:
         '200':
           description: Successful Submission
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ConstructionSubmitResponse"
+                "$ref": "#/components/schemas/TransactionSubmitResponse"
         '500':
           description: Unexpected error
           content:
@@ -344,15 +344,16 @@ components:
       type: object
       required:
         - network
-        - account_address
+        - account_identifier
       properties:
         network:
           type: string
-        account_address:
-          "$ref": "#/components/schemas/AccountAddress"
+        account_identifier:
+          "$ref": "#/components/schemas/AccountIdentifier"
       example:
         network: mainnet
-        account_address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+        account_identifier:
+          address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
     AccountBalancesResponse:
       type: object
       required:
@@ -370,10 +371,12 @@ components:
         account_balances:
           staked_and_unstaking_balance:
             amount: '0'
-            rri: xrd_rr1qy5wfsfh
+            token_identifier:
+              rri: xrd_rr1qy5wfsfh
           liquid_balances:
             - amount: '1000000000000000000000'
-              rri: xrd_rr1qy5wfsfh
+              token_identifier:
+                rri: xrd_rr1qy5wfsfh
     AccountBalances:
       type: object
       required:
@@ -390,15 +393,16 @@ components:
       type: object
       required:
         - network
-        - account_address
+        - account_identifier
       properties:
         network:
           type: string
-        account_address:
-          "$ref": "#/components/schemas/AccountAddress"
+        account_identifier:
+          "$ref": "#/components/schemas/AccountIdentifier"
       example:
         network: mainnet
-        account_address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+        account_identifier:
+          address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
     AccountStakesResponse:
       type: object
       required:
@@ -416,33 +420,36 @@ components:
           version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
         stakes:
-          - validator_address: rv1qg923hl7f725cs06eg5gmdcy4pfvpa8mfnjcw669traquj28c96z5w0rld0
+          - validator_identifier:
+              address: rv1qg923hl7f725cs06eg5gmdcy4pfvpa8mfnjcw669traquj28c96z5w0rld0
             delegated_stake:
-              rri: xrd_rr1qy5wfsfh
+              token_identifier:
+                rri: xrd_rr1qy5wfsfh
               value: '1000000000000000000000'
     AccountStakeEntry:
       type: object
       required:
-        - validator_address
+        - validator_identifier
         - delegated_stake
       properties:
-        validator_address:
-          "$ref": "#/components/schemas/ValidatorAddress"
+        validator_identifier:
+          "$ref": "#/components/schemas/ValidatorIdentifier"
         delegated_stake:
           "$ref": "#/components/schemas/TokenAmount"
     AccountUnstakesRequest:
       type: object
       required:
         - network
-        - account_address
+        - account_identifier
       properties:
         network:
           type: string
-        account_address:
-          "$ref": "#/components/schemas/AccountAddress"
+        account_identifier:
+          "$ref": "#/components/schemas/AccountIdentifier"
       example:
         network: mainnet
-        account_address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+        account_identifier:
+          address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
     AccountUnstakesResponse:
       type: object
       required:
@@ -460,20 +467,22 @@ components:
           version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
         unstakes:
-          - validator_address: rv1qg923hl7f725cs06eg5gmdcy4pfvpa8mfnjcw669traquj28c96z5w0rld0
+          - validator_identifier:
+              address: rv1qg923hl7f725cs06eg5gmdcy4pfvpa8mfnjcw669traquj28c96z5w0rld0
             unstaking_amount:
-              rri: xrd_rr1qy5wfsfh
+              token_identifier:
+                rri: xrd_rr1qy5wfsfh
               value: '1000000000000000000000'
             epochs_until_unlocked: 1
     AccountUnstakeEntry:
       type: object
       required:
-        - validator_address
+        - validator_identifier
         - unstaking_amount
         - epochs_until_unlocked
       properties:
-        validator_address:
-          "$ref": "#/components/schemas/ValidatorAddress"
+        validator_identifier:
+          "$ref": "#/components/schemas/ValidatorIdentifier"
         unstaking_amount:
           "$ref": "#/components/schemas/TokenAmount"
         epochs_until_unlocked:
@@ -482,19 +491,20 @@ components:
       type: object
       required:
         - network
-        - account_address
+        - account_identifier
       properties:
         network:
           type: string
-        account_address:
-          "$ref": "#/components/schemas/AccountAddress"
+        account_identifier:
+          "$ref": "#/components/schemas/AccountIdentifier"
         cursor:
           type: string
         limit:
           type: integer
       example:
         network: mainnet
-        account_address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+        account_identifier:
+          address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
         cursor: '0'
         limit: 1
     AccountTransactionsResponse:
@@ -525,7 +535,8 @@ components:
         total_count: 1
         transactions:
           - fee_paid:
-              rri: xrd_rr1qy5wfsfh
+              token_identifier:
+                rri: xrd_rr1qy5wfsfh
               value: '72000000000000000'
             metadata:
               signed_by:
@@ -534,7 +545,8 @@ components:
               timestamp: 1627407310726
             actions:
               - amount:
-                  rri: xrd_rr1qy5wfsfh
+                  token_identifier:
+                    rri: xrd_rr1qy5wfsfh
                   value: '24000000000000000000000000'
                 from: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
                 to: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
@@ -549,9 +561,9 @@ components:
             - amount
           properties:
             from:
-              "$ref": "#/components/schemas/AccountAddress"
+              "$ref": "#/components/schemas/AccountIdentifier"
             to:
-              "$ref": "#/components/schemas/AccountAddress"
+              "$ref": "#/components/schemas/AccountIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
     StakeTokens:
@@ -560,9 +572,9 @@ components:
         - type: object
           properties:
             from:
-              "$ref": "#/components/schemas/AccountAddress"
+              "$ref": "#/components/schemas/AccountIdentifier"
             to:
-              "$ref": "#/components/schemas/ValidatorAddress"
+              "$ref": "#/components/schemas/ValidatorIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
     UnstakeTokens:
@@ -575,9 +587,9 @@ components:
             - amount
           properties:
             from:
-              "$ref": "#/components/schemas/ValidatorAddress"
+              "$ref": "#/components/schemas/ValidatorIdentifier"
             to:
-              "$ref": "#/components/schemas/AccountAddress"
+              "$ref": "#/components/schemas/AccountIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
     CreateTokenDefinition:
@@ -593,7 +605,7 @@ components:
             token_supply:
               "$ref": "#/components/schemas/TokenAmount"
             to:
-              "$ref": "#/components/schemas/AccountAddress"
+              "$ref": "#/components/schemas/AccountIdentifier"
     MintTokens:
       allOf:
         - "$ref": "#/components/schemas/Action"
@@ -603,7 +615,7 @@ components:
             - amount
           properties:
             to:
-              "$ref": "#/components/schemas/ValidatorAddress"
+              "$ref": "#/components/schemas/ValidatorIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
     BurnTokens:
@@ -615,7 +627,7 @@ components:
             - amount
           properties:
             from:
-              "$ref": "#/components/schemas/ValidatorAddress"
+              "$ref": "#/components/schemas/ValidatorIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
     Action:
@@ -673,7 +685,7 @@ components:
           items:
             "$ref": "#/components/schemas/Action"
         fee_payer:
-          "$ref": "#/components/schemas/AccountAddress"
+          "$ref": "#/components/schemas/AccountIdentifier"
         message:
           type: string
         disable_token_mint_and_burn:
@@ -682,12 +694,16 @@ components:
         network: mainnet
         actions:
           - type: TransferTokens
-            from: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
-            to: rdx1qspcvwwuf8s549zyspz683v4n93g9kzpn6u6a9yalwzt00zghg75lmsftwv29
+            from:
+              address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+            to:
+              address: rdx1qspcvwwuf8s549zyspz683v4n93g9kzpn6u6a9yalwzt00zghg75lmsftwv29
             amount:
-              rri: xrd_rr1qy5wfsfh
+              token_identifier:
+                rri: xrd_rr1qy5wfsfh
               value: '123000000000000000'
-        fee_payer: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+        fee_payer:
+          address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
         disable_token_mint_and_burn: true
     TransactionBuildResponse:
       type: object
@@ -744,9 +760,9 @@ components:
             - user
           properties:
             owner:
-              $ref: "#/components/schemas/AccountAddress"
+              $ref: "#/components/schemas/AccountIdentifier"
             user:
-              $ref: "#/components/schemas/AccountAddress"
+              $ref: "#/components/schemas/AccountIdentifier"
     MessageTooLongError:
       allOf:
         - "$ref": "#/components/schemas/TransactionBuildResult"
@@ -774,7 +790,7 @@ components:
           BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"
           NotValidatorOwnerError: "#/components/schemas/NotValidatorOwnerError"
           MessageTooLongError: "#/components/schemas/MessageTooLongError"
-    ConstructionFinalizeRequest:
+    TransactionFinalizeRequest:
       type: object
       required:
         - network
@@ -803,14 +819,14 @@ components:
         signature:
           public_key: 03dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab
           bytes: ''
-    ConstructionFinalizeResponse:
+    TransactionFinalizeResponse:
       type: object
       required:
         - signed_transaction
       properties:
         signed_transaction:
           type: string
-    ConstructionSubmitRequest:
+    TransactionSubmitRequest:
       type: object
       required:
         - network
@@ -820,13 +836,13 @@ components:
           type: string
         signed_transaction:
           type: string
-    ConstructionSubmitResponse:
+    TransactionSubmitResponse:
       type: object
       required:
         - transaction_identifier
       properties:
         transaction_identifier:
-          type: string
+          $ref: "#/components/schemas/TransactionIdentifier"
     NetworkRequest:
       type: object
       example: {}
@@ -845,31 +861,40 @@ components:
         ledger_state:
           timestamp: "2021-08-29T01:19:00.524Z"
           state_version: 1
-    TokenInfoRequest:
+    TokenRequest:
       type: object
       required:
         - network
-        - rri
+        - token_identifier
       properties:
         network:
           type: string
-        rri:
-          "$ref": "#/components/schemas/ResourceIdentifier"
+        token_identifier:
+          "$ref": "#/components/schemas/TokenIdentifier"
       example:
         network: mainnet
-        rri: xrd_rr1qy5wfsfh
+        token_identifier:
+          rri: xrd_rr1qy5wfsfh
     LedgerState:
       type: object
       required:
         - version
         - timestamp
+        - epoch
+        - round
       properties:
         version:
           type: integer
           format: int64
         timestamp:
           type: string
-    TokenInfoResponse:
+        epoch:
+          type: integer
+          format: int64
+        round:
+          type: integer
+          format: int64
+    TokenResponse:
       type: object
       required:
         - ledger_state
@@ -887,16 +912,20 @@ components:
           version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
         token:
-          - rri: xrd_rr1qy5wfsfh
-            supply:
+          - token_identifier:
               rri: xrd_rr1qy5wfsfh
+            supply:
+              token_identifier:
+                rri: xrd_rr1qy5wfsfh
               value: '12014560679861300000000000000'
             info:
               total_burned:
-                rri: xrd_rr1qy5wfsfh
+                token_identifier:
+                  rri: xrd_rr1qy5wfsfh
                 value: '11437173800000000000000'
               total_minted:
-                rri: xrd_rr1qy5wfsfh
+                token_identifier:
+                  rri: xrd_rr1qy5wfsfh
                 value: '12014572117035100000000000000'
             properties:
               icon_url: https://assets.radixdlt.com/icons/icon-xrd-32x32.png
@@ -935,16 +964,20 @@ components:
           version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
         token:
-          - rri: xrd_rr1qy5wfsfh
-            supply:
+          - token_identifier:
               rri: xrd_rr1qy5wfsfh
+            supply:
+              token_identifier:
+                rri: xrd_rr1qy5wfsfh
               value: '12014560679861300000000000000'
             info:
               total_burned:
-                rri: xrd_rr1qy5wfsfh
+                token_identifier:
+                  rri: xrd_rr1qy5wfsfh
                 value: '11437173800000000000000'
               total_minted:
-                rri: xrd_rr1qy5wfsfh
+                token_identifier:
+                  rri: xrd_rr1qy5wfsfh
                 value: '12014572117035100000000000000'
             properties:
               icon_url: https://assets.radixdlt.com/icons/icon-xrd-32x32.png
@@ -960,26 +993,27 @@ components:
       type: object
       required:
         - network
-        - creator_account_address
+        - creator_account_identifier
         - symbol
       properties:
         network:
           type: string
-        creator_account_address:
-          "$ref": "#/components/schemas/AccountAddress"
+        creator_account_identifier:
+          "$ref": "#/components/schemas/AccountIdentifier"
         symbol:
           type: string
       example:
         network: mainnet
-        creator_account_address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
+        creator_account_identifier:
+          address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
         symbol: tkn
     TokenDeriveResponse:
       type: object
       required:
-        - rri
+        - token_identifier
       properties:
-        rri:
-          "$ref": "#/components/schemas/ResourceIdentifier"
+        token_identifier:
+          "$ref": "#/components/schemas/TokenIdentifier"
     TransactionStatusRequest:
       type: object
       required:
@@ -989,10 +1023,11 @@ components:
         network:
           type: string
         transaction_identifier:
-          type: string
+          $ref: "#/components/schemas/TransactionIdentifier"
       example:
         network: mainnet
-        transaction_identifier: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
+        transaction_identifier:
+          hash: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
     TransactionStatusResponse:
       type: object
       required:
@@ -1010,15 +1045,16 @@ components:
       type: object
       required:
         - network
-        - validator_address
+        - validator_identifier
       properties:
         network:
           type: string
-        validator_address:
-          "$ref": "#/components/schemas/ValidatorAddress"
+        validator_identifier:
+          "$ref": "#/components/schemas/ValidatorIdentifier"
       example:
         network: mainnet
-        validator_address: rv1qf2x63qx4jdaxj83kkw2yytehvvmu6r2xll5gcp6c9rancmrfsgfwttnczx
+        validator_identifier:
+          address: rv1qf2x63qx4jdaxj83kkw2yytehvvmu6r2xll5gcp6c9rancmrfsgfwttnczx
     ValidatorInfoResponse:
       type: object
       required:
@@ -1029,30 +1065,6 @@ components:
           "$ref": "#/components/schemas/LedgerState"
         validator:
           "$ref": "#/components/schemas/Validator"
-      example:
-        ledger_state:
-          version: 10
-          timestamp: "2021-08-29T01:19:00.524Z"
-        validator:
-          stake:
-            exitingOwnership: '0'
-            currentStake: '100000000000000000000'
-            currentOwnership: '100000000000000000000'
-            nextEpochEstimatedOwnerStake: '0'
-            preparedStake: '0'
-            nextEpochEstimatedStake: '100000000000000000000'
-          properties:
-            address: rv1qf2x63qx4jdaxj83kkw2yytehvvmu6r2xll5gcp6c9rancmrfsgfwttnczx
-            infoURL: https://learn.radixdlt.com/article/will-the-radix-foundation-operate-validator-nodes
-            validatorFee: '100.0'
-            name: Radix Foundation eu-west-1 node0 mainnet
-            registered: true
-            ownerAddress: rdx1qspldshtx0s2l2rcnaqtqpqz8vwps2y6d9se0wq25xrg92l66cmp6mcnc6pyu
-            externalStakeAccepted: false
-          uptime:
-            uptimePercentage: '100.00'
-            proposalsMissed: 0
-            proposalsCompleted: 108320
     ValidatorsRequest:
       type: object
       required:
@@ -1109,13 +1121,13 @@ components:
     Validator:
       type: object
       required:
-        - validator_address
+        - validator_identifier
         - stake
         - info
         - properties
       properties:
-        validator_address:
-          "$ref": "#/components/schemas/ValidatorAddress"
+        validator_identifier:
+          "$ref": "#/components/schemas/ValidatorIdentifier"
         stake:
           "$ref": "#/components/schemas/TokenAmount"
         info:
@@ -1123,20 +1135,24 @@ components:
         properties:
           "$ref": "#/components/schemas/ValidatorProperties"
       example:
-        validator_address: rv1qf2x63qx4jdaxj83kkw2yytehvvmu6r2xll5gcp6c9rancmrfsgfwttnczx
+        validator_identifier:
+          address: rv1qf2x63qx4jdaxj83kkw2yytehvvmu6r2xll5gcp6c9rancmrfsgfwttnczx
         stake:
-          rri: xrd_rr1qy5wfsfh
+          token_identifier:
+            rri: xrd_rr1qy5wfsfh
           value: '100000000000000000000'
         properties:
           url: https://learn.radixdlt.com/article/will-the-radix-foundation-operate-validator-nodes
           validator_fee: '100.0'
           name: Radix Foundation eu-west-1 node0 mainnet
           registered: true
-          owner_address: rdx1qspldshtx0s2l2rcnaqtqpqz8vwps2y6d9se0wq25xrg92l66cmp6mcnc6pyu
+          owner_account_identifier:
+            address: rdx1qspldshtx0s2l2rcnaqtqpqz8vwps2y6d9se0wq25xrg92l66cmp6mcnc6pyu
           external_stake_accepted: false
         info:
           owner_stake:
-            rri: xrd_rr1qy5wfsfh
+            token_identifier:
+              rri: xrd_rr1qy5wfsfh
             value: '0'
           uptime:
             epoch_range:
@@ -1152,7 +1168,7 @@ components:
         - validator_fee
         - name
         - registered
-        - owner_address
+        - owner_account_identifier
         - external_stake_accepted
       properties:
         url:
@@ -1163,8 +1179,8 @@ components:
           type: string
         registered:
           type: boolean
-        owner_address:
-          "$ref": "#/components/schemas/AccountAddress"
+        owner_account_identifier:
+          "$ref": "#/components/schemas/AccountIdentifier"
         external_stake_accepted:
           type: boolean
     ValidatorInfo:
@@ -1210,13 +1226,13 @@ components:
     Token:
       type: object
       required:
-        - rri
+        - token_identifier
         - token_supply
         - info
         - token_properties
       properties:
-        rri:
-          "$ref": "#/components/schemas/ResourceIdentifier"
+        token_identifier:
+          "$ref": "#/components/schemas/TokenIdentifier"
         token_supply:
           "$ref": "#/components/schemas/TokenAmount"
         info:
@@ -1224,16 +1240,20 @@ components:
         token_properties:
           "$ref": "#/components/schemas/TokenProperties"
       example:
-        rri: xrd_rr1qy5wfsfh
-        token_supply:
+        token_identifier:
           rri: xrd_rr1qy5wfsfh
+        token_supply:
+          token_identifier:
+            rri: xrd_rr1qy5wfsfh
           value: '12014560679861300000000000000'
         info:
           total_burned:
-            rri: xrd_rr1qy5wfsfh
+            token_identifier:
+              rri: xrd_rr1qy5wfsfh
             value: '11437173800000000000000'
           total_minted:
-            rri: xrd_rr1qy5wfsfh
+            token_identifier:
+              rri: xrd_rr1qy5wfsfh
             value: '12014572117035100000000000000'
         token_properties:
           icon_url: https://assets.radixdlt.com/icons/icon-xrd-32x32.png
@@ -1277,12 +1297,7 @@ components:
         granularity:
           "$ref": "#/components/schemas/BigInteger"
         owner:
-          "$ref": "#/components/schemas/AccountAddress"
-    TransactionIdentifier:
-      type: string
-      pattern: "^[0123456789abcdef]{64}$"
-      maxLength: 64
-      minLength: 64
+          "$ref": "#/components/schemas/AccountIdentifier"
     AccountTransaction:
       type: object
       required:
@@ -1290,6 +1305,7 @@ components:
         - transaction_identifier
         - actions
         - metadata
+        - fee_paid
       properties:
         transaction_status:
           "$ref": "#/components/schemas/AccountTransactionStatus"
@@ -1299,6 +1315,8 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/Action"
+        fee_paid:
+          $ref: "#/components/schemas/TokenAmount"
         metadata:
           "$ref": "#/components/schemas/AccountTransactionMetadata"
     AccountTransactionStatus:
@@ -1330,15 +1348,46 @@ components:
       type: object
       required:
         - value
-        - rri
+        - token_identifier
       properties:
         value:
           "$ref": "#/components/schemas/BigInteger"
-        rri:
-          "$ref": "#/components/schemas/ResourceIdentifier"
+        token_identifier:
+          "$ref": "#/components/schemas/TokenIdentifier"
     BigInteger:
       type: string
       pattern: "^-?[0-9]+$"
+    AccountIdentifier:
+      type: object
+      required:
+        - address
+      properties:
+        address:
+          $ref: "#/components/schemas/AccountAddress"
+    ValidatorIdentifier:
+      type: object
+      required:
+        - address
+      properties:
+        address:
+          $ref: "#/components/schemas/ValidatorAddress"
+    TokenIdentifier:
+      type: object
+      required:
+        - rri
+      properties:
+        rri:
+          $ref: "#/components/schemas/ResourceIdentifier"
+    TransactionIdentifier:
+      type: object
+      required:
+        - hash
+      properties:
+        hash:
+          type: string
+          pattern: "^[0123456789abcdef]{64}$"
+          maxLength: 64
+          minLength: 64
     AccountAddress:
       type: string
       pattern: "^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$"
