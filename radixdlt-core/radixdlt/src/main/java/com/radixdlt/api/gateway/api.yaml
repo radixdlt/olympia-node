@@ -834,16 +834,17 @@ components:
       type: object
       required:
         - network
+        - ledger_state
       properties:
         network:
           type: string
-        state_version:
-          type: integer
-          format: int64
+        ledger_state:
+          $ref: "#/components/schemas/LedgerState"
       example:
         network: mainnet
-        state_version: 1
-
+        ledger_state:
+          timestamp: "2021-08-29T01:19:00.524Z"
+          state_version: 1
     TokenInfoRequest:
       type: object
       required:

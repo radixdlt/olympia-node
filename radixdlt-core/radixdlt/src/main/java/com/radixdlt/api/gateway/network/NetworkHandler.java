@@ -71,6 +71,8 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import org.json.JSONObject;
 
+import java.time.Instant;
+
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
 final class NetworkHandler implements ApiHandler<Void> {
@@ -93,8 +95,12 @@ final class NetworkHandler implements ApiHandler<Void> {
 
 	@Override
 	public JSONObject handleRequest(Void request) {
-		return jsonObject()
-			.put("state_version", inMemorySystemInfo.getCurrentProof().getStateVersion())
+		var proof = inMemorySystemInfo.getCurrentProof();
+		return new JSONObject()
+			.put("ledger_state", new JSONObject()
+				.put("version", proof.getStateVersion())
+				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
+			)
 			.put("network", networkName);
 	}
 }
