@@ -495,7 +495,9 @@ public final class ProcessedTxnJsonConverter {
 		return result
 			.put("amount", new JSONObject()
 				.put("value", amount.toString())
-				.put("rri", addrToRri.apply(entry.resourceAddr().orElse(REAddr.ofNativeToken())))
+				.put("token_identifier", new JSONObject()
+					.put("rri", addrToRri.apply(entry.resourceAddr().orElse(REAddr.ofNativeToken())))
+				)
 			);
 	}
 }

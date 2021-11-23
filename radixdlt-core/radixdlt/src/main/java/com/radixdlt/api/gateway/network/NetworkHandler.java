@@ -73,8 +73,6 @@ import org.json.JSONObject;
 
 import java.time.Instant;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-
 final class NetworkHandler implements ApiHandler<Void> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final String networkName;

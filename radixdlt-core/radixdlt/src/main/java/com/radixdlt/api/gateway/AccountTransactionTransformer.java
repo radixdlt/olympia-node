@@ -118,7 +118,7 @@ public final class AccountTransactionTransformer {
 				var metadata = operationGroup.getJSONObject("metadata");
 				var actionJson = metadata.getJSONObject("action");
 				var amount = actionJson.getJSONObject("amount");
-				var rri = amount.getString("rri");
+				var rri = amount.getJSONObject("token_identifier").getString("rri");
 				var type = actionJson.getString("type");
 				if (!rri.startsWith("xrd") || type.equals(ActionType.TRANSFER.toString())) {
 					accountActions.put(actionJson);

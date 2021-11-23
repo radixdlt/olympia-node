@@ -129,13 +129,15 @@ final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest
 			builder = radixEngine.construct(request);
 		} catch (NotEnoughResourcesException e) {
 			return new JSONObject()
-				.put("result", new JSONObject()
+				.put("type", "TransactionBuildResponseError")
+				.put("error", new JSONObject()
 					.put("type", "NotEnoughResourcesError")
 					.put("available_amount", e.getAvailable())
 					.put("requested_amount", e.getRequested())
 				);
 		} catch (MinimumStakeException e) {
 			return new JSONObject()
+				.put("type", "TransactionBuildResponseError")
 				.put("result", new JSONObject()
 					.put("type", "BelowMinimumStakeError")
 					.put("minimum_amount", e.getMinimumStake())
@@ -143,14 +145,16 @@ final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest
 				);
 		} catch (DelegateStakePermissionException e) {
 			return new JSONObject()
-				.put("result", new JSONObject()
+				.put("type", "TransactionBuildResponseError")
+				.put("error", new JSONObject()
 					.put("type", "NotValidatorOwnerError")
 					.put("owner", addressing.forAccounts().of(e.getOwner()))
 					.put("user", addressing.forAccounts().of(e.getUser()))
 				);
 		} catch (MessageTooLongException e) {
 			return new JSONObject()
-				.put("result", new JSONObject()
+				.put("type", "TransactionBuildResponseError")
+				.put("error", new JSONObject()
 					.put("type", "MessageTooLongError")
 					.put("length_limit", 255)
 					.put("attempted_length", e.getAttemptedLength())
@@ -159,10 +163,10 @@ final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest
 
 		var unsignedTransaction = builder.buildForExternalSign();
 		return new JSONObject()
-			.put("result", new JSONObject()
-				.put("type", "TransactionBuildSuccess")
+			.put("type", "TransactionBuildResponseSuccess")
+			.put("transaction_build", new JSONObject()
 				.put("fee", new JSONObject()
-					.put("transaction_identifier", new JSONObject()
+					.put("token_identifier", new JSONObject()
 						.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
 					)
 					.put("value", unsignedTransaction.feesPaid().toString())

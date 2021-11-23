@@ -708,28 +708,63 @@ components:
     TransactionBuildResponse:
       type: object
       required:
-        - result
+        - type
       properties:
-        result:
-          $ref: "#/components/schemas/TransactionBuildResult"
-    TransactionBuildSuccess:
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          TransactionBuildResponseSuccess: "#/components/schemas/TransactionBuildResponseSuccess"
+          TransactionBuildResponseError: "#/components/schemas/TransactionBuildResponseError"
+    TransactionBuildResponseSuccess:
       allOf:
-        - "$ref": "#/components/schemas/TransactionBuildResult"
+        - "$ref": "#/components/schemas/TransactionBuildResponse"
         - type: object
           required:
-            - fee
-            - unsigned_transaction
-            - payload_to_sign
+            - transaction_build
           properties:
-            fee:
-              "$ref": "#/components/schemas/TokenAmount"
-            unsigned_transaction:
-              type: string
-            payload_to_sign:
-              type: string
+            transaction_build:
+              $ref: "#/components/schemas/TransactionBuild"
+    TransactionBuild:
+      type: object
+      required:
+        - fee
+        - unsigned_transaction
+        - payload_to_sign
+      properties:
+        fee:
+          "$ref": "#/components/schemas/TokenAmount"
+        unsigned_transaction:
+          type: string
+        payload_to_sign:
+          type: string
+    TransactionBuildResponseError:
+      allOf:
+        - "$ref": "#/components/schemas/TransactionBuildResponse"
+        - type: object
+          required:
+            - error
+          properties:
+            error:
+              $ref: "#/components/schemas/TransactionBuildError"
+    TransactionBuildError:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          NotEnoughResourcesError: "#/components/schemas/NotEnoughResourcesError"
+          BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"
+          NotValidatorOwnerError: "#/components/schemas/NotValidatorOwnerError"
+          MessageTooLongError: "#/components/schemas/MessageTooLongError"
     NotEnoughResourcesError:
       allOf:
-        - "$ref": "#/components/schemas/TransactionBuildResult"
+        - "$ref": "#/components/schemas/TransactionBuildError"
         - type: object
           required:
             - requested_amount
@@ -741,7 +776,7 @@ components:
               $ref: "#/components/schemas/BigInteger"
     BelowMinimumStakeError:
       allOf:
-        - "$ref": "#/components/schemas/TransactionBuildResult"
+        - "$ref": "#/components/schemas/TransactionBuildError"
         - type: object
           required:
             - requested_amount
@@ -753,7 +788,7 @@ components:
               $ref: "#/components/schemas/BigInteger"
     NotValidatorOwnerError:
       allOf:
-        - "$ref": "#/components/schemas/TransactionBuildResult"
+        - "$ref": "#/components/schemas/TransactionBuildError"
         - type: object
           required:
             - owner
@@ -765,7 +800,7 @@ components:
               $ref: "#/components/schemas/AccountIdentifier"
     MessageTooLongError:
       allOf:
-        - "$ref": "#/components/schemas/TransactionBuildResult"
+        - "$ref": "#/components/schemas/TransactionBuildError"
         - type: object
           required:
             - length_limit
@@ -775,21 +810,6 @@ components:
               type: integer
             attempted_length:
               type: integer
-    TransactionBuildResult:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          type: string
-      discriminator:
-        propertyName: type
-        mapping:
-          TransactionBuildSuccess: "#/components/schemas/TransactionBuildSuccess"
-          NotEnoughResourcesError: "#/components/schemas/NotEnoughResourcesError"
-          BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"
-          NotValidatorOwnerError: "#/components/schemas/NotValidatorOwnerError"
-          MessageTooLongError: "#/components/schemas/MessageTooLongError"
     TransactionFinalizeRequest:
       type: object
       required:
