@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -61,109 +62,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.chaos;
+package com.radixdlt.application.mempoolfiller;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.radixdlt.api.core.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.api.core.chaos.messageflooder.MessageFlooderUpdate;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.environment.LocalEvents;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
-
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.sanitizeBaseUrl;
-import static com.radixdlt.api.util.RestUtils.withBody;
-import static com.radixdlt.errors.InternalErrors.UNKNOWN;
-
-public final class ChaosController implements Controller {
-	private final EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
-	private final EventDispatcher<MessageFlooderUpdate> messageDispatcher;
-	private final Addressing addressing;
-
-	public ChaosController(
-		EventDispatcher<MempoolFillerUpdate> mempoolDispatcher,
-		EventDispatcher<MessageFlooderUpdate> messageDispatcher,
-		Addressing addressing
-	) {
-		this.mempoolDispatcher = mempoolDispatcher;
-		this.messageDispatcher = messageDispatcher;
-		this.addressing = addressing;
-	}
-
+/**
+ * Module responsible for the mempool filler chaos attack
+ */
+public final class MempoolFillerModule extends AbstractModule {
 	@Override
-	public void configureRoutes(String root, RoutingHandler handler) {
-		var sanitized = sanitizeBaseUrl(root);
-		handler.put(sanitized + "/message-flooder", this::handleMessageFlood);
-		handler.put(sanitized + "/mempool-filler", this::handleMempoolFill);
+	public void configure() {
+		bind(MempoolFiller.class).in(Scopes.SINGLETON);
+		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
+				.permitDuplicates();
+		eventBinder.addBinding().toInstance(MempoolFillerUpdate.class);
+		eventBinder.addBinding().toInstance(ScheduledMempoolFill.class);
 	}
 
-	@VisibleForTesting
-	void handleMessageFlood(HttpServerExchange exchange) {
-		withBody(exchange, values -> {
-			var update = MessageFlooderUpdate.create();
-
-			if (values.getBoolean("enabled")) {
-				var data = values.getJSONObject("data");
-
-				if (data.has("nodeAddress")) {
-					update = update.bftNode(createNodeByKey(data.getString("nodeAddress")));
-				}
-
-				if (data.has("messagesPerSec")) {
-					update = update.messagesPerSec(data.getInt("messagesPerSec"));
-				}
-
-				if (data.has("commandSize")) {
-					update = update.commandSize(data.getInt("commandSize"));
-				}
-			}
-
-			this.messageDispatcher.dispatch(update);
-		});
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> mempoolFillerUpdateProcessor(MempoolFiller mempoolFiller) {
+		return new EventProcessorOnRunner<>(Runners.CHAOS, MempoolFillerUpdate.class, mempoolFiller.mempoolFillerUpdateEventProcessor());
 	}
 
-	@VisibleForTesting
-	void handleMempoolFill(HttpServerExchange exchange) {
-		withBody(exchange, values -> {
-			var completableFuture = new CompletableFuture<Void>();
-			var update = prepareUpdate(completableFuture, values.getBoolean("enabled"));
-			mempoolDispatcher.dispatch(update);
-
-			try {
-				completableFuture.get();
-				respond(exchange, jsonObject().put("result", values.getBoolean("enabled") ? "enabled" : "disabled"));
-			} catch (ExecutionException e) {
-				var response = jsonObject()
-					.put("error", jsonObject()
-						.put("code", UNKNOWN.code())
-						.put("message", UNKNOWN.with(e.getCause().getClass(), e.getCause().getMessage())));
-				respond(exchange, response);
-			}
-		});
-	}
-
-	private MempoolFillerUpdate prepareUpdate(CompletableFuture<Void> completableFuture, boolean enable) {
-		if (enable) {
-			return MempoolFillerUpdate.enable(100, true, completableFuture);
-		} else {
-			return MempoolFillerUpdate.disable(completableFuture);
-		}
-	}
-
-	private BFTNode createNodeByKey(final String nodeAddress) {
-		try {
-			return BFTNode.create(addressing.forValidators().parse(nodeAddress));
-		} catch (DeserializeException e) {
-			throw new IllegalArgumentException();
-		}
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(MempoolFiller mempoolFiller) {
+		return new EventProcessorOnRunner<>(Runners.CHAOS, ScheduledMempoolFill.class, mempoolFiller.scheduledMempoolFillEventProcessor());
 	}
 }

@@ -71,7 +71,6 @@ import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.core.engine.EngineApiModule;
 import com.radixdlt.api.core.entity.EntityApiModule;
-import com.radixdlt.api.core.chaos.ChaosApiModule;
 import com.radixdlt.api.core.construction.ConstructionApiModule;
 import com.radixdlt.api.core.developer.DeveloperApiModule;
 import com.radixdlt.api.core.health.HealthApiModule;
@@ -105,20 +104,17 @@ public final class CoreServerModule extends AbstractModule {
 	private final String bindAddress;
 	private final boolean transactionsEnable;
 	private final boolean metricsEnable;
-	private final boolean chaosEnable;
 
 	public CoreServerModule(
 		int port,
 		String bindAddress,
 		boolean transactionsEnable,
-		boolean metricsEnable,
-		boolean chaosEnable
+		boolean metricsEnable
 	) {
 		this.port = port;
 		this.bindAddress = bindAddress;
 		this.transactionsEnable = transactionsEnable;
 		this.metricsEnable = metricsEnable;
-		this.chaosEnable = chaosEnable;
 	}
 
 	@Override
@@ -133,9 +129,6 @@ public final class CoreServerModule extends AbstractModule {
 
 		if (metricsEnable) {
 			install(new MetricsApiModule(NodeServer.class, "/metrics"));
-		}
-		if (chaosEnable) {
-			install(new ChaosApiModule(NodeServer.class, "/chaos"));
 		}
 
 		install(new EntityApiModule(NodeServer.class, "/entity"));

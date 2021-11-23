@@ -89,10 +89,8 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.core.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.api.core.chaos.mempoolfiller.ScheduledMempoolFill;
-import com.radixdlt.api.core.chaos.messageflooder.MessageFlooderUpdate;
-import com.radixdlt.api.core.chaos.messageflooder.ScheduledMessageFlood;
+import com.radixdlt.application.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.application.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -174,8 +172,6 @@ public class DispatcherModule extends AbstractModule {
 			.toProvider(Dispatchers.dispatcherProvider(AtomsRemovedFromMempool.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolRelayTrigger.class)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<MessageFlooderUpdate>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(MessageFlooderUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolFillerUpdate.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<ScheduledMempoolFill>>() { })
@@ -191,8 +187,6 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() { }))
 			.in(Scopes.SINGLETON);
-		bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledMessageFlood>>() { })
-			.toProvider(Dispatchers.scheduledDispatcherProvider(ScheduledMessageFlood.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
 			.toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<ScheduledEventDispatcher<SyncRequestTimeout>>() { })

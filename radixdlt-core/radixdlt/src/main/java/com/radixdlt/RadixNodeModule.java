@@ -283,6 +283,6 @@ public final class RadixNodeModule extends AbstractModule {
 		install(new PeerLivenessMonitorModule());
 
 		// API
-		install(new ApiModule(networkId, properties));
+		install(new ApiModule(properties));
 	}
 }

@@ -69,7 +69,6 @@ import com.radixdlt.api.gateway.ArchiveServerModule;
 import com.radixdlt.api.core.CoreServerModule;
 import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
 import com.radixdlt.api.service.network.NetworkInfoServiceModule;
-import com.radixdlt.networks.Network;
 import com.radixdlt.properties.RuntimeProperties;
 
 import java.util.HashMap;
@@ -81,11 +80,9 @@ public final class ApiModule extends AbstractModule {
 	private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
 
 	private final RuntimeProperties properties;
-	private final int networkId;
 
-	public ApiModule(int networkId, RuntimeProperties properties) {
+	public ApiModule(RuntimeProperties properties) {
 		this.properties = properties;
-		this.networkId = networkId;
 	}
 
 	@Override
@@ -110,11 +107,9 @@ public final class ApiModule extends AbstractModule {
 
 		var metricsEnable = properties.get("api.metrics.enable", false);
 		endpointStatus.put("metrics", metricsEnable);
-		var chaosEnable = properties.get("api.chaos.enable", false) && networkId != Network.MAINNET.getId();
-		endpointStatus.put("chaos", chaosEnable);
 		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
 		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new CoreServerModule(port, bindAddress, transactionsEnable, metricsEnable, chaosEnable));
+		install(new CoreServerModule(port, bindAddress, transactionsEnable, metricsEnable));
 		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
 	}
 }

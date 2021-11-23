@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -61,51 +62,96 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.chaos;
+package com.radixdlt.application.mempoolfiller;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.core.chaos.mempoolfiller.MempoolFillerModule;
-import com.radixdlt.api.core.chaos.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.api.core.chaos.messageflooder.MessageFlooderModule;
-import com.radixdlt.api.core.chaos.messageflooder.MessageFlooderUpdate;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.networks.Addressing;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.concurrent.CompletableFuture;
 
-import java.lang.annotation.Annotation;
+/**
+ * An update event to the mempool filler
+ */
+public final class MempoolFillerUpdate {
+    private final int parallelTransactions;
+    private final boolean sendToSelf;
+    private final CompletableFuture<Void> completableFuture;
 
-public class ChaosApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+    private MempoolFillerUpdate(
+        int parallelTransactions,
+        boolean sendToSelf,
+		CompletableFuture<Void> completableFuture
+    ) {
+        this.parallelTransactions = parallelTransactions;
+        this.sendToSelf = sendToSelf;
+        this.completableFuture = completableFuture;
+    }
 
-	public ChaosApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+    public static MempoolFillerUpdate enable(
+        int parallelTransactions,
+        boolean sendToSelf
+    ) {
+    	return new MempoolFillerUpdate(parallelTransactions, sendToSelf, null);
+    }
+
+    public static MempoolFillerUpdate enable(
+        int parallelTransactions,
+        boolean sendToSelf,
+        CompletableFuture<Void> completableFuture
+    ) {
+    	if (parallelTransactions < 0) {
+    	    throw new IllegalArgumentException("parallelTransactions must be > 0.");
+        }
+    	Objects.requireNonNull(completableFuture);
+        return new MempoolFillerUpdate(parallelTransactions, sendToSelf, completableFuture);
+    }
+
+    public static MempoolFillerUpdate disable() {
+    	return new MempoolFillerUpdate(-1, false, null);
 	}
 
-	@Override
-	protected void configure() {
-		install(new MessageFlooderModule());
-		install(new MempoolFillerModule());
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
-			.addBinding(path)
-			.toProvider(ControllerProvider.class);
-	}
+    public static MempoolFillerUpdate disable(CompletableFuture<Void> completableFuture) {
+        Objects.requireNonNull(completableFuture);
+        return new MempoolFillerUpdate(-1, false, completableFuture);
+    }
 
-	private static class ControllerProvider implements Provider<Controller> {
-		@Inject
-		private EventDispatcher<MempoolFillerUpdate> mempoolDispatcher;
-		@Inject
-		private EventDispatcher<MessageFlooderUpdate> messageDispatcher;
-		@Inject
-		private Addressing addressing;
+    public void onSuccess() {
+        if (completableFuture != null) {
+            completableFuture.complete(null);
+        }
+    }
 
-		@Override
-		public Controller get() {
-			return new ChaosController(mempoolDispatcher, messageDispatcher, addressing);
-		}
-	}
+    public void onError(String error) {
+        if (completableFuture != null) {
+            completableFuture.completeExceptionally(new RuntimeException(error));
+        }
+    }
+
+    public boolean enabled() {
+        return parallelTransactions > 0;
+    }
+
+    public OptionalInt numTransactions() {
+        return parallelTransactions > 0 ? OptionalInt.of(parallelTransactions) : OptionalInt.empty();
+    }
+
+    public Optional<Boolean> sendToSelf() {
+        return parallelTransactions > 0 ? Optional.of(sendToSelf) : Optional.empty();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(parallelTransactions, sendToSelf);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof MempoolFillerUpdate)) {
+            return false;
+        }
+
+        MempoolFillerUpdate other = (MempoolFillerUpdate) o;
+        return this.parallelTransactions == other.parallelTransactions
+            && this.sendToSelf == other.sendToSelf;
+    }
 }

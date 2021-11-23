@@ -70,7 +70,6 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.api.core.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxnConstructionRequest;
@@ -152,7 +151,6 @@ public class AccountInfoTest {
 				totalTokenAmount,
 				Amount.ofTokens(100)
 			),
-			new MempoolFillerModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {

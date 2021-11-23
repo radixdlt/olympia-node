@@ -69,7 +69,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.api.core.chaos.mempoolfiller.MempoolFillerModule;
+import com.radixdlt.application.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.integration.distributed.simulation.monitors.consensus.ConsensusMonitors;

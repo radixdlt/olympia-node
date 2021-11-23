@@ -64,7 +64,7 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
-import com.radixdlt.api.core.chaos.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.application.mempoolfiller.MempoolFillerUpdate;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;

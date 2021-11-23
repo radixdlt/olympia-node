@@ -81,7 +81,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.api.core.chaos.mempoolfiller.MempoolFillerModule;
 import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
@@ -170,7 +169,6 @@ public class UnstakingLockedTokensTest {
 				Amount.ofTokens(110),
 				Amount.ofTokens(100)
 			),
-			new MempoolFillerModule(),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
