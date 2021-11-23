@@ -61,42 +61,77 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.tokens;
+package com.radixdlt.api.core.system;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.api.util.GetHandler;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.sync.SyncConfig;
 import org.json.JSONObject;
 
-public class TokenDeriveHandler implements ApiHandler<TokenDeriveRequest> {
-	private final Addressing addressing;
+import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
+
+public class SystemConfigurationHandler implements GetHandler {
+
+	private final long pacemakerTimeout;
+	private final int bftSyncPatienceMillis;
+	private final int mempoolMaxSize;
+	private final long mempoolThrottleMs;
+	private final SyncConfig syncConfig;
+	private final P2PConfig p2PConfig;
 
 	@Inject
-	TokenDeriveHandler(
-		Addressing addressing
+	SystemConfigurationHandler(
+		@Self ECPublicKey self,
+		@PacemakerTimeout long pacemakerTimeout,
+		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
+		@MempoolMaxSize int mempoolMaxSize,
+		@MempoolThrottleMs long mempoolThrottleMs,
+		SyncConfig syncConfig,
+		P2PConfig p2PConfig
 	) {
-		this.addressing = addressing;
+		this.pacemakerTimeout = pacemakerTimeout;
+		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
+		this.mempoolMaxSize = mempoolMaxSize;
+		this.mempoolThrottleMs = mempoolThrottleMs;
+		this.syncConfig = syncConfig;
+		this.p2PConfig = p2PConfig;
 	}
 
-	@Override
-	public Addressing addressing() {
-		return addressing;
-	}
-
-	@Override
-	public TokenDeriveRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return TokenDeriveRequest.from(requestReader);
-	}
-
-	@Override
-	public JSONObject handleRequest(TokenDeriveRequest request) throws Exception {
-		var key = request.getAccountAddress().publicKey().orElseThrow();
-		var symbol = request.getSymbol();
-		var tokenAddress = REAddr.ofHashedKey(key, symbol);
+	private JSONObject from(P2PConfig p2PConfig) {
 		return new JSONObject()
-			.put("rri", addressing.forResources().of(symbol, tokenAddress));
+			.put("default_port", p2PConfig.defaultPort())
+			.put("discovery_interval", p2PConfig.discoveryInterval())
+			.put("listen_address", p2PConfig.listenAddress())
+			.put("listen_port", p2PConfig.listenPort())
+			.put("broadcast_port", p2PConfig.broadcastPort())
+			.put("peer_connection_timeout", p2PConfig.peerConnectionTimeout())
+			.put("max_inbound_channels", p2PConfig.maxInboundChannels())
+			.put("max_outbound_channels", p2PConfig.maxOutboundChannels())
+			.put("channel_buffer_size", p2PConfig.channelBufferSize())
+			.put("peer_liveness_check_interval", p2PConfig.peerLivenessCheckInterval())
+			.put("ping_timeout", p2PConfig.pingTimeout())
+			.put("seed_nodes", fromCollection(p2PConfig.seedNodes(), seedNode -> seedNode));
+	}
+
+	@Override
+	public JSONObject handleRequest() {
+		return new JSONObject()
+			.put("bft", new JSONObject()
+				.put("pacemaker_timeout", pacemakerTimeout)
+				.put("bft_sync_patience", bftSyncPatienceMillis)
+			)
+			.put("mempool", new JSONObject()
+				.put("max_size", mempoolMaxSize)
+				.put("throttle", mempoolThrottleMs)
+			)
+			.put("sync", syncConfig.asJson())
+			.put("networking", from(p2PConfig));
 	}
 }

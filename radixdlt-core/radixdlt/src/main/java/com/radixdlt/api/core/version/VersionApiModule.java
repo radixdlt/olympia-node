@@ -63,18 +63,13 @@
 
 package com.radixdlt.api.core.version;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.middleware2.InfoSupplier;
+import com.radixdlt.api.util.HandlerRoute;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.api.util.Controller;
+import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
-
-import static org.radix.Radix.SYSTEM_VERSION_KEY;
-import static org.radix.Radix.VERSION_STRING_KEY;
 
 public final class VersionApiModule extends AbstractModule {
 	private final Class<? extends Annotation> annotationType;
@@ -87,19 +82,8 @@ public final class VersionApiModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
-			.addBinding(path)
-			.toProvider(ControllerProvider.class);
-	}
-
-	private static class ControllerProvider implements Provider<Controller> {
-		@Inject
-		private InfoSupplier infoSupplier;
-
-		@Override
-		public Controller get() {
-			var versionString = (String) infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
-			return new VersionController(versionString);
-		}
+		MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType)
+			.addBinding(HandlerRoute.get(path))
+			.to(VersionHandler.class);
 	}
 }

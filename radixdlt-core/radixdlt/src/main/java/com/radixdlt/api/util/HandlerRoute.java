@@ -90,6 +90,11 @@ public final class HandlerRoute {
 		return new HandlerRoute(Methods.POST, path);
 	}
 
+	public static HandlerRoute get(String path) {
+		Objects.requireNonNull(path);
+		return new HandlerRoute(Methods.GET, path);
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(method, path);
@@ -97,8 +102,12 @@ public final class HandlerRoute {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 		HandlerRoute that = (HandlerRoute) o;
 		return Objects.equals(method, that.method) && Objects.equals(path, that.path);
 	}

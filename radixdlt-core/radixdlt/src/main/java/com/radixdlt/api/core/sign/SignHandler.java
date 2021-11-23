@@ -65,7 +65,7 @@ package com.radixdlt.api.core.sign;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.api.gateway.ApiHandler;
+import com.radixdlt.api.util.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.atom.TxLowLevelBuilder;

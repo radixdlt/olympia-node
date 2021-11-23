@@ -64,17 +64,12 @@
 package com.radixdlt.api.core.system;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.api.util.JsonRpcController;
-import com.radixdlt.api.util.JsonRpcServer;
+import com.radixdlt.api.util.HandlerRoute;
+import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
-import java.util.HashMap;
 
 public final class SystemApiModule extends AbstractModule {
 	private final Class<? extends Annotation> annotationType;
@@ -88,11 +83,12 @@ public final class SystemApiModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(SystemHandler.class).in(Scopes.SINGLETON);
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
-			.addBinding(path)
-			.toProvider(ControllerProvider.class);
+		MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType)
+			.addBinding(HandlerRoute.get(path))
+			.to(SystemConfigurationHandler.class);
 	}
 
+	/*
 	private static class ControllerProvider implements Provider<Controller> {
 		@Inject
 		private SystemHandler handler;
@@ -118,4 +114,5 @@ public final class SystemApiModule extends AbstractModule {
 			return new JsonRpcController(new JsonRpcServer(handlers));
 		}
 	}
+	 */
 }

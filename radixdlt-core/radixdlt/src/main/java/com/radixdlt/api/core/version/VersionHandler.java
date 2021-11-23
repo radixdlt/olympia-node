@@ -61,53 +61,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway;
+package com.radixdlt.api.core.version;
 
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import org.json.JSONException;
+import com.google.inject.Inject;
+import com.radixdlt.api.util.GetHandler;
+import com.radixdlt.middleware2.InfoSupplier;
 import org.json.JSONObject;
 
-import java.nio.charset.StandardCharsets;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static org.radix.Radix.SYSTEM_VERSION_KEY;
+import static org.radix.Radix.VERSION_STRING_KEY;
 
-import static com.radixdlt.api.util.RestUtils.CONTENT_TYPE_JSON;
+public class VersionHandler implements GetHandler {
+	private final JSONObject versionData;
 
-public interface ApiHandler<T> extends HttpHandler {
-	long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
-
-	T parseRequest(JsonObjectReader requestReader) throws InvalidParametersException;
-
-	JSONObject handleRequest(T request) throws Exception;
-
-	@Override
-	default void handleRequest(HttpServerExchange exchange) throws Exception {
-		if (exchange.isInIoThread()) {
-			exchange.dispatch(this);
-			return;
-		}
-
-		exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
-		exchange.startBlocking();
-
-		JSONObject jsonRequest;
-		try {
-			var input = new String(exchange.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-			jsonRequest = new JSONObject(input);
-		} catch (JSONException e) {
-			throw new JsonParseException(e);
-		}
-
-		var requestReader = JsonObjectReader.create(jsonRequest, this::addressing);
-		var request = parseRequest(requestReader);
-		var jsonResponse = handleRequest(request);
-		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-		exchange.setStatusCode(200);
-		exchange.getResponseSender().send(jsonResponse.toString());
+	@Inject
+	public VersionHandler(InfoSupplier infoSupplier) {
+		var versionString = (String) infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
+		versionData = jsonObject().put("version", versionString);
 	}
 
-	default Addressing addressing() {
-		throw new UnsupportedOperationException("Addressing not supported.");
+	@Override
+	public JSONObject handleRequest() {
+		return versionData;
 	}
 }

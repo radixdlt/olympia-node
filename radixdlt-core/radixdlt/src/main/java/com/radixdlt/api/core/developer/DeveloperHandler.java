@@ -63,13 +63,9 @@
 
 package com.radixdlt.api.core.developer;
 
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.network.p2p.addressbook.AddressBook;
-import com.radixdlt.network.p2p.discovery.DiscoverPeers;
 import org.json.JSONObject;
 
 import com.google.inject.Inject;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
@@ -77,21 +73,12 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.AccountAddressing;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.ResourceAddressing;
-import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.utils.functional.Failure;
 import com.radixdlt.utils.functional.Result;
@@ -116,22 +103,16 @@ public final class DeveloperHandler {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final BerkeleyLedgerEntryStore engineStore;
 	private final Addressing addressing;
-	private final AddressBook addressBook;
-	private final EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher;
 
 	@Inject
 	public DeveloperHandler(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		BerkeleyLedgerEntryStore engineStore,
-		Addressing addressing,
-		AddressBook addressBook,
-		EventDispatcher<DiscoverPeers> discoverPeersEventDispatcher
+		Addressing addressing
 	) {
 		this.radixEngine = radixEngine;
 		this.addressing = addressing;
 		this.engineStore = engineStore;
-		this.addressBook = addressBook;
-		this.discoverPeersEventDispatcher = discoverPeersEventDispatcher;
 	}
 
 	private Function<Bucket, String> getKeyMapper(String groupBy) {
@@ -329,103 +310,6 @@ public final class DeveloperHandler {
 				}
 			)
 		);
-	}
-
-	private static Pair<String, ECPublicKey> parseAddress(String type, String address) throws DeserializeException {
-		switch (type) {
-			case "account":
-				return AccountAddressing.parseUnknownHrp(address).mapSecond(addr -> addr.publicKey().orElseThrow());
-			case "node":
-				return NodeAddressing.parseUnknownHrp(address);
-			case "validator":
-				return ValidatorAddressing.parseUnknownHrp(address);
-			default:
-				throw new IllegalArgumentException("type must be: [account|node|validator]");
-		}
-	}
-
-	public JSONObject handleParseAddress(JSONObject request) {
-		return withRequiredParameters(
-			request,
-			List.of("address", "type"),
-			params -> Result.wrap(
-				DeveloperHandler::toFailure,
-				() -> {
-					var type = params.getString("type");
-					var address = params.getString("address");
-					var pair = parseAddress(type, address);
-					var hrp = pair.getFirst();
-					var pubKey = pair.getSecond();
-					return jsonObject()
-						.put("hrp", hrp)
-						.put("public_key", Bytes.toHexString(pubKey.getCompressedBytes()));
-				}
-			)
-		);
-	}
-
-	public JSONObject handleParseAmount(JSONObject request) {
-		return withRequiredParameters(
-			request,
-			List.of("amount"),
-			params -> Result.wrap(
-				DeveloperHandler::toFailure,
-				() -> {
-					var amountString = params.getString("amount");
-					var amount = UInt256.from(amountString);
-					return jsonObject()
-						.put("parsed", Amount.ofSubunits(amount).toString());
-				}
-			)
-		);
-	}
-
-	private static String createAddress(String type, Network network, ECPublicKey key) {
-		switch (type) {
-			case "account":
-				return AccountAddressing.bech32(network.getAccountHrp()).of(REAddr.ofPubKeyAccount(key));
-			case "node":
-				return NodeAddressing.bech32(network.getNodeHrp()).of(key);
-			case "validator":
-				return ValidatorAddressing.bech32(network.getValidatorHrp()).of(key);
-			default:
-				throw new IllegalArgumentException("type must be: [account|node|validator]");
-		}
-	}
-
-	public JSONObject handleCreateAddress(JSONObject request) {
-		return withRequiredParameters(
-			request,
-			List.of("networkId", "type"),
-			params -> Result.wrap(
-				DeveloperHandler::toFailure,
-				() -> {
-					var networkId = params.getInt("networkId");
-					var network = Network.ofId(networkId).orElseThrow();
-					var type = params.getString("type");
-					final String address;
-					if (type.equals("resource")) {
-						var addrBytes = Bytes.fromHexString(params.getString("address"));
-						var reAddr = REAddr.of(addrBytes);
-						var symbol = params.getString("symbol");
-						var suffix = network.getResourceHrpSuffix();
-						address = ResourceAddressing.bech32(suffix).of(symbol, reAddr);
-					} else {
-						var publicKeyHex = params.getString("public_key");
-						var publicKey = ECPublicKey.fromHex(publicKeyHex);
-						address = createAddress(type, network, publicKey);
-					}
-					return jsonObject()
-						.put("address", address);
-				}
-			)
-		);
-	}
-
-	public JSONObject clearAddressBook(JSONObject request) {
-		this.addressBook.clear();
-		this.discoverPeersEventDispatcher.dispatch(DiscoverPeers.create());
-		return jsonObject();
 	}
 
 	private static Failure toFailure(Throwable e) {

@@ -115,11 +115,11 @@ public interface SyncConfig {
 			@Override
 			public JSONObject asJson() {
 				return new JSONObject()
-					.put("syncCheckInterval", syncCheckInterval)
-					.put("syncCheckMaxPeers", syncCheckMaxPeers)
-					.put("requestTimeout", requestTimeout)
-					.put("ledgerStatusUpdateMaxPeersToNotify", ledgerStatusUpdateMaxPeersToNotify)
-					.put("maxLedgerUpdatesRate", maxLedgerUpdatesRate);
+					.put("sync_check_interval", syncCheckInterval)
+					.put("sync_check_max_peers", syncCheckMaxPeers)
+					.put("request_timeout", requestTimeout)
+					.put("ledger_status_update_max_peers_to_notify", ledgerStatusUpdateMaxPeersToNotify)
+					.put("max_ledger_updates_rate", maxLedgerUpdatesRate);
 			}
 		};
 	}

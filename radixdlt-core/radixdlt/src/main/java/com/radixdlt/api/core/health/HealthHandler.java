@@ -61,34 +61,25 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.version;
+package com.radixdlt.api.core.health;
 
+import com.google.inject.Inject;
+import com.radixdlt.api.service.network.NetworkInfoService;
+
+import com.radixdlt.api.util.GetHandler;
 import org.json.JSONObject;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.radixdlt.api.util.Controller;
+final class HealthHandler implements GetHandler {
+	private final NetworkInfoService networkInfoService;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
-
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.sanitizeBaseUrl;
-
-public class VersionController implements Controller {
-	private final JSONObject versionData;
-
-	public VersionController(String versionString) {
-		versionData = jsonObject().put("version", versionString);
+	@Inject
+	HealthHandler(NetworkInfoService networkInfoService) {
+		this.networkInfoService = networkInfoService;
 	}
 
 	@Override
-	public void configureRoutes(String root, RoutingHandler handler) {
-		handler.get(sanitizeBaseUrl(root), this::handleVersionRequest);
-	}
-
-	@VisibleForTesting
-	void handleVersionRequest(HttpServerExchange exchange) {
-		respond(exchange, versionData);
+	public JSONObject handleRequest() {
+		return new JSONObject()
+			.put("status", networkInfoService.nodeStatus());
 	}
 }

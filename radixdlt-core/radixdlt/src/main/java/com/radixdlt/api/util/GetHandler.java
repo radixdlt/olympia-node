@@ -61,36 +61,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.health;
+package com.radixdlt.api.util;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.api.service.network.NetworkInfoService;
-
+import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
-import io.undertow.util.HttpString;
+import io.undertow.util.Headers;
+import org.json.JSONObject;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.util.RestUtils.respond;
-import static com.radixdlt.api.util.RestUtils.sanitizeBaseUrl;
+import static com.radixdlt.api.util.RestUtils.CONTENT_TYPE_JSON;
 
-final class HealthController implements Controller {
-	private final NetworkInfoService networkInfoService;
-
-	@Inject
-	HealthController(NetworkInfoService networkInfoService) {
-		this.networkInfoService = networkInfoService;
-	}
-
+public interface GetHandler extends HttpHandler {
 	@Override
-	public void configureRoutes(String root, RoutingHandler handler) {
-		handler.get(sanitizeBaseUrl(root), this::handleHealthRequest);
+	default void handleRequest(HttpServerExchange exchange) throws Exception {
+		if (exchange.isInIoThread()) {
+			exchange.dispatch(this);
+			return;
+		}
+
+		exchange.startBlocking();
+
+		var jsonResponse = handleRequest();
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+		exchange.setStatusCode(200);
+		exchange.getResponseSender().send(jsonResponse.toString());
 	}
 
-	@VisibleForTesting
-	void handleHealthRequest(HttpServerExchange exchange) {
-		respond(exchange, jsonObject().put("status", networkInfoService.nodeStatus()));
-	}
+	JSONObject handleRequest();
 }

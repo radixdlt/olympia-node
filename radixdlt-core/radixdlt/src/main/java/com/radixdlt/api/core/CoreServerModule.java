@@ -123,15 +123,16 @@ public final class CoreServerModule extends AbstractModule {
 		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
 		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
 
+		// System API
 		install(new SystemApiModule(NodeServer.class, "/system"));
 		install(new HealthApiModule(NodeServer.class, "/health"));
 		install(new VersionApiModule(NodeServer.class, "/version"));
-		install(new DeveloperApiModule(NodeServer.class, "/developer"));
-
 		if (metricsEnable) {
 			install(new MetricsApiModule(NodeServer.class, "/metrics"));
 		}
 
+		// Core API
+		install(new DeveloperApiModule(NodeServer.class, "/developer"));
 		install(new EntityApiModule(NodeServer.class, "/entity"));
 		install(new NetworkApiModule(NodeServer.class, "/network"));
 		install(new SignApiModule(NodeServer.class, "/sign"));

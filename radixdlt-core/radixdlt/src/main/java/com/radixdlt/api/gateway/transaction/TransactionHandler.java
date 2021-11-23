@@ -65,7 +65,7 @@ package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.gateway.AccountTransactionTransformer;
-import com.radixdlt.api.gateway.ApiHandler;
+import com.radixdlt.api.util.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;

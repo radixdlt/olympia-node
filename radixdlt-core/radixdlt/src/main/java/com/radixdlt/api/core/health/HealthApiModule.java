@@ -66,7 +66,8 @@ package com.radixdlt.api.core.health;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.Controller;
+import com.radixdlt.api.util.HandlerRoute;
+import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
 
@@ -81,9 +82,9 @@ public final class HealthApiModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(HealthController.class).in(Scopes.SINGLETON);
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
-			.addBinding(path)
-			.to(HealthController.class);
+		bind(HealthHandler.class).in(Scopes.SINGLETON);
+		MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType)
+			.addBinding(HandlerRoute.get(path))
+			.to(HealthHandler.class);
 	}
 }

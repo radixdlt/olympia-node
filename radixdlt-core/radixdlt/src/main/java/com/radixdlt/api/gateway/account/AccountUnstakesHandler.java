@@ -64,7 +64,7 @@
 package com.radixdlt.api.gateway.account;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.gateway.ApiHandler;
+import com.radixdlt.api.util.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.identifiers.REAddr;

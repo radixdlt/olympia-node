@@ -104,10 +104,7 @@ public final class DeveloperApiModule extends AbstractModule {
 				"lookup_mapped_substate", handler::handleLookupMappedSubstate,
 				"scan_substates", handler::handleScanSubstates,
 				"parse_transaction", handler::handleParseTxn,
-				"parse_substate", handler::handleParseSubstate,
-				"parse_address", handler::handleParseAddress,
-				"parse_amount", handler::handleParseAmount,
-				"create_address", handler::handleCreateAddress
+				"parse_substate", handler::handleParseSubstate
 			);
 			return new JsonRpcController(new JsonRpcServer(handlers));
 		}
