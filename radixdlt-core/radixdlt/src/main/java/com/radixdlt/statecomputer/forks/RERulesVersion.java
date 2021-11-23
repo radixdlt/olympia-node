@@ -64,7 +64,6 @@
 
 package com.radixdlt.statecomputer.forks;
 
-import com.radixdlt.application.misc.FaucetTokensTransferConstructor;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
 import com.radixdlt.application.validators.construction.UpdateValidatorSystemMetadataConstructor;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
@@ -74,7 +73,6 @@ import com.radixdlt.atom.actions.BurnToken;
 import com.radixdlt.atom.actions.CreateFixedToken;
 import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.CreateSystem;
-import com.radixdlt.atom.actions.FaucetTokensTransfer;
 import com.radixdlt.atom.actions.FeeReserveComplete;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.NextEpoch;
@@ -186,7 +184,6 @@ public enum RERulesVersion {
 				))
 				.put(NextRound.class, new NextViewConstructorV3())
 				.put(RegisterValidator.class, new RegisterValidatorConstructor())
-				.put(FaucetTokensTransfer.class, new FaucetTokensTransferConstructor())
 				.put(SplitToken.class, new SplitTokenConstructor())
 				.put(StakeTokens.class, new StakeTokensConstructorV3(config.getMinimumStake().toSubunits()))
 				.put(UnstakeTokens.class, new UnstakeTokensConstructorV2())

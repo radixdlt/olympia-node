@@ -258,14 +258,14 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/ConstructionBuildRequest"
+              "$ref": "#/components/schemas/TransactionBuildRequest"
       responses:
         '200':
           description: An unsigned transaction
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ConstructionBuildResponse"
+                "$ref": "#/components/schemas/TransactionBuildResponse"
         '500':
           description: Unexpected error
           content:
@@ -315,7 +315,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ConstructionSubmitUnexpectedError"
+                "$ref": "#/components/schemas/UnexpectedError"
   "/transaction/status":
     post:
       summary: Get Transaction
@@ -543,6 +543,10 @@ components:
       allOf:
         - "$ref": "#/components/schemas/Action"
         - type: object
+          required:
+            - from
+            - to
+            - amount
           properties:
             from:
               "$ref": "#/components/schemas/AccountAddress"
@@ -565,6 +569,10 @@ components:
       allOf:
         - "$ref": "#/components/schemas/Action"
         - type: object
+          required:
+            - from
+            - to
+            - amount
           properties:
             from:
               "$ref": "#/components/schemas/ValidatorAddress"
@@ -577,8 +585,8 @@ components:
         - "$ref": "#/components/schemas/Action"
         - type: object
           required:
-            - amount
-            - properties
+            - token_properties
+            - token_supply
           properties:
             token_properties:
               "$ref": "#/components/schemas/TokenProperties"
@@ -590,6 +598,9 @@ components:
       allOf:
         - "$ref": "#/components/schemas/Action"
         - type: object
+          required:
+            - to
+            - amount
           properties:
             to:
               "$ref": "#/components/schemas/ValidatorAddress"
@@ -599,6 +610,9 @@ components:
       allOf:
         - "$ref": "#/components/schemas/Action"
         - type: object
+          required:
+            - from
+            - amount
           properties:
             from:
               "$ref": "#/components/schemas/ValidatorAddress"
@@ -645,7 +659,7 @@ components:
           type: integer
         minimum_stake:
           "$ref": "#/components/schemas/TokenAmount"
-    ConstructionBuildRequest:
+    TransactionBuildRequest:
       type: object
       required:
         - network
@@ -675,50 +689,91 @@ components:
               value: '123000000000000000'
         fee_payer: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
         disable_token_mint_and_burn: true
-    ConstructionBuildResponse:
+    TransactionBuildResponse:
       type: object
       required:
-        - fee
-        - unsigned_transaction
-        - payload_to_sign
+        - result
       properties:
-        fee:
-          "$ref": "#/components/schemas/TokenAmount"
-        unsigned_transaction:
-          type: string
-        payload_to_sign:
-          type: string
-      example:
-        fee:
-          value: '72000000000000000'
-          rri: xrd_rr1qy5wfsfh
-        unsigned_transaction: 07ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842000000020100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329a636aa8c02c00000008000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da3298ae6ecf94cc8000020045060004038639dc49e14a94448045a3c595996282d8419eb9ae949dfb84b7bc48ba3d4fee0100000000000000000000000000000000000000000000000001b4fbd92b5f800000
-        payload_to_sign: 28f4cf3b398e0c7256a8042d3c7a024bc308997dbc10db03c5eb6152f16f7673
-    MempoolFullError:
-      type: object
-    StateConflicError:
-      type: object
-    InvalidTransactionError:
-      type: object
-      properties:
-        message:
-          type: string
-    ConstructionSubmitUnexpectedError:
+        result:
+          $ref: "#/components/schemas/TransactionBuildResult"
+    TransactionBuildSuccess:
+      allOf:
+        - "$ref": "#/components/schemas/TransactionBuildResult"
+        - type: object
+          required:
+            - fee
+            - unsigned_transaction
+            - payload_to_sign
+          properties:
+            fee:
+              "$ref": "#/components/schemas/TokenAmount"
+            unsigned_transaction:
+              type: string
+            payload_to_sign:
+              type: string
+    NotEnoughResourcesError:
+      allOf:
+        - "$ref": "#/components/schemas/TransactionBuildResult"
+        - type: object
+          required:
+            - requested_amount
+            - available_amount
+          properties:
+            requested_amount:
+              $ref: "#/components/schemas/BigInteger"
+            available_amount:
+              $ref: "#/components/schemas/BigInteger"
+    BelowMinimumStakeError:
+      allOf:
+        - "$ref": "#/components/schemas/TransactionBuildResult"
+        - type: object
+          required:
+            - requested_amount
+            - minimum_amount
+          properties:
+            requested_amount:
+              $ref: "#/components/schemas/BigInteger"
+            minimum_amount:
+              $ref: "#/components/schemas/BigInteger"
+    NotValidatorOwnerError:
+      allOf:
+        - "$ref": "#/components/schemas/TransactionBuildResult"
+        - type: object
+          required:
+            - owner
+            - user
+          properties:
+            owner:
+              $ref: "#/components/schemas/AccountAddress"
+            user:
+              $ref: "#/components/schemas/AccountAddress"
+    MessageTooLongError:
+      allOf:
+        - "$ref": "#/components/schemas/TransactionBuildResult"
+        - type: object
+          required:
+            - length_limit
+            - attempted_length
+          properties:
+            length_limit:
+              type: integer
+            attempted_length:
+              type: integer
+    TransactionBuildResult:
       type: object
       required:
-        - message
+        - type
       properties:
-        message:
+        type:
           type: string
       discriminator:
-        propertyName: message
+        propertyName: type
         mapping:
-          INTERNAL_SERVER_ERROR: "#/components/schemas/InternalServerError"
-          INVALID_JSON: "#/components/schemas/InvalidJsonError"
-          INVALID_REQUEST: "#/components/schemas/InvalidRequestError"
-          MEMPOOL_FULL: "#/components/schemas/MempoolError"
-          STATE_CONFLICT: "#/components/schemas/StateConflictError"
-          INVALID_TRANSACTION: "#/components/schemas/InvalidTransactionError"
+          TransactionBuildSuccess: "#/components/schemas/TransactionBuildSuccess"
+          NotEnoughResourcesError: "#/components/schemas/NotEnoughResourcesError"
+          BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"
+          NotValidatorOwnerError: "#/components/schemas/NotValidatorOwnerError"
+          MessageTooLongError: "#/components/schemas/MessageTooLongError"
     ConstructionFinalizeRequest:
       type: object
       required:
@@ -788,38 +843,7 @@ components:
       example:
         network: mainnet
         state_version: 1
-    InternalServerError:
-      type: object
-      properties:
-        exception:
-          type: string
-        cause:
-          type: string
-    InvalidJsonError:
-      type: object
-      properties:
-        cause:
-          type: string
-    InvalidRequestError:
-      type: object
-      properties:
-        pointer:
-          type: string
-        cause:
-          type: string
-    UnexpectedError:
-      type: object
-      required:
-        - message
-      properties:
-        message:
-          type: string
-      discriminator:
-        propertyName: message
-        mapping:
-          INTERNAL_SERVER_ERROR: "#/components/schemas/InternalServerError"
-          INVALID_JSON: "#/components/schemas/InvalidJsonError"
-          INVALID_REQUEST: "#/components/schemas/InvalidRequestError"
+
     TokenInfoRequest:
       type: object
       required:
@@ -1049,30 +1073,38 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/Validator"
-      example:
-        ledger_state:
-          version: 1
-          timestamp: "2021-08-29T01:19:00.524Z"
-        validators:
-          - stake:
-              exitingOwnership: '0'
-              currentStake: '100000000000000000000'
-              currentOwnership: '100000000000000000000'
-              nextEpochEstimatedOwnerStake: '0'
-              preparedStake: '0'
-              nextEpochEstimatedStake: '100000000000000000000'
-            properties:
-              address: rv1qf2x63qx4jdaxj83kkw2yytehvvmu6r2xll5gcp6c9rancmrfsgfwttnczx
-              infoURL: https://learn.radixdlt.com/article/will-the-radix-foundation-operate-validator-nodes
-              validatorFee: '100.0'
-              name: Radix Foundation eu-west-1 node0 mainnet
-              registered: true
-              ownerAddress: rdx1qspldshtx0s2l2rcnaqtqpqz8vwps2y6d9se0wq25xrg92l66cmp6mcnc6pyu
-              externalStakeAccepted: false
-            uptime:
-              uptimePercentage: '100.00'
-              proposalsMissed: 0
-              proposalsCompleted: 108320
+    InternalServerError:
+      type: object
+      properties:
+        exception:
+          type: string
+        cause:
+          type: string
+    InvalidJsonError:
+      type: object
+      properties:
+        cause:
+          type: string
+    InvalidRequestError:
+      type: object
+      properties:
+        pointer:
+          type: string
+        cause:
+          type: string
+    UnexpectedError:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+      discriminator:
+        propertyName: message
+        mapping:
+          INTERNAL_SERVER_ERROR: "#/components/schemas/InternalServerError"
+          INVALID_JSON: "#/components/schemas/InvalidJsonError"
+          INVALID_REQUEST: "#/components/schemas/InvalidRequestError"
     Validator:
       type: object
       required:

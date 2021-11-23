@@ -67,6 +67,10 @@ import com.google.inject.Inject;
 import com.radixdlt.api.gateway.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
+import com.radixdlt.application.tokens.construction.MinimumStakeException;
+import com.radixdlt.atom.MessageTooLongException;
+import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
@@ -120,14 +124,49 @@ final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest
 
 	@Override
 	public JSONObject handleRequest(TxnConstructionRequest request) throws TxBuilderException {
-		TxBuilder builder = radixEngine.construct(request);
+		TxBuilder builder;
+		try {
+			builder = radixEngine.construct(request);
+		} catch (NotEnoughResourcesException e) {
+			return new JSONObject()
+				.put("result", new JSONObject()
+					.put("type", "NotEnoughResourcesError")
+					.put("available_amount", e.getAvailable())
+					.put("requested_amount", e.getRequested())
+				);
+		} catch (MinimumStakeException e) {
+			return new JSONObject()
+				.put("result", new JSONObject()
+					.put("type", "BelowMinimumStakeError")
+					.put("minimum_amount", e.getMinimumStake())
+					.put("requested_amount", e.getAttempt())
+				);
+		} catch (DelegateStakePermissionException e) {
+			return new JSONObject()
+				.put("result", new JSONObject()
+					.put("type", "NotValidatorOwnerError")
+					.put("owner", addressing.forAccounts().of(e.getOwner()))
+					.put("user", addressing.forAccounts().of(e.getUser()))
+				);
+		} catch (MessageTooLongException e) {
+			return new JSONObject()
+				.put("result", new JSONObject()
+					.put("type", "MessageTooLongError")
+					.put("length_limit", 255)
+					.put("attempted_length", e.getAttemptedLength())
+				);
+		}
+
 		var unsignedTransaction = builder.buildForExternalSign();
 		return new JSONObject()
-			.put("fee", new JSONObject()
-				.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
-				.put("value", unsignedTransaction.feesPaid().toString())
-			)
-			.put("unsigned_transaction", Bytes.toHexString(unsignedTransaction.blob()))
-			.put("payload_to_sign", Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
+			.put("result", new JSONObject()
+				.put("type", "TransactionBuildSuccess")
+				.put("fee", new JSONObject()
+					.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+					.put("value", unsignedTransaction.feesPaid().toString())
+				)
+				.put("unsigned_transaction", Bytes.toHexString(unsignedTransaction.blob()))
+				.put("payload_to_sign", Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()))
+			);
 	}
 }

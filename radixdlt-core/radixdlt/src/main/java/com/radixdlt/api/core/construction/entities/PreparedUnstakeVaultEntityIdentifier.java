@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,25 +61,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.atom.actions;
+package com.radixdlt.api.core.construction.entities;
 
-import com.radixdlt.atom.TxAction;
+import com.radixdlt.api.core.construction.EntityIdentifier;
+import com.radixdlt.api.core.construction.InvalidResourceIdentifierException;
+import com.radixdlt.api.core.construction.KeyQuery;
+import com.radixdlt.api.core.construction.ResourceIdentifier;
+import com.radixdlt.api.core.construction.ResourceQuery;
+import com.radixdlt.api.core.construction.StakeOwnershipResourceIdentifier;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.UInt256;
 
-public class FaucetTokensTransfer implements TxAction {
-	private final REAddr from;
-	private final REAddr to;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Supplier;
 
-	public FaucetTokensTransfer(REAddr from, REAddr to) {
-		this.from = from;
-		this.to = to;
+import static com.radixdlt.atom.SubstateTypeId.PREPARED_UNSTAKE;
+
+public class PreparedUnstakeVaultEntityIdentifier implements EntityIdentifier {
+	private final REAddr accountAddress;
+	private final ECPublicKey validatorKey;
+
+	PreparedUnstakeVaultEntityIdentifier(REAddr accountAddress, ECPublicKey validatorKey) {
+		this.accountAddress = accountAddress;
+		this.validatorKey = validatorKey;
 	}
 
-	public REAddr from() {
-		return from;
+	@Override
+	public Optional<REAddr> getAccountAddress() {
+		return Optional.of(accountAddress);
 	}
 
-	public REAddr to() {
-		return to;
+	@Override
+	public void bootUp(
+		TxBuilder txBuilder,
+		UInt256 amount,
+		ResourceIdentifier resourceIdentifier,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
+		if (!(resourceIdentifier instanceof StakeOwnershipResourceIdentifier)) {
+			throw new InvalidResourceIdentifierException("Can only store validator ownership in prepared_unstake address");
+		}
+		var stakeOwnershipResourceIdentifier = (StakeOwnershipResourceIdentifier) resourceIdentifier;
+		var stakeOwnershipKey = stakeOwnershipResourceIdentifier.getValidatorKey();
+		var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount);
+		txBuilder.up(substate);
+	}
+
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+
+		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
+		buf.put(PREPARED_UNSTAKE.id());
+		buf.put((byte) 0); // Reserved byte
+		buf.put(validatorKey.getCompressedBytes());
+		buf.put(accountAddress.getBytes());
+		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), PreparedUnstakeOwnership.class);
+		return List.of(ResourceQuery.from(index));
+	}
+
+	@Override
+	public List<KeyQuery> getKeyQueries() {
+		return List.of();
+	}
+
+	public static PreparedUnstakeVaultEntityIdentifier from(
+		REAddr accountAddress,
+		JsonObjectReader metadataReader
+	) throws InvalidParametersException {
+		var validatorKey = metadataReader.getValidatorIdentifier("validator");
+		return new PreparedUnstakeVaultEntityIdentifier(accountAddress, validatorKey);
 	}
 }

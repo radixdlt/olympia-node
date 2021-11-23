@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.core.construction;
 
+import com.radixdlt.api.core.construction.entities.ValidatorEntityIdentifier;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.application.validators.state.ValidatorMetaData;

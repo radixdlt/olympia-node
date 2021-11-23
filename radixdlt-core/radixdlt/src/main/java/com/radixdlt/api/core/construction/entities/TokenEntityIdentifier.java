@@ -61,41 +61,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.construction;
+package com.radixdlt.api.core.construction.entities;
 
-import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
-import com.radixdlt.application.tokens.construction.MinimumStakeException;
-import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.api.core.construction.EntityIdentifier;
+import com.radixdlt.api.core.construction.KeyQuery;
+import com.radixdlt.api.core.construction.ResourceIdentifier;
+import com.radixdlt.api.core.construction.ResourceQuery;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.radixdlt.atom.SubstateTypeId.PREPARED_STAKE;
+public class TokenEntityIdentifier implements EntityIdentifier {
+	private final REAddr tokenAddr;
 
-public class PreparedStakeVaultEntityIdentifier implements EntityIdentifier {
-	private final REAddr accountAddress;
-	private final ECPublicKey validatorKey;
+	private TokenEntityIdentifier(REAddr tokenAddr) {
+		this.tokenAddr = tokenAddr;
+	}
 
-	PreparedStakeVaultEntityIdentifier(REAddr accountAddress, ECPublicKey validatorKey) {
-		this.accountAddress = accountAddress;
-		this.validatorKey = validatorKey;
+	public REAddr getTokenAddr() {
+		return tokenAddr;
+	}
+
+	public static TokenEntityIdentifier from(REAddr tokenAddr) {
+		return new TokenEntityIdentifier(tokenAddr);
 	}
 
 	@Override
 	public Optional<REAddr> getAccountAddress() {
-		return Optional.of(accountAddress);
+		return Optional.empty();
 	}
 
 	@Override
@@ -105,50 +104,16 @@ public class PreparedStakeVaultEntityIdentifier implements EntityIdentifier {
 		ResourceIdentifier resourceIdentifier,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {
-		if (!(resourceIdentifier instanceof TokenResourceIdentifier)) {
-			throw new InvalidResourceIdentifierException("Can only store native token in prepared_stake address");
-		}
-		var tokenResourceIdentifier = (TokenResourceIdentifier) resourceIdentifier;
-		var tokenAddress = tokenResourceIdentifier.getTokenAddress();
-		if (!tokenAddress.isNativeToken()) {
-			throw new InvalidResourceIdentifierException("Can only store native token in prepared_stake address");
-		}
-
-		var minStake = config.get().getMinimumStake().toSubunits();
-		if (amount.compareTo(minStake) < 0) {
-			throw new MinimumStakeException(minStake, amount);
-		}
-
-		var flag = txBuilder.read(AllowDelegationFlag.class, validatorKey);
-		if (!flag.allowsDelegation()) {
-			var validator = txBuilder.read(ValidatorOwnerCopy.class, validatorKey);
-			var owner = validator.getOwner();
-			if (!accountAddress.equals(owner)) {
-				throw new DelegateStakePermissionException(owner, accountAddress);
-			}
-		}
-		var substate = new PreparedStake(amount, accountAddress, validatorKey);
-		txBuilder.up(substate);
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public List<ResourceQuery> getResourceQueries() {
-		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
-		buf.put(PREPARED_STAKE.id());
-		buf.put((byte) 0); // Reserved byte
-		buf.put(validatorKey.getCompressedBytes());
-		buf.put(accountAddress.getBytes());
-		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), PreparedStake.class);
-		return List.of(ResourceQuery.from(index));
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public List<KeyQuery> getKeyQueries() {
-		return List.of();
-	}
-
-
-	public static PreparedStakeVaultEntityIdentifier from(REAddr accountAddress, ECPublicKey validatorKey) {
-		return new PreparedStakeVaultEntityIdentifier(accountAddress, validatorKey);
+		throw new UnsupportedOperationException();
 	}
 }

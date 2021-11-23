@@ -61,10 +61,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.construction;
+package com.radixdlt.api.core.construction.entities;
 
+import com.radixdlt.api.core.construction.EntityIdentifier;
+import com.radixdlt.api.core.construction.KeyQuery;
+import com.radixdlt.api.core.construction.ResourceIdentifier;
+import com.radixdlt.api.core.construction.ResourceQuery;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorFeeCopy;
+import com.radixdlt.application.validators.state.ValidatorMetaData;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
+import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
@@ -73,19 +86,21 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public class TokenEntityIdentifier implements EntityIdentifier {
-	private final REAddr tokenAddr;
+import static com.radixdlt.atom.SubstateTypeId.*;
 
-	private TokenEntityIdentifier(REAddr tokenAddr) {
-		this.tokenAddr = tokenAddr;
+public class ValidatorEntityIdentifier implements EntityIdentifier {
+	private final ECPublicKey validatorKey;
+
+	private ValidatorEntityIdentifier(ECPublicKey validatorKey) {
+		this.validatorKey = validatorKey;
 	}
 
-	public REAddr getTokenAddr() {
-		return tokenAddr;
+	public static ValidatorEntityIdentifier from(ECPublicKey validatorKey) {
+		return new ValidatorEntityIdentifier(validatorKey);
 	}
 
-	public static TokenEntityIdentifier from(REAddr tokenAddr) {
-		return new TokenEntityIdentifier(tokenAddr);
+	public ECPublicKey getValidatorKey() {
+		return validatorKey;
 	}
 
 	@Override
@@ -94,22 +109,27 @@ public class TokenEntityIdentifier implements EntityIdentifier {
 	}
 
 	@Override
-	public void bootUp(
-		TxBuilder txBuilder,
-		UInt256 amount,
-		ResourceIdentifier resourceIdentifier,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		throw new UnsupportedOperationException();
+	public void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) {
+		throw new IllegalStateException();
 	}
 
 	@Override
 	public List<ResourceQuery> getResourceQueries() {
-		throw new UnsupportedOperationException();
+		var index = SubstateIndex.<ResourceInBucket>create(VALIDATOR_STAKE_DATA.id(), ValidatorStakeData.class);
+		return List.of(ResourceQuery.from(index, b -> b.bucket().getValidatorKey().equals(validatorKey)));
 	}
 
 	@Override
 	public List<KeyQuery> getKeyQueries() {
-		throw new UnsupportedOperationException();
+		return List.of(
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_META_DATA, ValidatorMetaData::createVirtual),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_STAKE_DATA, ValidatorStakeData::createVirtual),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_BFT_DATA),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_ALLOW_DELEGATION_FLAG, AllowDelegationFlag::createVirtual),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_REGISTERED_FLAG_COPY, ValidatorRegisteredCopy::createVirtual),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_RAKE_COPY, ValidatorFeeCopy::createVirtual),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_OWNER_COPY, ValidatorOwnerCopy::createVirtual),
+			KeyQuery.fromValidator(validatorKey, VALIDATOR_SYSTEM_META_DATA, ValidatorSystemMetadata::createVirtual)
+		);
 	}
 }

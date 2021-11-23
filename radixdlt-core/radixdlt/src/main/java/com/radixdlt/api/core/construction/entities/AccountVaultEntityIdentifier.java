@@ -61,8 +61,14 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.construction;
+package com.radixdlt.api.core.construction.entities;
 
+import com.radixdlt.api.core.construction.EntityIdentifier;
+import com.radixdlt.api.core.construction.KeyQuery;
+import com.radixdlt.api.core.construction.ResourceIdentifier;
+import com.radixdlt.api.core.construction.ResourceQuery;
+import com.radixdlt.api.core.construction.StakeOwnershipResourceIdentifier;
+import com.radixdlt.api.core.construction.TokenResourceIdentifier;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
