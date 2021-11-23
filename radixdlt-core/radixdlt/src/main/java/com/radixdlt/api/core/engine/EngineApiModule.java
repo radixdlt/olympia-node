@@ -65,6 +65,7 @@ package com.radixdlt.api.core.engine;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.api.util.HandlerRoute;
 import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
@@ -80,7 +81,7 @@ public class EngineApiModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		var binder = MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, annotationType);
-		binder.addBinding(path + "/configuration").to(EngineConfigurationHandler.class);
+		var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType);
+		binder.addBinding(HandlerRoute.post(path + "/configuration")).to(EngineConfigurationHandler.class);
 	}
 }

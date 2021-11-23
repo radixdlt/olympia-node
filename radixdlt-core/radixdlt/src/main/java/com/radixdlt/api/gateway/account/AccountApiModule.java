@@ -67,6 +67,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
 
@@ -90,11 +91,11 @@ public class AccountApiModule extends AbstractModule {
 		binder.addBinding().to(BerkeleyAccountTxHistoryStore.class);
 
 		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
+			binder(), HandlerRoute.class, HttpHandler.class, annotationType
 		);
-		routeBinder.addBinding(path + "/balances").to(AccountBalancesHandler.class);
-		routeBinder.addBinding(path + "/stakes").to(AccountStakesHandler.class);
-		routeBinder.addBinding(path + "/unstakes").to(AccountUnstakesHandler.class);
-		routeBinder.addBinding(path + "/transactions").to(AccountTransactionsHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/balances")).to(AccountBalancesHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/stakes")).to(AccountStakesHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/unstakes")).to(AccountUnstakesHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/transactions")).to(AccountTransactionsHandler.class);
 	}
 }

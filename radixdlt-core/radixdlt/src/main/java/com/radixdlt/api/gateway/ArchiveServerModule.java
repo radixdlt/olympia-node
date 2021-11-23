@@ -73,6 +73,7 @@ import com.radixdlt.api.gateway.transaction.TransactionApiModule;
 import com.radixdlt.api.gateway.network.NetworkApiModule;
 import com.radixdlt.api.gateway.tokens.TokenApiModule;
 import com.radixdlt.api.gateway.validator.ValidatorApiModule;
+import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
@@ -119,7 +120,7 @@ public class ArchiveServerModule extends AbstractModule {
 	@StringMapKey(Runners.ARCHIVE_API)
 	@Singleton
 	public ModuleRunner archiveHttpServer(
-		@ArchiveServer Map<String, HttpHandler> handlers,
+		@ArchiveServer Map<HandlerRoute, HttpHandler> handlers,
 		Addressing addressing,
 		SystemCounters counters
 	) {

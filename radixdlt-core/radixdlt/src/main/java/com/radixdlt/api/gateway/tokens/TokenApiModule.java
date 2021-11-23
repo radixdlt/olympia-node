@@ -67,6 +67,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
 
@@ -88,10 +89,10 @@ public final class TokenApiModule extends AbstractModule {
 			.addBinding().to(BerkeleyResourceInfoStore.class);
 
 		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
+			binder(), HandlerRoute.class, HttpHandler.class, annotationType
 		);
-		routeBinder.addBinding(path).to(TokenHandler.class);
-		routeBinder.addBinding(path + "/native").to(TokenNativeHandler.class);
-		routeBinder.addBinding(path + "/derive").to(TokenDeriveHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path)).to(TokenHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/native")).to(TokenNativeHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/derive")).to(TokenDeriveHandler.class);
 	}
 }

@@ -68,6 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
 
@@ -87,7 +88,7 @@ public final class TransactionIndexApiModule extends AbstractModule {
 		bind(BerkeleyTransactionIndexStore.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
 			.addBinding().to(BerkeleyTransactionIndexStore.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, annotationType)
-			.addBinding(path).to(TransactionsHandler.class);
+		MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType)
+			.addBinding(HandlerRoute.post(path)).to(TransactionsHandler.class);
 	}
 }

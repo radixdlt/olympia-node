@@ -67,6 +67,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
 
@@ -90,9 +91,9 @@ public final class ValidatorApiModule extends AbstractModule {
 		binder.addBinding().to(BerkeleyValidatorUptimeStore.class);
 
 		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
+			binder(), HandlerRoute.class, HttpHandler.class, annotationType
 		);
-		routeBinder.addBinding(path).to(ValidatorApiHandler.class);
-		routeBinder.addBinding(path + "s").to(ValidatorsApiHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path)).to(ValidatorApiHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "s")).to(ValidatorsApiHandler.class);
 	}
 }

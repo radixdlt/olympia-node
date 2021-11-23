@@ -65,6 +65,7 @@ package com.radixdlt.api.gateway.network;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.api.util.HandlerRoute;
 import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
@@ -81,8 +82,8 @@ public final class NetworkApiModule extends AbstractModule {
 	@Override
 	public void configure() {
 		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
+			binder(), HandlerRoute.class, HttpHandler.class, annotationType
 		);
-		routeBinder.addBinding(path).to(NetworkHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path)).to(NetworkHandler.class);
 	}
 }

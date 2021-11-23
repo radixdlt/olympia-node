@@ -80,6 +80,7 @@ import com.radixdlt.api.core.sign.SignApiModule;
 import com.radixdlt.api.core.system.SystemApiModule;
 import com.radixdlt.api.core.transactions.TransactionIndexApiModule;
 import com.radixdlt.api.core.version.VersionApiModule;
+import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.api.util.Controller;
 import com.radixdlt.counters.SystemCounters;
@@ -146,7 +147,7 @@ public final class CoreServerModule extends AbstractModule {
 	@Singleton
 	public ModuleRunner nodeHttpServer(
 		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<String, HttpHandler> handlers,
+		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
 		Addressing addressing,
 		SystemCounters counters
 	) {

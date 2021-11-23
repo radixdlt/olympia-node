@@ -99,7 +99,7 @@ public final class HttpServerRunner implements ModuleRunner {
 	private static final int QUEUE_SIZE = 2000;
 
 	private final Map<String, Controller> controllers;
-	private final Map<String, HttpHandler> handlers;
+	private final Map<HandlerRoute, HttpHandler> handlers;
 	private final List<ApiErrorCode> errorCodes;
 	private final String name;
 	private final int port;
@@ -111,7 +111,7 @@ public final class HttpServerRunner implements ModuleRunner {
 
 	public HttpServerRunner(
 		Map<String, Controller> controllers,
-		Map<String, HttpHandler> handlers,
+		Map<HandlerRoute, HttpHandler> handlers,
 		List<ApiErrorCode> errorCodes,
 		int port,
 		String bindAddress,
@@ -190,7 +190,7 @@ public final class HttpServerRunner implements ModuleRunner {
 	private HttpHandler configureRoutes() {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
 
-		handlers.forEach(handler::post);
+		handlers.forEach((r, h) -> handler.add(r.getMethod(), r.getPath(), h));
 
 		controllers.forEach((root, controller) -> {
 			log.info("Configuring routes under {}", root);

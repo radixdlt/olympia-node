@@ -61,28 +61,45 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.network;
+package com.radixdlt.api.util;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.HandlerRoute;
-import io.undertow.server.HttpHandler;
+import io.undertow.util.HttpString;
+import io.undertow.util.Methods;
 
-import java.lang.annotation.Annotation;
+import java.util.Objects;
 
-public final class NetworkApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
+public final class HandlerRoute {
+	private final HttpString method;
 	private final String path;
 
-	public NetworkApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
+	private HandlerRoute(HttpString method, String path) {
+		this.method = method;
 		this.path = path;
 	}
 
+	public HttpString getMethod() {
+		return method;
+	}
+
+	public String getPath() {
+		return path;
+	}
+
+	public static HandlerRoute post(String path) {
+		Objects.requireNonNull(path);
+		return new HandlerRoute(Methods.POST, path);
+	}
+
 	@Override
-	protected void configure() {
-		var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType);
-		binder.addBinding(HandlerRoute.post(path + "/configuration")).to(NetworkConfigurationHandler.class);
-		binder.addBinding(HandlerRoute.post(path + "/status")).to(NetworkStatusHandler.class);
+	public int hashCode() {
+		return Objects.hash(method, path);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		HandlerRoute that = (HandlerRoute) o;
+		return Objects.equals(method, that.method) && Objects.equals(path, that.path);
 	}
 }

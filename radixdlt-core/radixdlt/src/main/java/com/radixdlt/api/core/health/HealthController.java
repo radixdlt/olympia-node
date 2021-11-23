@@ -70,6 +70,7 @@ import com.radixdlt.api.service.network.NetworkInfoService;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import io.undertow.util.HttpString;
 
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.RestUtils.respond;

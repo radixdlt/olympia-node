@@ -65,6 +65,7 @@ package com.radixdlt.api.core.construction;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.api.util.HandlerRoute;
 import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
@@ -81,13 +82,13 @@ public final class ConstructionApiModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
+			binder(), HandlerRoute.class, HttpHandler.class, annotationType
 		);
-		routeBinder.addBinding(path + "/derive").to(DeriveHandler.class);
-		routeBinder.addBinding(path + "/build").to(BuildTransactionHandler.class);
-		routeBinder.addBinding(path + "/parse").to(ParseTransactionHandler.class);
-		routeBinder.addBinding(path + "/finalize").to(FinalizeTransactionHandler.class);
-		routeBinder.addBinding(path + "/hash").to(HashTransactionHandler.class);
-		routeBinder.addBinding(path + "/submit").to(SubmitTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/derive")).to(DeriveHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/build")).to(BuildTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/parse")).to(ParseTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/finalize")).to(FinalizeTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/hash")).to(HashTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/submit")).to(SubmitTransactionHandler.class);
 	}
 }

@@ -65,6 +65,7 @@ package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.api.util.HandlerRoute;
 import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
@@ -81,12 +82,12 @@ public final class TransactionApiModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		var routeBinder = MapBinder.newMapBinder(
-			binder(), String.class, HttpHandler.class, annotationType
+			binder(), HandlerRoute.class, HttpHandler.class, annotationType
 		);
-		routeBinder.addBinding(path + "/rules").to(TransactionRulesHandler.class);
-		routeBinder.addBinding(path + "/build").to(BuildTransactionHandler.class);
-		routeBinder.addBinding(path + "/finalize").to(FinalizeTransactionHandler.class);
-		routeBinder.addBinding(path + "/submit").to(SubmitTransactionHandler.class);
-		routeBinder.addBinding(path + "/status").to(TransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/rules")).to(TransactionRulesHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/build")).to(BuildTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/finalize")).to(FinalizeTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/submit")).to(SubmitTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/status")).to(TransactionHandler.class);
 	}
 }
