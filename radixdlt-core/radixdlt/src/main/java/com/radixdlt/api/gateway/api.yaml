@@ -366,6 +366,8 @@ components:
           "$ref": "#/components/schemas/AccountBalances"
       example:
         ledger_state:
+          epoch: 1
+          round: 1
           version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
         account_balances:
@@ -417,6 +419,8 @@ components:
             "$ref": "#/components/schemas/AccountStakeEntry"
       example:
         ledger_state:
+          epoch: 1
+          round: 1
           version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
         stakes:
@@ -464,6 +468,8 @@ components:
             "$ref": "#/components/schemas/AccountUnstakeEntry"
       example:
         ledger_state:
+          epoch: 1
+          round: 1
           version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
         unstakes:
@@ -529,6 +535,8 @@ components:
             "$ref": "#/components/schemas/AccountTransaction"
       example:
         ledger_state:
+          epoch: 1
+          round: 1
           version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
         next_cursor: 0
@@ -762,6 +770,7 @@ components:
           BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"
           NotValidatorOwnerError: "#/components/schemas/NotValidatorOwnerError"
           MessageTooLongError: "#/components/schemas/MessageTooLongError"
+          CouldNotConstructFeesError: "#/components/schemas/CouldNotConstructFeesError"
     NotEnoughResourcesError:
       allOf:
         - "$ref": "#/components/schemas/TransactionBuildError"
@@ -809,6 +818,15 @@ components:
             length_limit:
               type: integer
             attempted_length:
+              type: integer
+    CouldNotConstructFeesError:
+      allOf:
+        - "$ref": "#/components/schemas/TransactionBuildError"
+        - type: object
+          required:
+            - attempts
+          properties:
+            attempts:
               type: integer
     TransactionFinalizeRequest:
       type: object
@@ -879,8 +897,10 @@ components:
       example:
         network: mainnet
         ledger_state:
+          epoch: 1
+          round: 1
+          version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
-          state_version: 1
     TokenRequest:
       type: object
       required:
@@ -929,6 +949,8 @@ components:
             "$ref": "#/components/schemas/Token"
       example:
         ledger_state:
+          epoch: 1
+          round: 1
           version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
         token:
@@ -981,6 +1003,8 @@ components:
             "$ref": "#/components/schemas/Token"
       example:
         ledger_state:
+          epoch: 1
+          round: 1
           version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
         token:

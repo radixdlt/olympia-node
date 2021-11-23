@@ -74,6 +74,7 @@ import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
@@ -158,6 +159,13 @@ final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest
 					.put("type", "MessageTooLongError")
 					.put("length_limit", 255)
 					.put("attempted_length", e.getAttemptedLength())
+				);
+		} catch (FeeConstructionException e) {
+			return new JSONObject()
+				.put("type", "TransactionBuildResponseError")
+				.put("error", new JSONObject()
+					.put("type", "CouldNotConstructFeesError")
+					.put("attempts", e.getAttempts())
 				);
 		}
 
