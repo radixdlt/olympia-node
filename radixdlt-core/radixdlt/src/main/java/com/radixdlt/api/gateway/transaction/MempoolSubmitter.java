@@ -95,12 +95,16 @@ public class MempoolSubmitter {
 			// We need to block here as we need to complete the request in the same thread
 			var success = completableFuture.get();
 			return new JSONObject()
-				.put("transactionIdentifier", success.getTxn().getId())
+				.put("transaction_identifier", new JSONObject()
+					.put("hex", success.getTxn().getId())
+				)
 				.put("duplicate", false);
 		} catch (ExecutionException e) {
 			if (e.getCause() instanceof MempoolDuplicateException) {
 				return new JSONObject()
-					.put("transactionIdentifier", txn.getId())
+					.put("transaction_identifier", new JSONObject()
+						.put("hex", txn.getId())
+					)
 					.put("duplicate", true);
 			}
 

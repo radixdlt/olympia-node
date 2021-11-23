@@ -106,6 +106,6 @@ public class StakeOwnershipResourceIdentifier implements ResourceIdentifier {
 	}
 
 	public static StakeOwnershipResourceIdentifier from(JsonObjectReader reader) throws InvalidParametersException {
-		return new StakeOwnershipResourceIdentifier(reader.getValidatorIdentifier("validator"));
+		return new StakeOwnershipResourceIdentifier(reader.getValidatorAddress("validator"));
 	}
 }

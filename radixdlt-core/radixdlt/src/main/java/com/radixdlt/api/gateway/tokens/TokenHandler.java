@@ -98,7 +98,7 @@ final class TokenHandler implements ApiHandler<REAddr> {
 
 	@Override
 	public REAddr parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		return reader.getOptResource("rri").orElse(REAddr.ofNativeToken());
+		return reader.getTokenIdentifier("token_identifier");
 	}
 
 	@Override

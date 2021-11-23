@@ -87,7 +87,9 @@ public final class AccountTransactionTransformer {
 			if (feePaid != null) {
 				accountTransactionJson.put("fee_paid", new JSONObject()
 					.put("value", feePaid.getString("value"))
-					.put("rri", feePaid.getJSONObject("resource_identifier").getString("rri"))
+					.put("token_identifier", new JSONObject()
+						.put("rri", feePaid.getJSONObject("resource_identifier").getString("rri"))
+					)
 				);
 			}
 			accountTransactionJson.put("metadata", metadataJson);
@@ -108,7 +110,7 @@ public final class AccountTransactionTransformer {
 
 		var accountActions = new JSONArray();
 		accountTransactionJson.put("actions", accountActions);
-		accountTransactionJson.put("transaction_identifier", json.getJSONObject("transaction_identifier").getString("hash"));
+		accountTransactionJson.put("transaction_identifier", json.getJSONObject("transaction_identifier"));
 		var operationGroups = json.getJSONArray("operation_groups");
 		for (int i = 0; i < operationGroups.length(); i++) {
 			var operationGroup = operationGroups.getJSONObject(i);

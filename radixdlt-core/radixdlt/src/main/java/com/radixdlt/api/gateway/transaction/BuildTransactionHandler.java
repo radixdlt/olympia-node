@@ -104,7 +104,7 @@ final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest
 	@Override
 	public TxnConstructionRequest parseRequest(JsonObjectReader reader) throws InvalidParametersException {
 		var constructionRequest = TxnConstructionRequest.create();
-		var feePayer = reader.getAccountAddress("fee_payer");
+		var feePayer = reader.getAccountIdentifier("fee_payer");
 		constructionRequest.feePayer(feePayer);
 		if (reader.getOptBoolean("disable_token_mint_and_burn", false)) {
 			constructionRequest.disableResourceAllocAndDestroy();
@@ -162,7 +162,9 @@ final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest
 			.put("result", new JSONObject()
 				.put("type", "TransactionBuildSuccess")
 				.put("fee", new JSONObject()
-					.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+					.put("transaction_identifier", new JSONObject()
+						.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+					)
 					.put("value", unsignedTransaction.feesPaid().toString())
 				)
 				.put("unsigned_transaction", Bytes.toHexString(unsignedTransaction.blob()))

@@ -215,13 +215,25 @@ public final class JsonObjectReader {
 		return jsonObject.has(key);
 	}
 
-	public Optional<REAddr> getOptAccountAddress(String key) throws InvalidParametersException {
+	public Optional<REAddr> getOptAccountIdentifier(String key) throws InvalidParametersException {
 		try {
 			if (!jsonObject.has(key)) {
 				return Optional.empty();
 			}
-			var addressString = jsonObject.getString(key);
+
+			var json = getJsonObject(key);
+			var addressString = json.getString("address");
 			return Optional.of(addressing.get().forAccounts().parse(addressString));
+		} catch (DeserializeException | JSONException e) {
+			throw new InvalidParametersException("/" + key, Throwables.getRootCause(e));
+		}
+	}
+
+	public REAddr getAccountIdentifier(String key) throws InvalidParametersException {
+		try {
+			var json = getJsonObject(key);
+			var addressString = json.getString("address");
+			return addressing.get().forAccounts().parse(addressString);
 		} catch (DeserializeException | JSONException e) {
 			throw new InvalidParametersException("/" + key, Throwables.getRootCause(e));
 		}
@@ -405,6 +417,16 @@ public final class JsonObjectReader {
 		}
 	}
 
+	public REAddr getTokenIdentifier(String key) throws InvalidParametersException {
+		try {
+			var tokenJson = jsonObject.getJSONObject(key);
+			var rriString = tokenJson.getString("rri");
+			return addressing.get().forResources().parse2(rriString).getSecond();
+		} catch (DeserializeException | JSONException e) {
+			throw new InvalidParametersException("/" + key, Throwables.getRootCause(e));
+		}
+	}
+
 	public Optional<REAddr> getOptResource(String key) throws InvalidParametersException {
 		if (!jsonObject.has(key)) {
 			return Optional.empty();
@@ -412,7 +434,7 @@ public final class JsonObjectReader {
 		return Optional.of(getResource(key));
 	}
 
-	public Optional<ECPublicKey> tryValidatorIdentifier(String key) throws InvalidParametersException {
+	public Optional<ECPublicKey> tryValidatorAddress(String key) throws InvalidParametersException {
 		try {
 			var validatorAddress = jsonObject.getString(key);
 			if (!validatorAddress.startsWith(addressing.get().forValidators().getHrp())) {
@@ -426,6 +448,16 @@ public final class JsonObjectReader {
 
 	public ECPublicKey getValidatorIdentifier(String key) throws InvalidParametersException {
 		try {
+			var validatorJson = jsonObject.getJSONObject(key);
+			var validatorIdentifier = validatorJson.getString("address");
+			return addressing.get().forValidators().parse(validatorIdentifier);
+		} catch (DeserializeException | JSONException e) {
+			throw new InvalidParametersException("/" + key, Throwables.getRootCause(e));
+		}
+	}
+
+	public ECPublicKey getValidatorAddress(String key) throws InvalidParametersException {
+		try {
 			var validatorIdentifier = jsonObject.getString(key);
 			return addressing.get().forValidators().parse(validatorIdentifier);
 		} catch (DeserializeException | JSONException e) {
@@ -435,7 +467,8 @@ public final class JsonObjectReader {
 
 	public AID getTransactionIdentifier(String key) throws InvalidParametersException {
 		try {
-			var txnIdString = jsonObject.getString(key);
+			var json = jsonObject.getJSONObject(key);
+			var txnIdString = json.getString("hash");
 			return AID.from(txnIdString);
 		} catch (IllegalArgumentException | JSONException e) {
 			throw new InvalidParametersException("/" + key, e);

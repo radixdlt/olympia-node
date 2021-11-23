@@ -111,7 +111,9 @@ public class TransactionRulesHandler implements ApiHandler<Void> {
 			.put("transaction_rules", new JSONObject()
 				.put("maximum_message_length", 255)
 				.put("minimum_stake", new JSONObject()
-					.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+					.put("token_identifier", new JSONObject()
+						.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+					)
 					.put("value", forkConfig.getConfig().getMinimumStake().toSubunits().toString()))
 			);
 	}

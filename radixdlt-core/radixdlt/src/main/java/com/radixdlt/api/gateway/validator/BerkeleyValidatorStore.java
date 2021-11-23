@@ -150,7 +150,9 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 						var stake = UInt256.from(stakeString);
 						buf.put(stake.toByteArray());
 
-						var validatorKey = addressing.forValidators().parseNoErr(json.getString("validator_address"));
+						var validatorKey = addressing.forValidators().parseNoErr(
+							json.getJSONObject("validator_identifier").getString("address")
+						);
 						buf.put(validatorKey.getCompressedBytes());
 
 						result.setData(buf.array());
@@ -176,14 +178,22 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		var stakeJson = validatorJson.getJSONObject("stake");
 		var ownerEstimateString = stakeJson.getString("nextEpochEstimatedOwnerStake");
 		var stakeEstimateString = stakeJson.getString("nextEpochEstimatedStake");
+		var ownerAddress = (String) validatorJson.getJSONObject("properties").remove("owner_address");
+		validatorJson.getJSONObject("properties").put("owner_account_identifier", new JSONObject()
+			.put("address", ownerAddress)
+		);
 		validatorJson.put("info", new JSONObject()
 			.put("owner_stake", new JSONObject()
-				.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+				.put("token_identifier", new JSONObject()
+					.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+				)
 				.put("value", ownerEstimateString)
 			)
 		);
 		validatorJson.put("stake", new JSONObject()
-			.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+			.put("token_identifier", new JSONObject()
+				.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+			)
 			.put("value", stakeEstimateString)
 		);
 		return validatorJson;
@@ -265,7 +275,9 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 
 	private JSONObject createValidatorInfoDefault(ECPublicKey validatorKey) {
 		var json = new JSONObject()
-			.put("validator_address", addressing.forValidators().of(validatorKey))
+			.put("validator_identifier", new JSONObject()
+				.put("address", addressing.forValidators().of(validatorKey))
+			)
 			.put("properties", new JSONObject())
 			.put("stake", new JSONObject()
 				.put("delegators", new JSONObject())

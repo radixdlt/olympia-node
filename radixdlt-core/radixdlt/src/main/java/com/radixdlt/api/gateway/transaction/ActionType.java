@@ -83,8 +83,8 @@ public enum ActionType {
 	TRANSFER("TransferTokens") {
 		@Override
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var from = reader.getAccountAddress("from");
-			var to = reader.getAccountAddress("to");
+			var from = reader.getAccountIdentifier("from");
+			var to = reader.getAccountIdentifier("to");
 			var tokenAmount = TokenAmount.from(reader.getJsonObject("amount"));
 			return new TransferToken(tokenAmount.getTokenAddress(), from, to, tokenAmount.getAmount());
 		}
@@ -92,7 +92,7 @@ public enum ActionType {
 	STAKE("StakeTokens") {
 		@Override
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var from = reader.getAccountAddress("from");
+			var from = reader.getAccountIdentifier("from");
 			var validator = reader.getValidatorIdentifier("validator");
 			var tokenAmount = TokenAmount.from(reader.getJsonObject("amount"));
 			if (!tokenAmount.getTokenAddress().isNativeToken()) {
@@ -104,7 +104,7 @@ public enum ActionType {
 	UNSTAKE("UnstakeTokens") {
 		@Override
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var from = reader.getAccountAddress("from");
+			var from = reader.getAccountIdentifier("from");
 			var validator = reader.getValidatorIdentifier("validator");
 			var tokenAmount = TokenAmount.from(reader.getJsonObject("amount"));
 			if (!tokenAmount.getTokenAddress().isNativeToken()) {
@@ -116,7 +116,7 @@ public enum ActionType {
 	BURN("BurnTokens") {
 		@Override
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var from = reader.getAccountAddress("from");
+			var from = reader.getAccountIdentifier("from");
 			var tokenAmount = TokenAmount.from(reader.getJsonObject("amount"));
 			return new BurnToken(tokenAmount.getTokenAddress(), from, tokenAmount.getAmount());
 		}
@@ -124,7 +124,7 @@ public enum ActionType {
 	MINT("MintTokens") {
 		@Override
 		TxAction parseAction(JsonObjectReader reader) throws InvalidParametersException {
-			var to = reader.getAccountAddress("to");
+			var to = reader.getAccountIdentifier("to");
 			var tokenAmount = TokenAmount.from(reader.getJsonObject("amount"));
 			return new MintToken(tokenAmount.getTokenAddress(), to, tokenAmount.getAmount());
 		}

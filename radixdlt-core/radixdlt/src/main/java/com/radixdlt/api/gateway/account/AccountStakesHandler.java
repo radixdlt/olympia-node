@@ -97,7 +97,7 @@ final class AccountStakesHandler implements ApiHandler<REAddr> {
 
 	@Override
 	public REAddr parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		return reader.getAccountAddress("account_address");
+		return reader.getJsonObject("account_identifier", r -> r.getAccountAddress("address"));
 	}
 
 	@Override

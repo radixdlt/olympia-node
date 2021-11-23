@@ -186,7 +186,9 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 				.put("validator_address", validator)
 				.put("delegated_stake", new JSONObject()
 					.put("value", json.getString("value"))
-					.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+					.put("token_identifier", new JSONObject()
+						.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+					)
 				)
 			)
 		);
@@ -220,7 +222,9 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 				var totalOwnership = new BigInteger(json.getString("validatorTotalOwnership"), 10);
 				var estimatedUnstake = ownership.multiply(totalStake).divide(totalOwnership);
 				json.put("unstaking_amount", new JSONObject()
-					.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+					.put("token_identifier", new JSONObject()
+						.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+					)
 					.put("value", estimatedUnstake.toString())
 				);
 				json.put("epochs_until_unlocked", 500); // Hardcoded for now
@@ -246,7 +250,9 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		}
 
 		return new JSONObject()
-			.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+			.put("token_identifier", new JSONObject()
+				.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+			)
 			.put("value", lockedXrdAmount.toString());
 	}
 
@@ -258,6 +264,12 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 
 		if (databases.get(ResourceType.TOKEN_BALANCES).get(null, key, value, DEFAULT) == SUCCESS) {
 			var jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
+			for (int i = 0; i < jsonArray.length(); i++) {
+				var rri = (String) jsonArray.getJSONObject(i).remove("rri");
+				jsonArray.getJSONObject(i).put("token_identifier", new JSONObject()
+					.put("rri", rri)
+				);
+			}
 			json.put("liquid_balances", jsonArray);
 		} else {
 			json.put("liquid_balances", new JSONArray());

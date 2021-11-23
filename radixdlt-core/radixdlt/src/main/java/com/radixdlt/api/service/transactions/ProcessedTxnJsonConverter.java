@@ -453,10 +453,12 @@ public final class ProcessedTxnJsonConverter {
 			if (!(toBucket instanceof AccountBucket)) {
 				throw new IllegalStateException();
 			}
-			result.put("to", addressing.forAccounts().of(toBucket.getOwner()));
+			result.put("to", new JSONObject()
+				.put("address", addressing.forAccounts().of(toBucket.getOwner())));
 			result.put("type", ActionType.MINT.toString());
 		} else if (to.isEmpty()) {
-			result.put("from", addressing.forAccounts().of(from.get().getOwner()));
+			result.put("from", new JSONObject()
+				.put("address", addressing.forAccounts().of(from.get().getOwner())));
 			result.put("type", ActionType.BURN.toString());
 		} else {
 			var fromBucket = from.get();
@@ -464,20 +466,26 @@ public final class ProcessedTxnJsonConverter {
 			if (fromBucket instanceof AccountBucket) {
 				if (toBucket instanceof AccountBucket) {
 					result
-						.put("from", addressing.forAccounts().of(fromBucket.getOwner()))
-						.put("to", addressing.forAccounts().of(toBucket.getOwner()))
+						.put("from", new JSONObject()
+							.put("address", addressing.forAccounts().of(fromBucket.getOwner())))
+						.put("to", new JSONObject()
+							.put("address", addressing.forAccounts().of(toBucket.getOwner())))
 						.put("type", ActionType.TRANSFER.toString());
 				} else {
 					result
-						.put("from", addressing.forAccounts().of(fromBucket.getOwner()))
-						.put("to", addressing.forValidators().of(toBucket.getValidatorKey()))
+						.put("from", new JSONObject()
+							.put("address", addressing.forAccounts().of(fromBucket.getOwner())))
+						.put("to", new JSONObject()
+							.put("address", addressing.forValidators().of(toBucket.getValidatorKey())))
 						.put("type", ActionType.STAKE.toString());
 				}
 			} else if (fromBucket instanceof StakeOwnershipBucket) {
 				amount = computeStakeFromOwnership.apply(fromBucket.getValidatorKey(), UInt384.from(amount)).getLow();
 				result
-					.put("to", addressing.forAccounts().of(toBucket.getOwner()))
-					.put("from", addressing.forValidators().of(fromBucket.getValidatorKey()))
+					.put("to", new JSONObject()
+						.put("address", addressing.forAccounts().of(toBucket.getOwner())))
+					.put("from", new JSONObject()
+						.put("address", addressing.forValidators().of(fromBucket.getValidatorKey())))
 					.put("type", ActionType.UNSTAKE.toString());
 			} else {
 				throw new IllegalStateException();

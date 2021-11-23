@@ -86,7 +86,7 @@ public final class TokenAmount {
 	}
 
 	public static TokenAmount from(JsonObjectReader reader) throws InvalidParametersException {
-		var tokenAddress = reader.getResource("rri");
+		var tokenAddress = reader.getTokenIdentifier("token_identifier");
 		var amount = reader.getAmount("value");
 		return new TokenAmount(tokenAddress, amount);
 	}

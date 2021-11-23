@@ -97,6 +97,8 @@ public class TokenDeriveHandler implements ApiHandler<TokenDeriveRequest> {
 		var symbol = request.getSymbol();
 		var tokenAddress = REAddr.ofHashedKey(key, symbol);
 		return new JSONObject()
-			.put("rri", addressing.forResources().of(symbol, tokenAddress));
+			.put("token_identifier", new JSONObject()
+				.put("rri", addressing.forResources().of(symbol, tokenAddress))
+			);
 	}
 }

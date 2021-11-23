@@ -140,7 +140,7 @@ public final class TokenProperties {
 			reader.getOptString("url").orElse(""),
 			reader.getAmount("granularity"),
 			reader.getBoolean("is_supply_mutable"),
-			reader.getOptAccountAddress("owner").orElse(null)
+			reader.getOptAccountIdentifier("owner").orElse(null)
 		);
 	}
 

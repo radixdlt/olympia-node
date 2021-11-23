@@ -94,7 +94,7 @@ public interface EntityIdentifier {
 					case "prepared_stake":
 						return PreparedStakeVaultEntityIdentifier.from(
 							accountAddress,
-							r.getJsonObject("metadata").getValidatorIdentifier("validator")
+							r.getJsonObject("metadata").getValidatorAddress("validator")
 						);
 					case "prepared_unstake":
 						return PreparedUnstakeVaultEntityIdentifier.from(
@@ -114,7 +114,7 @@ public interface EntityIdentifier {
 			return fromAccountAddress(accountAddress.get(), reader);
 		}
 
-		var validatorKey = reader.tryValidatorIdentifier("address");
+		var validatorKey = reader.tryValidatorAddress("address");
 		if (validatorKey.isPresent()) {
 			return ValidatorEntityIdentifier.from(validatorKey.get());
 		}

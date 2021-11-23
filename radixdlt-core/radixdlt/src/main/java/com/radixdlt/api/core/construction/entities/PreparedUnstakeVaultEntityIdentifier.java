@@ -139,7 +139,7 @@ public class PreparedUnstakeVaultEntityIdentifier implements EntityIdentifier {
 		REAddr accountAddress,
 		JsonObjectReader metadataReader
 	) throws InvalidParametersException {
-		var validatorKey = metadataReader.getValidatorIdentifier("validator");
+		var validatorKey = metadataReader.getValidatorAddress("validator");
 		return new PreparedUnstakeVaultEntityIdentifier(accountAddress, validatorKey);
 	}
 }

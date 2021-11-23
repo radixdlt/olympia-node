@@ -95,7 +95,7 @@ final class ValidatorApiHandler implements ApiHandler<ECPublicKey> {
 
 	@Override
 	public ECPublicKey parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		return reader.getValidatorIdentifier("validator_address");
+		return reader.getJsonObject("validator_identifier", r -> r.getValidatorAddress("address"));
 	}
 
 	@Override

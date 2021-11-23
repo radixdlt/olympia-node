@@ -137,24 +137,25 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
 	) {
 		for (var event : txn.getEvents()) {
-			if (event instanceof ResourceCreatedEvent) {
-				var resourceCreated = (ResourceCreatedEvent) event;
+			if (event instanceof ResourceCreatedEvent resourceCreated) {
 				var rri = addressing.forResources().of(resourceCreated.getSymbol(), resourceCreated.getTokenResource().getAddr());
+				var tokenIdentifier = new JSONObject()
+					.put("rri", rri);
 				var tokenProperties = TokenProperties.from(resourceCreated).toJson(addressing);
 				var info = new JSONObject()
 					.put("total_burned", new JSONObject()
-						.put("rri", rri)
+						.put("token_identifier", tokenIdentifier)
 						.put("value", BigInteger.ZERO.toString())
 					)
 					.put("total_minted", new JSONObject()
-						.put("rri", rri)
+						.put("token_identifier", tokenIdentifier)
 						.put("value", BigInteger.ZERO.toString())
 					);
 
 				var json = new JSONObject()
-					.put("rri", rri)
+					.put("token_identifier", tokenIdentifier)
 					.put("token_supply", new JSONObject()
-						.put("rri", rri)
+						.put("token_identifier", tokenIdentifier)
 						.put("value", BigInteger.ZERO.toString())
 					)
 					.put("token_properties", tokenProperties)

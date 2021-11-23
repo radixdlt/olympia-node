@@ -85,7 +85,7 @@ public class TokenDeriveRequest {
 	}
 
 	public static TokenDeriveRequest from(JsonObjectReader reader) throws InvalidParametersException {
-		var accountAddress = reader.getAccountAddress("creator_account_address");
+		var accountAddress = reader.getJsonObject("creator_account_identifier", r -> r.getAccountAddress("address"));
 		var symbol = reader.getString("symbol");
 		return new TokenDeriveRequest(accountAddress, symbol);
 	}
