@@ -61,77 +61,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.system;
+package com.radixdlt.api.core.system.system;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.util.CountersJsonFormatter;
 import com.radixdlt.api.util.GetJsonHandler;
-import com.radixdlt.consensus.bft.PacemakerTimeout;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.network.p2p.P2PConfig;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.counters.SystemCounters;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
+import java.util.List;
 
-public class SystemConfigurationHandler implements GetJsonHandler {
+public class SystemMetricsHandler implements GetJsonHandler {
+	private final SystemCounters systemCounters;
 
-	private final long pacemakerTimeout;
-	private final int bftSyncPatienceMillis;
-	private final int mempoolMaxSize;
-	private final long mempoolThrottleMs;
-	private final SyncConfig syncConfig;
-	private final P2PConfig p2PConfig;
+	static final List<SystemCounters.CounterType> NETWORKING_COUNTERS = List.of(
+		SystemCounters.CounterType.MESSAGES_INBOUND_RECEIVED,
+		SystemCounters.CounterType.MESSAGES_INBOUND_PROCESSED,
+		SystemCounters.CounterType.MESSAGES_INBOUND_DISCARDED,
+		SystemCounters.CounterType.MESSAGES_OUTBOUND_ABORTED,
+		SystemCounters.CounterType.MESSAGES_OUTBOUND_PENDING,
+		SystemCounters.CounterType.MESSAGES_OUTBOUND_PROCESSED,
+		SystemCounters.CounterType.MESSAGES_OUTBOUND_SENT,
+		SystemCounters.CounterType.NETWORKING_UDP_DROPPED_MESSAGES,
+		SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES,
+		SystemCounters.CounterType.NETWORKING_TCP_IN_OPENED,
+		SystemCounters.CounterType.NETWORKING_TCP_OUT_OPENED,
+		SystemCounters.CounterType.NETWORKING_TCP_CLOSED,
+		SystemCounters.CounterType.NETWORKING_SENT_BYTES,
+		SystemCounters.CounterType.NETWORKING_RECEIVED_BYTES
+	);
+
+	static final List<SystemCounters.CounterType> SYNC_COUNTERS = List.of(
+		SystemCounters.CounterType.SYNC_LAST_READ_MILLIS,
+		SystemCounters.CounterType.SYNC_INVALID_COMMANDS_RECEIVED,
+		SystemCounters.CounterType.SYNC_PROCESSED,
+		SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION,
+		SystemCounters.CounterType.SYNC_TARGET_CURRENT_DIFF,
+		SystemCounters.CounterType.SYNC_REMOTE_REQUESTS_PROCESSED
+	);
+
+	static final List<SystemCounters.CounterType> BFT_COUNTERS = List.of(
+		SystemCounters.CounterType.BFT_CONSENSUS_EVENTS,
+		SystemCounters.CounterType.BFT_INDIRECT_PARENT,
+		SystemCounters.CounterType.BFT_PROCESSED,
+		SystemCounters.CounterType.BFT_PROPOSALS_MADE,
+		SystemCounters.CounterType.BFT_REJECTED,
+		SystemCounters.CounterType.BFT_TIMEOUT,
+		SystemCounters.CounterType.BFT_TIMED_OUT_VIEWS,
+		SystemCounters.CounterType.BFT_TIMEOUT_QUORUMS,
+		SystemCounters.CounterType.BFT_STATE_VERSION,
+		SystemCounters.CounterType.BFT_VERTEX_STORE_SIZE,
+		SystemCounters.CounterType.BFT_VERTEX_STORE_FORKS,
+		SystemCounters.CounterType.BFT_VERTEX_STORE_REBUILDS,
+		SystemCounters.CounterType.BFT_VOTE_QUORUMS,
+		SystemCounters.CounterType.BFT_SYNC_REQUESTS_SENT,
+		SystemCounters.CounterType.BFT_SYNC_REQUEST_TIMEOUTS
+	);
+
+	static final List<SystemCounters.CounterType> MEMPOOL_COUNTERS = List.of(
+		SystemCounters.CounterType.MEMPOOL_COUNT,
+		SystemCounters.CounterType.MEMPOOL_MAXCOUNT,
+		SystemCounters.CounterType.MEMPOOL_RELAYER_SENT_COUNT,
+		SystemCounters.CounterType.MEMPOOL_ADD_SUCCESS,
+		SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION,
+		SystemCounters.CounterType.MEMPOOL_ERRORS_HOOK,
+		SystemCounters.CounterType.MEMPOOL_ERRORS_CONFLICT,
+		SystemCounters.CounterType.MEMPOOL_ERRORS_OTHER
+	);
 
 	@Inject
-	SystemConfigurationHandler(
-		@Self ECPublicKey self,
-		@PacemakerTimeout long pacemakerTimeout,
-		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
-		@MempoolMaxSize int mempoolMaxSize,
-		@MempoolThrottleMs long mempoolThrottleMs,
-		SyncConfig syncConfig,
-		P2PConfig p2PConfig
-	) {
-		this.pacemakerTimeout = pacemakerTimeout;
-		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
-		this.mempoolMaxSize = mempoolMaxSize;
-		this.mempoolThrottleMs = mempoolThrottleMs;
-		this.syncConfig = syncConfig;
-		this.p2PConfig = p2PConfig;
-	}
-
-	private JSONObject from(P2PConfig p2PConfig) {
-		return new JSONObject()
-			.put("default_port", p2PConfig.defaultPort())
-			.put("discovery_interval", p2PConfig.discoveryInterval())
-			.put("listen_address", p2PConfig.listenAddress())
-			.put("listen_port", p2PConfig.listenPort())
-			.put("broadcast_port", p2PConfig.broadcastPort())
-			.put("peer_connection_timeout", p2PConfig.peerConnectionTimeout())
-			.put("max_inbound_channels", p2PConfig.maxInboundChannels())
-			.put("max_outbound_channels", p2PConfig.maxOutboundChannels())
-			.put("channel_buffer_size", p2PConfig.channelBufferSize())
-			.put("peer_liveness_check_interval", p2PConfig.peerLivenessCheckInterval())
-			.put("ping_timeout", p2PConfig.pingTimeout())
-			.put("seed_nodes", fromCollection(p2PConfig.seedNodes(), seedNode -> seedNode));
+	SystemMetricsHandler(SystemCounters systemCounters) {
+		this.systemCounters = systemCounters;
 	}
 
 	@Override
 	public JSONObject handleRequest() {
 		return new JSONObject()
-			.put("bft", new JSONObject()
-				.put("pacemaker_timeout", pacemakerTimeout)
-				.put("bft_sync_patience", bftSyncPatienceMillis)
-			)
-			.put("mempool", new JSONObject()
-				.put("max_size", mempoolMaxSize)
-				.put("throttle", mempoolThrottleMs)
-			)
-			.put("sync", syncConfig.asJson())
-			.put("networking", from(p2PConfig));
+			.put("mempool", CountersJsonFormatter.countersToJson(systemCounters, MEMPOOL_COUNTERS, true))
+			.put("bft", CountersJsonFormatter.countersToJson(systemCounters, BFT_COUNTERS, true))
+			.put("sync", CountersJsonFormatter.countersToJson(systemCounters, SYNC_COUNTERS, true))
+			.put("networking", CountersJsonFormatter.countersToJson(systemCounters, NETWORKING_COUNTERS, true));
 	}
 }

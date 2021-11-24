@@ -61,85 +61,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.system;
+package com.radixdlt.api.core.system.version;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.CountersJsonFormatter;
 import com.radixdlt.api.util.GetJsonHandler;
-import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.middleware2.InfoSupplier;
 import org.json.JSONObject;
 
-import java.util.List;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static org.radix.Radix.SYSTEM_VERSION_KEY;
+import static org.radix.Radix.VERSION_STRING_KEY;
 
-public class SystemMetricsHandler implements GetJsonHandler {
-	private final SystemCounters systemCounters;
-
-	static final List<SystemCounters.CounterType> NETWORKING_COUNTERS = List.of(
-		SystemCounters.CounterType.MESSAGES_INBOUND_RECEIVED,
-		SystemCounters.CounterType.MESSAGES_INBOUND_PROCESSED,
-		SystemCounters.CounterType.MESSAGES_INBOUND_DISCARDED,
-		SystemCounters.CounterType.MESSAGES_OUTBOUND_ABORTED,
-		SystemCounters.CounterType.MESSAGES_OUTBOUND_PENDING,
-		SystemCounters.CounterType.MESSAGES_OUTBOUND_PROCESSED,
-		SystemCounters.CounterType.MESSAGES_OUTBOUND_SENT,
-		SystemCounters.CounterType.NETWORKING_UDP_DROPPED_MESSAGES,
-		SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES,
-		SystemCounters.CounterType.NETWORKING_TCP_IN_OPENED,
-		SystemCounters.CounterType.NETWORKING_TCP_OUT_OPENED,
-		SystemCounters.CounterType.NETWORKING_TCP_CLOSED,
-		SystemCounters.CounterType.NETWORKING_SENT_BYTES,
-		SystemCounters.CounterType.NETWORKING_RECEIVED_BYTES
-	);
-
-	static final List<SystemCounters.CounterType> SYNC_COUNTERS = List.of(
-		SystemCounters.CounterType.SYNC_LAST_READ_MILLIS,
-		SystemCounters.CounterType.SYNC_INVALID_COMMANDS_RECEIVED,
-		SystemCounters.CounterType.SYNC_PROCESSED,
-		SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION,
-		SystemCounters.CounterType.SYNC_TARGET_CURRENT_DIFF,
-		SystemCounters.CounterType.SYNC_REMOTE_REQUESTS_PROCESSED
-	);
-
-	static final List<SystemCounters.CounterType> BFT_COUNTERS = List.of(
-		SystemCounters.CounterType.BFT_CONSENSUS_EVENTS,
-		SystemCounters.CounterType.BFT_INDIRECT_PARENT,
-		SystemCounters.CounterType.BFT_PROCESSED,
-		SystemCounters.CounterType.BFT_PROPOSALS_MADE,
-		SystemCounters.CounterType.BFT_REJECTED,
-		SystemCounters.CounterType.BFT_TIMEOUT,
-		SystemCounters.CounterType.BFT_TIMED_OUT_VIEWS,
-		SystemCounters.CounterType.BFT_TIMEOUT_QUORUMS,
-		SystemCounters.CounterType.BFT_STATE_VERSION,
-		SystemCounters.CounterType.BFT_VERTEX_STORE_SIZE,
-		SystemCounters.CounterType.BFT_VERTEX_STORE_FORKS,
-		SystemCounters.CounterType.BFT_VERTEX_STORE_REBUILDS,
-		SystemCounters.CounterType.BFT_VOTE_QUORUMS,
-		SystemCounters.CounterType.BFT_SYNC_REQUESTS_SENT,
-		SystemCounters.CounterType.BFT_SYNC_REQUEST_TIMEOUTS
-	);
-
-	static final List<SystemCounters.CounterType> MEMPOOL_COUNTERS = List.of(
-		SystemCounters.CounterType.MEMPOOL_COUNT,
-		SystemCounters.CounterType.MEMPOOL_MAXCOUNT,
-		SystemCounters.CounterType.MEMPOOL_RELAYER_SENT_COUNT,
-		SystemCounters.CounterType.MEMPOOL_ADD_SUCCESS,
-		SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION,
-		SystemCounters.CounterType.MEMPOOL_ERRORS_HOOK,
-		SystemCounters.CounterType.MEMPOOL_ERRORS_CONFLICT,
-		SystemCounters.CounterType.MEMPOOL_ERRORS_OTHER
-	);
+public class VersionHandler implements GetJsonHandler {
+	private final JSONObject versionData;
 
 	@Inject
-	SystemMetricsHandler(SystemCounters systemCounters) {
-		this.systemCounters = systemCounters;
+	public VersionHandler(InfoSupplier infoSupplier) {
+		var versionString = (String) infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
+		versionData = jsonObject().put("version", versionString);
 	}
 
 	@Override
 	public JSONObject handleRequest() {
-		return new JSONObject()
-			.put("mempool", CountersJsonFormatter.countersToJson(systemCounters, MEMPOOL_COUNTERS, true))
-			.put("bft", CountersJsonFormatter.countersToJson(systemCounters, BFT_COUNTERS, true))
-			.put("sync", CountersJsonFormatter.countersToJson(systemCounters, SYNC_COUNTERS, true))
-			.put("networking", CountersJsonFormatter.countersToJson(systemCounters, NETWORKING_COUNTERS, true));
+		return versionData;
 	}
 }

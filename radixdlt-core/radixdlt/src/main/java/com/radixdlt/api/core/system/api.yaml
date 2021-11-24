@@ -1,0 +1,124 @@
+openapi: 3.0.0
+info:
+  version: '1.0.0'
+  title: 'Radix System API'
+servers:
+  - url: 'localhost:3333'
+paths:
+  /version:
+    get:
+      summary: 'Get Version'
+      responses:
+        '200':
+          description: 'Version'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /health:
+    get:
+      summary: 'Get Health'
+      responses:
+        '200':
+          description: 'Health'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /system/configuration:
+    get:
+      summary: 'Get System Configuration'
+      responses:
+        '200':
+          description: 'System Configuration'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemConfigurationResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /system/metrics:
+    get:
+      summary: 'Get System Metrics'
+      responses:
+        '200':
+          description: 'System Metrics'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMetricsResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /prometheus/metrics:
+    get:
+      summary: 'Get Prometheus Metrics'
+      responses:
+        '200':
+          description: 'Prometheus Metrics'
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    VersionResponse:
+      type: object
+      required:
+        - version
+      properties:
+        version:
+          type: string
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - BOOTING
+            - SYNCING
+            - UP
+            - STALLED
+            - OUT_OF_SYNC
+    SystemConfigurationResponse:
+      type: object
+    SystemMetricsResponse:
+      type: object
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string

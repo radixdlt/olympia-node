@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.version;
+package com.radixdlt.api.core.system.version;
 
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.util.HandlerRoute;

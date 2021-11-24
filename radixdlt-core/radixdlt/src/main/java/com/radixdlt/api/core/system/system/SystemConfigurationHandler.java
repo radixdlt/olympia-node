@@ -61,28 +61,77 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.version;
+package com.radixdlt.api.core.system.system;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.util.GetJsonHandler;
-import com.radixdlt.middleware2.InfoSupplier;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.sync.SyncConfig;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static org.radix.Radix.SYSTEM_VERSION_KEY;
-import static org.radix.Radix.VERSION_STRING_KEY;
+import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
 
-public class VersionHandler implements GetJsonHandler {
-	private final JSONObject versionData;
+public class SystemConfigurationHandler implements GetJsonHandler {
+
+	private final long pacemakerTimeout;
+	private final int bftSyncPatienceMillis;
+	private final int mempoolMaxSize;
+	private final long mempoolThrottleMs;
+	private final SyncConfig syncConfig;
+	private final P2PConfig p2PConfig;
 
 	@Inject
-	public VersionHandler(InfoSupplier infoSupplier) {
-		var versionString = (String) infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
-		versionData = jsonObject().put("version", versionString);
+	SystemConfigurationHandler(
+		@Self ECPublicKey self,
+		@PacemakerTimeout long pacemakerTimeout,
+		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
+		@MempoolMaxSize int mempoolMaxSize,
+		@MempoolThrottleMs long mempoolThrottleMs,
+		SyncConfig syncConfig,
+		P2PConfig p2PConfig
+	) {
+		this.pacemakerTimeout = pacemakerTimeout;
+		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
+		this.mempoolMaxSize = mempoolMaxSize;
+		this.mempoolThrottleMs = mempoolThrottleMs;
+		this.syncConfig = syncConfig;
+		this.p2PConfig = p2PConfig;
+	}
+
+	private JSONObject from(P2PConfig p2PConfig) {
+		return new JSONObject()
+			.put("default_port", p2PConfig.defaultPort())
+			.put("discovery_interval", p2PConfig.discoveryInterval())
+			.put("listen_address", p2PConfig.listenAddress())
+			.put("listen_port", p2PConfig.listenPort())
+			.put("broadcast_port", p2PConfig.broadcastPort())
+			.put("peer_connection_timeout", p2PConfig.peerConnectionTimeout())
+			.put("max_inbound_channels", p2PConfig.maxInboundChannels())
+			.put("max_outbound_channels", p2PConfig.maxOutboundChannels())
+			.put("channel_buffer_size", p2PConfig.channelBufferSize())
+			.put("peer_liveness_check_interval", p2PConfig.peerLivenessCheckInterval())
+			.put("ping_timeout", p2PConfig.pingTimeout())
+			.put("seed_nodes", fromCollection(p2PConfig.seedNodes(), seedNode -> seedNode));
 	}
 
 	@Override
 	public JSONObject handleRequest() {
-		return versionData;
+		return new JSONObject()
+			.put("bft", new JSONObject()
+				.put("pacemaker_timeout", pacemakerTimeout)
+				.put("bft_sync_patience", bftSyncPatienceMillis)
+			)
+			.put("mempool", new JSONObject()
+				.put("max_size", mempoolMaxSize)
+				.put("throttle", mempoolThrottleMs)
+			)
+			.put("sync", syncConfig.asJson())
+			.put("networking", from(p2PConfig));
 	}
 }

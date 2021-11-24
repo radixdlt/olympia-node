@@ -61,30 +61,25 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.health;
+package com.radixdlt.api.core.system.health;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.HandlerRoute;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.service.network.NetworkInfoService;
 
-import java.lang.annotation.Annotation;
+import com.radixdlt.api.util.GetJsonHandler;
+import org.json.JSONObject;
 
-public final class HealthApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+final class HealthHandler implements GetJsonHandler {
+	private final NetworkInfoService networkInfoService;
 
-	public HealthApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	HealthHandler(NetworkInfoService networkInfoService) {
+		this.networkInfoService = networkInfoService;
 	}
 
 	@Override
-	protected void configure() {
-		bind(HealthHandler.class).in(Scopes.SINGLETON);
-		MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType)
-			.addBinding(HandlerRoute.get(path))
-			.to(HealthHandler.class);
+	public JSONObject handleRequest() {
+		return new JSONObject()
+			.put("status", networkInfoService.nodeStatus());
 	}
 }

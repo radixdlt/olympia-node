@@ -64,25 +64,25 @@
 package com.radixdlt.api.core.system;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.HandlerRoute;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.core.system.health.HealthApiModule;
+import com.radixdlt.api.core.prometheus.PrometheusApiModule;
+import com.radixdlt.api.core.system.system.SystemEndpointsModule;
+import com.radixdlt.api.core.system.version.VersionApiModule;
 
 import java.lang.annotation.Annotation;
 
-public final class SystemApiModule extends AbstractModule {
+public class SystemApiModule extends AbstractModule {
 	private final Class<? extends Annotation> annotationType;
-	private final String path;
 
-	public SystemApiModule(Class<? extends Annotation> annotationType, String path) {
+	public SystemApiModule(Class<? extends Annotation> annotationType) {
 		this.annotationType = annotationType;
-		this.path = path;
 	}
 
 	@Override
 	protected void configure() {
-		var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType);
-		binder.addBinding(HandlerRoute.get(path + "/configuration")).to(SystemConfigurationHandler.class);
-		binder.addBinding(HandlerRoute.get(path + "/metrics")).to(SystemMetricsHandler.class);
+		install(new SystemEndpointsModule(annotationType, "/system"));
+		install(new HealthApiModule(annotationType, "/health"));
+		install(new VersionApiModule(annotationType, "/version"));
+		install(new PrometheusApiModule(annotationType, "/prometheus/metrics"));
 	}
 }

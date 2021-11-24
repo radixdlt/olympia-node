@@ -61,94 +61,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.system.health;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
+import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.engine.EngineApiModule;
-import com.radixdlt.api.core.entity.EntityApiModule;
-import com.radixdlt.api.core.construction.ConstructionApiModule;
-import com.radixdlt.api.core.developer.DeveloperApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.core.network.NetworkApiModule;
-import com.radixdlt.api.core.sign.SignApiModule;
-import com.radixdlt.api.core.transactions.TransactionIndexApiModule;
 import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
 import io.undertow.server.HttpHandler;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+import java.lang.annotation.Annotation;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public final class HealthApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
+	private final String path;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
-	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+	public HealthApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
+		this.path = path;
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-
-		// Core API
-		install(new DeveloperApiModule(NodeServer.class, "/developer"));
-		install(new EntityApiModule(NodeServer.class, "/entity"));
-		install(new NetworkApiModule(NodeServer.class, "/network"));
-		install(new SignApiModule(NodeServer.class, "/sign"));
-		if (transactionsEnable) {
-			install(new TransactionIndexApiModule(NodeServer.class, "/transactions"));
-		}
-		install(new ConstructionApiModule(NodeServer.class, "/construction"));
-		install(new EngineApiModule(NodeServer.class, "/engine"));
-	}
-
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
-
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	protected void configure() {
+		bind(HealthHandler.class).in(Scopes.SINGLETON);
+		MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType)
+			.addBinding(HandlerRoute.get(path))
+			.to(HealthHandler.class);
 	}
 }

@@ -105,11 +105,9 @@ public final class ApiModule extends AbstractModule {
 			install(new TransactionsByIdStoreModule());
 		}
 
-		var metricsEnable = properties.get("api.metrics.enable", false);
-		endpointStatus.put("metrics", metricsEnable);
 		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
 		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);
-		install(new CoreServerModule(port, bindAddress, transactionsEnable, metricsEnable));
+		install(new CoreServerModule(port, bindAddress, transactionsEnable));
 		bind(new TypeLiteral<Map<String, Boolean>>() {}).annotatedWith(Endpoints.class).toInstance(endpointStatus);
 	}
 }
