@@ -64,13 +64,14 @@
 
 package com.radixdlt.ledger;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-import java.util.ArrayList;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+
 import java.util.List;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
@@ -91,13 +92,6 @@ public class DtoTxnsAndProofTest {
     @Test(expected = NullPointerException.class)
     public void deserializationWithNullTailThrowsException() {
         new DtoTxnsAndProof(List.of(), mock(DtoLedgerProof.class), null);
-    }
-
-    @Test(expected = NullPointerException.class)
-    public void deserializationWithNullInTxnListThrowsException() {
-        var list = new ArrayList<byte[]>();
-        list.add(null);
-        new DtoTxnsAndProof(list, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
     }
 
     @Test

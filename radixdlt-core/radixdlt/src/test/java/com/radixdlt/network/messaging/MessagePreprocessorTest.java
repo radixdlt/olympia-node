@@ -6,6 +6,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import org.junit.Test;
+import org.radix.time.Time;
 
 import java.time.Duration;
 
@@ -23,6 +24,8 @@ public class MessagePreprocessorTest {
             110, 99, 46, 115, 121, 110, 99, 95, 114, 101, 113, 117, 101, 115, 116, -1
     };
 
+
+
     @Test
     public void invalid_message_is_not_accepted_and_peer_is_banned() {
         var counters = new SystemCountersImpl();
@@ -30,7 +33,7 @@ public class MessagePreprocessorTest {
         var serialization = DefaultSerialization.getInstance();
         var peerControl = mock(PeerControl.class);
         var source = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
-        var inboundMessage = InboundMessage.of(source, SYNC_REQUEST_MESSAGE);
+        var inboundMessage = new InboundMessage(Time.currentTimestamp(), source, SYNC_REQUEST_MESSAGE);
 
         var messagePreprocessor = new MessagePreprocessor(
                 counters,
