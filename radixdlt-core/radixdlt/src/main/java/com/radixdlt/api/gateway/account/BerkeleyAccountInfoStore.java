@@ -202,7 +202,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 
 		if (databases.get(ResourceType.EXITTING_UNSTAKES).get(null, key, value, DEFAULT) == SUCCESS) {
 			var systemMapKey = SystemMapKey.ofSystem(SubstateTypeId.EPOCH_DATA.id());
-			var epochData = (EpochData) radixEngineProvider.get().get(systemMapKey).orElseThrow();
+			var epochData = (EpochData) radixEngineProvider.get().read(reader -> reader.get(systemMapKey).orElseThrow());
 			var curEpoch = epochData.getEpoch();
 			jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
 			for (int i = 0; i < jsonArray.length(); i++) {

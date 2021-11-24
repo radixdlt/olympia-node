@@ -101,7 +101,6 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.TransientEngineStore;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import org.apache.logging.log4j.LogManager;
@@ -142,7 +141,14 @@ public final class RadixEngine<M> {
 		ConstraintMachine constraintMachine,
 		EngineStore<M> engineStore
 	) {
-		this(parser, serialization, actionConstructors, constraintMachine, engineStore, BatchVerifier.empty());
+		this(
+			parser,
+			serialization,
+			actionConstructors,
+			constraintMachine,
+			engineStore,
+			BatchVerifier.empty()
+		);
 	}
 
 	public RadixEngine(
@@ -544,129 +550,74 @@ public final class RadixEngine<M> {
 		}
 	}
 
-	public Optional<Particle> get(SystemMapKey mapKey) {
+	public <V> V read(Function<RadixEngineReader<M>, V> readEngineStore) {
 		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			return engineStore.get(mapKey).map(raw -> {
-				try {
-					return deserialization.deserialize(raw.getData());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException(e);
+			return readEngineStore.apply(new RadixEngineReader<M>() {
+				@Override
+				public M getMetadata() {
+					return engineStore.getMetadata();
 				}
-			});
-		}
-	}
 
-	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
-		Class<T> c,
-		Function<T, K> keyMapper
-	) {
-		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			return reduce(deserialization.index(c), new HashMap<>(),
-				(m, t) -> {
-					m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
-					return m;
+				@Override
+				public Optional<Particle> get(SystemMapKey mapKey) {
+					var deserialization = constraintMachine.getDeserialization();
+					return engineStore.get(mapKey).map(raw -> {
+						try {
+							return deserialization.deserialize(raw.getData());
+						} catch (DeserializeException e) {
+							throw new IllegalStateException(e);
+						}
+					});
 				}
-			);
-		}
-	}
 
-	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
-		SubstateIndex<T> index,
-		Function<T, K> keyMapper,
-		Map<K, UInt384> initial
-	) {
-		return reduce(index, initial,
-			(m, t) -> {
-				m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
-				return m;
-			}
-		);
-	}
-
-	public <T extends ResourceInBucket> UInt384 reduceResources(SubstateIndex<T> index) {
-		synchronized (stateUpdateEngineLock) {
-			return reduce(index, UInt384.ZERO, (m, t) -> m.add(t.getAmount()));
-		}
-	}
-
-	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
-		SubstateIndex<T> index,
-		Function<T, K> keyMapper
-	) {
-		return reduceResources(index, keyMapper, new HashMap<>());
-	}
-
-	public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
-		SubstateIndex<T> index,
-		Function<T, K> keyMapper,
-		Predicate<T> predicate
-	) {
-		return reduce(index, new HashMap<>(),
-			(m, t) -> {
-				if (predicate.test(t)) {
-					m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
-				}
-				return m;
-			}
-		);
-	}
-
-	public <K, T extends ResourceInBucket> Map<K, Pair<UInt384, Long>> reduceResourcesWithSubstateCount(
-		SubstateIndex<T> index,
-		Function<T, K> keyMapper,
-		Predicate<T> predicate
-	) {
-		return reduce(index, new HashMap<>(),
-			(m, t) -> {
-				if (predicate.test(t)) {
-					m.merge(
-						keyMapper.apply(t),
-						Pair.of(UInt384.from(t.getAmount()), 1L),
-						(p0, p1) -> Pair.of(p0.getFirst().add(p1.getFirst()), p0.getSecond() + p1.getSecond())
+				@Override
+				public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(Class<T> c, Function<T, K> keyMapper) {
+					var deserialization = constraintMachine.getDeserialization();
+					return reduce(deserialization.index(c), new HashMap<>(),
+						(m, t) -> {
+							m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+							return m;
+						}
 					);
 				}
-				return m;
-			}
-		);
-	}
 
-	public <U, T extends Particle> U reduce(SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator) {
-		return reduce(i, identity, accumulator, Long.MAX_VALUE);
-	}
-
-	public <U, T extends Particle> U reduce(SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator, long limit) {
-		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			var u = identity;
-			long count = 0;
-			try (var cursor = engineStore.openIndexedCursor(i)) {
-				while (cursor.hasNext() && count < limit) {
-					try {
-						var t = (T) deserialization.deserialize(cursor.next().getData());
-						u = accumulator.apply(u, t);
-						count++;
-					} catch (DeserializeException e) {
-						throw new IllegalStateException(e);
-					}
+				@Override
+				public <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
+					SubstateIndex<T> index, Function<T, K> keyMapper, Predicate<T> predicate
+				) {
+					return reduce(index, new HashMap<>(),
+						(m, t) -> {
+							if (predicate.test(t)) {
+								m.merge(keyMapper.apply(t), UInt384.from(t.getAmount()), UInt384::add);
+							}
+							return m;
+						}
+					);
 				}
-			}
-			return u;
-		}
-	}
 
-	public <U, T extends Particle> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator) {
-		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			return reduce(deserialization.index(c), identity, accumulator);
-		}
-	}
+				private <U, T extends Particle> U reduce(SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator) {
+					var deserialization = constraintMachine.getDeserialization();
+					var u = identity;
+					try (var cursor = engineStore.openIndexedCursor(i)) {
+						while (cursor.hasNext()) {
+							try {
+								var t = (T) deserialization.deserialize(cursor.next().getData());
+								u = accumulator.apply(u, t);
+							} catch (DeserializeException e) {
+								throw new IllegalStateException(e);
+							}
+						}
+					}
+					return u;
+				}
 
-	public <U, T extends Particle> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator, long limit) {
-		synchronized (stateUpdateEngineLock) {
-			var deserialization = constraintMachine.getDeserialization();
-			return reduce(deserialization.index(c), identity, accumulator, limit);
+				@Override
+				public <U, T extends Particle> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator) {
+					var deserialization = constraintMachine.getDeserialization();
+					var index = deserialization.index(c);
+					return reduce(index, identity, accumulator);
+				}
+			});
 		}
 	}
 }

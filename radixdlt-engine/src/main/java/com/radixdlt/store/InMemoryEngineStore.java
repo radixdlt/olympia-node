@@ -95,6 +95,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 	private final Map<SubstateId, REStateUpdate> storedState = new HashMap<>();
 	private final Map<REAddr, Supplier<ByteBuffer>> resources = new HashMap<>();
 	private final Map<SystemMapKey, RawSubstateBytes> maps = new HashMap<>();
+	private M metadata;
 
 	@Override
 	public <R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException {
@@ -145,7 +146,7 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 
 			@Override
 			public void storeMetadata(M metadata) {
-
+				InMemoryEngineStore.this.metadata = metadata;
 			}
 
 			@Override
@@ -192,6 +193,11 @@ public final class InMemoryEngineStore<M> implements EngineStore<M> {
 				}
 			}
 		});
+	}
+
+	@Override
+	public M getMetadata() {
+		return metadata;
 	}
 
 	@Override

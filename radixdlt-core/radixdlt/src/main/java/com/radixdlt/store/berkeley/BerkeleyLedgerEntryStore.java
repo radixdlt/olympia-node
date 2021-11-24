@@ -284,6 +284,11 @@ public final class BerkeleyLedgerEntryStore implements EngineStore<LedgerAndBFTP
 		}
 	}
 
+	@Override
+	public LedgerAndBFTProof getMetadata() {
+		return getLastProof().map(LedgerAndBFTProof::create).orElse(null);
+	}
+
 	public Stream<RawSubstateBytes> scanner() {
 		var cursor = substatesDatabase.openCursor(null, null);
 		var iterator = new Iterator<RawSubstateBytes>() {

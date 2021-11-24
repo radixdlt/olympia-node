@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,95 +61,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.engine;
 
-import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
-import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt384;
 
-import java.nio.ByteBuffer;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-public class TransientEngineStore<M> implements EngineStore<M> {
-	private final EngineStore<M> base;
-	private final InMemoryEngineStore<M> transientStore = new InMemoryEngineStore<>();
-
-	public TransientEngineStore(EngineStore<M> base) {
-		this.base = Objects.requireNonNull(base);
-	}
-
-	@Override
-	public <R> R transaction(TransactionEngineStoreConsumer<M, R> consumer) throws RadixEngineException {
-		return base.transaction(baseStore ->
-			transientStore.transaction(tStore ->
-				consumer.start(new EngineStoreInTransaction<M>() {
-					@Override
-					public void storeTxn(REProcessedTxn txn) {
-						tStore.storeTxn(txn);
-					}
-
-					@Override
-					public void storeMetadata(M metadata) {
-						// no-op
-					}
-
-					@Override
-					public ByteBuffer verifyVirtualSubstate(SubstateId substateId)
-						throws VirtualSubstateAlreadyDownException, VirtualParentStateDoesNotExist {
-						try {
-							return tStore.verifyVirtualSubstate(substateId);
-						} catch (VirtualParentStateDoesNotExist e) {
-							return baseStore.verifyVirtualSubstate(substateId);
-						}
-					}
-
-					@Override
-					public Optional<ByteBuffer> loadSubstate(SubstateId substateId) {
-						if (!transientStore.contains(substateId)) {
-							return baseStore.loadSubstate(substateId);
-						}
-
-						return tStore.loadSubstate(substateId);
-					}
-
-					@Override
-					public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
-						return tStore.openIndexedCursor(index)
-							.concat(() -> baseStore.openIndexedCursor(index)
-								.filter(s -> !transientStore.contains(SubstateId.fromBytes(s.getId()))));
-					}
-
-					@Override
-					public Optional<ByteBuffer> loadResource(REAddr addr) {
-						return tStore.loadResource(addr).or(() -> baseStore.loadResource(addr));
-					}
-				})
-			)
-		);
-	}
-
-	@Override
-	public M getMetadata() {
-		return null;
-	}
-
-	@Override
-	public CloseableCursor<RawSubstateBytes> openIndexedCursor(SubstateIndex<?> index) {
-		return transientStore.openIndexedCursor(index)
-			.concat(() -> base.openIndexedCursor(index)
-				.filter(s -> !transientStore.contains(SubstateId.fromBytes(s.getId()))));
-	}
-
-	@Override
-	public Optional<RawSubstateBytes> get(SystemMapKey key) {
-		return transientStore.get(key).or(() -> base.get(key));
-	}
+public interface RadixEngineReader<M> {
+	M getMetadata();
+	Optional<Particle> get(SystemMapKey mapKey);
+	<K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(Class<T> c, Function<T, K> keyMapper);
+	<K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
+		SubstateIndex<T> index,
+		Function<T, K> keyMapper,
+		Predicate<T> predicate
+	);
+	<U, T extends Particle> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator);
 }

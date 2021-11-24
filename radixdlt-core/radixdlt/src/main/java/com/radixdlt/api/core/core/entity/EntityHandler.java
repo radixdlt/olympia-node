@@ -81,6 +81,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.Bytes;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -129,34 +130,45 @@ public class EntityHandler implements ApiHandler<EntityRequest> {
 			.put("validator", addressing.forValidators().of(bucket.getValidatorKey()));
 	}
 
-	private JSONArray getBalances(
-		List<ResourceQuery> resourceQueries,
-		Function<REAddr, String> addressToRri
+	private JSONObject getObjectsAndBalances(
+		List<KeyQuery> keyQueries,
+		List<ResourceQuery> resourceQueries
 	) {
-		var balances = new JSONArray();
-		for (var resourceQuery : resourceQueries) {
-			var index = resourceQuery.getIndex();
-			var bucketPredicate = resourceQuery.getPredicate();
-			radixEngine.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
-				.forEach((bucket, amount) -> {
-					var json = new JSONObject()
-						.put("resource_identifier", bucketToResourceJson(bucket, addressToRri))
-						.put("value", amount.toString());
-					balances.put(json);
-				});
-		}
-		return balances;
-	}
-
-	private JSONArray getObjects(
-		List<KeyQuery> keyQueries
-	) {
-		var objects = new JSONArray();
-		for (var keyQuery : keyQueries) {
-			var substate = radixEngine.get(keyQuery.getKey()).or(keyQuery.getVirtualSubstate());
-			substate.map(s -> converter.getDataObject(keyQuery.getTypeId(), s)).ifPresent(objects::put);
-		}
-		return objects;
+		return radixEngine.read(reader -> {
+			Function<REAddr, String> addressToRri = addr -> {
+				var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+				var substate = reader.get(mapKey).orElseThrow();
+				var tokenResource = (TokenResourceMetadata) substate;
+				return addressing.forResources().of(tokenResource.getSymbol(), addr);
+			};
+			var balances = new JSONArray();
+			for (var resourceQuery : resourceQueries) {
+				var index = resourceQuery.getIndex();
+				var bucketPredicate = resourceQuery.getPredicate();
+				reader.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
+					.forEach((bucket, amount) -> {
+						var json = new JSONObject()
+							.put("resource_identifier", bucketToResourceJson(bucket, addressToRri))
+							.put("value", amount.toString());
+						balances.put(json);
+					});
+			}
+			var objects = new JSONArray();
+			for (var keyQuery : keyQueries) {
+				var substate = reader.get(keyQuery.getKey()).or(keyQuery.getVirtualSubstate());
+				substate.map(s -> converter.getDataObject(keyQuery.getTypeId(), s)).ifPresent(objects::put);
+			}
+			var proof = reader.getMetadata().getProof();
+			var stateVersion = proof.getStateVersion();
+			var transactionAccumulator = Bytes.toHexString(proof.getAccumulatorState().getAccumulatorHash().asBytes());
+			return new JSONObject()
+				.put("state_identifier", new JSONObject()
+					.put("state_version", stateVersion)
+					.put("transaction_accumulator", transactionAccumulator)
+				)
+				.put("balances", balances)
+				.put("data_objects", objects);
+		});
 	}
 
 	@Override
@@ -165,23 +177,10 @@ public class EntityHandler implements ApiHandler<EntityRequest> {
 			throw new IllegalStateException();
 		}
 
-		Function<REAddr, String> addressToRri = addr -> {
-			var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-			var substate = radixEngine.get(mapKey).orElseThrow();
-			var tokenResource = (TokenResourceMetadata) substate;
-			return addressing.forResources().of(tokenResource.getSymbol(), addr);
-		};
-
 		var entityIdentifier = request.getEntityIdentifier();
-		// TODO: need to fetch these in a single database transaction and retrieve version as well
-		var balances = getBalances(
-			entityIdentifier.getResourceQueries(),
-			addressToRri
+		return getObjectsAndBalances(
+			entityIdentifier.getKeyQueries(),
+			entityIdentifier.getResourceQueries()
 		);
-		var objects = getObjects(entityIdentifier.getKeyQueries());
-
-		return new JSONObject()
-			.put("balances", balances)
-			.put("data_objects", objects);
 	}
 }

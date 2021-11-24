@@ -205,7 +205,8 @@ public class NextEpochV2Test {
 		this.sut.execute(List.of(txn), null, PermissionLevel.SUPER_USER);
 
 		// Assert
-		assertThat(sut.reduceResources(PreparedStake.class, PreparedStake::getDelegateKey)).isEmpty();
+		var map = sut.read(reader -> reader.reduceResources(PreparedStake.class, PreparedStake::getDelegateKey));
+		assertThat(map).isEmpty();
 	}
 
 	@Test

@@ -374,7 +374,7 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public Map<BFTNode, Map<String, String>> getValidators() {
-			var map = radixEngine.reduce(
+			var map = radixEngine.read(reader -> reader.reduce(
 				ValidatorStakeData.class,
 				new HashMap<BFTNode, Map<String, String>>(),
 				(u, s) -> {
@@ -384,9 +384,9 @@ public class StakingUnstakingValidatorsTest {
 					u.put(BFTNode.create(s.getValidatorKey()), data);
 					return u;
 				}
-			);
+			));
 
-			radixEngine.reduce(
+			radixEngine.read(reader -> reader.reduce(
 				AllowDelegationFlag.class,
 				map,
 				(u, flag) -> {
@@ -398,7 +398,7 @@ public class StakingUnstakingValidatorsTest {
 					});
 					return u;
 				}
-			);
+			));
 
 			return map;
 		}
@@ -416,23 +416,23 @@ public class StakingUnstakingValidatorsTest {
 		}
 
 		public BigInteger getTotalExittingStake() {
-			var totalStakeExitting = radixEngine.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			var totalStakeExitting = radixEngine.read(reader -> reader.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
 			return new BigInteger(1, totalStakeExitting.toByteArray());
 		}
 
 		public BigInteger getTotalTokensInAccounts() {
-			var totalTokens = radixEngine.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			var totalTokens = radixEngine.read(reader -> reader.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
 			return new BigInteger(1, totalTokens.toByteArray());
 		}
 
 		public UInt256 getTotalNativeTokens() {
-			var totalTokens = radixEngine.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			var totalTokens = radixEngine.read(reader -> reader.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
 			logger.info("Total tokens: {}", Amount.ofSubunits(totalTokens));
-			var totalStaked = radixEngine.reduce(ValidatorStakeData.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			var totalStaked = radixEngine.read(reader -> reader.reduce(ValidatorStakeData.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
 			logger.info("Total staked: {}", Amount.ofSubunits(totalStaked));
-			var totalStakePrepared = radixEngine.reduce(PreparedStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			var totalStakePrepared = radixEngine.read(reader -> reader.reduce(PreparedStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
 			logger.info("Total preparing stake: {}", Amount.ofSubunits(totalStakePrepared));
-			var totalStakeExitting = radixEngine.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount()));
+			var totalStakeExitting = radixEngine.read(reader -> reader.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
 			logger.info("Total exitting stake: {}", Amount.ofSubunits(totalStakeExitting));
 			var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
 			logger.info("Total: {}", Amount.ofSubunits(total));

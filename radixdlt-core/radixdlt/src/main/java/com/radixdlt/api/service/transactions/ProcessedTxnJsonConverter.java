@@ -139,7 +139,7 @@ public final class ProcessedTxnJsonConverter {
 
 			var tokenMetadata = localMetadata.orElseGet(() -> {
 				var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-				var substate = radixEngineProvider.get().get(mapKey).orElseThrow();
+				var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
 				// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
 				return (TokenResourceMetadata) substate;
 			});
@@ -149,7 +149,7 @@ public final class ProcessedTxnJsonConverter {
 
 		Function<ECPublicKey, ValidatorStakeData> getValidatorStake = key -> {
 			var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), key.getCompressedBytes());
-			return (ValidatorStakeData) radixEngineProvider.get().get(validatorDataKey).orElseThrow();
+			return (ValidatorStakeData) radixEngineProvider.get().read(reader -> reader.get(validatorDataKey).orElseThrow());
 		};
 
 		var operationGroups = this.getOperationGroups(processed, addressToRri, getValidatorStake);
