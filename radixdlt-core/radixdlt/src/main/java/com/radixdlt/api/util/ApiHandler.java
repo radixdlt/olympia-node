@@ -75,9 +75,9 @@ import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
 
-import static com.radixdlt.api.util.RestUtils.CONTENT_TYPE_JSON;
 
 public interface ApiHandler<T> extends HttpHandler {
+	String CONTENT_TYPE_JSON = "application/json";
 	long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
 	T parseRequest(JsonObjectReader requestReader) throws InvalidParametersException;

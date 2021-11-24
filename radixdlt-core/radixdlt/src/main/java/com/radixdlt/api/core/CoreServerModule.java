@@ -73,7 +73,6 @@ import com.radixdlt.api.core.core.CoreApiModule;
 import com.radixdlt.api.core.system.SystemApiModule;
 import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.networks.Addressing;
@@ -108,7 +107,6 @@ public final class CoreServerModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
 		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
 
 		install(new SystemApiModule(NodeServer.class));
@@ -119,12 +117,11 @@ public final class CoreServerModule extends AbstractModule {
 	@StringMapKey(Runners.NODE_API)
 	@Singleton
 	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
 		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
 		Addressing addressing,
 		SystemCounters counters
 	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
+		return new HttpServerRunner(handlers, List.of(), port, bindAddress, "node", addressing, counters);
 	}
 
 	/**

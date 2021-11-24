@@ -73,9 +73,11 @@ import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.sync.SyncConfig;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
+import java.util.Collection;
+import java.util.function.Function;
 
 public class SystemConfigurationHandler implements GetJsonHandler {
 
@@ -102,6 +104,12 @@ public class SystemConfigurationHandler implements GetJsonHandler {
 		this.mempoolThrottleMs = mempoolThrottleMs;
 		this.syncConfig = syncConfig;
 		this.p2PConfig = p2PConfig;
+	}
+
+	private static <T> JSONArray fromCollection(Collection<T> input, Function<T, Object> mapper) {
+		var array = new JSONArray();
+		input.forEach(element -> array.put(mapper.apply(element)));
+		return array;
 	}
 
 	private JSONObject from(P2PConfig p2PConfig) {

@@ -89,7 +89,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.StatusCodes;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.RestUtils.CONTENT_TYPE_JSON;
 import static java.util.logging.Logger.getLogger;
 
 public final class HttpServerRunner implements ModuleRunner {
@@ -97,7 +96,6 @@ public final class HttpServerRunner implements ModuleRunner {
 	private static final int MAXIMUM_CONCURRENT_REQUESTS = Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
 	private static final int QUEUE_SIZE = 2000;
 
-	private final Map<String, Controller> controllers;
 	private final Map<HandlerRoute, HttpHandler> handlers;
 	private final List<ApiErrorCode> errorCodes;
 	private final String name;
@@ -109,7 +107,6 @@ public final class HttpServerRunner implements ModuleRunner {
 	private Undertow server;
 
 	public HttpServerRunner(
-		Map<String, Controller> controllers,
 		Map<HandlerRoute, HttpHandler> handlers,
 		List<ApiErrorCode> errorCodes,
 		int port,
@@ -118,7 +115,6 @@ public final class HttpServerRunner implements ModuleRunner {
 		Addressing addressing,
 		SystemCounters counters
 	) {
-		this.controllers = controllers;
 		this.handlers = handlers;
 		this.errorCodes = errorCodes;
 		this.name = name.toLowerCase(Locale.US);
@@ -174,7 +170,7 @@ public final class HttpServerRunner implements ModuleRunner {
 			errorCode.getExceptionClass(),
 			exchange -> {
 				var ex = exchange.getAttachment(ExceptionHandler.THROWABLE);
-				exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+				exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
 				exchange.setStatusCode(500);
 				exchange.getResponseSender().send(new JSONObject()
 					.put("code", errorCode.getCode())
@@ -188,14 +184,7 @@ public final class HttpServerRunner implements ModuleRunner {
 
 	private HttpHandler configureRoutes() {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
-
 		handlers.forEach((r, h) -> handler.add(r.getMethod(), r.getPath(), h));
-
-		controllers.forEach((root, controller) -> {
-			log.info("Configuring routes under {}", root);
-			controller.configureRoutes(root, handler);
-		});
-
 		handler.setFallbackHandler(HttpServerRunner::fallbackHandler);
 		handler.setInvalidMethodHandler(HttpServerRunner::invalidMethodHandler);
 

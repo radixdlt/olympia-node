@@ -68,9 +68,9 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.RestUtils.CONTENT_TYPE_JSON;
-
 public interface GetJsonHandler extends HttpHandler {
+	String CONTENT_TYPE_JSON = "application/json";
+
 	@Override
 	default void handleRequest(HttpServerExchange exchange) throws Exception {
 		if (exchange.isInIoThread()) {

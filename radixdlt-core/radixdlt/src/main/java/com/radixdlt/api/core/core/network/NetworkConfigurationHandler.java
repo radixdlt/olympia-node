@@ -71,7 +71,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
 import static org.radix.Radix.VERSION_STRING_KEY;
 
@@ -95,7 +94,7 @@ class NetworkConfigurationHandler implements ApiHandler<Void> {
 
 	@Override
 	public JSONObject handleRequest(Void request) {
-		return jsonObject()
+		return new JSONObject()
 			.put("version", new JSONObject()
 				.put("core_version", infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY))
 				.put("api_version", "0.9.0")

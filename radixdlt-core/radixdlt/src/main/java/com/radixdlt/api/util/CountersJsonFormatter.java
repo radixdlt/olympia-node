@@ -69,15 +69,13 @@ import org.json.JSONObject;
 
 import java.util.List;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-
 public final class CountersJsonFormatter {
 
 	private CountersJsonFormatter() {
 	}
 
 	public static JSONObject countersToJson(SystemCounters counters, List<SystemCounters.CounterType> types, boolean skipTopLevel) {
-		var result = jsonObject();
+		var result = new JSONObject();
 		types.forEach(counterType -> counterToJson(result, counters, counterType, skipTopLevel));
 		return result;
 	}
@@ -97,7 +95,7 @@ public final class CountersJsonFormatter {
 				ptr = ptr.getJSONObject(element);
 			} else {
 				if (iterator.hasNext()) {
-					var newObj = jsonObject();
+					var newObj = new JSONObject();
 					ptr.put(element, newObj);
 					ptr = newObj;
 				} else {

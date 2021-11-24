@@ -68,7 +68,6 @@ import com.radixdlt.api.util.GetJsonHandler;
 import com.radixdlt.middleware2.InfoSupplier;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
 import static org.radix.Radix.VERSION_STRING_KEY;
 
@@ -78,7 +77,7 @@ public class VersionHandler implements GetJsonHandler {
 	@Inject
 	public VersionHandler(InfoSupplier infoSupplier) {
 		var versionString = (String) infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
-		versionData = jsonObject().put("version", versionString);
+		versionData = new JSONObject().put("version", versionString);
 	}
 
 	@Override

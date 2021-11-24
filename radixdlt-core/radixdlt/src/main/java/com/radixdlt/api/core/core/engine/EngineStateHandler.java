@@ -72,9 +72,11 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
+import java.util.Collection;
+import java.util.function.Function;
 
 
 public class EngineStateHandler implements ApiHandler<Void> {
@@ -114,6 +116,12 @@ public class EngineStateHandler implements ApiHandler<Void> {
 	public JSONObject getLatestEpochProof() {
 		var proof = inMemorySystemInfo.getEpochProof();
 		return proof == null ? new JSONObject() : proof.asJSON(addressing);
+	}
+
+	private static <T> JSONArray fromCollection(Collection<T> input, Function<T, Object> mapper) {
+		var array = new JSONArray();
+		input.forEach(element -> array.put(mapper.apply(element)));
+		return array;
 	}
 
 	public JSONObject getCheckpoints() {

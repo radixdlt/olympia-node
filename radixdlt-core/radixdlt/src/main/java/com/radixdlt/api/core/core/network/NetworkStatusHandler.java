@@ -82,8 +82,6 @@ import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-
 final class NetworkStatusHandler implements ApiHandler<NetworkIdentifier> {
 	private final Network network;
 	private final REAddr accountAddress;
@@ -124,7 +122,7 @@ final class NetworkStatusHandler implements ApiHandler<NetworkIdentifier> {
 		}
 
 		var currentProof = inMemorySystemInfo.getCurrentProof();
-		return jsonObject()
+		return new JSONObject()
 			.put("pre_genesis_state_identifier", new JSONObject()
 				.put("state_version", 0)
 				.put("transaction_accumulator", Bytes.toHexString(HashUtils.zero256().asBytes()))

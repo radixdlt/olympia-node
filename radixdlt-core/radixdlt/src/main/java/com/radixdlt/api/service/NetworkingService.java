@@ -76,9 +76,8 @@ import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
-import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
+import java.util.Collection;
+import java.util.function.Function;
 
 public final class NetworkingService {
 	private final JSONObject configuration;
@@ -107,7 +106,7 @@ public final class NetworkingService {
 	}
 
 	public JSONArray getPeers() {
-		var peerArray = jsonArray();
+		var peerArray = new JSONArray();
 
 		peersView.peers()
 			.map(this::peerToJson)
@@ -117,7 +116,7 @@ public final class NetworkingService {
 	}
 
 	public JSONArray getAddressBook() {
-		final var entriesArray = jsonArray();
+		final var entriesArray = new JSONArray();
 		addressBook.knownPeers().values().forEach(v -> entriesArray.put(addressBookEntryToJson(v)));
 		return entriesArray;
 	}
@@ -126,8 +125,14 @@ public final class NetworkingService {
 		return peersView.peers().count();
 	}
 
+	private static <T> JSONArray fromCollection(Collection<T> input, Function<T, Object> mapper) {
+		var array = new JSONArray();
+		input.forEach(element -> array.put(mapper.apply(element)));
+		return array;
+	}
+
 	private JSONObject prepareConfiguration(P2PConfig p2PConfig, ECPublicKey self) {
-		return jsonObject()
+		return new JSONObject()
 			.put("defaultPort", p2PConfig.defaultPort())
 			.put("discoveryInterval", p2PConfig.discoveryInterval())
 			.put("listenAddress", p2PConfig.listenAddress())
@@ -144,11 +149,11 @@ public final class NetworkingService {
 	}
 
 	private JSONObject peerToJson(PeersView.PeerInfo peer) {
-		var channelsJson = jsonArray();
-		var peerJson = jsonObject().put("address", addressing.forNodes().of(peer.getNodeId().getPublicKey()));
+		var channelsJson = new JSONArray();
+		var peerJson = new JSONObject().put("address", addressing.forNodes().of(peer.getNodeId().getPublicKey()));
 
 		peer.getChannels().forEach(channel -> {
-			var channelJson = jsonObject()
+			var channelJson = new JSONObject()
 				.put("type", channel.isOutbound() ? "out" : "in")
 				.put("localPort", channel.getPort())
 				.put("ip", channel.getHost());
@@ -161,10 +166,10 @@ public final class NetworkingService {
 	}
 
 	private JSONObject addressBookEntryToJson(AddressBookEntry e) {
-		final var knownAddressesArray = jsonArray();
+		final var knownAddressesArray = new JSONArray();
 
 		e.getKnownAddresses().forEach(addr -> {
-			final var addrObj = jsonObject()
+			final var addrObj = new JSONObject()
 				.put("uri", addr.getUri())
 				.put("blacklisted", addr.blacklisted())
 				.put(
@@ -174,7 +179,7 @@ public final class NetworkingService {
 			knownAddressesArray.put(addrObj);
 		});
 
-		final var entryObj = jsonObject()
+		final var entryObj = new JSONObject()
 			.put("address", addressing.forNodes().of(e.getNodeId().getPublicKey()))
 			.put("banned", e.isBanned())
 			.put("knownAddresses", knownAddressesArray);

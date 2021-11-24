@@ -65,7 +65,6 @@ package com.radixdlt.api.core.core;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.api.core.core.construction.ConstructionApiModule;
-import com.radixdlt.api.core.core.developer.DeveloperApiModule;
 import com.radixdlt.api.core.core.engine.EngineApiModule;
 import com.radixdlt.api.core.core.entity.EntityApiModule;
 import com.radixdlt.api.core.core.network.NetworkApiModule;
@@ -86,7 +85,6 @@ public class CoreApiModule extends AbstractModule {
 	@Override
 	public void configure() {
 		// Core API
-		install(new DeveloperApiModule(annotationType, "/developer"));
 		install(new EntityApiModule(annotationType, "/entity"));
 		install(new NetworkApiModule(annotationType, "/network"));
 		install(new SignApiModule(annotationType, "/sign"));

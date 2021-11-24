@@ -76,8 +76,6 @@ import com.radixdlt.utils.Bytes;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
-
 class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 	private final Network network;
 	private final BerkeleyTransactionsByIdStore txnStore;
@@ -136,7 +134,7 @@ class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 				.forEach(transactions::put);
 		}
 
-		return jsonObject()
+		return new JSONObject()
 			.put("state_identifier", committedStateIdentifier)
 			.put("transactions", transactions);
 	}

@@ -129,6 +129,6 @@ public class ArchiveServerModule extends AbstractModule {
 			ApiErrorCode.STATE_CONFLICT,
 			ApiErrorCode.INVALID_TRANSACTION
 		);
-		return new HttpServerRunner(Map.of(), handlers, errorCodes, port, bindAddress, "archive", addressing, counters);
+		return new HttpServerRunner(handlers, errorCodes, port, bindAddress, "archive", addressing, counters);
 	}
 }
