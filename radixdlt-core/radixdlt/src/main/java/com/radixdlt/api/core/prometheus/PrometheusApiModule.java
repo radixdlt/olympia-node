@@ -61,30 +61,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.util;
+package com.radixdlt.api.core.prometheus;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.api.util.HandlerRoute;
 import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import org.json.JSONObject;
 
-import static com.radixdlt.api.util.RestUtils.CONTENT_TYPE_JSON;
+import java.lang.annotation.Annotation;
 
-public interface GetHandler extends HttpHandler {
-	@Override
-	default void handleRequest(HttpServerExchange exchange) throws Exception {
-		if (exchange.isInIoThread()) {
-			exchange.dispatch(this);
-			return;
-		}
+public final class PrometheusApiModule extends AbstractModule {
+	private final Class<? extends Annotation> annotationType;
+	private final String path;
 
-		exchange.startBlocking();
-
-		var jsonResponse = handleRequest();
-		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-		exchange.setStatusCode(200);
-		exchange.getResponseSender().send(jsonResponse.toString());
+	public PrometheusApiModule(Class<? extends Annotation> annotationType, String path) {
+		this.annotationType = annotationType;
+		this.path = path;
 	}
 
-	JSONObject handleRequest();
+	@Override
+	protected void configure() {
+		bind(PrometheusHandler.class).in(Scopes.SINGLETON);
+		MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType)
+			.addBinding(HandlerRoute.get(path))
+			.to(PrometheusHandler.class);
+	}
 }

@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.metrics;
+package com.radixdlt.api.core.prometheus;
 
 import com.radixdlt.api.service.NetworkingService;
 import com.radixdlt.api.Endpoints;
@@ -100,9 +100,9 @@ import javax.management.openmbean.CompositeDataSupport;
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
 import static org.radix.Radix.VERSION_STRING_KEY;
 
-import static com.radixdlt.api.core.metrics.MetricsService.JmxMetric.jmxMetric;
+import static com.radixdlt.api.core.prometheus.PrometheusService.JmxMetric.jmxMetric;
 
-public class MetricsService {
+public class PrometheusService {
 	private static final Logger log = LogManager.getLogger();
 
 	private static final List<CounterType> EXPORT_LIST = Arrays.asList(CounterType.values());
@@ -133,7 +133,7 @@ public class MetricsService {
 	private final Map<String, Boolean> endpointStatuses;
 
 	@Inject
-	public MetricsService(
+	public PrometheusService(
 		@Endpoints Map<String, Boolean> endpointStatuses,
 		SystemCounters systemCounters,
 		InfoSupplier infoSupplier,

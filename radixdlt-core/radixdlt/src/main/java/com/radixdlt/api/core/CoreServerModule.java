@@ -74,7 +74,7 @@ import com.radixdlt.api.core.entity.EntityApiModule;
 import com.radixdlt.api.core.construction.ConstructionApiModule;
 import com.radixdlt.api.core.developer.DeveloperApiModule;
 import com.radixdlt.api.core.health.HealthApiModule;
-import com.radixdlt.api.core.metrics.MetricsApiModule;
+import com.radixdlt.api.core.prometheus.PrometheusApiModule;
 import com.radixdlt.api.core.network.NetworkApiModule;
 import com.radixdlt.api.core.sign.SignApiModule;
 import com.radixdlt.api.core.system.SystemApiModule;
@@ -128,7 +128,7 @@ public final class CoreServerModule extends AbstractModule {
 		install(new HealthApiModule(NodeServer.class, "/health"));
 		install(new VersionApiModule(NodeServer.class, "/version"));
 		if (metricsEnable) {
-			install(new MetricsApiModule(NodeServer.class, "/metrics"));
+			install(new PrometheusApiModule(NodeServer.class, "/prometheus/metrics"));
 		}
 
 		// Core API

@@ -61,29 +61,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.metrics;
+package com.radixdlt.api.core.prometheus;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.Controller;
+import com.google.inject.Inject;
 
-import java.lang.annotation.Annotation;
+import com.radixdlt.api.util.PrometheusGetHandler;
 
-public final class MetricsApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+public class PrometheusHandler implements PrometheusGetHandler {
+	private final PrometheusService metricsService;
 
-	public MetricsApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	public PrometheusHandler(PrometheusService metricsService) {
+		this.metricsService = metricsService;
 	}
 
 	@Override
-	protected void configure() {
-		bind(MetricsController.class).in(Scopes.SINGLETON);
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, annotationType)
-			.addBinding(path)
-			.to(MetricsController.class);
+	public String handleRequest() {
+		return metricsService.getMetrics();
 	}
 }

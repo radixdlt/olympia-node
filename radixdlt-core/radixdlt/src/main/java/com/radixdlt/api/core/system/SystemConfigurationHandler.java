@@ -64,7 +64,7 @@
 package com.radixdlt.api.core.system;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.GetHandler;
+import com.radixdlt.api.util.GetJsonHandler;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -77,7 +77,7 @@ import org.json.JSONObject;
 
 import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
 
-public class SystemConfigurationHandler implements GetHandler {
+public class SystemConfigurationHandler implements GetJsonHandler {
 
 	private final long pacemakerTimeout;
 	private final int bftSyncPatienceMillis;

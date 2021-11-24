@@ -66,10 +66,10 @@ package com.radixdlt.api.core.health;
 import com.google.inject.Inject;
 import com.radixdlt.api.service.network.NetworkInfoService;
 
-import com.radixdlt.api.util.GetHandler;
+import com.radixdlt.api.util.GetJsonHandler;
 import org.json.JSONObject;
 
-final class HealthHandler implements GetHandler {
+final class HealthHandler implements GetJsonHandler {
 	private final NetworkInfoService networkInfoService;
 
 	@Inject

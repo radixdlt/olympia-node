@@ -61,37 +61,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.metrics;
+package com.radixdlt.api.util;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
-import com.radixdlt.api.util.Controller;
-
+import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
 import io.undertow.util.Headers;
+import org.json.JSONObject;
 
-import static com.radixdlt.api.util.RestUtils.sanitizeBaseUrl;
+import static com.radixdlt.api.util.RestUtils.CONTENT_TYPE_JSON;
 
-public class MetricsController implements Controller {
-	// 	https://prometheus.io/docs/instrumenting/exposition_formats/
-	public static final String CONTENT_TYPE_TEXT_PLAIN_004 = "text/plain; version=0.0.4;charset=utf-8";
-
-	private final MetricsService metricsService;
-
-	@Inject
-	public MetricsController(MetricsService metricsService) {
-		this.metricsService = metricsService;
-	}
-
+public interface GetJsonHandler extends HttpHandler {
 	@Override
-	public void configureRoutes(String root, RoutingHandler handler) {
-		handler.get(sanitizeBaseUrl(root), this::handleMetricsRequest);
+	default void handleRequest(HttpServerExchange exchange) throws Exception {
+		if (exchange.isInIoThread()) {
+			exchange.dispatch(this);
+			return;
+		}
+
+		exchange.startBlocking();
+
+		var jsonResponse = handleRequest();
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+		exchange.setStatusCode(200);
+		exchange.getResponseSender().send(jsonResponse.toString());
 	}
 
-	@VisibleForTesting
-	void handleMetricsRequest(HttpServerExchange exchange) {
-		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_TEXT_PLAIN_004);
-		exchange.getResponseSender().send(metricsService.getMetrics());
-	}
+	JSONObject handleRequest();
 }

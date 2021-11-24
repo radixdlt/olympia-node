@@ -64,7 +64,6 @@
 package com.radixdlt.api.util;
 
 import com.radixdlt.api.gateway.ApiErrorCode;
-import com.radixdlt.api.core.metrics.MetricsHandler;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.networks.Addressing;
 import io.undertow.server.handlers.ExceptionHandler;
@@ -145,7 +144,7 @@ public final class HttpServerRunner implements ModuleRunner {
 
 	@Override
 	public void start() {
-		final var handler = new MetricsHandler(
+		final var handler = new RequestMetricsHandler(
 			counters,
 			name,
 			new RequestLimitingHandler(

@@ -61,9 +61,8 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.metrics;
+package com.radixdlt.api.util;
 
-import com.radixdlt.api.util.MovingAverage;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.counters.SystemCounters;
 import io.undertow.server.HttpHandler;
@@ -71,7 +70,7 @@ import io.undertow.server.HttpServerExchange;
 
 import java.util.Objects;
 
-public final class MetricsHandler implements HttpHandler {
+public final class RequestMetricsHandler implements HttpHandler {
 
 	private final SystemCounters counters;
 	private final HttpHandler next;
@@ -84,7 +83,7 @@ public final class MetricsHandler implements HttpHandler {
 
 	private final MovingAverage timeAvg = MovingAverage.create(10L);
 
-	public MetricsHandler(SystemCounters counters, String serverName, HttpHandler next) {
+	public RequestMetricsHandler(SystemCounters counters, String serverName, HttpHandler next) {
 		this.counters = Objects.requireNonNull(counters);
 		this.next = Objects.requireNonNull(next);
 

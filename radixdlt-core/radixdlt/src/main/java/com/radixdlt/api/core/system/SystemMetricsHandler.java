@@ -65,13 +65,13 @@ package com.radixdlt.api.core.system;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.util.CountersJsonFormatter;
-import com.radixdlt.api.util.GetHandler;
+import com.radixdlt.api.util.GetJsonHandler;
 import com.radixdlt.counters.SystemCounters;
 import org.json.JSONObject;
 
 import java.util.List;
 
-public class SystemMetricsHandler implements GetHandler {
+public class SystemMetricsHandler implements GetJsonHandler {
 	private final SystemCounters systemCounters;
 
 	static final List<SystemCounters.CounterType> NETWORKING_COUNTERS = List.of(

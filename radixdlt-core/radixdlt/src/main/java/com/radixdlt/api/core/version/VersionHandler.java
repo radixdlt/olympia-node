@@ -64,7 +64,7 @@
 package com.radixdlt.api.core.version;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.GetHandler;
+import com.radixdlt.api.util.GetJsonHandler;
 import com.radixdlt.middleware2.InfoSupplier;
 import org.json.JSONObject;
 
@@ -72,7 +72,7 @@ import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
 import static org.radix.Radix.VERSION_STRING_KEY;
 
-public class VersionHandler implements GetHandler {
+public class VersionHandler implements GetJsonHandler {
 	private final JSONObject versionData;
 
 	@Inject

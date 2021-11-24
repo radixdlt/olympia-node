@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -64,30 +63,28 @@
 
 package com.radixdlt.api.util;
 
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt384;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
-import java.util.HashMap;
-import java.util.Map;
+public interface PrometheusGetHandler extends HttpHandler {
+	// 	https://prometheus.io/docs/instrumenting/exposition_formats/
+	String CONTENT_TYPE_TEXT_PLAIN_004 = "text/plain; version=0.0.4;charset=utf-8";
 
-public final class StakeUtils {
-	private StakeUtils() {
+	@Override
+	default void handleRequest(HttpServerExchange exchange) throws Exception {
+		if (exchange.isInIoThread()) {
+			exchange.dispatch(this);
+			return;
+		}
+
+		exchange.startBlocking();
+
+		var text = handleRequest();
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_TEXT_PLAIN_004);
+		exchange.setStatusCode(200);
+		exchange.getResponseSender().send(text);
 	}
 
-	public static Map<REAddr, UInt256> toAmountPerAddress(ValidatorStakeData curData, Map<REAddr, UInt384> ownershipData) {
-		var amounts = new HashMap<REAddr, UInt256>();
-		ownershipData.forEach((addr, amount) -> amounts.put(addr, toAmount(curData, amount)));
-		return amounts;
-	}
-
-	public static UInt256 toAmount(ValidatorStakeData curData, UInt384 amount) {
-		return toFullAmount(curData, amount).getLow();
-	}
-
-	public static UInt384 toFullAmount(ValidatorStakeData curData, UInt384 amount) {
-		return amount.multiply(curData.getTotalStake())
-			.divide(curData.getTotalOwnership());
-	}
+	String handleRequest();
 }
