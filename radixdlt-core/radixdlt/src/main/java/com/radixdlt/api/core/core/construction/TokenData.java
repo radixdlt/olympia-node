@@ -61,78 +61,66 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.core.core.construction.entities.TokenEntityIdentifier;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.UInt256;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.function.Supplier;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public final class TokenData implements DataObject {
+	private final UInt256 granularity;
+	private final boolean isMutable;
+	private final ECPublicKey owner;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
-	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+	private TokenData(UInt256 granularity, boolean isMutable, ECPublicKey owner) {
+		this.granularity = granularity;
+		this.isMutable = isMutable;
+		this.owner = owner;
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
+	public void bootUp(
+		TxBuilder builder,
+		EntityIdentifier entityIdentifier,
+		DataObject.RelatedOperationFetcher fetcher,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
+		if (!isMutable && owner != null) {
+			throw new InvalidTokenOwnerException("Cannot have owner on fixed supply token.");
+		}
 
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+		if (granularity != null && !granularity.equals(UInt256.ONE)) {
+			// TODO: Fix
+			throw new IllegalStateException();
+		}
+
+		if (!(entityIdentifier instanceof TokenEntityIdentifier)) {
+			throw new IllegalStateException();
+		}
+		var tokenAddr = ((TokenEntityIdentifier) entityIdentifier).getTokenAddr();
+		var tokenMetadata = fetcher.get(TokenMetadata.class);
+		var symbol = tokenMetadata.getSymbol();
+
+		builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8));
+		builder.downREAddr(tokenAddr);
+		var tokenResource = new TokenResource(tokenAddr, UInt256.ONE, isMutable, owner);
+		builder.up(tokenResource);
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
-
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	public static TokenData from(JsonObjectReader reader, JsonObjectReader metadataReader) throws InvalidParametersException {
+		var granularity = reader.getOptNonZeroAmount("granularity").orElse(null);
+		var isMutable = reader.getBoolean("is_mutable");
+		var owner = reader.getPubKey("owner");
+		return new TokenData(granularity, isMutable, owner);
 	}
 }

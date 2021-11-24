@@ -65,7 +65,7 @@ package com.radixdlt.api.core.system;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.api.core.system.health.HealthApiModule;
-import com.radixdlt.api.core.prometheus.PrometheusApiModule;
+import com.radixdlt.api.core.system.prometheus.PrometheusApiModule;
 import com.radixdlt.api.core.system.system.SystemEndpointsModule;
 import com.radixdlt.api.core.system.version.VersionApiModule;
 

@@ -61,78 +61,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.construction.entities;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.core.core.construction.EntityIdentifier;
+import com.radixdlt.api.core.core.construction.KeyQuery;
+import com.radixdlt.api.core.core.construction.ResourceIdentifier;
+import com.radixdlt.api.core.core.construction.ResourceQuery;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.UInt256;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public class TokenEntityIdentifier implements EntityIdentifier {
+	private final REAddr tokenAddr;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
+	private TokenEntityIdentifier(REAddr tokenAddr) {
+		this.tokenAddr = tokenAddr;
+	}
 
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
-	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+	public REAddr getTokenAddr() {
+		return tokenAddr;
+	}
+
+	public static TokenEntityIdentifier from(REAddr tokenAddr) {
+		return new TokenEntityIdentifier(tokenAddr);
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public Optional<REAddr> getAccountAddress() {
+		return Optional.empty();
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
+	@Override
+	public void bootUp(
+		TxBuilder txBuilder,
+		UInt256 amount,
+		ResourceIdentifier resourceIdentifier,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
+		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public List<KeyQuery> getKeyQueries() {
+		throw new UnsupportedOperationException();
 	}
 }

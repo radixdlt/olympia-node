@@ -61,78 +61,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.core.core.construction.entities.TokenEntityIdentifier;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+import java.util.function.Supplier;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public class TokenMetadata implements DataObject {
+	private final String symbol;
+	private final String name;
+	private final String description;
+	private final String url;
+	private final String iconUrl;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
+	private TokenMetadata(String symbol, String name, String description, String url, String iconUrl) {
+		this.symbol = symbol;
+		this.name = name;
+		this.description = description;
+		this.url = url;
+		this.iconUrl = iconUrl;
+	}
 
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
-	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+	public String getSymbol() {
+		return symbol;
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public void bootUp(
+		TxBuilder builder,
+		EntityIdentifier entityIdentifier,
+		DataObject.RelatedOperationFetcher fetcher,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
+		if (!(entityIdentifier instanceof TokenEntityIdentifier)) {
+			throw new IllegalStateException();
+		}
+		var tokenAddr = ((TokenEntityIdentifier) entityIdentifier).getTokenAddr();
+		builder.up(new TokenResourceMetadata(
+			tokenAddr,
+			symbol,
+			name,
+			description,
+			iconUrl,
+			url
+		));
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
+	public static TokenMetadata from(JsonObjectReader reader) throws InvalidParametersException {
+		var symbol = reader.getString("symbol");
+		var name = reader.getOptString("name").orElse("");
+		var description = reader.getOptString("description").orElse("");
+		var url = reader.getOptString("url").orElse("");
+		var iconUrl = reader.getOptString("iconUrl").orElse("");
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+		return new TokenMetadata(symbol, name, description, url, iconUrl);
 	}
 }

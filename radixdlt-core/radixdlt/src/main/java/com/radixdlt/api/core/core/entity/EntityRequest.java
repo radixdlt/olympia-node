@@ -61,78 +61,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.entity;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.core.core.construction.EntityIdentifier;
+import com.radixdlt.api.core.core.network.NetworkIdentifier;
+import com.radixdlt.networks.Network;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+public final class EntityRequest {
+	private final NetworkIdentifier networkIdentifier;
+	private final EntityIdentifier entityIdentifier;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
+	private EntityRequest(
+		NetworkIdentifier networkIdentifier,
+		EntityIdentifier entityIdentifier
 	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+		this.networkIdentifier = networkIdentifier;
+		this.entityIdentifier = entityIdentifier;
 	}
 
-	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public Network getNetwork() {
+		return networkIdentifier.getNetwork();
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
+	public EntityIdentifier getEntityIdentifier() {
+		return entityIdentifier;
 	}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	public static EntityRequest from(JsonObjectReader reader) throws InvalidParametersException {
+		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier::from);
+		var entityIdentifier = reader.getJsonObject("entity_identifier", EntityIdentifier::from);
+		return new EntityRequest(networkIdentifier, entityIdentifier);
 	}
 }

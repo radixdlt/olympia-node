@@ -61,78 +61,61 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
+import com.google.inject.Inject;
+import com.radixdlt.api.util.ApiHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import org.json.JSONObject;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+public class DeriveHandler implements ApiHandler<DeriveRequest> {
+	private final Network network;
+	private final Addressing addressing;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
+	@Inject
+	DeriveHandler(
+		@NetworkId int networkId,
+		Addressing addressing
 	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.addressing = addressing;
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public DeriveRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return DeriveRequest.from(requestReader);
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
+	@Override
+	public JSONObject handleRequest(DeriveRequest request) throws Exception {
+		if (!request.getNetwork().equals(this.network)) {
+			throw new IllegalStateException();
+		}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+		if (request.getEntityType() == DeriveRequest.EntityType.ACCOUNT) {
+			var reAddr = REAddr.ofPubKeyAccount(request.getPublicKey());
+			return new JSONObject()
+				.put("entity_identifier", new JSONObject()
+					.put("address", addressing.forAccounts().of(reAddr))
+				);
+		} else if (request.getEntityType() == DeriveRequest.EntityType.VALIDATOR) {
+			return new JSONObject()
+				.put("entity_identifier", new JSONObject()
+					.put("address", addressing.forValidators().of(request.getPublicKey()))
+				);
+		} else if (request.getEntityType() == DeriveRequest.EntityType.TOKEN) {
+			var reAddr = REAddr.ofHashedKey(request.getPublicKey(), request.getSymbol());
+			return new JSONObject()
+				.put("entity_identifier", new JSONObject()
+					.put("address", addressing.forResources().of(request.getSymbol(), reAddr))
+				);
+		} else {
+			throw new IllegalStateException();
+		}
 	}
 }

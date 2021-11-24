@@ -61,78 +61,80 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.construction.entities;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.core.core.construction.EntityIdentifier;
+import com.radixdlt.api.core.core.construction.KeyQuery;
+import com.radixdlt.api.core.core.construction.ResourceIdentifier;
+import com.radixdlt.api.core.core.construction.ResourceQuery;
+import com.radixdlt.api.core.core.construction.StakeOwnershipResourceIdentifier;
+import com.radixdlt.api.core.core.construction.TokenResourceIdentifier;
+import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.UInt256;
+import org.bouncycastle.util.Arrays;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static com.radixdlt.atom.SubstateTypeId.STAKE_OWNERSHIP;
+import static com.radixdlt.atom.SubstateTypeId.TOKENS;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
+public class AccountVaultEntityIdentifier implements EntityIdentifier {
+	private final REAddr accountAddress;
 
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
-	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+	private AccountVaultEntityIdentifier(REAddr accountAddress) {
+		this.accountAddress = accountAddress;
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public Optional<REAddr> getAccountAddress() {
+		return Optional.of(accountAddress);
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
+	@Override
+	public void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) {
+		final Particle substate;
+		if (resourceIdentifier instanceof TokenResourceIdentifier) {
+			var tokenResourceIdentifier = (TokenResourceIdentifier) resourceIdentifier;
+			var tokenAddress = tokenResourceIdentifier.getTokenAddress();
+			substate = new TokensInAccount(accountAddress, tokenAddress, amount);
+		} else if (resourceIdentifier instanceof StakeOwnershipResourceIdentifier) {
+			var stakeOwnershipResourceIdentifier = (StakeOwnershipResourceIdentifier) resourceIdentifier;
+			substate = new StakeOwnership(stakeOwnershipResourceIdentifier.getValidatorKey(), accountAddress, amount);
+		} else {
+			throw new IllegalStateException("Unknown resource identifier: " + resourceIdentifier);
+		}
+		txBuilder.up(substate);
 	}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+		var tokenIndex = SubstateIndex.<ResourceInBucket>create(
+			Arrays.concatenate(new byte[]{TOKENS.id(), 0}, accountAddress.getBytes()),
+			TokensInAccount.class
+		);
+		// Unfortunately we prefixed Stakeownership in the wrong order so we'll need to do a scan
+		var ownershipIndex = SubstateIndex.<ResourceInBucket>create(STAKE_OWNERSHIP.id(), StakeOwnership.class);
+		return List.of(
+			ResourceQuery.from(tokenIndex),
+			ResourceQuery.from(ownershipIndex, b -> b.bucket().getOwner().equals(accountAddress))
+		);
+	}
+
+	@Override
+	public List<KeyQuery> getKeyQueries() {
+		return List.of();
+	}
+
+	public static AccountVaultEntityIdentifier from(REAddr address) {
+		return new AccountVaultEntityIdentifier(address);
 	}
 }

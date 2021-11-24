@@ -61,78 +61,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public class Operation {
+	private final EntityIdentifier entityIdentifier;
+	private final ResourceAmount amount;
+	private final DataUpdate dataUpdate;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
+	private Operation(
+		EntityIdentifier entityIdentifier,
+		ResourceAmount amount,
+		DataUpdate dataUpdate
 	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+		this.entityIdentifier = entityIdentifier;
+		this.amount = amount;
+		this.dataUpdate = dataUpdate;
 	}
 
-	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public EntityIdentifier getEntityIdentifier() {
+		return entityIdentifier;
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
+	public Optional<ResourceAmount> getAmount() {
+		return Optional.ofNullable(amount);
 	}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	public Optional<DataUpdate> getDataUpdate() {
+		return Optional.ofNullable(dataUpdate);
+	}
+
+	public static Operation from(JsonObjectReader reader) throws InvalidParametersException {
+		var entityIdentifier = reader.getJsonObject("entity_identifier", EntityIdentifier::from);
+		var amount = reader.getOptJsonObject("amount", ResourceAmount::from).orElse(null);
+		var data = reader.getOptJsonObject("data", DataUpdate::from).orElse(null);
+		return new Operation(entityIdentifier, amount, data);
 	}
 }

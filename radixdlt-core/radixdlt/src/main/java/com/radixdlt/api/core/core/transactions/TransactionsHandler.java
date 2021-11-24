@@ -61,78 +61,83 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.transactions;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.util.ApiHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.core.core.network.NetworkIdentifier;
+import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+class TransactionsHandler implements ApiHandler<TransactionsRequest> {
+	private final Network network;
+	private final BerkeleyTransactionsByIdStore txnStore;
+	private final BerkeleyTransactionIndexStore store;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
+	@Inject
+	TransactionsHandler(
+		@NetworkId int networkId,
+		BerkeleyTransactionIndexStore store,
+		BerkeleyTransactionsByIdStore txnStore
 	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.store = store;
+		this.txnStore = txnStore;
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public TransactionsRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		var limit = requestReader.getOptUnsignedLong("limit").orElse(1);
+		var stateIdentifier = requestReader.getJsonObject("state_identifier", PartialStateIdentifier::from);
+		var networkIdentifier = requestReader.getJsonObject("network_identifier", NetworkIdentifier::from);
+		return new TransactionsRequest(networkIdentifier, stateIdentifier, limit);
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
+	@Override
+	public JSONObject handleRequest(TransactionsRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network)) {
+			throw new IllegalStateException();
+		}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+		var stateIdentifier = request.getStateIdentifier();
+		var previousStateVersion = stateIdentifier.getStateVersion() - 1;
+		final JSONObject committedStateIdentifier;
+		if (previousStateVersion >= 0) {
+			try (var stream = store.get(previousStateVersion)) {
+				var prevTxnJson = stream.findFirst().flatMap(txnStore::getTransactionJSON).orElseThrow();
+				committedStateIdentifier = prevTxnJson.getJSONObject("committed_state_identifier");
+			}
+		} else {
+			committedStateIdentifier = new JSONObject()
+				.put("state_version", 0)
+				.put("transaction_accumulator", Bytes.toHexString(HashUtils.zero256().asBytes()));
+		}
+		var matchesInput = request.getStateIdentifier().getTransactionAccumulator()
+			.map(Bytes::toHexString)
+			.map(h -> committedStateIdentifier.getString("transaction_accumulator").equals(h))
+			.orElse(true);
+		if (!matchesInput) {
+			throw new IllegalStateException();
+		}
+
+		var transactions = new JSONArray();
+		try (var stream = store.get(stateIdentifier.getStateVersion())) {
+			stream.limit(request.getLimit())
+				.map(txnId -> txnStore.getTransactionJSON(txnId).orElseThrow())
+				.forEach(transactions::put);
+		}
+
+		return jsonObject()
+			.put("state_identifier", committedStateIdentifier)
+			.put("transactions", transactions);
 	}
 }

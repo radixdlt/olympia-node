@@ -61,78 +61,83 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.google.common.base.Throwables;
+import com.google.inject.Inject;
+import com.radixdlt.api.util.ApiHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
+import com.radixdlt.api.gateway.transaction.StateConflictException;
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import org.json.JSONObject;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public class SubmitTransactionHandler implements ApiHandler<SubmitTransactionRequest> {
+	private final Network network;
+	private final EventDispatcher<MempoolAdd> dispatcher;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
+	@Inject
+	SubmitTransactionHandler(
+		@NetworkId int networkId,
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
 	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.dispatcher = mempoolAddEventDispatcher;
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public SubmitTransactionRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return SubmitTransactionRequest.from(requestReader);
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
+	@Override
+	public JSONObject handleRequest(SubmitTransactionRequest request) throws Exception {
+		if (!request.getNetwork().equals(this.network)) {
+			throw new IllegalStateException();
+		}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+		var txn = request.getTxn();
+		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
+		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
+
+		dispatcher.dispatch(mempoolAdd);
+		try {
+			// We need to block here as we need to complete the request in the same thread
+			var success = completableFuture.get();
+			return new JSONObject()
+				.put("transactionIdentifier", new JSONObject().put("hash", success.getTxn().getId()))
+				.put("duplicate", false);
+		} catch (ExecutionException e) {
+			if (e.getCause() instanceof MempoolDuplicateException) {
+				return new JSONObject()
+					.put("transactionIdentifier", new JSONObject().put("hash", txn.getId()))
+					.put("duplicate", true);
+			}
+
+			if (e.getCause() instanceof MempoolRejectedException) {
+				var ex = (MempoolRejectedException) e.getCause();
+				var reException = (RadixEngineException) ex.getCause();
+
+				var cause = Throwables.getRootCause(reException);
+				if (cause instanceof SubstateNotFoundException) {
+					throw new StateConflictException(reException);
+				}
+
+				throw new InvalidTransactionException(reException);
+			}
+			throw e;
+		}
 	}
 }

@@ -61,78 +61,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.construction.entities;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.core.core.construction.EntityIdentifier;
+import com.radixdlt.api.core.core.construction.InvalidResourceIdentifierException;
+import com.radixdlt.api.core.core.construction.KeyQuery;
+import com.radixdlt.api.core.core.construction.ResourceIdentifier;
+import com.radixdlt.api.core.core.construction.ResourceQuery;
+import com.radixdlt.api.core.core.construction.StakeOwnershipResourceIdentifier;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.UInt256;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static com.radixdlt.atom.SubstateTypeId.PREPARED_UNSTAKE;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
+public class PreparedUnstakeVaultEntityIdentifier implements EntityIdentifier {
+	private final REAddr accountAddress;
+	private final ECPublicKey validatorKey;
 
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
-	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+	PreparedUnstakeVaultEntityIdentifier(REAddr accountAddress, ECPublicKey validatorKey) {
+		this.accountAddress = accountAddress;
+		this.validatorKey = validatorKey;
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public Optional<REAddr> getAccountAddress() {
+		return Optional.of(accountAddress);
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
+	@Override
+	public void bootUp(
+		TxBuilder txBuilder,
+		UInt256 amount,
+		ResourceIdentifier resourceIdentifier,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
+		if (!(resourceIdentifier instanceof StakeOwnershipResourceIdentifier)) {
+			throw new InvalidResourceIdentifierException("Can only store validator ownership in prepared_unstake address");
+		}
+		var stakeOwnershipResourceIdentifier = (StakeOwnershipResourceIdentifier) resourceIdentifier;
+		var stakeOwnershipKey = stakeOwnershipResourceIdentifier.getValidatorKey();
+		var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount);
+		txBuilder.up(substate);
 	}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+
+		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
+		buf.put(PREPARED_UNSTAKE.id());
+		buf.put((byte) 0); // Reserved byte
+		buf.put(validatorKey.getCompressedBytes());
+		buf.put(accountAddress.getBytes());
+		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), PreparedUnstakeOwnership.class);
+		return List.of(ResourceQuery.from(index));
+	}
+
+	@Override
+	public List<KeyQuery> getKeyQueries() {
+		return List.of();
+	}
+
+	public static PreparedUnstakeVaultEntityIdentifier from(
+		REAddr accountAddress,
+		JsonObjectReader metadataReader
+	) throws InvalidParametersException {
+		var validatorKey = metadataReader.getValidatorAddress("validator");
+		return new PreparedUnstakeVaultEntityIdentifier(accountAddress, validatorKey);
 	}
 }

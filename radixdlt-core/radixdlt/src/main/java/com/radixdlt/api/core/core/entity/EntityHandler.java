@@ -61,78 +61,127 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.entity;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
+import com.google.inject.Inject;
+import com.radixdlt.api.util.ApiHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.core.core.construction.KeyQuery;
+import com.radixdlt.api.core.core.construction.ResourceQuery;
+import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
+import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
 import java.util.List;
-import java.util.Map;
+import java.util.function.Function;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public class EntityHandler implements ApiHandler<EntityRequest> {
+	private final Network network;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final Addressing addressing;
+	private final ProcessedTxnJsonConverter converter;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
+	@Inject
+	EntityHandler(
+		@NetworkId int networkId,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
+		ProcessedTxnJsonConverter converter,
+		Addressing addressing
 	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.radixEngine = radixEngine;
+		this.converter = converter;
+		this.addressing = addressing;
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public Addressing addressing() {
+		return addressing;
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
+	@Override
+	public EntityRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return EntityRequest.from(requestReader);
+	}
+
+	private JSONObject bucketToResourceJson(Bucket bucket, Function<REAddr, String> addressToRri) {
+		if (bucket.resourceAddr() != null) {
+			return new JSONObject()
+				.put("type", "Token")
+				.put("rri", addressToRri.apply(bucket.resourceAddr())
+			);
+		}
+
+		return new JSONObject()
+			.put("type", "StakeOwnership")
+			.put("validator", addressing.forValidators().of(bucket.getValidatorKey()));
+	}
+
+	private JSONArray getBalances(
+		List<ResourceQuery> resourceQueries,
+		Function<REAddr, String> addressToRri
 	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
+		var balances = new JSONArray();
+		for (var resourceQuery : resourceQueries) {
+			var index = resourceQuery.getIndex();
+			var bucketPredicate = resourceQuery.getPredicate();
+			radixEngine.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
+				.forEach((bucket, amount) -> {
+					var json = new JSONObject()
+						.put("resource_identifier", bucketToResourceJson(bucket, addressToRri))
+						.put("value", amount.toString());
+					balances.put(json);
+				});
+		}
+		return balances;
 	}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	private JSONArray getObjects(
+		List<KeyQuery> keyQueries
+	) {
+		var objects = new JSONArray();
+		for (var keyQuery : keyQueries) {
+			var substate = radixEngine.get(keyQuery.getKey()).or(keyQuery.getVirtualSubstate());
+			substate.map(s -> converter.getDataObject(keyQuery.getTypeId(), s)).ifPresent(objects::put);
+		}
+		return objects;
+	}
+
+	@Override
+	public JSONObject handleRequest(EntityRequest request) throws Exception {
+		if (!request.getNetwork().equals(this.network)) {
+			throw new IllegalStateException();
+		}
+
+		Function<REAddr, String> addressToRri = addr -> {
+			var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+			var substate = radixEngine.get(mapKey).orElseThrow();
+			var tokenResource = (TokenResourceMetadata) substate;
+			return addressing.forResources().of(tokenResource.getSymbol(), addr);
+		};
+
+		var entityIdentifier = request.getEntityIdentifier();
+		// TODO: need to fetch these in a single database transaction and retrieve version as well
+		var balances = getBalances(
+			entityIdentifier.getResourceQueries(),
+			addressToRri
+		);
+		var objects = getObjects(entityIdentifier.getKeyQueries());
+
+		return new JSONObject()
+			.put("balances", balances)
+			.put("data_objects", objects);
 	}
 }

@@ -61,78 +61,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+import java.util.function.Supplier;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
-	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+public interface DataObject {
+	interface RelatedOperationFetcher {
+		<T extends DataObject> T get(Class<T> dataObjectClass);
 	}
 
-	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
+	void bootUp(
+		TxBuilder builder,
+		EntityIdentifier entityIdentifier,
+		RelatedOperationFetcher fetcher,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException;
 
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
-	}
-
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
-
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	static DataObject from(JsonObjectReader reader, JsonObjectReader metadataReader) throws InvalidParametersException {
+		var type = reader.getString("type");
+		switch (type) {
+			case "TokenData":
+				return TokenData.from(reader, metadataReader);
+			case "TokenMetadata":
+				return TokenMetadata.from(reader);
+			case "PreparedValidatorRegistered":
+				return PreparedValidatorRegistered.from(reader);
+			case "PreparedValidatorOwner":
+				return PreparedValidatorOwner.from(reader);
+			case "PreparedValidatorFee":
+				return PreparedValidatorFee.from(reader);
+			case "ValidatorMetadata":
+				return ValidatorMetadata.from(reader);
+			case "ValidatorAllowDelegation":
+				return ValidatorAllowDelegation.from(reader);
+			case "ValidatorSystemMetadata":
+				return ValidatorSystemMetadata.from(reader);
+			default:
+				throw new InvalidParametersException("/type", "Unknown type " + type);
+		}
 	}
 }

@@ -61,78 +61,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.sign;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.radixdlt.api.util.ApiHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONObject;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+public class SignHandler implements ApiHandler<SignRequest> {
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+	private final ECPublicKey self;
+	private final HashSigner hashSigner;
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
+	@Inject
+	SignHandler(
+		@Self ECPublicKey self,
+		@LocalSigner HashSigner hashSigner,
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider
 	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+		this.self = self;
+		this.hashSigner = hashSigner;
+		this.radixEngineProvider = radixEngineProvider;
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public SignRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return SignRequest.from(requestReader);
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
+	@Override
+	public JSONObject handleRequest(SignRequest signRequest) throws Exception {
+		if (!self.equals(signRequest.getPublicKey())) {
+			throw new IllegalStateException();
+		}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+		// Verify this is a valid transaction and not anything more malicious
+		radixEngineProvider.get().getParser().parse(Txn.create(signRequest.getUnsignedTransaction()));
+
+		var builder = TxLowLevelBuilder.newBuilder(signRequest.getUnsignedTransaction());
+		var hash = builder.hashToSign();
+		var signature = this.hashSigner.sign(hash);
+		var signedTransaction = builder.sig(signature).blob();
+
+		return new JSONObject().put("signed_transaction", Bytes.toHexString(signedTransaction));
 	}
 }

@@ -61,78 +61,53 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.network;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.util.ApiHandler;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.middleware2.InfoSupplier;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import org.json.JSONObject;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
+import static org.radix.Radix.SYSTEM_VERSION_KEY;
+import static org.radix.Radix.VERSION_STRING_KEY;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+class NetworkConfigurationHandler implements ApiHandler<Void> {
+	private final Network network;
+	private final InfoSupplier infoSupplier;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
+	@Inject
+	NetworkConfigurationHandler(
+		@NetworkId int networkId,
+		InfoSupplier infoSupplier
 	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.infoSupplier = infoSupplier;
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public Void parseRequest(JsonObjectReader reader) {
+		return null;
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
-
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	@Override
+	public JSONObject handleRequest(Void request) {
+		return jsonObject()
+			.put("version", new JSONObject()
+				.put("core_version", infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY))
+				.put("api_version", "0.9.0")
+			)
+			.put("network_identifier", new JSONObject()
+				.put("network", network.name().toLowerCase())
+			)
+			.put("bech32_human_readable_parts", new JSONObject()
+				.put("account_hrp", network.getAccountHrp())
+				.put("validator_hrp", network.getValidatorHrp())
+				.put("node_hrp", network.getNodeHrp())
+				.put("resource_hrp_suffix", network.getResourceHrpSuffix())
+			);
 	}
 }

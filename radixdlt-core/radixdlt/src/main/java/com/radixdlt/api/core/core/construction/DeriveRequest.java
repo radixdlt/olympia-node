@@ -61,78 +61,80 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.core.core.network.NetworkIdentifier;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.networks.Network;
+import com.radixdlt.utils.Pair;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+import java.util.Arrays;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public class DeriveRequest {
+	enum EntityType {
+		ACCOUNT("Account"), VALIDATOR("Validator"), TOKEN("Token");
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
+		private final String name;
+		EntityType(String name) {
+			this.name = name;
+		}
 
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
+		static EntityType from(String type) {
+			return Arrays.stream(EntityType.values())
+				.filter(e -> e.name.equals(type))
+				.findFirst()
+				.orElseThrow();
+		}
+	}
+
+	private final NetworkIdentifier networkIdentifier;
+	private final ECPublicKey publicKey;
+	private final EntityType entityType;
+	private final String symbol;
+
+	private DeriveRequest(
+		NetworkIdentifier networkIdentifier,
+		ECPublicKey publicKey,
+		EntityType entityType,
+		String symbol
 	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+		this.networkIdentifier = networkIdentifier;
+		this.publicKey = publicKey;
+		this.entityType = entityType;
+		this.symbol = symbol;
 	}
 
-	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public Network getNetwork() {
+		return networkIdentifier.getNetwork();
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
+	public ECPublicKey getPublicKey() {
+		return publicKey;
 	}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+	public EntityType getEntityType() {
+		return entityType;
+	}
+
+	public String getSymbol() {
+		return symbol;
+	}
+
+	public static DeriveRequest from(JsonObjectReader reader) throws InvalidParametersException {
+		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier::from);
+		var publicKey = reader.getJsonObject("public_key", r -> r.getPubKey("hex"));
+		var typeAndSymbol = reader.<Pair<EntityType, String>>getJsonObject("metadata", r -> {
+			var typeString = r.getString("type");
+			var type = EntityType.from(typeString);
+			if (type != EntityType.TOKEN) {
+				return Pair.of(type, null);
+			} else {
+				return Pair.of(type, r.getString("symbol"));
+			}
+		});
+
+		return new DeriveRequest(networkIdentifier, publicKey, typeAndSymbol.getFirst(), typeAndSymbol.getSecond());
 	}
 }

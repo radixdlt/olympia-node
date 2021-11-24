@@ -61,78 +61,111 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.transactions;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.google.common.collect.Streams;
+import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.Longs;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.Get;
+import com.sleepycat.je.OperationStatus;
+import com.sleepycat.je.Transaction;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
+import static com.sleepycat.je.LockMode.DEFAULT;
+import static com.sleepycat.je.OperationStatus.SUCCESS;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
+public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalStore {
+	private static final String TRANSACTIONS_DB = "radix.versioned_transactions";
+	private Database transactions;
 
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
-	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+	@Override
+	public void open(DatabaseEnvironment dbEnv) {
+		var env = dbEnv.getEnvironment();
+		transactions = env.openDatabase(null, TRANSACTIONS_DB, new DatabaseConfig()
+			.setAllowCreate(true)
+			.setTransactional(true)
+			.setKeyPrefixing(true)
+			.setBtreeComparator(lexicographicalComparator())
+		);
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public void close() {
+		if (transactions != null) {
+			transactions.close();
+		}
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
+	public long getCount() {
+		try (var cursor = transactions.openCursor(null, null)) {
+			final DatabaseEntry key = new DatabaseEntry();
+			var result = cursor.getLast(key, null, null);
+			return result == SUCCESS ? Longs.fromByteArray(key.getData()) : 0;
+		}
+	}
+
+	public Stream<AID> get(long stateVersion) {
+		var cursor = transactions.openCursor(null, null);
+		var iterator = new Iterator<AID>() {
+			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion));
+			final DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
+
+			@Override
+			public boolean hasNext() {
+				return status == SUCCESS;
+			}
+
+			@Override
+			public AID next() {
+				if (status != SUCCESS) {
+					throw new NoSuchElementException();
+				}
+				var next = AID.from(value.getData());
+				status = cursor.getNext(key, value, null);
+				return next;
+			}
+		};
+		return Streams.stream(iterator).onClose(cursor::close);
+	}
+
+	@Override
+	public void process(
+		Transaction dbTxn,
+		REProcessedTxn txn,
+		long stateVersion,
+		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
 	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
+		final long nextIndex;
+		try (var cursor = transactions.openCursor(dbTxn, null)) {
+			var key = new DatabaseEntry();
+			var status = cursor.getLast(key, null, DEFAULT);
+			if (status == OperationStatus.NOTFOUND) {
+				nextIndex = 0;
+			} else {
+				nextIndex = Longs.fromByteArray(key.getData()) + 1;
+			}
+		}
+		if (stateVersion != nextIndex + 1) {
+			throw new IllegalStateException("Expected stateVersion " + (nextIndex + 1) + " but is " + stateVersion);
+		}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+		var key = new DatabaseEntry(Longs.toByteArray(nextIndex));
+		var value = new DatabaseEntry(txn.getTxnId().getBytes());
+		transactions.putNoOverwrite(dbTxn, key, value);
 	}
 }

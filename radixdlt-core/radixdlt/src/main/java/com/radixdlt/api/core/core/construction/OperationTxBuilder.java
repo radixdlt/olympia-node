@@ -61,78 +61,107 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.construction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.google.common.base.Suppliers;
+import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.UInt256;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import java.math.BigInteger;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
+import java.util.function.Supplier;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
+	private final BuildTransactionRequest request;
+	private final Forks forks;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
+	private OperationTxBuilder(BuildTransactionRequest request, Forks forks) {
+		this.request = request;
+		this.forks = forks;
+	}
 
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
-	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+	public static OperationTxBuilder from(BuildTransactionRequest request, Forks forks) {
+		return new OperationTxBuilder(request, forks);
+	}
+
+	private void execute(
+		Operation operation,
+		List<Operation> relatedOperations,
+		TxBuilder txBuilder,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
+		var amountMaybe = operation.getAmount();
+		if (amountMaybe.isPresent()) {
+			var amount = amountMaybe.get();
+			var entityIdentifier = operation.getEntityIdentifier();
+			var resourceIdentifier = amount.getResourceIdentifier();
+			var compare = amount.getValue().compareTo(BigInteger.ZERO);
+			if (compare > 0) {
+				var actionAmount = UInt256.from(amount.getValue().toString());
+				entityIdentifier.bootUp(txBuilder, actionAmount, resourceIdentifier, config);
+			} else if (compare < 0) {
+				var accountAddress = entityIdentifier.getAccountAddress()
+					.orElseThrow(() -> new InvalidAddressIdentifierException("Spending resources can only occur from account addresses."));
+				var actionAmount = UInt256.from(amount.getValue().toString().substring(1));
+				var retrieval = resourceIdentifier.substateRetrieval(accountAddress);
+				var change = txBuilder.downFungible(
+					retrieval.getFirst(),
+					retrieval.getSecond(),
+					actionAmount
+				);
+				if (!change.isZero()) {
+					entityIdentifier.bootUp(txBuilder, change, resourceIdentifier, config);
+				}
+			}
+		}
+
+		var dataUpdateMaybe = operation.getDataUpdate();
+		if (dataUpdateMaybe.isPresent()) {
+			var dataUpdate = dataUpdateMaybe.get();
+			var fetcher = new DataObject.RelatedOperationFetcher() {
+				@Override
+				public <T extends DataObject> T get(Class<T> dataObjectClass) {
+					return relatedOperations.stream()
+						.map(o -> o.getDataUpdate().map(DataUpdate::getDataObject).orElse(null))
+						.filter(Objects::nonNull)
+						.filter(dataObjectClass::isInstance)
+						.map(dataObjectClass::cast)
+						.findFirst()
+						.orElseThrow();
+				}
+			};
+			dataUpdate.getDataObject().bootUp(
+				txBuilder,
+				operation.getEntityIdentifier(),
+				fetcher,
+				config
+			);
+		}
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
+	public void execute(TxBuilder txBuilder) throws TxBuilderException {
+		var configSupplier = Suppliers.memoize(() -> {
+			var epochData = txBuilder.findSystem(EpochData.class);
+			return forks.get(epochData.getEpoch()).getConfig();
+		});
 
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
-	}
+		for (var operationGroup : request.getOperationGroups()) {
+			for (var operation : operationGroup.getOperations()) {
+				execute(operation, operationGroup.getOperations(), txBuilder, configSupplier);
+			}
+			txBuilder.end();
+		}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
-
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+		var msg = request.getMessage();
+		if (msg.isPresent()) {
+			txBuilder.message(msg.get());
+		}
 	}
 }

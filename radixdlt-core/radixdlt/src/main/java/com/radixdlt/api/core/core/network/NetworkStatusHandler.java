@@ -61,78 +61,95 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.core.network;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.system.SystemApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.api.util.Controller;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.Runners;
+import com.google.inject.Inject;
+import com.radixdlt.api.util.ApiHandler;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.networks.Addressing;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONObject;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.List;
-import java.util.Map;
+import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+final class NetworkStatusHandler implements ApiHandler<NetworkIdentifier> {
+	private final Network network;
+	private final REAddr accountAddress;
+	private final ECPublicKey validatorKey;
+	private final InMemorySystemInfo inMemorySystemInfo;
+	private final AccumulatorState genesisAccumulatorState;
+	private final Addressing addressing;
 
-/**
- * Configures the api including http server setup
- */
-public final class CoreServerModule extends AbstractModule {
-	private final int port;
-	private final String bindAddress;
-	private final boolean transactionsEnable;
-
-	public CoreServerModule(
-		int port,
-		String bindAddress,
-		boolean transactionsEnable
+	@Inject
+	NetworkStatusHandler(
+		@NetworkId int networkId,
+		@Self REAddr accountAddress,
+		@Self ECPublicKey validatorKey,
+		InMemorySystemInfo inMemorySystemInfo,
+		@Genesis Txn genesisTxn,
+		LedgerAccumulator ledgerAccumulator,
+		Addressing addressing
 	) {
-		this.port = port;
-		this.bindAddress = bindAddress;
-		this.transactionsEnable = transactionsEnable;
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.accountAddress = accountAddress;
+		this.validatorKey = validatorKey;
+		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
+			new AccumulatorState(0, HashUtils.zero256()), genesisTxn.getId().asHashCode()
+		);
+		this.addressing = addressing;
 	}
 
 	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, Controller.class, NodeServer.class);
-		MapBinder.newMapBinder(binder(), String.class, HttpHandler.class, NodeServer.class);
-
-		install(new SystemApiModule(NodeServer.class));
-		install(new CoreApiModule(NodeServer.class, transactionsEnable));
+	public NetworkIdentifier parseRequest(JsonObjectReader reader) throws InvalidParametersException {
+		return reader.getJsonObject("network_identifier", NetworkIdentifier::from);
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey(Runners.NODE_API)
-	@Singleton
-	public ModuleRunner nodeHttpServer(
-		@NodeServer Map<String, Controller> controllers,
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(controllers, handlers, List.of(), port, bindAddress, "node", addressing, counters);
-	}
+	@Override
+	public JSONObject handleRequest(NetworkIdentifier request) {
+		if (!request.getNetwork().equals(this.network)) {
+			throw new IllegalStateException();
+		}
 
-	/**
-	 * Marks elements which run on Node server
-	 */
-	@Qualifier
-	@Target({ FIELD, PARAMETER, METHOD })
-	@Retention(RUNTIME)
-	private @interface NodeServer {
+		var currentProof = inMemorySystemInfo.getCurrentProof();
+		return jsonObject()
+			.put("pre_genesis_state_identifier", new JSONObject()
+				.put("state_version", 0)
+				.put("transaction_accumulator", Bytes.toHexString(HashUtils.zero256().asBytes()))
+			)
+			.put("genesis_state_identifier", new JSONObject()
+				.put("state_version", genesisAccumulatorState.getStateVersion())
+				.put("transaction_accumulator", Bytes.toHexString(genesisAccumulatorState.getAccumulatorHash().asBytes()))
+			)
+			.put("current_state_identifier", new JSONObject()
+				.put("state_version", currentProof.getStateVersion())
+				.put("transaction_accumulator", Bytes.toHexString(currentProof.getAccumulatorState().getAccumulatorHash().asBytes()))
+			)
+			.put("current_state_epoch", currentProof.getEpoch())
+			.put("current_state_round", currentProof.getView().number())
+			.put("current_state_timestamp", currentProof.timestamp())
+			.put("node_identifiers", new JSONObject()
+				.put("account_entity_identifier", new JSONObject()
+					.put("address", addressing.forAccounts().of(accountAddress))
+				)
+				.put("validator_entity_identifier", new JSONObject()
+					.put("address", addressing.forValidators().of(validatorKey))
+				)
+				.put("public_key", new JSONObject()
+					.put("hex", validatorKey.toHex())
+				)
+			);
 	}
 }
