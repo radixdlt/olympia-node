@@ -1041,6 +1041,7 @@ x-tagGroups:
     tags:
       - network
       - entity
+      - mempool
       - transactions
   - name: Construction API
     tags:
