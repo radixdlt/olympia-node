@@ -64,7 +64,6 @@
 package com.radixdlt.api.core.metrics;
 
 import com.radixdlt.api.service.NetworkingService;
-import com.radixdlt.api.service.SystemConfigService;
 import com.radixdlt.api.Endpoints;
 import com.radixdlt.api.service.network.NetworkInfoService;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -126,7 +125,6 @@ public class MetricsService {
 
 	private final SystemCounters systemCounters;
 	private final InfoSupplier infoSupplier;
-	private final SystemConfigService systemConfigService;
 	private final NetworkingService networkingService;
 	private final NetworkInfoService networkInfoService;
 	private final Addressing addressing;
@@ -139,7 +137,6 @@ public class MetricsService {
 		@Endpoints Map<String, Boolean> endpointStatuses,
 		SystemCounters systemCounters,
 		InfoSupplier infoSupplier,
-		SystemConfigService systemConfigService,
 		NetworkingService networkingService,
 		NetworkInfoService networkInfoService,
 		InMemorySystemInfo inMemorySystemInfo,
@@ -149,7 +146,6 @@ public class MetricsService {
 		this.endpointStatuses = endpointStatuses;
 		this.systemCounters = systemCounters;
 		this.infoSupplier = infoSupplier;
-		this.systemConfigService = systemConfigService;
 		this.networkingService = networkingService;
 		this.networkInfoService = networkInfoService;
 		this.inMemorySystemInfo = inMemorySystemInfo;
@@ -236,7 +232,7 @@ public class MetricsService {
 	}
 
 	private void addAccumulatorState(StringBuilder builder) {
-		var accumulatorState = systemConfigService.accumulatorState();
+		var accumulatorState = inMemorySystemInfo.getCurrentProof().getAccumulatorState();
 
 		appendField(
 			builder,

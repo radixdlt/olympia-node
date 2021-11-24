@@ -64,12 +64,8 @@
 
 package com.radixdlt.api.service;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import com.radixdlt.api.util.CountersJsonFormatter;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeersView;
@@ -80,34 +76,13 @@ import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.List;
-
 import static com.radixdlt.api.util.JsonRpcUtil.jsonObject;
 import static com.radixdlt.api.util.JsonRpcUtil.jsonArray;
 import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
 
 public final class NetworkingService {
-	@VisibleForTesting
-	static final List<CounterType> NETWORKING_COUNTERS = List.of(
-		CounterType.MESSAGES_INBOUND_RECEIVED,
-		CounterType.MESSAGES_INBOUND_PROCESSED,
-		CounterType.MESSAGES_INBOUND_DISCARDED,
-		CounterType.MESSAGES_OUTBOUND_ABORTED,
-		CounterType.MESSAGES_OUTBOUND_PENDING,
-		CounterType.MESSAGES_OUTBOUND_PROCESSED,
-		CounterType.MESSAGES_OUTBOUND_SENT,
-		CounterType.NETWORKING_UDP_DROPPED_MESSAGES,
-		CounterType.NETWORKING_TCP_DROPPED_MESSAGES,
-		CounterType.NETWORKING_TCP_IN_OPENED,
-		CounterType.NETWORKING_TCP_OUT_OPENED,
-		CounterType.NETWORKING_TCP_CLOSED,
-		CounterType.NETWORKING_SENT_BYTES,
-		CounterType.NETWORKING_RECEIVED_BYTES
-	);
-
 	private final JSONObject configuration;
 
-	private final SystemCounters systemCounters;
 	private final PeersView peersView;
 	private final AddressBook addressBook;
 	private final Addressing addressing;
@@ -115,13 +90,11 @@ public final class NetworkingService {
 	@Inject
 	public NetworkingService(
 		@Self ECPublicKey self,
-		SystemCounters systemCounters,
 		PeersView peersView,
 		AddressBook addressBook,
 		P2PConfig p2PConfig,
 		Addressing addressing
 	) {
-		this.systemCounters = systemCounters;
 		this.peersView = peersView;
 		this.addressBook = addressBook;
 		this.addressing = addressing;
@@ -147,10 +120,6 @@ public final class NetworkingService {
 		final var entriesArray = jsonArray();
 		addressBook.knownPeers().values().forEach(v -> entriesArray.put(addressBookEntryToJson(v)));
 		return entriesArray;
-	}
-
-	public JSONObject getData() {
-		return CountersJsonFormatter.countersToJson(systemCounters, NETWORKING_COUNTERS, false);
 	}
 
 	public long getPeersCount() {

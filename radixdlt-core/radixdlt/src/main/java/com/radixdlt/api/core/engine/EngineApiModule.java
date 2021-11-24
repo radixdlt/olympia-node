@@ -83,5 +83,6 @@ public class EngineApiModule extends AbstractModule {
 	protected void configure() {
 		var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType);
 		binder.addBinding(HandlerRoute.post(path + "/configuration")).to(EngineConfigurationHandler.class);
+		binder.addBinding(HandlerRoute.post(path + "/state")).to(EngineStateHandler.class);
 	}
 }

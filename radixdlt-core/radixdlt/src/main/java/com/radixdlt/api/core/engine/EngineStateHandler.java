@@ -61,84 +61,64 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.system;
-
-import com.radixdlt.api.service.NetworkingService;
-import com.radixdlt.api.service.SystemConfigService;
-import org.json.JSONObject;
+package com.radixdlt.api.core.engine;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.util.ApiHandler;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONObject;
 
-import static com.radixdlt.api.util.JsonRpcUtil.successResponse;
-import static com.radixdlt.api.util.JsonRpcUtil.wrapArray;
+import static com.radixdlt.api.util.JsonRpcUtil.fromCollection;
 
-public class SystemHandler {
-	private final SystemConfigService systemConfigService;
-	private final NetworkingService networkingService;
+
+public class EngineStateHandler implements ApiHandler<Void> {
+	private final Addressing addressing;
+	private final VerifiedTxnsAndProof genesis;
+	private final InMemorySystemInfo inMemorySystemInfo;
 
 	@Inject
-	public SystemHandler(SystemConfigService systemConfigService, NetworkingService networkingService) {
-		this.systemConfigService = systemConfigService;
-		this.networkingService = networkingService;
+	public EngineStateHandler(
+		@Genesis VerifiedTxnsAndProof genesis,
+		InMemorySystemInfo inMemorySystemInfo,
+		Addressing addressing
+	) {
+		this.genesis = genesis;
+		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.addressing = addressing;
 	}
 
-	public JSONObject apiGetData(JSONObject request) {
-		return successResponse(request, systemConfigService.getApiData());
+	@Override
+	public Void parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return null;
 	}
 
-	public JSONObject bftGetConfiguration(JSONObject request) {
-		return successResponse(request, systemConfigService.getBftConfiguration());
+	@Override
+	public JSONObject handleRequest(Void request) throws Exception {
+		return new JSONObject()
+			.put("proof", getLatestProof())
+			.put("epoch_proof", getLatestEpochProof())
+			.put("checkpoints", getCheckpoints());
 	}
 
-	public JSONObject bftGetData(JSONObject request) {
-		return successResponse(request, systemConfigService.getBftData());
+	public JSONObject getLatestProof() {
+		var proof = inMemorySystemInfo.getCurrentProof();
+		return proof == null ? new JSONObject() : proof.asJSON(addressing);
 	}
 
-	public JSONObject mempoolGetConfiguration(JSONObject request) {
-		return successResponse(request, systemConfigService.getMempoolConfiguration());
+	public JSONObject getLatestEpochProof() {
+		var proof = inMemorySystemInfo.getEpochProof();
+		return proof == null ? new JSONObject() : proof.asJSON(addressing);
 	}
 
-	public JSONObject mempoolGetData(JSONObject request) {
-		return successResponse(request, systemConfigService.getMempoolData());
-	}
-
-	public JSONObject ledgerGetLatestProof(JSONObject request) {
-		return successResponse(request, systemConfigService.getLatestProof());
-	}
-
-	public JSONObject ledgerGetLatestEpochProof(JSONObject request) {
-		return successResponse(request, systemConfigService.getLatestEpochProof());
-	}
-
-	public JSONObject radixEngineGetData(JSONObject request) {
-		return successResponse(request, systemConfigService.getRadixEngineData());
-	}
-
-	public JSONObject syncGetConfiguration(JSONObject request) {
-		return successResponse(request, systemConfigService.getSyncConfig());
-	}
-
-	public JSONObject syncGetData(JSONObject request) {
-		return successResponse(request, systemConfigService.getSyncData());
-	}
-
-	public JSONObject networkingGetConfiguration(JSONObject request) {
-		return successResponse(request, networkingService.getConfiguration());
-	}
-
-	public JSONObject networkingGetPeers(JSONObject request) {
-		return successResponse(request, wrapArray(networkingService.getPeers()));
-	}
-
-	public JSONObject networkingGetAddressBook(JSONObject request) {
-		return successResponse(request, wrapArray(networkingService.getAddressBook()));
-	}
-
-	public JSONObject networkingGetData(JSONObject request) {
-		return successResponse(request, networkingService.getData());
-	}
-
-	public JSONObject checkpointsGetCheckpoints(JSONObject request) {
-		return successResponse(request, systemConfigService.getCheckpoints());
+	public JSONObject getCheckpoints() {
+		return new JSONObject()
+			.put("txn", fromCollection(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
+			.put("proof", genesis.getProof().asJSON(addressing));
 	}
 }
