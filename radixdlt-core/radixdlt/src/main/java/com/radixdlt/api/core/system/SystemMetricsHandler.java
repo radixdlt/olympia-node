@@ -61,28 +61,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.system.system;
+package com.radixdlt.api.core.system;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.HandlerRoute;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.util.CountersJsonFormatter;
+import com.radixdlt.api.util.GetJsonHandler;
+import com.radixdlt.counters.SystemCounters;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+import java.util.List;
 
-public final class SystemEndpointsModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+public class SystemMetricsHandler implements GetJsonHandler {
+	private final SystemCounters systemCounters;
 
-	public SystemEndpointsModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	static final List<SystemCounters.CounterType> NETWORKING_COUNTERS = List.of(
+		SystemCounters.CounterType.MESSAGES_INBOUND_RECEIVED,
+		SystemCounters.CounterType.MESSAGES_INBOUND_PROCESSED,
+		SystemCounters.CounterType.MESSAGES_INBOUND_DISCARDED,
+		SystemCounters.CounterType.MESSAGES_OUTBOUND_ABORTED,
+		SystemCounters.CounterType.MESSAGES_OUTBOUND_PENDING,
+		SystemCounters.CounterType.MESSAGES_OUTBOUND_PROCESSED,
+		SystemCounters.CounterType.MESSAGES_OUTBOUND_SENT,
+		SystemCounters.CounterType.NETWORKING_UDP_DROPPED_MESSAGES,
+		SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES,
+		SystemCounters.CounterType.NETWORKING_TCP_IN_OPENED,
+		SystemCounters.CounterType.NETWORKING_TCP_OUT_OPENED,
+		SystemCounters.CounterType.NETWORKING_TCP_CLOSED,
+		SystemCounters.CounterType.NETWORKING_SENT_BYTES,
+		SystemCounters.CounterType.NETWORKING_RECEIVED_BYTES
+	);
+
+	static final List<SystemCounters.CounterType> SYNC_COUNTERS = List.of(
+		SystemCounters.CounterType.SYNC_LAST_READ_MILLIS,
+		SystemCounters.CounterType.SYNC_INVALID_COMMANDS_RECEIVED,
+		SystemCounters.CounterType.SYNC_PROCESSED,
+		SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION,
+		SystemCounters.CounterType.SYNC_TARGET_CURRENT_DIFF,
+		SystemCounters.CounterType.SYNC_REMOTE_REQUESTS_PROCESSED
+	);
+
+	static final List<SystemCounters.CounterType> BFT_COUNTERS = List.of(
+		SystemCounters.CounterType.BFT_CONSENSUS_EVENTS,
+		SystemCounters.CounterType.BFT_INDIRECT_PARENT,
+		SystemCounters.CounterType.BFT_PROCESSED,
+		SystemCounters.CounterType.BFT_PROPOSALS_MADE,
+		SystemCounters.CounterType.BFT_REJECTED,
+		SystemCounters.CounterType.BFT_TIMEOUT,
+		SystemCounters.CounterType.BFT_TIMED_OUT_VIEWS,
+		SystemCounters.CounterType.BFT_TIMEOUT_QUORUMS,
+		SystemCounters.CounterType.BFT_STATE_VERSION,
+		SystemCounters.CounterType.BFT_VERTEX_STORE_SIZE,
+		SystemCounters.CounterType.BFT_VERTEX_STORE_FORKS,
+		SystemCounters.CounterType.BFT_VERTEX_STORE_REBUILDS,
+		SystemCounters.CounterType.BFT_VOTE_QUORUMS,
+		SystemCounters.CounterType.BFT_SYNC_REQUESTS_SENT,
+		SystemCounters.CounterType.BFT_SYNC_REQUEST_TIMEOUTS
+	);
+
+	static final List<SystemCounters.CounterType> MEMPOOL_COUNTERS = List.of(
+		SystemCounters.CounterType.MEMPOOL_COUNT,
+		SystemCounters.CounterType.MEMPOOL_MAXCOUNT,
+		SystemCounters.CounterType.MEMPOOL_RELAYER_SENT_COUNT,
+		SystemCounters.CounterType.MEMPOOL_ADD_SUCCESS,
+		SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION,
+		SystemCounters.CounterType.MEMPOOL_ERRORS_HOOK,
+		SystemCounters.CounterType.MEMPOOL_ERRORS_CONFLICT,
+		SystemCounters.CounterType.MEMPOOL_ERRORS_OTHER
+	);
+
+	@Inject
+	SystemMetricsHandler(SystemCounters systemCounters) {
+		this.systemCounters = systemCounters;
 	}
 
 	@Override
-	protected void configure() {
-		var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType);
-		binder.addBinding(HandlerRoute.get(path + "/configuration")).to(SystemConfigurationHandler.class);
-		binder.addBinding(HandlerRoute.get(path + "/metrics")).to(SystemMetricsHandler.class);
+	public JSONObject handleRequest() {
+		return new JSONObject()
+			.put("mempool", CountersJsonFormatter.countersToJson(systemCounters, MEMPOOL_COUNTERS, true))
+			.put("bft", CountersJsonFormatter.countersToJson(systemCounters, BFT_COUNTERS, true))
+			.put("sync", CountersJsonFormatter.countersToJson(systemCounters, SYNC_COUNTERS, true))
+			.put("networking", CountersJsonFormatter.countersToJson(systemCounters, NETWORKING_COUNTERS, true));
 	}
 }

@@ -61,29 +61,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.system.version;
+package com.radixdlt.api.core.system;
 
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.HandlerRoute;
+import com.google.inject.Inject;
+import com.radixdlt.api.util.GetJsonHandler;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.sync.SyncConfig;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import com.google.inject.AbstractModule;
-import io.undertow.server.HttpHandler;
+import java.util.Collection;
+import java.util.function.Function;
 
-import java.lang.annotation.Annotation;
+public class SystemConfigurationHandler implements GetJsonHandler {
 
-public final class VersionApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
+	private final long pacemakerTimeout;
+	private final int bftSyncPatienceMillis;
+	private final int mempoolMaxSize;
+	private final long mempoolThrottleMs;
+	private final SyncConfig syncConfig;
+	private final P2PConfig p2PConfig;
 
-	public VersionApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	SystemConfigurationHandler(
+		@Self ECPublicKey self,
+		@PacemakerTimeout long pacemakerTimeout,
+		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
+		@MempoolMaxSize int mempoolMaxSize,
+		@MempoolThrottleMs long mempoolThrottleMs,
+		SyncConfig syncConfig,
+		P2PConfig p2PConfig
+	) {
+		this.pacemakerTimeout = pacemakerTimeout;
+		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
+		this.mempoolMaxSize = mempoolMaxSize;
+		this.mempoolThrottleMs = mempoolThrottleMs;
+		this.syncConfig = syncConfig;
+		this.p2PConfig = p2PConfig;
+	}
+
+	private static <T> JSONArray fromCollection(Collection<T> input, Function<T, Object> mapper) {
+		var array = new JSONArray();
+		input.forEach(element -> array.put(mapper.apply(element)));
+		return array;
+	}
+
+	private JSONObject from(P2PConfig p2PConfig) {
+		return new JSONObject()
+			.put("default_port", p2PConfig.defaultPort())
+			.put("discovery_interval", p2PConfig.discoveryInterval())
+			.put("listen_address", p2PConfig.listenAddress())
+			.put("listen_port", p2PConfig.listenPort())
+			.put("broadcast_port", p2PConfig.broadcastPort())
+			.put("peer_connection_timeout", p2PConfig.peerConnectionTimeout())
+			.put("max_inbound_channels", p2PConfig.maxInboundChannels())
+			.put("max_outbound_channels", p2PConfig.maxOutboundChannels())
+			.put("channel_buffer_size", p2PConfig.channelBufferSize())
+			.put("peer_liveness_check_interval", p2PConfig.peerLivenessCheckInterval())
+			.put("ping_timeout", p2PConfig.pingTimeout())
+			.put("seed_nodes", fromCollection(p2PConfig.seedNodes(), seedNode -> seedNode));
 	}
 
 	@Override
-	protected void configure() {
-		MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType)
-			.addBinding(HandlerRoute.get(path))
-			.to(VersionHandler.class);
+	public JSONObject handleRequest() {
+		return new JSONObject()
+			.put("bft", new JSONObject()
+				.put("pacemaker_timeout", pacemakerTimeout)
+				.put("bft_sync_patience", bftSyncPatienceMillis)
+			)
+			.put("mempool", new JSONObject()
+				.put("max_size", mempoolMaxSize)
+				.put("throttle", mempoolThrottleMs)
+			)
+			.put("sync", syncConfig.asJson())
+			.put("networking", from(p2PConfig));
 	}
 }

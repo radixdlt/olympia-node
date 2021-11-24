@@ -64,10 +64,10 @@
 package com.radixdlt.api.core.system;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.api.core.system.health.HealthApiModule;
+import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.core.system.prometheus.PrometheusApiModule;
-import com.radixdlt.api.core.system.system.SystemEndpointsModule;
-import com.radixdlt.api.core.system.version.VersionApiModule;
+import com.radixdlt.api.util.HandlerRoute;
+import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
 
@@ -80,9 +80,11 @@ public class SystemApiModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		install(new SystemEndpointsModule(annotationType, "/system"));
-		install(new HealthApiModule(annotationType, "/health"));
-		install(new VersionApiModule(annotationType, "/version"));
+		var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType);
+		binder.addBinding(HandlerRoute.get("/system/configuration")).to(SystemConfigurationHandler.class);
+		binder.addBinding(HandlerRoute.get("/system/metrics")).to(SystemMetricsHandler.class);
+		binder.addBinding(HandlerRoute.get("/system/health")).to(HealthHandler.class);
+		binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
 		install(new PrometheusApiModule(annotationType, "/prometheus/metrics"));
 	}
 }
