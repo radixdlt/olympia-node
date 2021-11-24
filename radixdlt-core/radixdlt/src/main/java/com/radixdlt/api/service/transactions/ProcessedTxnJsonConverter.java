@@ -147,7 +147,12 @@ public final class ProcessedTxnJsonConverter {
 			return addressing.forResources().of(tokenMetadata.getSymbol(), addr);
 		};
 
-		var operationGroups = this.getOperationGroups(processed, addressToRri, null);
+		Function<ECPublicKey, ValidatorStakeData> getValidatorStake = key -> {
+			var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), key.getCompressedBytes());
+			return (ValidatorStakeData) radixEngineProvider.get().get(validatorDataKey).orElseThrow();
+		};
+
+		var operationGroups = this.getOperationGroups(processed, addressToRri, getValidatorStake);
 
 		JSONObject metadata;
 		if (!processed.getFeePaid().isZero()) {

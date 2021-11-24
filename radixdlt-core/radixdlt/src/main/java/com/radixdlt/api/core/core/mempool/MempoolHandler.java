@@ -61,28 +61,50 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.engine;
+package com.radixdlt.api.core.core.mempool;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.HandlerRoute;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.core.core.network.NetworkIdentifier;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.util.ApiHandler;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.RadixEngineMempool;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+public class MempoolHandler implements ApiHandler<NetworkIdentifier> {
+	private final Network network;
+	private final RadixEngineMempool mempool;
 
-public class EngineApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
-
-	public EngineApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	private MempoolHandler(
+		@NetworkId int networkId,
+		RadixEngineMempool mempool
+	) {
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.mempool = mempool;
 	}
 
 	@Override
-	protected void configure() {
-		var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType);
-		binder.addBinding(HandlerRoute.post(path + "/configuration")).to(EngineConfigurationHandler.class);
-		binder.addBinding(HandlerRoute.post(path + "/state")).to(EngineStateHandler.class);
+	public NetworkIdentifier parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return requestReader.getJsonObject("network_identifier", NetworkIdentifier::from);
+	}
+
+	@Override
+	public JSONObject handleRequest(NetworkIdentifier request) throws Exception {
+		if (!request.getNetwork().equals(this.network)) {
+			throw new IllegalStateException();
+		}
+
+		var transactionIdentifiers = mempool.getData(map -> {
+			var mempoolList = new JSONArray();
+			map.keySet().forEach(txnId -> mempoolList.put(new JSONObject().put("hash", txnId.toString())));
+			return mempoolList;
+		});
+
+		return new JSONObject()
+			.put("transaction_identifiers", transactionIdentifiers);
 	}
 }

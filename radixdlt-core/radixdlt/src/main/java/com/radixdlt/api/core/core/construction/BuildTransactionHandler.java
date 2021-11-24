@@ -77,7 +77,7 @@ import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Bytes;
 import org.json.JSONObject;
 
-final class BuildTransactionHandler implements ApiHandler<BuildTransactionRequest> {
+public final class BuildTransactionHandler implements ApiHandler<BuildTransactionRequest> {
 	private final Addressing addressing;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final Forks forks;

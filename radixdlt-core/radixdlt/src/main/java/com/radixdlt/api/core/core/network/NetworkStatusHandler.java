@@ -82,7 +82,7 @@ import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
 import org.json.JSONObject;
 
-final class NetworkStatusHandler implements ApiHandler<NetworkIdentifier> {
+public final class NetworkStatusHandler implements ApiHandler<NetworkIdentifier> {
 	private final Network network;
 	private final REAddr accountAddress;
 	private final ECPublicKey validatorKey;

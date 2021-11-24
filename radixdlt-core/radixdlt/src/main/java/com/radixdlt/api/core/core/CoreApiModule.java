@@ -64,12 +64,24 @@
 package com.radixdlt.api.core.core;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.api.core.core.construction.ConstructionApiModule;
-import com.radixdlt.api.core.core.engine.EngineApiModule;
-import com.radixdlt.api.core.core.entity.EntityApiModule;
-import com.radixdlt.api.core.core.network.NetworkApiModule;
-import com.radixdlt.api.core.core.sign.SignApiModule;
-import com.radixdlt.api.core.core.transactions.TransactionIndexApiModule;
+import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.api.core.core.construction.BuildTransactionHandler;
+import com.radixdlt.api.core.core.construction.DeriveHandler;
+import com.radixdlt.api.core.core.construction.FinalizeTransactionHandler;
+import com.radixdlt.api.core.core.construction.HashTransactionHandler;
+import com.radixdlt.api.core.core.construction.ParseTransactionHandler;
+import com.radixdlt.api.core.core.construction.SubmitTransactionHandler;
+import com.radixdlt.api.core.core.engine.EngineConfigurationHandler;
+import com.radixdlt.api.core.core.engine.EngineStateHandler;
+import com.radixdlt.api.core.core.entity.EntityHandler;
+import com.radixdlt.api.core.core.mempool.MempoolHandler;
+import com.radixdlt.api.core.core.mempool.MempoolTransactionHandler;
+import com.radixdlt.api.core.core.network.NetworkConfigurationHandler;
+import com.radixdlt.api.core.core.network.NetworkStatusHandler;
+import com.radixdlt.api.core.core.sign.SignHandler;
+import com.radixdlt.api.core.core.transactions.TransactionsHandler;
+import com.radixdlt.api.util.HandlerRoute;
+import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
 
@@ -84,14 +96,26 @@ public class CoreApiModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		// Core API
-		install(new EntityApiModule(annotationType, "/entity"));
-		install(new NetworkApiModule(annotationType, "/network"));
-		install(new SignApiModule(annotationType, "/sign"));
+		var routeBinder = MapBinder.newMapBinder(
+			binder(), HandlerRoute.class, HttpHandler.class, annotationType
+		);
+
+		routeBinder.addBinding(HandlerRoute.post("/entity")).to(EntityHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/mempool")).to(MempoolHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/mempool/transaction")).to(MempoolTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/network/configuration")).to(NetworkConfigurationHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/network/status")).to(NetworkStatusHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/engine/configuration")).to(EngineConfigurationHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/engine/state")).to(EngineStateHandler.class);
 		if (transactionsEnable) {
-			install(new TransactionIndexApiModule(annotationType, "/transactions"));
+			routeBinder.addBinding(HandlerRoute.post("/transactions")).to(TransactionsHandler.class);
 		}
-		install(new ConstructionApiModule(annotationType, "/construction"));
-		install(new EngineApiModule(annotationType, "/engine"));
+		routeBinder.addBinding(HandlerRoute.post("/construction/derive")).to(DeriveHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/construction/build")).to(BuildTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/construction/parse")).to(ParseTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/construction/finalize")).to(FinalizeTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/construction/hash")).to(HashTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/construction/submit")).to(SubmitTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/sign")).to(SignHandler.class);
 	}
 }

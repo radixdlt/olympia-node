@@ -61,34 +61,64 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.mempool;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.HandlerRoute;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
+import com.radixdlt.api.util.ApiHandler;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.RadixEngineMempool;
+import com.radixdlt.utils.Bytes;
+import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
+public class MempoolTransactionHandler implements ApiHandler<MempoolTransactionRequest> {
+	private final Network network;
+	private final RadixEngineMempool mempool;
+	private final ProcessedTxnJsonConverter converter;
 
-public final class ConstructionApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
-
-	public ConstructionApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	@Inject
+	private MempoolTransactionHandler(
+		@NetworkId int networkId,
+		RadixEngineMempool mempool,
+		ProcessedTxnJsonConverter converter
+	) {
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.mempool = mempool;
+		this.converter = converter;
 	}
 
 	@Override
-	protected void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), HandlerRoute.class, HttpHandler.class, annotationType
+	public MempoolTransactionRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return MempoolTransactionRequest.from(requestReader);
+	}
+
+	@Override
+	public JSONObject handleRequest(MempoolTransactionRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network)) {
+			throw new IllegalStateException();
+		}
+
+		var transaction = mempool.getData(map -> map.get(request.getTransactionIdentifier()));
+		if (transaction == null) {
+			throw new IllegalStateException();
+		}
+
+		var processed = transaction.getFirst();
+		var metadata = transaction.getSecond();
+		var transactionJson = converter.getTransaction(processed);
+		transactionJson.getJSONObject("metadata")
+			.put("hex", Bytes.toHexString(processed.getTxn().getPayload()))
+			.put("size", processed.getTxn().getPayload().length);
+		transactionJson.put("transaction_identifier", new JSONObject()
+			.put("hash", request.getTransactionIdentifier())
 		);
-		routeBinder.addBinding(HandlerRoute.post(path + "/derive")).to(DeriveHandler.class);
-		routeBinder.addBinding(HandlerRoute.post(path + "/build")).to(BuildTransactionHandler.class);
-		routeBinder.addBinding(HandlerRoute.post(path + "/parse")).to(ParseTransactionHandler.class);
-		routeBinder.addBinding(HandlerRoute.post(path + "/finalize")).to(FinalizeTransactionHandler.class);
-		routeBinder.addBinding(HandlerRoute.post(path + "/hash")).to(HashTransactionHandler.class);
-		routeBinder.addBinding(HandlerRoute.post(path + "/submit")).to(SubmitTransactionHandler.class);
+		return new JSONObject()
+			.put("transaction", transactionJson)
+			.put("metadata", new JSONObject()
+				.put("added_timestamp", metadata.getInserted())
+			);
 	}
 }

@@ -93,6 +93,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -118,6 +119,10 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 		}
 		this.maxSize = maxSize;
 		this.radixEngine = radixEngine;
+	}
+
+	public <T> T getData(Function<Map<AID, Pair<REProcessedTxn, MempoolMetadata>>, T> mapper) {
+		return mapper.apply(data);
 	}
 
 	@Override

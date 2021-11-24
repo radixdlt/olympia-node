@@ -74,7 +74,7 @@ import org.json.JSONObject;
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
 import static org.radix.Radix.VERSION_STRING_KEY;
 
-class NetworkConfigurationHandler implements ApiHandler<Void> {
+public class NetworkConfigurationHandler implements ApiHandler<Void> {
 	private final Network network;
 	private final InfoSupplier infoSupplier;
 

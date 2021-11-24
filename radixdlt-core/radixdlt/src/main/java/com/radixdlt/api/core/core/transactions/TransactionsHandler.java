@@ -76,7 +76,7 @@ import com.radixdlt.utils.Bytes;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-class TransactionsHandler implements ApiHandler<TransactionsRequest> {
+public class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 	private final Network network;
 	private final BerkeleyTransactionsByIdStore txnStore;
 	private final BerkeleyTransactionIndexStore store;

@@ -1123,6 +1123,56 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
+  "/mempool":
+    post:
+      summary: Get Mempool Transactions
+      description: Gets the transaction identifiers in the mempool
+      tags:
+        - mempool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/MempoolRequest"
+      responses:
+        '200':
+          description: Mempool Transaction Identifiers
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MempoolResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/mempool/transaction":
+    post:
+      summary: Get Mempool Transaction
+      description: Gets the transaction from the mempool
+      tags:
+        - mempool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/MempoolTransactionRequest"
+      responses:
+        '200':
+          description: Mempool Transaction Identifiers
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MempoolTransactionResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
   "/transactions":
     post:
       summary: Get Committed Transactions
@@ -1299,6 +1349,8 @@ paths:
   "/engine/configuration":
     post:
       summary: Get Engine Configuration
+      tags:
+        - engine
       requestBody:
         required: true
         content:
@@ -1312,6 +1364,30 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/EngineConfigurationResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/engine/state":
+    post:
+      summary: Get Engine State Info
+      tags:
+        - engine
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/EngineStateRequest"
+      responses:
+        '200':
+          description: An unsigned transaction
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/EngineStateResponse"
         '500':
           description: Unexpected error
           content:
@@ -1473,6 +1549,49 @@ components:
               type: stake_ownership
             value: '15000000000000000000000'
         data_objects: []
+    MempoolRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+      example:
+        network_identifier:
+          network: mainnet
+    MempoolResponse:
+      type: object
+      required:
+        - transaction_identifiers
+      properties:
+        transaction_identifiers:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionIdentifier"
+    MempoolTransactionRequest:
+      type: object
+      required:
+        - network_identifier
+        - transaction_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+        transaction_identifier:
+          $ref: "#/components/schemas/TransactionIdentifier"
+      example:
+        network_identifier:
+          network: mainnet
+        transaction_identifier:
+          hash: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
+    MempoolTransactionResponse:
+      type: object
+      required:
+        - transaction
+      properties:
+        transaction:
+          $ref: "#/components/schemas/Transaction"
+        metadata:
+          type: object
     ConstructionDeriveRequest:
       type: object
       required:
@@ -1982,6 +2101,18 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/Fork"
+    EngineStateRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+      example:
+        network_identifier:
+          network: mainnet
+    EngineStateResponse:
+      type: object
     Fork:
       type: object
       required:
@@ -2082,6 +2213,26 @@ components:
           "$ref": "#/components/schemas/LongNumber"
         fork:
           type: string
+    Transaction:
+      type: object
+      required:
+        - transaction_identifier
+        - operation_groups
+        - metadata
+      properties:
+        transaction_identifier:
+          description: The unique identifier for the transaction.
+          "$ref": "#/components/schemas/TransactionIdentifier"
+        operation_groups:
+          description: Transactions are split into operation groups which are roughly
+            equivalent to ledger accounting entries where all credits have an equivalent
+            debit amount.
+          type: array
+          items:
+            "$ref": "#/components/schemas/OperationGroup"
+        metadata:
+          description: Metadata about the transaction, such as size and fee paid.
+          "$ref": "#/components/schemas/CommittedTransactionMetadata"
     CommittedTransaction:
       description: A transaction which has been committed on ledger.
       type: object

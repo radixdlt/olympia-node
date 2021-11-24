@@ -61,29 +61,39 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.sign;
+package com.radixdlt.api.core.core.mempool;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.util.HandlerRoute;
-import io.undertow.server.HttpHandler;
+import com.radixdlt.api.core.core.network.NetworkIdentifier;
+import com.radixdlt.api.gateway.InvalidParametersException;
+import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.identifiers.AID;
 
-import java.lang.annotation.Annotation;
+public class MempoolTransactionRequest {
+	private final NetworkIdentifier networkIdentifier;
+	private final AID transactionIdentifier;
 
-public final class SignApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
-	private final String path;
-
-	public SignApiModule(Class<? extends Annotation> annotationType, String path) {
-		this.annotationType = annotationType;
-		this.path = path;
+	public MempoolTransactionRequest(
+		NetworkIdentifier networkIdentifier,
+		AID transactionIdentifier
+	) {
+		this.networkIdentifier = networkIdentifier;
+		this.transactionIdentifier = transactionIdentifier;
 	}
 
-	@Override
-	protected void configure() {
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), HandlerRoute.class, HttpHandler.class, annotationType
+	public NetworkIdentifier getNetworkIdentifier() {
+		return networkIdentifier;
+	}
+
+	public AID getTransactionIdentifier() {
+		return transactionIdentifier;
+	}
+
+	public static MempoolTransactionRequest from(JsonObjectReader reader) throws InvalidParametersException {
+		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier::from);
+		var transactionIdentifier = reader.getTransactionIdentifier("transaction_identifier");
+		return new MempoolTransactionRequest(
+			networkIdentifier,
+			transactionIdentifier
 		);
-		routeBinder.addBinding(HandlerRoute.post(path)).to(SignHandler.class);
 	}
 }
