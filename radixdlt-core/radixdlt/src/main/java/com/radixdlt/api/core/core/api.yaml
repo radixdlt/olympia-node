@@ -1018,6 +1018,9 @@ tags:
   - name: entity
     x-displayName: Entity
     description: Get info about an entity.
+  - name: mempool
+    x-displayName: Mempool
+    description: Get info about the mempool
   - name: transactions
     x-displayName: Transactions
     description: Get the stream of committed transactions.
