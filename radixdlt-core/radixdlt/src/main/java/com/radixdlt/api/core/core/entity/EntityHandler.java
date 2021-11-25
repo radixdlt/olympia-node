@@ -80,7 +80,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.util.function.Function;
 
-public class EntityHandler implements JsonRpcHandler<EntityRequest, EntityResponse> {
+public class EntityHandler extends JsonRpcHandler<EntityRequest, EntityResponse> {
 	private final Network network;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ModelMapper modelMapper;
@@ -91,14 +91,10 @@ public class EntityHandler implements JsonRpcHandler<EntityRequest, EntityRespon
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		ModelMapper modelMapper
 	) {
+		super(EntityRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
 		this.radixEngine = radixEngine;
 		this.modelMapper = modelMapper;
-	}
-
-	@Override
-	public Class<EntityRequest> requestClass() {
-		return EntityRequest.class;
 	}
 
 	@Override

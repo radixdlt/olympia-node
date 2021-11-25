@@ -72,7 +72,7 @@ import com.radixdlt.statecomputer.forks.ForkConfig;
 
 import java.util.TreeMap;
 
-public class EngineConfigurationHandler implements JsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
+public class EngineConfigurationHandler extends JsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
 	private final TreeMap<Long, ForkConfig> forks;
 	private final ModelMapper modelMapper;
 
@@ -81,17 +81,13 @@ public class EngineConfigurationHandler implements JsonRpcHandler<EngineConfigur
 		TreeMap<Long, ForkConfig> forks,
 		ModelMapper modelMapper
 	) {
+		super(EngineConfigurationRequest.class);
 		this.forks = forks;
 		this.modelMapper = modelMapper;
 	}
 
 	@Override
-	public Class<EngineConfigurationRequest> requestClass() {
-		return EngineConfigurationRequest.class;
-	}
-
-	@Override
-	public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request) throws Exception {
+	public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request) {
 		var response = new EngineConfigurationResponse();
 		forks.forEach((epoch, config) -> response.addForksItem(modelMapper.fork(config)));
 		return response;

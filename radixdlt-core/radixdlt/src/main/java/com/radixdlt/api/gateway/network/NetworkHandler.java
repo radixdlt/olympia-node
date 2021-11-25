@@ -73,7 +73,7 @@ import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 import java.time.Instant;
 
-final class NetworkHandler implements JsonRpcHandler<Void, NetworkResponse> {
+final class NetworkHandler extends JsonRpcHandler<Void, NetworkResponse> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final String networkName;
 
@@ -82,13 +82,9 @@ final class NetworkHandler implements JsonRpcHandler<Void, NetworkResponse> {
 		@NetworkId int networkId,
 		InMemorySystemInfo inMemorySystemInfo
 	) {
+		super(Void.class);
 		this.networkName = Network.ofId(networkId).map(n -> n.name().toLowerCase()).orElse("unknown");
 		this.inMemorySystemInfo = inMemorySystemInfo;
-	}
-
-	@Override
-	public Class<Void> requestClass() {
-		return Void.class;
 	}
 
 	@Override

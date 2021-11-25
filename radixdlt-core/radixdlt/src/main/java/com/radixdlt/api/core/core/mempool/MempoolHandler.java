@@ -72,7 +72,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.RadixEngineMempool;
 
-public class MempoolHandler implements JsonRpcHandler<MempoolRequest, MempoolResponse> {
+public class MempoolHandler extends JsonRpcHandler<MempoolRequest, MempoolResponse> {
 	private final Network network;
 	private final RadixEngineMempool mempool;
 
@@ -81,13 +81,9 @@ public class MempoolHandler implements JsonRpcHandler<MempoolRequest, MempoolRes
 		@NetworkId int networkId,
 		RadixEngineMempool mempool
 	) {
+		super(MempoolRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
 		this.mempool = mempool;
-	}
-
-	@Override
-	public Class<MempoolRequest> requestClass() {
-		return MempoolRequest.class;
 	}
 
 	@Override

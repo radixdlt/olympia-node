@@ -76,7 +76,7 @@ import com.radixdlt.utils.Bytes;
 
 import java.util.stream.Collectors;
 
-public class TransactionsHandler implements JsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
+public class TransactionsHandler extends JsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
 	private final Network network;
 	private final BerkeleyTransactionsByIdStore txnStore;
 	private final BerkeleyTransactionIndexStore store;
@@ -87,14 +87,10 @@ public class TransactionsHandler implements JsonRpcHandler<CommittedTransactions
 		BerkeleyTransactionIndexStore store,
 		BerkeleyTransactionsByIdStore txnStore
 	) {
+		super(CommittedTransactionsRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
 		this.store = store;
 		this.txnStore = txnStore;
-	}
-
-	@Override
-	public Class<CommittedTransactionsRequest> requestClass() {
-		return CommittedTransactionsRequest.class;
 	}
 
 	@Override

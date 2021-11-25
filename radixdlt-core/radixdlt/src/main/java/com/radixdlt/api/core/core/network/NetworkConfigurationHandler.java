@@ -76,7 +76,7 @@ import com.radixdlt.networks.NetworkId;
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
 import static org.radix.Radix.VERSION_STRING_KEY;
 
-public class NetworkConfigurationHandler implements JsonRpcHandler<Void, NetworkConfigurationResponse> {
+public class NetworkConfigurationHandler extends JsonRpcHandler<Void, NetworkConfigurationResponse> {
 	private final Network network;
 	private final InfoSupplier infoSupplier;
 
@@ -85,13 +85,9 @@ public class NetworkConfigurationHandler implements JsonRpcHandler<Void, Network
 		@NetworkId int networkId,
 		InfoSupplier infoSupplier
 	) {
+		super(Void.class);
 		this.network = Network.ofId(networkId).orElseThrow();
 		this.infoSupplier = infoSupplier;
-	}
-
-	@Override
-	public Class<Void> requestClass() {
-		return Void.class;
 	}
 
 	@Override

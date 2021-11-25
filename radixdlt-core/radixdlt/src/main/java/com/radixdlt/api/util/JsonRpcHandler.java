@@ -64,24 +64,24 @@
 package com.radixdlt.api.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.radixdlt.api.core.core.openapitools.JSON;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
-public interface JsonRpcHandler<T, U> extends HttpHandler {
-	JSON json = new JSON();
-	// TODO: Move
-	ObjectMapper objectMapper = json.getMapper();
-	String CONTENT_TYPE_JSON = "application/json";
-	long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
+public abstract class JsonRpcHandler<T, U> implements HttpHandler {
+	private static final String CONTENT_TYPE_JSON = "application/json";
+	private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
-	Class<T> requestClass();
-	U handleRequest(T request) throws Exception;
+	private final Class<T> requestClass;
+	public abstract U handleRequest(T request) throws Exception;
+
+	public JsonRpcHandler(Class<T> requestClass) {
+		this.requestClass = requestClass;
+	}
 
 	@Override
-	default void handleRequest(HttpServerExchange exchange) throws Exception {
+	public final void handleRequest(HttpServerExchange exchange) throws Exception {
 		if (exchange.isInIoThread()) {
 			exchange.dispatch(this);
 			return;
@@ -90,11 +90,12 @@ public interface JsonRpcHandler<T, U> extends HttpHandler {
 		exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
 		exchange.startBlocking();
 
-		var request = objectMapper.readValue(exchange.getInputStream(), requestClass());
+		var mapper = JSON.getDefault().getMapper();
+		var request = requestClass == Void.class ? null : mapper.readValue(exchange.getInputStream(), requestClass);
 		var response = handleRequest(request);
 		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
 		exchange.setStatusCode(200);
-		objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-		exchange.getResponseSender().send(objectMapper.writeValueAsString(response));
+		mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+		exchange.getResponseSender().send(mapper.writeValueAsString(response));
 	}
 }

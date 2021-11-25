@@ -85,7 +85,7 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
 
-public final class NetworkStatusHandler implements JsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
+public final class NetworkStatusHandler extends JsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
 	private final Network network;
 	private final REAddr accountAddress;
 	private final ECPublicKey validatorKey;
@@ -103,6 +103,7 @@ public final class NetworkStatusHandler implements JsonRpcHandler<NetworkStatusR
 		LedgerAccumulator ledgerAccumulator,
 		Addressing addressing
 	) {
+		super(NetworkStatusRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
 		this.accountAddress = accountAddress;
 		this.validatorKey = validatorKey;
@@ -111,11 +112,6 @@ public final class NetworkStatusHandler implements JsonRpcHandler<NetworkStatusR
 			new AccumulatorState(0, HashUtils.zero256()), genesisTxn.getId().asHashCode()
 		);
 		this.addressing = addressing;
-	}
-
-	@Override
-	public Class<NetworkStatusRequest> requestClass() {
-		return NetworkStatusRequest.class;
 	}
 
 	@Override
