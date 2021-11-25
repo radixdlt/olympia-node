@@ -117,7 +117,7 @@ public final class Vote implements ConsensusEvent {
 
 	@JsonCreator
 	@VisibleForTesting
-	Vote(
+	public Vote(
 		@JsonProperty(value = "author", required = true) byte[] author,
 		@JsonProperty(value = "vote_data", required = true) VoteData voteData,
 		@JsonProperty("ts") long timestamp,

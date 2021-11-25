@@ -66,19 +66,18 @@ package org.radix.serialization;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
 
 import java.util.List;
 import java.util.Optional;
@@ -92,7 +91,6 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		View view = View.of(1234567891L);
 		HashCode id = HashUtils.random256();
 
-		var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
 		LedgerHeader ledgerHeader = LedgerHeader.mocked();
 		BFTHeader header = new BFTHeader(view, id, ledgerHeader);
 		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);

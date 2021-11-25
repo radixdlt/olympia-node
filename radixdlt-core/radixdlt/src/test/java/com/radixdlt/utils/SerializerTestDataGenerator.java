@@ -67,13 +67,16 @@ package com.radixdlt.utils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -81,9 +84,11 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.AccumulatorState;
 
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -108,6 +113,14 @@ public class SerializerTestDataGenerator {
 			randomHighQC(),
 			Optional.of(randomECDSASignature())
 		);
+	}
+
+	public static Proposal randomProposal() {
+		var qc = randomQC();
+		var txn = Txn.create(new byte[]{0, 1, 2, 3});
+		var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+		var vertex = UnverifiedVertex.create(qc, randomView(), List.of(txn), author);
+		return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
 	}
 
 	public static VoteData randomVoteData() {
