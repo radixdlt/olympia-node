@@ -15,13 +15,23 @@ we are not setting up nginx, and not allowing inbound connections to our node.
 Before starting, ensure this template folder has been copied outside the radixdlt repository,
 and given a sensible name describing the node you will run.
 
-Then, start a terminal in the copied folder.
+Then, start a terminal in the copied folder, and run:
 
-* Create and update `node-variables.sh`:
-  * Run `cp node-variables.template.sh node-variables.sh`
-  * Edit `node-variables.sh` to update the configuration inside.
-* Run `chmod +x generate-key.sh` and `chmod +x start-node.sh`
-* Run `./generate-key.sh` to generate a public/private keystore at `./node/keystore.ks`.
+```sh
+cp template.env .env
+chmod +x generate-key.sh
+chmod +x start-node.sh
+chmod +x stop-node.sh
+```
+
+Now, edit the `.env` file to fix a configuration, including setting up the `RADIXDLT_NODE_KEY_PASSWORD`
+which will be used by the key generation.
+
+Then, to generate the keys for your node, run:
+
+```sh
+./generate-key.sh  # This generates a public/private keystore at node/keystore.ks
+```
 
 You are now prepared and ready to start the node - but we just need to build the correct image
 that you wish the node to run from.
@@ -52,9 +62,11 @@ using the configuration at `node-variables.sh`.
 Some notes:
 * The ledger will be mounted to `./node/ledger` by default.
 * The node will start syncing whilst active, and the ledger may consume a lot of disk space over time.
-* We run docker-compose with the -d flag, so the container will need to be shut down manually through docker
-  / docker-compose / docker-desktop when you wish to shut it down.
+* We run docker-compose with the -d flag, so the container will need to be shut down manually 
+  when you wish to shut it down. Ctrl-C out of the logs and run `./stop-node.sh` to shut it down.
 * If for some reason the node stops, the docker-compose file is set to restart it.
+* The ledger (and logs) persist across starts/stops, in the `./node` directory.
+  If you wish to clear the ledger, stop the node with `./stop-node.sh` and run `./clear-ledger.sh`
 
 ### Checking your running node is running okay
 
@@ -86,7 +98,3 @@ curl --location --request POST 'localhost:3333/transactions' \
     "limit": 10
 }'
 ```
-
-## Clearing the ledger
-
-Stop the node and delete the folder `./node/ledger`.
