@@ -157,7 +157,6 @@ public class MessagePreprocessorTest {
 
 	@Test
 	public void invalid_message_is_not_accepted_and_peer_is_banned() {
-		System.out.println("Checking: " + clazz.getSimpleName());
 		var result = messagePreprocessor.process(inboundMessage);
 
 		assertFalse(result.isSuccess());

@@ -101,7 +101,13 @@ public class DsonTypeIdResolver extends TypeIdResolverBase {
 
 	@Override
 	public JavaType typeFromId(DatabindContext context, String id) throws IOException {
-		return _typeFactory.constructType(idLookup.getClassForId(id));
+		var clazz = idLookup.getClassForId(id);
+
+		if (clazz == null) {
+			throw new IOException("Unknown type ID: " + id);
+		}
+
+		return _typeFactory.constructType(clazz);
 	}
 
 	@Override

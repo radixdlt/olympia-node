@@ -76,7 +76,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @param <T> The element type
  */
-class SimplePriorityBlockingQueue<T> implements SimpleBlockingQueue<T> {
+public class SimplePriorityBlockingQueue<T> implements SimpleBlockingQueue<T> {
 	private final PriorityBlockingQueue<SimpleEntry<T>> queue;
 
 	static final class SimpleEntry<U> {
@@ -104,7 +104,7 @@ class SimplePriorityBlockingQueue<T> implements SimpleBlockingQueue<T> {
 		}
 	}
 
-	SimplePriorityBlockingQueue(int size, Comparator<? super T> comparator) {
+	public SimplePriorityBlockingQueue(int size, Comparator<? super T> comparator) {
 		this.queue = new PriorityBlockingQueue<>(size, comparator(comparator));
 	}
 

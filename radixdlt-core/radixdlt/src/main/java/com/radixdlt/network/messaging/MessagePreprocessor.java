@@ -64,19 +64,19 @@
 
 package com.radixdlt.network.messaging;
 
-import com.google.inject.Provider;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.PeerControl;
-import com.radixdlt.utils.functional.Result;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 
+import com.google.inject.Provider;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
+import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.functional.Result;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -84,6 +84,8 @@ import java.util.Objects;
 
 import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
 import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * Handles incoming messages. Deserializes raw messages and validates them.
@@ -137,7 +139,8 @@ final class MessagePreprocessor {
 	private Result<Message> deserialize(InboundMessage inboundMessage, byte[] in) {
 		try {
 			byte[] uncompressed = Compress.uncompress(in);
-			return Result.ok(serialization.fromDson(uncompressed, Message.class));
+
+			return Result.fromOptional(IO_ERROR, ofNullable(serialization.fromDson(uncompressed, Message.class)));
 		} catch (IOException e) {
 			log.error(String.format("Failed to deserialize message from peer %s", inboundMessage.source()), e);
 			peerControl.get().banPeer(inboundMessage.source(), Duration.ofMinutes(5), "Failed to deserialize inbound message");
