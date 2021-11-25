@@ -61,80 +61,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core;
 
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.core.core.network.NetworkIdentifier2;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.networks.Network;
-import com.radixdlt.utils.Pair;
+import com.google.inject.Inject;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationResponse;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 
-import java.util.Arrays;
+import java.util.TreeMap;
 
-public class DeriveRequest {
-	enum EntityType {
-		ACCOUNT("Account"), VALIDATOR("Validator"), TOKEN("Token");
+public class EngineConfigurationHandler extends JsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
+	private final TreeMap<Long, ForkConfig> forks;
+	private final ModelMapper modelMapper;
 
-		private final String name;
-		EntityType(String name) {
-			this.name = name;
-		}
-
-		static EntityType from(String type) {
-			return Arrays.stream(EntityType.values())
-				.filter(e -> e.name.equals(type))
-				.findFirst()
-				.orElseThrow();
-		}
-	}
-
-	private final NetworkIdentifier2 networkIdentifier;
-	private final ECPublicKey publicKey;
-	private final EntityType entityType;
-	private final String symbol;
-
-	private DeriveRequest(
-		NetworkIdentifier2 networkIdentifier,
-		ECPublicKey publicKey,
-		EntityType entityType,
-		String symbol
+	@Inject
+	public EngineConfigurationHandler(
+		TreeMap<Long, ForkConfig> forks,
+		ModelMapper modelMapper
 	) {
-		this.networkIdentifier = networkIdentifier;
-		this.publicKey = publicKey;
-		this.entityType = entityType;
-		this.symbol = symbol;
+		super(EngineConfigurationRequest.class);
+		this.forks = forks;
+		this.modelMapper = modelMapper;
 	}
 
-	public Network getNetwork() {
-		return networkIdentifier.getNetwork();
-	}
-
-	public ECPublicKey getPublicKey() {
-		return publicKey;
-	}
-
-	public EntityType getEntityType() {
-		return entityType;
-	}
-
-	public String getSymbol() {
-		return symbol;
-	}
-
-	public static DeriveRequest from(JsonObjectReader reader) throws InvalidParametersException {
-		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier2::from);
-		var publicKey = reader.getJsonObject("public_key", r -> r.getPubKey("hex"));
-		var typeAndSymbol = reader.<Pair<EntityType, String>>getJsonObject("metadata", r -> {
-			var typeString = r.getString("type");
-			var type = EntityType.from(typeString);
-			if (type != EntityType.TOKEN) {
-				return Pair.of(type, null);
-			} else {
-				return Pair.of(type, r.getString("symbol"));
-			}
-		});
-
-		return new DeriveRequest(networkIdentifier, publicKey, typeAndSymbol.getFirst(), typeAndSymbol.getSecond());
+	@Override
+	public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request) {
+		var response = new EngineConfigurationResponse();
+		forks.forEach((epoch, config) -> response.addForksItem(modelMapper.fork(config)));
+		return response;
 	}
 }

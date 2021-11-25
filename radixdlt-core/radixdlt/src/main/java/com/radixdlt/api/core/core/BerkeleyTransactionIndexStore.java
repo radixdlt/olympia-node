@@ -61,61 +61,111 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
-import org.json.JSONObject;
+import com.google.common.collect.Streams;
+import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.Longs;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.Get;
+import com.sleepycat.je.OperationStatus;
+import com.sleepycat.je.Transaction;
 
-public class DeriveHandler implements ApiHandler<DeriveRequest> {
-	private final Network network;
-	private final Addressing addressing;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
-	@Inject
-	DeriveHandler(
-		@NetworkId int networkId,
-		Addressing addressing
+import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
+import static com.sleepycat.je.LockMode.DEFAULT;
+import static com.sleepycat.je.OperationStatus.SUCCESS;
+
+public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalStore {
+	private static final String TRANSACTIONS_DB = "radix.versioned_transactions";
+	private Database transactions;
+
+	@Override
+	public void open(DatabaseEnvironment dbEnv) {
+		var env = dbEnv.getEnvironment();
+		transactions = env.openDatabase(null, TRANSACTIONS_DB, new DatabaseConfig()
+			.setAllowCreate(true)
+			.setTransactional(true)
+			.setKeyPrefixing(true)
+			.setBtreeComparator(lexicographicalComparator())
+		);
+	}
+
+	@Override
+	public void close() {
+		if (transactions != null) {
+			transactions.close();
+		}
+	}
+
+	public long getCount() {
+		try (var cursor = transactions.openCursor(null, null)) {
+			final DatabaseEntry key = new DatabaseEntry();
+			var result = cursor.getLast(key, null, null);
+			return result == SUCCESS ? Longs.fromByteArray(key.getData()) : 0;
+		}
+	}
+
+	public Stream<AID> get(long stateVersion) {
+		var cursor = transactions.openCursor(null, null);
+		var iterator = new Iterator<AID>() {
+			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion));
+			final DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
+
+			@Override
+			public boolean hasNext() {
+				return status == SUCCESS;
+			}
+
+			@Override
+			public AID next() {
+				if (status != SUCCESS) {
+					throw new NoSuchElementException();
+				}
+				var next = AID.from(value.getData());
+				status = cursor.getNext(key, value, null);
+				return next;
+			}
+		};
+		return Streams.stream(iterator).onClose(cursor::close);
+	}
+
+	@Override
+	public void process(
+		Transaction dbTxn,
+		REProcessedTxn txn,
+		long stateVersion,
+		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
 	) {
-		this.network = Network.ofId(networkId).orElseThrow();
-		this.addressing = addressing;
-	}
-
-	@Override
-	public DeriveRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return DeriveRequest.from(requestReader);
-	}
-
-	@Override
-	public JSONObject handleRequest(DeriveRequest request) throws Exception {
-		if (!request.getNetwork().equals(this.network)) {
-			throw new IllegalStateException();
+		final long nextIndex;
+		try (var cursor = transactions.openCursor(dbTxn, null)) {
+			var key = new DatabaseEntry();
+			var status = cursor.getLast(key, null, DEFAULT);
+			if (status == OperationStatus.NOTFOUND) {
+				nextIndex = 0;
+			} else {
+				nextIndex = Longs.fromByteArray(key.getData()) + 1;
+			}
+		}
+		if (stateVersion != nextIndex + 1) {
+			throw new IllegalStateException("Expected stateVersion " + (nextIndex + 1) + " but is " + stateVersion);
 		}
 
-		if (request.getEntityType() == DeriveRequest.EntityType.ACCOUNT) {
-			var reAddr = REAddr.ofPubKeyAccount(request.getPublicKey());
-			return new JSONObject()
-				.put("entity_identifier", new JSONObject()
-					.put("address", addressing.forAccounts().of(reAddr))
-				);
-		} else if (request.getEntityType() == DeriveRequest.EntityType.VALIDATOR) {
-			return new JSONObject()
-				.put("entity_identifier", new JSONObject()
-					.put("address", addressing.forValidators().of(request.getPublicKey()))
-				);
-		} else if (request.getEntityType() == DeriveRequest.EntityType.TOKEN) {
-			var reAddr = REAddr.ofHashedKey(request.getPublicKey(), request.getSymbol());
-			return new JSONObject()
-				.put("entity_identifier", new JSONObject()
-					.put("address", addressing.forResources().of(request.getSymbol(), reAddr))
-				);
-		} else {
-			throw new IllegalStateException();
-		}
+		var key = new DatabaseEntry(Longs.toByteArray(nextIndex));
+		var value = new DatabaseEntry(txn.getTxnId().getBytes());
+		transactions.putNoOverwrite(dbTxn, key, value);
 	}
 }

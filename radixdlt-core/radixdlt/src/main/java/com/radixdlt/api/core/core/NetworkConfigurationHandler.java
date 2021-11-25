@@ -61,72 +61,52 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.engine;
+package com.radixdlt.api.core.core;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.utils.Bytes;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.radixdlt.api.core.core.openapitools.model.Bech32HRPs;
+import com.radixdlt.api.core.core.openapitools.model.NetworkConfigurationResponse;
+import com.radixdlt.api.core.core.openapitools.model.NetworkConfigurationResponseVersion;
+import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.middleware2.InfoSupplier;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 
-import java.util.Collection;
-import java.util.function.Function;
+import static org.radix.Radix.SYSTEM_VERSION_KEY;
+import static org.radix.Radix.VERSION_STRING_KEY;
 
-
-public class EngineStateHandler implements ApiHandler<Void> {
-	private final Addressing addressing;
-	private final VerifiedTxnsAndProof genesis;
-	private final InMemorySystemInfo inMemorySystemInfo;
+public class NetworkConfigurationHandler extends JsonRpcHandler<Void, NetworkConfigurationResponse> {
+	private final Network network;
+	private final InfoSupplier infoSupplier;
 
 	@Inject
-	public EngineStateHandler(
-		@Genesis VerifiedTxnsAndProof genesis,
-		InMemorySystemInfo inMemorySystemInfo,
-		Addressing addressing
+	NetworkConfigurationHandler(
+		@NetworkId int networkId,
+		InfoSupplier infoSupplier
 	) {
-		this.genesis = genesis;
-		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.addressing = addressing;
+		super(Void.class);
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.infoSupplier = infoSupplier;
 	}
 
 	@Override
-	public Void parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return null;
-	}
-
-	@Override
-	public JSONObject handleRequest(Void request) throws Exception {
-		return new JSONObject()
-			.put("proof", getLatestProof())
-			.put("epoch_proof", getLatestEpochProof())
-			.put("checkpoints", getCheckpoints());
-	}
-
-	public JSONObject getLatestProof() {
-		var proof = inMemorySystemInfo.getCurrentProof();
-		return proof == null ? new JSONObject() : proof.asJSON(addressing);
-	}
-
-	public JSONObject getLatestEpochProof() {
-		var proof = inMemorySystemInfo.getEpochProof();
-		return proof == null ? new JSONObject() : proof.asJSON(addressing);
-	}
-
-	private static <T> JSONArray fromCollection(Collection<T> input, Function<T, Object> mapper) {
-		var array = new JSONArray();
-		input.forEach(element -> array.put(mapper.apply(element)));
-		return array;
-	}
-
-	public JSONObject getCheckpoints() {
-		return new JSONObject()
-			.put("txn", fromCollection(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
-			.put("proof", genesis.getProof().asJSON(addressing));
+	public NetworkConfigurationResponse handleRequest(Void request) {
+		return new NetworkConfigurationResponse()
+			.networkIdentifier(new NetworkIdentifier().network(network.name().toLowerCase()))
+			.bech32HumanReadableParts(
+				new Bech32HRPs()
+					.accountHrp(network.getAccountHrp())
+					.validatorHrp(network.getValidatorHrp())
+					.nodeHrp(network.getNodeHrp())
+					.resourceHrpSuffix(network.getResourceHrpSuffix())
+			)
+			.version(
+				new NetworkConfigurationResponseVersion()
+					.apiVersion("0.9.0")
+					.coreVersion(infoSupplier.getInfo().get(SYSTEM_VERSION_KEY)
+						.get(VERSION_STRING_KEY).toString()
+					)
+			);
 	}
 }

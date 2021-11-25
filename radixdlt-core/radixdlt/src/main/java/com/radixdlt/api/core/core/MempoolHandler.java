@@ -61,52 +61,43 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.network;
+package com.radixdlt.api.core.core;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.openapitools.model.Bech32HRPs;
-import com.radixdlt.api.core.core.openapitools.model.NetworkConfigurationResponse;
-import com.radixdlt.api.core.core.openapitools.model.NetworkConfigurationResponseVersion;
-import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.MempoolRequest;
+import com.radixdlt.api.core.core.openapitools.model.MempoolResponse;
+import com.radixdlt.api.core.core.openapitools.model.TransactionIdentifier;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.RadixEngineMempool;
 
-import static org.radix.Radix.SYSTEM_VERSION_KEY;
-import static org.radix.Radix.VERSION_STRING_KEY;
-
-public class NetworkConfigurationHandler extends JsonRpcHandler<Void, NetworkConfigurationResponse> {
+public class MempoolHandler extends JsonRpcHandler<MempoolRequest, MempoolResponse> {
 	private final Network network;
-	private final InfoSupplier infoSupplier;
+	private final RadixEngineMempool mempool;
 
 	@Inject
-	NetworkConfigurationHandler(
+	private MempoolHandler(
 		@NetworkId int networkId,
-		InfoSupplier infoSupplier
+		RadixEngineMempool mempool
 	) {
-		super(Void.class);
+		super(MempoolRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
-		this.infoSupplier = infoSupplier;
+		this.mempool = mempool;
 	}
 
 	@Override
-	public NetworkConfigurationResponse handleRequest(Void request) {
-		return new NetworkConfigurationResponse()
-			.networkIdentifier(new NetworkIdentifier().network(network.name().toLowerCase()))
-			.bech32HumanReadableParts(
-				new Bech32HRPs()
-					.accountHrp(network.getAccountHrp())
-					.validatorHrp(network.getValidatorHrp())
-					.nodeHrp(network.getNodeHrp())
-					.resourceHrpSuffix(network.getResourceHrpSuffix())
-			)
-			.version(
-				new NetworkConfigurationResponseVersion()
-					.apiVersion("0.9.0")
-					.coreVersion(infoSupplier.getInfo().get(SYSTEM_VERSION_KEY)
-						.get(VERSION_STRING_KEY).toString()
-					)
-			);
+	public MempoolResponse handleRequest(MempoolRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
+			throw new IllegalStateException();
+		}
+
+		return mempool.getData(map -> {
+			var response = new MempoolResponse();
+			map.keySet().forEach(txnId -> response.addTransactionIdentifiersItem(
+				new TransactionIdentifier().hash(txnId.toString())
+			));
+			return response;
+		});
 	}
 }

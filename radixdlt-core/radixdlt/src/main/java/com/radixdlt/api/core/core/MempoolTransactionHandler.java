@@ -61,111 +61,70 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.transactions;
+package com.radixdlt.api.core.core;
 
-import com.google.common.collect.Streams;
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
+import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionResponse;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import com.radixdlt.utils.Longs;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.Get;
-import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineMempool;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Stream;
+public class MempoolTransactionHandler extends JsonRpcHandler<MempoolTransactionRequest, MempoolTransactionResponse> {
+	private final Network network;
+	private final RadixEngineMempool mempool;
+	private final ModelMapper modelMapper;
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 
-import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.sleepycat.je.LockMode.DEFAULT;
-import static com.sleepycat.je.OperationStatus.SUCCESS;
-
-public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalStore {
-	private static final String TRANSACTIONS_DB = "radix.versioned_transactions";
-	private Database transactions;
-
-	@Override
-	public void open(DatabaseEnvironment dbEnv) {
-		var env = dbEnv.getEnvironment();
-		transactions = env.openDatabase(null, TRANSACTIONS_DB, new DatabaseConfig()
-			.setAllowCreate(true)
-			.setTransactional(true)
-			.setKeyPrefixing(true)
-			.setBtreeComparator(lexicographicalComparator())
-		);
-	}
-
-	@Override
-	public void close() {
-		if (transactions != null) {
-			transactions.close();
-		}
-	}
-
-	public long getCount() {
-		try (var cursor = transactions.openCursor(null, null)) {
-			final DatabaseEntry key = new DatabaseEntry();
-			var result = cursor.getLast(key, null, null);
-			return result == SUCCESS ? Longs.fromByteArray(key.getData()) : 0;
-		}
-	}
-
-	public Stream<AID> get(long stateVersion) {
-		var cursor = transactions.openCursor(null, null);
-		var iterator = new Iterator<AID>() {
-			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion));
-			final DatabaseEntry value = new DatabaseEntry();
-			OperationStatus status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
-
-			@Override
-			public boolean hasNext() {
-				return status == SUCCESS;
-			}
-
-			@Override
-			public AID next() {
-				if (status != SUCCESS) {
-					throw new NoSuchElementException();
-				}
-				var next = AID.from(value.getData());
-				status = cursor.getNext(key, value, null);
-				return next;
-			}
-		};
-		return Streams.stream(iterator).onClose(cursor::close);
-	}
-
-	@Override
-	public void process(
-		Transaction dbTxn,
-		REProcessedTxn txn,
-		long stateVersion,
-		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
+	@Inject
+	private MempoolTransactionHandler(
+		@NetworkId int networkId,
+		RadixEngineMempool mempool,
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+		ModelMapper modelMapper
 	) {
-		final long nextIndex;
-		try (var cursor = transactions.openCursor(dbTxn, null)) {
-			var key = new DatabaseEntry();
-			var status = cursor.getLast(key, null, DEFAULT);
-			if (status == OperationStatus.NOTFOUND) {
-				nextIndex = 0;
-			} else {
-				nextIndex = Longs.fromByteArray(key.getData()) + 1;
-			}
-		}
-		if (stateVersion != nextIndex + 1) {
-			throw new IllegalStateException("Expected stateVersion " + (nextIndex + 1) + " but is " + stateVersion);
+		super(MempoolTransactionRequest.class);
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.mempool = mempool;
+		this.modelMapper = modelMapper;
+		this.radixEngineProvider = radixEngineProvider;
+	}
+
+	private String symbol(REAddr tokenAddress) {
+		var mapKey = SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+		var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
+		// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+		var tokenResourceMetadata = (TokenResourceMetadata) substate;
+		return tokenResourceMetadata.getSymbol();
+	}
+
+	@Override
+	public MempoolTransactionResponse handleRequest(MempoolTransactionRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
+			throw new IllegalStateException();
 		}
 
-		var key = new DatabaseEntry(Longs.toByteArray(nextIndex));
-		var value = new DatabaseEntry(txn.getTxnId().getBytes());
-		transactions.putNoOverwrite(dbTxn, key, value);
+		var txnId = AID.from(request.getTransactionIdentifier().getHash());
+		var transaction = mempool.getData(map -> map.get(txnId));
+		if (transaction == null) {
+			throw new IllegalStateException();
+		}
+
+		var processed = transaction.getFirst();
+		var metadata = transaction.getSecond();
+		var transactionModel = modelMapper.transaction(processed, this::symbol);
+		return new MempoolTransactionResponse()
+			.transaction(transactionModel);
+		// .put("added_timestamp", metadata.getInserted())
 	}
 }

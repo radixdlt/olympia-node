@@ -61,94 +61,62 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.network;
+package com.radixdlt.api.core.core;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequest;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataToken;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveResponse;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
-import com.radixdlt.api.core.core.openapitools.model.PublicKey;
-import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.utils.Bytes;
 
-public final class NetworkStatusHandler extends JsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
+public class ConstructionDeriveHandler extends JsonRpcHandler<ConstructionDeriveRequest, ConstructionDeriveResponse> {
 	private final Network network;
-	private final REAddr accountAddress;
-	private final ECPublicKey validatorKey;
-	private final InMemorySystemInfo inMemorySystemInfo;
-	private final AccumulatorState genesisAccumulatorState;
 	private final Addressing addressing;
 
 	@Inject
-	NetworkStatusHandler(
+	ConstructionDeriveHandler(
 		@NetworkId int networkId,
-		@Self REAddr accountAddress,
-		@Self ECPublicKey validatorKey,
-		InMemorySystemInfo inMemorySystemInfo,
-		@Genesis Txn genesisTxn,
-		LedgerAccumulator ledgerAccumulator,
 		Addressing addressing
 	) {
-		super(NetworkStatusRequest.class);
+		super(ConstructionDeriveRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
-		this.accountAddress = accountAddress;
-		this.validatorKey = validatorKey;
-		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
-			new AccumulatorState(0, HashUtils.zero256()), genesisTxn.getId().asHashCode()
-		);
 		this.addressing = addressing;
 	}
 
 	@Override
-	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws Exception {
+	public ConstructionDeriveResponse handleRequest(ConstructionDeriveRequest request) throws Exception {
 		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
-		var currentProof = inMemorySystemInfo.getCurrentProof();
-		return new NetworkStatusResponse()
-			.currentStateEpoch(currentProof.getEpoch())
-			.currentStateRound(currentProof.getView().number())
-			.currentStateTimestamp(currentProof.timestamp())
-			.preGenesisStateIdentifier(
-				new StateIdentifier()
-					.stateVersion(0L)
-					.transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes()))
-			)
-			.genesisStateIdentifier(
-				new StateIdentifier()
-					.stateVersion(genesisAccumulatorState.getStateVersion())
-					.transactionAccumulator(Bytes.toHexString(genesisAccumulatorState.getAccumulatorHash().asBytes()))
-			)
-			.currentStateIdentifier(
-				new StateIdentifier()
-					.stateVersion(currentProof.getStateVersion())
-					.transactionAccumulator(Bytes.toHexString(currentProof.getAccumulatorState().getAccumulatorHash().asBytes()))
-			)
-			.nodeIdentifiers(
-				new NetworkStatusResponseNodeIdentifiers()
-					.accountEntityIdentifier(
-						new EntityIdentifier().address(addressing.forAccounts().of(accountAddress))
-					)
-					.validatorEntityIdentifier(
-						new EntityIdentifier().address(addressing.forValidators().of(validatorKey))
-					)
-					.publicKey(new PublicKey().hex(validatorKey.toHex()))
+		var publicKey = ECPublicKey.fromHex(request.getPublicKey().getHex());
+		var response = new ConstructionDeriveResponse();
+		if (request.getMetadata() instanceof ConstructionDeriveRequestMetadataAccount) {
+			var address = REAddr.ofPubKeyAccount(publicKey);
+			response.entityIdentifier(new EntityIdentifier()
+				.address(addressing.forAccounts().of(address))
 			);
+		} else if (request.getMetadata() instanceof ConstructionDeriveRequestMetadataValidator) {
+			response.entityIdentifier(new EntityIdentifier()
+				.address(addressing.forValidators().of(publicKey))
+			);
+		} else if (request.getMetadata() instanceof ConstructionDeriveRequestMetadataToken token) {
+			var tokenAddress = REAddr.ofHashedKey(publicKey, token.getSymbol());
+			response.entityIdentifier(new EntityIdentifier()
+				.address(addressing.forResources().of(token.getSymbol(), tokenAddress))
+			);
+		} else {
+			throw new IllegalStateException();
+		}
+
+		return response;
 	}
 }

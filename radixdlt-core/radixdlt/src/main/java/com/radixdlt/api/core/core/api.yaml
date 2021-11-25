@@ -1645,6 +1645,8 @@ components:
           address: test_rr1q0xjsd8e3ud8dexqntmse9n0mcjhepfr7y404dd3tfqqngerma
     ConstructionDeriveRequestMetadata:
       type: object
+      required:
+        - type
       properties:
         type:
           type: string
@@ -2164,20 +2166,16 @@ components:
           type: string
         unstaking_delay_epoch_length:
           type: integer
-          format: int64
         minimum_completed_proposals_percentage:
           type: integer
         maximum_transaction_size:
           type: integer
-          format: int64
         maximum_transactions_per_round:
           type: integer
         validator_fee_increase_debouncer_epoch_length:
           type: integer
-          format: int64
         maximum_rounds_per_epoch:
           type: integer
-          format: int64
         minimum_stake:
           "$ref": "#/components/schemas/ResourceAmount"
         rewards_per_proposal:

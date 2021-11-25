@@ -61,35 +61,77 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.engine;
+package com.radixdlt.api.core.core;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.ModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
-import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationResponse;
+import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
+import com.radixdlt.api.core.core.openapitools.model.EntityResponse;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-import java.util.TreeMap;
+import java.util.function.Function;
 
-public class EngineConfigurationHandler extends JsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
-	private final TreeMap<Long, ForkConfig> forks;
+public class EntityHandler extends JsonRpcHandler<EntityRequest, EntityResponse> {
+	private final Network network;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ModelMapper modelMapper;
 
 	@Inject
-	public EngineConfigurationHandler(
-		TreeMap<Long, ForkConfig> forks,
+	EntityHandler(
+		@NetworkId int networkId,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		ModelMapper modelMapper
 	) {
-		super(EngineConfigurationRequest.class);
-		this.forks = forks;
+		super(EntityRequest.class);
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.radixEngine = radixEngine;
 		this.modelMapper = modelMapper;
 	}
 
 	@Override
-	public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request) {
-		var response = new EngineConfigurationResponse();
-		forks.forEach((epoch, config) -> response.addForksItem(modelMapper.fork(config)));
-		return response;
+	public EntityResponse handleRequest(EntityRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
+			throw new IllegalStateException();
+		}
+
+		var entityIdentifier = request.getEntityIdentifier();
+		var entity = modelMapper.entity(entityIdentifier);
+		var keyQueries = entity.getKeyQueries();
+		var resourceQueries = entity.getResourceQueries();
+
+		return radixEngine.read(reader -> {
+			Function<REAddr, String> addressToSymbol = addr -> {
+				var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+				var substate = reader.get(mapKey).orElseThrow();
+				var tokenResource = (TokenResourceMetadata) substate;
+				return tokenResource.getSymbol();
+			};
+			var proof = reader.getMetadata().getProof();
+			var response = new EntityResponse()
+				.stateIdentifier(modelMapper.stateIdentifier(proof.getAccumulatorState()));
+
+			for (var resourceQuery : resourceQueries) {
+				var index = resourceQuery.getIndex();
+				var bucketPredicate = resourceQuery.getPredicate();
+				reader.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
+					.forEach((bucket, amount) -> response.addBalancesItem(modelMapper.resourceAmount(bucket, amount, addressToSymbol)));
+			}
+
+			for (var keyQuery : keyQueries) {
+				var substate = reader.get(keyQuery.getKey()).or(keyQuery.getVirtualSubstate());
+				substate.flatMap(modelMapper::dataObject).ifPresent(response::addDataObjectsItem);
+			}
+
+			return response;
+		});
 	}
 }

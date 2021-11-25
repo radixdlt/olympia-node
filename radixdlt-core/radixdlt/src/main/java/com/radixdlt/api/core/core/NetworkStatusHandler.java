@@ -61,70 +61,94 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.mempool;
+package com.radixdlt.api.core.core;
 
 import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.radixdlt.api.core.core.ModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
-import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionResponse;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
+import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
+import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.PublicKey;
+import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineMempool;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.radixdlt.utils.Bytes;
 
-public class MempoolTransactionHandler extends JsonRpcHandler<MempoolTransactionRequest, MempoolTransactionResponse> {
+public final class NetworkStatusHandler extends JsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
 	private final Network network;
-	private final RadixEngineMempool mempool;
-	private final ModelMapper modelMapper;
-	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+	private final REAddr accountAddress;
+	private final ECPublicKey validatorKey;
+	private final InMemorySystemInfo inMemorySystemInfo;
+	private final AccumulatorState genesisAccumulatorState;
+	private final Addressing addressing;
 
 	@Inject
-	private MempoolTransactionHandler(
+	NetworkStatusHandler(
 		@NetworkId int networkId,
-		RadixEngineMempool mempool,
-		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		ModelMapper modelMapper
+		@Self REAddr accountAddress,
+		@Self ECPublicKey validatorKey,
+		InMemorySystemInfo inMemorySystemInfo,
+		@Genesis Txn genesisTxn,
+		LedgerAccumulator ledgerAccumulator,
+		Addressing addressing
 	) {
-		super(MempoolTransactionRequest.class);
+		super(NetworkStatusRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
-		this.mempool = mempool;
-		this.modelMapper = modelMapper;
-		this.radixEngineProvider = radixEngineProvider;
-	}
-
-	private String symbol(REAddr tokenAddress) {
-		var mapKey = SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-		var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
-		// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-		var tokenResourceMetadata = (TokenResourceMetadata) substate;
-		return tokenResourceMetadata.getSymbol();
+		this.accountAddress = accountAddress;
+		this.validatorKey = validatorKey;
+		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
+			new AccumulatorState(0, HashUtils.zero256()), genesisTxn.getId().asHashCode()
+		);
+		this.addressing = addressing;
 	}
 
 	@Override
-	public MempoolTransactionResponse handleRequest(MempoolTransactionRequest request) throws Exception {
+	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws Exception {
 		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
-		var txnId = AID.from(request.getTransactionIdentifier().getHash());
-		var transaction = mempool.getData(map -> map.get(txnId));
-		if (transaction == null) {
-			throw new IllegalStateException();
-		}
-
-		var processed = transaction.getFirst();
-		var metadata = transaction.getSecond();
-		var transactionModel = modelMapper.transaction(processed, this::symbol);
-		return new MempoolTransactionResponse()
-			.transaction(transactionModel);
-		// .put("added_timestamp", metadata.getInserted())
+		var currentProof = inMemorySystemInfo.getCurrentProof();
+		return new NetworkStatusResponse()
+			.currentStateEpoch(currentProof.getEpoch())
+			.currentStateRound(currentProof.getView().number())
+			.currentStateTimestamp(currentProof.timestamp())
+			.preGenesisStateIdentifier(
+				new StateIdentifier()
+					.stateVersion(0L)
+					.transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes()))
+			)
+			.genesisStateIdentifier(
+				new StateIdentifier()
+					.stateVersion(genesisAccumulatorState.getStateVersion())
+					.transactionAccumulator(Bytes.toHexString(genesisAccumulatorState.getAccumulatorHash().asBytes()))
+			)
+			.currentStateIdentifier(
+				new StateIdentifier()
+					.stateVersion(currentProof.getStateVersion())
+					.transactionAccumulator(Bytes.toHexString(currentProof.getAccumulatorState().getAccumulatorHash().asBytes()))
+			)
+			.nodeIdentifiers(
+				new NetworkStatusResponseNodeIdentifiers()
+					.accountEntityIdentifier(
+						new EntityIdentifier().address(addressing.forAccounts().of(accountAddress))
+					)
+					.validatorEntityIdentifier(
+						new EntityIdentifier().address(addressing.forValidators().of(validatorKey))
+					)
+					.publicKey(new PublicKey().hex(validatorKey.toHex()))
+			);
 	}
 }

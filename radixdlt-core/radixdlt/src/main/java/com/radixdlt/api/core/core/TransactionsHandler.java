@@ -61,43 +61,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.mempool;
+package com.radixdlt.api.core.core;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.openapitools.model.MempoolRequest;
-import com.radixdlt.api.core.core.openapitools.model.MempoolResponse;
-import com.radixdlt.api.core.core.openapitools.model.TransactionIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
+import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsResponse;
+import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
+import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.RadixEngineMempool;
+import com.radixdlt.utils.Bytes;
 
-public class MempoolHandler extends JsonRpcHandler<MempoolRequest, MempoolResponse> {
+import java.util.stream.Collectors;
+
+public class TransactionsHandler extends JsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
 	private final Network network;
-	private final RadixEngineMempool mempool;
+	private final BerkeleyTransactionsByIdStore txnStore;
+	private final BerkeleyTransactionIndexStore store;
 
 	@Inject
-	private MempoolHandler(
+	TransactionsHandler(
 		@NetworkId int networkId,
-		RadixEngineMempool mempool
+		BerkeleyTransactionIndexStore store,
+		BerkeleyTransactionsByIdStore txnStore
 	) {
-		super(MempoolRequest.class);
+		super(CommittedTransactionsRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
-		this.mempool = mempool;
+		this.store = store;
+		this.txnStore = txnStore;
 	}
 
 	@Override
-	public MempoolResponse handleRequest(MempoolRequest request) throws Exception {
+	public CommittedTransactionsResponse handleRequest(CommittedTransactionsRequest request) throws Exception {
 		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
-		return mempool.getData(map -> {
-			var response = new MempoolResponse();
-			map.keySet().forEach(txnId -> response.addTransactionIdentifiersItem(
-				new TransactionIdentifier().hash(txnId.toString())
-			));
-			return response;
-		});
+		var limit = request.getLimit() == null ? 0L : request.getLimit();
+		var stateIdentifier = request.getStateIdentifier();
+		var previousStateVersion = stateIdentifier == null ? 0L : stateIdentifier.getStateVersion() - 1;
+		final StateIdentifier committedStateIdentifier;
+		if (previousStateVersion >= 0) {
+			try (var stream = store.get(previousStateVersion)) {
+				var prevTxnJson = stream.findFirst().flatMap(txnStore::getCommittedTransaction).orElseThrow();
+				committedStateIdentifier = prevTxnJson.getCommittedStateIdentifier();
+			}
+		} else {
+			committedStateIdentifier = new StateIdentifier()
+				.stateVersion(0L)
+				.transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes()));
+		}
+		var accumulator = request.getStateIdentifier().getTransactionAccumulator();
+		if (accumulator != null) {
+			var matchesInput = accumulator.equals(committedStateIdentifier.getTransactionAccumulator());
+			if (!matchesInput) {
+				throw new IllegalStateException();
+			}
+		}
+
+		var response = new CommittedTransactionsResponse();
+		response.stateIdentifier(committedStateIdentifier);
+
+		try (var stream = store.get(previousStateVersion)) {
+			var transactions = stream.limit(limit)
+				.map(txnId -> txnStore.getCommittedTransaction(txnId).orElseThrow())
+				.collect(Collectors.toList());
+			response.transactions(transactions);
+		}
+
+		return response;
 	}
 }
