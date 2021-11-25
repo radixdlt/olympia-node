@@ -33,7 +33,13 @@ public class MessagePreprocessorTest {
 	private final MessageCentralConfiguration config = mock(MessageCentralConfiguration.class);
 	private final Serialization serialization = DefaultSerialization.getInstance();
 	private final PeerControl peerControl = mock(PeerControl.class);
-	private final MessagePreprocessor messagePreprocessor = new MessagePreprocessor(counters, config, System::currentTimeMillis, serialization, () -> peerControl);
+	private final MessagePreprocessor messagePreprocessor = new MessagePreprocessor(
+		counters,
+		config,
+		System::currentTimeMillis,
+		serialization,
+		() -> peerControl
+	);
 
 	@Test
 	public void invalid_sync_request_message_is_not_accepted_and_peer_is_banned() throws Exception {
