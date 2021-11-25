@@ -64,7 +64,9 @@
 package com.radixdlt.api.core.core;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.core.core.construction.BuildTransactionHandler;
 import com.radixdlt.api.core.core.construction.DeriveHandler;
 import com.radixdlt.api.core.core.construction.FinalizeTransactionHandler;
@@ -79,8 +81,10 @@ import com.radixdlt.api.core.core.mempool.MempoolTransactionHandler;
 import com.radixdlt.api.core.core.network.NetworkConfigurationHandler;
 import com.radixdlt.api.core.core.network.NetworkStatusHandler;
 import com.radixdlt.api.core.core.sign.SignHandler;
+import com.radixdlt.api.core.core.transactions.BerkeleyTransactionIndexStore;
 import com.radixdlt.api.core.core.transactions.TransactionsHandler;
 import com.radixdlt.api.util.HandlerRoute;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
@@ -108,6 +112,9 @@ public class CoreApiModule extends AbstractModule {
 		routeBinder.addBinding(HandlerRoute.post("/engine/configuration")).to(EngineConfigurationHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/engine/state")).to(EngineStateHandler.class);
 		if (transactionsEnable) {
+			bind(BerkeleyTransactionIndexStore.class).in(Scopes.SINGLETON);
+			Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+				.addBinding().to(BerkeleyTransactionIndexStore.class);
 			routeBinder.addBinding(HandlerRoute.post("/transactions")).to(TransactionsHandler.class);
 		}
 		routeBinder.addBinding(HandlerRoute.post("/construction/derive")).to(DeriveHandler.class);

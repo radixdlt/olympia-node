@@ -66,6 +66,8 @@ package com.radixdlt.api.service.transactions;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.radixdlt.api.core.core.openapitools.JSON;
+import com.radixdlt.api.core.core.openapitools.model.CommittedTransaction;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
@@ -93,6 +95,7 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Transaction;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Optional;
@@ -161,6 +164,23 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 
 		return Optional.empty();
 	}
+
+	public Optional<CommittedTransaction> getCommittedTransaction(AID aid) {
+		var key = new DatabaseEntry(aid.getBytes());
+		var value = new DatabaseEntry();
+
+		if (txnIdDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
+			try {
+				var transaction = JSON.getDefault().getMapper().readValue(value.getData(), CommittedTransaction.class);
+				return Optional.of(transaction);
+			} catch (IOException e) {
+				throw new IllegalStateException(e);
+			}
+		}
+
+		return Optional.empty();
+	}
+
 
 	@Override
 	public void close() {

@@ -64,19 +64,19 @@
 package com.radixdlt.api.core.core.transactions;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.core.core.network.NetworkIdentifier2;
+import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
+import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsResponse;
+import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.utils.Bytes;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-public class TransactionsHandler implements ApiHandler<TransactionsRequest> {
+import java.util.stream.Collectors;
+
+public class TransactionsHandler implements JsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
 	private final Network network;
 	private final BerkeleyTransactionsByIdStore txnStore;
 	private final BerkeleyTransactionIndexStore store;
@@ -93,49 +93,48 @@ public class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 	}
 
 	@Override
-	public TransactionsRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		var limit = requestReader.getOptUnsignedLong("limit").orElse(1);
-		var stateIdentifier = requestReader.getJsonObject("state_identifier", PartialStateIdentifier::from);
-		var networkIdentifier = requestReader.getJsonObject("network_identifier", NetworkIdentifier2::from);
-		return new TransactionsRequest(networkIdentifier, stateIdentifier, limit);
+	public Class<CommittedTransactionsRequest> requestClass() {
+		return CommittedTransactionsRequest.class;
 	}
 
 	@Override
-	public JSONObject handleRequest(TransactionsRequest request) throws Exception {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network)) {
+	public CommittedTransactionsResponse handleRequest(CommittedTransactionsRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
+		var limit = request.getLimit() == null ? 0L : request.getLimit();
 		var stateIdentifier = request.getStateIdentifier();
-		var previousStateVersion = stateIdentifier.getStateVersion() - 1;
-		final JSONObject committedStateIdentifier;
+		var previousStateVersion = stateIdentifier == null ? 0L : stateIdentifier.getStateVersion() - 1;
+		final StateIdentifier committedStateIdentifier;
 		if (previousStateVersion >= 0) {
 			try (var stream = store.get(previousStateVersion)) {
-				var prevTxnJson = stream.findFirst().flatMap(txnStore::getTransactionJSON).orElseThrow();
-				committedStateIdentifier = prevTxnJson.getJSONObject("committed_state_identifier");
+				var prevTxnJson = stream.findFirst().flatMap(txnStore::getCommittedTransaction).orElseThrow();
+				committedStateIdentifier = prevTxnJson.getCommittedStateIdentifier();
 			}
 		} else {
-			committedStateIdentifier = new JSONObject()
-				.put("state_version", 0)
-				.put("transaction_accumulator", Bytes.toHexString(HashUtils.zero256().asBytes()));
+			committedStateIdentifier = new StateIdentifier()
+				.stateVersion(0L)
+				.transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes()));
 		}
-		var matchesInput = request.getStateIdentifier().getTransactionAccumulator()
-			.map(Bytes::toHexString)
-			.map(h -> committedStateIdentifier.getString("transaction_accumulator").equals(h))
-			.orElse(true);
-		if (!matchesInput) {
-			throw new IllegalStateException();
-		}
-
-		var transactions = new JSONArray();
-		try (var stream = store.get(stateIdentifier.getStateVersion())) {
-			stream.limit(request.getLimit())
-				.map(txnId -> txnStore.getTransactionJSON(txnId).orElseThrow())
-				.forEach(transactions::put);
+		var accumulator = request.getStateIdentifier().getTransactionAccumulator();
+		if (accumulator != null) {
+			var matchesInput = accumulator.equals(committedStateIdentifier.getTransactionAccumulator());
+			if (!matchesInput) {
+				throw new IllegalStateException();
+			}
 		}
 
-		return new JSONObject()
-			.put("state_identifier", committedStateIdentifier)
-			.put("transactions", transactions);
+		var response = new CommittedTransactionsResponse();
+		response.stateIdentifier(committedStateIdentifier);
+
+		try (var stream = store.get(previousStateVersion)) {
+			var transactions = stream.limit(limit)
+				.map(txnId -> txnStore.getCommittedTransaction(txnId).orElseThrow())
+				.collect(Collectors.toList());
+			response.transactions(transactions);
+		}
+
+		return response;
 	}
 }
