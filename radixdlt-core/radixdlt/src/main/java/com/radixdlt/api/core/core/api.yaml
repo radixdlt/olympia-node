@@ -65,8 +65,18 @@ info:
 
     ## Client Reference Implementation
 
-    We are currently working on a client reference implementation to the Core API
-    and hope to have this available to share with you soon.
+    > IMPORTANT
+    >
+    > The Network Gateway service is subject to substantial change before official release in v1.
+
+    We are currently working on a client reference implementation to the Core API, which we are happy to share
+    with you for reference, as a demonstration of how to interpret responses from the Core API:
+
+    * [Latest - more functionality, no guarantees of correctness](https://github.com/radixdlt/radixdlt-network-gateway/)
+    * [Stable - old code, ingesting balance and transfer data, manually tested against stokenet](https://github.com/radixdlt/radixdlt-network-gateway/tree/v0.1_BalanceSubstatesAndHistory)
+
+    As a starter, check out the folder `./src/DataAggregator/LedgerExtension` for understanding how to parse
+    the contents of the transaction stream.
 
     ## Client Code Generation
 
