@@ -71,10 +71,14 @@ import com.radixdlt.api.core.core.openapitools.model.*;
 import com.radixdlt.api.service.transactions.SubstateTypeMapping;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
+import com.radixdlt.application.system.state.SystemData;
+import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.ResourceData;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
@@ -83,8 +87,13 @@ import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
+import com.radixdlt.application.validators.state.ValidatorUpdatingData;
+import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.REStateUpdate;
+
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.networks.Addressing;
@@ -94,9 +103,13 @@ import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 
-public class ModelMapper {
+public final class ModelMapper {
 	private final Addressing addressing;
 
 	@Inject
@@ -311,33 +324,180 @@ public class ModelMapper {
 			.type(SubstateTypeMapping.getName(SubstateTypeId.VIRTUAL_PARENT));
 	}
 
-	public DataObject dataObject(Particle substate) {
+	public Optional<DataObject> dataObject(Particle substate) {
+		final DataObject dataObject;
 		if (substate instanceof TokenResource tokenResource) {
-			return tokenData(tokenResource);
+			dataObject = tokenData(tokenResource);
 		} else if (substate instanceof TokenResourceMetadata metadata) {
-			return tokenMetadata(metadata);
+			dataObject = tokenMetadata(metadata);
 		} else if (substate instanceof EpochData epochData) {
-			return epochData(epochData);
+			dataObject = epochData(epochData);
 		} else if (substate instanceof RoundData roundData) {
-			return roundData(roundData);
+			dataObject = roundData(roundData);
 		} else if (substate instanceof ValidatorRegisteredCopy validatorRegisteredCopy) {
-			return preparedValidatorRegistered(validatorRegisteredCopy);
+			dataObject = preparedValidatorRegistered(validatorRegisteredCopy);
 		} else if (substate instanceof ValidatorOwnerCopy validatorOwnerCopy) {
-			return preparedValidatorOwner(validatorOwnerCopy);
+			dataObject = preparedValidatorOwner(validatorOwnerCopy);
 		} else if (substate instanceof ValidatorFeeCopy validatorFeeCopy) {
-			return preparedValidatorFee(validatorFeeCopy);
+			dataObject = preparedValidatorFee(validatorFeeCopy);
 		} else if (substate instanceof ValidatorMetaData validatorMetaData) {
-			return validatorMetadata(validatorMetaData);
+			dataObject = validatorMetadata(validatorMetaData);
 		} else if (substate instanceof ValidatorBFTData validatorBFTData) {
-			return validatorBFTData(validatorBFTData);
+			dataObject = validatorBFTData(validatorBFTData);
 		} else if (substate instanceof AllowDelegationFlag allowDelegationFlag) {
-			return allowDelegationFlag(allowDelegationFlag);
+			dataObject = allowDelegationFlag(allowDelegationFlag);
 		} else if (substate instanceof ValidatorSystemMetadata validatorSystemMetadata) {
-			return validatorSystemMetadata(validatorSystemMetadata);
+			dataObject = validatorSystemMetadata(validatorSystemMetadata);
 		} else if (substate instanceof ValidatorStakeData validatorStakeData) {
-			return validatorStakeData(validatorStakeData);
+			dataObject = validatorStakeData(validatorStakeData);
 		} else {
-			throw new IllegalStateException("Unknown data object:  " + substate);
+			return Optional.empty();
 		}
+
+		return Optional.of(dataObject);
+	}
+
+	public SubstateIdentifier substateIdentifier(SubstateId substateId) {
+		return new SubstateIdentifier()
+			.identifier(Bytes.toHexString(substateId.asBytes()));
+	}
+
+	public Substate substate(SubstateId substateId, boolean bootUp) {
+		return new Substate()
+			.substateIdentifier(substateIdentifier(substateId))
+			.substateOperation(bootUp ? Substate.SubstateOperationEnum.BOOTUP : Substate.SubstateOperationEnum.SHUTDOWN);
+	}
+
+	public ResourceAmount resourceAmount(ResourceInBucket resourceInBucket, boolean bootUp, Function<REAddr, String> addressToSymbol) {
+		var amount = new BigInteger(bootUp ? 1 : -1, resourceInBucket.getAmount().toByteArray());
+		var bucket = resourceInBucket.bucket();
+		var resourceIdentifier = resourceIdentifier(bucket, addressToSymbol);
+		return new ResourceAmount()
+			.resourceIdentifier(resourceIdentifier)
+			.value(amount.toString());
+	}
+
+	public EntityIdentifier entityIdentifier(Particle substate, Function<REAddr, String> addressToSymbol) {
+		var entityIdentifier = new EntityIdentifier();
+		if (substate instanceof ResourceInBucket resourceInBucket && resourceInBucket.bucket().getOwner() != null) {
+			var bucket = resourceInBucket.bucket();
+			entityIdentifier.address(addressing.forAccounts().of(bucket.getOwner()));
+			if (bucket.getValidatorKey() != null) {
+				if (bucket.resourceAddr() != null && bucket.getEpochUnlock() == null) {
+					entityIdentifier.subEntity(new SubEntity()
+						.address("prepared_stakes")
+						.metadata(new SubEntityMetadata()
+							.validator(addressing.forValidators().of(bucket.getValidatorKey()))
+						)
+					);
+				} else if (bucket.resourceAddr() == null && Objects.equals(bucket.getEpochUnlock(), 0L)) {
+					// Don't add validator as validator is already part of resource
+					entityIdentifier.subEntity(new SubEntity()
+						.address("prepared_unstakes")
+					);
+				} else if (bucket.resourceAddr() != null && bucket.getEpochUnlock() != null) {
+					entityIdentifier.subEntity(new SubEntity()
+						.address("exiting_unstakes")
+						.metadata(new SubEntityMetadata()
+							.validator(addressing.forValidators().of(bucket.getValidatorKey()))
+							.epochUnlock(bucket.getEpochUnlock())
+						)
+					);
+				}
+			}
+		} else if (substate instanceof ValidatorStakeData validatorStakeData) {
+			entityIdentifier
+				.address(addressing.forValidators().of(validatorStakeData.getValidatorKey()))
+				.subEntity(new SubEntity().address("system"));
+		} else if (substate instanceof ResourceData resourceData) {
+			var symbol = addressToSymbol.apply(resourceData.getAddr());
+			entityIdentifier.address(addressing.forResources().of(symbol, resourceData.getAddr()));
+		} else if (substate instanceof SystemData) {
+			entityIdentifier.address("system");
+		} else if (substate instanceof ValidatorUpdatingData validatorUpdatingData) {
+			entityIdentifier.address(addressing.forValidators().of(validatorUpdatingData.getValidatorKey()));
+		} else if (substate instanceof com.radixdlt.application.validators.state.ValidatorData validatorData) {
+			entityIdentifier
+				.address(addressing.forValidators().of(validatorData.getValidatorKey()))
+				.subEntity(new SubEntity().address("system"));
+		} else if (substate instanceof UnclaimedREAddr unclaimedREAddr) {
+			var addr = unclaimedREAddr.getAddr();
+			final String address;
+			if (addr.isSystem()) {
+				address = "system";
+			} else {
+				var symbol = addressToSymbol.apply(addr);
+				address = addressing.forResources().of(symbol, addr);
+			}
+			entityIdentifier.address(address);
+		} else if (substate instanceof VirtualParent) {
+			entityIdentifier.address("system");
+		} else {
+			throw new IllegalStateException();
+		}
+
+		return entityIdentifier;
+	}
+
+	public Optional<Data> data(Particle substate, boolean bootUp) {
+		return dataObject(substate).map(dataObject -> new Data()
+			.dataObject(dataObject)
+			.action(bootUp ? Data.ActionEnum.CREATE : Data.ActionEnum.DELETE));
+	}
+
+	public Operation operation(REStateUpdate update, Function<REAddr, String> addressToSymbol) {
+		var operation = new Operation();
+		var substate = (Particle) update.getParsed();
+		operation.type(SubstateTypeMapping.getType(SubstateTypeId.valueOf(update.typeByte())));
+		operation.substate(substate(update.getId(), update.isBootUp()));
+		/*
+			.putOpt("metadata", update.isShutDown() ? null : new JSONObject()
+				.put("substate_data_hex", Bytes.toHexString(update.getRawSubstateBytes().getData()))
+			);
+		 */
+		operation.entityIdentifier(entityIdentifier(substate, addressToSymbol));
+		if (substate instanceof ResourceInBucket resourceInBucket && !resourceInBucket.getAmount().isZero()) {
+			operation.amount(resourceAmount(resourceInBucket, update.isBootUp(), addressToSymbol));
+		}
+		data(substate, update.isBootUp()).ifPresent(operation::data);
+		return operation;
+	}
+
+	public OperationGroup operationGroup(List<REStateUpdate> stateUpdates, Function<REAddr, String> addressToSymbol) {
+		var operationGroup = new OperationGroup();
+		stateUpdates.forEach(u -> {
+			operationGroup.addOperationsItem(operation(u, addressToSymbol));
+		});
+		return operationGroup;
+	}
+
+	public Transaction transaction(REProcessedTxn txn, Function<REAddr, String> addressToSymbol) {
+		Function<REAddr, String> localizedAddressToSymbol = addr -> {
+			var localSymbol = txn.getGroupedStateUpdates().stream()
+				.flatMap(List::stream)
+				.map(REStateUpdate::getParsed)
+				.filter(TokenResourceMetadata.class::isInstance)
+				.map(TokenResourceMetadata.class::cast)
+				.filter(r -> r.getAddr().equals(addr))
+				.map(TokenResourceMetadata::getSymbol)
+				.findFirst();
+
+			return localSymbol.orElseGet(() -> addressToSymbol.apply(addr));
+		};
+
+		var transaction = new Transaction();
+
+		for (var stateUpdates : txn.getGroupedStateUpdates()) {
+			var operationGroup = operationGroup(stateUpdates, localizedAddressToSymbol);
+			transaction.addOperationGroupsItem(operationGroup);
+		}
+
+		if (!txn.getFeePaid().isZero()) {
+			transaction.metadata(new CommittedTransactionMetadata()
+				.fee(nativeTokenAmount(txn.getFeePaid()))
+			);
+		}
+
+		return transaction;
 	}
 }

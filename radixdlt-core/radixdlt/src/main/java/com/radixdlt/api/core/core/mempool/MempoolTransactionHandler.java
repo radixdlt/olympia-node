@@ -64,61 +64,67 @@
 package com.radixdlt.api.core.core.mempool;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
-import com.radixdlt.api.util.ApiHandler;
+import com.google.inject.Provider;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
+import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionResponse;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineMempool;
-import com.radixdlt.utils.Bytes;
-import org.json.JSONObject;
 
-public class MempoolTransactionHandler implements ApiHandler<MempoolTransactionRequest> {
+public class MempoolTransactionHandler extends JsonRpcHandler<MempoolTransactionRequest, MempoolTransactionResponse> {
 	private final Network network;
 	private final RadixEngineMempool mempool;
-	private final ProcessedTxnJsonConverter converter;
+	private final ModelMapper modelMapper;
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 
 	@Inject
 	private MempoolTransactionHandler(
 		@NetworkId int networkId,
 		RadixEngineMempool mempool,
-		ProcessedTxnJsonConverter converter
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+		ModelMapper modelMapper
 	) {
+		super(MempoolTransactionRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
 		this.mempool = mempool;
-		this.converter = converter;
+		this.modelMapper = modelMapper;
+		this.radixEngineProvider = radixEngineProvider;
+	}
+
+	private String symbol(REAddr tokenAddress) {
+		var mapKey = SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+		var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
+		// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+		var tokenResourceMetadata = (TokenResourceMetadata) substate;
+		return tokenResourceMetadata.getSymbol();
 	}
 
 	@Override
-	public MempoolTransactionRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return MempoolTransactionRequest.from(requestReader);
-	}
-
-	@Override
-	public JSONObject handleRequest(MempoolTransactionRequest request) throws Exception {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network)) {
+	public MempoolTransactionResponse handleRequest(MempoolTransactionRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
-		var transaction = mempool.getData(map -> map.get(request.getTransactionIdentifier()));
+		var txnId = AID.from(request.getTransactionIdentifier().getHash());
+		var transaction = mempool.getData(map -> map.get(txnId));
 		if (transaction == null) {
 			throw new IllegalStateException();
 		}
 
 		var processed = transaction.getFirst();
 		var metadata = transaction.getSecond();
-		var transactionJson = converter.getTransaction(processed);
-		transactionJson.getJSONObject("metadata")
-			.put("hex", Bytes.toHexString(processed.getTxn().getPayload()))
-			.put("size", processed.getTxn().getPayload().length);
-		transactionJson.put("transaction_identifier", new JSONObject()
-			.put("hash", request.getTransactionIdentifier())
-		);
-		return new JSONObject()
-			.put("transaction", transactionJson)
-			.put("metadata", new JSONObject()
-				.put("added_timestamp", metadata.getInserted())
-			);
+		var transactionModel = modelMapper.transaction(processed, this::symbol);
+		return new MempoolTransactionResponse()
+			.transaction(transactionModel);
+		// .put("added_timestamp", metadata.getInserted())
 	}
 }
