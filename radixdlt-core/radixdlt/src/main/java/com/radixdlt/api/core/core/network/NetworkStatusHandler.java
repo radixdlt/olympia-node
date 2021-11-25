@@ -64,9 +64,13 @@
 package com.radixdlt.api.core.core.network;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
+import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
+import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.PublicKey;
+import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
@@ -80,9 +84,8 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
-import org.json.JSONObject;
 
-public final class NetworkStatusHandler implements ApiHandler<NetworkIdentifier> {
+public final class NetworkStatusHandler implements JsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
 	private final Network network;
 	private final REAddr accountAddress;
 	private final ECPublicKey validatorKey;
@@ -111,43 +114,45 @@ public final class NetworkStatusHandler implements ApiHandler<NetworkIdentifier>
 	}
 
 	@Override
-	public NetworkIdentifier parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		return reader.getJsonObject("network_identifier", NetworkIdentifier::from);
+	public Class<NetworkStatusRequest> requestClass() {
+		return NetworkStatusRequest.class;
 	}
 
 	@Override
-	public JSONObject handleRequest(NetworkIdentifier request) {
-		if (!request.getNetwork().equals(this.network)) {
+	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
 		var currentProof = inMemorySystemInfo.getCurrentProof();
-		return new JSONObject()
-			.put("pre_genesis_state_identifier", new JSONObject()
-				.put("state_version", 0)
-				.put("transaction_accumulator", Bytes.toHexString(HashUtils.zero256().asBytes()))
+		return new NetworkStatusResponse()
+			.currentStateEpoch(currentProof.getEpoch())
+			.currentStateRound(currentProof.getView().number())
+			.currentStateTimestamp(currentProof.timestamp())
+			.preGenesisStateIdentifier(
+				new StateIdentifier()
+					.stateVersion(0L)
+					.transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes()))
 			)
-			.put("genesis_state_identifier", new JSONObject()
-				.put("state_version", genesisAccumulatorState.getStateVersion())
-				.put("transaction_accumulator", Bytes.toHexString(genesisAccumulatorState.getAccumulatorHash().asBytes()))
+			.genesisStateIdentifier(
+				new StateIdentifier()
+					.stateVersion(genesisAccumulatorState.getStateVersion())
+					.transactionAccumulator(Bytes.toHexString(genesisAccumulatorState.getAccumulatorHash().asBytes()))
 			)
-			.put("current_state_identifier", new JSONObject()
-				.put("state_version", currentProof.getStateVersion())
-				.put("transaction_accumulator", Bytes.toHexString(currentProof.getAccumulatorState().getAccumulatorHash().asBytes()))
+			.currentStateIdentifier(
+				new StateIdentifier()
+					.stateVersion(currentProof.getStateVersion())
+					.transactionAccumulator(Bytes.toHexString(currentProof.getAccumulatorState().getAccumulatorHash().asBytes()))
 			)
-			.put("current_state_epoch", currentProof.getEpoch())
-			.put("current_state_round", currentProof.getView().number())
-			.put("current_state_timestamp", currentProof.timestamp())
-			.put("node_identifiers", new JSONObject()
-				.put("account_entity_identifier", new JSONObject()
-					.put("address", addressing.forAccounts().of(accountAddress))
-				)
-				.put("validator_entity_identifier", new JSONObject()
-					.put("address", addressing.forValidators().of(validatorKey))
-				)
-				.put("public_key", new JSONObject()
-					.put("hex", validatorKey.toHex())
-				)
+			.nodeIdentifiers(
+				new NetworkStatusResponseNodeIdentifiers()
+					.accountEntityIdentifier(
+						new EntityIdentifier().address(addressing.forAccounts().of(accountAddress))
+					)
+					.validatorEntityIdentifier(
+						new EntityIdentifier().address(addressing.forValidators().of(validatorKey))
+					)
+					.publicKey(new PublicKey().hex(validatorKey.toHex()))
 			);
 	}
 }

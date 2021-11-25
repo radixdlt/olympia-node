@@ -64,16 +64,16 @@
 package com.radixdlt.api.gateway.network;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.gateway.model.LedgerState;
+import com.radixdlt.api.gateway.model.NetworkResponse;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import org.json.JSONObject;
 
 import java.time.Instant;
 
-final class NetworkHandler implements ApiHandler<Void> {
+final class NetworkHandler implements JsonRpcHandler<Void, NetworkResponse> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final String networkName;
 
@@ -87,20 +87,21 @@ final class NetworkHandler implements ApiHandler<Void> {
 	}
 
 	@Override
-	public Void parseRequest(JsonObjectReader reader) {
-		return null;
+	public Class<Void> requestClass() {
+		return Void.class;
 	}
 
 	@Override
-	public JSONObject handleRequest(Void request) {
+	public NetworkResponse handleRequest(Void request) {
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return new JSONObject()
-			.put("ledger_state", new JSONObject()
-				.put("epoch", proof.getEpoch())
-				.put("round", proof.getView().number())
-				.put("version", proof.getStateVersion())
-				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
+		return new NetworkResponse(
+			networkName,
+			new LedgerState(
+				proof.getEpoch(),
+				proof.getView().number(),
+				proof.getStateVersion(),
+				Instant.ofEpochMilli(proof.timestamp()).toString()
 			)
-			.put("network", networkName);
+		);
 	}
 }

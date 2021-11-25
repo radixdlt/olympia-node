@@ -63,7 +63,7 @@
 
 package com.radixdlt.api.core.core.construction.entities;
 
-import com.radixdlt.api.core.core.construction.EntityIdentifier;
+import com.radixdlt.api.core.core.construction.Entity;
 import com.radixdlt.api.core.core.construction.InvalidResourceIdentifierException;
 import com.radixdlt.api.core.core.construction.KeyQuery;
 import com.radixdlt.api.core.core.construction.ResourceIdentifier;
@@ -90,7 +90,7 @@ import java.util.function.Supplier;
 
 import static com.radixdlt.atom.SubstateTypeId.PREPARED_STAKE;
 
-public class PreparedStakeVaultEntityIdentifier implements EntityIdentifier {
+public class PreparedStakeVaultEntityIdentifier implements Entity {
 	private final REAddr accountAddress;
 	private final ECPublicKey validatorKey;
 

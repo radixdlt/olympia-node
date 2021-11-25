@@ -95,7 +95,7 @@ public class TokenMetadata implements DataObject {
 	@Override
 	public void bootUp(
 		TxBuilder builder,
-		EntityIdentifier entityIdentifier,
+		Entity entityIdentifier,
 		DataObject.RelatedOperationFetcher fetcher,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {

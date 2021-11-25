@@ -67,7 +67,7 @@ import com.google.inject.Inject;
 import com.radixdlt.api.util.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.core.core.network.NetworkIdentifier;
+import com.radixdlt.api.core.core.network.NetworkIdentifier2;
 import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.networks.Network;
@@ -96,7 +96,7 @@ public class TransactionsHandler implements ApiHandler<TransactionsRequest> {
 	public TransactionsRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
 		var limit = requestReader.getOptUnsignedLong("limit").orElse(1);
 		var stateIdentifier = requestReader.getJsonObject("state_identifier", PartialStateIdentifier::from);
-		var networkIdentifier = requestReader.getJsonObject("network_identifier", NetworkIdentifier::from);
+		var networkIdentifier = requestReader.getJsonObject("network_identifier", NetworkIdentifier2::from);
 		return new TransactionsRequest(networkIdentifier, stateIdentifier, limit);
 	}
 

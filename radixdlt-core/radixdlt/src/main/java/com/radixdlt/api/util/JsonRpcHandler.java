@@ -61,37 +61,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.entity;
+package com.radixdlt.api.util;
 
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.core.core.construction.EntityIdentifier;
-import com.radixdlt.api.core.core.network.NetworkIdentifier;
-import com.radixdlt.networks.Network;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.radixdlt.api.core.core.openapitools.JSON;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
-public final class EntityRequest {
-	private final NetworkIdentifier networkIdentifier;
-	private final EntityIdentifier entityIdentifier;
+public interface JsonRpcHandler<T, U> extends HttpHandler {
+	JSON json = new JSON();
+	// TODO: Move
+	ObjectMapper objectMapper = json.getMapper();
+	String CONTENT_TYPE_JSON = "application/json";
+	long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
-	private EntityRequest(
-		NetworkIdentifier networkIdentifier,
-		EntityIdentifier entityIdentifier
-	) {
-		this.networkIdentifier = networkIdentifier;
-		this.entityIdentifier = entityIdentifier;
-	}
+	Class<T> requestClass();
+	U handleRequest(T request) throws Exception;
 
-	public Network getNetwork() {
-		return networkIdentifier.getNetwork();
-	}
+	@Override
+	default void handleRequest(HttpServerExchange exchange) throws Exception {
+		if (exchange.isInIoThread()) {
+			exchange.dispatch(this);
+			return;
+		}
 
-	public EntityIdentifier getEntityIdentifier() {
-		return entityIdentifier;
-	}
+		exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
+		exchange.startBlocking();
 
-	public static EntityRequest from(JsonObjectReader reader) throws InvalidParametersException {
-		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier::from);
-		var entityIdentifier = reader.getJsonObject("entity_identifier", EntityIdentifier::from);
-		return new EntityRequest(networkIdentifier, entityIdentifier);
+		var request = objectMapper.readValue(exchange.getInputStream(), requestClass());
+		var response = handleRequest(request);
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+		exchange.setStatusCode(200);
+		objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+		exchange.getResponseSender().send(objectMapper.writeValueAsString(response));
 	}
 }

@@ -64,48 +64,36 @@
 package com.radixdlt.api.core.core.engine;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationResponse;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.statecomputer.forks.ForkConfig;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.util.TreeMap;
 
-public class EngineConfigurationHandler implements ApiHandler<Void> {
+public class EngineConfigurationHandler implements JsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
 	private final TreeMap<Long, ForkConfig> forks;
-	private final Addressing addressing;
+	private final ModelMapper modelMapper;
 
 	@Inject
 	public EngineConfigurationHandler(
 		TreeMap<Long, ForkConfig> forks,
-		Addressing addressing
+		ModelMapper modelMapper
 	) {
 		this.forks = forks;
-		this.addressing = addressing;
+		this.modelMapper = modelMapper;
 	}
 
 	@Override
-	public Void parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return null;
+	public Class<EngineConfigurationRequest> requestClass() {
+		return EngineConfigurationRequest.class;
 	}
 
 	@Override
-	public JSONObject handleRequest(Void request) throws Exception {
-		var forksJson = new JSONArray();
-		forks.forEach((epoch, config) -> {
-			forksJson.put(config.asJson(amt -> new JSONObject()
-				.put("resource", new JSONObject()
-					.put("type", "Token")
-					.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
-				)
-				.put("value", amt)
-			));
-		});
-		return new JSONObject()
-			.put("forks", forksJson);
+	public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request) throws Exception {
+		var response = new EngineConfigurationResponse();
+		forks.forEach((epoch, config) -> response.addForksItem(modelMapper.fork(config)));
+		return response;
 	}
 }

@@ -65,7 +65,7 @@ package com.radixdlt.api.core.core.construction;
 
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.core.core.network.NetworkIdentifier;
+import com.radixdlt.api.core.core.network.NetworkIdentifier2;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.networks.Network;
 import com.radixdlt.utils.Pair;
@@ -89,13 +89,13 @@ public class DeriveRequest {
 		}
 	}
 
-	private final NetworkIdentifier networkIdentifier;
+	private final NetworkIdentifier2 networkIdentifier;
 	private final ECPublicKey publicKey;
 	private final EntityType entityType;
 	private final String symbol;
 
 	private DeriveRequest(
-		NetworkIdentifier networkIdentifier,
+		NetworkIdentifier2 networkIdentifier,
 		ECPublicKey publicKey,
 		EntityType entityType,
 		String symbol
@@ -123,7 +123,7 @@ public class DeriveRequest {
 	}
 
 	public static DeriveRequest from(JsonObjectReader reader) throws InvalidParametersException {
-		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier::from);
+		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier2::from);
 		var publicKey = reader.getJsonObject("public_key", r -> r.getPubKey("hex"));
 		var typeAndSymbol = reader.<Pair<EntityType, String>>getJsonObject("metadata", r -> {
 			var typeString = r.getString("type");

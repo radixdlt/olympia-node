@@ -61,26 +61,18 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.network;
+package com.radixdlt.api.gateway.model;
 
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.networks.Network;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class NetworkIdentifier {
-	private final Network network;
+public final class NetworkResponse {
+	@JsonProperty("network")
+	private final String network;
+	@JsonProperty("ledger_state")
+	private final LedgerState ledgerState;
 
-	private NetworkIdentifier(Network network) {
+	public NetworkResponse(String network, LedgerState ledgerState) {
 		this.network = network;
-	}
-
-	public Network getNetwork() {
-		return network;
-	}
-
-	public static NetworkIdentifier from(JsonObjectReader reader) throws InvalidParametersException {
-		var name = reader.getString("network");
-		var network = Network.ofName(name).orElseThrow();
-		return new NetworkIdentifier(network);
+		this.ledgerState = ledgerState;
 	}
 }

@@ -64,17 +64,19 @@
 package com.radixdlt.api.core.core.network;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.core.core.openapitools.model.Bech32HRPs;
+import com.radixdlt.api.core.core.openapitools.model.NetworkConfigurationResponse;
+import com.radixdlt.api.core.core.openapitools.model.NetworkConfigurationResponseVersion;
+import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import org.json.JSONObject;
 
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
 import static org.radix.Radix.VERSION_STRING_KEY;
 
-public class NetworkConfigurationHandler implements ApiHandler<Void> {
+public class NetworkConfigurationHandler implements JsonRpcHandler<Void, NetworkConfigurationResponse> {
 	private final Network network;
 	private final InfoSupplier infoSupplier;
 
@@ -88,25 +90,27 @@ public class NetworkConfigurationHandler implements ApiHandler<Void> {
 	}
 
 	@Override
-	public Void parseRequest(JsonObjectReader reader) {
-		return null;
+	public Class<Void> requestClass() {
+		return Void.class;
 	}
 
 	@Override
-	public JSONObject handleRequest(Void request) {
-		return new JSONObject()
-			.put("version", new JSONObject()
-				.put("core_version", infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY))
-				.put("api_version", "0.9.0")
+	public NetworkConfigurationResponse handleRequest(Void request) {
+		return new NetworkConfigurationResponse()
+			.networkIdentifier(new NetworkIdentifier().network(network.name().toLowerCase()))
+			.bech32HumanReadableParts(
+				new Bech32HRPs()
+					.accountHrp(network.getAccountHrp())
+					.validatorHrp(network.getValidatorHrp())
+					.nodeHrp(network.getNodeHrp())
+					.resourceHrpSuffix(network.getResourceHrpSuffix())
 			)
-			.put("network_identifier", new JSONObject()
-				.put("network", network.name().toLowerCase())
-			)
-			.put("bech32_human_readable_parts", new JSONObject()
-				.put("account_hrp", network.getAccountHrp())
-				.put("validator_hrp", network.getValidatorHrp())
-				.put("node_hrp", network.getNodeHrp())
-				.put("resource_hrp_suffix", network.getResourceHrpSuffix())
+			.version(
+				new NetworkConfigurationResponseVersion()
+					.apiVersion("0.9.0")
+					.coreVersion(infoSupplier.getInfo().get(SYSTEM_VERSION_KEY)
+						.get(VERSION_STRING_KEY).toString()
+					)
 			);
 	}
 }

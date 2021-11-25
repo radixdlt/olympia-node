@@ -63,24 +63,24 @@
 
 package com.radixdlt.api.core.core.mempool;
 
-import com.radixdlt.api.core.core.network.NetworkIdentifier;
+import com.radixdlt.api.core.core.network.NetworkIdentifier2;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.identifiers.AID;
 
 public class MempoolTransactionRequest {
-	private final NetworkIdentifier networkIdentifier;
+	private final NetworkIdentifier2 networkIdentifier;
 	private final AID transactionIdentifier;
 
 	public MempoolTransactionRequest(
-		NetworkIdentifier networkIdentifier,
+		NetworkIdentifier2 networkIdentifier,
 		AID transactionIdentifier
 	) {
 		this.networkIdentifier = networkIdentifier;
 		this.transactionIdentifier = transactionIdentifier;
 	}
 
-	public NetworkIdentifier getNetworkIdentifier() {
+	public NetworkIdentifier2 getNetworkIdentifier() {
 		return networkIdentifier;
 	}
 
@@ -89,7 +89,7 @@ public class MempoolTransactionRequest {
 	}
 
 	public static MempoolTransactionRequest from(JsonObjectReader reader) throws InvalidParametersException {
-		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier::from);
+		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier2::from);
 		var transactionIdentifier = reader.getTransactionIdentifier("transaction_identifier");
 		return new MempoolTransactionRequest(
 			networkIdentifier,

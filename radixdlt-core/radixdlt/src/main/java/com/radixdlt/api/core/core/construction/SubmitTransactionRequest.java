@@ -65,16 +65,16 @@ package com.radixdlt.api.core.core.construction;
 
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.core.core.network.NetworkIdentifier;
+import com.radixdlt.api.core.core.network.NetworkIdentifier2;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.networks.Network;
 
 public class SubmitTransactionRequest {
-	private final NetworkIdentifier networkIdentifier;
+	private final NetworkIdentifier2 networkIdentifier;
 	private final Txn txn;
 
 	private SubmitTransactionRequest(
-		NetworkIdentifier networkIdentifier,
+		NetworkIdentifier2 networkIdentifier,
 		Txn txn
 	) {
 		this.networkIdentifier = networkIdentifier;
@@ -90,7 +90,7 @@ public class SubmitTransactionRequest {
 	}
 
 	public static SubmitTransactionRequest from(JsonObjectReader reader) throws InvalidParametersException {
-		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier::from);
+		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier2::from);
 		var signedTransaction = Txn.create(reader.getHexBytes("signed_transaction"));
 		return new SubmitTransactionRequest(networkIdentifier, signedTransaction);
 	}

@@ -63,7 +63,7 @@
 
 package com.radixdlt.api.core.core.construction.entities;
 
-import com.radixdlt.api.core.core.construction.EntityIdentifier;
+import com.radixdlt.api.core.core.construction.Entity;
 import com.radixdlt.api.core.core.construction.KeyQuery;
 import com.radixdlt.api.core.core.construction.ResourceIdentifier;
 import com.radixdlt.api.core.core.construction.ResourceQuery;
@@ -87,7 +87,7 @@ import java.util.function.Supplier;
 import static com.radixdlt.atom.SubstateTypeId.STAKE_OWNERSHIP;
 import static com.radixdlt.atom.SubstateTypeId.TOKENS;
 
-public class AccountVaultEntityIdentifier implements EntityIdentifier {
+public class AccountVaultEntityIdentifier implements Entity {
 	private final REAddr accountAddress;
 
 	private AccountVaultEntityIdentifier(REAddr accountAddress) {

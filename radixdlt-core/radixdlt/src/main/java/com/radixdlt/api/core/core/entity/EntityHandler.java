@@ -64,123 +64,78 @@
 package com.radixdlt.api.core.core.entity;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.core.core.construction.KeyQuery;
-import com.radixdlt.api.core.core.construction.ResourceQuery;
-import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
-import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
+import com.radixdlt.api.core.core.openapitools.model.EntityResponse;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.Bytes;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-import java.util.List;
 import java.util.function.Function;
 
-public class EntityHandler implements ApiHandler<EntityRequest> {
+public class EntityHandler implements JsonRpcHandler<EntityRequest, EntityResponse> {
 	private final Network network;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final Addressing addressing;
-	private final ProcessedTxnJsonConverter converter;
+	private final ModelMapper modelMapper;
 
 	@Inject
 	EntityHandler(
 		@NetworkId int networkId,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		ProcessedTxnJsonConverter converter,
-		Addressing addressing
+		ModelMapper modelMapper
 	) {
 		this.network = Network.ofId(networkId).orElseThrow();
 		this.radixEngine = radixEngine;
-		this.converter = converter;
-		this.addressing = addressing;
+		this.modelMapper = modelMapper;
 	}
 
 	@Override
-	public Addressing addressing() {
-		return addressing;
+	public Class<EntityRequest> requestClass() {
+		return EntityRequest.class;
 	}
 
 	@Override
-	public EntityRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return EntityRequest.from(requestReader);
-	}
-
-	private JSONObject bucketToResourceJson(Bucket bucket, Function<REAddr, String> addressToRri) {
-		if (bucket.resourceAddr() != null) {
-			return new JSONObject()
-				.put("type", "Token")
-				.put("rri", addressToRri.apply(bucket.resourceAddr())
-			);
-		}
-
-		return new JSONObject()
-			.put("type", "StakeOwnership")
-			.put("validator", addressing.forValidators().of(bucket.getValidatorKey()));
-	}
-
-	private JSONObject getObjectsAndBalances(
-		List<KeyQuery> keyQueries,
-		List<ResourceQuery> resourceQueries
-	) {
-		return radixEngine.read(reader -> {
-			Function<REAddr, String> addressToRri = addr -> {
-				var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-				var substate = reader.get(mapKey).orElseThrow();
-				var tokenResource = (TokenResourceMetadata) substate;
-				return addressing.forResources().of(tokenResource.getSymbol(), addr);
-			};
-			var balances = new JSONArray();
-			for (var resourceQuery : resourceQueries) {
-				var index = resourceQuery.getIndex();
-				var bucketPredicate = resourceQuery.getPredicate();
-				reader.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
-					.forEach((bucket, amount) -> {
-						var json = new JSONObject()
-							.put("resource_identifier", bucketToResourceJson(bucket, addressToRri))
-							.put("value", amount.toString());
-						balances.put(json);
-					});
-			}
-			var objects = new JSONArray();
-			for (var keyQuery : keyQueries) {
-				var substate = reader.get(keyQuery.getKey()).or(keyQuery.getVirtualSubstate());
-				substate.map(s -> converter.getDataObject(keyQuery.getTypeId(), s)).ifPresent(objects::put);
-			}
-			var proof = reader.getMetadata().getProof();
-			var stateVersion = proof.getStateVersion();
-			var transactionAccumulator = Bytes.toHexString(proof.getAccumulatorState().getAccumulatorHash().asBytes());
-			return new JSONObject()
-				.put("state_identifier", new JSONObject()
-					.put("state_version", stateVersion)
-					.put("transaction_accumulator", transactionAccumulator)
-				)
-				.put("balances", balances)
-				.put("data_objects", objects);
-		});
-	}
-
-	@Override
-	public JSONObject handleRequest(EntityRequest request) throws Exception {
-		if (!request.getNetwork().equals(this.network)) {
+	public EntityResponse handleRequest(EntityRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
 		var entityIdentifier = request.getEntityIdentifier();
-		return getObjectsAndBalances(
-			entityIdentifier.getKeyQueries(),
-			entityIdentifier.getResourceQueries()
-		);
+		var entity = modelMapper.entity(entityIdentifier);
+		var keyQueries = entity.getKeyQueries();
+		var resourceQueries = entity.getResourceQueries();
+
+		return radixEngine.read(reader -> {
+			Function<REAddr, String> addressToSymbol = addr -> {
+				var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+				var substate = reader.get(mapKey).orElseThrow();
+				var tokenResource = (TokenResourceMetadata) substate;
+				return tokenResource.getSymbol();
+			};
+			var proof = reader.getMetadata().getProof();
+			var response = new EntityResponse()
+				.stateIdentifier(modelMapper.stateIdentifier(proof.getAccumulatorState()));
+
+			for (var resourceQuery : resourceQueries) {
+				var index = resourceQuery.getIndex();
+				var bucketPredicate = resourceQuery.getPredicate();
+				reader.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
+					.forEach((bucket, amount) -> response.addBalancesItem(modelMapper.resourceAmount(bucket, amount, addressToSymbol)));
+			}
+
+			for (var keyQuery : keyQueries) {
+				var substate = reader.get(keyQuery.getKey()).or(keyQuery.getVirtualSubstate());
+				substate.map(modelMapper::dataObject).ifPresent(response::addDataObjectsItem);
+			}
+
+			return response;
+		});
 	}
 }

@@ -61,64 +61,11 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.networks;
 
-import com.radixdlt.api.core.core.construction.entities.AccountVaultEntityIdentifier;
-import com.radixdlt.api.core.core.construction.entities.PreparedStakeVaultEntityIdentifier;
-import com.radixdlt.api.core.core.construction.entities.PreparedUnstakeVaultEntityIdentifier;
-import com.radixdlt.api.core.core.construction.entities.TokenEntityIdentifier;
-import com.radixdlt.api.core.core.construction.entities.ValidatorEntityIdentifier;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.UInt256;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Supplier;
-
-public interface EntityIdentifier {
-	Optional<REAddr> getAccountAddress();
-	void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) throws TxBuilderException;
-	List<ResourceQuery> getResourceQueries();
-	List<KeyQuery> getKeyQueries();
-
-	private static EntityIdentifier fromAccountAddress(REAddr accountAddress, JsonObjectReader reader) throws InvalidParametersException {
-		return reader
-			.getOptJsonObject("sub_address", r -> {
-				var subAddress = r.getString("address");
-				switch (subAddress) {
-					case "prepared_stake":
-						return PreparedStakeVaultEntityIdentifier.from(
-							accountAddress,
-							r.getJsonObject("metadata").getValidatorAddress("validator")
-						);
-					case "prepared_unstake":
-						return PreparedUnstakeVaultEntityIdentifier.from(
-							accountAddress,
-							r.getJsonObject("metadata")
-						);
-					default:
-						throw new InvalidParametersException("/address", "Invalid Sub Address: " + subAddress);
-				}
-			})
-			.orElseGet(() -> AccountVaultEntityIdentifier.from(accountAddress));
-	}
-
-	static EntityIdentifier from(JsonObjectReader reader) throws InvalidParametersException {
-		var accountAddress = reader.tryAccountAddress("address");
-		if (accountAddress.isPresent()) {
-			return fromAccountAddress(accountAddress.get(), reader);
-		}
-
-		var validatorKey = reader.tryValidatorAddress("address");
-		if (validatorKey.isPresent()) {
-			return ValidatorEntityIdentifier.from(validatorKey.get());
-		}
-
-		return TokenEntityIdentifier.from(reader.getResource("address"));
-	}
+public enum AddressType {
+	ACCOUNT,
+	VALIDATOR,
+	RESOURCE,
+	NODE;
 }

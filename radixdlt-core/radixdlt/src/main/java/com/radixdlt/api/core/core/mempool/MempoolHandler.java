@@ -64,17 +64,15 @@
 package com.radixdlt.api.core.core.mempool;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.network.NetworkIdentifier;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.util.ApiHandler;
+import com.radixdlt.api.core.core.openapitools.model.MempoolRequest;
+import com.radixdlt.api.core.core.openapitools.model.MempoolResponse;
+import com.radixdlt.api.core.core.openapitools.model.TransactionIdentifier;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.RadixEngineMempool;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-public class MempoolHandler implements ApiHandler<NetworkIdentifier> {
+public class MempoolHandler implements JsonRpcHandler<MempoolRequest, MempoolResponse> {
 	private final Network network;
 	private final RadixEngineMempool mempool;
 
@@ -88,23 +86,22 @@ public class MempoolHandler implements ApiHandler<NetworkIdentifier> {
 	}
 
 	@Override
-	public NetworkIdentifier parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return requestReader.getJsonObject("network_identifier", NetworkIdentifier::from);
+	public Class<MempoolRequest> requestClass() {
+		return MempoolRequest.class;
 	}
 
 	@Override
-	public JSONObject handleRequest(NetworkIdentifier request) throws Exception {
-		if (!request.getNetwork().equals(this.network)) {
+	public MempoolResponse handleRequest(MempoolRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
-		var transactionIdentifiers = mempool.getData(map -> {
-			var mempoolList = new JSONArray();
-			map.keySet().forEach(txnId -> mempoolList.put(new JSONObject().put("hash", txnId.toString())));
-			return mempoolList;
+		return mempool.getData(map -> {
+			var response = new MempoolResponse();
+			map.keySet().forEach(txnId -> response.addTransactionIdentifiersItem(
+				new TransactionIdentifier().hash(txnId.toString())
+			));
+			return response;
 		});
-
-		return new JSONObject()
-			.put("transaction_identifiers", transactionIdentifiers);
 	}
 }

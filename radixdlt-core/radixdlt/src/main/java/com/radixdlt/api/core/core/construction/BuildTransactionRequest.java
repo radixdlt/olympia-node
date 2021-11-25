@@ -65,7 +65,7 @@ package com.radixdlt.api.core.core.construction;
 
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.core.core.network.NetworkIdentifier;
+import com.radixdlt.api.core.core.network.NetworkIdentifier2;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Network;
 
@@ -74,14 +74,14 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class BuildTransactionRequest {
-	private final NetworkIdentifier networkIdentifier;
+	private final NetworkIdentifier2 networkIdentifier;
 	private final REAddr feePayer;
 	private final List<OperationGroup> operationGroups;
 	private final byte[] message;
 	private final boolean disableResourceAllocateAndDestroy;
 
 	private BuildTransactionRequest(
-		NetworkIdentifier networkIdentifier,
+		NetworkIdentifier2 networkIdentifier,
 		REAddr feePayer,
 		List<OperationGroup> operationGroups,
 		byte[] message,
@@ -115,8 +115,8 @@ public class BuildTransactionRequest {
 	}
 
 	public static BuildTransactionRequest from(JsonObjectReader reader) throws InvalidParametersException {
-		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier::from);
-		var feePayer = reader.getJsonObject("fee_payer", EntityIdentifier::from).getAccountAddress()
+		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier2::from);
+		var feePayer = reader.getJsonObject("fee_payer", Entity::from).getAccountAddress()
 			.orElseThrow();
 		var operationGroups = reader.getList("operation_groups", OperationGroup::from);
 		var message = reader.getOptHexBytes("message").orElse(null);

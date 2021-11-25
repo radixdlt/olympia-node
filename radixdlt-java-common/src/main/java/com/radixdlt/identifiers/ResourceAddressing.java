@@ -98,6 +98,10 @@ public final class ResourceAddressing {
 		return new ResourceAddressing(hrpSuffix);
 	}
 
+	public String getHrpSuffix() {
+		return hrpSuffix;
+	}
+
 	private static byte[] toBech32Data(byte[] bytes) {
 		return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
 	}

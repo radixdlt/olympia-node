@@ -83,7 +83,7 @@ public final class ValidatorAllowDelegation implements DataObject {
 	@Override
 	public void bootUp(
 		TxBuilder builder,
-		EntityIdentifier entityIdentifier,
+		Entity entityIdentifier,
 		RelatedOperationFetcher fetcher,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {

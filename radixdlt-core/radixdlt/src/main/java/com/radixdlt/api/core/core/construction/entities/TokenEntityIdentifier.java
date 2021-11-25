@@ -63,7 +63,7 @@
 
 package com.radixdlt.api.core.core.construction.entities;
 
-import com.radixdlt.api.core.core.construction.EntityIdentifier;
+import com.radixdlt.api.core.core.construction.Entity;
 import com.radixdlt.api.core.core.construction.KeyQuery;
 import com.radixdlt.api.core.core.construction.ResourceIdentifier;
 import com.radixdlt.api.core.core.construction.ResourceQuery;
@@ -77,7 +77,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public class TokenEntityIdentifier implements EntityIdentifier {
+public class TokenEntityIdentifier implements Entity {
 	private final REAddr tokenAddr;
 
 	private TokenEntityIdentifier(REAddr tokenAddr) {

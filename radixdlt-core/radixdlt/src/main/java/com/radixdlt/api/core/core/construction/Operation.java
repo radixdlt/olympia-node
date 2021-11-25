@@ -69,12 +69,12 @@ import com.radixdlt.api.gateway.JsonObjectReader;
 import java.util.Optional;
 
 public class Operation {
-	private final EntityIdentifier entityIdentifier;
+	private final Entity entityIdentifier;
 	private final ResourceAmount amount;
 	private final DataUpdate dataUpdate;
 
 	private Operation(
-		EntityIdentifier entityIdentifier,
+		Entity entityIdentifier,
 		ResourceAmount amount,
 		DataUpdate dataUpdate
 	) {
@@ -83,7 +83,7 @@ public class Operation {
 		this.dataUpdate = dataUpdate;
 	}
 
-	public EntityIdentifier getEntityIdentifier() {
+	public Entity getEntityIdentifier() {
 		return entityIdentifier;
 	}
 
@@ -96,7 +96,7 @@ public class Operation {
 	}
 
 	public static Operation from(JsonObjectReader reader) throws InvalidParametersException {
-		var entityIdentifier = reader.getJsonObject("entity_identifier", EntityIdentifier::from);
+		var entityIdentifier = reader.getJsonObject("entity_identifier", Entity::from);
 		var amount = reader.getOptJsonObject("amount", ResourceAmount::from).orElse(null);
 		var data = reader.getOptJsonObject("data", DataUpdate::from).orElse(null);
 		return new Operation(entityIdentifier, amount, data);

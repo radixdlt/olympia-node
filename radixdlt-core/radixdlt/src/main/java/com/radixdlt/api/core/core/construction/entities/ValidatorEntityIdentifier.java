@@ -63,7 +63,7 @@
 
 package com.radixdlt.api.core.core.construction.entities;
 
-import com.radixdlt.api.core.core.construction.EntityIdentifier;
+import com.radixdlt.api.core.core.construction.Entity;
 import com.radixdlt.api.core.core.construction.KeyQuery;
 import com.radixdlt.api.core.core.construction.ResourceIdentifier;
 import com.radixdlt.api.core.core.construction.ResourceQuery;
@@ -88,7 +88,7 @@ import java.util.function.Supplier;
 
 import static com.radixdlt.atom.SubstateTypeId.*;
 
-public class ValidatorEntityIdentifier implements EntityIdentifier {
+public class ValidatorEntityIdentifier implements Entity {
 	private final ECPublicKey validatorKey;
 
 	private ValidatorEntityIdentifier(ECPublicKey validatorKey) {
