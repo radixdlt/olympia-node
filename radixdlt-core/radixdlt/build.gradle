@@ -187,6 +187,8 @@ dependencies {
     implementation 'io.undertow:undertow-core'
     implementation 'com.stijndewitt.undertow.cors:undertow-cors-filter'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+    implementation 'com.madgag.spongycastle:core'
+
 
     testImplementation 'org.awaitility:awaitility'
     testImplementation 'org.mockito:mockito-core'
