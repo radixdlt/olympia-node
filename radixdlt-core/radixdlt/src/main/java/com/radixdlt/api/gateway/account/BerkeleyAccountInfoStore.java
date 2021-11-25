@@ -210,6 +210,12 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 				var epochUnlocked = json.getLong("epochUnlocked");
 				json.remove("epochUnlocked");
 				json.put("epochs_until_unlocked", epochUnlocked - curEpoch);
+				json.put("unstaking_amount", new JSONObject()
+					.put("token_identifier", new JSONObject()
+						.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+					)
+					.put("value", json.remove("value"))
+				);
 			}
 		}
 

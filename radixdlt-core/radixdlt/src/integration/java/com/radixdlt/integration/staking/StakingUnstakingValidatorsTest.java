@@ -465,7 +465,7 @@ public class StakingUnstakingValidatorsTest {
 			var privKey = nodeKeys.get(nodeIndex);
 			var acct = REAddr.ofPubKeyAccount(privKey.getPublicKey());
 			var to = nodeKeys.get(random.nextInt(nodeKeys.size())).getPublicKey();
-			var amount = Amount.ofTokens(random.nextInt(10) * 10).toSubunits();
+			var amount = Amount.ofTokens(random.nextInt(10) * 10 + 1).toSubunits();
 
 			var next = random.nextInt(16);
 			final TxAction action;
@@ -529,11 +529,11 @@ public class StakingUnstakingValidatorsTest {
 		assertThat(diff).isLessThanOrEqualTo(maxEmissions);
 		var json = nodeState.getNativeToken();
 		logger.info("json {}", json.toString(4));
-		var supplyStringFromJson = json.getString("currentSupply");
+		var supplyStringFromJson = json.getJSONObject("token_supply").getString("value");
 		assertThat(finalCount.toString()).isLessThanOrEqualTo(supplyStringFromJson);
 		var supplyFromJson = new BigInteger(supplyStringFromJson, 10);
-		var totalMinted = new BigInteger(json.getString("totalMinted"), 10);
-		var totalBurned = new BigInteger(json.getString("totalBurned"), 10);
+		var totalMinted = new BigInteger(json.getJSONObject("info").getJSONObject("total_minted").getString("value"), 10);
+		var totalBurned = new BigInteger(json.getJSONObject("info").getJSONObject("total_burned").getString("value"), 10);
 		assertThat(supplyFromJson).isEqualTo(totalMinted.subtract(totalBurned));
 
 		var totalTokenBalance = PrivateKeys.numeric(1).limit(20)
@@ -541,9 +541,9 @@ public class StakingUnstakingValidatorsTest {
 			.map(REAddr::ofPubKeyAccount)
 			.map(nodeState::getAccountInfo)
 			.map(jsonAccount -> {
-				var jsonArray = jsonAccount.getJSONArray("tokenBalances");
+				var jsonArray = jsonAccount.getJSONArray("liquid_balances");
 				if (jsonArray.length() == 1) {
-					return new BigInteger(jsonArray.getJSONObject(0).getString("amount"), 10);
+					return new BigInteger(jsonArray.getJSONObject(0).getString("value"), 10);
 				} else if (jsonArray.isEmpty()) {
 					return BigInteger.ZERO;
 				} else {
@@ -560,8 +560,8 @@ public class StakingUnstakingValidatorsTest {
 			.map(jsonUnstakes -> {
 				BigInteger sum = BigInteger.ZERO;
 				for (int i = 0; i < jsonUnstakes.length(); i++) {
-					if (jsonUnstakes.getJSONObject(i).getLong("epochsUntil") != 500) {
-						var amt = new BigInteger(jsonUnstakes.getJSONObject(i).getString("amount"), 10);
+					if (jsonUnstakes.getJSONObject(i).getLong("epochs_until_unlocked") != 500) {
+						var amt = new BigInteger(jsonUnstakes.getJSONObject(i).getJSONObject("unstaking_amount").getString("value"), 10);
 						sum = sum.add(amt);
 					}
 				}
