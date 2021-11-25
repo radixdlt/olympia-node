@@ -1525,9 +1525,12 @@ components:
     EntityResponse:
       type: object
       required:
+        - state_identifier
         - balances
         - data_objects
       properties:
+        state_identifier:
+          $ref: "#/components/schemas/StateIdentifier"
         balances:
           description: Balances associated with the entity.
           type: array
@@ -2151,16 +2154,20 @@ components:
           type: string
         unstaking_delay_epoch_length:
           type: integer
+          format: int64
         minimum_completed_proposals_percentage:
           type: integer
         maximum_transaction_size:
           type: integer
+          format: int64
         maximum_transactions_per_round:
           type: integer
         validator_fee_increase_debouncer_epoch_length:
           type: integer
+          format: int64
         maximum_rounds_per_epoch:
           type: integer
+          format: int64
         minimum_stake:
           "$ref": "#/components/schemas/ResourceAmount"
         rewards_per_proposal:

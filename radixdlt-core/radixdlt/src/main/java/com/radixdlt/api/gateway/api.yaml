@@ -956,7 +956,7 @@ components:
         token:
           - token_identifier:
               rri: xrd_rr1qy5wfsfh
-            supply:
+            token_supply:
               token_identifier:
                 rri: xrd_rr1qy5wfsfh
               value: '12014560679861300000000000000'
@@ -1371,7 +1371,7 @@ components:
         status:
           type: string
           enum:
-            - MEMPOOL
+            - PENDING
             - CONFIRMED
             - FAILED
         confirmed_time:
