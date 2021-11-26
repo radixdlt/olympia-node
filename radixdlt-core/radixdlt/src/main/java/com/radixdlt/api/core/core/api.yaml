@@ -2426,7 +2426,8 @@ components:
         - "$ref": "#/components/schemas/DataObject"
         - type: object
           required:
-            - isMutable
+            - granularity
+            - is_mutable
           properties:
             granularity:
               description: The granularity of a token given subunits of 10^18 (ie a
