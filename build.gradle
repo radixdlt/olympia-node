@@ -236,6 +236,18 @@ subprojects {
         tasks.withType(Test) {
             systemProperty "file.encoding", "UTF-8"
         }
+
+        tasks.named("checkstyleMain") {
+            configFile = rootProject.file('config/checkstyle/checkstyle.xml')
+            exclude "**/org/radix/**/*.java"
+            exclude "**/openapitools/**/*.java"
+        }
+
+        tasks.named("checkstyleTest") {
+            configFile = rootProject.file('config/checkstyle/checkstyle_test.xml')
+            exclude "**/org/radix/**/*.java"
+            exclude "**/openapitools/**/*.java"
+        }
     }
 
     dependencyManagement {
