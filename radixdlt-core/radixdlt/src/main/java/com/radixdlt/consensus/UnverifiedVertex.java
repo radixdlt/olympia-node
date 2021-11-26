@@ -77,6 +77,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 import javax.annotation.concurrent.Immutable;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -128,18 +129,18 @@ public final class UnverifiedVertex {
 
 	@JsonCreator
 	public static UnverifiedVertex create(
-			@JsonProperty(value = "qc", required = true) QuorumCertificate qc,
-			@JsonProperty("view") long viewId,
-			@JsonProperty("txns") List<byte[]> txns,
-			@JsonProperty("p") byte[] proposer,
-			@JsonProperty("tout") Boolean proposerTimedOut
+		@JsonProperty(value = "qc", required = true) QuorumCertificate qc,
+		@JsonProperty("view") long viewId,
+		@JsonProperty("txns") List<byte[]> txns,
+		@JsonProperty("p") byte[] proposer,
+		@JsonProperty("tout") Boolean proposerTimedOut
 	) throws PublicKeyException {
 		return new UnverifiedVertex(
-				qc,
-				View.of(viewId),
-				txns == null ? List.of() : txns,
-				proposer != null ? BFTNode.fromPublicKeyBytes(proposer) : null,
-				proposerTimedOut
+			qc,
+			View.of(viewId),
+			txns == null ? List.of() : txns,
+			proposer != null ? BFTNode.fromPublicKeyBytes(proposer) : null,
+			proposerTimedOut
 		);
 	}
 

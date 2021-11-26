@@ -69,7 +69,9 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
+
 import nl.jqno.equalsverifier.EqualsVerifier;
+
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
 import org.junit.Test;
@@ -99,8 +101,8 @@ public class LedgerHeaderTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(LedgerHeader.class)
-				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-				.verify();
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
 	}
 
 	@Test
