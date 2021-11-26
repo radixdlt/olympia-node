@@ -61,58 +61,78 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionParseRequest;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionParseResponse;
 import com.radixdlt.api.util.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
 import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.Bytes;
 import org.json.JSONObject;
 
-public class ParseTransactionHandler implements ApiHandler<ParseTransactionRequest> {
+public class ParseTransactionHandler extends JsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {
 	private final Network network;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
-	private final ProcessedTxnJsonConverter converter;
+	private final ModelMapper modelMapper;
 
 	@Inject
 	ParseTransactionHandler(
 		@NetworkId int networkId,
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		ProcessedTxnJsonConverter converter
+		ModelMapper modelMapper
 	) {
+		super(ConstructionParseRequest.class);
+
 		this.network = Network.ofId(networkId).orElseThrow();
 		this.radixEngineProvider = radixEngineProvider;
-		this.converter = converter;
+		this.modelMapper = modelMapper;
 	}
 
-
-	@Override
-	public ParseTransactionRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return ParseTransactionRequest.from(requestReader);
+	private String symbol(REAddr tokenAddress) {
+		var mapKey = SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+		var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
+		// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+		var tokenResourceMetadata = (TokenResourceMetadata) substate;
+		return tokenResourceMetadata.getSymbol();
 	}
 
 	@Override
-	public JSONObject handleRequest(ParseTransactionRequest request) throws Exception {
-		if (!request.getNetwork().equals(this.network)) {
+	public ConstructionParseResponse handleRequest(ConstructionParseRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
+		var txn = Bytes.fromHexString(request.getTransaction());
+
 		REProcessedTxn processed;
 		try {
-			processed = radixEngineProvider.get().test(request.getTransaction(), request.isSigned());
+			processed = radixEngineProvider.get().test(txn, request.getSigned());
 		} catch (RadixEngineException e) {
 			throw new InvalidTransactionException(e);
 		}
 
-		return converter.getTransaction(processed);
+		var response = new ConstructionParseResponse();
+		var transaction = modelMapper.transaction(processed, this::symbol);
+		transaction.getOperationGroups()
+			.forEach(response::addOperationGroupsItem);
+		return response;
 	}
 }

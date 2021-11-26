@@ -69,7 +69,6 @@ import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.core.core.construction.FinalizeTransactionHandler;
 import com.radixdlt.api.core.core.construction.HashTransactionHandler;
-import com.radixdlt.api.core.core.construction.ParseTransactionHandler;
 import com.radixdlt.api.core.core.construction.SubmitTransactionHandler;
 import com.radixdlt.api.core.core.sign.SignHandler;
 import com.radixdlt.api.util.HandlerRoute;
