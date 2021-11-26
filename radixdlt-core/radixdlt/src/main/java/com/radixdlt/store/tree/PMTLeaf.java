@@ -4,8 +4,8 @@ import java.nio.ByteBuffer;
 
 public class PMTLeaf extends PMTNode {
 
-	final private int EVEN_PREFIX = 2;
-	final private int ODD_PREFIX = 3;
+	private static final int EVEN_PREFIX = 2;
+	private static final int ODD_PREFIX = 3;
 	private byte[] prefixedKey;
 	byte[] getEvenPrefix() {
 		return ByteBuffer.allocate(8).putInt(EVEN_PREFIX).array();

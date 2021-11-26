@@ -1,6 +1,5 @@
 package com.radixdlt.store.tree;
 
-import java.io.OutputStream;
 import java.util.HashMap;
 
 public class PMTPath {
@@ -72,9 +71,9 @@ public class PMTPath {
 		//       * doesn't work with primitive ints?
 		//       * maybe move to PMTKey?
 		var commonLength = 0;
-		for (int i=0; i < shorter; i++) {
+		for (int i = 0; i < shorter; i++) {
 			if (currentNibs[i] == incomingNibs[i]) {
-				commonLength+=1;
+				commonLength += 1;
 			} else {
 				break;
 			}
@@ -83,7 +82,7 @@ public class PMTPath {
 		byte[] commonElements;
 		if (commonLength > 0) {
 			commonElements = new byte[commonLength];
-			for (int i=0; i < commonLength; i++) {
+			for (int i = 0; i < commonLength; i++) {
 				commonElements[i] = currentNibs[i];
 			}
 		} else {
@@ -93,8 +92,8 @@ public class PMTPath {
 		byte[] currentRem;
 		if (commonLength < currentNibs.length) {
 			currentRem = new byte[currentNibs.length - commonLength];
-			for (int i=0; i < currentRem.length; i++) {
-				currentRem[i] = currentNibs[commonLength+i];
+			for (int i = 0; i < currentRem.length; i++) {
+				currentRem[i] = currentNibs[commonLength + i];
 			}
 		} else {
 			currentRem = new byte[0];
@@ -103,8 +102,8 @@ public class PMTPath {
 		byte[] incomingRem;
 		if (commonLength < incomingNibs.length) {
 			incomingRem = new byte[incomingNibs.length - commonLength];
-			for (int i=0; i < incomingRem.length; i++) {
-				incomingRem[i] = incomingNibs[commonLength+i];
+			for (int i = 0; i < incomingRem.length; i++) {
+				incomingRem[i] = incomingNibs[commonLength + i];
 			}
 		} else {
 			incomingRem = new byte[0];
@@ -114,14 +113,14 @@ public class PMTPath {
 	}
 
 	public static byte[] intoNibbles(byte[] bytes) {
-		var nibs = new byte[bytes.length*2];
+		var nibs = new byte[bytes.length * 2];
 		var nibsIndex = 0;
-		for(byte b : bytes) {
+		for (byte b : bytes) {
 			byte high = (byte) ((b & 0xf0) >> 4);
 			byte low = (byte) (b & 0xf);
 			nibs[nibsIndex] = high;
-			nibs[nibsIndex+1] = low;
-			nibsIndex=nibsIndex+2;
+			nibs[nibsIndex + 1] = low;
+			nibsIndex = nibsIndex + 2;
 		}
 		return nibs;
 	}

@@ -220,6 +220,8 @@ subprojects {
         tasks.named("checkstyleTest") {
             configFile = rootProject.file('config/checkstyle/checkstyle_test.xml')
             exclude "**/org/radix/**/*.java"
+            exclude '**/com/radixdlt/store/tree/serialization/rlp/RlpTestData.java'
+            exclude '**/com/radixdlt/store/tree/serialization/rlp/RLPTest.java'
         }
     }
 
