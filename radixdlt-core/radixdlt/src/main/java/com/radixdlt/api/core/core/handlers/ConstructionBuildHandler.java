@@ -64,7 +64,7 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.AccountVaultEntity;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
@@ -83,7 +83,7 @@ public final class ConstructionBuildHandler extends JsonRpcHandler<ConstructionB
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final Forks forks;
 	private final Network network;
-	private final ModelMapper modelMapper;
+	private final CoreModelMapper modelMapper;
 
 	@Inject
 	ConstructionBuildHandler(
@@ -91,7 +91,7 @@ public final class ConstructionBuildHandler extends JsonRpcHandler<ConstructionB
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		Forks forks,
 		Addressing addressing,
-		ModelMapper modelMapper
+		CoreModelMapper modelMapper
 	) {
 		super(ConstructionBuildRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();

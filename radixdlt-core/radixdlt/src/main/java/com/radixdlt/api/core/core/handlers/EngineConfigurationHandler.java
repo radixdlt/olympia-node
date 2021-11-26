@@ -64,7 +64,7 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.EngineCheckpoint;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationResponse;
@@ -81,14 +81,14 @@ import java.util.TreeMap;
 
 public class EngineConfigurationHandler extends JsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
 	private final TreeMap<Long, ForkConfig> forks;
-	private final ModelMapper modelMapper;
+	private final CoreModelMapper modelMapper;
 	private final VerifiedTxnsAndProof genesis;
 
 	@Inject
 	public EngineConfigurationHandler(
 		@Genesis VerifiedTxnsAndProof genesis,
 		TreeMap<Long, ForkConfig> forks,
-		ModelMapper modelMapper
+		CoreModelMapper modelMapper
 	) {
 		super(EngineConfigurationRequest.class);
 		this.genesis = genesis;

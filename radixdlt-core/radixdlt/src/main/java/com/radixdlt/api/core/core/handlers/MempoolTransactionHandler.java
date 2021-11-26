@@ -65,7 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
 import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionResponse;
 import com.radixdlt.api.util.JsonRpcHandler;
@@ -83,7 +83,7 @@ import com.radixdlt.statecomputer.RadixEngineMempool;
 public class MempoolTransactionHandler extends JsonRpcHandler<MempoolTransactionRequest, MempoolTransactionResponse> {
 	private final Network network;
 	private final RadixEngineMempool mempool;
-	private final ModelMapper modelMapper;
+	private final CoreModelMapper modelMapper;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 
 	@Inject
@@ -91,7 +91,7 @@ public class MempoolTransactionHandler extends JsonRpcHandler<MempoolTransaction
 		@NetworkId int networkId,
 		RadixEngineMempool mempool,
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		ModelMapper modelMapper
+		CoreModelMapper modelMapper
 	) {
 		super(MempoolTransactionRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();

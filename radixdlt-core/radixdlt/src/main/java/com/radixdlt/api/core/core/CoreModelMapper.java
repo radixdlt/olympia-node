@@ -117,11 +117,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-public final class ModelMapper {
+public final class CoreModelMapper {
 	private final Addressing addressing;
 
 	@Inject
-	ModelMapper(Addressing addressing) {
+	CoreModelMapper(Addressing addressing) {
 		this.addressing = addressing;
 	}
 

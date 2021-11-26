@@ -65,7 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
 import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
@@ -89,13 +89,13 @@ import java.util.concurrent.ExecutionException;
 public class ConstructionSubmitHandler extends JsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
 	private final Network network;
 	private final EventDispatcher<MempoolAdd> dispatcher;
-	private final ModelMapper modelMapper;
+	private final CoreModelMapper modelMapper;
 
 	@Inject
 	ConstructionSubmitHandler(
 		@NetworkId int networkId,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
-		ModelMapper modelMapper
+		CoreModelMapper modelMapper
 	) {
 		super(ConstructionSubmitRequest.class);
 

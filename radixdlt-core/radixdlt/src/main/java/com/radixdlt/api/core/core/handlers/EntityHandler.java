@@ -64,7 +64,7 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityResponse;
 import com.radixdlt.api.util.JsonRpcHandler;
@@ -83,13 +83,13 @@ import java.util.function.Function;
 public class EntityHandler extends JsonRpcHandler<EntityRequest, EntityResponse> {
 	private final Network network;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final ModelMapper modelMapper;
+	private final CoreModelMapper modelMapper;
 
 	@Inject
 	EntityHandler(
 		@NetworkId int networkId,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		ModelMapper modelMapper
+		CoreModelMapper modelMapper
 	) {
 		super(EntityRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();

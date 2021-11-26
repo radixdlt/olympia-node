@@ -114,14 +114,14 @@ public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditio
 	private final AtomicReference<Instant> timestamp = new AtomicReference<>();
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final LedgerAccumulator ledgerAccumulator;
-	private final ModelMapper modelMapper;
+	private final CoreModelMapper modelMapper;
 	private HashCode accumulator;
 
 	@Inject
 	public BerkeleyProcessedTransactionsStore(
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
 		LedgerAccumulator ledgerAccumulator,
-		ModelMapper modelMapper
+		CoreModelMapper modelMapper
 	) {
 		// TODO: Fix this when we move AdditionalStore to be a RadixEngine construct rather than Berkeley construct
 		this.radixEngineProvider = radixEngineProvider;

@@ -68,7 +68,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.api.gateway.BerkeleyAccountTransactionStore;
-import com.radixdlt.api.gateway.ModelMapper;
+import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.AccountTransaction;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
@@ -97,7 +97,7 @@ public class TransactionStatusService {
 		.expireAfterAccess(Duration.ofMinutes(10))
 		.build();
 	private final BerkeleyAccountTransactionStore accountTransactionStore;
-	private final ModelMapper modelMapper;
+	private final GatewayModelMapper modelMapper;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 
 
@@ -105,7 +105,7 @@ public class TransactionStatusService {
 	TransactionStatusService(
 		BerkeleyAccountTransactionStore accountTransactionStore,
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		ModelMapper modelMapper
+		GatewayModelMapper modelMapper
 	) {
 		this.accountTransactionStore = accountTransactionStore;
 		this.radixEngineProvider = radixEngineProvider;

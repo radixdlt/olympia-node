@@ -64,7 +64,7 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionHashRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionHashResponse;
 import com.radixdlt.api.util.JsonRpcHandler;
@@ -72,10 +72,10 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.utils.Bytes;
 
 public class ConstructionHashHandler extends JsonRpcHandler<ConstructionHashRequest, ConstructionHashResponse> {
-	private final ModelMapper modelMapper;
+	private final CoreModelMapper modelMapper;
 
 	@Inject
-	public ConstructionHashHandler(ModelMapper modelMapper) {
+	public ConstructionHashHandler(CoreModelMapper modelMapper) {
 		super(ConstructionHashRequest.class);
 		this.modelMapper = modelMapper;
 	}

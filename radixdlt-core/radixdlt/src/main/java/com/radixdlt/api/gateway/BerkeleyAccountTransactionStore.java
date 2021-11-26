@@ -100,13 +100,13 @@ import static com.sleepycat.je.OperationStatus.SUCCESS;
 public final class BerkeleyAccountTransactionStore implements BerkeleyAdditionalStore {
 	private static final String TRANSACTIONS_DB = "radix.versioned_transactions";
 	private Database transactions;
-	private final ModelMapper modelMapper;
+	private final GatewayModelMapper modelMapper;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final AtomicReference<Instant> timestamp = new AtomicReference<>();
 
 	@Inject
 	public BerkeleyAccountTransactionStore(
-		ModelMapper modelMapper,
+		GatewayModelMapper modelMapper,
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider
 	) {
 		this.modelMapper = modelMapper;

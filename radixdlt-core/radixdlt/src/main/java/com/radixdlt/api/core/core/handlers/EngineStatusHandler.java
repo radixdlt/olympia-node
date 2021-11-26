@@ -64,7 +64,7 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.EngineStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.EngineStatusResponse;
 import com.radixdlt.api.core.core.openapitools.model.Validator;
@@ -79,13 +79,13 @@ public class EngineStatusHandler extends JsonRpcHandler<EngineStatusRequest, Eng
 	private final Addressing addressing;
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Network network;
-	private final ModelMapper modelMapper;
+	private final CoreModelMapper modelMapper;
 
 	@Inject
 	public EngineStatusHandler(
 		@NetworkId int networkId,
 		InMemorySystemInfo inMemorySystemInfo,
-		ModelMapper modelMapper,
+		CoreModelMapper modelMapper,
 		Addressing addressing
 	) {
 		super(EngineStatusRequest.class);

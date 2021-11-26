@@ -65,7 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseResponse;
 import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
@@ -85,13 +85,13 @@ import com.radixdlt.utils.Bytes;
 public final class ParseTransactionHandler extends JsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {
 	private final Network network;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
-	private final ModelMapper modelMapper;
+	private final CoreModelMapper modelMapper;
 
 	@Inject
 	ParseTransactionHandler(
 		@NetworkId int networkId,
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		ModelMapper modelMapper
+		CoreModelMapper modelMapper
 	) {
 		super(ConstructionParseRequest.class);
 

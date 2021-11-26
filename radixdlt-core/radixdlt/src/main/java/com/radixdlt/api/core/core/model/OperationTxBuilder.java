@@ -64,7 +64,7 @@
 package com.radixdlt.api.core.core.model;
 
 import com.google.common.base.Suppliers;
-import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.application.system.state.EpochData;
@@ -82,12 +82,12 @@ public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 	private final ConstructionBuildRequest request;
 	private final Forks forks;
 	private final Addressing addressing;
-	private final ModelMapper modelMapper;
+	private final CoreModelMapper modelMapper;
 
 	private OperationTxBuilder(
 		ConstructionBuildRequest request,
 		Addressing addressing,
-		ModelMapper modelMapper,
+		CoreModelMapper modelMapper,
 		Forks forks
 	) {
 		this.request = request;
@@ -99,7 +99,7 @@ public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 	public static OperationTxBuilder from(
 		ConstructionBuildRequest request,
 		Addressing addressing,
-		ModelMapper modelMapper,
+		CoreModelMapper modelMapper,
 		Forks forks
 	) {
 		return new OperationTxBuilder(request, addressing, modelMapper, forks);

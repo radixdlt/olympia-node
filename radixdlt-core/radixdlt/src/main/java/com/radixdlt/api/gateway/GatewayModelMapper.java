@@ -102,11 +102,11 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class ModelMapper {
+public class GatewayModelMapper {
 	private final Addressing addressing;
 
 	@Inject
-	public ModelMapper(Addressing addressing) {
+	public GatewayModelMapper(Addressing addressing) {
 		this.addressing = addressing;
 	}
 
