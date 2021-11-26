@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 public class PMTBranch extends PMTNode {
 
-	int NUMBER_OF_NIBBLES = 16;
+	private static final int NUMBER_OF_NIBBLES = 16;
 
 	private byte[][] slices;
 	private int slicesCounter = 0; // INFO: for removal
@@ -47,7 +47,8 @@ public class PMTBranch extends PMTNode {
 
 	public byte[] serialize() {
 		// TODO: serilize, RLP? Array RLP serialization. How to serialize nulls?
-		return this.serialized = "bran".getBytes();
+		this.serialized = "bran".getBytes();
+		return this.serialized;
 	}
 
 }
