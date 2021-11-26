@@ -1,15 +1,16 @@
 package com.radixdlt.store.tree;
 
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class TreeUtils {
 
+	private TreeUtils() { }
+
 	public static byte[] getFirstNibble(byte[] hash) {
 		byte[] nibble = new byte[4];
-		for(int i=0;i<=4;++i) {
+		for (int i = 0; i <= 4; ++i) {
 			nibble[i] = hash[i];
 		}
 		// should we set it in a cache field for re-use?
@@ -23,8 +24,8 @@ public class TreeUtils {
 			.collect(Collectors.joining());
 	}
 
-	final static int EVEN_SIZE = 8;
-	final static int ODD_SIZE = 4;
+	static final int EVEN_SIZE = 8;
+	static final int ODD_SIZE = 4;
 
 	public static byte[] applyPrefix(byte[] rawKey, byte[] oddPrefix, byte[] evenPrefix) {
 		var keyLength = rawKey.length;
