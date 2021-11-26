@@ -61,35 +61,99 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
+import com.radixdlt.api.core.core.openapitools.model.DataObject;
 import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
+import com.radixdlt.application.tokens.construction.MinimumStakeException;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.UInt256;
 
-import java.util.function.Predicate;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.function.Supplier;
 
-public final class ResourceQuery {
-	private final SubstateIndex<ResourceInBucket> index;
-	private final Predicate<ResourceInBucket> predicate;
+import static com.radixdlt.atom.SubstateTypeId.PREPARED_STAKE;
 
-	private ResourceQuery(SubstateIndex<ResourceInBucket> index, Predicate<ResourceInBucket> predicate) {
-		this.index = index;
-		this.predicate = predicate;
+public final class PreparedStakeVaultEntity implements Entity {
+	private final REAddr accountAddress;
+	private final ECPublicKey validatorKey;
+
+	PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey) {
+		this.accountAddress = accountAddress;
+		this.validatorKey = validatorKey;
 	}
 
-	public Predicate<ResourceInBucket> getPredicate() {
-		return predicate;
+	@Override
+	public void deposit(ResourceAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) throws TxBuilderException {
+		if (!(amount.getResource() instanceof TokenResource tokenResource)) {
+			throw new InvalidResourceIdentifierException("Can only store native token in prepared_stake address");
+		}
+		if (!tokenResource.getTokenAddress().isNativeToken()) {
+			throw new InvalidResourceIdentifierException("Can only store native token in prepared_stake address");
+		}
+
+		var minStake = config.get().getMinimumStake().toSubunits();
+		var attempt = UInt256.from(amount.getAmount().toByteArray());
+		if (attempt.compareTo(minStake) < 0) {
+			throw new MinimumStakeException(minStake, attempt);
+		}
+
+		var flag = txBuilder.read(AllowDelegationFlag.class, validatorKey);
+		if (!flag.allowsDelegation()) {
+			var validator = txBuilder.read(ValidatorOwnerCopy.class, validatorKey);
+			var owner = validator.getOwner();
+			if (!accountAddress.equals(owner)) {
+				throw new DelegateStakePermissionException(owner, accountAddress);
+			}
+		}
+		var substate = new PreparedStake(attempt, accountAddress, validatorKey);
+		txBuilder.up(substate);
 	}
 
-	public SubstateIndex<ResourceInBucket> getIndex() {
-		return index;
+	@Override
+	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
+		throw new IllegalStateException();
 	}
 
-	public static ResourceQuery from(SubstateIndex<ResourceInBucket> index) {
-		return new ResourceQuery(index, b -> true);
+	@Override
+	public void overwriteDataObject(
+		DataObject dataObject,
+		Addressing addressing,
+		TxBuilder txBuilder,
+		Supplier<RERulesConfig> config
+	) {
+		throw new IllegalStateException();
 	}
 
-	public static ResourceQuery from(SubstateIndex<ResourceInBucket> index, Predicate<ResourceInBucket> predicate) {
-		return new ResourceQuery(index, predicate);
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
+		buf.put(PREPARED_STAKE.id());
+		buf.put((byte) 0); // Reserved byte
+		buf.put(validatorKey.getCompressedBytes());
+		buf.put(accountAddress.getBytes());
+		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), PreparedStake.class);
+		return List.of(ResourceQuery.from(index));
+	}
+
+	@Override
+	public List<KeyQuery> getKeyQueries() {
+		return List.of();
+	}
+
+
+	public static PreparedStakeVaultEntity from(REAddr accountAddress, ECPublicKey validatorKey) {
+		return new PreparedStakeVaultEntity(accountAddress, validatorKey);
 	}
 }

@@ -64,9 +64,14 @@
 package com.radixdlt.api.core.core;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.construction.Entity;
-import com.radixdlt.api.core.core.construction.entities.AccountVaultEntityIdentifier;
-import com.radixdlt.api.core.core.construction.entities.ValidatorEntityIdentifier;
+import com.radixdlt.api.core.core.model.Entity;
+import com.radixdlt.api.core.core.model.AccountVaultEntity;
+import com.radixdlt.api.core.core.model.PreparedStakeVaultEntity;
+import com.radixdlt.api.core.core.model.PreparedUnstakeVaultEntity;
+import com.radixdlt.api.core.core.model.Resource;
+import com.radixdlt.api.core.core.model.StakeOwnershipResource;
+import com.radixdlt.api.core.core.model.TokenEntity;
+import com.radixdlt.api.core.core.model.ValidatorEntity;
 import com.radixdlt.api.core.core.openapitools.model.*;
 import com.radixdlt.api.service.transactions.SubstateTypeMapping;
 import com.radixdlt.application.system.state.EpochData;
@@ -97,9 +102,11 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
@@ -117,19 +124,72 @@ public final class ModelMapper {
 		this.addressing = addressing;
 	}
 
-	public Entity entity(EntityIdentifier entityIdentifier) throws Exception {
-		var address = entityIdentifier.getAddress();
-		var addressType = addressing.getAddressType(address).orElseThrow();
-		switch (addressType) {
-			case VALIDATOR -> {
-				var key = addressing.forValidators().parse(address);
-				return ValidatorEntityIdentifier.from(key);
+	public Pair<Boolean, com.radixdlt.api.core.core.model.ResourceAmount> resourceAmount(ResourceAmount resourceAmount) {
+		var bigInteger = new BigInteger(resourceAmount.getValue());
+		var isPositive = bigInteger.compareTo(BigInteger.ZERO) > 0;
+
+		var amount = new com.radixdlt.api.core.core.model.ResourceAmount(
+			resource(resourceAmount.getResourceIdentifier()),
+			UInt256.from((isPositive ? bigInteger : bigInteger.negate()).toByteArray())
+		);
+
+		return Pair.of(isPositive, amount);
+	}
+
+	public Resource resource(ResourceIdentifier resourceIdentifier) {
+		try {
+			if (resourceIdentifier instanceof TokenResourceIdentifier tokenResourceIdentifier) {
+				var tokenAddress = addressing.forResources().parse2(tokenResourceIdentifier.getRri()).getSecond();
+				return com.radixdlt.api.core.core.model.TokenResource.from(tokenAddress);
+			} else if (resourceIdentifier instanceof StakeOwnershipResourceIdentifier stakeOwnershipResourceIdentifier) {
+				var key = addressing.forValidators().parse(stakeOwnershipResourceIdentifier.getValidator());
+				return StakeOwnershipResource.from(key);
+			} else {
+				throw new IllegalStateException();
 			}
-			case ACCOUNT -> {
-				var accountAddress = addressing.forAccounts().parse(address);
-				return AccountVaultEntityIdentifier.from(accountAddress);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException();
+		}
+	}
+
+	public Entity entity(EntityIdentifier entityIdentifier) {
+		try {
+			var address = entityIdentifier.getAddress();
+			var addressType = addressing.getAddressType(address).orElseThrow();
+			switch (addressType) {
+				case VALIDATOR -> {
+					var key = addressing.forValidators().parse(address);
+					return ValidatorEntity.from(key);
+					// TODO: Add Validator System entity
+				}
+				case ACCOUNT -> {
+					var accountAddress = addressing.forAccounts().parse(address);
+					var subEntity = entityIdentifier.getSubEntity();
+					if (subEntity == null) {
+						return AccountVaultEntity.from(accountAddress);
+					}
+
+					var validator = addressing.forValidators().parse(subEntity.getMetadata().getValidator());
+					return switch (subEntity.getAddress()) {
+						case "prepared_stake" -> PreparedStakeVaultEntity.from(
+							accountAddress,
+							validator
+						);
+						case "prepared_unstake" -> PreparedUnstakeVaultEntity.from(
+							accountAddress,
+							validator
+						);
+						default -> throw new IllegalStateException();
+					};
+				}
+				case RESOURCE -> {
+					var pair = addressing.forResources().parse2(address);
+					return TokenEntity.from(pair.getFirst(), pair.getSecond());
+				}
+				default -> throw new IllegalStateException();
 			}
-			default -> throw new IllegalStateException();
+		} catch (DeserializeException e) {
+			throw new IllegalStateException(e);
 		}
 	}
 

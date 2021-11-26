@@ -61,68 +61,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.core.core.network.NetworkIdentifier2;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Network;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+public final class TokenResource implements Resource {
+	private final REAddr tokenAddress;
 
-public class BuildTransactionRequest {
-	private final NetworkIdentifier2 networkIdentifier;
-	private final REAddr feePayer;
-	private final List<OperationGroup> operationGroups;
-	private final byte[] message;
-	private final boolean disableResourceAllocateAndDestroy;
-
-	private BuildTransactionRequest(
-		NetworkIdentifier2 networkIdentifier,
-		REAddr feePayer,
-		List<OperationGroup> operationGroups,
-		byte[] message,
-		boolean disableResourceAllocateAndDestroy
-	) {
-		this.networkIdentifier = networkIdentifier;
-		this.feePayer = Objects.requireNonNull(feePayer);
-		this.operationGroups = Objects.requireNonNull(operationGroups);
-		this.message = message;
-		this.disableResourceAllocateAndDestroy = disableResourceAllocateAndDestroy;
+	private TokenResource(REAddr tokenAddress) {
+		this.tokenAddress = tokenAddress;
 	}
 
-	public Network getNetwork() {
-		return networkIdentifier.getNetwork();
+	public REAddr getTokenAddress() {
+		return tokenAddress;
 	}
 
-	public REAddr getFeePayer() {
-		return feePayer;
-	}
-
-	public List<OperationGroup> getOperationGroups() {
-		return operationGroups;
-	}
-
-	public Optional<byte[]> getMessage() {
-		return Optional.ofNullable(message);
-	}
-
-	public boolean isDisableResourceAllocateAndDestroy() {
-		return disableResourceAllocateAndDestroy;
-	}
-
-	public static BuildTransactionRequest from(JsonObjectReader reader) throws InvalidParametersException {
-		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier2::from);
-		var feePayer = reader.getJsonObject("fee_payer", Entity::from).getAccountAddress()
-			.orElseThrow();
-		var operationGroups = reader.getList("operation_groups", OperationGroup::from);
-		var message = reader.getOptHexBytes("message").orElse(null);
-		var disableResourceAllocateAndDestroy = reader.getOptBoolean("disable_resource_allocate_and_destroy", false);
-		return new BuildTransactionRequest(
-			networkIdentifier, feePayer, operationGroups, message, disableResourceAllocateAndDestroy
-		);
+	public static TokenResource from(REAddr tokenAddress) {
+		return new TokenResource(tokenAddress);
 	}
 }

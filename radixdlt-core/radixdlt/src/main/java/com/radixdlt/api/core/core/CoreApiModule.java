@@ -67,7 +67,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.core.core.construction.BuildTransactionHandler;
 import com.radixdlt.api.core.core.construction.FinalizeTransactionHandler;
 import com.radixdlt.api.core.core.construction.HashTransactionHandler;
 import com.radixdlt.api.core.core.construction.ParseTransactionHandler;
@@ -108,7 +107,7 @@ public class CoreApiModule extends AbstractModule {
 			routeBinder.addBinding(HandlerRoute.post("/transactions")).to(TransactionsHandler.class);
 		}
 		routeBinder.addBinding(HandlerRoute.post("/construction/derive")).to(ConstructionDeriveHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/construction/build")).to(BuildTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/construction/build")).to(ConstructionBuildHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/construction/parse")).to(ParseTransactionHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/construction/finalize")).to(FinalizeTransactionHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/construction/hash")).to(HashTransactionHandler.class);

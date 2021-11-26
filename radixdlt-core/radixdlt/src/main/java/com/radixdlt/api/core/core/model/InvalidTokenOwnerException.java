@@ -61,61 +61,12 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.core.core.construction.entities.ValidatorEntityIdentifier;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
-import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
-import com.radixdlt.application.validators.state.ValidatorFeeCopy;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
 
-import java.util.OptionalLong;
-import java.util.function.Supplier;
-
-public final class PreparedValidatorFee implements DataObject {
-	private final int validatorFee;
-
-	private PreparedValidatorFee(int validatorFee) {
-		this.validatorFee = validatorFee;
-	}
-
-	@Override
-	public void bootUp(
-		TxBuilder builder,
-		Entity entityIdentifier,
-		DataObject.RelatedOperationFetcher fetcher,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		if (!(entityIdentifier instanceof ValidatorEntityIdentifier)) {
-			throw new IllegalStateException();
-		}
-		var validatorKey = ((ValidatorEntityIdentifier) entityIdentifier).getValidatorKey();
-		builder.down(ValidatorFeeCopy.class, validatorKey);
-		var curRakePercentage = builder.read(ValidatorStakeData.class, validatorKey)
-			.getRakePercentage();
-
-		var isIncrease = validatorFee > curRakePercentage;
-		var rakeIncrease = validatorFee - curRakePercentage;
-		var maxRakeIncrease = ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE;
-		if (isIncrease && rakeIncrease >= maxRakeIncrease) {
-			throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
-		}
-
-		var rakeIncreaseDebounceEpochLength = config.get().getRakeIncreaseDebouncerEpochLength();
-		var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
-		var curEpoch = builder.readSystem(EpochData.class);
-		var epoch = curEpoch.getEpoch() + epochDiff;
-		builder.up(new ValidatorFeeCopy(OptionalLong.of(epoch), validatorKey, validatorFee));
-	}
-
-	public static PreparedValidatorFee from(JsonObjectReader reader) throws InvalidParametersException {
-		var fee = reader.getInteger("fee", 0, 10000);
-		return new PreparedValidatorFee(fee);
+public class InvalidTokenOwnerException extends TxBuilderException {
+	public InvalidTokenOwnerException(String message) {
+		super(message);
 	}
 }

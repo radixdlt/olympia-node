@@ -61,65 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.core.core.construction.entities.TokenEntityIdentifier;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-
-import java.util.function.Supplier;
-
-public class TokenMetadata implements DataObject {
-	private final String symbol;
-	private final String name;
-	private final String description;
-	private final String url;
-	private final String iconUrl;
-
-	private TokenMetadata(String symbol, String name, String description, String url, String iconUrl) {
-		this.symbol = symbol;
-		this.name = name;
-		this.description = description;
-		this.url = url;
-		this.iconUrl = iconUrl;
-	}
-
-	public String getSymbol() {
-		return symbol;
-	}
-
-	@Override
-	public void bootUp(
-		TxBuilder builder,
-		Entity entityIdentifier,
-		DataObject.RelatedOperationFetcher fetcher,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		if (!(entityIdentifier instanceof TokenEntityIdentifier)) {
-			throw new IllegalStateException();
-		}
-		var tokenAddr = ((TokenEntityIdentifier) entityIdentifier).getTokenAddr();
-		builder.up(new TokenResourceMetadata(
-			tokenAddr,
-			symbol,
-			name,
-			description,
-			iconUrl,
-			url
-		));
-	}
-
-	public static TokenMetadata from(JsonObjectReader reader) throws InvalidParametersException {
-		var symbol = reader.getString("symbol");
-		var name = reader.getOptString("name").orElse("");
-		var description = reader.getOptString("description").orElse("");
-		var url = reader.getOptString("url").orElse("");
-		var iconUrl = reader.getOptString("iconUrl").orElse("");
-
-		return new TokenMetadata(symbol, name, description, url, iconUrl);
-	}
+public sealed interface Resource permits TokenResource, StakeOwnershipResource {
 }

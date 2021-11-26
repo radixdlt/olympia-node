@@ -61,66 +61,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.core.core.construction.entities.TokenEntityIdentifier;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.application.system.scrypt.Syscall;
-import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.api.core.core.openapitools.model.DataObject;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.UInt256;
 
-import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.function.Supplier;
 
-public final class TokenData implements DataObject {
-	private final UInt256 granularity;
-	private final boolean isMutable;
-	private final ECPublicKey owner;
+public interface Entity {
+	// Read
+	List<ResourceQuery> getResourceQueries();
+	List<KeyQuery> getKeyQueries();
 
-	private TokenData(UInt256 granularity, boolean isMutable, ECPublicKey owner) {
-		this.granularity = granularity;
-		this.isMutable = isMutable;
-		this.owner = owner;
-	}
+	// Write
+	void deposit(ResourceAmount resourceAmount, TxBuilder txBuilder, Supplier<RERulesConfig> config) throws TxBuilderException;
 
-	@Override
-	public void bootUp(
-		TxBuilder builder,
-		Entity entityIdentifier,
-		DataObject.RelatedOperationFetcher fetcher,
+	SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException;
+
+	void overwriteDataObject(
+		DataObject dataObject,
+		Addressing addressing,
+		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		if (!isMutable && owner != null) {
-			throw new InvalidTokenOwnerException("Cannot have owner on fixed supply token.");
-		}
-
-		if (granularity != null && !granularity.equals(UInt256.ONE)) {
-			// TODO: Fix
-			throw new IllegalStateException();
-		}
-
-		if (!(entityIdentifier instanceof TokenEntityIdentifier)) {
-			throw new IllegalStateException();
-		}
-		var tokenAddr = ((TokenEntityIdentifier) entityIdentifier).getTokenAddr();
-		var tokenMetadata = fetcher.get(TokenMetadata.class);
-		var symbol = tokenMetadata.getSymbol();
-
-		builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8));
-		builder.downREAddr(tokenAddr);
-		var tokenResource = new TokenResource(tokenAddr, UInt256.ONE, isMutable, owner);
-		builder.up(tokenResource);
-	}
-
-	public static TokenData from(JsonObjectReader reader, JsonObjectReader metadataReader) throws InvalidParametersException {
-		var granularity = reader.getOptNonZeroAmount("granularity").orElse(null);
-		var isMutable = reader.getBoolean("is_mutable");
-		var owner = reader.getPubKey("owner");
-		return new TokenData(granularity, isMutable, owner);
-	}
+	) throws TxBuilderException;
 }

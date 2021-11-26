@@ -61,44 +61,102 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.Pair;
+import com.google.common.base.Suppliers;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
+import com.radixdlt.api.core.core.openapitools.model.Operation;
+import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.Bytes;
 
-import java.nio.ByteBuffer;
-import java.util.function.Predicate;
+import java.util.function.Supplier;
 
-public final class TokenResourceIdentifier implements ResourceIdentifier {
-	private final REAddr tokenAddress;
+public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
+	private final ConstructionBuildRequest request;
+	private final Forks forks;
+	private final Addressing addressing;
+	private final ModelMapper modelMapper;
 
-	private TokenResourceIdentifier(REAddr tokenAdress) {
-		this.tokenAddress = tokenAdress;
+	private OperationTxBuilder(
+		ConstructionBuildRequest request,
+		Addressing addressing,
+		ModelMapper modelMapper,
+		Forks forks
+	) {
+		this.request = request;
+		this.addressing = addressing;
+		this.modelMapper = modelMapper;
+		this.forks = forks;
 	}
 
-	public REAddr getTokenAddress() {
-		return tokenAddress;
+	public static OperationTxBuilder from(
+		ConstructionBuildRequest request,
+		Addressing addressing,
+		ModelMapper modelMapper,
+		Forks forks
+	) {
+		return new OperationTxBuilder(request, addressing, modelMapper, forks);
+	}
+
+	private void execute(
+		Operation operation,
+		TxBuilder txBuilder,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
+		var entityIdentifier = operation.getEntityIdentifier();
+		var entity = modelMapper.entity(entityIdentifier);
+
+		var amount = operation.getAmount();
+		if (amount != null) {
+			var signAndAmount = modelMapper.resourceAmount(amount);
+			var resourceAmount = signAndAmount.getSecond();
+			if (signAndAmount.getFirst()) {
+				entity.deposit(resourceAmount, txBuilder, config);
+			} else {
+				var retrieval = entity.withdraw(resourceAmount.getResource());
+				var change = txBuilder.downFungible(
+					retrieval.getIndex(),
+					retrieval.getPredicate(),
+					resourceAmount.getAmount()
+				);
+				if (!change.isZero()) {
+					var changeAmount = new ResourceAmount(resourceAmount.getResource(), change);
+					entity.deposit(changeAmount, txBuilder, config);
+				}
+			}
+		}
+
+		var data = operation.getData();
+		if (data != null) {
+			entity.overwriteDataObject(data.getDataObject(), addressing, txBuilder, config);
+		}
 	}
 
 	@Override
-	public Pair<SubstateIndex<ResourceInBucket>, Predicate<ResourceInBucket>> substateRetrieval(REAddr accountAddress) {
-		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
-		buf.put(SubstateTypeId.TOKENS.id());
-		buf.put((byte) 0);
-		buf.put(accountAddress.getBytes());
-		SubstateIndex<ResourceInBucket> index = SubstateIndex.create(buf.array(), TokensInAccount.class);
-		return Pair.of(index, p -> p.bucket().resourceAddr().equals(tokenAddress) && p.bucket().getOwner().equals(accountAddress));
-	}
+	public void execute(TxBuilder txBuilder) throws TxBuilderException {
 
-	public static TokenResourceIdentifier from(JsonObjectReader reader) throws InvalidParametersException {
-		var tokenAddress = reader.getResource("rri");
-		return new TokenResourceIdentifier(tokenAddress);
+		var configSupplier = Suppliers.memoize(() -> {
+			var epochData = txBuilder.findSystem(EpochData.class);
+			return forks.get(epochData.getEpoch()).getConfig();
+		});
+
+		for (var operationGroup : request.getOperationGroups()) {
+			for (var operation : operationGroup.getOperations()) {
+				execute(operation, txBuilder, configSupplier);
+			}
+			txBuilder.end();
+		}
+
+		var msg = request.getMessage();
+		if (msg != null) {
+			txBuilder.message(Bytes.fromHexString(msg));
+		}
 	}
 }

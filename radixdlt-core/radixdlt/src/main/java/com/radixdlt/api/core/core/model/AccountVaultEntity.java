@@ -61,64 +61,119 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.core.core.openapitools.model.DataObject;
+import com.radixdlt.application.system.state.StakeOwnership;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.utils.Bytes;
-import org.json.JSONObject;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import org.bouncycastle.util.Arrays;
 
-public final class BuildTransactionHandler implements ApiHandler<BuildTransactionRequest> {
-	private final Addressing addressing;
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final Forks forks;
-	private final Network network;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.function.Supplier;
 
-	@Inject
-	BuildTransactionHandler(
-		@NetworkId int networkId,
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		Forks forks,
-		Addressing addressing
-	) {
-		this.network = Network.ofId(networkId).orElseThrow();
-		this.radixEngine = radixEngine;
-		this.forks = forks;
-		this.addressing = addressing;
+import static com.radixdlt.atom.SubstateTypeId.STAKE_OWNERSHIP;
+import static com.radixdlt.atom.SubstateTypeId.TOKENS;
+
+public class AccountVaultEntity implements Entity {
+	private final REAddr accountAddress;
+
+	private AccountVaultEntity(REAddr accountAddress) {
+		this.accountAddress = accountAddress;
+	}
+
+	public REAddr getAccountAddress() {
+		return accountAddress;
 	}
 
 	@Override
-	public Addressing addressing() {
-		return addressing;
-	}
-
-	@Override
-	public BuildTransactionRequest parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		return BuildTransactionRequest.from(reader);
-	}
-
-	@Override
-	public JSONObject handleRequest(BuildTransactionRequest request) throws TxBuilderException {
-		if (!request.getNetwork().equals(this.network)) {
+	public void deposit(ResourceAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) {
+		final Particle substate;
+		if (amount.getResource() instanceof TokenResource tokenResource) {
+			var tokenAddress = tokenResource.getTokenAddress();
+			substate = new TokensInAccount(accountAddress, tokenAddress, amount.getAmount());
+		} else if (amount.getResource() instanceof StakeOwnershipResource stakeOwnershipResource) {
+			substate = new StakeOwnership(stakeOwnershipResource.getValidatorKey(), accountAddress, amount.getAmount());
+		} else {
 			throw new IllegalStateException();
 		}
+		txBuilder.up(substate);
+	}
 
-		var operationTxBuilder = OperationTxBuilder.from(request, forks);
-		var feePayer = request.getFeePayer();
-		var disableResourceAllocateAndDestroy = request.isDisableResourceAllocateAndDestroy();
-		var builder = radixEngine.constructWithFees(operationTxBuilder, disableResourceAllocateAndDestroy, feePayer);
-		var unsignedTransaction = builder.buildForExternalSign();
-		return new JSONObject()
-			.put("unsigned_transaction", Bytes.toHexString(unsignedTransaction.blob()))
-			.put("payload_to_sign", Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
+	@Override
+	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
+		if (resource instanceof TokenResource tokenResource) {
+			var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
+			buf.put(SubstateTypeId.TOKENS.id());
+			buf.put((byte) 0);
+			buf.put(accountAddress.getBytes());
+			SubstateIndex<ResourceInBucket> index = SubstateIndex.create(buf.array(), TokensInAccount.class);
+			return new SubstateWithdrawal(
+				index,
+				p -> p.bucket().resourceAddr().equals(tokenResource.getTokenAddress())
+				&& p.bucket().getOwner().equals(accountAddress)
+			);
+		} else if (resource instanceof StakeOwnershipResource stakeOwnershipResource) {
+			var validatorKey = stakeOwnershipResource.getValidatorKey();
+			var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES));
+			buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
+			buf.put((byte) 0);
+			buf.put(validatorKey.getCompressedBytes());
+			buf.put(accountAddress.getBytes());
+			if (buf.hasRemaining()) {
+				// Sanity
+				throw new IllegalStateException();
+			}
+			SubstateIndex<ResourceInBucket> index = SubstateIndex.create(buf.array(), StakeOwnership.class);
+			return new SubstateWithdrawal(
+				index,
+				p -> p.bucket().getOwner().equals(accountAddress) && p.bucket().getValidatorKey().equals(validatorKey)
+			);
+		} else {
+			throw new IllegalStateException();
+		}
+	}
+
+	@Override
+	public void overwriteDataObject(
+		DataObject dataObject,
+		Addressing addressing,
+		TxBuilder txBuilder,
+		Supplier<RERulesConfig> config
+	) {
+		throw new IllegalStateException();
+	}
+
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+		var tokenIndex = SubstateIndex.<ResourceInBucket>create(
+			Arrays.concatenate(new byte[]{TOKENS.id(), 0}, accountAddress.getBytes()),
+			TokensInAccount.class
+		);
+		// Unfortunately we prefixed Stakeownership in the wrong order so we'll need to do a scan
+		var ownershipIndex = SubstateIndex.<ResourceInBucket>create(STAKE_OWNERSHIP.id(), StakeOwnership.class);
+		return List.of(
+			ResourceQuery.from(tokenIndex),
+			ResourceQuery.from(ownershipIndex, b -> b.bucket().getOwner().equals(accountAddress))
+		);
+	}
+
+	@Override
+	public List<KeyQuery> getKeyQueries() {
+		return List.of();
+	}
+
+	public static AccountVaultEntity from(REAddr address) {
+		return new AccountVaultEntity(address);
 	}
 }

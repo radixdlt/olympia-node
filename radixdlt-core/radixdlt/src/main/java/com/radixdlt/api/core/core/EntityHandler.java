@@ -64,7 +64,6 @@
 package com.radixdlt.api.core.core;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.ModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityResponse;
 import com.radixdlt.api.util.JsonRpcHandler;

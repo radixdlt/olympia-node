@@ -61,26 +61,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.constraintmachine.SubstateIndex;
 
-import java.util.List;
+import java.util.function.Predicate;
 
-public class OperationGroup {
-	private final List<Operation> operations;
+public final class ResourceQuery {
+	private final SubstateIndex<ResourceInBucket> index;
+	private final Predicate<ResourceInBucket> predicate;
 
-	private OperationGroup(List<Operation> operations) {
-		this.operations = operations;
+	private ResourceQuery(SubstateIndex<ResourceInBucket> index, Predicate<ResourceInBucket> predicate) {
+		this.index = index;
+		this.predicate = predicate;
 	}
 
-	public List<Operation> getOperations() {
-		return operations;
+	public Predicate<ResourceInBucket> getPredicate() {
+		return predicate;
 	}
 
-	public static OperationGroup from(JsonObjectReader reader) throws InvalidParametersException {
-		var operations = reader.getList("operations", Operation::from);
-		return new OperationGroup(operations);
+	public SubstateIndex<ResourceInBucket> getIndex() {
+		return index;
+	}
+
+	public static ResourceQuery from(SubstateIndex<ResourceInBucket> index) {
+		return new ResourceQuery(index, b -> true);
+	}
+
+	public static ResourceQuery from(SubstateIndex<ResourceInBucket> index, Predicate<ResourceInBucket> predicate) {
+		return new ResourceQuery(index, predicate);
 	}
 }

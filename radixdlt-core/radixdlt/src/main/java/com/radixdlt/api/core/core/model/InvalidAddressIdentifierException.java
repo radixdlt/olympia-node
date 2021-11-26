@@ -61,107 +61,12 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
-import com.google.common.base.Suppliers;
-import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.UInt256;
 
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Supplier;
-
-public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
-	private final BuildTransactionRequest request;
-	private final Forks forks;
-
-	private OperationTxBuilder(BuildTransactionRequest request, Forks forks) {
-		this.request = request;
-		this.forks = forks;
-	}
-
-	public static OperationTxBuilder from(BuildTransactionRequest request, Forks forks) {
-		return new OperationTxBuilder(request, forks);
-	}
-
-	private void execute(
-		Operation operation,
-		List<Operation> relatedOperations,
-		TxBuilder txBuilder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		var amountMaybe = operation.getAmount();
-		if (amountMaybe.isPresent()) {
-			var amount = amountMaybe.get();
-			var entityIdentifier = operation.getEntityIdentifier();
-			var resourceIdentifier = amount.getResourceIdentifier();
-			var compare = amount.getValue().compareTo(BigInteger.ZERO);
-			if (compare > 0) {
-				var actionAmount = UInt256.from(amount.getValue().toString());
-				entityIdentifier.bootUp(txBuilder, actionAmount, resourceIdentifier, config);
-			} else if (compare < 0) {
-				var accountAddress = entityIdentifier.getAccountAddress()
-					.orElseThrow(() -> new InvalidAddressIdentifierException("Spending resources can only occur from account addresses."));
-				var actionAmount = UInt256.from(amount.getValue().toString().substring(1));
-				var retrieval = resourceIdentifier.substateRetrieval(accountAddress);
-				var change = txBuilder.downFungible(
-					retrieval.getFirst(),
-					retrieval.getSecond(),
-					actionAmount
-				);
-				if (!change.isZero()) {
-					entityIdentifier.bootUp(txBuilder, change, resourceIdentifier, config);
-				}
-			}
-		}
-
-		var dataUpdateMaybe = operation.getDataUpdate();
-		if (dataUpdateMaybe.isPresent()) {
-			var dataUpdate = dataUpdateMaybe.get();
-			var fetcher = new DataObject.RelatedOperationFetcher() {
-				@Override
-				public <T extends DataObject> T get(Class<T> dataObjectClass) {
-					return relatedOperations.stream()
-						.map(o -> o.getDataUpdate().map(DataUpdate::getDataObject).orElse(null))
-						.filter(Objects::nonNull)
-						.filter(dataObjectClass::isInstance)
-						.map(dataObjectClass::cast)
-						.findFirst()
-						.orElseThrow();
-				}
-			};
-			dataUpdate.getDataObject().bootUp(
-				txBuilder,
-				operation.getEntityIdentifier(),
-				fetcher,
-				config
-			);
-		}
-	}
-
-	@Override
-	public void execute(TxBuilder txBuilder) throws TxBuilderException {
-		var configSupplier = Suppliers.memoize(() -> {
-			var epochData = txBuilder.findSystem(EpochData.class);
-			return forks.get(epochData.getEpoch()).getConfig();
-		});
-
-		for (var operationGroup : request.getOperationGroups()) {
-			for (var operation : operationGroup.getOperations()) {
-				execute(operation, operationGroup.getOperations(), txBuilder, configSupplier);
-			}
-			txBuilder.end();
-		}
-
-		var msg = request.getMessage();
-		if (msg.isPresent()) {
-			txBuilder.message(msg.get());
-		}
+public class InvalidAddressIdentifierException extends TxBuilderException {
+	public InvalidAddressIdentifierException(String message) {
+		super(message);
 	}
 }

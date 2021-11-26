@@ -61,12 +61,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.constraintmachine.SubstateIndex;
 
-public class InvalidTokenOwnerException extends TxBuilderException {
-	public InvalidTokenOwnerException(String message) {
-		super(message);
+import java.util.function.Predicate;
+
+public final class SubstateWithdrawal {
+	private final SubstateIndex<ResourceInBucket> index;
+	private final Predicate<ResourceInBucket> predicate;
+
+	public SubstateWithdrawal(
+		SubstateIndex<ResourceInBucket> index,
+		Predicate<ResourceInBucket> predicate
+	) {
+		this.index = index;
+		this.predicate = predicate;
+	}
+
+	public SubstateIndex<ResourceInBucket> getIndex() {
+		return index;
+	}
+
+	public Predicate<ResourceInBucket> getPredicate() {
+		return predicate;
 	}
 }

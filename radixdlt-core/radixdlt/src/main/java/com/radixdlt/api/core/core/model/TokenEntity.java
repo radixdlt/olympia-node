@@ -61,64 +61,102 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.core.core.construction.entities.AccountVaultEntityIdentifier;
-import com.radixdlt.api.core.core.construction.entities.PreparedStakeVaultEntityIdentifier;
-import com.radixdlt.api.core.core.construction.entities.PreparedUnstakeVaultEntityIdentifier;
-import com.radixdlt.api.core.core.construction.entities.TokenEntityIdentifier;
-import com.radixdlt.api.core.core.construction.entities.ValidatorEntityIdentifier;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.core.core.openapitools.model.DataObject;
+import com.radixdlt.api.core.core.openapitools.model.TokenData;
+import com.radixdlt.api.core.core.openapitools.model.TokenMetadata;
+import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Supplier;
 
-public interface Entity {
-	Optional<REAddr> getAccountAddress();
-	void bootUp(TxBuilder txBuilder, UInt256 amount, ResourceIdentifier resourceIdentifier, Supplier<RERulesConfig> config) throws TxBuilderException;
-	List<ResourceQuery> getResourceQueries();
-	List<KeyQuery> getKeyQueries();
+public class TokenEntity implements Entity {
+	private final String symbol;
+	private final REAddr tokenAddr;
 
-	private static Entity fromAccountAddress(REAddr accountAddress, JsonObjectReader reader) throws InvalidParametersException {
-		return reader
-			.getOptJsonObject("sub_address", r -> {
-				var subAddress = r.getString("address");
-				switch (subAddress) {
-					case "prepared_stake":
-						return PreparedStakeVaultEntityIdentifier.from(
-							accountAddress,
-							r.getJsonObject("metadata").getValidatorAddress("validator")
-						);
-					case "prepared_unstake":
-						return PreparedUnstakeVaultEntityIdentifier.from(
-							accountAddress,
-							r.getJsonObject("metadata")
-						);
-					default:
-						throw new InvalidParametersException("/address", "Invalid Sub Address: " + subAddress);
-				}
-			})
-			.orElseGet(() -> AccountVaultEntityIdentifier.from(accountAddress));
+	private TokenEntity(String symbol, REAddr tokenAddr) {
+		this.symbol = symbol;
+		this.tokenAddr = tokenAddr;
 	}
 
-	static Entity from(JsonObjectReader reader) throws InvalidParametersException {
-		var accountAddress = reader.tryAccountAddress("address");
-		if (accountAddress.isPresent()) {
-			return fromAccountAddress(accountAddress.get(), reader);
-		}
+	public REAddr getTokenAddr() {
+		return tokenAddr;
+	}
 
-		var validatorKey = reader.tryValidatorAddress("address");
-		if (validatorKey.isPresent()) {
-			return ValidatorEntityIdentifier.from(validatorKey.get());
-		}
+	public static TokenEntity from(String symbol, REAddr tokenAddr) {
+		return new TokenEntity(symbol, tokenAddr);
+	}
 
-		return TokenEntityIdentifier.from(reader.getResource("address"));
+	@Override
+	public void deposit(ResourceAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) throws TxBuilderException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void overwriteDataObject(
+		DataObject dataObject,
+		Addressing addressing,
+		TxBuilder builder,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
+		if (dataObject instanceof TokenData tokenData) {
+			var isMutable = tokenData.getIsMutable();
+			var owner = tokenData.getOwner();
+			if (!isMutable && owner != null) {
+				throw new InvalidTokenOwnerException("Cannot have owner on fixed supply token.");
+			}
+
+			if (tokenData.getGranularity() != null && !tokenData.getGranularity().equals("1")) {
+				// TODO: Fix
+				throw new IllegalStateException();
+			}
+
+			builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8));
+			builder.downREAddr(tokenAddr);
+			try {
+				var ownerKey = addressing.forAccounts().parse(owner).publicKey().orElseThrow();
+				var tokenResource = new TokenResource(tokenAddr, UInt256.ONE, isMutable, ownerKey);
+				builder.up(tokenResource);
+			} catch (DeserializeException e) {
+				throw new IllegalStateException();
+			}
+		} else if (dataObject instanceof TokenMetadata tokenMetadata) {
+			builder.up(new TokenResourceMetadata(
+				tokenAddr,
+				symbol,
+				tokenMetadata.getName(),
+				tokenMetadata.getDescription(),
+				tokenMetadata.getIconUrl(),
+				tokenMetadata.getUrl()
+			));
+		} else {
+			throw new IllegalStateException();
+		}
+	}
+
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public List<KeyQuery> getKeyQueries() {
+		throw new UnsupportedOperationException();
 	}
 }

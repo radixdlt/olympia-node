@@ -61,34 +61,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.crypto.ECPublicKey;
 
-import java.math.BigInteger;
+public final class StakeOwnershipResource implements Resource {
+	private final ECPublicKey validatorKey;
 
-public class ResourceAmount {
-	private final ResourceIdentifier resourceIdentifier;
-	private final BigInteger value;
-
-	private ResourceAmount(ResourceIdentifier resourceIdentifier, BigInteger value) {
-		this.resourceIdentifier = resourceIdentifier;
-		this.value = value;
+	private StakeOwnershipResource(ECPublicKey validatorKey) {
+		this.validatorKey = validatorKey;
 	}
 
-	public ResourceIdentifier getResourceIdentifier() {
-		return resourceIdentifier;
+	public ECPublicKey getValidatorKey() {
+		return validatorKey;
 	}
 
-	public BigInteger getValue() {
-		return value;
-	}
-
-	public static ResourceAmount from(JsonObjectReader reader) throws InvalidParametersException {
-		return new ResourceAmount(
-			ResourceIdentifier.from(reader.getJsonObject("resource_identifier")),
-			reader.getBigInteger("value")
-		);
+	public static StakeOwnershipResource from(ECPublicKey validatorKey) {
+		return new StakeOwnershipResource(validatorKey);
 	}
 }

@@ -61,25 +61,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.utils.UInt256;
 
-public class DataUpdate {
-	private final DataObject dataObject;
+public class ResourceAmount {
+	private final Resource resource;
+	private final UInt256 amount;
 
-	private DataUpdate(DataObject dataObject) {
-		this.dataObject = dataObject;
+	public ResourceAmount(Resource resource, UInt256 amount) {
+		this.resource = resource;
+		this.amount = amount;
 	}
 
-	public DataObject getDataObject() {
-		return dataObject;
+	public Resource getResource() {
+		return resource;
 	}
 
-	public static DataUpdate from(JsonObjectReader reader) throws InvalidParametersException {
-		var metadataReader = reader.getOptJsonObject("metadata", r -> r).orElseGet(JsonObjectReader::empty);
-		var dataObject = reader.getJsonObject("object", r -> DataObject.from(r, metadataReader));
-		return new DataUpdate(dataObject);
+	public UInt256 getAmount() {
+		return amount;
 	}
 }

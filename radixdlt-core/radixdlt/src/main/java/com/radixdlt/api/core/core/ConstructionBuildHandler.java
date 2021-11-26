@@ -61,29 +61,64 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core;
 
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.Pair;
+import com.google.inject.Inject;
+import com.radixdlt.api.core.core.model.OperationTxBuilder;
+import com.radixdlt.api.core.core.model.AccountVaultEntity;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildResponse;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.utils.Bytes;
 
-import java.util.function.Predicate;
+public final class ConstructionBuildHandler extends JsonRpcHandler<ConstructionBuildRequest, ConstructionBuildResponse> {
+	private final Addressing addressing;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final Forks forks;
+	private final Network network;
+	private final ModelMapper modelMapper;
 
-public interface ResourceIdentifier {
-	Pair<SubstateIndex<ResourceInBucket>, Predicate<ResourceInBucket>> substateRetrieval(REAddr accountAddress);
+	@Inject
+	ConstructionBuildHandler(
+		@NetworkId int networkId,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
+		Forks forks,
+		Addressing addressing,
+		ModelMapper modelMapper
+	) {
+		super(ConstructionBuildRequest.class);
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.radixEngine = radixEngine;
+		this.forks = forks;
+		this.addressing = addressing;
+		this.modelMapper = modelMapper;
+	}
 
-	static ResourceIdentifier from(JsonObjectReader reader) throws InvalidParametersException {
-		var type = reader.getString("type");
-		switch (type) {
-			case "Token":
-				return TokenResourceIdentifier.from(reader);
-			case "StakeOwnership":
-				return StakeOwnershipResourceIdentifier.from(reader);
-			default:
-				throw new InvalidParametersException("/type", "Invalid type " + type);
+	@Override
+	public ConstructionBuildResponse handleRequest(ConstructionBuildRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
+			throw new IllegalStateException();
 		}
+
+		var operationTxBuilder = OperationTxBuilder.from(request, addressing, modelMapper, forks);
+		var feePayer = modelMapper.entity(request.getFeePayer());
+		var disableAllocAndDestroy = request.getDisableResourceAllocateAndDestroy();
+
+		var disable = disableAllocAndDestroy != null && !disableAllocAndDestroy;
+		if (!(feePayer instanceof AccountVaultEntity accountVaultEntity)) {
+			throw new IllegalStateException();
+		}
+
+		var builder = radixEngine.constructWithFees(operationTxBuilder, disable, accountVaultEntity.getAccountAddress());
+		var unsignedTransaction = builder.buildForExternalSign();
+		return new ConstructionBuildResponse()
+			.unsignedTransaction(Bytes.toHexString(unsignedTransaction.blob()))
+			.payloadToSign(Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
 	}
 }

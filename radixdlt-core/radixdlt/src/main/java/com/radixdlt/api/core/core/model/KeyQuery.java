@@ -61,48 +61,47 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.core.core.construction.entities.ValidatorEntityIdentifier;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.crypto.ECPublicKey;
 
-import java.util.OptionalLong;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
-public final class PreparedValidatorOwner implements DataObject {
-	private final REAddr owner;
+public class KeyQuery {
+	private final SystemMapKey key;
+	private final Supplier<Optional<Particle>> virtualSubstate;
+	private final SubstateTypeId typeId;
 
-	private PreparedValidatorOwner(REAddr owner) {
-		this.owner = owner;
+	private KeyQuery(SystemMapKey key, Supplier<Optional<Particle>> virtualSubstate, SubstateTypeId typeId) {
+		this.key = key;
+		this.virtualSubstate = virtualSubstate;
+		this.typeId = typeId;
 	}
 
-	@Override
-	public void bootUp(
-		TxBuilder builder,
-		Entity entityIdentifier,
-		DataObject.RelatedOperationFetcher fetcher,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		if (!(entityIdentifier instanceof ValidatorEntityIdentifier)) {
-			throw new IllegalStateException();
-		}
-		var validatorKey = ((ValidatorEntityIdentifier) entityIdentifier).getValidatorKey();
-		builder.down(ValidatorOwnerCopy.class, validatorKey);
-		var curEpoch = builder.readSystem(EpochData.class);
-		builder.up(new ValidatorOwnerCopy(
-			OptionalLong.of(curEpoch.getEpoch() + 1), validatorKey, owner
-		));
+	public SystemMapKey getKey() {
+		return key;
 	}
 
-	public static PreparedValidatorOwner from(JsonObjectReader reader) throws InvalidParametersException {
-		var owner = reader.getAccountAddress("owner");
-		return new PreparedValidatorOwner(owner);
+	public Supplier<Optional<Particle>> getVirtualSubstate() {
+		return virtualSubstate;
+	}
+
+	public SubstateTypeId getTypeId() {
+		return typeId;
+	}
+
+	public static KeyQuery fromValidator(ECPublicKey validatorKey, SubstateTypeId typeId, Function<ECPublicKey, Particle> virtualSubstate) {
+		var key = SystemMapKey.ofSystem(typeId.id(), validatorKey.getCompressedBytes());
+		return new KeyQuery(key, () -> Optional.of(virtualSubstate.apply(validatorKey)), typeId);
+	}
+
+	public static KeyQuery fromValidator(ECPublicKey validatorKey, SubstateTypeId typeId) {
+		var key = SystemMapKey.ofSystem(typeId.id(), validatorKey.getCompressedBytes());
+		return new KeyQuery(key, Optional::empty, typeId);
 	}
 }
