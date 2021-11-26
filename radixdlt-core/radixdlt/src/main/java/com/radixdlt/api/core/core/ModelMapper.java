@@ -99,6 +99,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.networks.Addressing;
@@ -559,5 +560,10 @@ public final class ModelMapper {
 		}
 
 		return transaction;
+	}
+
+	public TransactionIdentifier transactionIdentifier(AID txnId) {
+		return new TransactionIdentifier()
+			.hash(txnId.toString());
 	}
 }

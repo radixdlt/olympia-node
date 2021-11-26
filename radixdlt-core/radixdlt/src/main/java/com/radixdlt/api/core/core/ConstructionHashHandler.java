@@ -61,37 +61,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.construction;
+package com.radixdlt.api.core.core;
 
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.core.core.network.NetworkIdentifier2;
+import com.google.inject.Inject;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionHashRequest;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionHashResponse;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.networks.Network;
+import com.radixdlt.utils.Bytes;
 
-public class SubmitTransactionRequest {
-	private final NetworkIdentifier2 networkIdentifier;
-	private final Txn txn;
+public class ConstructionHashHandler extends JsonRpcHandler<ConstructionHashRequest, ConstructionHashResponse> {
+	private final ModelMapper modelMapper;
 
-	private SubmitTransactionRequest(
-		NetworkIdentifier2 networkIdentifier,
-		Txn txn
-	) {
-		this.networkIdentifier = networkIdentifier;
-		this.txn = txn;
+	@Inject
+	public ConstructionHashHandler(ModelMapper modelMapper) {
+		super(ConstructionHashRequest.class);
+		this.modelMapper = modelMapper;
 	}
 
-	public Network getNetwork() {
-		return networkIdentifier.getNetwork();
-	}
-
-	public Txn getTxn() {
-		return txn;
-	}
-
-	public static SubmitTransactionRequest from(JsonObjectReader reader) throws InvalidParametersException {
-		var networkIdentifier = reader.getJsonObject("network_identifier", NetworkIdentifier2::from);
-		var signedTransaction = Txn.create(reader.getHexBytes("signed_transaction"));
-		return new SubmitTransactionRequest(networkIdentifier, signedTransaction);
+	@Override
+	public ConstructionHashResponse handleRequest(ConstructionHashRequest request) throws Exception {
+		var bytes = Bytes.fromHexString(request.getSignedTransaction());
+		var txn = Txn.create(bytes);
+		return new ConstructionHashResponse()
+			.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()));
 	}
 }

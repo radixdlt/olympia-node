@@ -61,39 +61,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.network;
+package com.radixdlt.api.core.core;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
+import com.google.common.base.Throwables;
+import com.google.inject.Inject;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
+import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
+import com.radixdlt.api.gateway.transaction.StateConflictException;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.utils.Bytes;
 
-public class NetworkIdentifier2 {
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+public class ConstructionSubmitHandler extends JsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
 	private final Network network;
+	private final EventDispatcher<MempoolAdd> dispatcher;
+	private final ModelMapper modelMapper;
 
-	private NetworkIdentifier2(Network network) {
-		this.network = network;
+	@Inject
+	ConstructionSubmitHandler(
+		@NetworkId int networkId,
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
+		ModelMapper modelMapper
+	) {
+		super(ConstructionSubmitRequest.class);
+
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.dispatcher = mempoolAddEventDispatcher;
+		this.modelMapper = modelMapper;
 	}
 
-	@JsonCreator
-	static NetworkIdentifier2 create(@JsonProperty("network") String networkName) {
-		var network = Network.ofName(networkName).orElseThrow();
-		return new NetworkIdentifier2(network);
-	}
+	@Override
+	public ConstructionSubmitResponse handleRequest(ConstructionSubmitRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
+			throw new IllegalStateException();
+		}
 
-	@JsonProperty("network")
-	public String getNetworkName() {
-		return network.name();
-	}
+		var bytes = Bytes.fromHexString(request.getSignedTransaction());
+		var txn = Txn.create(bytes);
+		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
+		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
 
-	public Network getNetwork() {
-		return network;
-	}
+		dispatcher.dispatch(mempoolAdd);
+		try {
+			// We need to block here as we need to complete the request in the same thread
+			var success = completableFuture.get();
+			return new ConstructionSubmitResponse()
+				.transactionIdentifier(modelMapper.transactionIdentifier(success.getTxn().getId()))
+				.duplicate(false);
+		} catch (ExecutionException e) {
+			if (e.getCause() instanceof MempoolDuplicateException) {
+				return new ConstructionSubmitResponse()
+					.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
+					.duplicate(true);
+			}
 
-	public static NetworkIdentifier2 from(JsonObjectReader reader) throws InvalidParametersException {
-		var name = reader.getString("network");
-		var network = Network.ofName(name).orElseThrow();
-		return new NetworkIdentifier2(network);
+			if (e.getCause() instanceof MempoolRejectedException) {
+				var ex = (MempoolRejectedException) e.getCause();
+				var reException = (RadixEngineException) ex.getCause();
+
+				var cause = Throwables.getRootCause(reException);
+				if (cause instanceof SubstateNotFoundException) {
+					throw new StateConflictException(reException);
+				}
+
+				throw new InvalidTransactionException(reException);
+			}
+			throw e;
+		}
 	}
 }
