@@ -67,12 +67,9 @@ package com.radixdlt.application.system;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.utils.UInt256;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 public final class FeeTable {
 	private final Amount perByteFee;
@@ -99,25 +96,5 @@ public final class FeeTable {
 
 	public Map<Class<? extends Particle>, UInt256> getPerUpSubstateFee() {
 		return perUpSubstateFee;
-	}
-
-	public JSONObject asJson(
-		Function<Class<? extends Particle>, String> substateNameMapper,
-		Function<UInt256, JSONObject> xrdAmountToJson
-	) {
-		var upSubstateFee = new JSONArray();
-		perUpSubstateFee.forEach((p, fee) -> {
-			var substateType = substateNameMapper.apply(p);
-			upSubstateFee.put(new JSONObject()
-				.put("substate_type_identifier", new JSONObject()
-					.put("type", substateType)
-				)
-				.put("fee", xrdAmountToJson.apply(fee))
-			);
-		});
-
-		return new JSONObject()
-			.put("per_byte_fee", xrdAmountToJson.apply(perByteFee.toSubunits()))
-			.put("per_up_substate_fee", upSubstateFee);
 	}
 }

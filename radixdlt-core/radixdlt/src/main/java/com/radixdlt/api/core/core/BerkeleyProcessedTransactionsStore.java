@@ -69,7 +69,6 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.api.core.core.openapitools.JSON;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransaction;
-import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
@@ -84,12 +83,10 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -97,10 +94,8 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Get;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
-import org.json.JSONObject;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -114,32 +109,29 @@ import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditionalStore {
-	private static final String TXN_ID_DB_NAME = "radix.transactions";
-	private Database txnIdDatabase; // Txns by index; Append-only
+	private static final String PROCESSED_TRANSACTIONS_DB_NAME = "radix.transactions";
+	private Database processedTransactionsDatabase; // Txns by index; Append-only
 	private final AtomicReference<Instant> timestamp = new AtomicReference<>();
-	private final Addressing addressing;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final LedgerAccumulator ledgerAccumulator;
-	private final ProcessedTxnJsonConverter converter;
+	private final ModelMapper modelMapper;
 	private HashCode accumulator;
 
 	@Inject
 	public BerkeleyProcessedTransactionsStore(
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
 		LedgerAccumulator ledgerAccumulator,
-		ProcessedTxnJsonConverter converter,
-		Addressing addressing
+		ModelMapper modelMapper
 	) {
 		// TODO: Fix this when we move AdditionalStore to be a RadixEngine construct rather than Berkeley construct
 		this.radixEngineProvider = radixEngineProvider;
 		this.ledgerAccumulator = ledgerAccumulator;
-		this.converter = converter;
-		this.addressing = addressing;
+		this.modelMapper = modelMapper;
 	}
 
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
-		txnIdDatabase = dbEnv.getEnvironment().openDatabase(null, TXN_ID_DB_NAME, new DatabaseConfig()
+		processedTransactionsDatabase = dbEnv.getEnvironment().openDatabase(null, PROCESSED_TRANSACTIONS_DB_NAME, new DatabaseConfig()
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setKeyPrefixing(true)
@@ -148,7 +140,7 @@ public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditio
 
 		var key = new DatabaseEntry(new byte[0]);
 		var value = new DatabaseEntry();
-		if (txnIdDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
+		if (processedTransactionsDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
 			accumulator = HashCode.fromBytes(value.getData());
 		} else {
 			accumulator = HashUtils.zero256();
@@ -156,7 +148,7 @@ public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditio
 	}
 
 	public Stream<CommittedTransaction> get(long index) {
-		var cursor = txnIdDatabase.openCursor(null, null);
+		var cursor = processedTransactionsDatabase.openCursor(null, null);
 		var iterator = new Iterator<CommittedTransaction>() {
 			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(index));
 			final DatabaseEntry value = new DatabaseEntry();
@@ -188,8 +180,8 @@ public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditio
 
 	@Override
 	public void close() {
-		if (txnIdDatabase != null) {
-			txnIdDatabase.close();
+		if (processedTransactionsDatabase != null) {
+			processedTransactionsDatabase.close();
 		}
 	}
 
@@ -214,65 +206,37 @@ public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditio
 			.map(RoundData::asInstant)
 			.forEach(timestamp::set);
 
-		Function<REAddr, String> addressToRri = addr -> {
+		Function<REAddr, String> addressToSymbol = addr -> {
 			var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
 			var data = mapper.apply(mapKey).orElseThrow().getData();
 			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
 			var metadata = (TokenResourceMetadata) deserialize(data);
-			var symbol = metadata.getSymbol();
-			return addressing.forResources().of(symbol, addr);
+			return metadata.getSymbol();
 		};
 		Function<ECPublicKey, ValidatorStakeData> getValidatorStake = key -> {
 			var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), key.getCompressedBytes());
 			var data = mapper.apply(validatorDataKey).orElseThrow().getData();
 			return (ValidatorStakeData) deserialize(data);
 		};
-		var operationGroups = converter.getOperationGroups(txn, addressToRri, getValidatorStake);
 
-		var txnId = txn.getTxnId();
-		var fee = txn.getFeePaid();
-		final JSONObject feeObject;
-		if (!fee.isZero()) {
-			feeObject = new JSONObject()
-				.put("resource_identifier", new JSONObject()
-					.put("type", "Token")
-					.put("rri", addressToRri.apply(REAddr.ofNativeToken()))
-				)
-				.put("value", fee.toString());
-		} else {
-			feeObject = null;
+		var transaction = modelMapper.transaction(txn, addressToSymbol);
+		byte[] data;
+		try {
+			data = JSON.getDefault().getMapper().writeValueAsBytes(transaction);
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
 		}
-		var messageHex = txn.getMsg().map(Bytes::toHexString);
-		var jsonString = new JSONObject()
-			.put("committed_state_identifier", new JSONObject()
-				.put("state_version", stateVersion)
-				.put("transaction_accumulator", Bytes.toHexString(nextAccumulatorState.getAccumulatorHash().asBytes()))
-			)
-			.put("transaction_identifier", new JSONObject().put("hash", txn.getTxnId()))
-			.put("metadata", new JSONObject()
-				.put("hex", Bytes.toHexString(txn.getTxn().getPayload()))
-				.putOpt("fee", feeObject)
-				.put("size", txn.getTxn().getPayload().length)
-				.put("timestamp", timestamp.get().toEpochMilli())
-				.putOpt("signed_by", txn.getSignedBy()
-					.map(p -> Bytes.toHexString(p.getCompressedBytes()))
-					.map(hex -> new JSONObject().put("hex", hex))
-					.orElse(null))
-				.putOpt("message", messageHex.orElse(null))
-			)
-			.put("operation_groups", operationGroups)
-			.toString();
 		this.accumulator = nextAccumulatorState.getAccumulatorHash();
 
-
 		var key = new DatabaseEntry(Longs.toByteArray(stateVersion - 1));
-		var value = new DatabaseEntry(jsonString.getBytes(StandardCharsets.UTF_8));
-		var result = txnIdDatabase.putNoOverwrite(dbTxn, key, value);
+		var value = new DatabaseEntry(data);
+		var result = processedTransactionsDatabase.putNoOverwrite(dbTxn, key, value);
 		if (result != SUCCESS) {
 			throw new IllegalStateException("Unexpected operation status " + result);
 		}
 
-		result = txnIdDatabase.put(dbTxn, new DatabaseEntry(new byte[0]), new DatabaseEntry(nextAccumulatorState.getAccumulatorHash().asBytes()));
+		var accumulatorHashEntry = new DatabaseEntry(nextAccumulatorState.getAccumulatorHash().asBytes());
+		result = processedTransactionsDatabase.put(dbTxn, new DatabaseEntry(new byte[0]), accumulatorHashEntry);
 		if (result != SUCCESS) {
 			throw new IllegalStateException("Unexpected operation status " + result);
 		}

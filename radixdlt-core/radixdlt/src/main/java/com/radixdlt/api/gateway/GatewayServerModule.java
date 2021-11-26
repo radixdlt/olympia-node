@@ -92,11 +92,11 @@ import java.util.Map;
 import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public class ArchiveServerModule extends AbstractModule {
+public class GatewayServerModule extends AbstractModule {
 	private final int port;
 	private final String bindAddress;
 
-	public ArchiveServerModule(int port, String bindAddress) {
+	public GatewayServerModule(int port, String bindAddress) {
 		this.port = port;
 		this.bindAddress = bindAddress;
 	}

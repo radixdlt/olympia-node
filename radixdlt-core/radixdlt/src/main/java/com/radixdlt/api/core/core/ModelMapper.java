@@ -73,7 +73,6 @@ import com.radixdlt.api.core.core.model.StakeOwnershipResource;
 import com.radixdlt.api.core.core.model.TokenEntity;
 import com.radixdlt.api.core.core.model.ValidatorEntity;
 import com.radixdlt.api.core.core.openapitools.model.*;
-import com.radixdlt.api.service.transactions.SubstateTypeMapping;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.SystemData;

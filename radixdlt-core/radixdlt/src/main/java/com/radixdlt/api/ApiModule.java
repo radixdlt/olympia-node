@@ -65,7 +65,7 @@ package com.radixdlt.api;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.api.gateway.ArchiveServerModule;
+import com.radixdlt.api.gateway.GatewayServerModule;
 import com.radixdlt.api.core.CoreServerModule;
 import com.radixdlt.api.service.network.NetworkInfoServiceModule;
 import com.radixdlt.properties.RuntimeProperties;
@@ -95,7 +95,7 @@ public final class ApiModule extends AbstractModule {
 		if (archiveEnable) {
 			var port = properties.get("api.archive.port", DEFAULT_ARCHIVE_PORT);
 			var bindAddress = properties.get("api.archive.bind.address", DEFAULT_BIND_ADDRESS);
-			install(new ArchiveServerModule(port, bindAddress));
+			install(new GatewayServerModule(port, bindAddress));
 		}
 
 		var transactionsEnable = properties.get("api.transactions.enable", false);
