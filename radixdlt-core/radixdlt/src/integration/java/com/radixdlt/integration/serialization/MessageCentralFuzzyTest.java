@@ -75,28 +75,33 @@ public class MessageCentralFuzzyTest {
 		var disposable = messageCentral.messagesOf(Message.class)
 			.subscribe(nextItem -> counter.incrementAndGet(), error -> fail(error.getMessage()));
 
+		//Insert single valid message to ensure whole pipeline is working properly
+		emitSingleValidMessage(inboundMessages);
+		// Insert batch of randomly generated messages
 		emitFuzzyMessages(inboundMessages);
+
 		disposable.dispose();
 
+		// Ensure that only one (valid) message passed through
 		assertEquals(1L, counter.get());
 	}
 
-	private void emitFuzzyMessages(PublishSubject<InboundMessage> emitter) {
+	private void emitSingleValidMessage(PublishSubject<InboundMessage> subject) {
 		try {
-			//Insert single valid message to ensure whole pipeline is working properly.
 			var bytes = Compress.compress(serialization.toDson(new PeerPingMessage(), DsonOutput.Output.WIRE));
 			var valid = new InboundMessage(Time.currentTimestamp(), randomNodeId(), bytes);
-			emitter.onNext(valid);
+			subject.onNext(valid);
 		} catch (Exception e) {
 			// Ignore
 		}
+	}
 
-		// Insert batch of randomly generated messages
+	private void emitFuzzyMessages(PublishSubject<InboundMessage> subject) {
 		for (int i = 0; i < NUM_TEST_MESSAGES; i++) {
-			emitter.onNext(generateFuzzyMessage());
+			subject.onNext(generateFuzzyMessage());
 		}
 
-		emitter.onComplete();
+		subject.onComplete();
 	}
 
 	private InboundMessage generateFuzzyMessage() {
