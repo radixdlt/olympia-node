@@ -73,7 +73,7 @@ import com.radixdlt.api.core.core.handlers.ConstructionFinalizeHandler;
 import com.radixdlt.api.core.core.handlers.ConstructionHashHandler;
 import com.radixdlt.api.core.core.handlers.ConstructionSubmitHandler;
 import com.radixdlt.api.core.core.handlers.EngineConfigurationHandler;
-import com.radixdlt.api.core.core.handlers.EngineStateHandler;
+import com.radixdlt.api.core.core.handlers.EngineStatusHandler;
 import com.radixdlt.api.core.core.handlers.EntityHandler;
 import com.radixdlt.api.core.core.handlers.MempoolHandler;
 import com.radixdlt.api.core.core.handlers.MempoolTransactionHandler;
@@ -109,7 +109,7 @@ public class CoreApiModule extends AbstractModule {
 		routeBinder.addBinding(HandlerRoute.post("/network/configuration")).to(NetworkConfigurationHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/network/status")).to(NetworkStatusHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/engine/configuration")).to(EngineConfigurationHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/engine/state")).to(EngineStateHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/engine/status")).to(EngineStatusHandler.class);
 		if (transactionsEnable) {
 			bind(BerkeleyProcessedTransactionsStore.class).in(Scopes.SINGLETON);
 			Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)

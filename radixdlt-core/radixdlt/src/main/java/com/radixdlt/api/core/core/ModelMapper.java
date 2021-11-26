@@ -94,6 +94,7 @@ import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.application.validators.state.ValidatorUpdatingData;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
@@ -197,6 +198,14 @@ public final class ModelMapper {
 		return new StateIdentifier()
 			.stateVersion(accumulatorState.getStateVersion())
 			.transactionAccumulator(Bytes.toHexString(accumulatorState.getAccumulatorHash().asBytes()));
+	}
+
+	public EngineStateIdentifier engineStateIdentifier(LedgerProof ledgerProof) {
+		return new EngineStateIdentifier()
+			.stateIdentifier(stateIdentifier(ledgerProof.getAccumulatorState()))
+			.epoch(ledgerProof.getEpoch())
+			.round(ledgerProof.getView().number())
+			.timestamp(ledgerProof.timestamp());
 	}
 
 	public SubstateTypeIdentifier substateTypeIdentifier(Class<? extends Particle> substateClass) {

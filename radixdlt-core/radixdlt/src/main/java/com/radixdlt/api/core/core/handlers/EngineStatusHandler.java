@@ -64,69 +64,59 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.EngineStatusRequest;
+import com.radixdlt.api.core.core.openapitools.model.EngineStatusResponse;
+import com.radixdlt.api.core.core.openapitools.model.Validator;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.utils.Bytes;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.util.Collection;
-import java.util.function.Function;
 
 
-public class EngineStateHandler implements ApiHandler<Void> {
+public class EngineStatusHandler extends JsonRpcHandler<EngineStatusRequest, EngineStatusResponse> {
 	private final Addressing addressing;
-	private final VerifiedTxnsAndProof genesis;
 	private final InMemorySystemInfo inMemorySystemInfo;
+	private final Network network;
+	private final ModelMapper modelMapper;
 
 	@Inject
-	public EngineStateHandler(
-		@Genesis VerifiedTxnsAndProof genesis,
+	public EngineStatusHandler(
+		@NetworkId int networkId,
 		InMemorySystemInfo inMemorySystemInfo,
+		ModelMapper modelMapper,
 		Addressing addressing
 	) {
-		this.genesis = genesis;
+		super(EngineStatusRequest.class);
+
+		this.network = Network.ofId(networkId).orElseThrow();
 		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.modelMapper = modelMapper;
 		this.addressing = addressing;
 	}
 
-	@Override
-	public Void parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return null;
-	}
 
 	@Override
-	public JSONObject handleRequest(Void request) throws Exception {
-		return new JSONObject()
-			.put("proof", getLatestProof())
-			.put("epoch_proof", getLatestEpochProof())
-			.put("checkpoints", getCheckpoints());
-	}
+	public EngineStatusResponse handleRequest(EngineStatusRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
+			throw new IllegalStateException();
+		}
 
-	public JSONObject getLatestProof() {
-		var proof = inMemorySystemInfo.getCurrentProof();
-		return proof == null ? new JSONObject() : proof.asJSON(addressing);
-	}
+		var response = new EngineStatusResponse();
+		var currentProof = inMemorySystemInfo.getCurrentProof();
+		var epochProof = inMemorySystemInfo.getEpochProof();
+		response.engineStateIdentifier(modelMapper.engineStateIdentifier(currentProof));
 
-	public JSONObject getLatestEpochProof() {
-		var proof = inMemorySystemInfo.getEpochProof();
-		return proof == null ? new JSONObject() : proof.asJSON(addressing);
-	}
+		epochProof.getNextValidatorSet().ifPresent(set ->
+			set.getValidators().forEach(v -> {
+				var validator = new Validator()
+					.validatorAddress(addressing.forValidators().of(v.getNode().getKey()))
+					.stake(v.getPower().toString());
+				response.addValidatorSetItem(validator);
+			})
+		);
 
-	private static <T> JSONArray fromCollection(Collection<T> input, Function<T, Object> mapper) {
-		var array = new JSONArray();
-		input.forEach(element -> array.put(mapper.apply(element)));
-		return array;
-	}
-
-	public JSONObject getCheckpoints() {
-		return new JSONObject()
-			.put("txn", fromCollection(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
-			.put("proof", genesis.getProof().asJSON(addressing));
+		return response;
 	}
 }

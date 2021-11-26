@@ -18,91 +18,49 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 
 /**
- * EngineConfigurationResponse
+ * EngineStatusRequest
  */
 @JsonPropertyOrder({
-  EngineConfigurationResponse.JSON_PROPERTY_CHECKPOINTS,
-  EngineConfigurationResponse.JSON_PROPERTY_FORKS
+  EngineStatusRequest.JSON_PROPERTY_NETWORK_IDENTIFIER
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T13:38:25.299627-06:00[America/Chicago]")
-public class EngineConfigurationResponse {
-  public static final String JSON_PROPERTY_CHECKPOINTS = "checkpoints";
-  private List<EngineCheckpoint> checkpoints = new ArrayList<>();
-
-  public static final String JSON_PROPERTY_FORKS = "forks";
-  private List<Fork> forks = new ArrayList<>();
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T14:17:46.906471-06:00[America/Chicago]")
+public class EngineStatusRequest {
+  public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
+  private NetworkIdentifier networkIdentifier;
 
 
-  public EngineConfigurationResponse checkpoints(List<EngineCheckpoint> checkpoints) {
-    this.checkpoints = checkpoints;
-    return this;
-  }
-
-  public EngineConfigurationResponse addCheckpointsItem(EngineCheckpoint checkpointsItem) {
-    this.checkpoints.add(checkpointsItem);
+  public EngineStatusRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
     return this;
   }
 
    /**
-   * Get checkpoints
-   * @return checkpoints
+   * Get networkIdentifier
+   * @return networkIdentifier
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CHECKPOINTS)
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<EngineCheckpoint> getCheckpoints() {
-    return checkpoints;
+  public NetworkIdentifier getNetworkIdentifier() {
+    return networkIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CHECKPOINTS)
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCheckpoints(List<EngineCheckpoint> checkpoints) {
-    this.checkpoints = checkpoints;
-  }
-
-
-  public EngineConfigurationResponse forks(List<Fork> forks) {
-    this.forks = forks;
-    return this;
-  }
-
-  public EngineConfigurationResponse addForksItem(Fork forksItem) {
-    this.forks.add(forksItem);
-    return this;
-  }
-
-   /**
-   * Get forks
-   * @return forks
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FORKS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<Fork> getForks() {
-    return forks;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_FORKS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setForks(List<Fork> forks) {
-    this.forks = forks;
+  public void setNetworkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
   }
 
 
   /**
-   * Return true if this EngineConfigurationResponse object is equal to o.
+   * Return true if this EngineStatusRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -112,22 +70,20 @@ public class EngineConfigurationResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EngineConfigurationResponse engineConfigurationResponse = (EngineConfigurationResponse) o;
-    return Objects.equals(this.checkpoints, engineConfigurationResponse.checkpoints) &&
-        Objects.equals(this.forks, engineConfigurationResponse.forks);
+    EngineStatusRequest engineStatusRequest = (EngineStatusRequest) o;
+    return Objects.equals(this.networkIdentifier, engineStatusRequest.networkIdentifier);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(checkpoints, forks);
+    return Objects.hash(networkIdentifier);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EngineConfigurationResponse {\n");
-    sb.append("    checkpoints: ").append(toIndentedString(checkpoints)).append("\n");
-    sb.append("    forks: ").append(toIndentedString(forks)).append("\n");
+    sb.append("class EngineStatusRequest {\n");
+    sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
     sb.append("}");
     return sb.toString();
   }

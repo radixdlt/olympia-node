@@ -1384,9 +1384,9 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
-  "/engine/state":
+  "/engine/status":
     post:
-      summary: Get Engine State Info
+      summary: Get Engine Current Status
       tags:
         - engine
       requestBody:
@@ -1394,14 +1394,38 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/EngineStateRequest"
+              "$ref": "#/components/schemas/EngineStatusRequest"
+      responses:
+        '200':
+          description: Engine Status
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/EngineStatusResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/sign":
+    post:
+      summary: Sign a transaction with the node's key
+      tags:
+        - sign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/SignRequest"
       responses:
         '200':
           description: An unsigned transaction
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/EngineStateResponse"
+                "$ref": "#/components/schemas/SignResponse"
         '500':
           description: Unexpected error
           content:
@@ -1962,6 +1986,7 @@ components:
         ledger.
       type: object
       required:
+        - state_identifier
         - network_identifier
       properties:
         network_identifier:
@@ -2115,12 +2140,17 @@ components:
       type: object
       required:
         - forks
+        - checkpoints
       properties:
+        checkpoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/EngineCheckpoint"
         forks:
           type: array
           items:
             "$ref": "#/components/schemas/Fork"
-    EngineStateRequest:
+    EngineStatusRequest:
       type: object
       required:
         - network_identifier
@@ -2130,8 +2160,76 @@ components:
       example:
         network_identifier:
           network: mainnet
-    EngineStateResponse:
+    EngineStatusResponse:
       type: object
+      required:
+        - engine_state_identifier
+        - validator_set
+      properties:
+        engine_state_identifier:
+          $ref: "#/components/schemas/EngineStateIdentifier"
+        validator_set:
+          type: array
+          items:
+            $ref: "#/components/schemas/Validator"
+    Validator:
+      type: object
+      required:
+        - validator_address
+        - stake
+      properties:
+        validator_address:
+          type: string
+        stake:
+          $ref: "#/components/schemas/BigInteger"
+    EngineCheckpoint:
+      type: object
+      required:
+        - engine_state_identifier
+      properties:
+        engine_state_identifier:
+          $ref: "#/components/schemas/EngineStateIdentifier"
+        checkpoint_transaction:
+          type: "string"
+    EngineStateIdentifier:
+      type: object
+      required:
+        - state_identifier
+        - epoch
+        - round
+        - timestamp
+      properties:
+        state_identifier:
+          $ref: "#/components/schemas/StateIdentifier"
+        epoch:
+          type: integer
+          format: int64
+        round:
+          type: integer
+          format: int64
+        timestamp:
+          type: integer
+          format: int64
+    SignRequest:
+      type: object
+      required:
+        - network_identifier
+        - unsigned_transaction
+        - public_key
+      properties:
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        unsigned_transaction:
+          type: string
+        public_key:
+          $ref: "#/components/schemas/PublicKey"
+    SignResponse:
+      type: object
+      required:
+        - signed_transaction
+      properties:
+        signed_transaction:
+          type: string
     Fork:
       type: object
       required:
@@ -2166,16 +2264,20 @@ components:
           type: string
         unstaking_delay_epoch_length:
           type: integer
+          format: int64
         minimum_completed_proposals_percentage:
           type: integer
         maximum_transaction_size:
           type: integer
+          format: int64
         maximum_transactions_per_round:
           type: integer
         validator_fee_increase_debouncer_epoch_length:
           type: integer
+          format: int64
         maximum_rounds_per_epoch:
           type: integer
+          format: int64
         minimum_stake:
           "$ref": "#/components/schemas/ResourceAmount"
         rewards_per_proposal:

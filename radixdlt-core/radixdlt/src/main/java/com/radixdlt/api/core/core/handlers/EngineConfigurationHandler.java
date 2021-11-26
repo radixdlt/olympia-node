@@ -65,23 +65,33 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.EngineCheckpoint;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationResponse;
+import com.radixdlt.api.core.core.openapitools.model.EngineStateIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
 import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.utils.Bytes;
 
 import java.util.TreeMap;
 
 public class EngineConfigurationHandler extends JsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
 	private final TreeMap<Long, ForkConfig> forks;
 	private final ModelMapper modelMapper;
+	private final VerifiedTxnsAndProof genesis;
 
 	@Inject
 	public EngineConfigurationHandler(
+		@Genesis VerifiedTxnsAndProof genesis,
 		TreeMap<Long, ForkConfig> forks,
 		ModelMapper modelMapper
 	) {
 		super(EngineConfigurationRequest.class);
+		this.genesis = genesis;
 		this.forks = forks;
 		this.modelMapper = modelMapper;
 	}
@@ -90,6 +100,21 @@ public class EngineConfigurationHandler extends JsonRpcHandler<EngineConfigurati
 	public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request) {
 		var response = new EngineConfigurationResponse();
 		forks.forEach((epoch, config) -> response.addForksItem(modelMapper.fork(config)));
+		response.addCheckpointsItem(genesisCheckpoint());
 		return response;
+	}
+
+	private EngineCheckpoint genesisCheckpoint() {
+		return new EngineCheckpoint()
+			.checkpointTransaction(Bytes.toHexString(genesis.getTxns().get(0).getPayload()))
+			.engineStateIdentifier(new EngineStateIdentifier()
+				.stateIdentifier(new StateIdentifier()
+					.stateVersion(0L)
+					.transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes()))
+				)
+				.epoch(0L)
+				.round(0L)
+				.timestamp(genesis.getProof().timestamp())
+			);
 	}
 }

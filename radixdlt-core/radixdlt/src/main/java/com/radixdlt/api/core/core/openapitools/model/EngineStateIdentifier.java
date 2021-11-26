@@ -18,91 +18,139 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 
 /**
- * EngineConfigurationResponse
+ * EngineStateIdentifier
  */
 @JsonPropertyOrder({
-  EngineConfigurationResponse.JSON_PROPERTY_CHECKPOINTS,
-  EngineConfigurationResponse.JSON_PROPERTY_FORKS
+  EngineStateIdentifier.JSON_PROPERTY_STATE_IDENTIFIER,
+  EngineStateIdentifier.JSON_PROPERTY_EPOCH,
+  EngineStateIdentifier.JSON_PROPERTY_ROUND,
+  EngineStateIdentifier.JSON_PROPERTY_TIMESTAMP
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T13:38:25.299627-06:00[America/Chicago]")
-public class EngineConfigurationResponse {
-  public static final String JSON_PROPERTY_CHECKPOINTS = "checkpoints";
-  private List<EngineCheckpoint> checkpoints = new ArrayList<>();
+public class EngineStateIdentifier {
+  public static final String JSON_PROPERTY_STATE_IDENTIFIER = "state_identifier";
+  private StateIdentifier stateIdentifier;
 
-  public static final String JSON_PROPERTY_FORKS = "forks";
-  private List<Fork> forks = new ArrayList<>();
+  public static final String JSON_PROPERTY_EPOCH = "epoch";
+  private Long epoch;
 
+  public static final String JSON_PROPERTY_ROUND = "round";
+  private Long round;
 
-  public EngineConfigurationResponse checkpoints(List<EngineCheckpoint> checkpoints) {
-    this.checkpoints = checkpoints;
-    return this;
-  }
-
-  public EngineConfigurationResponse addCheckpointsItem(EngineCheckpoint checkpointsItem) {
-    this.checkpoints.add(checkpointsItem);
-    return this;
-  }
-
-   /**
-   * Get checkpoints
-   * @return checkpoints
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CHECKPOINTS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<EngineCheckpoint> getCheckpoints() {
-    return checkpoints;
-  }
+  public static final String JSON_PROPERTY_TIMESTAMP = "timestamp";
+  private Long timestamp;
 
 
-  @JsonProperty(JSON_PROPERTY_CHECKPOINTS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCheckpoints(List<EngineCheckpoint> checkpoints) {
-    this.checkpoints = checkpoints;
-  }
-
-
-  public EngineConfigurationResponse forks(List<Fork> forks) {
-    this.forks = forks;
-    return this;
-  }
-
-  public EngineConfigurationResponse addForksItem(Fork forksItem) {
-    this.forks.add(forksItem);
+  public EngineStateIdentifier stateIdentifier(StateIdentifier stateIdentifier) {
+    this.stateIdentifier = stateIdentifier;
     return this;
   }
 
    /**
-   * Get forks
-   * @return forks
+   * Get stateIdentifier
+   * @return stateIdentifier
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FORKS)
+  @JsonProperty(JSON_PROPERTY_STATE_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Fork> getForks() {
-    return forks;
+  public StateIdentifier getStateIdentifier() {
+    return stateIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FORKS)
+  @JsonProperty(JSON_PROPERTY_STATE_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setForks(List<Fork> forks) {
-    this.forks = forks;
+  public void setStateIdentifier(StateIdentifier stateIdentifier) {
+    this.stateIdentifier = stateIdentifier;
+  }
+
+
+  public EngineStateIdentifier epoch(Long epoch) {
+    this.epoch = epoch;
+    return this;
+  }
+
+   /**
+   * Get epoch
+   * @return epoch
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getEpoch() {
+    return epoch;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setEpoch(Long epoch) {
+    this.epoch = epoch;
+  }
+
+
+  public EngineStateIdentifier round(Long round) {
+    this.round = round;
+    return this;
+  }
+
+   /**
+   * Get round
+   * @return round
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ROUND)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getRound() {
+    return round;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROUND)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRound(Long round) {
+    this.round = round;
+  }
+
+
+  public EngineStateIdentifier timestamp(Long timestamp) {
+    this.timestamp = timestamp;
+    return this;
+  }
+
+   /**
+   * Get timestamp
+   * @return timestamp
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_TIMESTAMP)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getTimestamp() {
+    return timestamp;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TIMESTAMP)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setTimestamp(Long timestamp) {
+    this.timestamp = timestamp;
   }
 
 
   /**
-   * Return true if this EngineConfigurationResponse object is equal to o.
+   * Return true if this EngineStateIdentifier object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -112,22 +160,26 @@ public class EngineConfigurationResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EngineConfigurationResponse engineConfigurationResponse = (EngineConfigurationResponse) o;
-    return Objects.equals(this.checkpoints, engineConfigurationResponse.checkpoints) &&
-        Objects.equals(this.forks, engineConfigurationResponse.forks);
+    EngineStateIdentifier engineStateIdentifier = (EngineStateIdentifier) o;
+    return Objects.equals(this.stateIdentifier, engineStateIdentifier.stateIdentifier) &&
+        Objects.equals(this.epoch, engineStateIdentifier.epoch) &&
+        Objects.equals(this.round, engineStateIdentifier.round) &&
+        Objects.equals(this.timestamp, engineStateIdentifier.timestamp);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(checkpoints, forks);
+    return Objects.hash(stateIdentifier, epoch, round, timestamp);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EngineConfigurationResponse {\n");
-    sb.append("    checkpoints: ").append(toIndentedString(checkpoints)).append("\n");
-    sb.append("    forks: ").append(toIndentedString(forks)).append("\n");
+    sb.append("class EngineStateIdentifier {\n");
+    sb.append("    stateIdentifier: ").append(toIndentedString(stateIdentifier)).append("\n");
+    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
+    sb.append("    round: ").append(toIndentedString(round)).append("\n");
+    sb.append("    timestamp: ").append(toIndentedString(timestamp)).append("\n");
     sb.append("}");
     return sb.toString();
   }

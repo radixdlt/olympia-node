@@ -24,85 +24,80 @@ import java.util.Objects;
 
 
 /**
- * EngineConfigurationResponse
+ * EngineStatusResponse
  */
 @JsonPropertyOrder({
-  EngineConfigurationResponse.JSON_PROPERTY_CHECKPOINTS,
-  EngineConfigurationResponse.JSON_PROPERTY_FORKS
+  EngineStatusResponse.JSON_PROPERTY_ENGINE_STATE_IDENTIFIER,
+  EngineStatusResponse.JSON_PROPERTY_VALIDATOR_SET
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T13:38:25.299627-06:00[America/Chicago]")
-public class EngineConfigurationResponse {
-  public static final String JSON_PROPERTY_CHECKPOINTS = "checkpoints";
-  private List<EngineCheckpoint> checkpoints = new ArrayList<>();
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T14:17:46.906471-06:00[America/Chicago]")
+public class EngineStatusResponse {
+  public static final String JSON_PROPERTY_ENGINE_STATE_IDENTIFIER = "engine_state_identifier";
+  private EngineStateIdentifier engineStateIdentifier;
 
-  public static final String JSON_PROPERTY_FORKS = "forks";
-  private List<Fork> forks = new ArrayList<>();
+  public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
+  private List<Validator> validatorSet = new ArrayList<>();
 
 
-  public EngineConfigurationResponse checkpoints(List<EngineCheckpoint> checkpoints) {
-    this.checkpoints = checkpoints;
-    return this;
-  }
-
-  public EngineConfigurationResponse addCheckpointsItem(EngineCheckpoint checkpointsItem) {
-    this.checkpoints.add(checkpointsItem);
+  public EngineStatusResponse engineStateIdentifier(EngineStateIdentifier engineStateIdentifier) {
+    this.engineStateIdentifier = engineStateIdentifier;
     return this;
   }
 
    /**
-   * Get checkpoints
-   * @return checkpoints
+   * Get engineStateIdentifier
+   * @return engineStateIdentifier
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CHECKPOINTS)
+  @JsonProperty(JSON_PROPERTY_ENGINE_STATE_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<EngineCheckpoint> getCheckpoints() {
-    return checkpoints;
+  public EngineStateIdentifier getEngineStateIdentifier() {
+    return engineStateIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CHECKPOINTS)
+  @JsonProperty(JSON_PROPERTY_ENGINE_STATE_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCheckpoints(List<EngineCheckpoint> checkpoints) {
-    this.checkpoints = checkpoints;
+  public void setEngineStateIdentifier(EngineStateIdentifier engineStateIdentifier) {
+    this.engineStateIdentifier = engineStateIdentifier;
   }
 
 
-  public EngineConfigurationResponse forks(List<Fork> forks) {
-    this.forks = forks;
+  public EngineStatusResponse validatorSet(List<Validator> validatorSet) {
+    this.validatorSet = validatorSet;
     return this;
   }
 
-  public EngineConfigurationResponse addForksItem(Fork forksItem) {
-    this.forks.add(forksItem);
+  public EngineStatusResponse addValidatorSetItem(Validator validatorSetItem) {
+    this.validatorSet.add(validatorSetItem);
     return this;
   }
 
    /**
-   * Get forks
-   * @return forks
+   * Get validatorSet
+   * @return validatorSet
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FORKS)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Fork> getForks() {
-    return forks;
+  public List<Validator> getValidatorSet() {
+    return validatorSet;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FORKS)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setForks(List<Fork> forks) {
-    this.forks = forks;
+  public void setValidatorSet(List<Validator> validatorSet) {
+    this.validatorSet = validatorSet;
   }
 
 
   /**
-   * Return true if this EngineConfigurationResponse object is equal to o.
+   * Return true if this EngineStatusResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -112,22 +107,22 @@ public class EngineConfigurationResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EngineConfigurationResponse engineConfigurationResponse = (EngineConfigurationResponse) o;
-    return Objects.equals(this.checkpoints, engineConfigurationResponse.checkpoints) &&
-        Objects.equals(this.forks, engineConfigurationResponse.forks);
+    EngineStatusResponse engineStatusResponse = (EngineStatusResponse) o;
+    return Objects.equals(this.engineStateIdentifier, engineStatusResponse.engineStateIdentifier) &&
+        Objects.equals(this.validatorSet, engineStatusResponse.validatorSet);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(checkpoints, forks);
+    return Objects.hash(engineStateIdentifier, validatorSet);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EngineConfigurationResponse {\n");
-    sb.append("    checkpoints: ").append(toIndentedString(checkpoints)).append("\n");
-    sb.append("    forks: ").append(toIndentedString(forks)).append("\n");
+    sb.append("class EngineStatusResponse {\n");
+    sb.append("    engineStateIdentifier: ").append(toIndentedString(engineStateIdentifier)).append("\n");
+    sb.append("    validatorSet: ").append(toIndentedString(validatorSet)).append("\n");
     sb.append("}");
     return sb.toString();
   }
