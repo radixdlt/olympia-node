@@ -65,18 +65,12 @@ package com.radixdlt.api.core.core;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.api.core.core.ModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseResponse;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
-import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.engine.RadixEngine;
@@ -86,9 +80,8 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
-import org.json.JSONObject;
 
-public class ParseTransactionHandler extends JsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {
+public final class ParseTransactionHandler extends JsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {
 	private final Network network;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final ModelMapper modelMapper;
