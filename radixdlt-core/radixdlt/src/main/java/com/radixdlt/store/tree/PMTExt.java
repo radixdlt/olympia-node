@@ -6,8 +6,8 @@ import static com.radixdlt.store.tree.TreeUtils.applyPrefix;
 
 public class PMTExt extends PMTNode {
 
-	final private int EVEN_PREFIX = 0;
-	final private int ODD_PREFIX = 1;
+	private static final int EVEN_PREFIX = 0;
+	private static final int ODD_PREFIX = 1;
 	private byte[] prefixedKey;
 	// TODO: explicit test for Nibble prefix! Check java Endianness
 	byte[] getEvenPrefix() {
@@ -37,7 +37,8 @@ public class PMTExt extends PMTNode {
 			this.prefixedKey = applyPrefix(this.getKey().getKey(), getOddPrefix(), getEvenPrefix());
 
 			// TODO: serialize, RLP?
-			return this.serialized = "ext".getBytes();
+			this.serialized = "ext".getBytes();
+			return this.serialized;
 		}
 	}
 }
