@@ -518,15 +518,11 @@ components:
       required:
         - ledger_state
         - transactions
-        - total_count
       properties:
         ledger_state:
           "$ref": "#/components/schemas/LedgerState"
           type: integer
           format: int64
-        total_count:
-          type: integer
-          minimum: 0
         next_cursor:
           type: string
         transactions:
@@ -540,7 +536,6 @@ components:
           version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
         next_cursor: 0
-        total_count: 1
         transactions:
           - fee_paid:
               token_identifier:
@@ -623,7 +618,7 @@ components:
             - amount
           properties:
             to:
-              "$ref": "#/components/schemas/ValidatorIdentifier"
+              "$ref": "#/components/schemas/AccountIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
     BurnTokens:
@@ -635,7 +630,7 @@ components:
             - amount
           properties:
             from:
-              "$ref": "#/components/schemas/ValidatorIdentifier"
+              "$ref": "#/components/schemas/AccountIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
     Action:
@@ -956,7 +951,7 @@ components:
         token:
           - token_identifier:
               rri: xrd_rr1qy5wfsfh
-            token_supply:
+            total_supply:
               token_identifier:
                 rri: xrd_rr1qy5wfsfh
               value: '12014560679861300000000000000'

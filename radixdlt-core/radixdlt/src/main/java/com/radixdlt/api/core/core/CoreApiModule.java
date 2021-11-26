@@ -111,9 +111,9 @@ public class CoreApiModule extends AbstractModule {
 		routeBinder.addBinding(HandlerRoute.post("/engine/configuration")).to(EngineConfigurationHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/engine/state")).to(EngineStateHandler.class);
 		if (transactionsEnable) {
-			bind(BerkeleyTransactionIndexStore.class).in(Scopes.SINGLETON);
+			bind(BerkeleyProcessedTransactionsStore.class).in(Scopes.SINGLETON);
 			Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-				.addBinding().to(BerkeleyTransactionIndexStore.class);
+				.addBinding().to(BerkeleyProcessedTransactionsStore.class);
 			routeBinder.addBinding(HandlerRoute.post("/transactions")).to(TransactionsHandler.class);
 		}
 		routeBinder.addBinding(HandlerRoute.post("/construction/derive")).to(ConstructionDeriveHandler.class);

@@ -61,36 +61,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.gateway;
 
-import com.google.common.collect.Streams;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.radixdlt.api.gateway.openapitools.JSON;
+import com.radixdlt.api.gateway.openapitools.model.AccountTransaction;
+import com.radixdlt.application.system.state.RoundData;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.Get;
-import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.io.IOException;
+import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
-public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalStore {
+public final class BerkeleyAccountTransactionStore implements BerkeleyAdditionalStore {
 	private static final String TRANSACTIONS_DB = "radix.versioned_transactions";
 	private Database transactions;
+	private final ModelMapper modelMapper;
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+	private final AtomicReference<Instant> timestamp = new AtomicReference<>();
+
+	@Inject
+	public BerkeleyAccountTransactionStore(
+		ModelMapper modelMapper,
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider
+	) {
+		this.modelMapper = modelMapper;
+		this.radixEngineProvider = radixEngineProvider;
+	}
 
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
@@ -110,37 +131,28 @@ public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalSt
 		}
 	}
 
-	public long getCount() {
-		try (var cursor = transactions.openCursor(null, null)) {
-			final DatabaseEntry key = new DatabaseEntry();
-			var result = cursor.getLast(key, null, null);
-			return result == SUCCESS ? Longs.fromByteArray(key.getData()) : 0;
+	public Optional<AccountTransaction> get(AID txnId) {
+		var key = new DatabaseEntry(txnId.getBytes());
+		var value = new DatabaseEntry();
+		var result = transactions.get(null, key, value, null);
+		if (!result.equals(SUCCESS)) {
+			return Optional.empty();
+		}
+		try {
+			var transaction = JSON.getDefault().getMapper().readValue(value.getData(), AccountTransaction.class);
+			return Optional.of(transaction);
+		} catch (IOException e) {
+			throw new IllegalStateException();
 		}
 	}
 
-	public Stream<AID> get(long stateVersion) {
-		var cursor = transactions.openCursor(null, null);
-		var iterator = new Iterator<AID>() {
-			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion));
-			final DatabaseEntry value = new DatabaseEntry();
-			OperationStatus status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
-
-			@Override
-			public boolean hasNext() {
-				return status == SUCCESS;
-			}
-
-			@Override
-			public AID next() {
-				if (status != SUCCESS) {
-					throw new NoSuchElementException();
-				}
-				var next = AID.from(value.getData());
-				status = cursor.getNext(key, value, null);
-				return next;
-			}
-		};
-		return Streams.stream(iterator).onClose(cursor::close);
+	private Particle deserialize(byte[] data) {
+		var deserialization = radixEngineProvider.get().getSubstateDeserialization();
+		try {
+			return deserialization.deserialize(data);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException();
+		}
 	}
 
 	@Override
@@ -150,22 +162,39 @@ public final class BerkeleyTransactionIndexStore implements BerkeleyAdditionalSt
 		long stateVersion,
 		Function<SystemMapKey, Optional<RawSubstateBytes>> mapper
 	) {
-		final long nextIndex;
-		try (var cursor = transactions.openCursor(dbTxn, null)) {
-			var key = new DatabaseEntry();
-			var status = cursor.getLast(key, null, DEFAULT);
-			if (status == OperationStatus.NOTFOUND) {
-				nextIndex = 0;
-			} else {
-				nextIndex = Longs.fromByteArray(key.getData()) + 1;
-			}
-		}
-		if (stateVersion != nextIndex + 1) {
-			throw new IllegalStateException("Expected stateVersion " + (nextIndex + 1) + " but is " + stateVersion);
-		}
+		txn.stateUpdates()
+			.filter(u -> u.getParsed() instanceof RoundData)
+			.map(u -> (RoundData) u.getParsed())
+			.filter(r -> r.getTimestamp() > 0)
+			.map(RoundData::asInstant)
+			.forEach(timestamp::set);
 
-		var key = new DatabaseEntry(Longs.toByteArray(nextIndex));
-		var value = new DatabaseEntry(txn.getTxnId().getBytes());
-		transactions.putNoOverwrite(dbTxn, key, value);
+		Function<REAddr, String> addressToSymbol = addr -> {
+			var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+			var data = mapper.apply(mapKey).orElseThrow().getData();
+			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+			var metadata = (TokenResourceMetadata) deserialize(data);
+			return metadata.getSymbol();
+		};
+
+		Function<ECPublicKey, ValidatorStakeData> getValidatorStake = key -> {
+			var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), key.getCompressedBytes());
+			var data = mapper.apply(validatorDataKey).orElseThrow().getData();
+			// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+			return (ValidatorStakeData) deserialize(data);
+		};
+
+		var accountTransaction = modelMapper.accountTransaction(
+			txn, timestamp.get(), addressToSymbol, getValidatorStake
+		);
+
+		try {
+			var key = new DatabaseEntry(txn.getTxnId().getBytes());
+			var bytes = JSON.getDefault().getMapper().writeValueAsBytes(accountTransaction);
+			var value = new DatabaseEntry(bytes);
+			transactions.putNoOverwrite(dbTxn, key, value);
+		} catch (IOException e) {
+			throw new IllegalStateException();
+		}
 	}
 }

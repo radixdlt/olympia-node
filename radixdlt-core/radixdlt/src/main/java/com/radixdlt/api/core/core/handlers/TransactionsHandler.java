@@ -64,11 +64,10 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.BerkeleyTransactionIndexStore;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsResponse;
 import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
-import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.core.core.BerkeleyProcessedTransactionsStore;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.networks.Network;
@@ -79,18 +78,15 @@ import java.util.stream.Collectors;
 
 public class TransactionsHandler extends JsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
 	private final Network network;
-	private final BerkeleyTransactionsByIdStore txnStore;
-	private final BerkeleyTransactionIndexStore store;
+	private final BerkeleyProcessedTransactionsStore txnStore;
 
 	@Inject
 	TransactionsHandler(
 		@NetworkId int networkId,
-		BerkeleyTransactionIndexStore store,
-		BerkeleyTransactionsByIdStore txnStore
+		BerkeleyProcessedTransactionsStore txnStore
 	) {
 		super(CommittedTransactionsRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
-		this.store = store;
 		this.txnStore = txnStore;
 	}
 
@@ -102,11 +98,12 @@ public class TransactionsHandler extends JsonRpcHandler<CommittedTransactionsReq
 
 		var limit = request.getLimit() == null ? 0L : request.getLimit();
 		var stateIdentifier = request.getStateIdentifier();
-		var previousStateVersion = stateIdentifier == null ? 0L : stateIdentifier.getStateVersion() - 1;
+		var stateVersion = stateIdentifier.getStateVersion();
+		var previousStateVersion = stateVersion - 1;
 		final StateIdentifier committedStateIdentifier;
 		if (previousStateVersion >= 0) {
-			try (var stream = store.get(previousStateVersion)) {
-				var prevTxnJson = stream.findFirst().flatMap(txnStore::getCommittedTransaction).orElseThrow();
+			try (var stream = txnStore.get(previousStateVersion)) {
+				var prevTxnJson = stream.findFirst().orElseThrow();
 				committedStateIdentifier = prevTxnJson.getCommittedStateIdentifier();
 			}
 		} else {
@@ -114,7 +111,7 @@ public class TransactionsHandler extends JsonRpcHandler<CommittedTransactionsReq
 				.stateVersion(0L)
 				.transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes()));
 		}
-		var accumulator = request.getStateIdentifier().getTransactionAccumulator();
+		var accumulator = stateIdentifier.getTransactionAccumulator();
 		if (accumulator != null) {
 			var matchesInput = accumulator.equals(committedStateIdentifier.getTransactionAccumulator());
 			if (!matchesInput) {
@@ -125,10 +122,8 @@ public class TransactionsHandler extends JsonRpcHandler<CommittedTransactionsReq
 		var response = new CommittedTransactionsResponse();
 		response.stateIdentifier(committedStateIdentifier);
 
-		try (var stream = store.get(previousStateVersion)) {
-			var transactions = stream.limit(limit)
-				.map(txnId -> txnStore.getCommittedTransaction(txnId).orElseThrow())
-				.collect(Collectors.toList());
+		try (var stream = txnStore.get(stateVersion)) {
+			var transactions = stream.limit(limit).collect(Collectors.toList());
 			response.transactions(transactions);
 		}
 

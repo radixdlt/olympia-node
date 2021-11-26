@@ -66,7 +66,8 @@ package com.radixdlt.integration.services;
 
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.gateway.BerkeleyAccountTransactionStore;
+import com.radixdlt.api.gateway.openapitools.model.AccountTransactionStatus;
 import com.radixdlt.api.gateway.transaction.TransactionStatusService;
 import com.radixdlt.api.gateway.transaction.TransactionStatusServiceModule;
 import com.radixdlt.engine.RadixEngine;
@@ -187,9 +188,9 @@ public class TransactionStatusTest {
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
 
-					var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-					bind(BerkeleyTransactionsByIdStore.class).in(Scopes.SINGLETON);
-					binder.addBinding().to(BerkeleyTransactionsByIdStore.class);
+					bind(BerkeleyAccountTransactionStore.class).in(Scopes.SINGLETON);
+					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+						.addBinding().to(BerkeleyAccountTransactionStore.class);
 				}
 
 				@Provides
@@ -226,20 +227,22 @@ public class TransactionStatusTest {
 
 
 		dispatcher.dispatch(MempoolAdd.create(txn));
-		String lastStatus = null;
+		AccountTransactionStatus.StatusEnum lastStatus = null;
 		for (int i = 0; i < 20; i++) {
 			for (int j = 0; j < 100; j++) {
 				deterministicRunner.processNext();
 				// Check that once confirmed, status does not change
-				var json = service.getTransactionStatus(txn.getId());
-				if (json.isPresent()) {
-					var status = json.get().getJSONObject("transaction_status").getString("status");
-					if (!status.equals("CONFIRMED")) {
-						assertThat(lastStatus).isNotEqualTo("CONFIRMED");
+				var accountTransactionMaybe = service.getTransactionStatus(txn.getId());
+				if (accountTransactionMaybe.isPresent()) {
+					var status = accountTransactionMaybe.get()
+						.getTransactionStatus().getStatus();
+					if (!status.equals(AccountTransactionStatus.StatusEnum.CONFIRMED)) {
+						assertThat(lastStatus).isNotEqualTo(AccountTransactionStatus.StatusEnum.CONFIRMED);
 					}
 				}
 
-				lastStatus = json.map(s -> s.getJSONObject("transaction_status").getString("status")).orElse("NOT_FOUND");
+				lastStatus = accountTransactionMaybe.map(s -> s.getTransactionStatus().getStatus())
+						.orElse(null);
 			}
 			// TODO: allow network to dispatch to itself rather than forcing it here
 			dispatcher.dispatch(MempoolAdd.create(txn));

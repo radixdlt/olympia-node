@@ -64,7 +64,9 @@
 package com.radixdlt.api.gateway;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
@@ -78,6 +80,7 @@ import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
 
 import javax.inject.Qualifier;
@@ -109,6 +112,9 @@ public class ArchiveServerModule extends AbstractModule {
 
 	@Override
 	public void configure() {
+		bind(BerkeleyAccountTransactionStore.class).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+			.addBinding().to(BerkeleyAccountTransactionStore.class);
 		install(new AccountApiModule(ArchiveServer.class, "/account"));
 		install(new TokenApiModule(ArchiveServer.class, "/token"));
 		install(new ValidatorApiModule(ArchiveServer.class, "/validator"));

@@ -61,71 +61,47 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway;
+package com.radixdlt.api.gateway.transaction;
 
-import com.radixdlt.api.gateway.transaction.ActionType;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.google.inject.Inject;
+import com.radixdlt.api.gateway.openapitools.model.LedgerState;
+import com.radixdlt.api.gateway.openapitools.model.TransactionStatusRequest;
+import com.radixdlt.api.gateway.openapitools.model.TransactionStatusResponse;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.radixdlt.utils.Bytes;
 
 import java.time.Instant;
 
-public final class AccountTransactionTransformer {
+final class TransactionStatusHandler extends JsonRpcHandler<TransactionStatusRequest, TransactionStatusResponse> {
+	private final InMemorySystemInfo inMemorySystemInfo;
+	private final TransactionStatusService service;
 
-	public AccountTransactionTransformer() {
+	@Inject
+	TransactionStatusHandler(
+		InMemorySystemInfo inMemorySystemInfo,
+		TransactionStatusService service
+	) {
+		super(TransactionStatusRequest.class);
+
+		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.service = service;
 	}
 
-	public JSONObject map(JSONObject json) {
-		var accountTransactionJson = new JSONObject();
-
-		Long timestamp;
-		if (json.has("metadata")) {
-			var metadataJson = json.getJSONObject("metadata");
-			metadataJson.remove("signed_by");
-			metadataJson.remove("size");
-			timestamp = (Long) metadataJson.remove("timestamp");
-			var feePaid = (JSONObject) metadataJson.remove("fee");
-			if (feePaid != null) {
-				accountTransactionJson.put("fee_paid", new JSONObject()
-					.put("value", feePaid.getString("value"))
-					.put("token_identifier", new JSONObject()
-						.put("rri", feePaid.getJSONObject("resource_identifier").getString("rri"))
-					)
-				);
-			}
-			accountTransactionJson.put("metadata", metadataJson);
-		} else {
-			timestamp = null;
-		}
-
-		if (timestamp != null) {
-			accountTransactionJson.put("transaction_status", new JSONObject()
-				.put("status", "CONFIRMED")
-				.put("confirmed_time", Instant.ofEpochMilli(timestamp).toString())
+	@Override
+	public TransactionStatusResponse handleRequest(TransactionStatusRequest request) throws Exception {
+		var bytes = Bytes.fromHexString(request.getTransactionIdentifier().getHash());
+		var txnId = Txn.create(bytes).getId();
+		var response = new TransactionStatusResponse();
+		service.getTransactionStatus(txnId).ifPresent(response::addTransactionItem);
+		var proof = inMemorySystemInfo.getCurrentProof();
+		return response
+			.ledgerState(new LedgerState()
+				.epoch(proof.getEpoch())
+				.round(proof.getView().number())
+				.version(proof.getStateVersion())
+				.timestamp(Instant.ofEpochMilli(proof.timestamp()).toString())
 			);
-		} else {
-			accountTransactionJson.put("transaction_status", new JSONObject()
-				.put("status", "MEMPOOL")
-			);
-		}
-
-		var accountActions = new JSONArray();
-		accountTransactionJson.put("actions", accountActions);
-		accountTransactionJson.put("transaction_identifier", json.getJSONObject("transaction_identifier"));
-		var operationGroups = json.getJSONArray("operation_groups");
-		for (int i = 0; i < operationGroups.length(); i++) {
-			var operationGroup = operationGroups.getJSONObject(i);
-			if (operationGroup.has("metadata")) {
-				var metadata = operationGroup.getJSONObject("metadata");
-				var actionJson = metadata.getJSONObject("action");
-				var amount = actionJson.getJSONObject("amount");
-				var rri = amount.getJSONObject("token_identifier").getString("rri");
-				var type = actionJson.getString("type");
-				if (!rri.startsWith("xrd") || type.equals(ActionType.TRANSFER.toString())) {
-					accountActions.put(actionJson);
-				}
-			}
-		}
-
-		return accountTransactionJson;
 	}
 }

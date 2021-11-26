@@ -61,13 +61,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.service.transactions;
+package com.radixdlt.api.core.core;
 
+import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.api.core.core.openapitools.JSON;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransaction;
+import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
@@ -79,7 +81,6 @@ import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -89,36 +90,41 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.Get;
+import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.sleepycat.je.LockMode.DEFAULT;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
-public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalStore {
+public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditionalStore {
 	private static final String TXN_ID_DB_NAME = "radix.transactions";
-	private Database txnIdDatabase; // Txns by AID; Append-only
+	private Database txnIdDatabase; // Txns by index; Append-only
 	private final AtomicReference<Instant> timestamp = new AtomicReference<>();
 	private final Addressing addressing;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final LedgerAccumulator ledgerAccumulator;
-
 	private final ProcessedTxnJsonConverter converter;
 	private HashCode accumulator;
 
 	@Inject
-	public BerkeleyTransactionsByIdStore(
+	public BerkeleyProcessedTransactionsStore(
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
 		LedgerAccumulator ledgerAccumulator,
 		ProcessedTxnJsonConverter converter,
@@ -149,38 +155,36 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		}
 	}
 
-	public boolean contains(AID aid) {
-		var key = new DatabaseEntry(aid.getBytes());
-		return SUCCESS == txnIdDatabase.get(null, key, null, DEFAULT);
-	}
+	public Stream<CommittedTransaction> get(long index) {
+		var cursor = txnIdDatabase.openCursor(null, null);
+		var iterator = new Iterator<CommittedTransaction>() {
+			final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(index));
+			final DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.get(key, value, Get.SEARCH, null) != null ? SUCCESS : OperationStatus.NOTFOUND;
 
-	public Optional<JSONObject> getTransactionJSON(AID aid) {
-		var key = new DatabaseEntry(aid.getBytes());
-		var value = new DatabaseEntry();
-
-		if (txnIdDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
-			return Optional.of(new JSONObject(new String(value.getData(), StandardCharsets.UTF_8)));
-		}
-
-		return Optional.empty();
-	}
-
-	public Optional<CommittedTransaction> getCommittedTransaction(AID aid) {
-		var key = new DatabaseEntry(aid.getBytes());
-		var value = new DatabaseEntry();
-
-		if (txnIdDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
-			try {
-				var transaction = JSON.getDefault().getMapper().readValue(value.getData(), CommittedTransaction.class);
-				return Optional.of(transaction);
-			} catch (IOException e) {
-				throw new IllegalStateException(e);
+			@Override
+			public boolean hasNext() {
+				return status == SUCCESS;
 			}
-		}
 
-		return Optional.empty();
+			@Override
+			public CommittedTransaction next() {
+				if (status != SUCCESS) {
+					throw new NoSuchElementException();
+				}
+				CommittedTransaction next;
+				try {
+					next = JSON.getDefault().getMapper().readValue(value.getData(), CommittedTransaction.class);
+				} catch (IOException e) {
+					throw new IllegalStateException();
+				}
+
+				status = cursor.getNext(key, value, null);
+				return next;
+			}
+		};
+		return Streams.stream(iterator).onClose(cursor::close);
 	}
-
 
 	@Override
 	public void close() {
@@ -226,7 +230,6 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 		var operationGroups = converter.getOperationGroups(txn, addressToRri, getValidatorStake);
 
 		var txnId = txn.getTxnId();
-		var key = new DatabaseEntry(txnId.getBytes());
 		var fee = txn.getFeePaid();
 		final JSONObject feeObject;
 		if (!fee.isZero()) {
@@ -259,9 +262,10 @@ public final class BerkeleyTransactionsByIdStore implements BerkeleyAdditionalSt
 			)
 			.put("operation_groups", operationGroups)
 			.toString();
-
 		this.accumulator = nextAccumulatorState.getAccumulatorHash();
 
+
+		var key = new DatabaseEntry(Longs.toByteArray(stateVersion - 1));
 		var value = new DatabaseEntry(jsonString.getBytes(StandardCharsets.UTF_8));
 		var result = txnIdDatabase.putNoOverwrite(dbTxn, key, value);
 		if (result != SUCCESS) {

@@ -67,7 +67,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.api.gateway.ArchiveServerModule;
 import com.radixdlt.api.core.CoreServerModule;
-import com.radixdlt.api.service.transactions.TransactionsByIdStoreModule;
 import com.radixdlt.api.service.network.NetworkInfoServiceModule;
 import com.radixdlt.properties.RuntimeProperties;
 
@@ -101,9 +100,6 @@ public final class ApiModule extends AbstractModule {
 
 		var transactionsEnable = properties.get("api.transactions.enable", false);
 		endpointStatus.put("transactions", transactionsEnable);
-		if (archiveEnable || transactionsEnable) {
-			install(new TransactionsByIdStoreModule());
-		}
 
 		int port = properties.get("api.node.port", DEFAULT_NODE_PORT);
 		var bindAddress = properties.get("api.node.bind.address", DEFAULT_BIND_ADDRESS);

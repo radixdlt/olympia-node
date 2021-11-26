@@ -66,15 +66,23 @@ package com.radixdlt.api.gateway.transaction;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
-import com.radixdlt.api.gateway.AccountTransactionTransformer;
-import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
-import com.radixdlt.api.service.transactions.ProcessedTxnJsonConverter;
+import com.google.inject.Provider;
+import com.radixdlt.api.gateway.BerkeleyAccountTransactionStore;
+import com.radixdlt.api.gateway.ModelMapper;
+import com.radixdlt.api.gateway.openapitools.model.AccountTransaction;
+import com.radixdlt.application.system.state.ValidatorStakeData;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import org.json.JSONObject;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -88,19 +96,20 @@ public class TransactionStatusService {
 		.maximumSize(10000)
 		.expireAfterAccess(Duration.ofMinutes(10))
 		.build();
-	private final BerkeleyTransactionsByIdStore store;
-	private final AccountTransactionTransformer transactionTransformer;
-	private final ProcessedTxnJsonConverter converter;
+	private final BerkeleyAccountTransactionStore accountTransactionStore;
+	private final ModelMapper modelMapper;
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+
 
 	@Inject
 	TransactionStatusService(
-		AccountTransactionTransformer transactionTransformer,
-		BerkeleyTransactionsByIdStore store,
-		ProcessedTxnJsonConverter converter
+		BerkeleyAccountTransactionStore accountTransactionStore,
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+		ModelMapper modelMapper
 	) {
-		this.transactionTransformer = transactionTransformer;
-		this.store = store;
-		this.converter = converter;
+		this.accountTransactionStore = accountTransactionStore;
+		this.radixEngineProvider = radixEngineProvider;
+		this.modelMapper = modelMapper;
 	}
 
 	private void onReject(MempoolAddFailure mempoolAddFailure) {
@@ -120,21 +129,30 @@ public class TransactionStatusService {
 		return this::onSuccess;
 	}
 
-	public Optional<JSONObject> getTransactionStatus(AID txId) {
+	private String symbol(REAddr tokenAddress) {
+		var mapKey = SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+		var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
+		var tokenResourceMetadata = (TokenResourceMetadata) substate;
+		return tokenResourceMetadata.getSymbol();
+	}
+
+	private ValidatorStakeData getValidatorStake(ECPublicKey key) {
+		var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), key.getCompressedBytes());
+		var data = radixEngineProvider.get().read(reader -> reader.get(validatorDataKey)).orElseThrow();
+		return (ValidatorStakeData) data;
+	}
+
+	public Optional<AccountTransaction> getTransactionStatus(AID txId) {
 		var success = successCache.getIfPresent(txId);
-		var transactionJson = store.getTransactionJSON(txId)
-			.map(transactionTransformer::map);
-		if (transactionJson.isPresent()) {
-			return transactionJson;
+		var transaction = accountTransactionStore.get(txId);
+		if (transaction.isPresent()) {
+			return transaction;
 		}
 
 		if (success != null) {
 			var processedTxn = success.getProcessedTxn(REProcessedTxn.class);
-			var json = converter.getTransaction(processedTxn);
-			json.put("transaction_identifier", new JSONObject().put(
-				"hash", txId.toString()
-			));
-			return Optional.of(transactionTransformer.map(json));
+			var accountTransaction = modelMapper.accountTransaction(processedTxn, null, this::symbol, this::getValidatorStake);
+			return Optional.of(accountTransaction);
 		}
 
 		// TODO: Add failure case if missing dependencies

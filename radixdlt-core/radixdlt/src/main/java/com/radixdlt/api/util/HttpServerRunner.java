@@ -170,6 +170,7 @@ public final class HttpServerRunner implements ModuleRunner {
 			errorCode.getExceptionClass(),
 			exchange -> {
 				var ex = exchange.getAttachment(ExceptionHandler.THROWABLE);
+				ex.printStackTrace();
 				exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
 				exchange.setStatusCode(500);
 				exchange.getResponseSender().send(new JSONObject()

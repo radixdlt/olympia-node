@@ -64,81 +64,67 @@
 package com.radixdlt.api.gateway.account;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.gateway.AccountTransactionTransformer;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.gateway.BerkeleyAccountTransactionStore;
+import com.radixdlt.api.gateway.openapitools.model.AccountTransactionsRequest;
+import com.radixdlt.api.gateway.openapitools.model.AccountTransactionsResponse;
+import com.radixdlt.api.gateway.openapitools.model.LedgerState;
+import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.time.Instant;
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 
-class AccountTransactionsHandler implements ApiHandler<AccountTransactionsRequest> {
-	private final AccountTransactionTransformer transactionTransformer;
+class AccountTransactionsHandler extends JsonRpcHandler<AccountTransactionsRequest, AccountTransactionsResponse> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Addressing addressing;
 	private final BerkeleyAccountTxHistoryStore txHistoryStore;
-	private final BerkeleyTransactionsByIdStore txByIdStore;
+	private final BerkeleyAccountTransactionStore accountTransactionStore;
 
 	@Inject
 	AccountTransactionsHandler(
-		AccountTransactionTransformer transactionTransformer,
 		InMemorySystemInfo inMemorySystemInfo,
 		Addressing addressing,
 		BerkeleyAccountTxHistoryStore txHistoryStore,
-		BerkeleyTransactionsByIdStore txByIdStore
+		BerkeleyAccountTransactionStore accountTransactionStore
 	) {
-		this.transactionTransformer = transactionTransformer;
+		super(AccountTransactionsRequest.class);
+
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.addressing = addressing;
 		this.txHistoryStore = txHistoryStore;
-		this.txByIdStore = txByIdStore;
+		this.accountTransactionStore = accountTransactionStore;
 	}
 
 	@Override
-	public Addressing addressing() {
-		return addressing;
-	}
-
-	@Override
-	public AccountTransactionsRequest parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		var addr = reader.getJsonObject("account_identifier", r -> r.getAccountAddress("address"));
-		var limit = reader.getOptUnsignedLong("limit").orElse(10);
-		var cursor = reader.getOptString("cursor").stream().mapToLong(Long::parseLong).findFirst();
-
-		return new AccountTransactionsRequest(addr, limit, cursor);
-	}
-
-	@Override
-	public JSONObject handleRequest(AccountTransactionsRequest request) {
-		var txnArray = new JSONArray();
+	public AccountTransactionsResponse handleRequest(AccountTransactionsRequest request) throws Exception {
+		var accountAddress = addressing.forAccounts().parse(request.getAccountIdentifier().getAddress());
+		var cursor = Optional.ofNullable(request.getCursor())
+			.map(Long::parseLong).map(OptionalLong::of).orElse(OptionalLong.empty());
+		var limit = request.getLimit() == null ? 10 : request.getLimit();
 		var lastOffset = new AtomicLong(0);
-		txHistoryStore.getTxnIdsAssociatedWithAccount(request.getAccountAddr(), request.getCursor())
-			.limit(request.getLimit())
+		var response = new AccountTransactionsResponse();
+		txHistoryStore.getTxnIdsAssociatedWithAccount(accountAddress, cursor)
+			.limit(limit)
 			.forEach(pair -> {
-				var json = txByIdStore.getTransactionJSON(pair.getFirst()).orElseThrow();
-				var accountTransactionJson = transactionTransformer.map(json);
+				var transaction = accountTransactionStore.get(pair.getFirst()).orElseThrow();
+				response.addTransactionsItem(transaction);
 				lastOffset.set(pair.getSecond());
-				txnArray.put(accountTransactionJson);
 			});
 
-		var result = new JSONObject();
 		if (lastOffset.get() > 0) {
-			result.put("next_cursor", Long.toString(lastOffset.get() - 1));
+			response.nextCursor(Long.toString(lastOffset.get() - 1));
 		}
+
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return result
-			.put("ledger_state", new JSONObject()
-				.put("epoch", proof.getEpoch())
-				.put("round", proof.getView().number())
-				.put("version", proof.getStateVersion())
-				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
-			)
-			.put("total_count", txnArray.length())
-			.put("transactions", txnArray);
+		return response
+			.ledgerState(new LedgerState()
+				.epoch(proof.getEpoch())
+				.round(proof.getView().number())
+				.version(proof.getStateVersion())
+				.timestamp(Instant.ofEpochMilli(proof.timestamp()).toString())
+			);
 	}
 }
