@@ -72,8 +72,10 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
+
 import javax.annotation.concurrent.Immutable;
+
+import java.util.Objects;
 
 @Immutable
 @SerializerId2("ledger.accumulator_state")
@@ -93,10 +95,14 @@ public final class AccumulatorState {
 	@JsonCreator
 	public AccumulatorState(
 		@JsonProperty("state_version") long stateVersion,
-		@JsonProperty("accumulator_hash") HashCode accumulatorHash
+		@JsonProperty(value = "accumulator_hash", required = true) HashCode accumulatorHash
 	) {
-		this.stateVersion = stateVersion;
+		if (stateVersion < 0) {
+			throw new IllegalArgumentException("State version must be >= 0");
+		}
+
 		this.accumulatorHash = Objects.requireNonNull(accumulatorHash);
+		this.stateVersion = stateVersion;
 	}
 
 	public long getStateVersion() {

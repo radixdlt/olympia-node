@@ -77,6 +77,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 import javax.annotation.concurrent.Immutable;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -109,23 +110,6 @@ public final class UnverifiedVertex {
 
 	private final BFTNode proposer;
 
-	@JsonCreator
-	private UnverifiedVertex(
-		@JsonProperty(value = "qc", required = true) QuorumCertificate qc,
-		@JsonProperty("view") long viewId,
-		@JsonProperty("txns") List<byte[]> txns,
-		@JsonProperty("p") byte[] proposer,
-		@JsonProperty("tout") Boolean proposerTimedOut
-	) throws PublicKeyException {
-		this(
-			qc,
-			View.of(viewId),
-			txns == null ? List.of() : txns,
-			proposer != null ? BFTNode.fromPublicKeyBytes(proposer) : null,
-			proposerTimedOut
-		);
-	}
-
 	private UnverifiedVertex(QuorumCertificate qc, View view, List<byte[]> txns, BFTNode proposer, Boolean proposerTimedOut) {
 		this.qc = requireNonNull(qc);
 		this.view = requireNonNull(view);
@@ -141,6 +125,23 @@ public final class UnverifiedVertex {
 		this.txns = txns;
 		this.proposer = proposer;
 		this.proposerTimedOut = proposerTimedOut;
+	}
+
+	@JsonCreator
+	public static UnverifiedVertex create(
+		@JsonProperty(value = "qc", required = true) QuorumCertificate qc,
+		@JsonProperty("view") long viewId,
+		@JsonProperty("txns") List<byte[]> txns,
+		@JsonProperty("p") byte[] proposer,
+		@JsonProperty("tout") Boolean proposerTimedOut
+	) throws PublicKeyException {
+		return new UnverifiedVertex(
+			qc,
+			View.of(viewId),
+			txns == null ? List.of() : txns,
+			proposer != null ? BFTNode.fromPublicKeyBytes(proposer) : null,
+			proposerTimedOut
+		);
 	}
 
 	public static UnverifiedVertex createGenesis(LedgerHeader ledgerHeader) {
@@ -192,7 +193,7 @@ public final class UnverifiedVertex {
 	}
 
 	public List<Txn> getTxns() {
-		return txns == null ? List.of() : txns.stream().map(Txn::create).collect(Collectors.toList());
+		return txns == null ? List.of() : txns.stream().map(Txn::create).toList();
 	}
 
 	@JsonProperty("view")

@@ -72,6 +72,8 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
+import java.util.ArrayList;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -93,5 +95,17 @@ public class GetVerticesResponseMessageTest {
 				.suppress(Warning.NONFINAL_FIELDS)
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException() {
+		new GetVerticesResponseMessage(null);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullListThrowsException() {
+		var list = new ArrayList<UnverifiedVertex>();
+		list.add(null);
+		new GetVerticesResponseMessage(list);
 	}
 }

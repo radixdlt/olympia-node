@@ -76,6 +76,8 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
 public final class RadixNodeUri {
 	private final String host;
 	private final int port;
@@ -84,7 +86,7 @@ public final class RadixNodeUri {
 
 	@JsonCreator
 	public static RadixNodeUri deserialize(byte[] uri) throws URISyntaxException, DeserializeException {
-		return fromUri(new URI(new String(uri)));
+		return fromUri(new URI(new String(requireNonNull(uri))));
 	}
 
 	public static RadixNodeUri fromPubKeyAndAddress(int networkId, ECPublicKey publicKey, String host, int port) {
@@ -101,10 +103,10 @@ public final class RadixNodeUri {
 		if (port <= 0) {
 			throw new RuntimeException("Port must be a positive integer");
 		}
-		this.host = Objects.requireNonNull(host);
+		this.host = requireNonNull(host);
 		this.port = port;
 		this.networkNodeHrp = networkNodeHrp;
-		this.nodeId = Objects.requireNonNull(nodeId);
+		this.nodeId = requireNonNull(nodeId);
 	}
 
 	public String getHost() {

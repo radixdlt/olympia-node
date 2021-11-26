@@ -165,7 +165,7 @@ public class SafetyRulesTest {
 		when(grandParent.getView()).thenReturn(mock(View.class));
 		when(vertex.getGrandParentHeader()).thenReturn(grandParent);
 		BFTHeader header = mock(BFTHeader.class);
-		Optional<Vote> voteMaybe = safetyRules.voteFor(vertex, header, 0L, mock(HighQC.class));
+		Optional<Vote> voteMaybe = safetyRules.voteFor(vertex, header, 1L, mock(HighQC.class));
 		assertThat(voteMaybe).isNotEmpty();
 		Vote vote = voteMaybe.get();
 		assertThat(vote.getVoteData().getProposed()).isEqualTo(header);
@@ -189,7 +189,7 @@ public class SafetyRulesTest {
 		BFTHeader grandParent = mock(BFTHeader.class);
 		when(grandParent.getView()).thenReturn(mock(View.class));
 		when(proposal.getGrandParentHeader()).thenReturn(grandParent);
-		Optional<Vote> voteMaybe = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, mock(HighQC.class));
+		Optional<Vote> voteMaybe = safetyRules.voteFor(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
 		assertThat(voteMaybe).isNotEmpty();
 		Vote vote = voteMaybe.get();
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
@@ -213,7 +213,7 @@ public class SafetyRulesTest {
 		when(proposal.getParentHeader()).thenReturn(parent);
 		when(proposal.getView()).thenReturn(View.of(3));
 
-		Optional<Vote> voteMaybe = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, mock(HighQC.class));
+		Optional<Vote> voteMaybe = safetyRules.voteFor(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
 		assertThat(voteMaybe).isNotEmpty();
 		Vote vote = voteMaybe.get();
 		assertThat(vote.getVoteData().getCommitted()).hasValue(grandparentHeader);
@@ -237,7 +237,7 @@ public class SafetyRulesTest {
 		when(grandParent.getView()).thenReturn(mock(View.class));
 		when(proposal.getGrandParentHeader()).thenReturn(grandParent);
 
-		Optional<Vote> voteMaybe = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, mock(HighQC.class));
+		Optional<Vote> voteMaybe = safetyRules.voteFor(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
 		assertThat(voteMaybe).isNotEmpty();
 		Vote vote = voteMaybe.get();
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();

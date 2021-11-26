@@ -90,7 +90,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.serialization.Serialization;
 
-final class MessageCentralImpl implements MessageCentral {
+public final class MessageCentralImpl implements MessageCentral {
 	private static final Logger log = LogManager.getLogger();
 
 	// Dependencies
@@ -118,7 +118,7 @@ final class MessageCentralImpl implements MessageCentral {
 	private final SimpleThreadPool<OutboundMessageEvent> outboundThreadPool;
 
 	@Inject
-	MessageCentralImpl(
+	public MessageCentralImpl(
 		MessageCentralConfiguration config,
 		Serialization serialization,
 		PeerManager peerManager,

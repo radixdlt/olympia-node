@@ -68,14 +68,13 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
-
 import org.junit.Test;
 import org.radix.serialization.SerializeObject;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 public class HighQCTest extends SerializeObject<HighQC> {
 	public HighQCTest() {
@@ -140,5 +139,10 @@ public class HighQCTest extends SerializeObject<HighQC> {
 		EqualsVerifier.forClass(HighQC.class)
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException() {
+		HighQC.serializerCreate(null, mock(QuorumCertificate.class), mock(TimeoutCertificate.class));
 	}
 }

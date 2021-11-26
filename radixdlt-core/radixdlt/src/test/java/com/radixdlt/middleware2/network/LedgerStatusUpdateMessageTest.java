@@ -79,4 +79,9 @@ public class LedgerStatusUpdateMessageTest {
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException() {
+		new LedgerStatusUpdateMessage(null);
+	}
 }
