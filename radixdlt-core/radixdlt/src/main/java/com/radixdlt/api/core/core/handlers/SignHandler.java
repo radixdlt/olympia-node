@@ -61,72 +61,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.google.inject.Provider;
+import com.radixdlt.api.core.core.openapitools.model.SignRequest;
+import com.radixdlt.api.core.core.openapitools.model.SignResponse;
+import com.radixdlt.api.util.JsonRpcHandler;
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-import java.util.Collection;
-import java.util.function.Function;
+public class SignHandler extends JsonRpcHandler<SignRequest, SignResponse> {
 
-
-public class EngineStateHandler implements ApiHandler<Void> {
-	private final Addressing addressing;
-	private final VerifiedTxnsAndProof genesis;
-	private final InMemorySystemInfo inMemorySystemInfo;
+	private final ECPublicKey self;
+	private final HashSigner hashSigner;
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 
 	@Inject
-	public EngineStateHandler(
-		@Genesis VerifiedTxnsAndProof genesis,
-		InMemorySystemInfo inMemorySystemInfo,
-		Addressing addressing
+	SignHandler(
+		@Self ECPublicKey self,
+		@LocalSigner HashSigner hashSigner,
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider
 	) {
-		this.genesis = genesis;
-		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.addressing = addressing;
+		super(SignRequest.class);
+
+		this.self = self;
+		this.hashSigner = hashSigner;
+		this.radixEngineProvider = radixEngineProvider;
 	}
 
 	@Override
-	public Void parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return null;
-	}
+	public SignResponse handleRequest(SignRequest request) throws Exception {
+		var pubKey = ECPublicKey.fromHex(request.getPublicKey().getHex());
+		if (!self.equals(pubKey)) {
+			throw new IllegalStateException();
+		}
 
-	@Override
-	public JSONObject handleRequest(Void request) throws Exception {
-		return new JSONObject()
-			.put("proof", getLatestProof())
-			.put("epoch_proof", getLatestEpochProof())
-			.put("checkpoints", getCheckpoints());
-	}
+		// Verify this is a valid transaction and not anything more malicious
+		var bytes = Bytes.fromHexString(request.getUnsignedTransaction());
+		var txn = Txn.create(bytes);
+		radixEngineProvider.get().getParser().parse(txn);
 
-	public JSONObject getLatestProof() {
-		var proof = inMemorySystemInfo.getCurrentProof();
-		return proof == null ? new JSONObject() : proof.asJSON(addressing);
-	}
+		var builder = TxLowLevelBuilder.newBuilder(bytes);
+		var hash = builder.hashToSign();
+		var signature = this.hashSigner.sign(hash);
+		var signedTransaction = builder.sig(signature).blob();
 
-	public JSONObject getLatestEpochProof() {
-		var proof = inMemorySystemInfo.getEpochProof();
-		return proof == null ? new JSONObject() : proof.asJSON(addressing);
-	}
-
-	private static <T> JSONArray fromCollection(Collection<T> input, Function<T, Object> mapper) {
-		var array = new JSONArray();
-		input.forEach(element -> array.put(mapper.apply(element)));
-		return array;
-	}
-
-	public JSONObject getCheckpoints() {
-		return new JSONObject()
-			.put("txn", fromCollection(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
-			.put("proof", genesis.getProof().asJSON(addressing));
+		return new SignResponse()
+			.signedTransaction(Bytes.toHexString(signedTransaction));
 	}
 }

@@ -61,34 +61,72 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
-import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationResponse;
+import com.google.inject.Provider;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionParseRequest;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionParseResponse;
+import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.statecomputer.forks.ForkConfig;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.Bytes;
 
-import java.util.TreeMap;
-
-public class EngineConfigurationHandler extends JsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
-	private final TreeMap<Long, ForkConfig> forks;
+public final class ParseTransactionHandler extends JsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {
+	private final Network network;
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final ModelMapper modelMapper;
 
 	@Inject
-	public EngineConfigurationHandler(
-		TreeMap<Long, ForkConfig> forks,
+	ParseTransactionHandler(
+		@NetworkId int networkId,
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
 		ModelMapper modelMapper
 	) {
-		super(EngineConfigurationRequest.class);
-		this.forks = forks;
+		super(ConstructionParseRequest.class);
+
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.radixEngineProvider = radixEngineProvider;
 		this.modelMapper = modelMapper;
 	}
 
+	private String symbol(REAddr tokenAddress) {
+		var mapKey = SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+		var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
+		// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+		var tokenResourceMetadata = (TokenResourceMetadata) substate;
+		return tokenResourceMetadata.getSymbol();
+	}
+
 	@Override
-	public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request) {
-		var response = new EngineConfigurationResponse();
-		forks.forEach((epoch, config) -> response.addForksItem(modelMapper.fork(config)));
+	public ConstructionParseResponse handleRequest(ConstructionParseRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
+			throw new IllegalStateException();
+		}
+
+		var txn = Bytes.fromHexString(request.getTransaction());
+
+		REProcessedTxn processed;
+		try {
+			processed = radixEngineProvider.get().test(txn, request.getSigned());
+		} catch (RadixEngineException e) {
+			throw new InvalidTransactionException(e);
+		}
+
+		var response = new ConstructionParseResponse();
+		var transaction = modelMapper.transaction(processed, this::symbol);
+		transaction.getOperationGroups()
+			.forEach(response::addOperationGroupsItem);
 		return response;
 	}
 }

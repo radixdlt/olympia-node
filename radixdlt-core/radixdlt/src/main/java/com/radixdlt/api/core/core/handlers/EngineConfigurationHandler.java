@@ -61,43 +61,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.openapitools.model.MempoolRequest;
-import com.radixdlt.api.core.core.openapitools.model.MempoolResponse;
-import com.radixdlt.api.core.core.openapitools.model.TransactionIdentifier;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationResponse;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.RadixEngineMempool;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 
-public class MempoolHandler extends JsonRpcHandler<MempoolRequest, MempoolResponse> {
-	private final Network network;
-	private final RadixEngineMempool mempool;
+import java.util.TreeMap;
+
+public class EngineConfigurationHandler extends JsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
+	private final TreeMap<Long, ForkConfig> forks;
+	private final ModelMapper modelMapper;
 
 	@Inject
-	private MempoolHandler(
-		@NetworkId int networkId,
-		RadixEngineMempool mempool
+	public EngineConfigurationHandler(
+		TreeMap<Long, ForkConfig> forks,
+		ModelMapper modelMapper
 	) {
-		super(MempoolRequest.class);
-		this.network = Network.ofId(networkId).orElseThrow();
-		this.mempool = mempool;
+		super(EngineConfigurationRequest.class);
+		this.forks = forks;
+		this.modelMapper = modelMapper;
 	}
 
 	@Override
-	public MempoolResponse handleRequest(MempoolRequest request) throws Exception {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new IllegalStateException();
-		}
-
-		return mempool.getData(map -> {
-			var response = new MempoolResponse();
-			map.keySet().forEach(txnId -> response.addTransactionIdentifiersItem(
-				new TransactionIdentifier().hash(txnId.toString())
-			));
-			return response;
-		});
+	public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request) {
+		var response = new EngineConfigurationResponse();
+		forks.forEach((epoch, config) -> response.addForksItem(modelMapper.fork(config)));
+		return response;
 	}
 }

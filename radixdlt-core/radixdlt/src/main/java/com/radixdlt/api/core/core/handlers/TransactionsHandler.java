@@ -61,76 +61,77 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
-import com.radixdlt.api.core.core.openapitools.model.EntityResponse;
+import com.radixdlt.api.core.core.BerkeleyTransactionIndexStore;
+import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
+import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsResponse;
+import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
+import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.Bytes;
 
-import java.util.function.Function;
+import java.util.stream.Collectors;
 
-public class EntityHandler extends JsonRpcHandler<EntityRequest, EntityResponse> {
+public class TransactionsHandler extends JsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
 	private final Network network;
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final ModelMapper modelMapper;
+	private final BerkeleyTransactionsByIdStore txnStore;
+	private final BerkeleyTransactionIndexStore store;
 
 	@Inject
-	EntityHandler(
+	TransactionsHandler(
 		@NetworkId int networkId,
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		ModelMapper modelMapper
+		BerkeleyTransactionIndexStore store,
+		BerkeleyTransactionsByIdStore txnStore
 	) {
-		super(EntityRequest.class);
+		super(CommittedTransactionsRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
-		this.radixEngine = radixEngine;
-		this.modelMapper = modelMapper;
+		this.store = store;
+		this.txnStore = txnStore;
 	}
 
 	@Override
-	public EntityResponse handleRequest(EntityRequest request) throws Exception {
+	public CommittedTransactionsResponse handleRequest(CommittedTransactionsRequest request) throws Exception {
 		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
-		var entityIdentifier = request.getEntityIdentifier();
-		var entity = modelMapper.entity(entityIdentifier);
-		var keyQueries = entity.getKeyQueries();
-		var resourceQueries = entity.getResourceQueries();
-
-		return radixEngine.read(reader -> {
-			Function<REAddr, String> addressToSymbol = addr -> {
-				var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-				var substate = reader.get(mapKey).orElseThrow();
-				var tokenResource = (TokenResourceMetadata) substate;
-				return tokenResource.getSymbol();
-			};
-			var proof = reader.getMetadata().getProof();
-			var response = new EntityResponse()
-				.stateIdentifier(modelMapper.stateIdentifier(proof.getAccumulatorState()));
-
-			for (var resourceQuery : resourceQueries) {
-				var index = resourceQuery.getIndex();
-				var bucketPredicate = resourceQuery.getPredicate();
-				reader.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
-					.forEach((bucket, amount) -> response.addBalancesItem(modelMapper.resourceAmount(bucket, amount, addressToSymbol)));
+		var limit = request.getLimit() == null ? 0L : request.getLimit();
+		var stateIdentifier = request.getStateIdentifier();
+		var previousStateVersion = stateIdentifier == null ? 0L : stateIdentifier.getStateVersion() - 1;
+		final StateIdentifier committedStateIdentifier;
+		if (previousStateVersion >= 0) {
+			try (var stream = store.get(previousStateVersion)) {
+				var prevTxnJson = stream.findFirst().flatMap(txnStore::getCommittedTransaction).orElseThrow();
+				committedStateIdentifier = prevTxnJson.getCommittedStateIdentifier();
 			}
-
-			for (var keyQuery : keyQueries) {
-				var substate = reader.get(keyQuery.getKey()).or(keyQuery.getVirtualSubstate());
-				substate.flatMap(modelMapper::dataObject).ifPresent(response::addDataObjectsItem);
+		} else {
+			committedStateIdentifier = new StateIdentifier()
+				.stateVersion(0L)
+				.transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes()));
+		}
+		var accumulator = request.getStateIdentifier().getTransactionAccumulator();
+		if (accumulator != null) {
+			var matchesInput = accumulator.equals(committedStateIdentifier.getTransactionAccumulator());
+			if (!matchesInput) {
+				throw new IllegalStateException();
 			}
+		}
 
-			return response;
-		});
+		var response = new CommittedTransactionsResponse();
+		response.stateIdentifier(committedStateIdentifier);
+
+		try (var stream = store.get(previousStateVersion)) {
+			var transactions = stream.limit(limit)
+				.map(txnId -> txnStore.getCommittedTransaction(txnId).orElseThrow())
+				.collect(Collectors.toList());
+			response.transactions(transactions);
+		}
+
+		return response;
 	}
 }

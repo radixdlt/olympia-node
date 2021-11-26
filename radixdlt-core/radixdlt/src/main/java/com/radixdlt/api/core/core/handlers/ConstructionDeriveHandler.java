@@ -61,74 +61,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
-import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsResponse;
-import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
-import com.radixdlt.api.service.transactions.BerkeleyTransactionsByIdStore;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequest;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataToken;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveResponse;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.utils.Bytes;
 
-import java.util.stream.Collectors;
-
-public class TransactionsHandler extends JsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
+public class ConstructionDeriveHandler extends JsonRpcHandler<ConstructionDeriveRequest, ConstructionDeriveResponse> {
 	private final Network network;
-	private final BerkeleyTransactionsByIdStore txnStore;
-	private final BerkeleyTransactionIndexStore store;
+	private final Addressing addressing;
 
 	@Inject
-	TransactionsHandler(
+	ConstructionDeriveHandler(
 		@NetworkId int networkId,
-		BerkeleyTransactionIndexStore store,
-		BerkeleyTransactionsByIdStore txnStore
+		Addressing addressing
 	) {
-		super(CommittedTransactionsRequest.class);
+		super(ConstructionDeriveRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
-		this.store = store;
-		this.txnStore = txnStore;
+		this.addressing = addressing;
 	}
 
 	@Override
-	public CommittedTransactionsResponse handleRequest(CommittedTransactionsRequest request) throws Exception {
+	public ConstructionDeriveResponse handleRequest(ConstructionDeriveRequest request) throws Exception {
 		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
-		var limit = request.getLimit() == null ? 0L : request.getLimit();
-		var stateIdentifier = request.getStateIdentifier();
-		var previousStateVersion = stateIdentifier == null ? 0L : stateIdentifier.getStateVersion() - 1;
-		final StateIdentifier committedStateIdentifier;
-		if (previousStateVersion >= 0) {
-			try (var stream = store.get(previousStateVersion)) {
-				var prevTxnJson = stream.findFirst().flatMap(txnStore::getCommittedTransaction).orElseThrow();
-				committedStateIdentifier = prevTxnJson.getCommittedStateIdentifier();
-			}
+		var publicKey = ECPublicKey.fromHex(request.getPublicKey().getHex());
+		var response = new ConstructionDeriveResponse();
+		if (request.getMetadata() instanceof ConstructionDeriveRequestMetadataAccount) {
+			var address = REAddr.ofPubKeyAccount(publicKey);
+			response.entityIdentifier(new EntityIdentifier()
+				.address(addressing.forAccounts().of(address))
+			);
+		} else if (request.getMetadata() instanceof ConstructionDeriveRequestMetadataValidator) {
+			response.entityIdentifier(new EntityIdentifier()
+				.address(addressing.forValidators().of(publicKey))
+			);
+		} else if (request.getMetadata() instanceof ConstructionDeriveRequestMetadataToken token) {
+			var tokenAddress = REAddr.ofHashedKey(publicKey, token.getSymbol());
+			response.entityIdentifier(new EntityIdentifier()
+				.address(addressing.forResources().of(token.getSymbol(), tokenAddress))
+			);
 		} else {
-			committedStateIdentifier = new StateIdentifier()
-				.stateVersion(0L)
-				.transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes()));
-		}
-		var accumulator = request.getStateIdentifier().getTransactionAccumulator();
-		if (accumulator != null) {
-			var matchesInput = accumulator.equals(committedStateIdentifier.getTransactionAccumulator());
-			if (!matchesInput) {
-				throw new IllegalStateException();
-			}
-		}
-
-		var response = new CommittedTransactionsResponse();
-		response.stateIdentifier(committedStateIdentifier);
-
-		try (var stream = store.get(previousStateVersion)) {
-			var transactions = stream.limit(limit)
-				.map(txnId -> txnStore.getCommittedTransaction(txnId).orElseThrow())
-				.collect(Collectors.toList());
-			response.transactions(transactions);
+			throw new IllegalStateException();
 		}
 
 		return response;

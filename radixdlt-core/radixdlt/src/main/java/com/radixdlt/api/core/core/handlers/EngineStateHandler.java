@@ -61,60 +61,72 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.sign;
+package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.radixdlt.api.util.ApiHandler;
 import com.radixdlt.api.gateway.InvalidParametersException;
 import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.qualifier.LocalSigner;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.api.util.ApiHandler;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
-public class SignHandler implements ApiHandler<SignRequest> {
+import java.util.Collection;
+import java.util.function.Function;
 
-	private final ECPublicKey self;
-	private final HashSigner hashSigner;
-	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+
+public class EngineStateHandler implements ApiHandler<Void> {
+	private final Addressing addressing;
+	private final VerifiedTxnsAndProof genesis;
+	private final InMemorySystemInfo inMemorySystemInfo;
 
 	@Inject
-	SignHandler(
-		@Self ECPublicKey self,
-		@LocalSigner HashSigner hashSigner,
-		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider
+	public EngineStateHandler(
+		@Genesis VerifiedTxnsAndProof genesis,
+		InMemorySystemInfo inMemorySystemInfo,
+		Addressing addressing
 	) {
-		this.self = self;
-		this.hashSigner = hashSigner;
-		this.radixEngineProvider = radixEngineProvider;
+		this.genesis = genesis;
+		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.addressing = addressing;
 	}
 
 	@Override
-	public SignRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return SignRequest.from(requestReader);
+	public Void parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
+		return null;
 	}
 
 	@Override
-	public JSONObject handleRequest(SignRequest signRequest) throws Exception {
-		if (!self.equals(signRequest.getPublicKey())) {
-			throw new IllegalStateException();
-		}
+	public JSONObject handleRequest(Void request) throws Exception {
+		return new JSONObject()
+			.put("proof", getLatestProof())
+			.put("epoch_proof", getLatestEpochProof())
+			.put("checkpoints", getCheckpoints());
+	}
 
-		// Verify this is a valid transaction and not anything more malicious
-		radixEngineProvider.get().getParser().parse(Txn.create(signRequest.getUnsignedTransaction()));
+	public JSONObject getLatestProof() {
+		var proof = inMemorySystemInfo.getCurrentProof();
+		return proof == null ? new JSONObject() : proof.asJSON(addressing);
+	}
 
-		var builder = TxLowLevelBuilder.newBuilder(signRequest.getUnsignedTransaction());
-		var hash = builder.hashToSign();
-		var signature = this.hashSigner.sign(hash);
-		var signedTransaction = builder.sig(signature).blob();
+	public JSONObject getLatestEpochProof() {
+		var proof = inMemorySystemInfo.getEpochProof();
+		return proof == null ? new JSONObject() : proof.asJSON(addressing);
+	}
 
-		return new JSONObject().put("signed_transaction", Bytes.toHexString(signedTransaction));
+	private static <T> JSONArray fromCollection(Collection<T> input, Function<T, Object> mapper) {
+		var array = new JSONArray();
+		input.forEach(element -> array.put(mapper.apply(element)));
+		return array;
+	}
+
+	public JSONObject getCheckpoints() {
+		return new JSONObject()
+			.put("txn", fromCollection(genesis.getTxns(), txn -> Bytes.toHexString(txn.getPayload())))
+			.put("proof", genesis.getProof().asJSON(addressing));
 	}
 }

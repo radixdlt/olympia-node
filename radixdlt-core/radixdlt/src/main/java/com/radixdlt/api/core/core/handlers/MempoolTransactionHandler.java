@@ -61,29 +61,70 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionHashRequest;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionHashResponse;
+import com.google.inject.Provider;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
+import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionResponse;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineMempool;
 
-public class ConstructionHashHandler extends JsonRpcHandler<ConstructionHashRequest, ConstructionHashResponse> {
+public class MempoolTransactionHandler extends JsonRpcHandler<MempoolTransactionRequest, MempoolTransactionResponse> {
+	private final Network network;
+	private final RadixEngineMempool mempool;
 	private final ModelMapper modelMapper;
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 
 	@Inject
-	public ConstructionHashHandler(ModelMapper modelMapper) {
-		super(ConstructionHashRequest.class);
+	private MempoolTransactionHandler(
+		@NetworkId int networkId,
+		RadixEngineMempool mempool,
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+		ModelMapper modelMapper
+	) {
+		super(MempoolTransactionRequest.class);
+		this.network = Network.ofId(networkId).orElseThrow();
+		this.mempool = mempool;
 		this.modelMapper = modelMapper;
+		this.radixEngineProvider = radixEngineProvider;
+	}
+
+	private String symbol(REAddr tokenAddress) {
+		var mapKey = SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+		var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
+		// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+		var tokenResourceMetadata = (TokenResourceMetadata) substate;
+		return tokenResourceMetadata.getSymbol();
 	}
 
 	@Override
-	public ConstructionHashResponse handleRequest(ConstructionHashRequest request) throws Exception {
-		var bytes = Bytes.fromHexString(request.getSignedTransaction());
-		var txn = Txn.create(bytes);
-		return new ConstructionHashResponse()
-			.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()));
+	public MempoolTransactionResponse handleRequest(MempoolTransactionRequest request) throws Exception {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
+			throw new IllegalStateException();
+		}
+
+		var txnId = AID.from(request.getTransactionIdentifier().getHash());
+		var transaction = mempool.getData(map -> map.get(txnId));
+		if (transaction == null) {
+			throw new IllegalStateException();
+		}
+
+		var processed = transaction.getFirst();
+		var metadata = transaction.getSecond();
+		var transactionModel = modelMapper.transaction(processed, this::symbol);
+		return new MempoolTransactionResponse()
+			.transaction(transactionModel);
+		// .put("added_timestamp", metadata.getInserted())
 	}
 }

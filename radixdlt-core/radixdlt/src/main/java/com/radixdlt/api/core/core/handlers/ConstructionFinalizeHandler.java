@@ -61,71 +61,50 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionParseRequest;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionParseResponse;
-import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeRequest;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeResponse;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECKeyUtils;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
 
-public final class ParseTransactionHandler extends JsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {
+public final class ConstructionFinalizeHandler extends JsonRpcHandler<ConstructionFinalizeRequest, ConstructionFinalizeResponse> {
 	private final Network network;
-	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
-	private final ModelMapper modelMapper;
 
 	@Inject
-	ParseTransactionHandler(
-		@NetworkId int networkId,
-		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		ModelMapper modelMapper
+	public ConstructionFinalizeHandler(
+		@NetworkId int networkId
 	) {
-		super(ConstructionParseRequest.class);
-
+		super(ConstructionFinalizeRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
-		this.radixEngineProvider = radixEngineProvider;
-		this.modelMapper = modelMapper;
-	}
-
-	private String symbol(REAddr tokenAddress) {
-		var mapKey = SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-		var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
-		// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-		var tokenResourceMetadata = (TokenResourceMetadata) substate;
-		return tokenResourceMetadata.getSymbol();
 	}
 
 	@Override
-	public ConstructionParseResponse handleRequest(ConstructionParseRequest request) throws Exception {
+	public ConstructionFinalizeResponse handleRequest(ConstructionFinalizeRequest request) throws Exception {
 		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
-		var txn = Bytes.fromHexString(request.getTransaction());
+		var sig = request.getSignature();
+		var publicKey = ECPublicKey.fromHex(sig.getPublicKey().getHex());
+		var bytes = Bytes.fromHexString(sig.getBytes());
+		var rawSig = ECDSASignature.decodeFromDER(bytes);
+		var unsignedTransaction = Bytes.fromHexString(request.getUnsignedTransaction());
+		var hash = HashUtils.sha256(unsignedTransaction).asBytes();
+		var recoverable = ECKeyUtils.toRecoverableSig(
+			rawSig, hash, publicKey
+		);
 
-		REProcessedTxn processed;
-		try {
-			processed = radixEngineProvider.get().test(txn, request.getSigned());
-		} catch (RadixEngineException e) {
-			throw new InvalidTransactionException(e);
-		}
-
-		var response = new ConstructionParseResponse();
-		var transaction = modelMapper.transaction(processed, this::symbol);
-		transaction.getOperationGroups()
-			.forEach(response::addOperationGroupsItem);
-		return response;
+		var txn = TxLowLevelBuilder.newBuilder(unsignedTransaction).sig(recoverable).build();
+		return new ConstructionFinalizeResponse()
+			.signedTransaction(Bytes.toHexString(txn.getPayload()));
 	}
 }

@@ -61,64 +61,43 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.model.OperationTxBuilder;
-import com.radixdlt.api.core.core.model.AccountVaultEntity;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildResponse;
+import com.radixdlt.api.core.core.openapitools.model.MempoolRequest;
+import com.radixdlt.api.core.core.openapitools.model.MempoolResponse;
+import com.radixdlt.api.core.core.openapitools.model.TransactionIdentifier;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.statecomputer.RadixEngineMempool;
 
-public final class ConstructionBuildHandler extends JsonRpcHandler<ConstructionBuildRequest, ConstructionBuildResponse> {
-	private final Addressing addressing;
-	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final Forks forks;
+public class MempoolHandler extends JsonRpcHandler<MempoolRequest, MempoolResponse> {
 	private final Network network;
-	private final ModelMapper modelMapper;
+	private final RadixEngineMempool mempool;
 
 	@Inject
-	ConstructionBuildHandler(
+	private MempoolHandler(
 		@NetworkId int networkId,
-		RadixEngine<LedgerAndBFTProof> radixEngine,
-		Forks forks,
-		Addressing addressing,
-		ModelMapper modelMapper
+		RadixEngineMempool mempool
 	) {
-		super(ConstructionBuildRequest.class);
+		super(MempoolRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
-		this.radixEngine = radixEngine;
-		this.forks = forks;
-		this.addressing = addressing;
-		this.modelMapper = modelMapper;
+		this.mempool = mempool;
 	}
 
 	@Override
-	public ConstructionBuildResponse handleRequest(ConstructionBuildRequest request) throws Exception {
+	public MempoolResponse handleRequest(MempoolRequest request) throws Exception {
 		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
-		var operationTxBuilder = OperationTxBuilder.from(request, addressing, modelMapper, forks);
-		var feePayer = modelMapper.entity(request.getFeePayer());
-		var disableAllocAndDestroy = request.getDisableResourceAllocateAndDestroy();
-
-		var disable = disableAllocAndDestroy != null && !disableAllocAndDestroy;
-		if (!(feePayer instanceof AccountVaultEntity accountVaultEntity)) {
-			throw new IllegalStateException();
-		}
-
-		var builder = radixEngine.constructWithFees(operationTxBuilder, disable, accountVaultEntity.getAccountAddress());
-		var unsignedTransaction = builder.buildForExternalSign();
-		return new ConstructionBuildResponse()
-			.unsignedTransaction(Bytes.toHexString(unsignedTransaction.blob()))
-			.payloadToSign(Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
+		return mempool.getData(map -> {
+			var response = new MempoolResponse();
+			map.keySet().forEach(txnId -> response.addTransactionIdentifiersItem(
+				new TransactionIdentifier().hash(txnId.toString())
+			));
+			return response;
+		});
 	}
 }

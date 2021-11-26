@@ -61,50 +61,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeRequest;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeResponse;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionHashRequest;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionHashResponse;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyUtils;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.utils.Bytes;
 
-public final class ConstructionFinalizeHandler extends JsonRpcHandler<ConstructionFinalizeRequest, ConstructionFinalizeResponse> {
-	private final Network network;
+public class ConstructionHashHandler extends JsonRpcHandler<ConstructionHashRequest, ConstructionHashResponse> {
+	private final ModelMapper modelMapper;
 
 	@Inject
-	public ConstructionFinalizeHandler(
-		@NetworkId int networkId
-	) {
-		super(ConstructionFinalizeRequest.class);
-		this.network = Network.ofId(networkId).orElseThrow();
+	public ConstructionHashHandler(ModelMapper modelMapper) {
+		super(ConstructionHashRequest.class);
+		this.modelMapper = modelMapper;
 	}
 
 	@Override
-	public ConstructionFinalizeResponse handleRequest(ConstructionFinalizeRequest request) throws Exception {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new IllegalStateException();
-		}
-
-		var sig = request.getSignature();
-		var publicKey = ECPublicKey.fromHex(sig.getPublicKey().getHex());
-		var bytes = Bytes.fromHexString(sig.getBytes());
-		var rawSig = ECDSASignature.decodeFromDER(bytes);
-		var unsignedTransaction = Bytes.fromHexString(request.getUnsignedTransaction());
-		var hash = HashUtils.sha256(unsignedTransaction).asBytes();
-		var recoverable = ECKeyUtils.toRecoverableSig(
-			rawSig, hash, publicKey
-		);
-
-		var txn = TxLowLevelBuilder.newBuilder(unsignedTransaction).sig(recoverable).build();
-		return new ConstructionFinalizeResponse()
-			.signedTransaction(Bytes.toHexString(txn.getPayload()));
+	public ConstructionHashResponse handleRequest(ConstructionHashRequest request) throws Exception {
+		var bytes = Bytes.fromHexString(request.getSignedTransaction());
+		var txn = Txn.create(bytes);
+		return new ConstructionHashResponse()
+			.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()));
 	}
 }

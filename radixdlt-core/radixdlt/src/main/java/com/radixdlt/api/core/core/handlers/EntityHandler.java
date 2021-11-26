@@ -61,85 +61,77 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.handlers;
 
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
-import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
-import com.radixdlt.api.gateway.transaction.StateConflictException;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
+import com.radixdlt.api.core.core.openapitools.model.EntityResponse;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
-public class ConstructionSubmitHandler extends JsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
+public class EntityHandler extends JsonRpcHandler<EntityRequest, EntityResponse> {
 	private final Network network;
-	private final EventDispatcher<MempoolAdd> dispatcher;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final ModelMapper modelMapper;
 
 	@Inject
-	ConstructionSubmitHandler(
+	EntityHandler(
 		@NetworkId int networkId,
-		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
+		RadixEngine<LedgerAndBFTProof> radixEngine,
 		ModelMapper modelMapper
 	) {
-		super(ConstructionSubmitRequest.class);
-
+		super(EntityRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
-		this.dispatcher = mempoolAddEventDispatcher;
+		this.radixEngine = radixEngine;
 		this.modelMapper = modelMapper;
 	}
 
 	@Override
-	public ConstructionSubmitResponse handleRequest(ConstructionSubmitRequest request) throws Exception {
+	public EntityResponse handleRequest(EntityRequest request) throws Exception {
 		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
-		var bytes = Bytes.fromHexString(request.getSignedTransaction());
-		var txn = Txn.create(bytes);
-		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
+		var entityIdentifier = request.getEntityIdentifier();
+		var entity = modelMapper.entity(entityIdentifier);
+		var keyQueries = entity.getKeyQueries();
+		var resourceQueries = entity.getResourceQueries();
 
-		dispatcher.dispatch(mempoolAdd);
-		try {
-			// We need to block here as we need to complete the request in the same thread
-			var success = completableFuture.get();
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(success.getTxn().getId()))
-				.duplicate(false);
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof MempoolDuplicateException) {
-				return new ConstructionSubmitResponse()
-					.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-					.duplicate(true);
+		return radixEngine.read(reader -> {
+			Function<REAddr, String> addressToSymbol = addr -> {
+				var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+				var substate = reader.get(mapKey).orElseThrow();
+				var tokenResource = (TokenResourceMetadata) substate;
+				return tokenResource.getSymbol();
+			};
+			var proof = reader.getMetadata().getProof();
+			var response = new EntityResponse()
+				.stateIdentifier(modelMapper.stateIdentifier(proof.getAccumulatorState()));
+
+			for (var resourceQuery : resourceQueries) {
+				var index = resourceQuery.getIndex();
+				var bucketPredicate = resourceQuery.getPredicate();
+				reader.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
+					.forEach((bucket, amount) -> response.addBalancesItem(modelMapper.resourceAmount(bucket, amount, addressToSymbol)));
 			}
 
-			if (e.getCause() instanceof MempoolRejectedException) {
-				var ex = (MempoolRejectedException) e.getCause();
-				var reException = (RadixEngineException) ex.getCause();
-
-				var cause = Throwables.getRootCause(reException);
-				if (cause instanceof SubstateNotFoundException) {
-					throw new StateConflictException(reException);
-				}
-
-				throw new InvalidTransactionException(reException);
+			for (var keyQuery : keyQueries) {
+				var substate = reader.get(keyQuery.getKey()).or(keyQuery.getVirtualSubstate());
+				substate.flatMap(modelMapper::dataObject).ifPresent(response::addDataObjectsItem);
 			}
-			throw e;
-		}
+
+			return response;
+		});
 	}
 }

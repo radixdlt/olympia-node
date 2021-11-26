@@ -61,94 +61,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
-import com.radixdlt.api.core.core.openapitools.model.PublicKey;
-import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
+import com.radixdlt.api.core.core.ModelMapper;
+import com.radixdlt.api.core.core.model.OperationTxBuilder;
+import com.radixdlt.api.core.core.model.AccountVaultEntity;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildResponse;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Bytes;
 
-public final class NetworkStatusHandler extends JsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
-	private final Network network;
-	private final REAddr accountAddress;
-	private final ECPublicKey validatorKey;
-	private final InMemorySystemInfo inMemorySystemInfo;
-	private final AccumulatorState genesisAccumulatorState;
+public final class ConstructionBuildHandler extends JsonRpcHandler<ConstructionBuildRequest, ConstructionBuildResponse> {
 	private final Addressing addressing;
+	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+	private final Forks forks;
+	private final Network network;
+	private final ModelMapper modelMapper;
 
 	@Inject
-	NetworkStatusHandler(
+	ConstructionBuildHandler(
 		@NetworkId int networkId,
-		@Self REAddr accountAddress,
-		@Self ECPublicKey validatorKey,
-		InMemorySystemInfo inMemorySystemInfo,
-		@Genesis Txn genesisTxn,
-		LedgerAccumulator ledgerAccumulator,
-		Addressing addressing
+		RadixEngine<LedgerAndBFTProof> radixEngine,
+		Forks forks,
+		Addressing addressing,
+		ModelMapper modelMapper
 	) {
-		super(NetworkStatusRequest.class);
+		super(ConstructionBuildRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
-		this.accountAddress = accountAddress;
-		this.validatorKey = validatorKey;
-		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
-			new AccumulatorState(0, HashUtils.zero256()), genesisTxn.getId().asHashCode()
-		);
+		this.radixEngine = radixEngine;
+		this.forks = forks;
 		this.addressing = addressing;
+		this.modelMapper = modelMapper;
 	}
 
 	@Override
-	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws Exception {
+	public ConstructionBuildResponse handleRequest(ConstructionBuildRequest request) throws Exception {
 		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
-		var currentProof = inMemorySystemInfo.getCurrentProof();
-		return new NetworkStatusResponse()
-			.currentStateEpoch(currentProof.getEpoch())
-			.currentStateRound(currentProof.getView().number())
-			.currentStateTimestamp(currentProof.timestamp())
-			.preGenesisStateIdentifier(
-				new StateIdentifier()
-					.stateVersion(0L)
-					.transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes()))
-			)
-			.genesisStateIdentifier(
-				new StateIdentifier()
-					.stateVersion(genesisAccumulatorState.getStateVersion())
-					.transactionAccumulator(Bytes.toHexString(genesisAccumulatorState.getAccumulatorHash().asBytes()))
-			)
-			.currentStateIdentifier(
-				new StateIdentifier()
-					.stateVersion(currentProof.getStateVersion())
-					.transactionAccumulator(Bytes.toHexString(currentProof.getAccumulatorState().getAccumulatorHash().asBytes()))
-			)
-			.nodeIdentifiers(
-				new NetworkStatusResponseNodeIdentifiers()
-					.accountEntityIdentifier(
-						new EntityIdentifier().address(addressing.forAccounts().of(accountAddress))
-					)
-					.validatorEntityIdentifier(
-						new EntityIdentifier().address(addressing.forValidators().of(validatorKey))
-					)
-					.publicKey(new PublicKey().hex(validatorKey.toHex()))
-			);
+		var operationTxBuilder = OperationTxBuilder.from(request, addressing, modelMapper, forks);
+		var feePayer = modelMapper.entity(request.getFeePayer());
+		var disableAllocAndDestroy = request.getDisableResourceAllocateAndDestroy();
+
+		var disable = disableAllocAndDestroy != null && !disableAllocAndDestroy;
+		if (!(feePayer instanceof AccountVaultEntity accountVaultEntity)) {
+			throw new IllegalStateException();
+		}
+
+		var builder = radixEngine.constructWithFees(operationTxBuilder, disable, accountVaultEntity.getAccountAddress());
+		var unsignedTransaction = builder.buildForExternalSign();
+		return new ConstructionBuildResponse()
+			.unsignedTransaction(Bytes.toHexString(unsignedTransaction.blob()))
+			.payloadToSign(Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()));
 	}
 }
