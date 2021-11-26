@@ -3,18 +3,15 @@ package com.radixdlt.store.tree.serialization.rlp;
 import static org.junit.Assert.*;
 
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 
 import org.junit.Test;
-import org.spongycastle.util.BigIntegers;
-import org.spongycastle.util.encoders.Hex;
 
 public class ByteUtilTest {
 
 	@Test
 	public void testAppendByte() {
 		byte[] bytes = "tes".getBytes();
-		byte b = 0x74; 
+		byte b = 0x74;
 		assertArrayEquals("test".getBytes(), ByteUtil.appendByte(bytes, b));
 	}
 
@@ -33,15 +30,15 @@ public class ByteUtilTest {
 		byte[] actuals = ByteUtil.bigIntegerToBytes(b);
 		assertArrayEquals(expecteds, actuals);
 	}
-	
-	@Test 
+
+	@Test
 	public void testBigIntegerToBytesZero() {
 		byte[] expecteds = new byte[]{0x00};
 		BigInteger b = BigInteger.ZERO;
 		byte[] actuals = ByteUtil.bigIntegerToBytes(b);
 		assertArrayEquals(expecteds, actuals);
 	}
-	
+
 	@Test
 	public void testToHexString() {
 		assertEquals("", ByteUtil.toHexString(null));
@@ -49,8 +46,8 @@ public class ByteUtilTest {
 
 	@Test
 	public void testCalcPacketLength() {
-		byte[] test = new byte[] { 0x0f, 0x10, 0x43 };
-		byte[] expected = new byte[] { 0x00, 0x00, 0x00, 0x03 };
+		byte[] test = new byte[] {0x0f, 0x10, 0x43};
+		byte[] expected = new byte[] {0x00, 0x00, 0x00, 0x03};
 		assertArrayEquals(expected, ByteUtil.calcPacketLength(test));
 	}
 
@@ -58,7 +55,7 @@ public class ByteUtilTest {
 	public void testByteArrayToInt() {
 		assertEquals(0, ByteUtil.byteArrayToInt(null));
 		assertEquals(0, ByteUtil.byteArrayToInt(new byte[0]));
-	
+
 //		byte[] x = new byte[] { 5,1,7,0,8 };
 //		long start = System.currentTimeMillis();
 //		for (int i = 0; i < 100000000; i++) {
@@ -91,83 +88,83 @@ public class ByteUtilTest {
 
 	@Test
 	public void testStripLeadingZeroes() {
-		byte[] test1 = new byte[] { 0x00, 0x01 };
-		byte[] test2 = new byte[] { 0x00, 0x00, 0x01 };
-		byte[] expected = new byte[] { 0x01 };
+		byte[] test1 = new byte[] {0x00, 0x01};
+		byte[] test2 = new byte[] {0x00, 0x00, 0x01};
+		byte[] expected = new byte[] {0x01};
 		assertArrayEquals(expected, ByteUtil.stripLeadingZeroes(test1));
 		assertArrayEquals(expected, ByteUtil.stripLeadingZeroes(test2));
 	}
-		
+
 	@Test
 	public void testMatchingNibbleLength1() {
 		// a larger than b
-		byte[] a = new byte[] { 0x00, 0x01 };
-		byte[] b = new byte[] { 0x00 };
+		byte[] a = new byte[] {0x00, 0x01};
+		byte[] b = new byte[] {0x00};
 		int result = ByteUtil.matchingNibbleLength(a, b);
 		assertEquals(1, result);
 	}
 	@Test
 	public void testMatchingNibbleLength2() {
 		// b larger than a
-		byte[] a  = new byte[] { 0x00 };
-		byte[] b  = new byte[] { 0x00, 0x01 };
+		byte[] a  = new byte[] {0x00};
+		byte[] b  = new byte[] {0x00, 0x01};
 		int result = ByteUtil.matchingNibbleLength(a, b);
 		assertEquals(1, result);
 	}
-	
+
 	@Test
 	public void testMatchingNibbleLength3() {
 		// a and b the same length equal
-		byte[] a = new byte[] { 0x00 };
-		byte[] b = new byte[] { 0x00 };
+		byte[] a = new byte[] {0x00};
+		byte[] b = new byte[] {0x00};
 		int result = ByteUtil.matchingNibbleLength(a, b);
 		assertEquals(1, result);
 	}
-	
+
 	@Test
 	public void testMatchingNibbleLength4() {
 		// a and b the same length not equal
-		byte[] a = new byte[] { 0x01 };
-		byte[] b = new byte[] { 0x00 };
+		byte[] a = new byte[] {0x01};
+		byte[] b = new byte[] {0x00};
 		int result = ByteUtil.matchingNibbleLength(a, b);
 		assertEquals(0, result);
 	}
-	
+
     @Test
-    public void testNiceNiblesOutput_1(){
+    public void testNiceNiblesOutput_1() {
         byte[] test = {7, 0, 7, 5, 7, 0, 7, 0, 7, 9};
         String result = "\\x07\\x00\\x07\\x05\\x07\\x00\\x07\\x00\\x07\\x09";
         assertEquals(result, ByteUtil.nibblesToPrettyString(test));
     }
 
     @Test
-    public void testNiceNiblesOutput_2(){
+    public void testNiceNiblesOutput_2() {
         byte[] test = {7, 0, 7, 0xf, 7, 0, 0xa, 0, 7, 9};
         String result = "\\x07\\x00\\x07\\x0f\\x07\\x00\\x0a\\x00\\x07\\x09";
         assertEquals(result, ByteUtil.nibblesToPrettyString(test));
     }
-	
-	@Test(expected=NullPointerException.class)
+
+	@Test(expected = NullPointerException.class)
 	public void testMatchingNibbleLength5() {
 		// a == null
 		byte[] a = null;
-		byte[] b = new byte[] { 0x00 };
+		byte[] b = new byte[] {0x00};
 		ByteUtil.matchingNibbleLength(a, b);
 	}
-	
-	@Test(expected=NullPointerException.class)
+
+	@Test(expected = NullPointerException.class)
 	public void testMatchingNibbleLength6() {
 		// b == null
-		byte[] a = new byte[] { 0x00 };
+		byte[] a = new byte[] {0x00};
 		byte[] b = null;
 		ByteUtil.matchingNibbleLength(a, b);
 	}
-	
+
 	@Test
 	public void testMatchingNibbleLength7() {
 		// a or b is empty
 		byte[] a = new byte[0];
-		byte[] b = new byte[] { 0x00 };
+		byte[] b = new byte[] {0x00};
 		int result = ByteUtil.matchingNibbleLength(a, b);
 		assertEquals(0, result);
 	}

@@ -1,6 +1,5 @@
 package com.radixdlt.store.tree;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -9,9 +8,13 @@ public class PMTAcc {
 	private List<PMTNode> oldAcc;
 	private List<PMTNode> newAcc;
 
-	public PMTAcc() {}
+	public PMTAcc() { }
 
-	public PMTNode newTip;
+	private PMTNode newTip;
+
+	public void setNewTip(PMTNode newTip) {
+		this.newTip = newTip;
+	}
 
 	public PMTNode getTip() {
 		return newTip;

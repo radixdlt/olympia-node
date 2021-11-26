@@ -11,7 +11,7 @@ public abstract class PMTNode implements Cloneable {
 		EMPTY
 	}
 
-	public final static int DB_SIZE_COND = 32;
+	public static final int DB_SIZE_COND = 32;
 
 	protected byte[] hash;
 	protected byte[] serialized;
