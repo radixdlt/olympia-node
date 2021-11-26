@@ -1320,6 +1320,10 @@ components:
         - symbol
         - is_supply_mutable
         - granularity
+        - name
+        - description
+        - url
+        - icon_url
       properties:
         name:
           type: string
