@@ -64,24 +64,22 @@
 package com.radixdlt.api.core.system;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.GetJsonHandler;
+import com.radixdlt.api.core.system.openapitools.model.VersionResponse;
 import com.radixdlt.middleware2.InfoSupplier;
-import org.json.JSONObject;
 
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
 import static org.radix.Radix.VERSION_STRING_KEY;
 
-public class VersionHandler implements GetJsonHandler {
-	private final JSONObject versionData;
+public class VersionHandler extends SystemGetJsonHandler<VersionResponse> {
+	private final String version;
 
 	@Inject
 	public VersionHandler(InfoSupplier infoSupplier) {
-		var versionString = (String) infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
-		versionData = new JSONObject().put("version", versionString);
+		this.version = (String) infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
 	}
 
 	@Override
-	public JSONObject handleRequest() {
-		return versionData;
+	public VersionResponse handleRequest() {
+		return new VersionResponse().version(version);
 	}
 }

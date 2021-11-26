@@ -69,7 +69,6 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bytes;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -117,14 +116,6 @@ public final class VerifiedTxnsAndProof {
 		}
 		var proof = LedgerProof.fromJSON(addressing, json.getJSONObject("proof"));
 		return VerifiedTxnsAndProof.create(txns, proof);
-	}
-
-	public JSONObject toJSON(Addressing addressing) {
-		var txnsArray = new JSONArray();
-		txns.forEach(txn -> txnsArray.put(Bytes.toHexString(txn.getPayload())));
-		return new JSONObject()
-			.put("proof", proof.asJSON(addressing))
-			.put("txns", txnsArray);
 	}
 
 	@Override

@@ -63,37 +63,33 @@
 
 package com.radixdlt.api.core.system;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.core.system.openapitools.model.HealthResponse;
-import com.radixdlt.api.service.network.NetworkInfoService;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.radixdlt.api.core.system.openapitools.JSON;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
-final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
-	private final NetworkInfoService networkInfoService;
+abstract class SystemGetJsonHandler<T> implements HttpHandler {
+	private static final String CONTENT_TYPE_JSON = "application/json";
+	private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
-	@Inject
-	HealthHandler(NetworkInfoService networkInfoService) {
-		this.networkInfoService = networkInfoService;
-	}
+	public abstract T handleRequest() throws Exception;
 
 	@Override
-	public HealthResponse handleRequest() {
-		switch (networkInfoService.nodeStatus()) {
-			case UP -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.UP);
-			}
-			case BOOTING -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.BOOTING);
-			}
-			case SYNCING -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.SYNCING);
-			}
-			case STALLED -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.STALLED);
-			}
-			case OUT_OF_SYNC -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.OUT_OF_SYNC);
-			}
-			default -> throw new IllegalStateException();
+	public final void handleRequest(HttpServerExchange exchange) throws Exception {
+		if (exchange.isInIoThread()) {
+			exchange.dispatch(this);
+			return;
 		}
+
+		exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
+		exchange.startBlocking();
+
+		var mapper = JSON.getDefault().getMapper();
+		var response = handleRequest();
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+		exchange.setStatusCode(200);
+		mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+		exchange.getResponseSender().send(mapper.writeValueAsString(response));
 	}
 }

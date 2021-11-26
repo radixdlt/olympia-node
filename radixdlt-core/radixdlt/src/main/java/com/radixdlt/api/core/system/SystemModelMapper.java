@@ -64,36 +64,46 @@
 package com.radixdlt.api.core.system;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.system.openapitools.model.HealthResponse;
-import com.radixdlt.api.service.network.NetworkInfoService;
+import com.radixdlt.api.core.system.openapitools.model.NetworkingConfiguration;
+import com.radixdlt.api.core.system.openapitools.model.SyncConfiguration;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.sync.SyncConfig;
 
-final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
-	private final NetworkInfoService networkInfoService;
+import java.math.BigDecimal;
+
+public final class SystemModelMapper {
+	private final Addressing addressing;
 
 	@Inject
-	HealthHandler(NetworkInfoService networkInfoService) {
-		this.networkInfoService = networkInfoService;
+	SystemModelMapper(Addressing addressing) {
+		this.addressing = addressing;
 	}
 
-	@Override
-	public HealthResponse handleRequest() {
-		switch (networkInfoService.nodeStatus()) {
-			case UP -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.UP);
-			}
-			case BOOTING -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.BOOTING);
-			}
-			case SYNCING -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.SYNCING);
-			}
-			case STALLED -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.STALLED);
-			}
-			case OUT_OF_SYNC -> {
-				return new HealthResponse().status(HealthResponse.StatusEnum.OUT_OF_SYNC);
-			}
-			default -> throw new IllegalStateException();
-		}
+	public NetworkingConfiguration networkingConfiguration(ECPublicKey self, P2PConfig config) {
+		return new NetworkingConfiguration()
+			.defaultPort(config.defaultPort())
+			.discoveryInterval(config.discoveryInterval())
+			.listenAddress(config.listenAddress())
+			.listenPort(config.listenPort())
+			.broadcastPort(config.broadcastPort())
+			.peerConnectionTimeout(config.peerConnectionTimeout())
+			.maxInboundChannels(config.maxInboundChannels())
+			.maxOutboundChannels(config.maxOutboundChannels())
+			.channelBufferSize(config.channelBufferSize())
+			.peerLivenessCheckInterval(config.peerLivenessCheckInterval())
+			.pingTimeout(config.pingTimeout())
+			.seedNodes(config.seedNodes())
+			.nodeAddress(addressing.forNodes().of(self));
+	}
+
+	public SyncConfiguration syncConfiguration(SyncConfig syncConfig) {
+		return new SyncConfiguration()
+			.syncCheckInterval(syncConfig.syncCheckInterval())
+			.syncCheckMaxPeers(syncConfig.syncCheckMaxPeers())
+			.requestTimeout(syncConfig.syncRequestTimeout())
+			.ledgerStatusUpdateMaxPeersToNotify(syncConfig.ledgerStatusUpdateMaxPeersToNotify())
+			.maxLedgerUpdatesRate(BigDecimal.valueOf(syncConfig.maxLedgerUpdatesRate()));
 	}
 }

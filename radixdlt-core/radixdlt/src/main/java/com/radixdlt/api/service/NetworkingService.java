@@ -76,12 +76,7 @@ import com.radixdlt.networks.Addressing;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.Collection;
-import java.util.function.Function;
-
 public final class NetworkingService {
-	private final JSONObject configuration;
-
 	private final PeersView peersView;
 	private final AddressBook addressBook;
 	private final Addressing addressing;
@@ -97,12 +92,6 @@ public final class NetworkingService {
 		this.peersView = peersView;
 		this.addressBook = addressBook;
 		this.addressing = addressing;
-
-		configuration = prepareConfiguration(p2PConfig, self);
-	}
-
-	public JSONObject getConfiguration() {
-		return configuration;
 	}
 
 	public JSONArray getPeers() {
@@ -123,29 +112,6 @@ public final class NetworkingService {
 
 	public long getPeersCount() {
 		return peersView.peers().count();
-	}
-
-	private static <T> JSONArray fromCollection(Collection<T> input, Function<T, Object> mapper) {
-		var array = new JSONArray();
-		input.forEach(element -> array.put(mapper.apply(element)));
-		return array;
-	}
-
-	private JSONObject prepareConfiguration(P2PConfig p2PConfig, ECPublicKey self) {
-		return new JSONObject()
-			.put("defaultPort", p2PConfig.defaultPort())
-			.put("discoveryInterval", p2PConfig.discoveryInterval())
-			.put("listenAddress", p2PConfig.listenAddress())
-			.put("listenPort", p2PConfig.listenPort())
-			.put("broadcastPort", p2PConfig.broadcastPort())
-			.put("peerConnectionTimeout", p2PConfig.peerConnectionTimeout())
-			.put("maxInboundChannels", p2PConfig.maxInboundChannels())
-			.put("maxOutboundChannels", p2PConfig.maxOutboundChannels())
-			.put("channelBufferSize", p2PConfig.channelBufferSize())
-			.put("peerLivenessCheckInterval", p2PConfig.peerLivenessCheckInterval())
-			.put("pingTimeout", p2PConfig.pingTimeout())
-			.put("seedNodes", fromCollection(p2PConfig.seedNodes(), seedNode -> seedNode))
-			.put("nodeAddress", addressing.forNodes().of(self));
 	}
 
 	private JSONObject peerToJson(PeersView.PeerInfo peer) {

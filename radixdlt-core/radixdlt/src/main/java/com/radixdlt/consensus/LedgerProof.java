@@ -132,13 +132,6 @@ public final class LedgerProof {
 		return new LedgerProof(opaque, header, sigs);
 	}
 
-	public JSONObject asJSON(Addressing addressing) {
-		return new JSONObject()
-			.put("opaque", Bytes.toHexString(opaque.asBytes()))
-			.put("header", ledgerHeader.asJSONObject(addressing))
-			.put("sigs", signatures.asJSON());
-	}
-
 	public static LedgerProof mock() {
 		var acc = new AccumulatorState(0, HashUtils.zero256());
 		var header = LedgerHeader.create(0, View.genesis(), acc, 0);
