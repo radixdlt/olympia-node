@@ -65,6 +65,8 @@ package com.radixdlt.api.gateway.tokens;
 
 import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.api.gateway.openapitools.JSON;
+import com.radixdlt.api.gateway.openapitools.model.Token;
 import com.radixdlt.api.gateway.transaction.TokenProperties;
 import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -81,6 +83,7 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.Transaction;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -100,12 +103,17 @@ public final class BerkeleyResourceInfoStore implements BerkeleyAdditionalStore 
 		this.addressing = addressing;
 	}
 
-	public Optional<JSONObject> getResourceInfo(REAddr addr) {
+	public Optional<Token> getResourceInfo(REAddr addr) {
 		var key = new DatabaseEntry(addr.getBytes());
 		var value = new DatabaseEntry();
 
 		if (resourceInfoDatabase.get(null, key, value, DEFAULT) == SUCCESS) {
-			return Optional.of(new JSONObject(new String(value.getData(), StandardCharsets.UTF_8)));
+			try {
+				var token = JSON.getDefault().getMapper().readValue(value.getData(), Token.class);
+				return Optional.of(token);
+			} catch (IOException e) {
+				throw new IllegalStateException(e);
+			}
 		}
 
 		return Optional.empty();

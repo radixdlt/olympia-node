@@ -22,45 +22,45 @@ import java.util.Objects;
 
 
 /**
- * TokenIdentifier
+ * TokenDeriveResponse
  */
 @JsonPropertyOrder({
-  TokenIdentifier.JSON_PROPERTY_RRI
+  TokenDeriveResponse.JSON_PROPERTY_TOKEN_IDENTIFIER
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T01:21:01.645550-06:00[America/Chicago]")
-public class TokenIdentifier {
-  public static final String JSON_PROPERTY_RRI = "rri";
-  private String rri;
+public class TokenDeriveResponse {
+  public static final String JSON_PROPERTY_TOKEN_IDENTIFIER = "token_identifier";
+  private TokenIdentifier tokenIdentifier;
 
 
-  public TokenIdentifier rri(String rri) {
-    this.rri = rri;
+  public TokenDeriveResponse tokenIdentifier(TokenIdentifier tokenIdentifier) {
+    this.tokenIdentifier = tokenIdentifier;
     return this;
   }
 
    /**
-   * Get rri
-   * @return rri
+   * Get tokenIdentifier
+   * @return tokenIdentifier
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RRI)
+  @JsonProperty(JSON_PROPERTY_TOKEN_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getRri() {
-    return rri;
+  public TokenIdentifier getTokenIdentifier() {
+    return tokenIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RRI)
+  @JsonProperty(JSON_PROPERTY_TOKEN_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRri(String rri) {
-    this.rri = rri;
+  public void setTokenIdentifier(TokenIdentifier tokenIdentifier) {
+    this.tokenIdentifier = tokenIdentifier;
   }
 
 
   /**
-   * Return true if this TokenIdentifier object is equal to o.
+   * Return true if this TokenDeriveResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -70,20 +70,20 @@ public class TokenIdentifier {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TokenIdentifier tokenIdentifier = (TokenIdentifier) o;
-    return Objects.equals(this.rri, tokenIdentifier.rri);
+    TokenDeriveResponse tokenDeriveResponse = (TokenDeriveResponse) o;
+    return Objects.equals(this.tokenIdentifier, tokenDeriveResponse.tokenIdentifier);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(rri);
+    return Objects.hash(tokenIdentifier);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TokenIdentifier {\n");
-    sb.append("    rri: ").append(toIndentedString(rri)).append("\n");
+    sb.append("class TokenDeriveResponse {\n");
+    sb.append("    tokenIdentifier: ").append(toIndentedString(tokenIdentifier)).append("\n");
     sb.append("}");
     return sb.toString();
   }

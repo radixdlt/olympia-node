@@ -121,6 +121,14 @@ public final class GatewayModelMapper {
 		}
 	}
 
+	public REAddr tokenAddress(TokenIdentifier tokenIdentifier) {
+		try {
+			return addressing.forResources().parse2(tokenIdentifier.getRri()).getSecond();
+		} catch (DeserializeException e) {
+			throw new IllegalStateException();
+		}
+	}
+
 	public LedgerState ledgerState(LedgerProof ledgerProof) {
 		return new LedgerState()
 			.epoch(ledgerProof.getEpoch())
@@ -176,11 +184,15 @@ public final class GatewayModelMapper {
 		return new ValidatorIdentifier().address(addressing.forValidators().of(key));
 	}
 
-	public TokenIdentifier tokenIdentifier(REAddr addr, Function<REAddr, String> addrToSymbol) {
-		var symbol = addrToSymbol.apply(addr);
+	public TokenIdentifier tokenIdentifier(REAddr addr, String symbol) {
 		var rri = addressing.forResources().of(symbol, addr);
 		return new TokenIdentifier()
 			.rri(rri);
+	}
+
+	public TokenIdentifier tokenIdentifier(REAddr addr, Function<REAddr, String> addrToSymbol) {
+		var symbol = addrToSymbol.apply(addr);
+		return tokenIdentifier(addr, symbol);
 	}
 
 	public TokenAmount tokenAmount(

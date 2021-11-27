@@ -64,41 +64,28 @@
 package com.radixdlt.api.gateway.tokens;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
+import com.radixdlt.api.gateway.GatewayModelMapper;
+import com.radixdlt.api.gateway.openapitools.model.TokenDeriveRequest;
+import com.radixdlt.api.gateway.openapitools.model.TokenDeriveResponse;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
-import org.json.JSONObject;
 
-public class TokenDeriveHandler implements ApiHandler<TokenDeriveRequest> {
-	private final Addressing addressing;
+public final class TokenDeriveHandler extends GatewayJsonRpcHandler<TokenDeriveRequest, TokenDeriveResponse> {
+	private final GatewayModelMapper gatewayModelMapper;
 
 	@Inject
-	TokenDeriveHandler(
-		Addressing addressing
-	) {
-		this.addressing = addressing;
+	TokenDeriveHandler(GatewayModelMapper gatewayModelMapper) {
+		super(TokenDeriveRequest.class);
+		this.gatewayModelMapper = gatewayModelMapper;
 	}
 
 	@Override
-	public Addressing addressing() {
-		return addressing;
-	}
-
-	@Override
-	public TokenDeriveRequest parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return TokenDeriveRequest.from(requestReader);
-	}
-
-	@Override
-	public JSONObject handleRequest(TokenDeriveRequest request) throws Exception {
-		var key = request.getAccountAddress().publicKey().orElseThrow();
+	public TokenDeriveResponse handleRequest(TokenDeriveRequest request) throws Exception {
+		var accountAddress = gatewayModelMapper.account(request.getCreatorAccountIdentifier());
+		var key = accountAddress.publicKey().orElseThrow();
 		var symbol = request.getSymbol();
 		var tokenAddress = REAddr.ofHashedKey(key, symbol);
-		return new JSONObject()
-			.put("token_identifier", new JSONObject()
-				.put("rri", addressing.forResources().of(symbol, tokenAddress))
-			);
+		return new TokenDeriveResponse()
+			.tokenIdentifier(gatewayModelMapper.tokenIdentifier(tokenAddress, symbol));
 	}
 }

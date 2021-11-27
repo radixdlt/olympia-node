@@ -70,6 +70,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.gateway.account.BerkeleyAccountInfoStore;
 import com.radixdlt.api.gateway.openapitools.model.AccountBalances;
 import com.radixdlt.api.gateway.openapitools.model.AccountUnstakeEntry;
+import com.radixdlt.api.gateway.openapitools.model.Token;
 import com.radixdlt.api.gateway.validator.BerkeleyValidatorUptimeStore;
 import com.radixdlt.api.gateway.tokens.BerkeleyResourceInfoStore;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
@@ -93,7 +94,6 @@ import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.util.Throwables;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -404,7 +404,7 @@ public class StakingUnstakingValidatorsTest {
 			return map;
 		}
 
-		public JSONObject getNativeToken() {
+		public Token getNativeToken() {
 			return resourceInfoStore.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
 		}
 
@@ -528,13 +528,13 @@ public class StakingUnstakingValidatorsTest {
 		var diff = finalCount.subtract(initialCount);
 		logger.info("Difference {}", Amount.ofSubunits(diff));
 		assertThat(diff).isLessThanOrEqualTo(maxEmissions);
-		var json = nodeState.getNativeToken();
-		logger.info("json {}", json.toString(4));
-		var supplyStringFromJson = json.getJSONObject("token_supply").getString("value");
-		assertThat(finalCount.toString()).isLessThanOrEqualTo(supplyStringFromJson);
-		var supplyFromJson = new BigInteger(supplyStringFromJson, 10);
-		var totalMinted = new BigInteger(json.getJSONObject("info").getJSONObject("total_minted").getString("value"), 10);
-		var totalBurned = new BigInteger(json.getJSONObject("info").getJSONObject("total_burned").getString("value"), 10);
+		var nativeToken = nodeState.getNativeToken();
+		logger.info("nativeToken {}", nativeToken);
+		var supplyString = nativeToken.getTokenSupply().getValue();
+		assertThat(finalCount.toString()).isLessThanOrEqualTo(supplyString);
+		var supplyFromJson = new BigInteger(supplyString, 10);
+		var totalMinted = new BigInteger(nativeToken.getInfo().getTotalMinted().getValue());
+		var totalBurned = new BigInteger(nativeToken.getInfo().getTotalBurned().getValue());
 		assertThat(supplyFromJson).isEqualTo(totalMinted.subtract(totalBurned));
 
 		var totalTokenBalance = PrivateKeys.numeric(1).limit(20)

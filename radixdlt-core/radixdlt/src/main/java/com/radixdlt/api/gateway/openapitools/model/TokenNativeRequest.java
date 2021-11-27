@@ -22,45 +22,45 @@ import java.util.Objects;
 
 
 /**
- * TokenIdentifier
+ * TokenNativeRequest
  */
 @JsonPropertyOrder({
-  TokenIdentifier.JSON_PROPERTY_RRI
+  TokenNativeRequest.JSON_PROPERTY_NETWORK
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T01:21:01.645550-06:00[America/Chicago]")
-public class TokenIdentifier {
-  public static final String JSON_PROPERTY_RRI = "rri";
-  private String rri;
+public class TokenNativeRequest {
+  public static final String JSON_PROPERTY_NETWORK = "network";
+  private String network;
 
 
-  public TokenIdentifier rri(String rri) {
-    this.rri = rri;
+  public TokenNativeRequest network(String network) {
+    this.network = network;
     return this;
   }
 
    /**
-   * Get rri
-   * @return rri
+   * Get network
+   * @return network
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RRI)
+  @JsonProperty(JSON_PROPERTY_NETWORK)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getRri() {
-    return rri;
+  public String getNetwork() {
+    return network;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RRI)
+  @JsonProperty(JSON_PROPERTY_NETWORK)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRri(String rri) {
-    this.rri = rri;
+  public void setNetwork(String network) {
+    this.network = network;
   }
 
 
   /**
-   * Return true if this TokenIdentifier object is equal to o.
+   * Return true if this TokenNativeRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -70,20 +70,20 @@ public class TokenIdentifier {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TokenIdentifier tokenIdentifier = (TokenIdentifier) o;
-    return Objects.equals(this.rri, tokenIdentifier.rri);
+    TokenNativeRequest tokenNativeRequest = (TokenNativeRequest) o;
+    return Objects.equals(this.network, tokenNativeRequest.network);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(rri);
+    return Objects.hash(network);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TokenIdentifier {\n");
-    sb.append("    rri: ").append(toIndentedString(rri)).append("\n");
+    sb.append("class TokenNativeRequest {\n");
+    sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("}");
     return sb.toString();
   }

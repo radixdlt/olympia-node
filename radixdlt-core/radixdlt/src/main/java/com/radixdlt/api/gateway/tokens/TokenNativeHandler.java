@@ -64,46 +64,36 @@
 package com.radixdlt.api.gateway.tokens;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
+import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
+import com.radixdlt.api.gateway.GatewayModelMapper;
+import com.radixdlt.api.gateway.openapitools.model.TokenNativeRequest;
+import com.radixdlt.api.gateway.openapitools.model.TokenNativeResponse;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-import java.time.Instant;
-
-public class TokenNativeHandler implements ApiHandler<Void> {
+public class TokenNativeHandler extends GatewayJsonRpcHandler<TokenNativeRequest, TokenNativeResponse> {
 	private final InMemorySystemInfo inMemorySystemInfo;
+	private final GatewayModelMapper gatewayModelMapper;
 	private final BerkeleyResourceInfoStore store;
 
 	@Inject
 	TokenNativeHandler(
 		InMemorySystemInfo inMemorySystemInfo,
+		GatewayModelMapper gatewayModelMapper,
 		BerkeleyResourceInfoStore store
 	) {
+		super(TokenNativeRequest.class);
 		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.gatewayModelMapper = gatewayModelMapper;
 		this.store = store;
 	}
 
 	@Override
-	public Void parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return null;
-	}
-
-	@Override
-	public JSONObject handleRequest(Void request) throws Exception {
-		var tokenJson = store.getResourceInfo(REAddr.ofNativeToken())
-			.map(o -> new JSONArray().put(o)).orElse(new JSONArray());
+	public TokenNativeResponse handleRequest(TokenNativeRequest request) throws Exception {
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return new JSONObject()
-			.put("ledger_state", new JSONObject()
-				.put("epoch", proof.getEpoch())
-				.put("round", proof.getView().number())
-				.put("version", proof.getStateVersion())
-				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
-			)
-			.put("token", tokenJson);
+		var response = new TokenNativeResponse()
+			.ledgerState(gatewayModelMapper.ledgerState(proof));
+		store.getResourceInfo(REAddr.ofNativeToken()).ifPresent(response::setToken);
+		return response;
 	}
 }

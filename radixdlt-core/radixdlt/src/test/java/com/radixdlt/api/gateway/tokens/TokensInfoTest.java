@@ -201,13 +201,10 @@ public class TokensInfoTest {
 		);
 
 		// Assert
-		var json = store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
-		var infoJson = json.getJSONObject("info");
-		assertThat(json.getJSONObject("token_supply").getString("value"))
-			.isEqualTo(totalTokenAmount.toSubunits().toString());
-		assertThat(infoJson.getJSONObject("total_minted").getString("value"))
-			.isEqualTo(totalTokenAmount.toSubunits().toString());
-		assertThat(infoJson.getJSONObject("total_burned").getString("value"))
-			.isEqualTo(UInt256.ZERO.toString());
+		var token = store.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
+		var tokenInfo = token.getInfo();
+		assertThat(token.getTokenSupply().getValue()).isEqualTo(totalTokenAmount.toSubunits().toString());
+		assertThat(tokenInfo.getTotalMinted().getValue()).isEqualTo(totalTokenAmount.toSubunits().toString());
+		assertThat(tokenInfo.getTotalBurned().getValue()).isEqualTo(UInt256.ZERO.toString());
 	}
 }

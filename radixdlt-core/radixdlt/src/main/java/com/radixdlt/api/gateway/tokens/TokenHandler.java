@@ -64,55 +64,37 @@
 package com.radixdlt.api.gateway.tokens;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
+import com.radixdlt.api.gateway.GatewayModelMapper;
+import com.radixdlt.api.gateway.openapitools.model.TokenRequest;
+import com.radixdlt.api.gateway.openapitools.model.TokenResponse;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-import java.time.Instant;
-
-final class TokenHandler implements ApiHandler<REAddr> {
+final class TokenHandler extends GatewayJsonRpcHandler<TokenRequest, TokenResponse> {
 	private final InMemorySystemInfo inMemorySystemInfo;
-	private final Addressing addressing;
+	private final GatewayModelMapper gatewayModelMapper;
 	private final BerkeleyResourceInfoStore store;
 
 	@Inject
 	TokenHandler(
 		InMemorySystemInfo inMemorySystemInfo,
-		Addressing addressing,
+		GatewayModelMapper gatewayModelMapper,
 		BerkeleyResourceInfoStore store
 	) {
+		super(TokenRequest.class);
+
 		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.addressing = addressing;
+		this.gatewayModelMapper = gatewayModelMapper;
 		this.store = store;
 	}
 
 	@Override
-	public Addressing addressing() {
-		return addressing;
-	}
-
-	@Override
-	public REAddr parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		return reader.getTokenIdentifier("token_identifier");
-	}
-
-	@Override
-	public JSONObject handleRequest(REAddr addr) {
-		var tokenJson = store.getResourceInfo(addr)
-			.map(o -> new JSONArray().put(o)).orElse(new JSONArray());
+	public TokenResponse handleRequest(TokenRequest request) throws Exception {
+		var tokenAddress = gatewayModelMapper.tokenAddress(request.getTokenIdentifier());
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return new JSONObject()
-			.put("ledger_state", new JSONObject()
-				.put("epoch", proof.getEpoch())
-				.put("round", proof.getView().number())
-				.put("version", proof.getStateVersion())
-				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
-			)
-			.put("token", tokenJson);
+		var response = new TokenResponse()
+			.ledgerState(gatewayModelMapper.ledgerState(proof));
+		store.getResourceInfo(tokenAddress).ifPresent(response::addTokenItem);
+		return response;
 	}
 }
