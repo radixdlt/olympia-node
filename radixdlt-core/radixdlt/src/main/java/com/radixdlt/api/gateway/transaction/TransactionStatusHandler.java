@@ -65,43 +65,36 @@ package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
-import com.radixdlt.api.gateway.openapitools.model.LedgerState;
+import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.TransactionStatusRequest;
 import com.radixdlt.api.gateway.openapitools.model.TransactionStatusResponse;
-import com.radixdlt.atom.Txn;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.utils.Bytes;
-
-import java.time.Instant;
 
 final class TransactionStatusHandler extends GatewayJsonRpcHandler<TransactionStatusRequest, TransactionStatusResponse> {
+	private final GatewayModelMapper gatewayModelMapper;
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final TransactionStatusService service;
 
 	@Inject
 	TransactionStatusHandler(
+		GatewayModelMapper gatewayModelMapper,
 		InMemorySystemInfo inMemorySystemInfo,
 		TransactionStatusService service
 	) {
 		super(TransactionStatusRequest.class);
 
+		this.gatewayModelMapper = gatewayModelMapper;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.service = service;
 	}
 
 	@Override
 	public TransactionStatusResponse handleRequest(TransactionStatusRequest request) throws Exception {
-		var bytes = Bytes.fromHexString(request.getTransactionIdentifier().getHash());
-		var txnId = Txn.create(bytes).getId();
+		var txnId = AID.from(request.getTransactionIdentifier().getHash());
 		var response = new TransactionStatusResponse();
 		service.getTransactionStatus(txnId).ifPresent(response::addTransactionItem);
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return response
-			.ledgerState(new LedgerState()
-				.epoch(proof.getEpoch())
-				.round(proof.getView().number())
-				.version(proof.getStateVersion())
-				.timestamp(Instant.ofEpochMilli(proof.timestamp()).toString())
-			);
+		return response.ledgerState(gatewayModelMapper.ledgerState(proof));
 	}
 }
