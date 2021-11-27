@@ -99,9 +99,11 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.ForkConfig;
@@ -192,6 +194,26 @@ public final class CoreModelMapper {
 		} catch (DeserializeException e) {
 			throw new IllegalStateException(e);
 		}
+	}
+
+	public Peer peer(ECPublicKey key) {
+		return new Peer().peerId(addressing.forNodes().of(key));
+	}
+
+	public Peer peer(PeersView.PeerInfo peerInfo) {
+		return new Peer().peerId(addressing.forNodes().of(peerInfo.getNodeId().getPublicKey()));
+	}
+
+	public EntityIdentifier entityIdentifier(REAddr accountAddress) {
+		return new EntityIdentifier().address(addressing.forAccounts().of(accountAddress));
+	}
+
+	public EntityIdentifier entityIdentifier(ECPublicKey validatorKey) {
+		return new EntityIdentifier().address(addressing.forValidators().of(validatorKey));
+	}
+
+	public PublicKey publicKey(ECPublicKey publicKey) {
+		return new PublicKey().hex(publicKey.toHex());
 	}
 
 	public StateIdentifier stateIdentifier(AccumulatorState accumulatorState) {

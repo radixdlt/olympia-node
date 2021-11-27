@@ -16,143 +16,51 @@ package com.radixdlt.api.core.core.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 import java.util.Objects;
 
 
 /**
- * The entity identifiers associated with this node&#39;s private key.
+ * Peer
  */
-@ApiModel(description = "The entity identifiers associated with this node's private key.")
 @JsonPropertyOrder({
-  NetworkStatusResponseNodeIdentifiers.JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER,
-  NetworkStatusResponseNodeIdentifiers.JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER,
-  NetworkStatusResponseNodeIdentifiers.JSON_PROPERTY_PUBLIC_KEY,
-  NetworkStatusResponseNodeIdentifiers.JSON_PROPERTY_P2P_NODE
+  Peer.JSON_PROPERTY_PEER_ID
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T22:42:19.934226-06:00[America/Chicago]")
-public class NetworkStatusResponseNodeIdentifiers {
-  public static final String JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER = "account_entity_identifier";
-  private EntityIdentifier accountEntityIdentifier;
-
-  public static final String JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER = "validator_entity_identifier";
-  private EntityIdentifier validatorEntityIdentifier;
-
-  public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
-  private PublicKey publicKey;
-
-  public static final String JSON_PROPERTY_P2P_NODE = "p2p_node";
-  private Peer p2pNode;
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T22:27:23.585231-06:00[America/Chicago]")
+public class Peer {
+  public static final String JSON_PROPERTY_PEER_ID = "peer_id";
+  private String peerId;
 
 
-  public NetworkStatusResponseNodeIdentifiers accountEntityIdentifier(EntityIdentifier accountEntityIdentifier) {
-    this.accountEntityIdentifier = accountEntityIdentifier;
+  public Peer peerId(String peerId) {
+    this.peerId = peerId;
     return this;
   }
 
    /**
-   * Get accountEntityIdentifier
-   * @return accountEntityIdentifier
+   * Get peerId
+   * @return peerId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_PEER_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityIdentifier getAccountEntityIdentifier() {
-    return accountEntityIdentifier;
+  public String getPeerId() {
+    return peerId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_PEER_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccountEntityIdentifier(EntityIdentifier accountEntityIdentifier) {
-    this.accountEntityIdentifier = accountEntityIdentifier;
-  }
-
-
-  public NetworkStatusResponseNodeIdentifiers validatorEntityIdentifier(EntityIdentifier validatorEntityIdentifier) {
-    this.validatorEntityIdentifier = validatorEntityIdentifier;
-    return this;
-  }
-
-   /**
-   * Get validatorEntityIdentifier
-   * @return validatorEntityIdentifier
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public EntityIdentifier getValidatorEntityIdentifier() {
-    return validatorEntityIdentifier;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorEntityIdentifier(EntityIdentifier validatorEntityIdentifier) {
-    this.validatorEntityIdentifier = validatorEntityIdentifier;
-  }
-
-
-  public NetworkStatusResponseNodeIdentifiers publicKey(PublicKey publicKey) {
-    this.publicKey = publicKey;
-    return this;
-  }
-
-   /**
-   * Get publicKey
-   * @return publicKey
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public PublicKey getPublicKey() {
-    return publicKey;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPublicKey(PublicKey publicKey) {
-    this.publicKey = publicKey;
-  }
-
-
-  public NetworkStatusResponseNodeIdentifiers p2pNode(Peer p2pNode) {
-    this.p2pNode = p2pNode;
-    return this;
-  }
-
-   /**
-   * Get p2pNode
-   * @return p2pNode
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_P2P_NODE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Peer getP2pNode() {
-    return p2pNode;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_P2P_NODE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setP2pNode(Peer p2pNode) {
-    this.p2pNode = p2pNode;
+  public void setPeerId(String peerId) {
+    this.peerId = peerId;
   }
 
 
   /**
-   * Return true if this NetworkStatusResponse_node_identifiers object is equal to o.
+   * Return true if this Peer object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -162,26 +70,20 @@ public class NetworkStatusResponseNodeIdentifiers {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NetworkStatusResponseNodeIdentifiers networkStatusResponseNodeIdentifiers = (NetworkStatusResponseNodeIdentifiers) o;
-    return Objects.equals(this.accountEntityIdentifier, networkStatusResponseNodeIdentifiers.accountEntityIdentifier) &&
-        Objects.equals(this.validatorEntityIdentifier, networkStatusResponseNodeIdentifiers.validatorEntityIdentifier) &&
-        Objects.equals(this.publicKey, networkStatusResponseNodeIdentifiers.publicKey) &&
-        Objects.equals(this.p2pNode, networkStatusResponseNodeIdentifiers.p2pNode);
+    Peer peer = (Peer) o;
+    return Objects.equals(this.peerId, peer.peerId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(accountEntityIdentifier, validatorEntityIdentifier, publicKey, p2pNode);
+    return Objects.hash(peerId);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NetworkStatusResponseNodeIdentifiers {\n");
-    sb.append("    accountEntityIdentifier: ").append(toIndentedString(accountEntityIdentifier)).append("\n");
-    sb.append("    validatorEntityIdentifier: ").append(toIndentedString(validatorEntityIdentifier)).append("\n");
-    sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
-    sb.append("    p2pNode: ").append(toIndentedString(p2pNode)).append("\n");
+    sb.append("class Peer {\n");
+    sb.append("    peerId: ").append(toIndentedString(peerId)).append("\n");
     sb.append("}");
     return sb.toString();
   }

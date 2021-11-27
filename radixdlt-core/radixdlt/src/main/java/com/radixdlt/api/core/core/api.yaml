@@ -1471,6 +1471,8 @@ components:
           resource_hrp_suffix: _rr
     NetworkStatusRequest:
       type: object
+      required:
+        - network_identifier
       properties:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
@@ -1487,6 +1489,7 @@ components:
         - current_state_round
         - current_state_timestamp
         - node_identifiers
+        - peers
       properties:
         pre_genesis_state_identifier:
           description: The ledger state identifier before the genesis transaction.
@@ -1515,6 +1518,7 @@ components:
             - account_entity_identifier
             - validator_entity_identifier
             - public_key
+            - p2p_node
           properties:
             account_entity_identifier:
               "$ref": "#/components/schemas/EntityIdentifier"
@@ -1522,6 +1526,12 @@ components:
               "$ref": "#/components/schemas/EntityIdentifier"
             public_key:
               "$ref": "#/components/schemas/PublicKey"
+            p2p_node:
+              $ref: "#/components/schemas/Peer"
+        peers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Peer"
       example:
         pre_genesis_state_identifier:
           state_version: 0
@@ -1540,6 +1550,7 @@ components:
             address: rdx1qspmwn5n0qyz685f20aevh4wglxxzg9k5t5vql20s4jqa7kj8hz0njclnh0mf
           validator_entity_identifier:
             address: rv1qwm5aymcpqk3az2nlwt9atj8e3sjpd4zarq86nu9vs80453acnuuklp5yl2
+        peers: []
     EntityRequest:
       type: object
       required:
@@ -2844,6 +2855,13 @@ components:
           description: An ECDSA signature of with the given `public_key`. The ECDSA signature
             should be created using the secp256k1 curve and should be encoded in DER format, and
             then encoded as a hex string.
+    Peer:
+      type: object
+      required:
+        - peer_id
+      properties:
+        peer_id:
+          type: string
     Bech32HRPs:
       type: object
       required:

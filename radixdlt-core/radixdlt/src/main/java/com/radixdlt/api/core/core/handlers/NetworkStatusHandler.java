@@ -64,12 +64,10 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
-import com.radixdlt.api.core.core.openapitools.model.PublicKey;
-import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
 import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.Self;
@@ -78,20 +76,21 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.utils.Bytes;
 
 public final class NetworkStatusHandler extends JsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
 	private final Network network;
 	private final REAddr accountAddress;
 	private final ECPublicKey validatorKey;
 	private final InMemorySystemInfo inMemorySystemInfo;
+	private final AccumulatorState preGenesisAccumulatorState;
 	private final AccumulatorState genesisAccumulatorState;
-	private final Addressing addressing;
+	private final CoreModelMapper coreModelMapper;
+	private final PeersView peersView;
 
 	@Inject
 	NetworkStatusHandler(
@@ -101,17 +100,20 @@ public final class NetworkStatusHandler extends JsonRpcHandler<NetworkStatusRequ
 		InMemorySystemInfo inMemorySystemInfo,
 		@Genesis Txn genesisTxn,
 		LedgerAccumulator ledgerAccumulator,
-		Addressing addressing
+		PeersView peersView,
+		CoreModelMapper coreModelMapper
 	) {
 		super(NetworkStatusRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
 		this.accountAddress = accountAddress;
 		this.validatorKey = validatorKey;
 		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.preGenesisAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
 		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
-			new AccumulatorState(0, HashUtils.zero256()), genesisTxn.getId().asHashCode()
+			preGenesisAccumulatorState, genesisTxn.getId().asHashCode()
 		);
-		this.addressing = addressing;
+		this.peersView = peersView;
+		this.coreModelMapper = coreModelMapper;
 	}
 
 	@Override
@@ -121,34 +123,22 @@ public final class NetworkStatusHandler extends JsonRpcHandler<NetworkStatusRequ
 		}
 
 		var currentProof = inMemorySystemInfo.getCurrentProof();
-		return new NetworkStatusResponse()
+		var response = new NetworkStatusResponse()
 			.currentStateEpoch(currentProof.getEpoch())
 			.currentStateRound(currentProof.getView().number())
 			.currentStateTimestamp(currentProof.timestamp())
-			.preGenesisStateIdentifier(
-				new StateIdentifier()
-					.stateVersion(0L)
-					.transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes()))
-			)
-			.genesisStateIdentifier(
-				new StateIdentifier()
-					.stateVersion(genesisAccumulatorState.getStateVersion())
-					.transactionAccumulator(Bytes.toHexString(genesisAccumulatorState.getAccumulatorHash().asBytes()))
-			)
-			.currentStateIdentifier(
-				new StateIdentifier()
-					.stateVersion(currentProof.getStateVersion())
-					.transactionAccumulator(Bytes.toHexString(currentProof.getAccumulatorState().getAccumulatorHash().asBytes()))
-			)
+			.preGenesisStateIdentifier(coreModelMapper.stateIdentifier(preGenesisAccumulatorState))
+			.genesisStateIdentifier(coreModelMapper.stateIdentifier(genesisAccumulatorState))
+			.currentStateIdentifier(coreModelMapper.stateIdentifier(currentProof.getAccumulatorState()))
 			.nodeIdentifiers(
 				new NetworkStatusResponseNodeIdentifiers()
-					.accountEntityIdentifier(
-						new EntityIdentifier().address(addressing.forAccounts().of(accountAddress))
-					)
-					.validatorEntityIdentifier(
-						new EntityIdentifier().address(addressing.forValidators().of(validatorKey))
-					)
-					.publicKey(new PublicKey().hex(validatorKey.toHex()))
+					.accountEntityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
+					.validatorEntityIdentifier(coreModelMapper.entityIdentifier(validatorKey))
+					.publicKey(coreModelMapper.publicKey(validatorKey))
+					.p2pNode(coreModelMapper.peer(validatorKey))
 			);
+
+		peersView.peers().map(coreModelMapper::peer).forEach(response::addPeersItem);
+		return response;
 	}
 }
