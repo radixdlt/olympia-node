@@ -66,41 +66,39 @@ package com.radixdlt.api.gateway.account;
 import com.google.inject.Inject;
 import com.radixdlt.api.gateway.BerkeleyAccountTransactionStore;
 import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
+import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.AccountTransactionsRequest;
 import com.radixdlt.api.gateway.openapitools.model.AccountTransactionsResponse;
-import com.radixdlt.api.gateway.openapitools.model.LedgerState;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 
 class AccountTransactionsHandler extends GatewayJsonRpcHandler<AccountTransactionsRequest, AccountTransactionsResponse> {
 	private final InMemorySystemInfo inMemorySystemInfo;
-	private final Addressing addressing;
 	private final BerkeleyAccountTxHistoryStore txHistoryStore;
 	private final BerkeleyAccountTransactionStore accountTransactionStore;
+	private final GatewayModelMapper gatewayModelMapper;
 
 	@Inject
 	AccountTransactionsHandler(
 		InMemorySystemInfo inMemorySystemInfo,
-		Addressing addressing,
 		BerkeleyAccountTxHistoryStore txHistoryStore,
-		BerkeleyAccountTransactionStore accountTransactionStore
+		BerkeleyAccountTransactionStore accountTransactionStore,
+		GatewayModelMapper gatewayModelMapper
 	) {
 		super(AccountTransactionsRequest.class);
 
 		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.addressing = addressing;
 		this.txHistoryStore = txHistoryStore;
 		this.accountTransactionStore = accountTransactionStore;
+		this.gatewayModelMapper = gatewayModelMapper;
 	}
 
 	@Override
 	public AccountTransactionsResponse handleRequest(AccountTransactionsRequest request) throws Exception {
-		var accountAddress = addressing.forAccounts().parse(request.getAccountIdentifier().getAddress());
+		var accountAddress = gatewayModelMapper.account(request.getAccountIdentifier());
 		var cursor = Optional.ofNullable(request.getCursor())
 			.map(Long::parseLong).map(OptionalLong::of).orElse(OptionalLong.empty());
 		var limit = request.getLimit() == null ? 10 : request.getLimit();
@@ -119,12 +117,6 @@ class AccountTransactionsHandler extends GatewayJsonRpcHandler<AccountTransactio
 		}
 
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return response
-			.ledgerState(new LedgerState()
-				.epoch(proof.getEpoch())
-				.round(proof.getView().number())
-				.version(proof.getStateVersion())
-				.timestamp(Instant.ofEpochMilli(proof.timestamp()).toString())
-			);
+		return response.ledgerState(gatewayModelMapper.ledgerState(proof));
 	}
 }

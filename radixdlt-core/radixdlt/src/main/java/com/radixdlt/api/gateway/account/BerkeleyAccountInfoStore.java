@@ -66,8 +66,12 @@ package com.radixdlt.api.gateway.account;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.JSON;
 import com.radixdlt.api.gateway.openapitools.model.AccountBalances;
+import com.radixdlt.api.gateway.openapitools.model.AccountStakeEntry;
+import com.radixdlt.api.gateway.openapitools.model.TokenAmount;
+import com.radixdlt.api.gateway.openapitools.model.ValidatorIdentifier;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.Bucket;
@@ -100,8 +104,10 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -125,9 +131,15 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 	);
 	private final Map<ResourceType, Database> databases = new HashMap<>();
 	private Database validatorStakes;
+	private final GatewayModelMapper gatewayModelMapper;
 
 	@Inject
-	BerkeleyAccountInfoStore(Addressing addressing, Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
+	BerkeleyAccountInfoStore(
+		GatewayModelMapper gatewayModelMapper,
+		Addressing addressing,
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider
+	) {
+		this.gatewayModelMapper = gatewayModelMapper;
 		this.addressing = addressing;
 		this.radixEngineProvider = radixEngineProvider;
 	}
@@ -145,7 +157,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		return ownership.multiply(totalStake).divide(totalOwnership);
 	}
 
-	public JSONArray getAccountStakes(REAddr addr) {
+	public List<AccountStakeEntry> getAccountStakes(REAddr addr) {
 		var key = new DatabaseEntry(addr.getBytes());
 		var value = new DatabaseEntry();
 		var stakes = new TreeMap<String, JSONObject>();
@@ -183,19 +195,15 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			}
 		}
 
-		var result = new JSONArray();
-		stakes.forEach((validator, json) -> result.put(
-			new JSONObject()
-				.put("validator_address", validator)
-				.put("delegated_stake", new JSONObject()
-					.put("value", json.getString("value"))
-					.put("token_identifier", new JSONObject()
-						.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
-					)
+		var list = new ArrayList<AccountStakeEntry>();
+		stakes.forEach((validator, json) -> list.add(new AccountStakeEntry()
+				.validatorIdentifier(new ValidatorIdentifier().address(validator))
+				.delegatedStake(new TokenAmount()
+					.tokenIdentifier(gatewayModelMapper.nativeTokenIdentifier())
+					.value(json.getString("value"))
 				)
-			)
-		);
-		return result;
+			));
+		return list;
 	}
 
 	public JSONArray getAccountUnstakes(REAddr addr) {
@@ -247,8 +255,8 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 	private JSONObject getStakedAndUnstakingBalance(REAddr addr) {
 		var stakes = getAccountStakes(addr);
 		var lockedXrdAmount = BigInteger.ZERO;
-		for (int i = 0; i < stakes.length(); i++) {
-			var amountString = stakes.getJSONObject(i).getJSONObject("delegated_stake").getString("value");
+		for (AccountStakeEntry stake : stakes) {
+			var amountString = stake.getDelegatedStake().getValue();
 			lockedXrdAmount = lockedXrdAmount.add(new BigInteger(amountString));
 		}
 
