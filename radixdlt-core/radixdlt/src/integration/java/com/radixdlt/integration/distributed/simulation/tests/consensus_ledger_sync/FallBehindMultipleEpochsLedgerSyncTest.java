@@ -147,11 +147,12 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
 
 		// node must be synced up to some state after the first epoch
 		// and must not fall behind too much
-		assertTrue(nodeCounters.get(CounterType.SYNC_TARGET_CURRENT_DIFF) < 200);
-		assertTrue(nodeCounters.get(CounterType.SYNC_PROCESSED) > 200);
+		var diff = nodeCounters.get(CounterType.SYNC_TARGET_STATE_VERSION) - nodeCounters.get(CounterType.SYNC_CURRENT_STATE_VERSION);
+		assertThat(diff).isLessThan(200);
+		assertTrue(nodeCounters.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED) > 200);
 		assertTrue(nodeCounters.get(CounterType.LEDGER_STATE_VERSION) > 200);
 		// just to be sure that node wasn't a validator
-		assertEquals(0, nodeCounters.get(CounterType.BFT_PROPOSALS_MADE));
-		assertEquals(0, nodeCounters.get(CounterType.BFT_PROCESSED));
+		assertEquals(0, nodeCounters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT));
+		assertEquals(0, nodeCounters.get(CounterType.BFT_COMMITTED_VERTICES));
 	}
 }

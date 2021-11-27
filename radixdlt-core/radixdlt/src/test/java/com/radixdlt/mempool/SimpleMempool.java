@@ -155,8 +155,7 @@ public final class SimpleMempool implements Mempool<Txn> {
 	}
 
 	private void updateCounts() {
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_COUNT, this.data.size());
-		this.counters.set(SystemCounters.CounterType.MEMPOOL_MAXCOUNT, maxSize);
+		this.counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, this.data.size());
 	}
 
 	@Override

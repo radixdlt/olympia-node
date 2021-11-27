@@ -104,13 +104,13 @@ public class MovingWindowValidatorsTest {
 			.runUntil(DeterministicTest.hasReachedEpochView(EpochView.of(maxEpoch, highView)));
 
 		LinkedList<SystemCounters> testCounters = systemCounters(bftTest);
-		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_INDIRECT_PARENT)).containsOnly(0L);
-		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_TIMEOUT)).containsOnly(0L);
+		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS)).containsOnly(0L);
+		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT)).containsOnly(0L);
 
 		long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, highView.number());
 
 		assertThat(testCounters)
-			.extracting(sc -> sc.get(CounterType.BFT_PROCESSED))
+			.extracting(sc -> sc.get(CounterType.BFT_COMMITTED_VERTICES))
 			.allMatch(between(maxCount - maxEpoch, maxCount));
 	}
 

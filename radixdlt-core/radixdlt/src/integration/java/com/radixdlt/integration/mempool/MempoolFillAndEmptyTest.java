@@ -137,7 +137,7 @@ public final class MempoolFillAndEmptyTest {
 	}
 
     private void fillAndEmptyMempool() {
-        while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) < 1000) {
+        while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) < 1000) {
             ControlledMessage msg = network.nextMessage().value();
             processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
             if (msg.message() instanceof EpochViewUpdate) {
@@ -148,12 +148,12 @@ public final class MempoolFillAndEmptyTest {
         for (int i = 0; i < 10000; i++) {
             ControlledMessage msg = network.nextMessage().value();
             processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-            if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT) == 0) {
+            if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) == 0) {
                 break;
             }
         }
 
-        assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isZero();
+        assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
     }
 
     @Test

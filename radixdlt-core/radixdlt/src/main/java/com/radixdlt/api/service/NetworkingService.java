@@ -65,9 +65,6 @@
 package com.radixdlt.api.service;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
@@ -83,10 +80,8 @@ public final class NetworkingService {
 
 	@Inject
 	public NetworkingService(
-		@Self ECPublicKey self,
 		PeersView peersView,
 		AddressBook addressBook,
-		P2PConfig p2PConfig,
 		Addressing addressing
 	) {
 		this.peersView = peersView;

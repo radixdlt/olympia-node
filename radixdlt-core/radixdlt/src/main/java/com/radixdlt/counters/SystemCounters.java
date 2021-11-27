@@ -74,28 +74,32 @@ public interface SystemCounters {
 	enum CounterType {
 		// Please keep these sorted
 
-		BFT_CONSENSUS_EVENTS("bft.consensus_events"),
-		BFT_INDIRECT_PARENT("bft.indirect_parent"),
-		BFT_PROCESSED("bft.processed"),
-		BFT_PROPOSALS_MADE("bft.proposals_made"),
+		BFT_EVENTS_RECEIVED("bft.events_received"),
+		BFT_COMMITTED_VERTICES("bft.committed_vertices"),
 		/** Number of proposals rejected. */
-		BFT_REJECTED("bft.rejected"),
-		/** Number of times a view-timeout message was broadcast. */
-		BFT_TIMEOUT("bft.timeout"),
-		/** Number of views that timed out. Rescheduled timeouts of the same view are not counted */
-		BFT_TIMED_OUT_VIEWS("bft.timed_out_views"),
-		/** Number of view-timeout quorums formed. */
-		BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
-		BFT_STATE_VERSION("bft.state_version"),
-		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
-		BFT_VERTEX_STORE_FORKS("bft.vertex_store_forks"),
-		BFT_VERTEX_STORE_REBUILDS("bft.vertex_store_rebuilds"),
+		BFT_NO_VOTES_SENT("bft.no_votes_sent"),
 		/** Number of vote quorums formed. */
 		BFT_VOTE_QUORUMS("bft.vote_quorums"),
+		/** Number of view-timeout quorums formed. */
+		BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
+
+		/** Number of times a view-timeout message was broadcast. */
+		BFT_PACEMAKER_TIMEOUTS_SENT("bft.pacemaker.timeouts_sent"),
+		BFT_PACEMAKER_ROUND("bft.pacemaker.round"),
+		BFT_PACEMAKER_PROPOSED_TRANSACTIONS("bft.pacemaker.proposed_transactions"),
+		BFT_PACEMAKER_PROPOSALS_SENT("bft.pacemaker.proposals_sent"),
+		BFT_PACEMAKER_TIMED_OUT_ROUNDS("bft.pacemaker.timed_out_rounds"),
+
 		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
+		BFT_SYNC_REQUESTS_RECEIVED("bft.sync.requests_received"),
 		BFT_SYNC_REQUEST_TIMEOUTS("bft.sync.request_timeouts"),
 
-		PACEMAKER_VIEW("pacemaker.view"),
+		/** Number of views that timed out. Rescheduled timeouts of the same view are not counted */
+		BFT_VERTEX_STORE_SIZE("bft.vertex_store.size"),
+		BFT_VERTEX_STORE_FORKS("bft.vertex_store.forks"),
+		BFT_VERTEX_STORE_REBUILDS("bft.vertex_store.rebuilds"),
+		BFT_VERTEX_STORE_INDIRECT_PARENTS("bft.vertex_store.indirect_parents"),
+
 
 		// Count of database accesses
 		COUNT_BDB_LEDGER_COMMIT("count.bdb.ledger.commit"),
@@ -176,21 +180,16 @@ public interface SystemCounters {
 		LEDGER_SYNC_COMMANDS_PROCESSED("ledger.sync_commands_processed"),
 		LEDGER_BFT_COMMANDS_PROCESSED("ledger.bft_commands_processed"),
 
-		SYNC_LAST_READ_MILLIS("sync.last_read_millis"),
-		SYNC_INVALID_COMMANDS_RECEIVED("sync.invalid_commands_received"),
-		SYNC_PROCESSED("sync.processed"),
+		SYNC_INVALID_RESPONSES_RECEIVED("sync.invalid_responses_received"),
+		SYNC_VALID_RESPONSES_RECEIVED("sync.valid_responses_received"),
+		SYNC_REMOTE_REQUESTS_RECEIVED("sync.remote_requests_received"),
+		SYNC_CURRENT_STATE_VERSION("sync.current_state_version"),
 		SYNC_TARGET_STATE_VERSION("sync.target_state_version"),
-		SYNC_TARGET_CURRENT_DIFF("sync.target_current_diff"),
-		SYNC_REMOTE_REQUESTS_PROCESSED("sync.remote_requests_processed"),
 
-		MEMPOOL_COUNT("mempool.count"),
-		MEMPOOL_MAXCOUNT("mempool.maxcount"),
-		MEMPOOL_RELAYER_SENT_COUNT("mempool.relayer_sent_count"),
+		MEMPOOL_CURRENT_SIZE("mempool.current_size"),
+		MEMPOOL_RELAYS_SENT("mempool.relays_sent"),
 		MEMPOOL_ADD_SUCCESS("mempool.add_success"),
-		MEMPOOL_PROPOSED_TRANSACTION("mempool.proposed_transaction"),
-		MEMPOOL_ERRORS_HOOK("mempool.errors.hook"),
-		MEMPOOL_ERRORS_CONFLICT("mempool.errors.conflict"),
-		MEMPOOL_ERRORS_OTHER("mempool.errors.other"),
+		MEMPOOL_ADD_FAILURE("mempool.add_failure"),
 
 		RADIX_ENGINE_INVALID_PROPOSED_COMMANDS("radix_engine.invalid_proposed_commands"),
 		RADIX_ENGINE_USER_TRANSACTIONS("radix_engine.user_transactions"),
@@ -208,13 +207,9 @@ public interface SystemCounters {
 		MESSAGES_OUTBOUND_PROCESSED("messages.outbound.processed"),
 		MESSAGES_OUTBOUND_SENT("messages.outbound.sent"),
 
-		NETWORKING_UDP_DROPPED_MESSAGES("networking.udp.dropped_messages"),
 		NETWORKING_TCP_DROPPED_MESSAGES("networking.tcp.dropped_messages"),
-		NETWORKING_TCP_IN_OPENED("networking.tcp.in_opened"),
-		NETWORKING_TCP_OUT_OPENED("networking.tcp.out_opened"),
-		NETWORKING_TCP_CLOSED("networking.tcp.closed"),
-		NETWORKING_SENT_BYTES("networking.sent_bytes"),
-		NETWORKING_RECEIVED_BYTES("networking.received_bytes"),
+		NETWORKING_BYTES_SENT("networking.bytes_sent"),
+		NETWORKING_BYTES_RECEIVED("networking.bytes_received"),
 		NETWORKING_P2P_ACTIVE_INBOUND_CHANNELS("networking.p2p.active_inbound_channels"),
 		NETWORKING_P2P_ACTIVE_OUTBOUND_CHANNELS("networking.p2p.active_outbound_channels"),
 		NETWORKING_P2P_ACTIVE_CHANNELS("networking.p2p.active_channels"),

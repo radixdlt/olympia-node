@@ -115,7 +115,7 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
 		final var results = runningTest.awaitCompletion();
 
 		final var statistics = runningTest.getNetwork().getSystemCounters().values().stream()
-			.map(s -> LongStream.of(s.get(CounterType.BFT_TIMEOUT), s.get(CounterType.BFT_TIMED_OUT_VIEWS)))
+			.map(s -> LongStream.of(s.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT), s.get(CounterType.BFT_PACEMAKER_TIMED_OUT_ROUNDS)))
 			.map(LongStream::summaryStatistics)
 			.collect(ImmutableList.toImmutableList());
 

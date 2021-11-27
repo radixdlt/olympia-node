@@ -87,7 +87,7 @@ public class NetworkInfoService {
 	private static final long STATUS_AVERAGING_FACTOR = 3L;       // averaging time in multiples of collecting interval
 
 	public static final CounterType THROUGHPUT_KEY = CounterType.COUNT_BDB_LEDGER_COMMIT;
-	public static final CounterType DEMAND_KEY = CounterType.MEMPOOL_COUNT;
+	public static final CounterType DEMAND_KEY = CounterType.MEMPOOL_CURRENT_SIZE;
 	public static final CounterType LEDGER_KEY = CounterType.LEDGER_STATE_VERSION;
 	public static final CounterType TARGET_KEY = CounterType.SYNC_TARGET_STATE_VERSION;
 

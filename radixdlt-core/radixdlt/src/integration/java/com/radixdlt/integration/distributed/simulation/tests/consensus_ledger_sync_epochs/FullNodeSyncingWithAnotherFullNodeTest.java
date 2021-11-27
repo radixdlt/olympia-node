@@ -146,8 +146,8 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 			.getSystemCounters().get(runningTest.getNetwork().getNodes().get(NODE_UNDER_TEST));
 
 		// just to be sure that node wasn't a validator
-		assertEquals(0, testNodeCounters.get(CounterType.BFT_PROPOSALS_MADE));
-		assertEquals(0, testNodeCounters.get(CounterType.BFT_PROCESSED));
+		assertEquals(0, testNodeCounters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT));
+		assertEquals(0, testNodeCounters.get(CounterType.BFT_COMMITTED_VERTICES));
 
 		final var syncNodeCounters = runningTest.getNetwork()
 			.getSystemCounters().get(runningTest.getNetwork().getNodes().get(NON_VALIDATOR_SYNC_NODE));
@@ -155,7 +155,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
 		// make sure that the sync target node actually processed all the requests from test node
 		// and test node didn't communicate directly with a validator
 		assertThat(
-			syncNodeCounters.get(CounterType.SYNC_REMOTE_REQUESTS_PROCESSED) - testNodeCounters.get(CounterType.SYNC_PROCESSED)
+			syncNodeCounters.get(CounterType.SYNC_REMOTE_REQUESTS_RECEIVED) - testNodeCounters.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED)
 		).isBetween(-4L, 4L); // small discrepancies are fine
 	}
 

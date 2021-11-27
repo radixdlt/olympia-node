@@ -161,16 +161,12 @@ public final class RemoteSyncService {
 
 		log.trace("REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}", verifiable, remoteCurrentHeader, sender);
 
-		systemCounters.increment(CounterType.SYNC_REMOTE_REQUESTS_PROCESSED);
+		systemCounters.increment(CounterType.SYNC_REMOTE_REQUESTS_RECEIVED);
 		syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
 	}
 
 	private VerifiedTxnsAndProof getCommittedCommandsForSyncRequest(DtoLedgerProof startHeader) {
-		final var start = System.currentTimeMillis();
-		final var result = committedReader.getNextCommittedTxns(startHeader);
-		final var finish = System.currentTimeMillis();
-		systemCounters.set(CounterType.SYNC_LAST_READ_MILLIS, finish - start);
-		return result;
+		return committedReader.getNextCommittedTxns(startHeader);
 	}
 
 	public RemoteEventProcessor<StatusRequest> statusRequestEventProcessor() {

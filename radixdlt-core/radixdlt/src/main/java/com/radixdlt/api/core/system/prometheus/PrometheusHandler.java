@@ -64,8 +64,14 @@
 package com.radixdlt.api.core.system.prometheus;
 
 import com.google.inject.Inject;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
-public class PrometheusHandler implements PrometheusGetHandler {
+public class PrometheusHandler implements HttpHandler {
+	// 	https://prometheus.io/docs/instrumenting/exposition_formats/
+	private static final String CONTENT_TYPE_TEXT_PLAIN_004 = "text/plain; version=0.0.4;charset=utf-8";
+
 	private final PrometheusService metricsService;
 
 	@Inject
@@ -74,7 +80,17 @@ public class PrometheusHandler implements PrometheusGetHandler {
 	}
 
 	@Override
-	public String handleRequest() {
-		return metricsService.getMetrics();
+	public void handleRequest(HttpServerExchange exchange) throws Exception {
+		if (exchange.isInIoThread()) {
+			exchange.dispatch(this);
+			return;
+		}
+
+		exchange.startBlocking();
+
+		var text = metricsService.getMetrics();
+		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_TEXT_PLAIN_004);
+		exchange.setStatusCode(200);
+		exchange.getResponseSender().send(text);
 	}
 }

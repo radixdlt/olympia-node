@@ -5,7 +5,7 @@ info:
 servers:
   - url: 'localhost:3333'
 paths:
-  /version:
+  /system/version:
     get:
       summary: 'Get Version'
       responses:
@@ -21,7 +21,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /health:
+  /system/health:
     get:
       summary: 'Get Health'
       responses:
@@ -39,7 +39,7 @@ paths:
                 $ref: '#/components/schemas/Error'
   /system/configuration:
     get:
-      summary: 'Get System Configuration'
+      summary: 'Get Configuration'
       responses:
         '200':
           description: 'System Configuration'
@@ -55,7 +55,7 @@ paths:
                 $ref: '#/components/schemas/Error'
   /system/metrics:
     get:
-      summary: 'Get System Metrics'
+      summary: 'Get Metrics'
       responses:
         '200':
           description: 'System Metrics'
@@ -109,8 +109,315 @@ components:
             - OUT_OF_SYNC
     SystemConfigurationResponse:
       type: object
+      required:
+        - networking
+        - bft
+      properties:
+        mempool:
+          $ref: "#/components/schemas/MempoolConfiguration"
+        bft:
+          $ref: "#/components/schemas/BFTConfiguration"
+        sync:
+          $ref: "#/components/schemas/SyncConfiguration"
+        networking:
+          $ref: "#/components/schemas/NetworkingConfiguration"
     SystemMetricsResponse:
       type: object
+      required:
+        - mempool
+        - bft
+        - sync
+      properties:
+        bft:
+          $ref: "#/components/schemas/BFTMetrics"
+        sync:
+          $ref: "#/components/schemas/SyncMetrics"
+        mempool:
+          $ref: "#/components/schemas/MempoolMetrics"
+        networking:
+          $ref: "#/components/schemas/NetworkingMetrics"
+    NetworkingMetrics:
+      type: object
+      required:
+        - bytes_sent
+        - bytes_received
+        - inbound
+        - outbound
+      properties:
+        bytes_sent:
+          type: integer
+          format: int64
+        bytes_received:
+          type: integer
+          format: int64
+        inbound:
+          $ref: "#/components/schemas/NetworkingInboundMetrics"
+        outbound:
+          $ref: "#/components/schemas/NetworkingOutboundMetrics"
+    NetworkingInboundMetrics:
+      type: object
+      required:
+        - processed
+        - discarded
+        - received
+      properties:
+        processed:
+          type: integer
+          format: int64
+        discarded:
+          type: integer
+          format: int64
+        received:
+          type: integer
+          format: int64
+    NetworkingOutboundMetrics:
+      type: object
+      required:
+        - processed
+        - aborted
+        - pending
+        - sent
+      properties:
+        processed:
+          type: integer
+          format: int64
+        aborted:
+          type: integer
+          format: int64
+        pending:
+          type: integer
+          format: int64
+        sent:
+          type: integer
+          format: int64
+    BFTMetrics:
+      type: object
+      required:
+        - events_received
+        - committed_vertices
+        - no_votes_sent
+        - vote_quorums
+        - timeout_quorums
+        - pacemaker
+        - sync
+        - vertex_store
+      properties:
+        events_received:
+          type: integer
+          format: int64
+        committed_vertices:
+          type: integer
+          format: int64
+        no_votes_sent:
+          type: integer
+          format: int64
+        vote_quorums:
+          type: integer
+          format: int64
+        timeout_quorums:
+          type: integer
+          format: int64
+        pacemaker:
+          $ref: "#/components/schemas/BFTPacemakerMetrics"
+        sync:
+          $ref: "#/components/schemas/BFTSyncMetrics"
+        vertex_store:
+          $ref: "#/components/schemas/BFTVertexStoreMetrics"
+    BFTPacemakerMetrics:
+      type: object
+      required:
+        - timeouts_sent
+        - round
+        - proposed_transactions
+        - proposals_sent
+        - timed_out_rounds
+      properties:
+        timeouts_sent:
+          type: integer
+          format: int64
+        round:
+          type: integer
+          format: int64
+        proposed_transactions:
+          type: integer
+          format: int64
+        proposals_sent:
+          type: integer
+          format: int64
+        timed_out_rounds:
+          type: integer
+          format: int64
+    BFTSyncMetrics:
+      type: object
+      required:
+        - requests_sent
+        - requests_received
+        - request_timeouts
+      properties:
+        requests_sent:
+          type: integer
+          format: int64
+        requests_received:
+          type: integer
+          format: int64
+        request_timeouts:
+          type: integer
+          format: int64
+    BFTVertexStoreMetrics:
+      type: object
+      required:
+        - size
+        - forks
+        - rebuilds
+        - indirect_parents
+      properties:
+        size:
+          type: integer
+          format: int64
+        forks:
+          type: integer
+          format: int64
+        rebuilds:
+          type: integer
+          format: int64
+        indirect_parents:
+          type: integer
+          format: int64
+    SyncMetrics:
+      type: object
+      required:
+        - current_state_version
+        - target_state_version
+        - valid_responses_received
+        - invalid_responses_received
+        - remote_requests_received
+      properties:
+        current_state_version:
+          type: integer
+          format: int64
+        target_state_version:
+          type: integer
+          format: int64
+        valid_responses_received:
+          type: integer
+          format: int64
+        invalid_responses_received:
+          type: integer
+          format: int64
+        remote_requests_received:
+          type: integer
+          format: int64
+    MempoolMetrics:
+      type: object
+      required:
+        - current_size
+        - add_success
+        - add_failure
+        - relays_sent
+      properties:
+        current_size:
+          type: integer
+          format: int64
+        add_success:
+          type: integer
+          format: int64
+        add_failure:
+          type: integer
+          format: int64
+        relays_sent:
+          type: integer
+          format: int64
+    MempoolConfiguration:
+      type: object
+      required:
+        - max_size
+        - throttle
+      properties:
+        max_size:
+          type: integer
+        throttle:
+          type: integer
+          format: int64
+    BFTConfiguration:
+      type: object
+      required:
+        - pacemaker_timeout
+        - bft_sync_patience
+      properties:
+        pacemaker_timeout:
+          type: integer
+          format: int64
+        bft_sync_patience:
+          type: integer
+    SyncConfiguration:
+      type: object
+      required:
+        - sync_check_interval
+        - sync_check_max_peers
+        - request_timeout
+        - ledger_status_update_max_peers_to_notify
+        - max_ledger_updates_rate
+      properties:
+        sync_check_interval:
+          type: integer
+          format: int64
+        sync_check_max_peers:
+          type: integer
+        request_timeout:
+          type: integer
+          format: int64
+        ledger_status_update_max_peers_to_notify:
+          type: integer
+        max_ledger_updates_rate:
+          type: number
+    NetworkingConfiguration:
+      type: object
+      required:
+        - default_port
+        - discovery_interval
+        - listen_address
+        - listen_port
+        - broadcast_port
+        - peer_connection_timeout
+        - max_inbound_channels
+        - max_outbound_channels
+        - channel_buffer_size
+        - peer_liveness_check_interval
+        - ping_timeout
+        - seed_nodes
+        - node_address
+      properties:
+        default_port:
+          type: integer
+        discovery_interval:
+          type: integer
+          format: int64
+        listen_address:
+          type: string
+        listen_port:
+          type: integer
+        broadcast_port:
+          type: integer
+        peer_connection_timeout:
+          type: integer
+        max_inbound_channels:
+          type: integer
+        max_outbound_channels:
+          type: integer
+        channel_buffer_size:
+          type: integer
+        peer_liveness_check_interval:
+          type: integer
+          format: int64
+        ping_timeout:
+          type: integer
+          format: int64
+        seed_nodes:
+          type: array
+          items:
+            type: string
+        node_address:
+          type: string
     Error:
       type: object
       required:

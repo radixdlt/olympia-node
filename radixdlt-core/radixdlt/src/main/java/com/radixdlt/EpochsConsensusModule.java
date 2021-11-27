@@ -362,12 +362,14 @@ public class EpochsConsensusModule extends AbstractModule {
 	@Provides
 	private BFTSyncRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory(
 		RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher,
-		RemoteEventDispatcher<GetVerticesResponse> responseDispatcher
+		RemoteEventDispatcher<GetVerticesResponse> responseDispatcher,
+		SystemCounters systemCounters
 	) {
 		return vertexStore -> new VertexStoreBFTSyncRequestProcessor(
 			vertexStore,
 			errorResponseDispatcher,
-			responseDispatcher
+			responseDispatcher,
+			systemCounters
 		);
 	}
 

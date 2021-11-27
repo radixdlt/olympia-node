@@ -210,7 +210,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			Object processedTxn;
 			try {
 				processedTxn = mempool.add(txn);
-				systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
+				systemCounters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 			} catch (MempoolDuplicateException e) {
 				// Idempotent commands
 				log.trace("Mempool duplicate txn: {} origin: {}", txn, origin);
@@ -237,7 +237,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		// TODO: only return commands which will not cause a missing dependency error
 		final List<Txn> txns = mempool.getTxns(maxSigsPerRound.orElse(50), cmds);
-		systemCounters.add(SystemCounters.CounterType.MEMPOOL_PROPOSED_TRANSACTION, txns.size());
 		return txns;
 	}
 
@@ -412,7 +411,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// TODO: refactor mempool to be less generic and make this more efficient
 		// TODO: Move this into engine
 		List<Txn> removed = this.mempool.committed(txCommitted);
-		systemCounters.set(SystemCounters.CounterType.MEMPOOL_COUNT, mempool.getCount());
+		systemCounters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 		if (!removed.isEmpty()) {
 			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
 			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);

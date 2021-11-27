@@ -113,7 +113,7 @@ final class MessagePreprocessor {
 
 	Result<MessageFromPeer<Message>> process(InboundMessage inboundMessage) {
 		final byte[] messageBytes = inboundMessage.message();
-		this.counters.add(CounterType.NETWORKING_RECEIVED_BYTES, messageBytes.length);
+		this.counters.add(CounterType.NETWORKING_BYTES_RECEIVED, messageBytes.length);
 		final var result = deserialize(inboundMessage, messageBytes)
 			.flatMap(message -> processMessage(inboundMessage.source(), message));
 		this.counters.increment(CounterType.MESSAGES_INBOUND_RECEIVED);

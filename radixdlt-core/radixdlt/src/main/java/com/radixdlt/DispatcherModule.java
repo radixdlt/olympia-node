@@ -160,7 +160,7 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
 				MempoolAddFailure.class,
-				m -> CounterType.MEMPOOL_ERRORS_OTHER
+				m -> CounterType.MEMPOOL_ADD_FAILURE
 			))
 			.in(Scopes.SINGLETON);
 
@@ -177,7 +177,7 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<ScheduledMempoolFill>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(ScheduledMempoolFill.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<NoVote>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(NoVote.class, v -> CounterType.BFT_REJECTED))
+			.toProvider(Dispatchers.dispatcherProvider(NoVote.class, v -> CounterType.BFT_NO_VOTES_SENT))
 			.in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(
@@ -359,7 +359,7 @@ public class DispatcherModule extends AbstractModule {
 				systemCounters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
 			}
 			if (!update.getInserted().getVertex().hasDirectParent()) {
-				systemCounters.increment(CounterType.BFT_INDIRECT_PARENT);
+				systemCounters.increment(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
 			}
 			systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreSize());
 			dispatcher.dispatch(update);
@@ -375,7 +375,6 @@ public class DispatcherModule extends AbstractModule {
 		var dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
 		return update -> {
 			long stateVersion = update.getVertexStoreState().getRootHeader().getStateVersion();
-			systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
 			systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreState().getVertices().size());
 			systemCounters.increment(CounterType.BFT_VERTEX_STORE_REBUILDS);
 			dispatcher.dispatch(update);
@@ -400,7 +399,7 @@ public class DispatcherModule extends AbstractModule {
 		SystemCounters systemCounters
 	) {
 		return commit -> {
-			systemCounters.add(CounterType.SYNC_PROCESSED, commit.getTxns().size());
+			systemCounters.add(CounterType.SYNC_VALID_RESPONSES_RECEIVED, commit.getTxns().size());
 			processors.forEach(e -> e.process(commit));
 		};
 	}
@@ -414,18 +413,14 @@ public class DispatcherModule extends AbstractModule {
 	) {
 		if (asyncProcessors.isEmpty()) {
 			return commit -> {
-				long stateVersion = commit.getVertexStoreState().getRootHeader().getStateVersion();
-				systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
-				systemCounters.add(CounterType.BFT_PROCESSED, commit.getCommitted().size());
+				systemCounters.add(CounterType.BFT_COMMITTED_VERTICES, commit.getCommitted().size());
 				systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
 				processors.forEach(e -> e.process(commit));
 			};
 		} else {
 			var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
 			return commit -> {
-				long stateVersion = commit.getVertexStoreState().getRootHeader().getStateVersion();
-				systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
-				systemCounters.add(CounterType.BFT_PROCESSED, commit.getCommitted().size());
+				systemCounters.add(CounterType.BFT_COMMITTED_VERTICES, commit.getCommitted().size());
 				systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
 				processors.forEach(e -> e.process(commit));
 				dispatcher.dispatch(commit);

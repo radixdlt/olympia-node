@@ -154,7 +154,7 @@ public class SyncServiceModule extends AbstractModule {
 	) {
 		return (sender, resp) -> {
 			peerControl.banPeer(NodeId.fromPublicKey(sender.getKey()), Duration.ofMinutes(10), "Received invalid sync response");
-			counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
+			counters.increment(CounterType.SYNC_INVALID_RESPONSES_RECEIVED);
 		};
 	}
 

@@ -284,15 +284,15 @@ public class MempoolRelayTest {
 		processForCount(100000);
 
 		// assert that validators have an empty mempool, but not the full nodes
-		this.validators.forEach(n -> assertEquals(0L, getCounter(n, CounterType.MEMPOOL_COUNT)));
-		this.fullNodes.forEach(n -> assertTrue(getCounter(n, CounterType.MEMPOOL_COUNT) >= 1L));
+		this.validators.forEach(n -> assertEquals(0L, getCounter(n, CounterType.MEMPOOL_CURRENT_SIZE)));
+		this.fullNodes.forEach(n -> assertTrue(getCounter(n, CounterType.MEMPOOL_CURRENT_SIZE) >= 1L));
 
 		// trigger mempool relay on the full nodes and process some more messages
 		this.fullNodes.forEach(n -> dispatch(n, MempoolRelayTrigger.class, MempoolRelayTrigger.create()));
 		processForCount(10000);
 
 		// at this point all mempools should be empty
-		this.validators.forEach(n -> assertEquals(0L, getCounter(n, CounterType.MEMPOOL_COUNT)));
-		this.fullNodes.forEach(n -> assertEquals(0L, getCounter(n, CounterType.MEMPOOL_COUNT)));
+		this.validators.forEach(n -> assertEquals(0L, getCounter(n, CounterType.MEMPOOL_CURRENT_SIZE)));
+		this.fullNodes.forEach(n -> assertEquals(0L, getCounter(n, CounterType.MEMPOOL_CURRENT_SIZE)));
 	}
 }

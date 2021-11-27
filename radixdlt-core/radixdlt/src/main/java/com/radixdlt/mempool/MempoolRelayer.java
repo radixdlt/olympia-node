@@ -147,7 +147,7 @@ public final class MempoolRelayer {
 		peers.stream()
 			.limit(maxPeers)
 			.forEach(peer -> {
-				counters.add(CounterType.MEMPOOL_RELAYER_SENT_COUNT, txns.size());
+				counters.add(CounterType.MEMPOOL_RELAYS_SENT, txns.size());
 				this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
 			});
 	}
