@@ -83,7 +83,6 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.annotation.concurrent.Immutable;
@@ -177,29 +176,6 @@ public final class LedgerHeader {
 
 
 		return new LedgerHeader(epoch, view, accumulatorState, timestamp, nextValidators);
-	}
-
-	public JSONObject asJSONObject(Addressing addressing) {
-		var json = new JSONObject()
-			.put("epoch", epoch)
-			.put("view", view.number())
-			.put("version", accumulatorState.getStateVersion())
-			.put("accumulator", Bytes.toHexString(accumulatorState.getAccumulatorHash().asBytes()))
-			.put("timestamp", timestamp);
-
-		if (nextValidators != null) {
-			var validators = new JSONArray();
-			for (var v : nextValidators) {
-				var validatorAddress = addressing.forValidators().of(v.getNode().getKey());
-				validators.put(new JSONObject()
-					.put("address", validatorAddress)
-					.put("stake", v.getPower())
-				);
-			}
-			json.put("nextValidators", validators);
-		}
-
-		return json;
 	}
 
 	//TODO: used only for tests, move elsewhere https://radixdlt.atlassian.net/browse/NT-2
