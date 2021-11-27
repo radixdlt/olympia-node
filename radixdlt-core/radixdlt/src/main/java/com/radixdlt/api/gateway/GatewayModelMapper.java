@@ -71,12 +71,21 @@ import com.radixdlt.api.gateway.openapitools.model.AccountTransaction;
 import com.radixdlt.api.gateway.openapitools.model.AccountTransactionMetadata;
 import com.radixdlt.api.gateway.openapitools.model.AccountTransactionStatus;
 import com.radixdlt.api.gateway.openapitools.model.Action;
+import com.radixdlt.api.gateway.openapitools.model.BelowMinimumStakeError;
 import com.radixdlt.api.gateway.openapitools.model.BurnTokens;
+import com.radixdlt.api.gateway.openapitools.model.CouldNotConstructFeesError;
+import com.radixdlt.api.gateway.openapitools.model.CreateTokenDefinition;
 import com.radixdlt.api.gateway.openapitools.model.LedgerState;
+import com.radixdlt.api.gateway.openapitools.model.MessageTooLongError;
 import com.radixdlt.api.gateway.openapitools.model.MintTokens;
+import com.radixdlt.api.gateway.openapitools.model.NotEnoughResourcesError;
+import com.radixdlt.api.gateway.openapitools.model.NotValidatorOwnerError;
 import com.radixdlt.api.gateway.openapitools.model.StakeTokens;
 import com.radixdlt.api.gateway.openapitools.model.TokenAmount;
 import com.radixdlt.api.gateway.openapitools.model.TokenIdentifier;
+import com.radixdlt.api.gateway.openapitools.model.TransactionBuild;
+import com.radixdlt.api.gateway.openapitools.model.TransactionBuildError;
+import com.radixdlt.api.gateway.openapitools.model.TransactionBuildRequest;
 import com.radixdlt.api.gateway.openapitools.model.TransactionIdentifier;
 import com.radixdlt.api.gateway.openapitools.model.TransactionRules;
 import com.radixdlt.api.gateway.openapitools.model.TransferTokens;
@@ -85,11 +94,25 @@ import com.radixdlt.api.gateway.openapitools.model.ValidatorIdentifier;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.Bucket;
+import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
+import com.radixdlt.application.tokens.construction.MinimumStakeException;
 import com.radixdlt.application.tokens.state.AccountBucket;
+import com.radixdlt.atom.MessageTooLongException;
+import com.radixdlt.atom.NotEnoughResourcesException;
+import com.radixdlt.atom.TxAction;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.atom.UnsignedTxnData;
+import com.radixdlt.atom.actions.BurnToken;
+import com.radixdlt.atom.actions.CreateFixedToken;
+import com.radixdlt.atom.actions.CreateMutableToken;
+import com.radixdlt.atom.actions.MintToken;
+import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
@@ -98,7 +121,6 @@ import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
-import org.json.JSONObject;
 
 import java.time.Instant;
 import java.util.List;
@@ -242,7 +264,6 @@ public final class GatewayModelMapper {
 		var amount = UInt256.from(amtByteArray);
 		var from = entry.from();
 		var to = entry.to();
-		var result = new JSONObject();
 
 		var tokenAmount = tokenAmount(
 			amount,
@@ -334,5 +355,127 @@ public final class GatewayModelMapper {
 		}
 
 		return accountTransaction;
+	}
+
+	public TxAction txAction(Action action) {
+		if (action instanceof TransferTokens transferTokens) {
+			var from = account(transferTokens.getFrom());
+			var to = account(transferTokens.getTo());
+			var tokenAddress = tokenAddress(transferTokens.getAmount().getTokenIdentifier());
+			var amount = UInt256.from(transferTokens.getAmount().getValue());
+			return new TransferToken(tokenAddress, from, to, amount);
+		} else if (action instanceof MintTokens mintTokens) {
+			var to = account(mintTokens.getTo());
+			var tokenAddress = tokenAddress(mintTokens.getAmount().getTokenIdentifier());
+			var amount = UInt256.from(mintTokens.getAmount().getValue());
+			return new MintToken(tokenAddress, to, amount);
+		} else if (action instanceof BurnTokens burnTokens) {
+			var from = account(burnTokens.getFrom());
+			var tokenAddress = tokenAddress(burnTokens.getAmount().getTokenIdentifier());
+			var amount = UInt256.from(burnTokens.getAmount().getValue());
+			return new BurnToken(tokenAddress, from, amount);
+		} else if (action instanceof StakeTokens stakeTokens) {
+			var from = account(stakeTokens.getFrom());
+			var to = validator(stakeTokens.getTo());
+			var tokenAddress = tokenAddress(stakeTokens.getAmount().getTokenIdentifier());
+			if (!tokenAddress.isNativeToken()) {
+				throw new IllegalStateException();
+			}
+			var amount = UInt256.from(stakeTokens.getAmount().getValue());
+			return new com.radixdlt.atom.actions.StakeTokens(from, to, amount);
+		} else if (action instanceof UnstakeTokens unstakeTokens) {
+			var from = validator(unstakeTokens.getFrom());
+			var to = account(unstakeTokens.getTo());
+			var tokenAddress = tokenAddress(unstakeTokens.getAmount().getTokenIdentifier());
+			if (!tokenAddress.isNativeToken()) {
+				throw new IllegalStateException();
+			}
+			var amount = UInt256.from(unstakeTokens.getAmount().getValue());
+			return new com.radixdlt.atom.actions.UnstakeTokens(from, to, amount);
+		} else if (action instanceof CreateTokenDefinition createTokenDefinition) {
+			var tokenSupply = createTokenDefinition.getTokenSupply();
+			var tokenAddress = tokenAddress(tokenSupply.getTokenIdentifier());
+			var supply = UInt256.from(tokenSupply.getValue());
+			var tokenProperties = createTokenDefinition.getTokenProperties();
+			var symbol = tokenProperties.getSymbol();
+			var name = tokenProperties.getName();
+			var description = tokenProperties.getDescription();
+			var iconUrl = tokenProperties.getIconUrl();
+			var url = tokenProperties.getUrl();
+			if (!tokenProperties.getIsSupplyMutable()) {
+				if (supply.isZero() || tokenProperties.getOwner() != null) {
+					throw new IllegalStateException();
+				}
+
+				var to = account(createTokenDefinition.getTo());
+				return new CreateFixedToken(tokenAddress, to, symbol, name, description, iconUrl, url, supply);
+			} else {
+				if (!supply.isZero() || tokenProperties.getOwner() == null) {
+					throw new IllegalStateException();
+				}
+				var owner = account(tokenProperties.getOwner());
+				return new CreateMutableToken(tokenAddress, symbol, name, description, iconUrl, url, owner.publicKey().orElseThrow());
+			}
+		} else {
+			throw new IllegalStateException();
+		}
+	}
+
+	public TxnConstructionRequest txnConstructionRequest(TransactionBuildRequest request) {
+		var constructionRequest = TxnConstructionRequest.create();
+		constructionRequest.feePayer(account(request.getFeePayer()));
+		var disableMintAndBurn = request.getDisableTokenMintAndBurn();
+		if (disableMintAndBurn != null && !disableMintAndBurn) {
+			constructionRequest.disableResourceAllocAndDestroy();
+		}
+		var message = request.getMessage();
+		if (message != null) {
+			constructionRequest.msg(Bytes.fromHexString(message));
+		}
+
+		var actions = request.getActions().stream().map(this::txAction).collect(Collectors.toList());
+		constructionRequest.actions(actions);
+
+		return constructionRequest;
+	}
+
+	public TransactionBuildError transactionBuildError(TxBuilderException e) {
+		if (e instanceof NotEnoughResourcesException notEnoughResourcesException) {
+			return new NotEnoughResourcesError()
+				.availableAmount(notEnoughResourcesException.getAvailable().toString())
+				.requestedAmount(notEnoughResourcesException.getRequested().toString())
+				.type("NotEnoughResourcesError");
+		} else if (e instanceof MinimumStakeException minimumStakeException) {
+			return new BelowMinimumStakeError()
+				.minimumAmount(minimumStakeException.getMinimumStake().toString())
+				.requestedAmount(minimumStakeException.getAttempt().toString())
+				.type("MinimumStakeError");
+		} else if (e instanceof DelegateStakePermissionException delegateStakePermissionException) {
+			return new NotValidatorOwnerError()
+				.owner(accountIdentifier(delegateStakePermissionException.getOwner()))
+				.user(accountIdentifier(delegateStakePermissionException.getUser()))
+				.type("NotValidatorOwnerError");
+		} else if (e instanceof MessageTooLongException messageTooLongException) {
+			return new MessageTooLongError()
+				.lengthLimit(255)
+				.attemptedLength(messageTooLongException.getAttemptedLength())
+				.type("MessageTooLongError");
+		} else if (e instanceof FeeConstructionException feeConstructionException) {
+			return new CouldNotConstructFeesError()
+				.attempts(feeConstructionException.getAttempts())
+				.type("CouldNotConstructFeesError");
+		} else {
+			throw new IllegalStateException();
+		}
+	}
+
+	public TransactionBuild transactionBuild(UnsignedTxnData unsignedTxnData)  {
+		return new TransactionBuild()
+			.fee(new TokenAmount()
+				.tokenIdentifier(nativeTokenIdentifier())
+				.value(unsignedTxnData.feesPaid().toString())
+			)
+			.unsignedTransaction(Bytes.toHexString(unsignedTxnData.blob()))
+			.payloadToSign(Bytes.toHexString(unsignedTxnData.hashToSign().asBytes()));
 	}
 }

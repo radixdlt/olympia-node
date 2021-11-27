@@ -235,7 +235,7 @@ public class UnstakingLockedTokensTest {
 				return epochChange != null && epochChange.getEpoch() == unstakingEpoch;
 			}
 		);
-		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(accountAddr, self, Amount.ofTokens(10).toSubunits()));
+		var unstakeTxn = dispatchAndWaitForCommit(new UnstakeTokens(self, accountAddr, Amount.ofTokens(10).toSubunits()));
 
 		if (transferEpoch > unstakingEpoch) {
 			runner.runNextEventsThrough(

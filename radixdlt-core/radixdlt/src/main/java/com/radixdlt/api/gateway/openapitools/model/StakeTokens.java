@@ -33,7 +33,7 @@ import java.util.Objects;
   StakeTokens.JSON_PROPERTY_TO,
   StakeTokens.JSON_PROPERTY_AMOUNT
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T12:22:00.029895-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BurnTokens.class, name = "BurnTokens"),
@@ -63,10 +63,10 @@ public class StakeTokens extends Action {
    * Get from
    * @return from
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_FROM)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public AccountIdentifier getFrom() {
     return from;
@@ -74,7 +74,7 @@ public class StakeTokens extends Action {
 
 
   @JsonProperty(JSON_PROPERTY_FROM)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setFrom(AccountIdentifier from) {
     this.from = from;
   }
@@ -89,10 +89,10 @@ public class StakeTokens extends Action {
    * Get to
    * @return to
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_TO)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public ValidatorIdentifier getTo() {
     return to;
@@ -100,7 +100,7 @@ public class StakeTokens extends Action {
 
 
   @JsonProperty(JSON_PROPERTY_TO)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTo(ValidatorIdentifier to) {
     this.to = to;
   }
@@ -115,10 +115,10 @@ public class StakeTokens extends Action {
    * Get amount
    * @return amount
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_AMOUNT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public TokenAmount getAmount() {
     return amount;
@@ -126,7 +126,7 @@ public class StakeTokens extends Action {
 
 
   @JsonProperty(JSON_PROPERTY_AMOUNT)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAmount(TokenAmount amount) {
     this.amount = amount;
   }

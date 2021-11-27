@@ -64,123 +64,48 @@
 package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
-import com.radixdlt.application.tokens.construction.MinimumStakeException;
-import com.radixdlt.atom.MessageTooLongException;
-import com.radixdlt.atom.NotEnoughResourcesException;
+import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
+import com.radixdlt.api.gateway.GatewayModelMapper;
+import com.radixdlt.api.gateway.openapitools.model.TransactionBuildRequest;
+import com.radixdlt.api.gateway.openapitools.model.TransactionBuildResponse;
+import com.radixdlt.api.gateway.openapitools.model.TransactionBuildResponseError;
+import com.radixdlt.api.gateway.openapitools.model.TransactionBuildResponseSuccess;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.Bytes;
-import org.json.JSONObject;
 
-import java.nio.charset.StandardCharsets;
-
-final class BuildTransactionHandler implements ApiHandler<TxnConstructionRequest> {
-	private final Addressing addressing;
+final class TransactionBuildHandler extends GatewayJsonRpcHandler<TransactionBuildRequest, TransactionBuildResponse> {
+	private final GatewayModelMapper gatewayModelMapper;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	@Inject
-	BuildTransactionHandler(
+	TransactionBuildHandler(
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		Addressing addressing
+		GatewayModelMapper gatewayModelMapper
 	) {
+		super(TransactionBuildRequest.class);
+
 		this.radixEngine = radixEngine;
-		this.addressing = addressing;
+		this.gatewayModelMapper = gatewayModelMapper;
 	}
 
 	@Override
-	public Addressing addressing() {
-		return addressing;
-	}
-
-	@Override
-	public TxnConstructionRequest parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		var constructionRequest = TxnConstructionRequest.create();
-		var feePayer = reader.getAccountIdentifier("fee_payer");
-		constructionRequest.feePayer(feePayer);
-		if (reader.getOptBoolean("disable_token_mint_and_burn", false)) {
-			constructionRequest.disableResourceAllocAndDestroy();
-		}
-		var message = reader.getOptString("message");
-		message.ifPresent(msg -> constructionRequest.msg(msg.getBytes(StandardCharsets.UTF_8)));
-
-		var actions = reader.getList("actions", r -> {
-			var typeString = r.getString("type");
-			var type = ActionType.parse(typeString);
-			return type.parseAction(r);
-		});
-		constructionRequest.actions(actions);
-
-		return constructionRequest;
-	}
-
-	@Override
-	public JSONObject handleRequest(TxnConstructionRequest request) throws TxBuilderException {
+	public TransactionBuildResponse handleRequest(TransactionBuildRequest request) throws Exception {
+		var txnConstructionRequest = gatewayModelMapper.txnConstructionRequest(request);
 		TxBuilder builder;
 		try {
-			builder = radixEngine.construct(request);
-		} catch (NotEnoughResourcesException e) {
-			return new JSONObject()
-				.put("type", "TransactionBuildResponseError")
-				.put("error", new JSONObject()
-					.put("type", "NotEnoughResourcesError")
-					.put("available_amount", e.getAvailable())
-					.put("requested_amount", e.getRequested())
-				);
-		} catch (MinimumStakeException e) {
-			return new JSONObject()
-				.put("type", "TransactionBuildResponseError")
-				.put("result", new JSONObject()
-					.put("type", "BelowMinimumStakeError")
-					.put("minimum_amount", e.getMinimumStake())
-					.put("requested_amount", e.getAttempt())
-				);
-		} catch (DelegateStakePermissionException e) {
-			return new JSONObject()
-				.put("type", "TransactionBuildResponseError")
-				.put("error", new JSONObject()
-					.put("type", "NotValidatorOwnerError")
-					.put("owner", addressing.forAccounts().of(e.getOwner()))
-					.put("user", addressing.forAccounts().of(e.getUser()))
-				);
-		} catch (MessageTooLongException e) {
-			return new JSONObject()
-				.put("type", "TransactionBuildResponseError")
-				.put("error", new JSONObject()
-					.put("type", "MessageTooLongError")
-					.put("length_limit", 255)
-					.put("attempted_length", e.getAttemptedLength())
-				);
-		} catch (FeeConstructionException e) {
-			return new JSONObject()
-				.put("type", "TransactionBuildResponseError")
-				.put("error", new JSONObject()
-					.put("type", "CouldNotConstructFeesError")
-					.put("attempts", e.getAttempts())
-				);
+			builder = radixEngine.construct(txnConstructionRequest);
+		} catch (TxBuilderException e) {
+			var buildError = gatewayModelMapper.transactionBuildError(e);
+			return new TransactionBuildResponseError()
+				.error(buildError)
+				.type("TransactionBuildResponseError");
 		}
 
 		var unsignedTransaction = builder.buildForExternalSign();
-		return new JSONObject()
-			.put("type", "TransactionBuildResponseSuccess")
-			.put("transaction_build", new JSONObject()
-				.put("fee", new JSONObject()
-					.put("token_identifier", new JSONObject()
-						.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
-					)
-					.put("value", unsignedTransaction.feesPaid().toString())
-				)
-				.put("unsigned_transaction", Bytes.toHexString(unsignedTransaction.blob()))
-				.put("payload_to_sign", Bytes.toHexString(unsignedTransaction.hashToSign().asBytes()))
-			);
+		return new TransactionBuildResponseSuccess()
+			.transactionBuild(gatewayModelMapper.transactionBuild(unsignedTransaction))
+			.type("TransactionBuildResponseSuccess");
 	}
 }

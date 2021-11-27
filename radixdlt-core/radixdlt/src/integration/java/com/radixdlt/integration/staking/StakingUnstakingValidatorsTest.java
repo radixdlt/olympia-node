@@ -479,7 +479,7 @@ public class StakingUnstakingValidatorsTest {
 					break;
 				case 2:
 					var unstakeAmt = random.nextBoolean() ? UInt256.from(random.nextLong()) : amount;
-					action = new UnstakeTokens(acct, to, unstakeAmt);
+					action = new UnstakeTokens(to, acct, unstakeAmt);
 					break;
 				case 3:
 					action = new RegisterValidator(privKey.getPublicKey());

@@ -86,7 +86,7 @@ public final class TransactionApiModule extends AbstractModule {
 			binder(), HandlerRoute.class, HttpHandler.class, annotationType
 		);
 		routeBinder.addBinding(HandlerRoute.post(path + "/rules")).to(TransactionRulesHandler.class);
-		routeBinder.addBinding(HandlerRoute.post(path + "/build")).to(BuildTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/build")).to(TransactionBuildHandler.class);
 		routeBinder.addBinding(HandlerRoute.post(path + "/finalize")).to(FinalizeTransactionHandler.class);
 		routeBinder.addBinding(HandlerRoute.post(path + "/submit")).to(SubmitTransactionHandler.class);
 		routeBinder.addBinding(HandlerRoute.post(path + "/status")).to(TransactionStatusHandler.class);
