@@ -1489,6 +1489,7 @@ components:
         - current_state_round
         - current_state_timestamp
         - node_identifiers
+        - sync_status
         - peers
       properties:
         pre_genesis_state_identifier:
@@ -1528,6 +1529,8 @@ components:
               "$ref": "#/components/schemas/PublicKey"
             p2p_node:
               $ref: "#/components/schemas/Peer"
+        sync_status:
+          $ref: "#/components/schemas/SyncStatus"
         peers:
           type: array
           items:
@@ -2855,6 +2858,18 @@ components:
           description: An ECDSA signature of with the given `public_key`. The ECDSA signature
             should be created using the secp256k1 curve and should be encoded in DER format, and
             then encoded as a hex string.
+    SyncStatus:
+      type: object
+      required:
+        - current_state_version
+        - target_state_version
+      properties:
+        current_state_version:
+          type: integer
+          format: int64
+        target_state_version:
+          type: integer
+          format: int64
     Peer:
       type: object
       required:

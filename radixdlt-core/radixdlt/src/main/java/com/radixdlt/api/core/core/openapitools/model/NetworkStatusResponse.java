@@ -34,9 +34,10 @@ import java.util.Objects;
   NetworkStatusResponse.JSON_PROPERTY_CURRENT_STATE_ROUND,
   NetworkStatusResponse.JSON_PROPERTY_CURRENT_STATE_TIMESTAMP,
   NetworkStatusResponse.JSON_PROPERTY_NODE_IDENTIFIERS,
+  NetworkStatusResponse.JSON_PROPERTY_SYNC_STATUS,
   NetworkStatusResponse.JSON_PROPERTY_PEERS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T22:42:19.934226-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T17:01:34.779105-06:00[America/Chicago]")
 public class NetworkStatusResponse {
   public static final String JSON_PROPERTY_PRE_GENESIS_STATE_IDENTIFIER = "pre_genesis_state_identifier";
   private StateIdentifier preGenesisStateIdentifier;
@@ -58,6 +59,9 @@ public class NetworkStatusResponse {
 
   public static final String JSON_PROPERTY_NODE_IDENTIFIERS = "node_identifiers";
   private NetworkStatusResponseNodeIdentifiers nodeIdentifiers;
+
+  public static final String JSON_PROPERTY_SYNC_STATUS = "sync_status";
+  private SyncStatus syncStatus;
 
   public static final String JSON_PROPERTY_PEERS = "peers";
   private List<Peer> peers = new ArrayList<>();
@@ -245,6 +249,32 @@ public class NetworkStatusResponse {
   }
 
 
+  public NetworkStatusResponse syncStatus(SyncStatus syncStatus) {
+    this.syncStatus = syncStatus;
+    return this;
+  }
+
+   /**
+   * Get syncStatus
+   * @return syncStatus
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_SYNC_STATUS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public SyncStatus getSyncStatus() {
+    return syncStatus;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SYNC_STATUS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSyncStatus(SyncStatus syncStatus) {
+    this.syncStatus = syncStatus;
+  }
+
+
   public NetworkStatusResponse peers(List<Peer> peers) {
     this.peers = peers;
     return this;
@@ -295,12 +325,13 @@ public class NetworkStatusResponse {
         Objects.equals(this.currentStateRound, networkStatusResponse.currentStateRound) &&
         Objects.equals(this.currentStateTimestamp, networkStatusResponse.currentStateTimestamp) &&
         Objects.equals(this.nodeIdentifiers, networkStatusResponse.nodeIdentifiers) &&
+        Objects.equals(this.syncStatus, networkStatusResponse.syncStatus) &&
         Objects.equals(this.peers, networkStatusResponse.peers);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(preGenesisStateIdentifier, genesisStateIdentifier, currentStateIdentifier, currentStateEpoch, currentStateRound, currentStateTimestamp, nodeIdentifiers, peers);
+    return Objects.hash(preGenesisStateIdentifier, genesisStateIdentifier, currentStateIdentifier, currentStateEpoch, currentStateRound, currentStateTimestamp, nodeIdentifiers, syncStatus, peers);
   }
 
   @Override
@@ -314,6 +345,7 @@ public class NetworkStatusResponse {
     sb.append("    currentStateRound: ").append(toIndentedString(currentStateRound)).append("\n");
     sb.append("    currentStateTimestamp: ").append(toIndentedString(currentStateTimestamp)).append("\n");
     sb.append("    nodeIdentifiers: ").append(toIndentedString(nodeIdentifiers)).append("\n");
+    sb.append("    syncStatus: ").append(toIndentedString(syncStatus)).append("\n");
     sb.append("    peers: ").append(toIndentedString(peers)).append("\n");
     sb.append("}");
     return sb.toString();

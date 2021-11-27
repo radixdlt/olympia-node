@@ -68,8 +68,10 @@ import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.SyncStatus;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.REAddr;
@@ -90,6 +92,7 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 	private final AccumulatorState genesisAccumulatorState;
 	private final CoreModelMapper coreModelMapper;
 	private final PeersView peersView;
+	private final SystemCounters systemCounters;
 
 	@Inject
 	NetworkStatusHandler(
@@ -100,7 +103,8 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 		@Genesis Txn genesisTxn,
 		LedgerAccumulator ledgerAccumulator,
 		PeersView peersView,
-		CoreModelMapper coreModelMapper
+		CoreModelMapper coreModelMapper,
+		SystemCounters systemCounters
 	) {
 		super(NetworkStatusRequest.class);
 		this.network = Network.ofId(networkId).orElseThrow();
@@ -113,6 +117,7 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 		);
 		this.peersView = peersView;
 		this.coreModelMapper = coreModelMapper;
+		this.systemCounters = systemCounters;
 	}
 
 	@Override
@@ -135,6 +140,10 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 					.validatorEntityIdentifier(coreModelMapper.entityIdentifier(validatorKey))
 					.publicKey(coreModelMapper.publicKey(validatorKey))
 					.p2pNode(coreModelMapper.peer(validatorKey))
+			)
+			.syncStatus(new SyncStatus()
+				.currentStateVersion(systemCounters.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
+				.targetStateVersion(systemCounters.get(SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION))
 			);
 
 		peersView.peers().map(coreModelMapper::peer).forEach(response::addPeersItem);
