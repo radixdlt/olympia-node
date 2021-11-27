@@ -22,45 +22,45 @@ import java.util.Objects;
 
 
 /**
- * TransactionIdentifier
+ * TransactionBuildResponseErrorAllOf
  */
 @JsonPropertyOrder({
-  TransactionIdentifier.JSON_PROPERTY_HASH
+  TransactionBuildResponseErrorAllOf.JSON_PROPERTY_ERROR
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
-public class TransactionIdentifier {
-  public static final String JSON_PROPERTY_HASH = "hash";
-  private String hash;
+public class TransactionBuildResponseErrorAllOf {
+  public static final String JSON_PROPERTY_ERROR = "error";
+  private TransactionBuildError error;
 
 
-  public TransactionIdentifier hash(String hash) {
-    this.hash = hash;
+  public TransactionBuildResponseErrorAllOf error(TransactionBuildError error) {
+    this.error = error;
     return this;
   }
 
    /**
-   * Get hash
-   * @return hash
+   * Get error
+   * @return error
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_HASH)
+  @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getHash() {
-    return hash;
+  public TransactionBuildError getError() {
+    return error;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_HASH)
+  @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setHash(String hash) {
-    this.hash = hash;
+  public void setError(TransactionBuildError error) {
+    this.error = error;
   }
 
 
   /**
-   * Return true if this TransactionIdentifier object is equal to o.
+   * Return true if this TransactionBuildResponseError_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -70,20 +70,20 @@ public class TransactionIdentifier {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionIdentifier transactionIdentifier = (TransactionIdentifier) o;
-    return Objects.equals(this.hash, transactionIdentifier.hash);
+    TransactionBuildResponseErrorAllOf transactionBuildResponseErrorAllOf = (TransactionBuildResponseErrorAllOf) o;
+    return Objects.equals(this.error, transactionBuildResponseErrorAllOf.error);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(hash);
+    return Objects.hash(error);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionIdentifier {\n");
-    sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
+    sb.append("class TransactionBuildResponseErrorAllOf {\n");
+    sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -18,8 +18,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.swagger.annotations.ApiModelProperty;
 import com.radixdlt.api.gateway.openapitools.JSON;
+import io.swagger.annotations.ApiModelProperty;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +32,7 @@ import java.util.Objects;
   BurnTokens.JSON_PROPERTY_FROM,
   BurnTokens.JSON_PROPERTY_AMOUNT
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-25T22:30:43.084837-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BurnTokens.class, name = "BurnTokens"),

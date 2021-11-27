@@ -78,6 +78,7 @@ import com.radixdlt.api.gateway.openapitools.model.StakeTokens;
 import com.radixdlt.api.gateway.openapitools.model.TokenAmount;
 import com.radixdlt.api.gateway.openapitools.model.TokenIdentifier;
 import com.radixdlt.api.gateway.openapitools.model.TransactionIdentifier;
+import com.radixdlt.api.gateway.openapitools.model.TransactionRules;
 import com.radixdlt.api.gateway.openapitools.model.TransferTokens;
 import com.radixdlt.api.gateway.openapitools.model.UnstakeTokens;
 import com.radixdlt.api.gateway.openapitools.model.ValidatorIdentifier;
@@ -93,6 +94,7 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -143,6 +145,15 @@ public final class GatewayModelMapper {
 			.round(ledgerProof.getView().number())
 			.timestamp(Instant.ofEpochMilli(ledgerProof.timestamp()).toString())
 			.version(ledgerProof.getStateVersion());
+	}
+
+	public TransactionRules transactionRules(ForkConfig forkConfig) {
+		return new TransactionRules()
+			.maximumMessageLength(255)
+			.minimumStake(new TokenAmount()
+				.tokenIdentifier(nativeTokenIdentifier())
+				.value(forkConfig.getConfig().getMinimumStake().toSubunits().toString())
+			);
 	}
 
 	public List<Action> actions(

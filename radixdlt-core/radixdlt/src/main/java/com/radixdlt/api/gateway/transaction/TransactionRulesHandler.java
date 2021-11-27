@@ -64,59 +64,41 @@
 package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
+import com.radixdlt.api.gateway.GatewayModelMapper;
+import com.radixdlt.api.gateway.openapitools.model.TransactionRulesRequest;
+import com.radixdlt.api.gateway.openapitools.model.TransactionRulesResponse;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import org.json.JSONObject;
 
-import java.time.Instant;
 import java.util.TreeMap;
 
-public class TransactionRulesHandler implements ApiHandler<Void> {
+public final class TransactionRulesHandler extends GatewayJsonRpcHandler<TransactionRulesRequest, TransactionRulesResponse> {
 
-	private final Addressing addressing;
+	private final GatewayModelMapper gatewayModelMapper;
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final TreeMap<Long, ForkConfig> forks;
 
 	@Inject
 	private TransactionRulesHandler(
-		Addressing addressing,
+		GatewayModelMapper gatewayModelMapper,
 		InMemorySystemInfo inMemorySystemInfo,
 		TreeMap<Long, ForkConfig> forks
 	) {
-		this.addressing = addressing;
+		super(TransactionRulesRequest.class);
+
+		this.gatewayModelMapper = gatewayModelMapper;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.forks = forks;
 	}
 
 	@Override
-	public Void parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		return null;
-	}
-
-	@Override
-	public JSONObject handleRequest(Void request) throws Exception {
-		var currentEpoch = inMemorySystemInfo.getCurrentProof().getEpoch();
-		var forkConfig = forks.floorEntry(currentEpoch).getValue();
+	public TransactionRulesResponse handleRequest(TransactionRulesRequest request) throws Exception {
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return new JSONObject()
-			.put("ledger_state", new JSONObject()
-				.put("epoch", proof.getEpoch())
-				.put("round", proof.getView().number())
-				.put("version", proof.getStateVersion())
-				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
-			)
-			.put("transaction_rules", new JSONObject()
-				.put("maximum_message_length", 255)
-				.put("minimum_stake", new JSONObject()
-					.put("token_identifier", new JSONObject()
-						.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
-					)
-					.put("value", forkConfig.getConfig().getMinimumStake().toSubunits().toString()))
-			);
+		var response = new TransactionRulesResponse();
+		response.ledgerState(gatewayModelMapper.ledgerState(proof));
+		var forkConfig = forks.floorEntry(proof.getEpoch()).getValue();
+		response.transactionRules(gatewayModelMapper.transactionRules(forkConfig));
+		return response;
 	}
 }

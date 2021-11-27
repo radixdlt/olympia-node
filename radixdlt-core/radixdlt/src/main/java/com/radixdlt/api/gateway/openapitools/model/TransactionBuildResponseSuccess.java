@@ -26,55 +26,51 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Action
+ * TransactionBuildResponseSuccess
  */
 @JsonPropertyOrder({
-  Action.JSON_PROPERTY_TYPE
+  TransactionBuildResponseSuccess.JSON_PROPERTY_TRANSACTION_BUILD
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = BurnTokens.class, name = "BurnTokens"),
-  @JsonSubTypes.Type(value = CreateTokenDefinition.class, name = "CreateTokenDefinition"),
-  @JsonSubTypes.Type(value = MintTokens.class, name = "MintTokens"),
-  @JsonSubTypes.Type(value = StakeTokens.class, name = "StakeTokens"),
-  @JsonSubTypes.Type(value = TransferTokens.class, name = "TransferTokens"),
-  @JsonSubTypes.Type(value = UnstakeTokens.class, name = "UnstakeTokens"),
+  @JsonSubTypes.Type(value = TransactionBuildResponseError.class, name = "TransactionBuildResponseError"),
+  @JsonSubTypes.Type(value = TransactionBuildResponseSuccess.class, name = "TransactionBuildResponseSuccess"),
 })
 
-public class Action {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+public class TransactionBuildResponseSuccess extends TransactionBuildResponse {
+  public static final String JSON_PROPERTY_TRANSACTION_BUILD = "transaction_build";
+  private TransactionBuild transactionBuild;
 
 
-  public Action type(String type) {
-    this.type = type;
+  public TransactionBuildResponseSuccess transactionBuild(TransactionBuild transactionBuild) {
+    this.transactionBuild = transactionBuild;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get transactionBuild
+   * @return transactionBuild
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_BUILD)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public TransactionBuild getTransactionBuild() {
+    return transactionBuild;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_BUILD)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setTransactionBuild(TransactionBuild transactionBuild) {
+    this.transactionBuild = transactionBuild;
   }
 
 
   /**
-   * Return true if this Action object is equal to o.
+   * Return true if this TransactionBuildResponseSuccess object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -84,20 +80,22 @@ public class Action {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Action action = (Action) o;
-    return Objects.equals(this.type, action.type);
+    TransactionBuildResponseSuccess transactionBuildResponseSuccess = (TransactionBuildResponseSuccess) o;
+    return Objects.equals(this.transactionBuild, transactionBuildResponseSuccess.transactionBuild) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(transactionBuild, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Action {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class TransactionBuildResponseSuccess {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    transactionBuild: ").append(toIndentedString(transactionBuild)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -116,14 +114,10 @@ public class Action {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("BurnTokens", BurnTokens.class);
-  mappings.put("CreateTokenDefinition", CreateTokenDefinition.class);
-  mappings.put("MintTokens", MintTokens.class);
-  mappings.put("StakeTokens", StakeTokens.class);
-  mappings.put("TransferTokens", TransferTokens.class);
-  mappings.put("UnstakeTokens", UnstakeTokens.class);
-  mappings.put("Action", Action.class);
-  JSON.registerDiscriminator(Action.class, "type", mappings);
+  mappings.put("TransactionBuildResponseError", TransactionBuildResponseError.class);
+  mappings.put("TransactionBuildResponseSuccess", TransactionBuildResponseSuccess.class);
+  mappings.put("TransactionBuildResponseSuccess", TransactionBuildResponseSuccess.class);
+  JSON.registerDiscriminator(TransactionBuildResponseSuccess.class, "type", mappings);
 }
 }
 

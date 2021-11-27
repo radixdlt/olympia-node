@@ -26,28 +26,24 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Action
+ * TransactionBuildResponse
  */
 @JsonPropertyOrder({
-  Action.JSON_PROPERTY_TYPE
+  TransactionBuildResponse.JSON_PROPERTY_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = BurnTokens.class, name = "BurnTokens"),
-  @JsonSubTypes.Type(value = CreateTokenDefinition.class, name = "CreateTokenDefinition"),
-  @JsonSubTypes.Type(value = MintTokens.class, name = "MintTokens"),
-  @JsonSubTypes.Type(value = StakeTokens.class, name = "StakeTokens"),
-  @JsonSubTypes.Type(value = TransferTokens.class, name = "TransferTokens"),
-  @JsonSubTypes.Type(value = UnstakeTokens.class, name = "UnstakeTokens"),
+  @JsonSubTypes.Type(value = TransactionBuildResponseError.class, name = "TransactionBuildResponseError"),
+  @JsonSubTypes.Type(value = TransactionBuildResponseSuccess.class, name = "TransactionBuildResponseSuccess"),
 })
 
-public class Action {
+public class TransactionBuildResponse {
   public static final String JSON_PROPERTY_TYPE = "type";
   private String type;
 
 
-  public Action type(String type) {
+  public TransactionBuildResponse type(String type) {
     this.type = type;
     return this;
   }
@@ -74,7 +70,7 @@ public class Action {
 
 
   /**
-   * Return true if this Action object is equal to o.
+   * Return true if this TransactionBuildResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -84,8 +80,8 @@ public class Action {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Action action = (Action) o;
-    return Objects.equals(this.type, action.type);
+    TransactionBuildResponse transactionBuildResponse = (TransactionBuildResponse) o;
+    return Objects.equals(this.type, transactionBuildResponse.type);
   }
 
   @Override
@@ -96,7 +92,7 @@ public class Action {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Action {\n");
+    sb.append("class TransactionBuildResponse {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -116,14 +112,10 @@ public class Action {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("BurnTokens", BurnTokens.class);
-  mappings.put("CreateTokenDefinition", CreateTokenDefinition.class);
-  mappings.put("MintTokens", MintTokens.class);
-  mappings.put("StakeTokens", StakeTokens.class);
-  mappings.put("TransferTokens", TransferTokens.class);
-  mappings.put("UnstakeTokens", UnstakeTokens.class);
-  mappings.put("Action", Action.class);
-  JSON.registerDiscriminator(Action.class, "type", mappings);
+  mappings.put("TransactionBuildResponseError", TransactionBuildResponseError.class);
+  mappings.put("TransactionBuildResponseSuccess", TransactionBuildResponseSuccess.class);
+  mappings.put("TransactionBuildResponse", TransactionBuildResponse.class);
+  JSON.registerDiscriminator(TransactionBuildResponse.class, "type", mappings);
 }
 }
 

@@ -18,28 +18,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 
 /**
- * TransactionStatusResponse
+ * TransactionRulesResponse
  */
 @JsonPropertyOrder({
-  TransactionStatusResponse.JSON_PROPERTY_LEDGER_STATE,
-  TransactionStatusResponse.JSON_PROPERTY_TRANSACTION
+  TransactionRulesResponse.JSON_PROPERTY_LEDGER_STATE,
+  TransactionRulesResponse.JSON_PROPERTY_TRANSACTION_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
-public class TransactionStatusResponse {
+public class TransactionRulesResponse {
   public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
   private LedgerState ledgerState;
 
-  public static final String JSON_PROPERTY_TRANSACTION = "transaction";
-  private List<AccountTransaction> transaction = new ArrayList<>();
+  public static final String JSON_PROPERTY_TRANSACTION_RULES = "transaction_rules";
+  private TransactionRules transactionRules;
 
 
-  public TransactionStatusResponse ledgerState(LedgerState ledgerState) {
+  public TransactionRulesResponse ledgerState(LedgerState ledgerState) {
     this.ledgerState = ledgerState;
     return this;
   }
@@ -65,39 +63,34 @@ public class TransactionStatusResponse {
   }
 
 
-  public TransactionStatusResponse transaction(List<AccountTransaction> transaction) {
-    this.transaction = transaction;
-    return this;
-  }
-
-  public TransactionStatusResponse addTransactionItem(AccountTransaction transactionItem) {
-    this.transaction.add(transactionItem);
+  public TransactionRulesResponse transactionRules(TransactionRules transactionRules) {
+    this.transactionRules = transactionRules;
     return this;
   }
 
    /**
-   * Get transaction
-   * @return transaction
+   * Get transactionRules
+   * @return transactionRules
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TRANSACTION)
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<AccountTransaction> getTransaction() {
-    return transaction;
+  public TransactionRules getTransactionRules() {
+    return transactionRules;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TRANSACTION)
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTransaction(List<AccountTransaction> transaction) {
-    this.transaction = transaction;
+  public void setTransactionRules(TransactionRules transactionRules) {
+    this.transactionRules = transactionRules;
   }
 
 
   /**
-   * Return true if this TransactionStatusResponse object is equal to o.
+   * Return true if this TransactionRulesResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -107,22 +100,22 @@ public class TransactionStatusResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionStatusResponse transactionStatusResponse = (TransactionStatusResponse) o;
-    return Objects.equals(this.ledgerState, transactionStatusResponse.ledgerState) &&
-        Objects.equals(this.transaction, transactionStatusResponse.transaction);
+    TransactionRulesResponse transactionRulesResponse = (TransactionRulesResponse) o;
+    return Objects.equals(this.ledgerState, transactionRulesResponse.ledgerState) &&
+        Objects.equals(this.transactionRules, transactionRulesResponse.transactionRules);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ledgerState, transaction);
+    return Objects.hash(ledgerState, transactionRules);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionStatusResponse {\n");
+    sb.append("class TransactionRulesResponse {\n");
     sb.append("    ledgerState: ").append(toIndentedString(ledgerState)).append("\n");
-    sb.append("    transaction: ").append(toIndentedString(transaction)).append("\n");
+    sb.append("    transactionRules: ").append(toIndentedString(transactionRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }

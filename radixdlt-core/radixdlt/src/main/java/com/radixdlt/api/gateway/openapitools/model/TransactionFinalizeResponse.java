@@ -22,45 +22,45 @@ import java.util.Objects;
 
 
 /**
- * TransactionIdentifier
+ * TransactionFinalizeResponse
  */
 @JsonPropertyOrder({
-  TransactionIdentifier.JSON_PROPERTY_HASH
+  TransactionFinalizeResponse.JSON_PROPERTY_SIGNED_TRANSACTION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
-public class TransactionIdentifier {
-  public static final String JSON_PROPERTY_HASH = "hash";
-  private String hash;
+public class TransactionFinalizeResponse {
+  public static final String JSON_PROPERTY_SIGNED_TRANSACTION = "signed_transaction";
+  private String signedTransaction;
 
 
-  public TransactionIdentifier hash(String hash) {
-    this.hash = hash;
+  public TransactionFinalizeResponse signedTransaction(String signedTransaction) {
+    this.signedTransaction = signedTransaction;
     return this;
   }
 
    /**
-   * Get hash
-   * @return hash
+   * Get signedTransaction
+   * @return signedTransaction
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_HASH)
+  @JsonProperty(JSON_PROPERTY_SIGNED_TRANSACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getHash() {
-    return hash;
+  public String getSignedTransaction() {
+    return signedTransaction;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_HASH)
+  @JsonProperty(JSON_PROPERTY_SIGNED_TRANSACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setHash(String hash) {
-    this.hash = hash;
+  public void setSignedTransaction(String signedTransaction) {
+    this.signedTransaction = signedTransaction;
   }
 
 
   /**
-   * Return true if this TransactionIdentifier object is equal to o.
+   * Return true if this TransactionFinalizeResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -70,20 +70,20 @@ public class TransactionIdentifier {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionIdentifier transactionIdentifier = (TransactionIdentifier) o;
-    return Objects.equals(this.hash, transactionIdentifier.hash);
+    TransactionFinalizeResponse transactionFinalizeResponse = (TransactionFinalizeResponse) o;
+    return Objects.equals(this.signedTransaction, transactionFinalizeResponse.signedTransaction);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(hash);
+    return Objects.hash(signedTransaction);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionIdentifier {\n");
-    sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
+    sb.append("class TransactionFinalizeResponse {\n");
+    sb.append("    signedTransaction: ").append(toIndentedString(signedTransaction)).append("\n");
     sb.append("}");
     return sb.toString();
   }

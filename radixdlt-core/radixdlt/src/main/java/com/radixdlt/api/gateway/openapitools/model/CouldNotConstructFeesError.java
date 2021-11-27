@@ -26,55 +26,54 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Action
+ * CouldNotConstructFeesError
  */
 @JsonPropertyOrder({
-  Action.JSON_PROPERTY_TYPE
+  CouldNotConstructFeesError.JSON_PROPERTY_ATTEMPTS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = BurnTokens.class, name = "BurnTokens"),
-  @JsonSubTypes.Type(value = CreateTokenDefinition.class, name = "CreateTokenDefinition"),
-  @JsonSubTypes.Type(value = MintTokens.class, name = "MintTokens"),
-  @JsonSubTypes.Type(value = StakeTokens.class, name = "StakeTokens"),
-  @JsonSubTypes.Type(value = TransferTokens.class, name = "TransferTokens"),
-  @JsonSubTypes.Type(value = UnstakeTokens.class, name = "UnstakeTokens"),
+  @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
+  @JsonSubTypes.Type(value = CouldNotConstructFeesError.class, name = "CouldNotConstructFeesError"),
+  @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
+  @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
+  @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
 })
 
-public class Action {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+public class CouldNotConstructFeesError extends TransactionBuildError {
+  public static final String JSON_PROPERTY_ATTEMPTS = "attempts";
+  private Integer attempts;
 
 
-  public Action type(String type) {
-    this.type = type;
+  public CouldNotConstructFeesError attempts(Integer attempts) {
+    this.attempts = attempts;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get attempts
+   * @return attempts
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_ATTEMPTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public Integer getAttempts() {
+    return attempts;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_ATTEMPTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setAttempts(Integer attempts) {
+    this.attempts = attempts;
   }
 
 
   /**
-   * Return true if this Action object is equal to o.
+   * Return true if this CouldNotConstructFeesError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -84,20 +83,22 @@ public class Action {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Action action = (Action) o;
-    return Objects.equals(this.type, action.type);
+    CouldNotConstructFeesError couldNotConstructFeesError = (CouldNotConstructFeesError) o;
+    return Objects.equals(this.attempts, couldNotConstructFeesError.attempts) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(attempts, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Action {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class CouldNotConstructFeesError {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    attempts: ").append(toIndentedString(attempts)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -116,14 +117,13 @@ public class Action {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("BurnTokens", BurnTokens.class);
-  mappings.put("CreateTokenDefinition", CreateTokenDefinition.class);
-  mappings.put("MintTokens", MintTokens.class);
-  mappings.put("StakeTokens", StakeTokens.class);
-  mappings.put("TransferTokens", TransferTokens.class);
-  mappings.put("UnstakeTokens", UnstakeTokens.class);
-  mappings.put("Action", Action.class);
-  JSON.registerDiscriminator(Action.class, "type", mappings);
+  mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
+  mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
+  mappings.put("MessageTooLongError", MessageTooLongError.class);
+  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
+  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
+  mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
+  JSON.registerDiscriminator(CouldNotConstructFeesError.class, "type", mappings);
 }
 }
 

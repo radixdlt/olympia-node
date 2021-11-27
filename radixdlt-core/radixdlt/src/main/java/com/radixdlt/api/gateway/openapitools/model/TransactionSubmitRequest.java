@@ -22,22 +22,22 @@ import java.util.Objects;
 
 
 /**
- * TransactionStatusRequest
+ * TransactionSubmitRequest
  */
 @JsonPropertyOrder({
-  TransactionStatusRequest.JSON_PROPERTY_NETWORK,
-  TransactionStatusRequest.JSON_PROPERTY_TRANSACTION_IDENTIFIER
+  TransactionSubmitRequest.JSON_PROPERTY_NETWORK,
+  TransactionSubmitRequest.JSON_PROPERTY_SIGNED_TRANSACTION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
-public class TransactionStatusRequest {
+public class TransactionSubmitRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
 
-  public static final String JSON_PROPERTY_TRANSACTION_IDENTIFIER = "transaction_identifier";
-  private TransactionIdentifier transactionIdentifier;
+  public static final String JSON_PROPERTY_SIGNED_TRANSACTION = "signed_transaction";
+  private String signedTransaction;
 
 
-  public TransactionStatusRequest network(String network) {
+  public TransactionSubmitRequest network(String network) {
     this.network = network;
     return this;
   }
@@ -63,34 +63,34 @@ public class TransactionStatusRequest {
   }
 
 
-  public TransactionStatusRequest transactionIdentifier(TransactionIdentifier transactionIdentifier) {
-    this.transactionIdentifier = transactionIdentifier;
+  public TransactionSubmitRequest signedTransaction(String signedTransaction) {
+    this.signedTransaction = signedTransaction;
     return this;
   }
 
    /**
-   * Get transactionIdentifier
-   * @return transactionIdentifier
+   * Get signedTransaction
+   * @return signedTransaction
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TRANSACTION_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_SIGNED_TRANSACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TransactionIdentifier getTransactionIdentifier() {
-    return transactionIdentifier;
+  public String getSignedTransaction() {
+    return signedTransaction;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TRANSACTION_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_SIGNED_TRANSACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTransactionIdentifier(TransactionIdentifier transactionIdentifier) {
-    this.transactionIdentifier = transactionIdentifier;
+  public void setSignedTransaction(String signedTransaction) {
+    this.signedTransaction = signedTransaction;
   }
 
 
   /**
-   * Return true if this TransactionStatusRequest object is equal to o.
+   * Return true if this TransactionSubmitRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -100,22 +100,22 @@ public class TransactionStatusRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionStatusRequest transactionStatusRequest = (TransactionStatusRequest) o;
-    return Objects.equals(this.network, transactionStatusRequest.network) &&
-        Objects.equals(this.transactionIdentifier, transactionStatusRequest.transactionIdentifier);
+    TransactionSubmitRequest transactionSubmitRequest = (TransactionSubmitRequest) o;
+    return Objects.equals(this.network, transactionSubmitRequest.network) &&
+        Objects.equals(this.signedTransaction, transactionSubmitRequest.signedTransaction);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, transactionIdentifier);
+    return Objects.hash(network, signedTransaction);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionStatusRequest {\n");
+    sb.append("class TransactionSubmitRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
-    sb.append("    transactionIdentifier: ").append(toIndentedString(transactionIdentifier)).append("\n");
+    sb.append("    signedTransaction: ").append(toIndentedString(signedTransaction)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -21,33 +21,33 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * Action
+ * TransactionBuildError
  */
 @JsonPropertyOrder({
-  Action.JSON_PROPERTY_TYPE
+  TransactionBuildError.JSON_PROPERTY_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = BurnTokens.class, name = "BurnTokens"),
-  @JsonSubTypes.Type(value = CreateTokenDefinition.class, name = "CreateTokenDefinition"),
-  @JsonSubTypes.Type(value = MintTokens.class, name = "MintTokens"),
-  @JsonSubTypes.Type(value = StakeTokens.class, name = "StakeTokens"),
-  @JsonSubTypes.Type(value = TransferTokens.class, name = "TransferTokens"),
-  @JsonSubTypes.Type(value = UnstakeTokens.class, name = "UnstakeTokens"),
+  @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
+  @JsonSubTypes.Type(value = CouldNotConstructFeesError.class, name = "CouldNotConstructFeesError"),
+  @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
+  @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
+  @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
 })
 
-public class Action {
+public class TransactionBuildError {
   public static final String JSON_PROPERTY_TYPE = "type";
   private String type;
 
 
-  public Action type(String type) {
+  public TransactionBuildError type(String type) {
     this.type = type;
     return this;
   }
@@ -74,7 +74,7 @@ public class Action {
 
 
   /**
-   * Return true if this Action object is equal to o.
+   * Return true if this TransactionBuildError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -84,8 +84,8 @@ public class Action {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Action action = (Action) o;
-    return Objects.equals(this.type, action.type);
+    TransactionBuildError transactionBuildError = (TransactionBuildError) o;
+    return Objects.equals(this.type, transactionBuildError.type);
   }
 
   @Override
@@ -96,7 +96,7 @@ public class Action {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Action {\n");
+    sb.append("class TransactionBuildError {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -116,14 +116,13 @@ public class Action {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("BurnTokens", BurnTokens.class);
-  mappings.put("CreateTokenDefinition", CreateTokenDefinition.class);
-  mappings.put("MintTokens", MintTokens.class);
-  mappings.put("StakeTokens", StakeTokens.class);
-  mappings.put("TransferTokens", TransferTokens.class);
-  mappings.put("UnstakeTokens", UnstakeTokens.class);
-  mappings.put("Action", Action.class);
-  JSON.registerDiscriminator(Action.class, "type", mappings);
+  mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
+  mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
+  mappings.put("MessageTooLongError", MessageTooLongError.class);
+  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
+  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
+  mappings.put("TransactionBuildError", TransactionBuildError.class);
+  JSON.registerDiscriminator(TransactionBuildError.class, "type", mappings);
 }
 }
 
