@@ -66,7 +66,6 @@ package com.radixdlt.api.core.core.handlers;
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeResponse;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
@@ -76,7 +75,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.utils.Bytes;
 
-public final class ConstructionFinalizeHandler extends JsonRpcHandler<ConstructionFinalizeRequest, ConstructionFinalizeResponse> {
+public final class ConstructionFinalizeHandler extends CoreJsonRpcHandler<ConstructionFinalizeRequest, ConstructionFinalizeResponse> {
 	private final Network network;
 
 	@Inject

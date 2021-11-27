@@ -201,9 +201,9 @@ public class AccountInfoTest {
 		);
 
 		// Assert
-		var json = store.getAccountInfo(acct);
-		var balances = json.getJSONArray("liquid_balances");
-		assertThat(balances.length()).isEqualTo(0);
+		var accountBalances = store.getAccountInfo(acct);
+		var liquidBalances = accountBalances.getLiquidBalances();
+		assertThat(liquidBalances).isEmpty();
 	}
 
 	@Test
@@ -234,9 +234,9 @@ public class AccountInfoTest {
 		);
 
 		// Assert
-		var json = store.getAccountInfo(acct);
-		var balances = json.getJSONArray("liquid_balances");
-		var amtString = balances.getJSONObject(0).getString("value");
+		var accountBalances = store.getAccountInfo(acct);
+		var liquidBalances = accountBalances.getLiquidBalances();
+		var amtString = liquidBalances.get(0).getValue();
 		assertThat(amtString).isEqualTo(Amount.ofTokens(10).toSubunits().toString());
 	}
 }

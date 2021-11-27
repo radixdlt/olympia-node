@@ -68,14 +68,13 @@ import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.EngineStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.EngineStatusResponse;
 import com.radixdlt.api.core.core.openapitools.model.Validator;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 
-public class EngineStatusHandler extends JsonRpcHandler<EngineStatusRequest, EngineStatusResponse> {
+public class EngineStatusHandler extends CoreJsonRpcHandler<EngineStatusRequest, EngineStatusResponse> {
 	private final Addressing addressing;
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Network network;

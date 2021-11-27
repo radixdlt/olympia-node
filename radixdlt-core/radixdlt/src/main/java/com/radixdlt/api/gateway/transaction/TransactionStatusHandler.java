@@ -64,17 +64,17 @@
 package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.openapitools.model.LedgerState;
 import com.radixdlt.api.gateway.openapitools.model.TransactionStatusRequest;
 import com.radixdlt.api.gateway.openapitools.model.TransactionStatusResponse;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.utils.Bytes;
 
 import java.time.Instant;
 
-final class TransactionStatusHandler extends JsonRpcHandler<TransactionStatusRequest, TransactionStatusResponse> {
+final class TransactionStatusHandler extends GatewayJsonRpcHandler<TransactionStatusRequest, TransactionStatusResponse> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final TransactionStatusService service;
 

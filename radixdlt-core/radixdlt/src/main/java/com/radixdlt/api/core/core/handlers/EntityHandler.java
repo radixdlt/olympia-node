@@ -67,7 +67,6 @@ import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityResponse;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
@@ -80,7 +79,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.util.function.Function;
 
-public class EntityHandler extends JsonRpcHandler<EntityRequest, EntityResponse> {
+public class EntityHandler extends CoreJsonRpcHandler<EntityRequest, EntityResponse> {
 	private final Network network;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final CoreModelMapper modelMapper;

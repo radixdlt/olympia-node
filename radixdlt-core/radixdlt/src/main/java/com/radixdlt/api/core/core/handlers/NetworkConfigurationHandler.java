@@ -68,7 +68,6 @@ import com.radixdlt.api.core.core.openapitools.model.Bech32HRPs;
 import com.radixdlt.api.core.core.openapitools.model.NetworkConfigurationResponse;
 import com.radixdlt.api.core.core.openapitools.model.NetworkConfigurationResponseVersion;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
@@ -76,7 +75,7 @@ import com.radixdlt.networks.NetworkId;
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
 import static org.radix.Radix.VERSION_STRING_KEY;
 
-public class NetworkConfigurationHandler extends JsonRpcHandler<Void, NetworkConfigurationResponse> {
+public class NetworkConfigurationHandler extends CoreJsonRpcHandler<Void, NetworkConfigurationResponse> {
 	private final Network network;
 	private final InfoSupplier infoSupplier;
 

@@ -66,6 +66,8 @@ package com.radixdlt.api.gateway.account;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.api.gateway.openapitools.JSON;
+import com.radixdlt.api.gateway.openapitools.model.AccountBalances;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.Bucket;
@@ -94,6 +96,7 @@ import com.sleepycat.je.Transaction;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -262,7 +265,7 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			.put("value", lockedXrdAmount.toString());
 	}
 
-	public JSONObject getAccountInfo(REAddr addr) {
+	public AccountBalances getAccountInfo(REAddr addr) {
 		var key = new DatabaseEntry(addr.getBytes());
 		var value = new DatabaseEntry();
 
@@ -283,7 +286,11 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 
 		json.put("staked_and_unstaking_balance", getStakedAndUnstakingBalance(addr));
 
-		return json;
+		try {
+			return JSON.getDefault().getMapper().readValue(json.toString(), AccountBalances.class);
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	@Override

@@ -64,7 +64,7 @@
 package com.radixdlt.api.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.radixdlt.api.core.core.openapitools.JSON;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -74,10 +74,13 @@ public abstract class JsonRpcHandler<T, U> implements HttpHandler {
 	private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
 	private final Class<T> requestClass;
+	private final ObjectMapper objectMapper;
+
 	public abstract U handleRequest(T request) throws Exception;
 
-	public JsonRpcHandler(Class<T> requestClass) {
+	public JsonRpcHandler(Class<T> requestClass, ObjectMapper objectMapper) {
 		this.requestClass = requestClass;
+		this.objectMapper = objectMapper;
 	}
 
 	@Override
@@ -90,12 +93,12 @@ public abstract class JsonRpcHandler<T, U> implements HttpHandler {
 		exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
 		exchange.startBlocking();
 
-		var mapper = JSON.getDefault().getMapper();
-		var request = requestClass == Void.class ? null : mapper.readValue(exchange.getInputStream(), requestClass);
+		var request = requestClass == Void.class
+			? null : objectMapper.readValue(exchange.getInputStream(), requestClass);
 		var response = handleRequest(request);
 		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
 		exchange.setStatusCode(200);
-		mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-		exchange.getResponseSender().send(mapper.writeValueAsString(response));
+		objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+		exchange.getResponseSender().send(objectMapper.writeValueAsString(response));
 	}
 }

@@ -61,24 +61,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.model;
+package com.radixdlt.api.gateway;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.inject.Inject;
+import com.radixdlt.api.gateway.openapitools.model.NetworkResponse;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 
-public class LedgerState {
-	@JsonProperty("epoch")
-	private final long epoch;
-	@JsonProperty("round")
-	private final long round;
-	@JsonProperty("version")
-	private final long version;
-	@JsonProperty("timestamp")
-	private final String timestamp;
+final class NetworkHandler extends GatewayJsonRpcHandler<Void, NetworkResponse> {
+	private final InMemorySystemInfo inMemorySystemInfo;
+	private final String networkName;
+	private final GatewayModelMapper gatewayModelMapper;
 
-	public LedgerState(long epoch, long round, long version, String timestamp) {
-		this.epoch = epoch;
-		this.round = round;
-		this.version = version;
-		this.timestamp = timestamp;
+	@Inject
+	NetworkHandler(
+		@NetworkId int networkId,
+		InMemorySystemInfo inMemorySystemInfo,
+		GatewayModelMapper gatewayModelMapper
+	) {
+		super(Void.class);
+		this.networkName = Network.ofId(networkId).map(n -> n.name().toLowerCase()).orElse("unknown");
+		this.inMemorySystemInfo = inMemorySystemInfo;
+		this.gatewayModelMapper = gatewayModelMapper;
+	}
+
+	@Override
+	public NetworkResponse handleRequest(Void request) {
+		var proof = inMemorySystemInfo.getCurrentProof();
+		return new NetworkResponse()
+			.network(networkName)
+			.ledgerState(gatewayModelMapper.ledgerState(proof));
 	}
 }

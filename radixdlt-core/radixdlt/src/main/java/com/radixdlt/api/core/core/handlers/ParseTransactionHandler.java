@@ -69,7 +69,6 @@ import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseResponse;
 import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -82,7 +81,7 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
 
-public final class ParseTransactionHandler extends JsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {
+public final class ParseTransactionHandler extends CoreJsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {
 	private final Network network;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final CoreModelMapper modelMapper;

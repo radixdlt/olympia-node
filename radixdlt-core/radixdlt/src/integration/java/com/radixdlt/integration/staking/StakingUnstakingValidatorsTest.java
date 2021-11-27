@@ -68,6 +68,7 @@ import com.google.common.collect.ClassToInstanceMap;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.gateway.account.BerkeleyAccountInfoStore;
+import com.radixdlt.api.gateway.openapitools.model.AccountBalances;
 import com.radixdlt.api.gateway.validator.BerkeleyValidatorUptimeStore;
 import com.radixdlt.api.gateway.tokens.BerkeleyResourceInfoStore;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
@@ -407,7 +408,7 @@ public class StakingUnstakingValidatorsTest {
 			return resourceInfoStore.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
 		}
 
-		public JSONObject getAccountInfo(REAddr addr) {
+		public AccountBalances getAccountInfo(REAddr addr) {
 			return accountInfoStore.getAccountInfo(addr);
 		}
 
@@ -540,11 +541,11 @@ public class StakingUnstakingValidatorsTest {
 			.map(ECKeyPair::getPublicKey)
 			.map(REAddr::ofPubKeyAccount)
 			.map(nodeState::getAccountInfo)
-			.map(jsonAccount -> {
-				var jsonArray = jsonAccount.getJSONArray("liquid_balances");
-				if (jsonArray.length() == 1) {
-					return new BigInteger(jsonArray.getJSONObject(0).getString("value"), 10);
-				} else if (jsonArray.isEmpty()) {
+			.map(accountBalances -> {
+				var tokenAmounts = accountBalances.getLiquidBalances();
+				if (tokenAmounts.size() == 1) {
+					return new BigInteger(tokenAmounts.get(0).getValue());
+				} else if (tokenAmounts.isEmpty()) {
 					return BigInteger.ZERO;
 				} else {
 					throw new IllegalStateException();

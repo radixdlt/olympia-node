@@ -64,52 +64,35 @@
 package com.radixdlt.api.gateway.account;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
+import com.radixdlt.api.gateway.GatewayModelMapper;
+import com.radixdlt.api.gateway.openapitools.model.AccountBalancesRequest;
+import com.radixdlt.api.gateway.openapitools.model.AccountBalancesResponse;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import org.json.JSONObject;
 
-import java.time.Instant;
-
-final class AccountBalancesHandler implements ApiHandler<REAddr> {
+final class AccountBalancesHandler extends GatewayJsonRpcHandler<AccountBalancesRequest, AccountBalancesResponse> {
 	private final InMemorySystemInfo inMemorySystemInfo;
-	private final Addressing addressing;
 	private final BerkeleyAccountInfoStore store;
+	private final GatewayModelMapper gatewayModelMapper;
 
 	@Inject
 	AccountBalancesHandler(
 		InMemorySystemInfo inMemorySystemInfo,
-		Addressing addressing,
-		BerkeleyAccountInfoStore store
+		BerkeleyAccountInfoStore store,
+		GatewayModelMapper gatewayModelMapper
 	) {
+		super(AccountBalancesRequest.class);
 		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.addressing = addressing;
 		this.store = store;
+		this.gatewayModelMapper = gatewayModelMapper;
 	}
 
 	@Override
-	public Addressing addressing() {
-		return addressing;
-	}
-
-	@Override
-	public REAddr parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		return reader.getJsonObject("account_identifier", r -> r.getAccountAddress("address"));
-	}
-
-	@Override
-	public JSONObject handleRequest(REAddr addr) {
+	public AccountBalancesResponse handleRequest(AccountBalancesRequest request) throws Exception {
+		var accountAddress = gatewayModelMapper.account(request.getAccountIdentifier());
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return new JSONObject()
-			.put("ledger_state", new JSONObject()
-				.put("epoch", proof.getEpoch())
-				.put("round", proof.getView().number())
-				.put("version", proof.getStateVersion())
-				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
-			)
-			.put("account_balances", store.getAccountInfo(addr));
+		return new AccountBalancesResponse()
+			.ledgerState(gatewayModelMapper.ledgerState(proof))
+			.accountBalances(store.getAccountInfo(accountAddress));
 	}
 }

@@ -65,10 +65,10 @@ package com.radixdlt.api.gateway.account;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.gateway.BerkeleyAccountTransactionStore;
+import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.openapitools.model.AccountTransactionsRequest;
 import com.radixdlt.api.gateway.openapitools.model.AccountTransactionsResponse;
 import com.radixdlt.api.gateway.openapitools.model.LedgerState;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
@@ -77,7 +77,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 
-class AccountTransactionsHandler extends JsonRpcHandler<AccountTransactionsRequest, AccountTransactionsResponse> {
+class AccountTransactionsHandler extends GatewayJsonRpcHandler<AccountTransactionsRequest, AccountTransactionsResponse> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final Addressing addressing;
 	private final BerkeleyAccountTxHistoryStore txHistoryStore;

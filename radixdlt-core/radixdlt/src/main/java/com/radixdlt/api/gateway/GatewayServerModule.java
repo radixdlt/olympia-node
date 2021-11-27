@@ -66,13 +66,13 @@ package com.radixdlt.api.gateway;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.gateway.account.AccountApiModule;
 import com.radixdlt.api.gateway.transaction.TransactionApiModule;
-import com.radixdlt.api.gateway.network.NetworkApiModule;
 import com.radixdlt.api.gateway.tokens.TokenApiModule;
 import com.radixdlt.api.gateway.validator.ValidatorApiModule;
 import com.radixdlt.api.util.HandlerRoute;
@@ -115,10 +115,15 @@ public class GatewayServerModule extends AbstractModule {
 		bind(BerkeleyAccountTransactionStore.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
 			.addBinding().to(BerkeleyAccountTransactionStore.class);
+
+		var routeBinder = MapBinder.newMapBinder(
+			binder(), HandlerRoute.class, HttpHandler.class, ArchiveServer.class
+		);
+		routeBinder.addBinding(HandlerRoute.post("/network")).to(NetworkHandler.class);
+
 		install(new AccountApiModule(ArchiveServer.class, "/account"));
 		install(new TokenApiModule(ArchiveServer.class, "/token"));
 		install(new ValidatorApiModule(ArchiveServer.class, "/validator"));
-		install(new NetworkApiModule(ArchiveServer.class, "/network"));
 		install(new TransactionApiModule(ArchiveServer.class, "/transaction"));
 	}
 

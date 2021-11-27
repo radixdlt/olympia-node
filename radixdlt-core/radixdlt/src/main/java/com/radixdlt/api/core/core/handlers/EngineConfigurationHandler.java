@@ -70,7 +70,6 @@ import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationResponse;
 import com.radixdlt.api.core.core.openapitools.model.EngineStateIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -79,7 +78,7 @@ import com.radixdlt.utils.Bytes;
 
 import java.util.TreeMap;
 
-public class EngineConfigurationHandler extends JsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
+public class EngineConfigurationHandler extends CoreJsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
 	private final TreeMap<Long, ForkConfig> forks;
 	private final CoreModelMapper modelMapper;
 	private final VerifiedTxnsAndProof genesis;

@@ -72,6 +72,7 @@ import com.radixdlt.api.gateway.openapitools.model.AccountTransactionMetadata;
 import com.radixdlt.api.gateway.openapitools.model.AccountTransactionStatus;
 import com.radixdlt.api.gateway.openapitools.model.Action;
 import com.radixdlt.api.gateway.openapitools.model.BurnTokens;
+import com.radixdlt.api.gateway.openapitools.model.LedgerState;
 import com.radixdlt.api.gateway.openapitools.model.MintTokens;
 import com.radixdlt.api.gateway.openapitools.model.StakeTokens;
 import com.radixdlt.api.gateway.openapitools.model.TokenAmount;
@@ -84,12 +85,14 @@ import com.radixdlt.application.system.state.StakeOwnershipBucket;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.state.AccountBucket;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -102,12 +105,28 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class GatewayModelMapper {
+public final class GatewayModelMapper {
 	private final Addressing addressing;
 
 	@Inject
 	public GatewayModelMapper(Addressing addressing) {
 		this.addressing = addressing;
+	}
+
+	public REAddr account(AccountIdentifier accountIdentifier) {
+		try {
+			return addressing.forAccounts().parse(accountIdentifier.getAddress());
+		} catch (DeserializeException e) {
+			throw new IllegalStateException();
+		}
+	}
+
+	public LedgerState ledgerState(LedgerProof ledgerProof) {
+		return new LedgerState()
+			.epoch(ledgerProof.getEpoch())
+			.round(ledgerProof.getView().number())
+			.timestamp(Instant.ofEpochMilli(ledgerProof.timestamp()).toString())
+			.version(ledgerProof.getStateVersion());
 	}
 
 	public List<Action> actions(

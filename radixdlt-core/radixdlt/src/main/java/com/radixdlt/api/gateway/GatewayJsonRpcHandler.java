@@ -61,43 +61,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.network;
+package com.radixdlt.api.gateway;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.gateway.model.LedgerState;
-import com.radixdlt.api.gateway.model.NetworkResponse;
+import com.radixdlt.api.gateway.openapitools.JSON;
 import com.radixdlt.api.util.JsonRpcHandler;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
 
-import java.time.Instant;
-
-final class NetworkHandler extends JsonRpcHandler<Void, NetworkResponse> {
-	private final InMemorySystemInfo inMemorySystemInfo;
-	private final String networkName;
-
-	@Inject
-	NetworkHandler(
-		@NetworkId int networkId,
-		InMemorySystemInfo inMemorySystemInfo
-	) {
-		super(Void.class);
-		this.networkName = Network.ofId(networkId).map(n -> n.name().toLowerCase()).orElse("unknown");
-		this.inMemorySystemInfo = inMemorySystemInfo;
-	}
-
-	@Override
-	public NetworkResponse handleRequest(Void request) {
-		var proof = inMemorySystemInfo.getCurrentProof();
-		return new NetworkResponse(
-			networkName,
-			new LedgerState(
-				proof.getEpoch(),
-				proof.getView().number(),
-				proof.getStateVersion(),
-				Instant.ofEpochMilli(proof.timestamp()).toString()
-			)
-		);
+public abstract class GatewayJsonRpcHandler<T, U> extends JsonRpcHandler<T, U> {
+	public GatewayJsonRpcHandler(Class<T> requestClass) {
+		super(requestClass, JSON.getDefault().getMapper());
 	}
 }

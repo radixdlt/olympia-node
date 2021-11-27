@@ -67,7 +67,6 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.api.core.core.openapitools.model.SignRequest;
 import com.radixdlt.api.core.core.openapitools.model.SignResponse;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.HashSigner;
@@ -78,7 +77,7 @@ import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
 
-public class SignHandler extends JsonRpcHandler<SignRequest, SignResponse> {
+public class SignHandler extends CoreJsonRpcHandler<SignRequest, SignResponse> {
 
 	private final ECPublicKey self;
 	private final HashSigner hashSigner;

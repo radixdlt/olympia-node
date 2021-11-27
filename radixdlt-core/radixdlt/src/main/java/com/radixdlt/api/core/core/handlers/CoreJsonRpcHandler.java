@@ -61,18 +61,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.model;
+package com.radixdlt.api.core.core.handlers;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.api.core.core.openapitools.JSON;
+import com.radixdlt.api.util.JsonRpcHandler;
 
-public final class NetworkResponse {
-	@JsonProperty("network")
-	private final String network;
-	@JsonProperty("ledger_state")
-	private final LedgerState ledgerState;
-
-	public NetworkResponse(String network, LedgerState ledgerState) {
-		this.network = network;
-		this.ledgerState = ledgerState;
+abstract class CoreJsonRpcHandler<T, U> extends JsonRpcHandler<T, U> {
+	CoreJsonRpcHandler(Class<T> requestClass) {
+		super(requestClass, JSON.getDefault().getMapper());
 	}
 }

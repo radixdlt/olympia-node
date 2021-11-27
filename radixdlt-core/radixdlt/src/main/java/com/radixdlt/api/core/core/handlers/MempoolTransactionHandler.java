@@ -68,7 +68,6 @@ import com.google.inject.Provider;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
 import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionResponse;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SystemMapKey;
@@ -80,7 +79,7 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineMempool;
 
-public class MempoolTransactionHandler extends JsonRpcHandler<MempoolTransactionRequest, MempoolTransactionResponse> {
+public class MempoolTransactionHandler extends CoreJsonRpcHandler<MempoolTransactionRequest, MempoolTransactionResponse> {
 	private final Network network;
 	private final RadixEngineMempool mempool;
 	private final CoreModelMapper modelMapper;

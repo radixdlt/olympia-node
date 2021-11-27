@@ -68,7 +68,6 @@ import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsReques
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsResponse;
 import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
 import com.radixdlt.api.core.core.BerkeleyProcessedTransactionsStore;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
@@ -76,7 +75,7 @@ import com.radixdlt.utils.Bytes;
 
 import java.util.stream.Collectors;
 
-public class TransactionsHandler extends JsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
+public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
 	private final Network network;
 	private final BerkeleyProcessedTransactionsStore txnStore;
 

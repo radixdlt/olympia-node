@@ -67,12 +67,11 @@ import com.google.inject.Inject;
 import com.radixdlt.api.core.core.openapitools.model.MempoolRequest;
 import com.radixdlt.api.core.core.openapitools.model.MempoolResponse;
 import com.radixdlt.api.core.core.openapitools.model.TransactionIdentifier;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.RadixEngineMempool;
 
-public class MempoolHandler extends JsonRpcHandler<MempoolRequest, MempoolResponse> {
+public class MempoolHandler extends CoreJsonRpcHandler<MempoolRequest, MempoolResponse> {
 	private final Network network;
 	private final RadixEngineMempool mempool;
 

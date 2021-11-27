@@ -69,7 +69,6 @@ import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.AccountVaultEntity;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildResponse;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
@@ -78,7 +77,7 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Bytes;
 
-public final class ConstructionBuildHandler extends JsonRpcHandler<ConstructionBuildRequest, ConstructionBuildResponse> {
+public final class ConstructionBuildHandler extends CoreJsonRpcHandler<ConstructionBuildRequest, ConstructionBuildResponse> {
 	private final Addressing addressing;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final Forks forks;

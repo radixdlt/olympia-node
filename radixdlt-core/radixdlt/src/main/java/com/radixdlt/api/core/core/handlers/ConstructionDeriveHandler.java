@@ -70,14 +70,13 @@ import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMe
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveResponse;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 
-public class ConstructionDeriveHandler extends JsonRpcHandler<ConstructionDeriveRequest, ConstructionDeriveResponse> {
+public class ConstructionDeriveHandler extends CoreJsonRpcHandler<ConstructionDeriveRequest, ConstructionDeriveResponse> {
 	private final Network network;
 	private final Addressing addressing;
 

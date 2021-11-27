@@ -70,7 +70,6 @@ import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
 import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
 import com.radixdlt.api.gateway.transaction.StateConflictException;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.engine.RadixEngineException;
@@ -86,7 +85,7 @@ import com.radixdlt.utils.Bytes;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-public class ConstructionSubmitHandler extends JsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
+public class ConstructionSubmitHandler extends CoreJsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
 	private final Network network;
 	private final EventDispatcher<MempoolAdd> dispatcher;
 	private final CoreModelMapper modelMapper;

@@ -68,7 +68,6 @@ import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
-import com.radixdlt.api.util.JsonRpcHandler;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
@@ -82,7 +81,7 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
-public final class NetworkStatusHandler extends JsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
+public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
 	private final Network network;
 	private final REAddr accountAddress;
 	private final ECPublicKey validatorKey;
