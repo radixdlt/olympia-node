@@ -190,8 +190,6 @@ public final class HttpServerRunner implements ModuleRunner {
 		handler.setInvalidMethodHandler(HttpServerRunner::invalidMethodHandler);
 
 		var exceptionHandler = Handlers.exceptionHandler(handler);
-		addErrorCodeHandler(ApiErrorCode.INVALID_JSON, exceptionHandler);
-		addErrorCodeHandler(ApiErrorCode.INVALID_REQUEST, exceptionHandler);
 		errorCodes.forEach(e -> addErrorCodeHandler(e, exceptionHandler));
 		addErrorCodeHandler(ApiErrorCode.INTERNAL_SERVER_ERROR, exceptionHandler);
 

@@ -169,6 +169,11 @@ public final class BerkeleyAccountTransactionStore implements BerkeleyAdditional
 			.map(RoundData::asInstant)
 			.forEach(timestamp::set);
 
+		// Only store user transactions
+		if (txn.getSignedBy().isEmpty()) {
+			return;
+		}
+
 		Function<REAddr, String> addressToSymbol = addr -> {
 			var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
 			var data = mapper.apply(mapKey).orElseThrow().getData();

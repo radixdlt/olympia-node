@@ -63,8 +63,6 @@
 
 package com.radixdlt.api.gateway.transaction;
 
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
 import com.radixdlt.application.tokens.ResourceCreatedEvent;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
@@ -129,19 +127,6 @@ public final class TokenProperties {
 
 	public String getUrl() {
 		return iconUrl;
-	}
-
-	public static TokenProperties from(JsonObjectReader reader) throws InvalidParametersException {
-		return new TokenProperties(
-			reader.getString("symbol"),
-			reader.getString("name"),
-			reader.getOptString("description").orElse(""),
-			reader.getOptString("iconUrl").orElse(""),
-			reader.getOptString("url").orElse(""),
-			reader.getAmount("granularity"),
-			reader.getBoolean("is_supply_mutable"),
-			reader.getOptAccountIdentifier("owner").orElse(null)
-		);
 	}
 
 	public static TokenProperties from(ResourceCreatedEvent resourceCreated) {

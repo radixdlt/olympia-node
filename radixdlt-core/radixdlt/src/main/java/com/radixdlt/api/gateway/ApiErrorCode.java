@@ -81,23 +81,6 @@ public enum ApiErrorCode {
 				.putOpt("root", root == null ? null : root.toString());
 		}
 	},
-	INVALID_JSON(JsonParseException.class, 2) {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (JsonParseException) e;
-			return new JSONObject()
-				.put("cause", ex.getCause().getMessage());
-		}
-	},
-	INVALID_REQUEST(InvalidParametersException.class, 3) {
-		@Override
-		public JSONObject getDetails(Throwable e, Addressing addressing) {
-			var ex = (InvalidParametersException) e;
-			return new JSONObject()
-				.put("pointer", ex.getJsonPointer())
-				.put("cause", ex.getCause() == null ? ex.getMessage() : ex.getCause().getMessage());
-		}
-	},
 	MEMPOOL_FULL(MempoolFullException.class, 100) {
 		@Override
 		public JSONObject getDetails(Throwable e, Addressing addressing) {

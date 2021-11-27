@@ -65,7 +65,6 @@ package com.radixdlt.api.gateway;
 
 import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
-import com.radixdlt.accounting.TwoActorEntry;
 import com.radixdlt.api.gateway.openapitools.model.AccountIdentifier;
 import com.radixdlt.api.gateway.openapitools.model.AccountTransaction;
 import com.radixdlt.api.gateway.openapitools.model.AccountTransactionMetadata;
@@ -83,6 +82,7 @@ import com.radixdlt.api.gateway.openapitools.model.NotValidatorOwnerError;
 import com.radixdlt.api.gateway.openapitools.model.StakeTokens;
 import com.radixdlt.api.gateway.openapitools.model.TokenAmount;
 import com.radixdlt.api.gateway.openapitools.model.TokenIdentifier;
+import com.radixdlt.api.gateway.openapitools.model.TokenProperties;
 import com.radixdlt.api.gateway.openapitools.model.TransactionBuild;
 import com.radixdlt.api.gateway.openapitools.model.TransactionBuildError;
 import com.radixdlt.api.gateway.openapitools.model.TransactionBuildRequest;
@@ -91,12 +91,13 @@ import com.radixdlt.api.gateway.openapitools.model.TransactionRules;
 import com.radixdlt.api.gateway.openapitools.model.TransferTokens;
 import com.radixdlt.api.gateway.openapitools.model.UnstakeTokens;
 import com.radixdlt.api.gateway.openapitools.model.ValidatorIdentifier;
-import com.radixdlt.application.system.state.StakeOwnershipBucket;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
 import com.radixdlt.application.tokens.construction.MinimumStakeException;
-import com.radixdlt.application.tokens.state.AccountBucket;
+import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.MessageTooLongException;
 import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.TxAction;
@@ -109,6 +110,7 @@ import com.radixdlt.atom.actions.CreateMutableToken;
 import com.radixdlt.atom.actions.MintToken;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.crypto.ECPublicKey;
@@ -123,9 +125,11 @@ import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
+import java.math.BigInteger;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -194,25 +198,141 @@ public final class GatewayModelMapper {
 	) {
 		return txn.getGroupedStateUpdates()
 			.stream()
-			.flatMap(u -> inferAction(u, addressToSymbol, getValidatorStake).stream())
+			.flatMap(u -> inferActions(u, addressToSymbol, getValidatorStake).stream())
 			.collect(Collectors.toList());
 	}
 
-	private Optional<Action> inferAction(
+	private CreateTokenDefinition inferCreateTokenDefinition(List<REStateUpdate> stateUpdates) {
+		var tokenProperties = new TokenProperties();
+		var tokenSupply = new TokenAmount().value("0");
+		var createTokenDefinition = new CreateTokenDefinition()
+			.tokenProperties(tokenProperties)
+			.tokenSupply(tokenSupply);
+		createTokenDefinition.setType("CreateTokenDefinition");
+
+		for (var u : stateUpdates) {
+			var substate = (Particle) u.getParsed();
+			if (substate instanceof TokenResource tokenResource) {
+				tokenResource.getOwner()
+					.map(REAddr::ofPubKeyAccount)
+					.map(GatewayModelMapper.this::accountIdentifier)
+					.ifPresent(tokenProperties::setOwner);
+				tokenProperties.granularity(tokenResource.getGranularity().toString());
+				tokenProperties.isSupplyMutable(tokenResource.isMutable());
+			} else if (substate instanceof TokenResourceMetadata tokenResourceMetadata) {
+				tokenProperties.name(tokenResourceMetadata.getName());
+				tokenProperties.description(tokenResourceMetadata.getDescription());
+				tokenProperties.symbol(tokenResourceMetadata.getSymbol());
+				tokenProperties.url(tokenResourceMetadata.getUrl());
+				tokenProperties.iconUrl(tokenResourceMetadata.getIconUrl());
+				tokenSupply.tokenIdentifier(tokenIdentifier(tokenResourceMetadata.getAddr(), tokenResourceMetadata.getSymbol()));
+			} else if (substate instanceof TokensInAccount tokensInAccount) {
+				// Can only mint a single substate for fixed supply tokens so we should
+				// not need to worry about multiple holders
+				createTokenDefinition.to(accountIdentifier(tokensInAccount.getHoldingAddr()));
+				tokenSupply.value(tokensInAccount.getAmount().toString());
+			}
+		}
+
+		return createTokenDefinition;
+	}
+
+	private List<Action> inferActions(
 		List<REStateUpdate> stateUpdates,
 		Function<REAddr, String> addressToSymbol,
 		Function<ECPublicKey, ValidatorStakeData> getValidatorStake
 	) {
 		var accounting = REResourceAccounting.compute(stateUpdates.stream());
-		var entry = TwoActorEntry.parse(accounting.bucketAccounting());
-		return entry.map(e -> mapToAction(
-			e,
-			addressToSymbol,
-			(k, ownership) -> {
-				var stakeData = getValidatorStake.apply(k);
-				return ownership.multiply(stakeData.getTotalStake()).divide(stakeData.getTotalOwnership());
+		var bucketAccounting = accounting.bucketAccounting();
+
+		var withdrawals = bucketAccounting.entrySet().stream()
+			.filter(e -> e.getValue().compareTo(BigInteger.ZERO) < 0)
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+		if (withdrawals.size() > 1) {
+			throw new IllegalStateException("Invalid operation group with multiple vault withdrawals.");
+		}
+
+		if (stateUpdates.stream().anyMatch(u -> u.getParsed() instanceof TokenResource)) {
+			if (withdrawals.size() > 0) {
+				throw new IllegalStateException("Should be no withdrawals in Token Creation");
 			}
-		));
+			return List.of(inferCreateTokenDefinition(stateUpdates));
+		}
+
+		var deposits = bucketAccounting.entrySet().stream()
+			.filter(e -> e.getValue().compareTo(BigInteger.ZERO) > 0)
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+		if (withdrawals.isEmpty() && deposits.isEmpty()) {
+			return List.of();
+		}
+
+		if (withdrawals.isEmpty()) {
+			return deposits.entrySet().stream()
+				.filter(e -> e.getKey().resourceAddr() != null && !e.getKey().resourceAddr().isNativeToken())
+				.map(e -> {
+					var value = UInt256.from(e.getValue().toString());
+					var amount = tokenAmount(value, e.getKey().resourceAddr(), addressToSymbol);
+					return new MintTokens()
+							.to(accountIdentifier(e.getKey().getOwner()))
+							.amount(amount)
+							.type("MintTokens");
+				})
+				.collect(Collectors.toList());
+		}
+
+		var withdrawal = withdrawals.entrySet().stream().findFirst().orElseThrow();
+		var from = withdrawal.getKey();
+		var fromAmount = withdrawal.getValue().negate();
+		var actions = new ArrayList<Action>();
+		for (var e : deposits.entrySet()) {
+			var to = e.getKey();
+			var amount = e.getValue();
+			fromAmount = fromAmount.subtract(amount);
+			if (fromAmount.compareTo(BigInteger.ZERO) < 0) {
+				throw new IllegalStateException("Invalid accounting found");
+			}
+			var value = UInt256.from(amount.toString());
+			if (to.resourceAddr() != null && to.getValidatorKey() == null) {
+				actions.add(new TransferTokens()
+					.from(accountIdentifier(from.getOwner()))
+					.to(accountIdentifier(to.getOwner()))
+					.amount(tokenAmount(value, to.resourceAddr(), addressToSymbol))
+					.type("TransferTokens")
+				);
+			} else if (to.resourceAddr() != null && to.getValidatorKey() != null) {
+				actions.add(new StakeTokens()
+					.from(accountIdentifier(from.getOwner()))
+					.to(validatorIdentifier(to.getValidatorKey()))
+					.amount(tokenAmount(value, to.resourceAddr(), addressToSymbol))
+					.type("StakeTokens")
+				);
+			} else if (to.resourceAddr() == null && from.getValidatorKey() != null) {
+				actions.add(new UnstakeTokens()
+					.from(validatorIdentifier(from.getValidatorKey()))
+					.to(accountIdentifier(to.getOwner()))
+					.amount(tokenAmount(value, from, to.resourceAddr(), addressToSymbol, (k, ownership) -> {
+						var stakeData = getValidatorStake.apply(k);
+						return ownership.multiply(stakeData.getTotalStake()).divide(stakeData.getTotalOwnership());
+					}))
+					.type("UnstakeTokens")
+				);
+			} else {
+				throw new IllegalStateException();
+			}
+		}
+
+		if (fromAmount.compareTo(BigInteger.ZERO) > 0 && from.resourceAddr() != null && !from.resourceAddr().isNativeToken()) {
+			var value = UInt256.from(fromAmount.toString());
+			actions.add(new BurnTokens()
+				.from(accountIdentifier(from.getOwner()))
+				.amount(tokenAmount(value, from.resourceAddr(), addressToSymbol))
+				.type("BurnTokens")
+			);
+		}
+
+		return actions;
 	}
 
 	public TokenIdentifier nativeTokenIdentifier() {
@@ -247,86 +367,28 @@ public final class GatewayModelMapper {
 
 	public TokenAmount tokenAmount(
 		UInt256 amount,
+		REAddr tokenAddress,
+		Function<REAddr, String> addrToSymbol
+	) {
+		return new TokenAmount()
+			.tokenIdentifier(tokenIdentifier(tokenAddress, addrToSymbol))
+			.value(amount.toString());
+	}
+
+	public TokenAmount tokenAmount(
+		UInt256 amount,
 		Bucket fromBucket,
 		REAddr tokenAddress,
 		Function<REAddr, String> addrToSymbol,
 		BiFunction<ECPublicKey, UInt384, UInt384> computeStakeFromOwnership
 	) {
 		if (tokenAddress != null) {
-			return new TokenAmount()
-				.tokenIdentifier(tokenIdentifier(tokenAddress, addrToSymbol))
-				.value(amount.toString());
+			return tokenAmount(amount, tokenAddress, addrToSymbol);
 		} else {
 			var value = computeStakeFromOwnership.apply(fromBucket.getValidatorKey(), UInt384.from(amount)).getLow();
 			return new TokenAmount()
 				.tokenIdentifier(tokenIdentifier(REAddr.ofNativeToken(), addrToSymbol))
 				.value(value.toString());
-		}
-	}
-
-	private Action mapToAction(
-		TwoActorEntry entry,
-		Function<REAddr, String> addrToSymbol,
-		BiFunction<ECPublicKey, UInt384, UInt384> computeStakeFromOwnership
-	) {
-		var amtByteArray = entry.amount().toByteArray();
-		var amount = UInt256.from(amtByteArray);
-		var from = entry.from();
-		var to = entry.to();
-
-		var tokenAmount = tokenAmount(
-			amount,
-			from.orElse(null),
-			entry.resourceAddr().orElse(null),
-			addrToSymbol,
-			computeStakeFromOwnership
-		);
-
-		if (from.isEmpty()) {
-			var toBucket = to.orElseThrow();
-			if (!(toBucket instanceof AccountBucket)) {
-				throw new IllegalStateException();
-			}
-			return new MintTokens()
-				.to(accountIdentifier(toBucket.getOwner()))
-				.amount(tokenAmount)
-				.type("MintTokens");
-		} else if (to.isEmpty()) {
-			return new BurnTokens()
-				.from(accountIdentifier(from.get().getOwner()))
-				.amount(tokenAmount)
-				.type("BurnTokens");
-		} else {
-			var fromBucket = from.get();
-			var toBucket = to.get();
-			if (fromBucket instanceof AccountBucket) {
-				var fromAccount = accountIdentifier(fromBucket.getOwner());
-				if (toBucket instanceof AccountBucket) {
-					var toAccount = accountIdentifier(toBucket.getOwner());
-					return new TransferTokens()
-						.amount(tokenAmount)
-						.from(fromAccount)
-						.to(toAccount)
-						.type("TransferTokens");
-				} else {
-					var toValidator = validatorIdentifier(toBucket.getValidatorKey());
-					return new StakeTokens()
-						.amount(tokenAmount)
-						.from(fromAccount)
-						.to(toValidator)
-						.type("StakeTokens");
-				}
-			} else if (fromBucket instanceof StakeOwnershipBucket) {
-				var fromValidator = validatorIdentifier(toBucket.getValidatorKey());
-				var toAccount = accountIdentifier(toBucket.getOwner());
-				return new UnstakeTokens()
-					.amount(tokenAmount)
-					.from(fromValidator)
-					.to(toAccount)
-					.type("UnstakeTokens");
-			} else {
-				throw new IllegalStateException();
-			}
 		}
 	}
 
@@ -337,8 +399,13 @@ public final class GatewayModelMapper {
 		Function<ECPublicKey, ValidatorStakeData> getValidatorStake
 	) {
 		var accountTransaction = new AccountTransaction();
-		actions(processedTxn, addressToSymbol, getValidatorStake)
-			.forEach(accountTransaction::addActionsItem);
+
+		// Only add actions for user transactions
+		if (!processedTxn.getFeePaid().isZero()) {
+			actions(processedTxn, addressToSymbol, getValidatorStake)
+				.forEach(accountTransaction::addActionsItem);
+		}
+
 		accountTransaction.transactionIdentifier(transactionIdentifier(processedTxn.getTxnId()));
 		if (confirmedTimestamp != null) {
 			accountTransaction
