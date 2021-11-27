@@ -63,13 +63,13 @@
 
 package com.radixdlt.api.core.system.prometheus;
 
-import com.radixdlt.api.service.NetworkingService;
 import com.radixdlt.api.Endpoints;
 import com.radixdlt.api.service.network.NetworkInfoService;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
@@ -125,19 +125,19 @@ public class PrometheusService {
 
 	private final SystemCounters systemCounters;
 	private final InfoSupplier infoSupplier;
-	private final NetworkingService networkingService;
 	private final NetworkInfoService networkInfoService;
 	private final Addressing addressing;
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final BFTNode self;
 	private final Map<String, Boolean> endpointStatuses;
+	private final PeersView peersView;
 
 	@Inject
 	public PrometheusService(
 		@Endpoints Map<String, Boolean> endpointStatuses,
 		SystemCounters systemCounters,
 		InfoSupplier infoSupplier,
-		NetworkingService networkingService,
+		PeersView peersView,
 		NetworkInfoService networkInfoService,
 		InMemorySystemInfo inMemorySystemInfo,
 		@Self BFTNode self,
@@ -146,7 +146,7 @@ public class PrometheusService {
 		this.endpointStatuses = endpointStatuses;
 		this.systemCounters = systemCounters;
 		this.infoSupplier = infoSupplier;
-		this.networkingService = networkingService;
+		this.peersView = peersView;
 		this.networkInfoService = networkInfoService;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.self = self;
@@ -168,7 +168,7 @@ public class PrometheusService {
 		appendCounter(builder, "info_configuration_pacemakermaxexponent", pacemakerMaxExponent(snapshot));
 		appendCounter(builder, "info_epochmanager_currentview_view", currentView(snapshot));
 		appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpoch(snapshot));
-		appendCounter(builder, "total_peers", networkingService.getPeersCount());
+		appendCounter(builder, "total_peers", peersView.peers().count());
 
 		var totalValidators = inMemorySystemInfo.getEpochProof().getNextValidatorSet()
 			.map(BFTValidatorSet::getValidators)

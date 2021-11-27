@@ -64,6 +64,8 @@
 package com.radixdlt.api.core.system;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.core.system.openapitools.model.Address;
+import com.radixdlt.api.core.system.openapitools.model.AddressBookEntry;
 import com.radixdlt.api.core.system.openapitools.model.BFTMetrics;
 import com.radixdlt.api.core.system.openapitools.model.BFTPacemakerMetrics;
 import com.radixdlt.api.core.system.openapitools.model.BFTSyncMetrics;
@@ -73,15 +75,23 @@ import com.radixdlt.api.core.system.openapitools.model.NetworkingConfiguration;
 import com.radixdlt.api.core.system.openapitools.model.NetworkingInboundMetrics;
 import com.radixdlt.api.core.system.openapitools.model.NetworkingMetrics;
 import com.radixdlt.api.core.system.openapitools.model.NetworkingOutboundMetrics;
+import com.radixdlt.api.core.system.openapitools.model.Peer;
+import com.radixdlt.api.core.system.openapitools.model.PeerChannel;
 import com.radixdlt.api.core.system.openapitools.model.SyncConfiguration;
 import com.radixdlt.api.core.system.openapitools.model.SyncMetrics;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
+import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.sync.SyncConfig;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+
 import static com.radixdlt.counters.SystemCounters.CounterType.*;
 
 public final class SystemModelMapper {
@@ -194,4 +204,41 @@ public final class SystemModelMapper {
 			.requestsSent(counters.get(BFT_SYNC_REQUESTS_SENT))
 			.requestTimeouts(counters.get(BFT_SYNC_REQUEST_TIMEOUTS));
 	}
+
+	public Peer peer(PeersView.PeerInfo peerInfo) {
+		var peerId = addressing.forNodes().of(peerInfo.getNodeId().getPublicKey());
+		var peer = new Peer().peerId(peerId);
+
+		peerInfo.getChannels().forEach(channel -> {
+			var peerChannel = new PeerChannel()
+				.type(channel.isOutbound() ? PeerChannel.TypeEnum.OUT : PeerChannel.TypeEnum.IN)
+				.localPort(channel.getPort())
+				.ip(channel.getHost());
+			channel.getUri().map(RadixNodeUri::toString).ifPresent(peerChannel::uri);
+			peer.addChannelsItem(peerChannel);
+		});
+		return peer;
+	}
+
+	public Address address(PeerAddressEntry entry) {
+		return new Address()
+			.uri(entry.getUri().toString())
+			.blacklisted(entry.blacklisted())
+			.lastConnectionStatus(Address.LastConnectionStatusEnum.fromValue(
+				entry.getLatestConnectionStatus().map(LatestConnectionStatus::toString).orElse("UNKNOWN")
+			));
+	}
+
+	public AddressBookEntry addressBookEntry(com.radixdlt.network.p2p.addressbook.AddressBookEntry entry) {
+		var addressBookEntry = new AddressBookEntry()
+			.peerId(addressing.forNodes().of(entry.getNodeId().getPublicKey()))
+				.banned(entry.isBanned());
+		entry.bannedUntil().map(Instant::toEpochMilli).ifPresent(addressBookEntry::bannedUntil);
+		entry.getKnownAddresses()
+			.stream().map(this::address)
+			.forEach(addressBookEntry::addKnownAddressesItem);
+
+		return addressBookEntry;
+	}
+
 }

@@ -63,30 +63,27 @@
 
 package com.radixdlt.api.core.system;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.core.system.prometheus.PrometheusApiModule;
-import com.radixdlt.api.util.HandlerRoute;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.core.system.openapitools.model.SystemPeersResponse;
+import com.radixdlt.network.p2p.PeersView;
 
-import java.lang.annotation.Annotation;
+public final class PeersHandler extends SystemGetJsonHandler<SystemPeersResponse> {
 
-public class SystemApiModule extends AbstractModule {
-	private final Class<? extends Annotation> annotationType;
+	private final SystemModelMapper systemModelMapper;
+	private final PeersView peersView;
 
-	public SystemApiModule(Class<? extends Annotation> annotationType) {
-		this.annotationType = annotationType;
+	@Inject
+	PeersHandler(
+		SystemModelMapper systemModelMapper,
+		PeersView peersView
+	) {
+		this.systemModelMapper = systemModelMapper;
+		this.peersView = peersView;
 	}
-
 	@Override
-	protected void configure() {
-		var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType);
-		binder.addBinding(HandlerRoute.get("/system/configuration")).to(SystemConfigurationHandler.class);
-		binder.addBinding(HandlerRoute.get("/system/metrics")).to(SystemMetricsHandler.class);
-		binder.addBinding(HandlerRoute.get("/system/health")).to(HealthHandler.class);
-		binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
-		binder.addBinding(HandlerRoute.get("/system/peers")).to(PeersHandler.class);
-		binder.addBinding(HandlerRoute.get("/system/addressbook")).to(AddressBookHandler.class);
-		install(new PrometheusApiModule(annotationType, "/prometheus/metrics"));
+	public SystemPeersResponse handleRequest() throws Exception {
+		var response = new SystemPeersResponse();
+		peersView.peers().map(systemModelMapper::peer).forEach(response::addPeersItem);
+		return response;
 	}
 }

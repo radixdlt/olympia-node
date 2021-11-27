@@ -53,6 +53,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /system/peers:
+    get:
+      summary: 'Get Peers'
+      responses:
+        '200':
+          description: 'Peers'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemPeersResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /system/addressbook:
+    get:
+      summary: 'Get Address Book'
+      responses:
+        '200':
+          description: 'Address Book'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemAddressBookResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /system/metrics:
     get:
       summary: 'Get Metrics'
@@ -121,6 +153,24 @@ components:
           $ref: "#/components/schemas/SyncConfiguration"
         networking:
           $ref: "#/components/schemas/NetworkingConfiguration"
+    SystemAddressBookResponse:
+      type: object
+      required:
+        - entries
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/AddressBookEntry"
+    SystemPeersResponse:
+      type: object
+      required:
+        - peers
+      properties:
+        peers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Peer"
     SystemMetricsResponse:
       type: object
       required:
@@ -136,6 +186,71 @@ components:
           $ref: "#/components/schemas/MempoolMetrics"
         networking:
           $ref: "#/components/schemas/NetworkingMetrics"
+    AddressBookEntry:
+      type: object
+      required:
+        - peer_id
+        - banned
+        - known_addresses
+      properties:
+        peer_id:
+          type: string
+        banned:
+          type: boolean
+        banned_until:
+          type: integer
+          format: int64
+        known_addresses:
+          type: array
+          items:
+            $ref: "#/components/schemas/Address"
+    Address:
+      type: object
+      required:
+        - uri
+        - blacklisted
+        - last_connection_status
+      properties:
+        uri:
+          type: string
+        blacklisted:
+          type: boolean
+        last_connection_status:
+          type: string
+          enum:
+            - SUCCESS
+            - FAILURE
+            - UNKNOWN
+    Peer:
+      type: object
+      required:
+        - peer_id
+        - channels
+      properties:
+        peer_id:
+          type: string
+        channels:
+          type: array
+          items:
+            $ref: "#/components/schemas/PeerChannel"
+    PeerChannel:
+      type: object
+      required:
+        - type
+        - local_port
+        - ip
+      properties:
+        type:
+          type: string
+          enum:
+            - IN
+            - OUT
+        local_port:
+          type: integer
+        ip:
+          type: string
+        uri:
+          type: string
     NetworkingMetrics:
       type: object
       required:

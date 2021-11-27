@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix DLT Ltd incorporated in England.
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,91 +61,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.service;
+package com.radixdlt.api.core.system;
 
 import com.google.inject.Inject;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.api.core.system.openapitools.model.SystemAddressBookResponse;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
-import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
-import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
-import com.radixdlt.networks.Addressing;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-public final class NetworkingService {
-	private final PeersView peersView;
+public final class AddressBookHandler extends SystemGetJsonHandler<SystemAddressBookResponse> {
 	private final AddressBook addressBook;
-	private final Addressing addressing;
+	private final SystemModelMapper systemModelMapper;
 
 	@Inject
-	public NetworkingService(
-		PeersView peersView,
-		AddressBook addressBook,
-		Addressing addressing
-	) {
-		this.peersView = peersView;
+	AddressBookHandler(AddressBook addressBook, SystemModelMapper systemModelMapper) {
 		this.addressBook = addressBook;
-		this.addressing = addressing;
+		this.systemModelMapper = systemModelMapper;
 	}
 
-	public JSONArray getPeers() {
-		var peerArray = new JSONArray();
-
-		peersView.peers()
-			.map(this::peerToJson)
-			.forEach(peerArray::put);
-
-		return peerArray;
-	}
-
-	public JSONArray getAddressBook() {
-		final var entriesArray = new JSONArray();
-		addressBook.knownPeers().values().forEach(v -> entriesArray.put(addressBookEntryToJson(v)));
-		return entriesArray;
-	}
-
-	public long getPeersCount() {
-		return peersView.peers().count();
-	}
-
-	private JSONObject peerToJson(PeersView.PeerInfo peer) {
-		var channelsJson = new JSONArray();
-		var peerJson = new JSONObject().put("address", addressing.forNodes().of(peer.getNodeId().getPublicKey()));
-
-		peer.getChannels().forEach(channel -> {
-			var channelJson = new JSONObject()
-				.put("type", channel.isOutbound() ? "out" : "in")
-				.put("localPort", channel.getPort())
-				.put("ip", channel.getHost());
-
-			channel.getUri().ifPresent(uri -> channelJson.put("uri", uri.toString()));
-			channelsJson.put(channelJson);
-		});
-		peerJson.put("channels", channelsJson);
-		return peerJson;
-	}
-
-	private JSONObject addressBookEntryToJson(AddressBookEntry e) {
-		final var knownAddressesArray = new JSONArray();
-
-		e.getKnownAddresses().forEach(addr -> {
-			final var addrObj = new JSONObject()
-				.put("uri", addr.getUri())
-				.put("blacklisted", addr.blacklisted())
-				.put(
-					"latestConnectionStatus",
-					addr.getLatestConnectionStatus().map(LatestConnectionStatus::toString).orElse("UNKNOWN")
-				);
-			knownAddressesArray.put(addrObj);
-		});
-
-		final var entryObj = new JSONObject()
-			.put("address", addressing.forNodes().of(e.getNodeId().getPublicKey()))
-			.put("banned", e.isBanned())
-			.put("knownAddresses", knownAddressesArray);
-
-		e.bannedUntil().ifPresent(bannedUntil -> entryObj.put("bannedUntil", bannedUntil));
-
-		return entryObj;
+	@Override
+	public SystemAddressBookResponse handleRequest() throws Exception {
+		var response = new SystemAddressBookResponse();
+		addressBook.knownPeers()
+			.forEach((n, entry) -> response.addEntriesItem(systemModelMapper.addressBookEntry(entry)));
+		return response;
 	}
 }
