@@ -26,15 +26,19 @@ import java.util.Objects;
  */
 @JsonPropertyOrder({
   NetworkResponse.JSON_PROPERTY_NETWORK,
-  NetworkResponse.JSON_PROPERTY_LEDGER_STATE
+  NetworkResponse.JSON_PROPERTY_LEDGER_STATE,
+  NetworkResponse.JSON_PROPERTY_TARGET_LEDGER_STATE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T00:28:54.766735-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T17:16:58.694354-06:00[America/Chicago]")
 public class NetworkResponse {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
 
   public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
   private LedgerState ledgerState;
+
+  public static final String JSON_PROPERTY_TARGET_LEDGER_STATE = "target_ledger_state";
+  private TargetLedgerState targetLedgerState;
 
 
   public NetworkResponse network(String network) {
@@ -89,6 +93,32 @@ public class NetworkResponse {
   }
 
 
+  public NetworkResponse targetLedgerState(TargetLedgerState targetLedgerState) {
+    this.targetLedgerState = targetLedgerState;
+    return this;
+  }
+
+   /**
+   * Get targetLedgerState
+   * @return targetLedgerState
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_TARGET_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public TargetLedgerState getTargetLedgerState() {
+    return targetLedgerState;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TARGET_LEDGER_STATE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTargetLedgerState(TargetLedgerState targetLedgerState) {
+    this.targetLedgerState = targetLedgerState;
+  }
+
+
   /**
    * Return true if this NetworkResponse object is equal to o.
    */
@@ -102,12 +132,13 @@ public class NetworkResponse {
     }
     NetworkResponse networkResponse = (NetworkResponse) o;
     return Objects.equals(this.network, networkResponse.network) &&
-        Objects.equals(this.ledgerState, networkResponse.ledgerState);
+        Objects.equals(this.ledgerState, networkResponse.ledgerState) &&
+        Objects.equals(this.targetLedgerState, networkResponse.targetLedgerState);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, ledgerState);
+    return Objects.hash(network, ledgerState, targetLedgerState);
   }
 
   @Override
@@ -116,6 +147,7 @@ public class NetworkResponse {
     sb.append("class NetworkResponse {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    ledgerState: ").append(toIndentedString(ledgerState)).append("\n");
+    sb.append("    targetLedgerState: ").append(toIndentedString(targetLedgerState)).append("\n");
     sb.append("}");
     return sb.toString();
   }
