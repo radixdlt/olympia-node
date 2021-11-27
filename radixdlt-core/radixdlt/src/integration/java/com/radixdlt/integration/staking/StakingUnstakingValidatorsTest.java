@@ -69,6 +69,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.gateway.account.BerkeleyAccountInfoStore;
 import com.radixdlt.api.gateway.openapitools.model.AccountBalances;
+import com.radixdlt.api.gateway.openapitools.model.AccountUnstakeEntry;
 import com.radixdlt.api.gateway.validator.BerkeleyValidatorUptimeStore;
 import com.radixdlt.api.gateway.tokens.BerkeleyResourceInfoStore;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
@@ -92,7 +93,6 @@ import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.util.Throwables;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -412,7 +412,7 @@ public class StakingUnstakingValidatorsTest {
 			return accountInfoStore.getAccountInfo(addr);
 		}
 
-		public JSONArray getAccountUnstakes(REAddr addr) {
+		public List<AccountUnstakeEntry> getAccountUnstakes(REAddr addr) {
 			return accountInfoStore.getAccountUnstakes(addr);
 		}
 
@@ -558,11 +558,11 @@ public class StakingUnstakingValidatorsTest {
 			.map(ECKeyPair::getPublicKey)
 			.map(REAddr::ofPubKeyAccount)
 			.map(nodeState::getAccountUnstakes)
-			.map(jsonUnstakes -> {
+			.map(unstakes -> {
 				BigInteger sum = BigInteger.ZERO;
-				for (int i = 0; i < jsonUnstakes.length(); i++) {
-					if (jsonUnstakes.getJSONObject(i).getLong("epochs_until_unlocked") != 500) {
-						var amt = new BigInteger(jsonUnstakes.getJSONObject(i).getJSONObject("unstaking_amount").getString("value"), 10);
+				for (var unstake : unstakes) {
+					if (unstake.getEpochsUntilUnlocked() != 500L) {
+						var amt = new BigInteger(unstake.getUnstakingAmount().getValue());
 						sum = sum.add(amt);
 					}
 				}

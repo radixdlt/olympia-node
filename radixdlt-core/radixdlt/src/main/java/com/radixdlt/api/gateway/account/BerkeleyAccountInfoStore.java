@@ -70,6 +70,7 @@ import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.JSON;
 import com.radixdlt.api.gateway.openapitools.model.AccountBalances;
 import com.radixdlt.api.gateway.openapitools.model.AccountStakeEntry;
+import com.radixdlt.api.gateway.openapitools.model.AccountUnstakeEntry;
 import com.radixdlt.api.gateway.openapitools.model.TokenAmount;
 import com.radixdlt.api.gateway.openapitools.model.ValidatorIdentifier;
 import com.radixdlt.application.system.state.EpochData;
@@ -206,26 +207,25 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		return list;
 	}
 
-	public JSONArray getAccountUnstakes(REAddr addr) {
+	public List<AccountUnstakeEntry> getAccountUnstakes(REAddr addr) {
 		var key = new DatabaseEntry(addr.getBytes());
 		var value = new DatabaseEntry();
-		var jsonArray = new JSONArray();
+		var unstakes = new ArrayList<AccountUnstakeEntry>();
 
 		if (databases.get(ResourceType.EXITTING_UNSTAKES).get(null, key, value, DEFAULT) == SUCCESS) {
 			var systemMapKey = SystemMapKey.ofSystem(SubstateTypeId.EPOCH_DATA.id());
 			var epochData = (EpochData) radixEngineProvider.get().read(reader -> reader.get(systemMapKey).orElseThrow());
 			var curEpoch = epochData.getEpoch();
-			jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
+			var jsonArray = new JSONArray(new String(value.getData(), StandardCharsets.UTF_8));
 			for (int i = 0; i < jsonArray.length(); i++) {
 				var json = jsonArray.getJSONObject(i);
 				var epochUnlocked = json.getLong("epochUnlocked");
-				json.remove("epochUnlocked");
-				json.put("epochs_until_unlocked", epochUnlocked - curEpoch);
-				json.put("unstaking_amount", new JSONObject()
-					.put("token_identifier", new JSONObject()
-						.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+				unstakes.add(new AccountUnstakeEntry()
+					.epochsUntilUnlocked(epochUnlocked - curEpoch)
+					.unstakingAmount(new TokenAmount()
+						.tokenIdentifier(gatewayModelMapper.nativeTokenIdentifier())
+						.value(json.getString("value"))
 					)
-					.put("value", json.remove("value"))
 				);
 			}
 		}
@@ -238,18 +238,17 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 				var totalStake = new BigInteger(json.getString("validatorTotalStake"), 10);
 				var totalOwnership = new BigInteger(json.getString("validatorTotalOwnership"), 10);
 				var estimatedUnstake = ownership.multiply(totalStake).divide(totalOwnership);
-				json.put("unstaking_amount", new JSONObject()
-					.put("token_identifier", new JSONObject()
-						.put("rri", addressing.forResources().of("xrd", REAddr.ofNativeToken()))
+				unstakes.add(new AccountUnstakeEntry()
+					.epochsUntilUnlocked(500L) // Hardcoded for now
+					.unstakingAmount(new TokenAmount()
+						.tokenIdentifier(gatewayModelMapper.nativeTokenIdentifier())
+						.value(estimatedUnstake.toString())
 					)
-					.put("value", estimatedUnstake.toString())
 				);
-				json.put("epochs_until_unlocked", 500); // Hardcoded for now
-				jsonArray.put(json);
 			}
 		}
 
-		return jsonArray;
+		return unstakes;
 	}
 
 	private JSONObject getStakedAndUnstakingBalance(REAddr addr) {
@@ -261,8 +260,8 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 		}
 
 		var unstakes = getAccountUnstakes(addr);
-		for (int i = 0; i < unstakes.length(); i++) {
-			var amountString = unstakes.getJSONObject(i).getJSONObject("unstaking_amount").getString("value");
+		for (AccountUnstakeEntry unstake : unstakes) {
+			var amountString = unstake.getUnstakingAmount().getValue();
 			lockedXrdAmount = lockedXrdAmount.add(new BigInteger(amountString));
 		}
 
