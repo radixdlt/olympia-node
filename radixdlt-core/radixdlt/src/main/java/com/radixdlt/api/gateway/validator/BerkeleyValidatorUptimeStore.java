@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.gateway.validator;
 
+import com.radixdlt.api.gateway.openapitools.model.EpochRange;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -163,21 +164,28 @@ public final class BerkeleyValidatorUptimeStore implements BerkeleyAdditionalSto
 		validatorUptimeByValidator.put(dbTxn, key, value);
 	}
 
-	public JSONObject getUptimeTwoWeeks(ECPublicKey validatorKey) {
+	public com.radixdlt.api.gateway.openapitools.model.ValidatorUptime getUptimeTwoWeeks(ECPublicKey validatorKey) {
 		var key = new DatabaseEntry(validatorKey.getCompressedBytes());
 		var value = new DatabaseEntry();
 		var status = validatorUptimeByValidator.get(null, key, value, null);
-		JSONObject result;
+		com.radixdlt.api.gateway.openapitools.model.ValidatorUptime result;
 		if (status != OperationStatus.SUCCESS) {
-			result = ValidatorUptime.empty().toJSON();
+			result = new com.radixdlt.api.gateway.openapitools.model.ValidatorUptime()
+				.uptimePercentage("0.00")
+				.proposalsCompleted(0L)
+				.proposalsMissed(0L);
 		} else {
-			result = new JSONObject(new String(value.getData(), StandardCharsets.UTF_8));
+			var uptime = ValidatorUptime.fromJSON(new JSONObject(new String(value.getData(), StandardCharsets.UTF_8)));
+			result = new com.radixdlt.api.gateway.openapitools.model.ValidatorUptime()
+				.uptimePercentage(uptime.toPercentageString())
+				.proposalsMissed(uptime.getProposalsMissed())
+				.proposalsCompleted(uptime.getProposalsCompleted());
 		}
 
 		return result
-			.put("epoch_range", new JSONObject()
-				.put("from", Math.max(curEpoch.get() - NUM_EPOCHS_WINDOW, 1))
-				.put("to", curEpoch.get())
+			.epochRange(new EpochRange()
+				.from(Math.max(curEpoch.get() - NUM_EPOCHS_WINDOW, 1))
+				.to(curEpoch.get())
 			);
 	}
 

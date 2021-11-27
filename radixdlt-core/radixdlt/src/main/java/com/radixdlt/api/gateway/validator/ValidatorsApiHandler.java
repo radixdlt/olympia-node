@@ -64,74 +64,56 @@
 package com.radixdlt.api.gateway.validator;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
+import com.radixdlt.api.gateway.GatewayModelMapper;
+import com.radixdlt.api.gateway.openapitools.model.Validator;
+import com.radixdlt.api.gateway.openapitools.model.ValidatorsRequest;
+import com.radixdlt.api.gateway.openapitools.model.ValidatorsResponse;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
 
-class ValidatorsApiHandler implements ApiHandler<Void> {
+final class ValidatorsApiHandler extends GatewayJsonRpcHandler<ValidatorsRequest, ValidatorsResponse> {
 	private final InMemorySystemInfo inMemorySystemInfo;
-	private final Addressing addressing;
+	private final GatewayModelMapper gatewayModelMapper;
 	private final BerkeleyValidatorStore validatorStore;
 	private final BerkeleyValidatorUptimeStore uptimeStore;
 
 	@Inject
 	ValidatorsApiHandler(
 		InMemorySystemInfo inMemorySystemInfo,
-		Addressing addressing,
+		GatewayModelMapper gatewayModelMapper,
 		BerkeleyValidatorStore validatorStore,
 		BerkeleyValidatorUptimeStore uptimeStore
 	) {
+		super(ValidatorsRequest.class);
+
 		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.addressing = addressing;
+		this.gatewayModelMapper = gatewayModelMapper;
 		this.validatorStore = validatorStore;
 		this.uptimeStore = uptimeStore;
 	}
 
-	@Override
-	public Void parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		return null;
-	}
-
-	@Override
-	public JSONObject handleRequest(Void request) {
-		var validatorsJson = fetchValidators(0, 1000);
-		var proof = inMemorySystemInfo.getCurrentProof();
-		return new JSONObject()
-			.put("ledger_state", new JSONObject()
-				.put("epoch", proof.getEpoch())
-				.put("round", proof.getView().number())
-				.put("version", proof.getStateVersion())
-				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
-			)
-			.put("validators", validatorsJson);
-	}
-
-	@Override
-	public Addressing addressing() {
-		return addressing;
-	}
-
-	private JSONArray fetchValidators(long offset, long limit) {
-		var validators = new JSONArray();
+	private List<Validator> fetchValidators(long offset, long limit) {
 		try (var stream = validatorStore.getValidators(offset)) {
-			stream
+			return stream
 				.limit(limit)
-				.peek(json -> {
-					json.getJSONObject("stake").remove("delegators");
-					var addrString = json.getJSONObject("validator_identifier").getString("address");
-					var validatorKey = addressing.forValidators().parseNoErr(addrString);
+				.peek(validator -> {
+					var validatorKey = gatewayModelMapper.validator(validator.getValidatorIdentifier());
 					var uptime = uptimeStore.getUptimeTwoWeeks(validatorKey);
-					json.getJSONObject("info")
-						.put("uptime", uptime);
+					validator.getInfo().setUptime(uptime);
 				})
-				.forEach(validators::put);
+				.collect(Collectors.toList());
 		}
-		return validators;
+	}
+
+	@Override
+	public ValidatorsResponse handleRequest(ValidatorsRequest request) throws Exception {
+		var response = new ValidatorsResponse();
+		fetchValidators(0, 1000).forEach(response::addValidatorsItem);
+		var proof = inMemorySystemInfo.getCurrentProof();
+		var ledgerState = gatewayModelMapper.ledgerState(proof);
+		return response.ledgerState(ledgerState);
 	}
 }

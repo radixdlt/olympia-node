@@ -74,6 +74,14 @@ final class ValidatorUptime {
 		this.proposalsMissed = proposalsMissed;
 	}
 
+	public long getProposalsCompleted() {
+		return proposalsCompleted;
+	}
+
+	public long getProposalsMissed() {
+		return proposalsMissed;
+	}
+
 	public static ValidatorUptime create(long proposalsCompleted, long proposalsMissed) {
 		return new ValidatorUptime(proposalsCompleted, proposalsMissed);
 	}

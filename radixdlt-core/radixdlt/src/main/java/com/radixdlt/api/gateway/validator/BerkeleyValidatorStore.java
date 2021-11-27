@@ -66,6 +66,8 @@ package com.radixdlt.api.gateway.validator;
 import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.radixdlt.accounting.REResourceAccounting;
+import com.radixdlt.api.gateway.openapitools.JSON;
+import com.radixdlt.api.gateway.openapitools.model.Validator;
 import com.radixdlt.application.system.state.StakeBucket;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;
 import com.radixdlt.application.tokens.state.ExittingOwnershipBucket;
@@ -98,6 +100,7 @@ import com.sleepycat.je.SecondaryDatabase;
 import com.sleepycat.je.Transaction;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -174,7 +177,7 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		}
 	}
 
-	private JSONObject mapValidator(JSONObject validatorJson) {
+	private Validator mapValidator(JSONObject validatorJson) {
 		var stakeJson = validatorJson.getJSONObject("stake");
 		var ownerEstimateString = stakeJson.getString("nextEpochEstimatedOwnerStake");
 		var stakeEstimateString = stakeJson.getString("nextEpochEstimatedStake");
@@ -196,10 +199,14 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 			)
 			.put("value", stakeEstimateString)
 		);
-		return validatorJson;
+		try {
+			return JSON.getDefault().getMapper().readValue(validatorJson.toString(), Validator.class);
+		} catch (IOException e) {
+			throw new IllegalStateException();
+		}
 	}
 
-	public JSONObject getValidatorInfo(ECPublicKey validatorKey) {
+	public Validator getValidatorInfo(ECPublicKey validatorKey) {
 		var validatorJson = getCurrentValidatorInfo(validatorKey, null, null);
 		return mapValidator(validatorJson);
 	}
@@ -247,7 +254,7 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 		}
 	}
 
-	public Stream<JSONObject> getValidators(long skip) {
+	public Stream<Validator> getValidators(long skip) {
 		var iterator = new ValidatorsIterator(orderedValidatorsDatabase, skip);
 		iterator.open();
 		return Streams.stream(iterator)

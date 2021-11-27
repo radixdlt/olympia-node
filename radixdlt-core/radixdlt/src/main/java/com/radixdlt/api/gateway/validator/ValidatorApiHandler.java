@@ -64,59 +64,43 @@
 package com.radixdlt.api.gateway.validator;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
+import com.radixdlt.api.gateway.GatewayModelMapper;
+import com.radixdlt.api.gateway.openapitools.model.ValidatorInfoRequest;
+import com.radixdlt.api.gateway.openapitools.model.ValidatorInfoResponse;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import org.json.JSONObject;
 
-import java.time.Instant;
-
-final class ValidatorApiHandler implements ApiHandler<ECPublicKey> {
+final class ValidatorApiHandler extends GatewayJsonRpcHandler<ValidatorInfoRequest, ValidatorInfoResponse> {
 	private final InMemorySystemInfo inMemorySystemInfo;
-	private final Addressing addressing;
 	private final BerkeleyValidatorStore validatorStore;
 	private final BerkeleyValidatorUptimeStore uptimeStore;
+	private final GatewayModelMapper gatewayModelMapper;
 
 	@Inject
 	ValidatorApiHandler(
 		InMemorySystemInfo inMemorySystemInfo,
-		Addressing addressing,
 		BerkeleyValidatorStore validatorStore,
-		BerkeleyValidatorUptimeStore uptimeStore
+		BerkeleyValidatorUptimeStore uptimeStore,
+		GatewayModelMapper gatewayModelMapper
 	) {
+		super(ValidatorInfoRequest.class);
+
 		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.addressing = addressing;
 		this.validatorStore = validatorStore;
 		this.uptimeStore = uptimeStore;
+		this.gatewayModelMapper = gatewayModelMapper;
 	}
 
 	@Override
-	public ECPublicKey parseRequest(JsonObjectReader reader) throws InvalidParametersException {
-		return reader.getJsonObject("validator_identifier", r -> r.getValidatorAddress("address"));
-	}
-
-	@Override
-	public JSONObject handleRequest(ECPublicKey key) {
-		var validatorJson = validatorStore.getValidatorInfo(key);
+	public ValidatorInfoResponse handleRequest(ValidatorInfoRequest request) throws Exception {
+		var response = new ValidatorInfoResponse();
+		var key = gatewayModelMapper.validator(request.getValidatorIdentifier());
+		var validator = validatorStore.getValidatorInfo(key);
 		var uptime = uptimeStore.getUptimeTwoWeeks(key);
-		validatorJson.getJSONObject("info")
-			.put("uptime", uptime);
+		validator.getInfo().setUptime(uptime);
+		response.validator(validator);
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return new JSONObject()
-			.put("ledger_state", new JSONObject()
-				.put("epoch", proof.getEpoch())
-				.put("round", proof.getView().number())
-				.put("version", proof.getStateVersion())
-				.put("timestamp", Instant.ofEpochMilli(proof.timestamp()).toString())
-			)
-			.put("validator", validatorJson);
-	}
-
-	@Override
-	public Addressing addressing() {
-		return addressing;
+		response.ledgerState(gatewayModelMapper.ledgerState(proof));
+		return response;
 	}
 }

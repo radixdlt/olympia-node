@@ -113,6 +113,14 @@ public final class GatewayModelMapper {
 		this.addressing = addressing;
 	}
 
+	public ECPublicKey validator(ValidatorIdentifier validatorIdentifier) {
+		try {
+			return addressing.forValidators().parse(validatorIdentifier.getAddress());
+		} catch (DeserializeException e) {
+			throw new IllegalStateException();
+		}
+	}
+
 	public REAddr account(AccountIdentifier accountIdentifier) {
 		try {
 			return addressing.forAccounts().parse(accountIdentifier.getAddress());

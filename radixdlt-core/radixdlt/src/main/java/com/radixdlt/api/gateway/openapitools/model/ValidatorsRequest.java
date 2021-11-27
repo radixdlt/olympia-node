@@ -22,45 +22,45 @@ import java.util.Objects;
 
 
 /**
- * ValidatorIdentifier
+ * ValidatorsRequest
  */
 @JsonPropertyOrder({
-  ValidatorIdentifier.JSON_PROPERTY_ADDRESS
+  ValidatorsRequest.JSON_PROPERTY_NETWORK
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T01:49:33.060927-06:00[America/Chicago]")
-public class ValidatorIdentifier {
-  public static final String JSON_PROPERTY_ADDRESS = "address";
-  private String address;
+public class ValidatorsRequest {
+  public static final String JSON_PROPERTY_NETWORK = "network";
+  private String network;
 
 
-  public ValidatorIdentifier address(String address) {
-    this.address = address;
+  public ValidatorsRequest network(String network) {
+    this.network = network;
     return this;
   }
 
    /**
-   * Get address
-   * @return address
+   * Get network
+   * @return network
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_NETWORK)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getAddress() {
-    return address;
+  public String getNetwork() {
+    return network;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_NETWORK)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAddress(String address) {
-    this.address = address;
+  public void setNetwork(String network) {
+    this.network = network;
   }
 
 
   /**
-   * Return true if this ValidatorIdentifier object is equal to o.
+   * Return true if this ValidatorsRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -70,20 +70,20 @@ public class ValidatorIdentifier {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ValidatorIdentifier validatorIdentifier = (ValidatorIdentifier) o;
-    return Objects.equals(this.address, validatorIdentifier.address);
+    ValidatorsRequest validatorsRequest = (ValidatorsRequest) o;
+    return Objects.equals(this.network, validatorsRequest.network);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(address);
+    return Objects.hash(network);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ValidatorIdentifier {\n");
-    sb.append("    address: ").append(toIndentedString(address)).append("\n");
+    sb.append("class ValidatorsRequest {\n");
+    sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("}");
     return sb.toString();
   }

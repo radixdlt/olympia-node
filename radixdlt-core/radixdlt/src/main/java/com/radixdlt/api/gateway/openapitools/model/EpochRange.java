@@ -22,45 +22,75 @@ import java.util.Objects;
 
 
 /**
- * ValidatorIdentifier
+ * EpochRange
  */
 @JsonPropertyOrder({
-  ValidatorIdentifier.JSON_PROPERTY_ADDRESS
+  EpochRange.JSON_PROPERTY_FROM,
+  EpochRange.JSON_PROPERTY_TO
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T01:49:33.060927-06:00[America/Chicago]")
-public class ValidatorIdentifier {
-  public static final String JSON_PROPERTY_ADDRESS = "address";
-  private String address;
+public class EpochRange {
+  public static final String JSON_PROPERTY_FROM = "from";
+  private Long from;
+
+  public static final String JSON_PROPERTY_TO = "to";
+  private Long to;
 
 
-  public ValidatorIdentifier address(String address) {
-    this.address = address;
+  public EpochRange from(Long from) {
+    this.from = from;
     return this;
   }
 
    /**
-   * Get address
-   * @return address
+   * Get from
+   * @return from
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_FROM)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getAddress() {
-    return address;
+  public Long getFrom() {
+    return from;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_FROM)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAddress(String address) {
-    this.address = address;
+  public void setFrom(Long from) {
+    this.from = from;
+  }
+
+
+  public EpochRange to(Long to) {
+    this.to = to;
+    return this;
+  }
+
+   /**
+   * Get to
+   * @return to
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_TO)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getTo() {
+    return to;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TO)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setTo(Long to) {
+    this.to = to;
   }
 
 
   /**
-   * Return true if this ValidatorIdentifier object is equal to o.
+   * Return true if this EpochRange object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -70,20 +100,22 @@ public class ValidatorIdentifier {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ValidatorIdentifier validatorIdentifier = (ValidatorIdentifier) o;
-    return Objects.equals(this.address, validatorIdentifier.address);
+    EpochRange epochRange = (EpochRange) o;
+    return Objects.equals(this.from, epochRange.from) &&
+        Objects.equals(this.to, epochRange.to);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(address);
+    return Objects.hash(from, to);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ValidatorIdentifier {\n");
-    sb.append("    address: ").append(toIndentedString(address)).append("\n");
+    sb.append("class EpochRange {\n");
+    sb.append("    from: ").append(toIndentedString(from)).append("\n");
+    sb.append("    to: ").append(toIndentedString(to)).append("\n");
     sb.append("}");
     return sb.toString();
   }
