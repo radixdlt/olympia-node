@@ -493,6 +493,7 @@ components:
           "$ref": "#/components/schemas/TokenAmount"
         epochs_until_unlocked:
           type: integer
+          format: int64
     AccountTransactionsRequest:
       type: object
       required:
@@ -573,6 +574,10 @@ components:
       allOf:
         - "$ref": "#/components/schemas/Action"
         - type: object
+          required:
+            - from
+            - to
+            - amount
           properties:
             from:
               "$ref": "#/components/schemas/AccountIdentifier"
@@ -855,10 +860,13 @@ components:
     TransactionFinalizeResponse:
       type: object
       required:
+        - transaction_identifier
         - signed_transaction
       properties:
         signed_transaction:
           type: string
+        transaction_identifier:
+          $ref: "#/components/schemas/TransactionIdentifier"
     TransactionSubmitRequest:
       type: object
       required:
@@ -992,10 +1000,7 @@ components:
         ledger_state:
           "$ref": "#/components/schemas/LedgerState"
         token:
-          type: array
-          maxItems: 1
-          items:
-            "$ref": "#/components/schemas/Token"
+          "$ref": "#/components/schemas/Token"
       example:
         ledger_state:
           epoch: 1
@@ -1246,9 +1251,11 @@ components:
           type: string
         proposals_missed:
           type: integer
+          format: int64
           minimum: 0
         proposals_completed:
           type: integer
+          format: int64
           minimum: 0
     EpochRange:
       type: object

@@ -73,12 +73,11 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import org.json.JSONObject;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-public class MempoolSubmitter {
+public final class MempoolSubmitter {
 	private final EventDispatcher<MempoolAdd> dispatcher;
 
 	@Inject
@@ -86,26 +85,17 @@ public class MempoolSubmitter {
 		this.dispatcher = mempoolAddEventDispatcher;
 	}
 
-	public JSONObject submitToMempool(Txn txn) throws Exception {
+	public void submitToMempool(Txn txn) throws Exception {
 		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
 
 		dispatcher.dispatch(mempoolAdd);
 		try {
 			// We need to block here as we need to complete the request in the same thread
-			var success = completableFuture.get();
-			return new JSONObject()
-				.put("transaction_identifier", new JSONObject()
-					.put("hex", success.getTxn().getId())
-				)
-				.put("duplicate", false);
+			completableFuture.get();
 		} catch (ExecutionException e) {
 			if (e.getCause() instanceof MempoolDuplicateException) {
-				return new JSONObject()
-					.put("transaction_identifier", new JSONObject()
-						.put("hex", txn.getId())
-					)
-					.put("duplicate", true);
+				return;
 			}
 
 			if (e.getCause() instanceof MempoolRejectedException) {

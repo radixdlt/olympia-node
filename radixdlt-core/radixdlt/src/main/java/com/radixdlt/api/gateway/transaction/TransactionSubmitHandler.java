@@ -63,49 +63,28 @@
 
 package com.radixdlt.api.gateway.transaction;
 
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
+import com.google.inject.Inject;
+import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
+import com.radixdlt.api.gateway.openapitools.model.TransactionIdentifier;
+import com.radixdlt.api.gateway.openapitools.model.TransactionSubmitRequest;
+import com.radixdlt.api.gateway.openapitools.model.TransactionSubmitResponse;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.utils.Bytes;
 
-final class FinalizeTransactionRequest {
-	private final byte[] unsignedTransaction;
-	private final ECDSASignature signature;
-	private final ECPublicKey pubKey;
-	private final boolean submit;
+final class TransactionSubmitHandler extends GatewayJsonRpcHandler<TransactionSubmitRequest, TransactionSubmitResponse> {
+	private final MempoolSubmitter mempoolSubmitter;
 
-	private FinalizeTransactionRequest(
-		byte[] unsignedTransaction,
-		ECDSASignature signature,
-		ECPublicKey pubKey,
-		boolean submit
-	) {
-		this.unsignedTransaction = unsignedTransaction;
-		this.signature = signature;
-		this.pubKey = pubKey;
-		this.submit = submit;
+	@Inject
+	TransactionSubmitHandler(MempoolSubmitter mempoolSubmitter) {
+		super(TransactionSubmitRequest.class);
+		this.mempoolSubmitter = mempoolSubmitter;
 	}
 
-	public static FinalizeTransactionRequest create(
-		byte[] unsignedTransaction,
-		ECDSASignature signature,
-		ECPublicKey pubKey,
-		boolean submit
-	) {
-		return new FinalizeTransactionRequest(unsignedTransaction, signature, pubKey, submit);
-	}
-
-	public boolean isSubmit() {
-		return submit;
-	}
-
-	public byte[] getUnsignedTransaction() {
-		return unsignedTransaction;
-	}
-
-	public ECDSASignature getSignature() {
-		return signature;
-	}
-
-	public ECPublicKey getPubKey() {
-		return pubKey;
+	@Override
+	public TransactionSubmitResponse handleRequest(TransactionSubmitRequest request) throws Exception {
+		var txn = Txn.create(Bytes.fromHexString(request.getSignedTransaction()));
+		mempoolSubmitter.submitToMempool(txn);
+		return new TransactionSubmitResponse()
+			.transactionIdentifier(new TransactionIdentifier().hash(txn.getId().toString()));
 	}
 }

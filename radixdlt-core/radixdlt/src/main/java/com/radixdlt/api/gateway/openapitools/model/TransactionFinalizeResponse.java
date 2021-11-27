@@ -25,12 +25,16 @@ import java.util.Objects;
  * TransactionFinalizeResponse
  */
 @JsonPropertyOrder({
-  TransactionFinalizeResponse.JSON_PROPERTY_SIGNED_TRANSACTION
+  TransactionFinalizeResponse.JSON_PROPERTY_SIGNED_TRANSACTION,
+  TransactionFinalizeResponse.JSON_PROPERTY_TRANSACTION_IDENTIFIER
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T13:02:32.525636-06:00[America/Chicago]")
 public class TransactionFinalizeResponse {
   public static final String JSON_PROPERTY_SIGNED_TRANSACTION = "signed_transaction";
   private String signedTransaction;
+
+  public static final String JSON_PROPERTY_TRANSACTION_IDENTIFIER = "transaction_identifier";
+  private TransactionIdentifier transactionIdentifier;
 
 
   public TransactionFinalizeResponse signedTransaction(String signedTransaction) {
@@ -59,6 +63,32 @@ public class TransactionFinalizeResponse {
   }
 
 
+  public TransactionFinalizeResponse transactionIdentifier(TransactionIdentifier transactionIdentifier) {
+    this.transactionIdentifier = transactionIdentifier;
+    return this;
+  }
+
+   /**
+   * Get transactionIdentifier
+   * @return transactionIdentifier
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_IDENTIFIER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public TransactionIdentifier getTransactionIdentifier() {
+    return transactionIdentifier;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_IDENTIFIER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setTransactionIdentifier(TransactionIdentifier transactionIdentifier) {
+    this.transactionIdentifier = transactionIdentifier;
+  }
+
+
   /**
    * Return true if this TransactionFinalizeResponse object is equal to o.
    */
@@ -71,12 +101,13 @@ public class TransactionFinalizeResponse {
       return false;
     }
     TransactionFinalizeResponse transactionFinalizeResponse = (TransactionFinalizeResponse) o;
-    return Objects.equals(this.signedTransaction, transactionFinalizeResponse.signedTransaction);
+    return Objects.equals(this.signedTransaction, transactionFinalizeResponse.signedTransaction) &&
+        Objects.equals(this.transactionIdentifier, transactionFinalizeResponse.transactionIdentifier);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(signedTransaction);
+    return Objects.hash(signedTransaction, transactionIdentifier);
   }
 
   @Override
@@ -84,6 +115,7 @@ public class TransactionFinalizeResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionFinalizeResponse {\n");
     sb.append("    signedTransaction: ").append(toIndentedString(signedTransaction)).append("\n");
+    sb.append("    transactionIdentifier: ").append(toIndentedString(transactionIdentifier)).append("\n");
     sb.append("}");
     return sb.toString();
   }

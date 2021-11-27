@@ -64,28 +64,46 @@
 package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.ApiHandler;
-import com.radixdlt.api.gateway.InvalidParametersException;
-import com.radixdlt.api.gateway.JsonObjectReader;
-import com.radixdlt.atom.Txn;
-import org.json.JSONObject;
+import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
+import com.radixdlt.api.gateway.GatewayModelMapper;
+import com.radixdlt.api.gateway.openapitools.model.TransactionFinalizeRequest;
+import com.radixdlt.api.gateway.openapitools.model.TransactionFinalizeResponse;
+import com.radixdlt.api.gateway.openapitools.model.TransactionIdentifier;
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECKeyUtils;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.utils.Bytes;
 
-final class SubmitTransactionHandler implements ApiHandler<Txn> {
+final class TransactionFinalizeHandler extends GatewayJsonRpcHandler<TransactionFinalizeRequest, TransactionFinalizeResponse> {
+	private final GatewayModelMapper gatewayModelMapper;
 	private final MempoolSubmitter mempoolSubmitter;
 
 	@Inject
-	SubmitTransactionHandler(MempoolSubmitter mempoolSubmitter) {
+	TransactionFinalizeHandler(GatewayModelMapper gatewayModelMapper, MempoolSubmitter mempoolSubmitter) {
+		super(TransactionFinalizeRequest.class);
+
+		this.gatewayModelMapper = gatewayModelMapper;
 		this.mempoolSubmitter = mempoolSubmitter;
 	}
 
 	@Override
-	public Txn parseRequest(JsonObjectReader requestReader) throws InvalidParametersException {
-		var bytes = requestReader.getHexBytes("signed_transaction");
-		return Txn.create(bytes);
-	}
+	public TransactionFinalizeResponse handleRequest(TransactionFinalizeRequest request) throws Exception {
+		var unsignedTransaction = Bytes.fromHexString(request.getUnsignedTransaction());
+		var signature = ECDSASignature.decodeFromHexDer(request.getSignature().getBytes());
+		var pubKey = gatewayModelMapper.ecPublicKey(request.getSignature().getPublicKey());
+		var recoverable = ECKeyUtils.toRecoverableSig(
+			signature, HashUtils.sha256(unsignedTransaction).asBytes(), pubKey
+		);
 
-	@Override
-	public JSONObject handleRequest(Txn txn) throws Exception {
-		return mempoolSubmitter.submitToMempool(txn);
+		var txn = TxLowLevelBuilder.newBuilder(unsignedTransaction).sig(recoverable).build();
+		var submit = request.getSubmit();
+		if (submit != null && submit) {
+			mempoolSubmitter.submitToMempool(txn);
+		}
+
+		return new TransactionFinalizeResponse()
+			.signedTransaction(Bytes.toHexString(txn.getPayload()))
+			.transactionIdentifier(new TransactionIdentifier().hash(txn.getId().toString()));
 	}
 }

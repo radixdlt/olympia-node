@@ -87,8 +87,8 @@ public final class TransactionApiModule extends AbstractModule {
 		);
 		routeBinder.addBinding(HandlerRoute.post(path + "/rules")).to(TransactionRulesHandler.class);
 		routeBinder.addBinding(HandlerRoute.post(path + "/build")).to(TransactionBuildHandler.class);
-		routeBinder.addBinding(HandlerRoute.post(path + "/finalize")).to(FinalizeTransactionHandler.class);
-		routeBinder.addBinding(HandlerRoute.post(path + "/submit")).to(SubmitTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/finalize")).to(TransactionFinalizeHandler.class);
+		routeBinder.addBinding(HandlerRoute.post(path + "/submit")).to(TransactionSubmitHandler.class);
 		routeBinder.addBinding(HandlerRoute.post(path + "/status")).to(TransactionStatusHandler.class);
 		bind(TransactionStatusService.class).in(Scopes.SINGLETON);
 	}

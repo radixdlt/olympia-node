@@ -112,6 +112,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
@@ -157,6 +158,14 @@ public final class GatewayModelMapper {
 		try {
 			return addressing.forResources().parse2(tokenIdentifier.getRri()).getSecond();
 		} catch (DeserializeException e) {
+			throw new IllegalStateException();
+		}
+	}
+
+	public ECPublicKey ecPublicKey(String publicKeyHex) {
+		try {
+			return ECPublicKey.fromHex(publicKeyHex);
+		} catch (PublicKeyException e) {
 			throw new IllegalStateException();
 		}
 	}
