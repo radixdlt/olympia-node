@@ -77,25 +77,19 @@ import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.Bytes;
 
-public final class ParseTransactionHandler extends CoreJsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {
-	private final Network network;
+public final class ConstructionParseHandler extends CoreJsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final CoreModelMapper modelMapper;
 
 	@Inject
-	ParseTransactionHandler(
-		@NetworkId int networkId,
+	ConstructionParseHandler(
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
 		CoreModelMapper modelMapper
 	) {
 		super(ConstructionParseRequest.class);
 
-		this.network = Network.ofId(networkId).orElseThrow();
 		this.radixEngineProvider = radixEngineProvider;
 		this.modelMapper = modelMapper;
 	}
@@ -110,11 +104,9 @@ public final class ParseTransactionHandler extends CoreJsonRpcHandler<Constructi
 
 	@Override
 	public ConstructionParseResponse handleRequest(ConstructionParseRequest request) throws Exception {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new IllegalStateException();
-		}
+		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var txn = Bytes.fromHexString(request.getTransaction());
+		var txn = modelMapper.bytes(request.getTransaction());
 
 		REProcessedTxn processed;
 		try {

@@ -69,9 +69,6 @@ import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
-import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
-import com.radixdlt.api.gateway.transaction.StateConflictException;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
@@ -79,42 +76,33 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.utils.Bytes;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-public class ConstructionSubmitHandler extends CoreJsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
-	private final Network network;
+public final class ConstructionSubmitHandler extends CoreJsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
 	private final EventDispatcher<MempoolAdd> dispatcher;
 	private final CoreModelMapper modelMapper;
 
 	@Inject
 	ConstructionSubmitHandler(
-		@NetworkId int networkId,
 		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		CoreModelMapper modelMapper
 	) {
 		super(ConstructionSubmitRequest.class);
 
-		this.network = Network.ofId(networkId).orElseThrow();
 		this.dispatcher = mempoolAddEventDispatcher;
 		this.modelMapper = modelMapper;
 	}
 
 	@Override
 	public ConstructionSubmitResponse handleRequest(ConstructionSubmitRequest request) throws Exception {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new IllegalStateException();
-		}
+		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var bytes = Bytes.fromHexString(request.getSignedTransaction());
-		var txn = Txn.create(bytes);
+		var txn = modelMapper.txn(request.getSignedTransaction());
+
 		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
 		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
-
 		dispatcher.dispatch(mempoolAdd);
 		try {
 			// We need to block here as we need to complete the request in the same thread
@@ -135,10 +123,10 @@ public class ConstructionSubmitHandler extends CoreJsonRpcHandler<ConstructionSu
 
 				var cause = Throwables.getRootCause(reException);
 				if (cause instanceof SubstateNotFoundException) {
-					throw new StateConflictException(reException);
+					throw new CoreModelMapper.StateConflictException();
 				}
 
-				throw new InvalidTransactionException(reException);
+				throw new CoreModelMapper.InvalidTransactionException();
 			}
 			throw e;
 		}

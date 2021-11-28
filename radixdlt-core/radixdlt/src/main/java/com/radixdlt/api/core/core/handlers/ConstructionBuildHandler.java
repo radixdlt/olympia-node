@@ -100,7 +100,7 @@ public final class ConstructionBuildHandler extends CoreJsonRpcHandler<Construct
 
 		var disable = disableAllocAndDestroy != null && !disableAllocAndDestroy;
 		if (!(feePayer instanceof AccountVaultEntity accountVaultEntity)) {
-			throw new IllegalStateException();
+			throw new CoreModelMapper.InvalidParameterException();
 		}
 
 		var builder = radixEngine.constructWithFees(operationTxBuilder, disable, accountVaultEntity.getAccountAddress());

@@ -97,11 +97,13 @@ import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.application.validators.state.ValidatorUpdatingData;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AID;
@@ -236,9 +238,42 @@ public final class CoreModelMapper {
 		}
 	}
 
+	public static class InvalidTransactionException extends CoreModelException {
+		public InvalidTransactionException() {
+			super(Error.BAD_REQUEST);
+		}
+
+		@Override
+		ErrorDetails getErrorDetails() {
+			return null;
+		}
+	}
+
+	public static class StateConflictException extends CoreModelException {
+		public StateConflictException() {
+			super(Error.STATE_CONFLICT);
+		}
+
+		@Override
+		ErrorDetails getErrorDetails() {
+			return null;
+		}
+	}
+
 	public void verifyNetwork(NetworkIdentifier networkIdentifier) throws NetworkNotSupportedException {
 		if (!networkIdentifier.getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new NetworkNotSupportedException();
+		}
+	}
+
+	public Pair<ECPublicKey, ECDSASignature> keyAndSignature(Signature signature) throws InvalidPublicKeyException, InvalidParameterException {
+		var publicKey = ecPublicKey(signature.getPublicKey());
+		var bytes = bytes(signature.getBytes());
+		try {
+			var sig = ECDSASignature.decodeFromDER(bytes);
+			return Pair.of(publicKey, sig);
+		} catch (IllegalArgumentException e) {
+			throw new InvalidParameterException();
 		}
 	}
 
@@ -247,6 +282,14 @@ public final class CoreModelMapper {
 			return ECPublicKey.fromHex(publicKey.getHex());
 		} catch (PublicKeyException e) {
 			throw new InvalidPublicKeyException();
+		}
+	}
+
+	public byte[] bytes(String hex) throws InvalidParameterException {
+		try {
+			return Bytes.fromHexString(hex);
+		} catch (IllegalArgumentException e) {
+			throw new InvalidParameterException();
 		}
 	}
 
@@ -311,6 +354,18 @@ public final class CoreModelMapper {
 		}
 
 		return new OperationTxBuilder(message, entityOperationGroups, addressing, forks);
+	}
+
+
+	public Txn txn(String hex) throws InvalidParameterException {
+		byte[] bytes;
+		try {
+			bytes = Bytes.fromHexString(hex);
+		} catch (IllegalArgumentException e) {
+			throw new InvalidParameterException();
+		}
+
+		return Txn.create(bytes);
 	}
 
 	public AID txnId(TransactionIdentifier transactionIdentifier) throws InvalidTransactionHash {

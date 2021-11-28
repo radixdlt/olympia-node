@@ -97,7 +97,9 @@ public class EngineConfigurationHandler extends CoreJsonRpcHandler<EngineConfigu
 	}
 
 	@Override
-	public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request) {
+	public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request) throws Exception {
+		modelMapper.verifyNetwork(request.getNetworkIdentifier());
+
 		var response = new EngineConfigurationResponse();
 		forks.forEach((epoch, config) -> response.addForksItem(modelMapper.fork(config)));
 		response.addCheckpointsItem(genesisCheckpoint());

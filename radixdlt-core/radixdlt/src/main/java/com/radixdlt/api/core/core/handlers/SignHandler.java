@@ -66,6 +66,7 @@ package com.radixdlt.api.core.core.handlers;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.SignRequest;
 import com.radixdlt.api.core.core.openapitools.model.SignResponse;
 import com.radixdlt.atom.TxLowLevelBuilder;
@@ -78,34 +79,39 @@ import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
 
-public class SignHandler extends CoreJsonRpcHandler<SignRequest, SignResponse> {
+public final class SignHandler extends CoreJsonRpcHandler<SignRequest, SignResponse> {
 
 	private final ECPublicKey self;
 	private final HashSigner hashSigner;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+	private final CoreModelMapper coreModelMapper;
 
 	@Inject
 	SignHandler(
 		@Self ECPublicKey self,
 		@LocalSigner HashSigner hashSigner,
-		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+		CoreModelMapper coreModelMapper
 	) {
 		super(SignRequest.class);
 
 		this.self = self;
 		this.hashSigner = hashSigner;
 		this.radixEngineProvider = radixEngineProvider;
+		this.coreModelMapper = coreModelMapper;
 	}
 
 	@Override
 	public SignResponse handleRequest(SignRequest request) throws Exception {
-		var pubKey = ECPublicKey.fromHex(request.getPublicKey().getHex());
+		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
+
+		var pubKey = coreModelMapper.ecPublicKey(request.getPublicKey());
 		if (!self.equals(pubKey)) {
-			throw new IllegalStateException();
+			throw new CoreModelMapper.InvalidParameterException();
 		}
 
 		// Verify this is a valid transaction and not anything more malicious
-		var bytes = Bytes.fromHexString(request.getUnsignedTransaction());
+		var bytes = coreModelMapper.bytes(request.getUnsignedTransaction());
 		var txn = Txn.create(bytes);
 		radixEngineProvider.get().getParser().parse(txn);
 

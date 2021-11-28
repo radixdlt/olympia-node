@@ -79,7 +79,7 @@ import com.radixdlt.api.core.core.handlers.MempoolHandler;
 import com.radixdlt.api.core.core.handlers.MempoolTransactionHandler;
 import com.radixdlt.api.core.core.handlers.NetworkConfigurationHandler;
 import com.radixdlt.api.core.core.handlers.NetworkStatusHandler;
-import com.radixdlt.api.core.core.handlers.ParseTransactionHandler;
+import com.radixdlt.api.core.core.handlers.ConstructionParseHandler;
 import com.radixdlt.api.core.core.handlers.SignHandler;
 import com.radixdlt.api.core.core.handlers.TransactionsHandler;
 import com.radixdlt.api.util.HandlerRoute;
@@ -118,7 +118,7 @@ public class CoreApiModule extends AbstractModule {
 		}
 		routeBinder.addBinding(HandlerRoute.post("/construction/derive")).to(ConstructionDeriveHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/construction/build")).to(ConstructionBuildHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/construction/parse")).to(ParseTransactionHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/construction/parse")).to(ConstructionParseHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/construction/finalize")).to(ConstructionFinalizeHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/construction/hash")).to(ConstructionHashHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/construction/submit")).to(ConstructionSubmitHandler.class);

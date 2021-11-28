@@ -65,42 +65,34 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeResponse;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyUtils;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.utils.Bytes;
 
 public final class ConstructionFinalizeHandler extends CoreJsonRpcHandler<ConstructionFinalizeRequest, ConstructionFinalizeResponse> {
-	private final Network network;
+	private final CoreModelMapper coreModelMapper;
 
 	@Inject
 	public ConstructionFinalizeHandler(
-		@NetworkId int networkId
+		CoreModelMapper coreModelMapper
 	) {
 		super(ConstructionFinalizeRequest.class);
-		this.network = Network.ofId(networkId).orElseThrow();
+		this.coreModelMapper = coreModelMapper;
 	}
 
 	@Override
 	public ConstructionFinalizeResponse handleRequest(ConstructionFinalizeRequest request) throws Exception {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new IllegalStateException();
-		}
+		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var sig = request.getSignature();
-		var publicKey = ECPublicKey.fromHex(sig.getPublicKey().getHex());
-		var bytes = Bytes.fromHexString(sig.getBytes());
-		var rawSig = ECDSASignature.decodeFromDER(bytes);
-		var unsignedTransaction = Bytes.fromHexString(request.getUnsignedTransaction());
+		var keyAndSignature = coreModelMapper.keyAndSignature(request.getSignature());
+		var unsignedTransaction = coreModelMapper.bytes(request.getUnsignedTransaction());
 		var hash = HashUtils.sha256(unsignedTransaction).asBytes();
 		var recoverable = ECKeyUtils.toRecoverableSig(
-			rawSig, hash, publicKey
+			keyAndSignature.getSecond(), hash, keyAndSignature.getFirst()
 		);
 
 		var txn = TxLowLevelBuilder.newBuilder(unsignedTransaction).sig(recoverable).build();

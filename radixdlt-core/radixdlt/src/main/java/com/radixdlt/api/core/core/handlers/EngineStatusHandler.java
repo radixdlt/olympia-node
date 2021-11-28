@@ -70,27 +70,22 @@ import com.radixdlt.api.core.core.openapitools.model.EngineStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.EngineStatusResponse;
 import com.radixdlt.api.core.core.openapitools.model.Validator;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 
 public class EngineStatusHandler extends CoreJsonRpcHandler<EngineStatusRequest, EngineStatusResponse> {
 	private final Addressing addressing;
 	private final InMemorySystemInfo inMemorySystemInfo;
-	private final Network network;
 	private final CoreModelMapper modelMapper;
 
 	@Inject
 	public EngineStatusHandler(
-		@NetworkId int networkId,
 		InMemorySystemInfo inMemorySystemInfo,
 		CoreModelMapper modelMapper,
 		Addressing addressing
 	) {
 		super(EngineStatusRequest.class);
 
-		this.network = Network.ofId(networkId).orElseThrow();
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.modelMapper = modelMapper;
 		this.addressing = addressing;
@@ -98,9 +93,7 @@ public class EngineStatusHandler extends CoreJsonRpcHandler<EngineStatusRequest,
 
 	@Override
 	public EngineStatusResponse handleRequest(EngineStatusRequest request) throws Exception {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new IllegalStateException();
-		}
+		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var response = new EngineStatusResponse();
 		var currentProof = inMemorySystemInfo.getCurrentProof();
