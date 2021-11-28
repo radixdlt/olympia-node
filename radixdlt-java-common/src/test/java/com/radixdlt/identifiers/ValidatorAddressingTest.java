@@ -110,7 +110,7 @@ public class ValidatorAddressingTest {
 		for (var e : privateKeyToValidatorId.entrySet()) {
 			var address = e.getValue();
 			var privHex = e.getKey();
-			var pubKey = validatorAddresses.parse(address);
+			var pubKey = validatorAddresses.parseOrThrow(address, IllegalStateException::new);
 			var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
 			var expectedPubKey = keyPair.getPublicKey();
 			assertThat(pubKey).isEqualTo(expectedPubKey);
@@ -122,7 +122,8 @@ public class ValidatorAddressingTest {
 		for (var e : invalidAddresses.entrySet()) {
 			var address = e.getKey();
 			var expectedError = e.getValue();
-			assertThatThrownBy(() -> validatorAddresses.parse(address), expectedError).isInstanceOf(DeserializeException.class);
+			assertThatThrownBy(() -> validatorAddresses.parseOrThrow(address, IllegalStateException::new), expectedError)
+				.isInstanceOf(IllegalStateException.class);
 		}
 	}
 }

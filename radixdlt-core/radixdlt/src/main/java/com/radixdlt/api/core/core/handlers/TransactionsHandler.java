@@ -63,83 +63,72 @@
 
 package com.radixdlt.api.core.core.handlers;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsResponse;
-import com.radixdlt.api.core.core.openapitools.model.PartialStateIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
 import com.radixdlt.api.core.core.BerkeleyProcessedTransactionsStore;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.Pair;
 
 import java.util.stream.Collectors;
 
 public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
-	private final Network network;
 	private final BerkeleyProcessedTransactionsStore txnStore;
+	private final CoreModelMapper coreModelMapper;
 
 	@Inject
 	TransactionsHandler(
-		@NetworkId int networkId,
+		CoreModelMapper coreModelMapper,
 		BerkeleyProcessedTransactionsStore txnStore
 	) {
 		super(CommittedTransactionsRequest.class);
-		this.network = Network.ofId(networkId).orElseThrow();
+		this.coreModelMapper = coreModelMapper;
 		this.txnStore = txnStore;
 	}
 
-	private Pair<PartialStateIdentifier, Long> validateRequest(CommittedTransactionsRequest request) {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new IllegalStateException();
+	private HashCode getAccumulatorHash(long stateVersion) throws CoreModelMapper.StateIdentifierNotFoundException {
+		var previousStateVersion = stateVersion - 1;
+		if (previousStateVersion >= 0) {
+			try (var stream = txnStore.get(previousStateVersion)) {
+				var prevTxn = stream.findFirst()
+					.orElseThrow(CoreModelMapper.StateIdentifierNotFoundException::new);
+				var bytes = Bytes.fromHexString(prevTxn.getCommittedStateIdentifier().getTransactionAccumulator());
+				return HashCode.fromBytes(bytes);
+			}
+		} else {
+			return HashUtils.zero256();
 		}
-
-		var limit = request.getLimit() == null ? 0L : request.getLimit();
-
-		var partialStateIdentifier = request.getStateIdentifier() == null
-			? new PartialStateIdentifier().stateVersion(0L) : request.getStateIdentifier();
-
-		return Pair.of(partialStateIdentifier, limit);
 	}
 
 	@Override
 	public CommittedTransactionsResponse handleRequest(CommittedTransactionsRequest request) throws Exception {
-		var validated = validateRequest(request);
-		var stateIdentifier = validated.getFirst();
-		var limit = validated.getSecond();
+		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		long stateVersion = stateIdentifier.getStateVersion();
-		var previousStateVersion = stateVersion - 1;
-		final StateIdentifier committedStateIdentifier;
-		if (previousStateVersion >= 0) {
-			try (var stream = txnStore.get(previousStateVersion)) {
-				var prevTxnJson = stream.findFirst().orElseThrow();
-				committedStateIdentifier = prevTxnJson.getCommittedStateIdentifier();
-			}
-		} else {
-			committedStateIdentifier = new StateIdentifier()
-				.stateVersion(0L)
-				.transactionAccumulator(Bytes.toHexString(HashUtils.zero256().asBytes()));
-		}
-		var accumulator = stateIdentifier.getTransactionAccumulator();
+		var limit = coreModelMapper.limit(request.getLimit());
+		var stateIdentifier = coreModelMapper.partialStateIdentifier(request.getStateIdentifier());
+		long stateVersion = stateIdentifier.getFirst();
+		var accumulator = stateIdentifier.getSecond();
+		var currentAccumulator = getAccumulatorHash(stateVersion);
 		if (accumulator != null) {
-			var matchesInput = accumulator.equals(committedStateIdentifier.getTransactionAccumulator());
+			var matchesInput = accumulator.equals(currentAccumulator);
 			if (!matchesInput) {
-				throw new IllegalStateException();
+				throw new CoreModelMapper.StateIdentifierNotFoundException();
 			}
 		}
 
 		var response = new CommittedTransactionsResponse();
-		response.stateIdentifier(committedStateIdentifier);
-
 		try (var stream = txnStore.get(stateVersion)) {
 			var transactions = stream.limit(limit).collect(Collectors.toList());
 			response.transactions(transactions);
 		}
-
-		return response;
+		return response
+			.stateIdentifier(new StateIdentifier()
+				.stateVersion(stateVersion)
+				.transactionAccumulator(Bytes.toHexString(currentAccumulator.asBytes()))
+			);
 	}
 }

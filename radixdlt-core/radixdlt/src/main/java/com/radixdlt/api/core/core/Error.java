@@ -61,63 +61,26 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.handlers;
+package com.radixdlt.api.core.core;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.radixdlt.api.core.core.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
-import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionResponse;
-import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineMempool;
+public enum Error {
+	BAD_REQUEST(400, "Bad request"),
+	NOT_FOUND(404, "Not found"),
+	NETWORK_NOT_SUPPORTED(501, "Network not supported");
 
-public class MempoolTransactionHandler extends CoreJsonRpcHandler<MempoolTransactionRequest, MempoolTransactionResponse> {
-	private final RadixEngineMempool mempool;
-	private final CoreModelMapper modelMapper;
-	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+	private final int errorCode;
+	private final String message;
 
-	@Inject
-	private MempoolTransactionHandler(
-		RadixEngineMempool mempool,
-		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		CoreModelMapper modelMapper
-	) {
-		super(MempoolTransactionRequest.class);
-
-		this.mempool = mempool;
-		this.modelMapper = modelMapper;
-		this.radixEngineProvider = radixEngineProvider;
+	Error(int errorCode, String message) {
+		this.errorCode = errorCode;
+		this.message = message;
 	}
 
-	private String symbol(REAddr tokenAddress) {
-		var mapKey = SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
-		var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
-		// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
-		var tokenResourceMetadata = (TokenResourceMetadata) substate;
-		return tokenResourceMetadata.getSymbol();
+	public int getErrorCode() {
+		return errorCode;
 	}
 
-	@Override
-	public MempoolTransactionResponse handleRequest(MempoolTransactionRequest request) throws Exception {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
-
-		var txnId = modelMapper.txnId(request.getTransactionIdentifier());
-		var transaction = mempool.getData(map -> map.get(txnId));
-		if (transaction == null) {
-			throw new CoreModelMapper.TransactionNotFoundException();
-		}
-
-		var processed = transaction.getFirst();
-		var metadata = transaction.getSecond();
-		var transactionModel = modelMapper.transaction(processed, this::symbol);
-		return new MempoolTransactionResponse()
-			.transaction(transactionModel);
-		// .put("added_timestamp", metadata.getInserted())
+	public String getMessage() {
+		return message;
 	}
 }

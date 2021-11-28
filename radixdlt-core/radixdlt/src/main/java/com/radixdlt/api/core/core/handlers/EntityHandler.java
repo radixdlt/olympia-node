@@ -97,7 +97,6 @@ public class EntityHandler extends CoreJsonRpcHandler<EntityRequest, EntityRespo
 		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var entity = modelMapper.entity(request.getEntityIdentifier());
-
 		var keyQueries = entity.getKeyQueries();
 		var resourceQueries = entity.getResourceQueries();
 

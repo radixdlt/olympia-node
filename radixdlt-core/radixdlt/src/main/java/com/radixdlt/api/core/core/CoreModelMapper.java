@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.core.core;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.model.Entity;
 import com.radixdlt.api.core.core.model.AccountVaultEntity;
@@ -142,18 +143,16 @@ public final class CoreModelMapper {
 	}
 
 	public abstract static class CoreModelException extends Exception {
-		private final int code;
-		private final String message;
+		private final Error error;
 
-		public CoreModelException(int code, String message) {
-			this.code = code;
-			this.message = message;
+		public CoreModelException(Error error) {
+			this.error = error;
 		}
 
 		public UnexpectedError toError() {
 			return new UnexpectedError()
-				.code(code)
-				.message(message)
+				.code(error.getErrorCode())
+				.message(error.getMessage())
 				.details(getErrorDetails());
 		}
 
@@ -162,7 +161,7 @@ public final class CoreModelMapper {
 
 	public static class NetworkNotSupportedException extends CoreModelException {
 		public NetworkNotSupportedException() {
-			super(1, "Network not supported");
+			super(Error.NETWORK_NOT_SUPPORTED);
 		}
 
 		@Override
@@ -173,7 +172,7 @@ public final class CoreModelMapper {
 
 	public static class InvalidAddressException extends CoreModelException {
 		public InvalidAddressException() {
-			super(2, "Invalid Address");
+			super(Error.BAD_REQUEST);
 		}
 
 		@Override
@@ -182,8 +181,59 @@ public final class CoreModelMapper {
 		}
 	}
 
-	public static class InvalidPublicKeyException extends Exception {
+	public static class InvalidTransactionHash extends CoreModelException {
+		public InvalidTransactionHash() {
+			super(Error.BAD_REQUEST);
+		}
 
+		@Override
+		ErrorDetails getErrorDetails() {
+			return null;
+		}
+	}
+
+	public static class TransactionNotFoundException extends CoreModelException {
+		public TransactionNotFoundException() {
+			super(Error.NOT_FOUND);
+		}
+
+		@Override
+		ErrorDetails getErrorDetails() {
+			return null;
+		}
+	}
+
+	public static class InvalidParameterException extends CoreModelException {
+		public InvalidParameterException() {
+			super(Error.BAD_REQUEST);
+		}
+
+		@Override
+		ErrorDetails getErrorDetails() {
+			return null;
+		}
+	}
+
+	public static class StateIdentifierNotFoundException extends CoreModelException {
+		public StateIdentifierNotFoundException() {
+			super(Error.NOT_FOUND);
+		}
+
+		@Override
+		ErrorDetails getErrorDetails() {
+			return null;
+		}
+	}
+
+	public static class InvalidPublicKeyException extends CoreModelException {
+		public InvalidPublicKeyException() {
+			super(Error.BAD_REQUEST);
+		}
+
+		@Override
+		ErrorDetails getErrorDetails() {
+			return null;
+		}
 	}
 
 	public void verifyNetwork(NetworkIdentifier networkIdentifier) throws NetworkNotSupportedException {
@@ -261,6 +311,50 @@ public final class CoreModelMapper {
 		}
 
 		return new OperationTxBuilder(message, entityOperationGroups, addressing, forks);
+	}
+
+	public AID txnId(TransactionIdentifier transactionIdentifier) throws InvalidTransactionHash {
+		try {
+			return AID.from(transactionIdentifier.getHash());
+		} catch (IllegalArgumentException e) {
+			throw new InvalidTransactionHash();
+		}
+	}
+
+	public long limit(Long limit) throws InvalidParameterException {
+		if (limit == null) {
+			return 0L;
+		}
+
+		if (limit < 0) {
+			throw new InvalidParameterException();
+		}
+
+		return limit;
+	}
+
+	public Pair<Long, HashCode> partialStateIdentifier(PartialStateIdentifier partialStateIdentifier) throws InvalidParameterException {
+		if (partialStateIdentifier == null) {
+			return Pair.of(0L, null);
+		}
+
+		if (partialStateIdentifier.getStateVersion() < 0L) {
+			throw new InvalidParameterException();
+		}
+
+		final HashCode accumulator;
+		if (partialStateIdentifier.getTransactionAccumulator() != null) {
+			try {
+				var bytes = Bytes.fromHexString(partialStateIdentifier.getTransactionAccumulator());
+				accumulator = HashCode.fromBytes(bytes);
+			} catch (IllegalArgumentException e) {
+				throw new InvalidParameterException();
+			}
+		} else {
+			accumulator = null;
+		}
+
+		return Pair.of(partialStateIdentifier.getStateVersion(), accumulator);
 	}
 
 	public Pair<Boolean, com.radixdlt.api.core.core.model.ResourceAmount> resourceAmount(ResourceAmount resourceAmount)
@@ -658,6 +752,45 @@ public final class CoreModelMapper {
 			operationGroup.addOperationsItem(operation(u, addressToSymbol));
 		});
 		return operationGroup;
+	}
+
+	public CommittedTransaction committedTransaction(
+		REProcessedTxn txn,
+		AccumulatorState accumulatorState,
+		Function<REAddr, String> addressToSymbol
+	) {
+		Function<REAddr, String> localizedAddressToSymbol = addr -> {
+			var localSymbol = txn.getGroupedStateUpdates().stream()
+				.flatMap(List::stream)
+				.map(REStateUpdate::getParsed)
+				.filter(TokenResourceMetadata.class::isInstance)
+				.map(TokenResourceMetadata.class::cast)
+				.filter(r -> r.getAddr().equals(addr))
+				.map(TokenResourceMetadata::getSymbol)
+				.findFirst();
+
+			return localSymbol.orElseGet(() -> addressToSymbol.apply(addr));
+		};
+
+		var transaction = new CommittedTransaction();
+
+		for (var stateUpdates : txn.getGroupedStateUpdates()) {
+			var operationGroup = operationGroup(stateUpdates, localizedAddressToSymbol);
+			transaction.addOperationGroupsItem(operationGroup);
+		}
+
+		var metadata = new CommittedTransactionMetadata()
+			.fee(nativeTokenAmount(txn.getFeePaid()))
+			.hex(Bytes.toHexString(txn.getTxn().getPayload()))
+			.size(txn.getTxn().getPayload().length);
+		txn.getSignedBy().ifPresent(s -> metadata.setSignedBy(publicKey(s)));
+		txn.getMsg().ifPresent(msg -> metadata.setMessage(Bytes.toHexString(msg)));
+
+		transaction.metadata(metadata);
+		transaction.transactionIdentifier(transactionIdentifier(txn.getTxnId()));
+		transaction.committedStateIdentifier(stateIdentifier(accumulatorState));
+
+		return transaction;
 	}
 
 	public Transaction transaction(REProcessedTxn txn, Function<REAddr, String> addressToSymbol) {

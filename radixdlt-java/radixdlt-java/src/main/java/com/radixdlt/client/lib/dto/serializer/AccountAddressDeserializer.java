@@ -85,11 +85,6 @@ public class AccountAddressDeserializer extends StdDeserializer<AccountAddress> 
 	@Override
 	public AccountAddress deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
 		var value = parser.getText();
-
-		try {
-			return AccountAddress.create(addressing.parse(value));
-		} catch (IllegalArgumentException e) {
-			throw new DeserializeException("Error while parsing address " + value, e);
-		}
+		return AccountAddress.create(addressing.parseOrThrow(value, DeserializeException::new));
 	}
 }

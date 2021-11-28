@@ -120,7 +120,12 @@ public final class ResourceAddressing {
 
 		var symbol = bech32Data.hrp.substring(0, bech32Data.hrp.length() - hrpSuffix.length());
 		var addrBytes = fromBech32Data(bech32Data.data);
-		return Pair.of(symbol, REAddr.of(addrBytes));
+		try {
+			var readdr = REAddr.of(addrBytes);
+			return Pair.of(symbol, readdr);
+		} catch (IllegalArgumentException e) {
+			throw exceptionSupplier.apply(e.getMessage());
+		}
 	}
 
 	public String of(String symbol, REAddr addr) {

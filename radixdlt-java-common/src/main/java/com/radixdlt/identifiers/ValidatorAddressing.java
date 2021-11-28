@@ -69,15 +69,10 @@ import org.bitcoinj.core.Bech32;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
 import java.util.function.Function;
-
-import static com.radixdlt.errors.ApiErrors.INVALID_VALIDATOR_ADDRESS;
 
 /**
  * Bech-32 encoding/decoding of validators. Validators are represented as 33-byte

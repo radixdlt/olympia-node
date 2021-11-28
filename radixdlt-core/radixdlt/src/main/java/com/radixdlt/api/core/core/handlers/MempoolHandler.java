@@ -65,36 +65,30 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.MempoolRequest;
 import com.radixdlt.api.core.core.openapitools.model.MempoolResponse;
 import com.radixdlt.api.core.core.openapitools.model.TransactionIdentifier;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.RadixEngineMempool;
 
-public class MempoolHandler extends CoreJsonRpcHandler<MempoolRequest, MempoolResponse> {
-	private final Network network;
+public final class MempoolHandler extends CoreJsonRpcHandler<MempoolRequest, MempoolResponse> {
+	private final CoreModelMapper coreModelMapper;
 	private final RadixEngineMempool mempool;
 
 	@Inject
 	private MempoolHandler(
-		@NetworkId int networkId,
+		CoreModelMapper coreModelMapper,
 		RadixEngineMempool mempool
 	) {
 		super(MempoolRequest.class);
-		this.network = Network.ofId(networkId).orElseThrow();
-		this.mempool = mempool;
-	}
 
-	private void validateRequest(MempoolRequest request) {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new IllegalStateException();
-		}
+		this.coreModelMapper = coreModelMapper;
+		this.mempool = mempool;
 	}
 
 	@Override
 	public MempoolResponse handleRequest(MempoolRequest request) throws Exception {
-		validateRequest(request);
+		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		return mempool.getData(map -> {
 			var response = new MempoolResponse();

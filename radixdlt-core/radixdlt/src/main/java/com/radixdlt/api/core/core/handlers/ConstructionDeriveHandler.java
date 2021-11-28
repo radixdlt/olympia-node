@@ -87,9 +87,10 @@ public final class ConstructionDeriveHandler extends CoreJsonRpcHandler<Construc
 	public ConstructionDeriveResponse handleRequest(ConstructionDeriveRequest request) throws Exception {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var metadata = request.getMetadata();
 		var publicKey = coreModelMapper.ecPublicKey(request.getPublicKey());
+
 		var response = new ConstructionDeriveResponse();
+		var metadata = request.getMetadata();
 		if (metadata instanceof ConstructionDeriveRequestMetadataAccount) {
 			var address = REAddr.ofPubKeyAccount(publicKey);
 			response.entityIdentifier(coreModelMapper.entityIdentifier(address));

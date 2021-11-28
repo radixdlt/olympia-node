@@ -144,7 +144,9 @@ public class AsyncRadixApiLocalTest {
 
 	@Test
 	public void testAccountInfo() throws IOException {
-		var accountAddress = AccountAddress.create(ACCOUNTS.parse("ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sfvvdfj"));
+		var accountAddress = AccountAddress.create(
+			ACCOUNTS.parseOrThrow("ddx1qspll7tm6464am4yypzn59p42g6a8qhkguhc269p3vhs27s5vq5h24sfvvdfj", IllegalStateException::new)
+		);
 
 		prepareClient(ACCOUNT_INFO)
 			.map(RadixApi::withTrace)

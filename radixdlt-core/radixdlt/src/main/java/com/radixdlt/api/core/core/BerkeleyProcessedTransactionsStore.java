@@ -70,14 +70,12 @@ import com.google.inject.Provider;
 import com.radixdlt.api.core.core.openapitools.JSON;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransaction;
 import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
@@ -213,13 +211,8 @@ public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditio
 			var metadata = (TokenResourceMetadata) deserialize(data);
 			return metadata.getSymbol();
 		};
-		Function<ECPublicKey, ValidatorStakeData> getValidatorStake = key -> {
-			var validatorDataKey = SystemMapKey.ofSystem(SubstateTypeId.VALIDATOR_STAKE_DATA.id(), key.getCompressedBytes());
-			var data = mapper.apply(validatorDataKey).orElseThrow().getData();
-			return (ValidatorStakeData) deserialize(data);
-		};
 
-		var transaction = modelMapper.transaction(txn, addressToSymbol);
+		var transaction = modelMapper.committedTransaction(txn, nextAccumulatorState, addressToSymbol);
 		byte[] data;
 		try {
 			data = JSON.getDefault().getMapper().writeValueAsBytes(transaction);
