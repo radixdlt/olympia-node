@@ -61,64 +61,48 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model;
+package com.radixdlt.api.core.core.model.entities;
 
+import com.radixdlt.api.core.core.model.Entity;
+import com.radixdlt.api.core.core.model.KeyQuery;
+import com.radixdlt.api.core.core.model.ParsedDataObject;
+import com.radixdlt.api.core.core.model.Resource;
+import com.radixdlt.api.core.core.model.ResourceQuery;
+import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
+import com.radixdlt.api.core.core.model.StakeOwnershipResource;
+import com.radixdlt.api.core.core.model.SubstateWithdrawal;
 import com.radixdlt.api.core.core.model.exceptions.InvalidResourceIdentifierException;
-import com.radixdlt.api.core.core.openapitools.model.DataObject;
 import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
-import com.radixdlt.application.tokens.construction.MinimumStakeException;
-import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.UInt256;
 
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.radixdlt.atom.SubstateTypeId.PREPARED_STAKE;
+import static com.radixdlt.atom.SubstateTypeId.PREPARED_UNSTAKE;
 
-public final class PreparedStakeVaultEntity implements Entity {
+public final class PreparedUnstakeVaultEntity implements Entity {
 	private final REAddr accountAddress;
 	private final ECPublicKey validatorKey;
 
-	PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey) {
+	PreparedUnstakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey) {
 		this.accountAddress = accountAddress;
 		this.validatorKey = validatorKey;
 	}
 
 	@Override
-	public void deposit(ResourceAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) throws TxBuilderException {
-		if (!(amount.getResource() instanceof TokenResource tokenResource)) {
-			throw new InvalidResourceIdentifierException("Can only store native token in prepared_stake address");
+	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) throws TxBuilderException {
+		if (!(amount.getResource() instanceof StakeOwnershipResource stakeOwnershipResource)) {
+			throw new InvalidResourceIdentifierException("Can only store validator ownership in prepared_unstake address");
 		}
-		if (!tokenResource.getTokenAddress().isNativeToken()) {
-			throw new InvalidResourceIdentifierException("Can only store native token in prepared_stake address");
-		}
-
-		var minStake = config.get().getMinimumStake().toSubunits();
-		var attempt = UInt256.from(amount.getAmount().toByteArray());
-		if (attempt.compareTo(minStake) < 0) {
-			throw new MinimumStakeException(minStake, attempt);
-		}
-
-		var flag = txBuilder.read(AllowDelegationFlag.class, validatorKey);
-		if (!flag.allowsDelegation()) {
-			var validator = txBuilder.read(ValidatorOwnerCopy.class, validatorKey);
-			var owner = validator.getOwner();
-			if (!accountAddress.equals(owner)) {
-				throw new DelegateStakePermissionException(owner, accountAddress);
-			}
-		}
-		var substate = new PreparedStake(attempt, accountAddress, validatorKey);
+		var stakeOwnershipKey = stakeOwnershipResource.getValidatorKey();
+		var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount.getAmount());
 		txBuilder.up(substate);
 	}
 
@@ -129,8 +113,7 @@ public final class PreparedStakeVaultEntity implements Entity {
 
 	@Override
 	public void overwriteDataObject(
-		DataObject dataObject,
-		Addressing addressing,
+		ParsedDataObject dataObject,
 		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
 	) {
@@ -139,12 +122,13 @@ public final class PreparedStakeVaultEntity implements Entity {
 
 	@Override
 	public List<ResourceQuery> getResourceQueries() {
+
 		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
-		buf.put(PREPARED_STAKE.id());
+		buf.put(PREPARED_UNSTAKE.id());
 		buf.put((byte) 0); // Reserved byte
 		buf.put(validatorKey.getCompressedBytes());
 		buf.put(accountAddress.getBytes());
-		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), PreparedStake.class);
+		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), PreparedUnstakeOwnership.class);
 		return List.of(ResourceQuery.from(index));
 	}
 
@@ -153,8 +137,7 @@ public final class PreparedStakeVaultEntity implements Entity {
 		return List.of();
 	}
 
-
-	public static PreparedStakeVaultEntity from(REAddr accountAddress, ECPublicKey validatorKey) {
-		return new PreparedStakeVaultEntity(accountAddress, validatorKey);
+	public static PreparedUnstakeVaultEntity from(REAddr accountAddress, ECPublicKey validatorKey) {
+		return new PreparedUnstakeVaultEntity(accountAddress, validatorKey);
 	}
 }

@@ -64,11 +64,11 @@
 package com.radixdlt.api.core.core.model;
 
 import com.google.common.base.Suppliers;
+import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
@@ -79,19 +79,61 @@ import java.util.function.Supplier;
 public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 	private final Forks forks;
 	private final List<List<EntityOperation>> operationGroups;
-	private final Addressing addressing;
 	private final String message;
 
 	public OperationTxBuilder(
 		String message,
 		List<List<EntityOperation>> operationGroups,
-		Addressing addressing,
 		Forks forks
 	) {
 		this.message = message;
 		this.operationGroups = operationGroups;
-		this.addressing = addressing;
 		this.forks = forks;
+	}
+
+	private void executeResourceOperation(
+		Entity entity,
+		ResourceOperation operation,
+		TxBuilder txBuilder,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
+		if (operation == null) {
+			return;
+		}
+
+		var amount = operation.getAmount();
+		if (operation.isDeposit()) {
+			entity.deposit(amount, txBuilder, config);
+		} else {
+			var retrieval = entity.withdraw(amount.getResource());
+			var change = txBuilder.downFungible(
+				retrieval.getIndex(),
+				retrieval.getPredicate(),
+				amount.getAmount()
+			);
+			if (!change.isZero()) {
+				var changeAmount = new ResourceUnsignedAmount(amount.getResource(), change);
+				entity.deposit(changeAmount, txBuilder, config);
+			}
+		}
+	}
+
+	private void executeDataOperation(
+		Entity entity,
+		DataOperation operation,
+		TxBuilder txBuilder,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
+		if (operation == null) {
+			return;
+		}
+
+		if (operation.getDataAction().equals(Data.ActionEnum.CREATE)) {
+			var parsedDataObject = operation.getParsedDataObject();
+			entity.overwriteDataObject(parsedDataObject, txBuilder, config);
+		} else {
+			throw new IllegalStateException();
+		}
 	}
 
 	private void execute(
@@ -101,28 +143,11 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
 	) throws TxBuilderException {
 		var entity = operation.getEntity();
 
-		var amount = operation.getResourceAmount();
-		if (amount != null) {
-			if (operation.isAmountPositive()) {
-				entity.deposit(amount, txBuilder, config);
-			} else {
-				var retrieval = entity.withdraw(amount.getResource());
-				var change = txBuilder.downFungible(
-					retrieval.getIndex(),
-					retrieval.getPredicate(),
-					amount.getAmount()
-				);
-				if (!change.isZero()) {
-					var changeAmount = new ResourceAmount(amount.getResource(), change);
-					entity.deposit(changeAmount, txBuilder, config);
-				}
-			}
-		}
+		var resourceOperation = operation.getResourceOperation();
+		executeResourceOperation(entity, resourceOperation, txBuilder, config);
 
-		var data = operation.getData();
-		if (data != null) {
-			entity.overwriteDataObject(data.getDataObject(), addressing, txBuilder, config);
-		}
+		var dataOperation = operation.getDataOperation();
+		executeDataOperation(entity, dataOperation, txBuilder, config);
 	}
 
 	@Override

@@ -63,10 +63,8 @@
 
 package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.core.core.openapitools.model.DataObject;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 
 import java.util.List;
@@ -78,13 +76,12 @@ public interface Entity {
 	List<KeyQuery> getKeyQueries();
 
 	// Write
-	void deposit(ResourceAmount resourceAmount, TxBuilder txBuilder, Supplier<RERulesConfig> config) throws TxBuilderException;
+	void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) throws TxBuilderException;
 
 	SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException;
 
 	void overwriteDataObject(
-		DataObject dataObject,
-		Addressing addressing,
+		ParsedDataObject parsedDataObject,
 		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException;

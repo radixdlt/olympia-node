@@ -63,22 +63,23 @@
 
 package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.utils.UInt256;
+import com.google.common.collect.ClassToInstanceMap;
+import com.radixdlt.api.core.core.openapitools.model.DataObject;
 
-public class ResourceAmount {
-	private final Resource resource;
-	private final UInt256 amount;
+public final class ParsedDataObject {
+	private final DataObject dataObject;
+	private final ClassToInstanceMap<Object> parsedData;
 
-	public ResourceAmount(Resource resource, UInt256 amount) {
-		this.resource = resource;
-		this.amount = amount;
+	public ParsedDataObject(DataObject dataObject, ClassToInstanceMap<Object> parsedData) {
+		this.dataObject = dataObject;
+		this.parsedData = parsedData;
 	}
 
-	public Resource getResource() {
-		return resource;
+	public DataObject getDataObject() {
+		return dataObject;
 	}
 
-	public UInt256 getAmount() {
-		return amount;
+	public <T> T getParsed(Class<T> parsedClass) {
+		return parsedData.getInstance(parsedClass);
 	}
 }

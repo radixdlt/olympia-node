@@ -61,9 +61,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model;
+package com.radixdlt.api.core.core.model.entities;
 
-import com.radixdlt.api.core.core.openapitools.model.DataObject;
+import com.radixdlt.api.core.core.model.Entity;
+import com.radixdlt.api.core.core.model.KeyQuery;
+import com.radixdlt.api.core.core.model.ParsedDataObject;
+import com.radixdlt.api.core.core.model.Resource;
+import com.radixdlt.api.core.core.model.ResourceQuery;
+import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
+import com.radixdlt.api.core.core.model.StakeOwnershipResource;
+import com.radixdlt.api.core.core.model.SubstateWithdrawal;
+import com.radixdlt.api.core.core.model.TokenResource;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
@@ -74,7 +82,6 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import org.bouncycastle.util.Arrays;
 
@@ -97,7 +104,7 @@ public class AccountVaultEntity implements Entity {
 	}
 
 	@Override
-	public void deposit(ResourceAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) {
+	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) {
 		final Particle substate;
 		if (amount.getResource() instanceof TokenResource tokenResource) {
 			var tokenAddress = tokenResource.getTokenAddress();
@@ -132,7 +139,7 @@ public class AccountVaultEntity implements Entity {
 			buf.put(accountAddress.getBytes());
 			if (buf.hasRemaining()) {
 				// Sanity
-				throw new IllegalStateException();
+				throw new IllegalStateException("Buffer Size sanity check failed.");
 			}
 			SubstateIndex<ResourceInBucket> index = SubstateIndex.create(buf.array(), StakeOwnership.class);
 			return new SubstateWithdrawal(
@@ -140,14 +147,13 @@ public class AccountVaultEntity implements Entity {
 				p -> p.bucket().getOwner().equals(accountAddress) && p.bucket().getValidatorKey().equals(validatorKey)
 			);
 		} else {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Unknown resource: " + resource);
 		}
 	}
 
 	@Override
 	public void overwriteDataObject(
-		DataObject dataObject,
-		Addressing addressing,
+		ParsedDataObject parsedDataObject,
 		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
 	) {

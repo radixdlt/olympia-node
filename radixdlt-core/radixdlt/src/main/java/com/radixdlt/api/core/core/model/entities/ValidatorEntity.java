@@ -61,9 +61,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model;
+package com.radixdlt.api.core.core.model.entities;
 
-import com.radixdlt.api.core.core.openapitools.model.DataObject;
+import com.radixdlt.api.core.core.model.Entity;
+import com.radixdlt.api.core.core.model.KeyQuery;
+import com.radixdlt.api.core.core.model.ParsedDataObject;
+import com.radixdlt.api.core.core.model.Resource;
+import com.radixdlt.api.core.core.model.ResourceQuery;
+import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
+import com.radixdlt.api.core.core.model.SubstateWithdrawal;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorFee;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorOwner;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorRegistered;
@@ -84,7 +90,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
 
@@ -110,7 +116,7 @@ public class ValidatorEntity implements Entity {
 	}
 
 	@Override
-	public void deposit(ResourceAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) {
+	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) {
 		throw new IllegalStateException();
 	}
 
@@ -121,11 +127,11 @@ public class ValidatorEntity implements Entity {
 
 	@Override
 	public void overwriteDataObject(
-		DataObject dataObject,
-		Addressing addressing,
+		ParsedDataObject parsedDataObject,
 		TxBuilder builder,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {
+		var dataObject = parsedDataObject.getDataObject();
 		if (dataObject instanceof PreparedValidatorRegistered preparedValidatorRegistered) {
 			builder.down(ValidatorRegisteredCopy.class, validatorKey);
 			var curEpoch = builder.readSystem(EpochData.class);
@@ -134,11 +140,10 @@ public class ValidatorEntity implements Entity {
 				validatorKey,
 				preparedValidatorRegistered.getRegistered()
 			));
-		} else if (dataObject instanceof PreparedValidatorOwner preparedValidatorOwner) {
+		} else if (dataObject instanceof PreparedValidatorOwner) {
 			builder.down(ValidatorOwnerCopy.class, validatorKey);
 			var curEpoch = builder.readSystem(EpochData.class);
-			var owner = addressing.forAccounts()
-				.parseOrThrow(preparedValidatorOwner.getOwner(), s -> new IllegalStateException());
+			var owner = parsedDataObject.getParsed(REAddr.class);
 			builder.up(new ValidatorOwnerCopy(OptionalLong.of(curEpoch.getEpoch() + 1), validatorKey, owner));
 		} else if (dataObject instanceof PreparedValidatorFee preparedValidatorFee) {
 			builder.down(ValidatorFeeCopy.class, validatorKey);

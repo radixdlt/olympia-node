@@ -61,32 +61,105 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model;
+package com.radixdlt.api.core.core.model.entities;
 
-public final class EntityOperation {
-	private final Entity entity;
-	private final ResourceOperation resourceOperation;
-	private final DataOperation dataOperation;
+import com.radixdlt.api.core.core.model.Entity;
+import com.radixdlt.api.core.core.model.KeyQuery;
+import com.radixdlt.api.core.core.model.ParsedDataObject;
+import com.radixdlt.api.core.core.model.Resource;
+import com.radixdlt.api.core.core.model.ResourceQuery;
+import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
+import com.radixdlt.api.core.core.model.SubstateWithdrawal;
+import com.radixdlt.api.core.core.model.TokenResource;
+import com.radixdlt.api.core.core.model.exceptions.InvalidResourceIdentifierException;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
+import com.radixdlt.application.tokens.construction.MinimumStakeException;
+import com.radixdlt.application.tokens.state.PreparedStake;
+import com.radixdlt.application.validators.state.AllowDelegationFlag;
+import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.UInt256;
 
-	public EntityOperation(
-		Entity entity,
-		ResourceOperation resourceOperation,
-		DataOperation dataOperation
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.function.Supplier;
+
+import static com.radixdlt.atom.SubstateTypeId.PREPARED_STAKE;
+
+public final class PreparedStakeVaultEntity implements Entity {
+	private final REAddr accountAddress;
+	private final ECPublicKey validatorKey;
+
+	PreparedStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey) {
+		this.accountAddress = accountAddress;
+		this.validatorKey = validatorKey;
+	}
+
+	@Override
+	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) throws TxBuilderException {
+		if (!(amount.getResource() instanceof TokenResource tokenResource)) {
+			throw new InvalidResourceIdentifierException("Can only store native token in prepared_stake address");
+		}
+		if (!tokenResource.getTokenAddress().isNativeToken()) {
+			throw new InvalidResourceIdentifierException("Can only store native token in prepared_stake address");
+		}
+
+		var minStake = config.get().getMinimumStake().toSubunits();
+		var attempt = UInt256.from(amount.getAmount().toByteArray());
+		if (attempt.compareTo(minStake) < 0) {
+			throw new MinimumStakeException(minStake, attempt);
+		}
+
+		var flag = txBuilder.read(AllowDelegationFlag.class, validatorKey);
+		if (!flag.allowsDelegation()) {
+			var validator = txBuilder.read(ValidatorOwnerCopy.class, validatorKey);
+			var owner = validator.getOwner();
+			if (!accountAddress.equals(owner)) {
+				throw new DelegateStakePermissionException(owner, accountAddress);
+			}
+		}
+		var substate = new PreparedStake(attempt, accountAddress, validatorKey);
+		txBuilder.up(substate);
+	}
+
+	@Override
+	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
+		throw new IllegalStateException();
+	}
+
+	@Override
+	public void overwriteDataObject(
+		ParsedDataObject parsedDataObject,
+		TxBuilder txBuilder,
+		Supplier<RERulesConfig> config
 	) {
-		this.entity = entity;
-		this.resourceOperation = resourceOperation;
-		this.dataOperation = dataOperation;
+		throw new IllegalStateException();
 	}
 
-	public Entity getEntity() {
-		return entity;
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
+		buf.put(PREPARED_STAKE.id());
+		buf.put((byte) 0); // Reserved byte
+		buf.put(validatorKey.getCompressedBytes());
+		buf.put(accountAddress.getBytes());
+		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), PreparedStake.class);
+		return List.of(ResourceQuery.from(index));
 	}
 
-	public ResourceOperation getResourceOperation() {
-		return resourceOperation;
+	@Override
+	public List<KeyQuery> getKeyQueries() {
+		return List.of();
 	}
 
-	public DataOperation getDataOperation() {
-		return dataOperation;
+
+	public static PreparedStakeVaultEntity from(REAddr accountAddress, ECPublicKey validatorKey) {
+		return new PreparedStakeVaultEntity(accountAddress, validatorKey);
 	}
 }

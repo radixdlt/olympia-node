@@ -63,97 +63,23 @@
 
 package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.core.core.model.exceptions.InvalidTokenOwnerException;
-import com.radixdlt.api.core.core.openapitools.model.DataObject;
-import com.radixdlt.api.core.core.openapitools.model.TokenData;
-import com.radixdlt.api.core.core.openapitools.model.TokenMetadata;
-import com.radixdlt.application.system.scrypt.Syscall;
-import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.UInt256;
+import com.google.common.collect.ClassToInstanceMap;
+import com.radixdlt.api.core.core.openapitools.model.Data;
 
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.function.Supplier;
+public final class DataOperation {
+	private final Data data;
+	private final ClassToInstanceMap<Object> parsedData;
 
-public class TokenEntity implements Entity {
-	private final String symbol;
-	private final REAddr tokenAddr;
-
-	private TokenEntity(String symbol, REAddr tokenAddr) {
-		this.symbol = symbol;
-		this.tokenAddr = tokenAddr;
+	public DataOperation(Data data, ClassToInstanceMap<Object> parsedData) {
+		this.data = data;
+		this.parsedData = parsedData;
 	}
 
-	public REAddr getTokenAddr() {
-		return tokenAddr;
+	public Data.ActionEnum getDataAction() {
+		return data.getAction();
 	}
 
-	public static TokenEntity from(String symbol, REAddr tokenAddr) {
-		return new TokenEntity(symbol, tokenAddr);
-	}
-
-	@Override
-	public void deposit(ResourceAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) throws TxBuilderException {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void overwriteDataObject(
-		DataObject dataObject,
-		Addressing addressing,
-		TxBuilder builder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		if (dataObject instanceof TokenData tokenData) {
-			var isMutable = tokenData.getIsMutable();
-			var owner = tokenData.getOwner();
-			if (!isMutable && owner != null) {
-				throw new InvalidTokenOwnerException("Cannot have owner on fixed supply token.");
-			}
-
-			if (tokenData.getGranularity() != null && !tokenData.getGranularity().equals("1")) {
-				// TODO: Fix
-				throw new IllegalStateException();
-			}
-
-			builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8));
-			builder.downREAddr(tokenAddr);
-			var ownerKey = addressing.forAccounts()
-				.parseOrThrow(owner, s -> new IllegalStateException()).publicKey().orElseThrow();
-			var tokenResource = new TokenResource(tokenAddr, UInt256.ONE, isMutable, ownerKey);
-			builder.up(tokenResource);
-		} else if (dataObject instanceof TokenMetadata tokenMetadata) {
-			builder.up(new TokenResourceMetadata(
-				tokenAddr,
-				symbol,
-				tokenMetadata.getName(),
-				tokenMetadata.getDescription(),
-				tokenMetadata.getIconUrl(),
-				tokenMetadata.getUrl()
-			));
-		} else {
-			throw new IllegalStateException();
-		}
-	}
-
-	@Override
-	public List<ResourceQuery> getResourceQueries() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public List<KeyQuery> getKeyQueries() {
-		throw new UnsupportedOperationException();
+	public ParsedDataObject getParsedDataObject() {
+		return new ParsedDataObject(data.getDataObject(), parsedData);
 	}
 }

@@ -63,30 +63,24 @@
 
 package com.radixdlt.api.core.core.model;
 
-public final class EntityOperation {
-	private final Entity entity;
-	private final ResourceOperation resourceOperation;
-	private final DataOperation dataOperation;
+import com.radixdlt.utils.UInt256;
 
-	public EntityOperation(
-		Entity entity,
-		ResourceOperation resourceOperation,
-		DataOperation dataOperation
-	) {
-		this.entity = entity;
-		this.resourceOperation = resourceOperation;
-		this.dataOperation = dataOperation;
+public final class ResourceOperation {
+	private final Resource resource;
+	private final UInt256 amount;
+	private final boolean deposit;
+
+	public ResourceOperation(Resource resource, UInt256 amount, boolean deposit) {
+		this.resource = resource;
+		this.amount = amount;
+		this.deposit = deposit;
 	}
 
-	public Entity getEntity() {
-		return entity;
+	public ResourceUnsignedAmount getAmount() {
+		return new ResourceUnsignedAmount(resource, amount);
 	}
 
-	public ResourceOperation getResourceOperation() {
-		return resourceOperation;
-	}
-
-	public DataOperation getDataOperation() {
-		return dataOperation;
+	public boolean isDeposit() {
+		return deposit;
 	}
 }

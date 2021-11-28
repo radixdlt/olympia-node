@@ -61,32 +61,103 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model;
+package com.radixdlt.api.core.core.model.entities;
 
-public final class EntityOperation {
-	private final Entity entity;
-	private final ResourceOperation resourceOperation;
-	private final DataOperation dataOperation;
+import com.radixdlt.api.core.core.model.Entity;
+import com.radixdlt.api.core.core.model.KeyQuery;
+import com.radixdlt.api.core.core.model.ParsedDataObject;
+import com.radixdlt.api.core.core.model.Resource;
+import com.radixdlt.api.core.core.model.ResourceQuery;
+import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
+import com.radixdlt.api.core.core.model.SubstateWithdrawal;
+import com.radixdlt.api.core.core.model.exceptions.InvalidTokenOwnerException;
+import com.radixdlt.api.core.core.openapitools.model.TokenData;
+import com.radixdlt.api.core.core.openapitools.model.TokenMetadata;
+import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.tokens.state.TokenResource;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.utils.UInt256;
 
-	public EntityOperation(
-		Entity entity,
-		ResourceOperation resourceOperation,
-		DataOperation dataOperation
-	) {
-		this.entity = entity;
-		this.resourceOperation = resourceOperation;
-		this.dataOperation = dataOperation;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.function.Supplier;
+
+public final class TokenEntity implements Entity {
+	private final String symbol;
+	private final REAddr tokenAddr;
+
+	private TokenEntity(String symbol, REAddr tokenAddr) {
+		this.symbol = symbol;
+		this.tokenAddr = tokenAddr;
 	}
 
-	public Entity getEntity() {
-		return entity;
+	public REAddr getTokenAddr() {
+		return tokenAddr;
 	}
 
-	public ResourceOperation getResourceOperation() {
-		return resourceOperation;
+	public static TokenEntity from(String symbol, REAddr tokenAddr) {
+		return new TokenEntity(symbol, tokenAddr);
 	}
 
-	public DataOperation getDataOperation() {
-		return dataOperation;
+	@Override
+	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) throws TxBuilderException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void overwriteDataObject(
+		ParsedDataObject parsedDataObject,
+		TxBuilder builder,
+		Supplier<RERulesConfig> config
+	) throws TxBuilderException {
+		var dataObject = parsedDataObject.getDataObject();
+		if (dataObject instanceof TokenData tokenData) {
+			var isMutable = tokenData.getIsMutable();
+			var ownerKey = parsedDataObject.getParsed(ECPublicKey.class);
+			if (!isMutable && ownerKey != null) {
+				throw new InvalidTokenOwnerException("Cannot have owner on fixed supply token.");
+			}
+
+			if (!tokenData.getGranularity().equals("1")) {
+				// TODO: Fix
+				throw new IllegalStateException();
+			}
+
+			builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8));
+			builder.downREAddr(tokenAddr);
+			var tokenResource = new TokenResource(tokenAddr, UInt256.ONE, isMutable, ownerKey);
+			builder.up(tokenResource);
+		} else if (dataObject instanceof TokenMetadata tokenMetadata) {
+			builder.up(new TokenResourceMetadata(
+				tokenAddr,
+				symbol,
+				tokenMetadata.getName(),
+				tokenMetadata.getDescription(),
+				tokenMetadata.getIconUrl(),
+				tokenMetadata.getUrl()
+			));
+		} else {
+			throw new IllegalStateException();
+		}
+	}
+
+	@Override
+	public List<ResourceQuery> getResourceQueries() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public List<KeyQuery> getKeyQueries() {
+		throw new UnsupportedOperationException();
 	}
 }

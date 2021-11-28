@@ -63,10 +63,14 @@
 
 package com.radixdlt.api.core.core;
 
+import com.google.common.collect.ClassToInstanceMap;
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
+import com.radixdlt.api.core.core.model.DataOperation;
 import com.radixdlt.api.core.core.model.Entity;
-import com.radixdlt.api.core.core.model.AccountVaultEntity;
+import com.radixdlt.api.core.core.model.ResourceOperation;
+import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.core.model.EntityOperation;
 import com.radixdlt.api.core.core.model.exceptions.InvalidAddressException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidFeePayerEntityException;
@@ -76,12 +80,12 @@ import com.radixdlt.api.core.core.model.exceptions.InvalidPublicKeyException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidSignatureException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidSubEntityException;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;
-import com.radixdlt.api.core.core.model.PreparedStakeVaultEntity;
-import com.radixdlt.api.core.core.model.PreparedUnstakeVaultEntity;
+import com.radixdlt.api.core.core.model.entities.PreparedStakeVaultEntity;
+import com.radixdlt.api.core.core.model.entities.PreparedUnstakeVaultEntity;
 import com.radixdlt.api.core.core.model.Resource;
 import com.radixdlt.api.core.core.model.StakeOwnershipResource;
-import com.radixdlt.api.core.core.model.TokenEntity;
-import com.radixdlt.api.core.core.model.ValidatorEntity;
+import com.radixdlt.api.core.core.model.entities.TokenEntity;
+import com.radixdlt.api.core.core.model.entities.ValidatorEntity;
 import com.radixdlt.api.core.core.model.exceptions.InvalidTransactionHashException;
 import com.radixdlt.api.core.core.model.exceptions.NetworkNotSupportedException;
 import com.radixdlt.api.core.core.openapitools.model.*;
@@ -260,25 +264,46 @@ public final class CoreModelMapper {
 		}
 	}
 
+	public DataOperation dataOperation(Data data) throws CoreModelException {
+		if (data == null) {
+			return null;
+		}
+
+		final ClassToInstanceMap<Object> parsed;
+		var dataObject = data.getDataObject();
+		if (dataObject instanceof PreparedValidatorOwner preparedValidatorOwner) {
+			var owner = preparedValidatorOwner.getOwner();
+			parsed = ImmutableClassToInstanceMap.of(
+				REAddr.class, addressing.forAccounts().parseOrThrow(owner, s -> new InvalidAddressException(owner))
+			);
+		} else if (dataObject instanceof TokenData tokenData && tokenData.getOwner() != null) {
+			var owner = tokenData.getOwner();
+			var ownerAddress = addressing.forAccounts().parseOrThrow(owner, s -> new InvalidAddressException(owner));
+			var key = ownerAddress.publicKey().orElseThrow(() -> new InvalidAddressException(owner));
+			parsed = ImmutableClassToInstanceMap.of(ECPublicKey.class, key);
+		} else {
+			parsed = ImmutableClassToInstanceMap.of();
+		}
+
+		return new DataOperation(data, parsed);
+	}
 
 	public OperationTxBuilder operationTxBuilder(String message, List<OperationGroup> operationGroups) throws CoreModelException {
 		var entityOperationGroups = new ArrayList<List<EntityOperation>>();
 		for (var group : operationGroups) {
 			var entityOperationGroup = new ArrayList<EntityOperation>();
 			for (var op : group.getOperations()) {
-				var pair = op.getAmount() == null ? null : resourceAmount(op.getAmount());
 				var entityOperation = new EntityOperation(
 					entity(op.getEntityIdentifier()),
-					pair == null ? null : pair.getSecond(),
-					pair == null || pair.getFirst(),
-					op.getData()
+					resourceOperation(op.getAmount()),
+					dataOperation(op.getData())
 				);
 				entityOperationGroup.add(entityOperation);
 			}
 			entityOperationGroups.add(entityOperationGroup);
 		}
 
-		return new OperationTxBuilder(message, entityOperationGroups, addressing, forks);
+		return new OperationTxBuilder(message, entityOperationGroups, forks);
 	}
 
 
@@ -332,17 +357,19 @@ public final class CoreModelMapper {
 		return Pair.of(partialStateIdentifier.getStateVersion(), accumulator);
 	}
 
-	public Pair<Boolean, com.radixdlt.api.core.core.model.ResourceAmount> resourceAmount(ResourceAmount resourceAmount)
-		throws InvalidAddressException {
+	public ResourceOperation resourceOperation(ResourceAmount resourceAmount) throws InvalidAddressException {
+		if (resourceAmount == null) {
+			return null;
+		}
+
 		var bigInteger = new BigInteger(resourceAmount.getValue());
 		var isPositive = bigInteger.compareTo(BigInteger.ZERO) > 0;
 
-		var amount = new com.radixdlt.api.core.core.model.ResourceAmount(
+		return new ResourceOperation(
 			resource(resourceAmount.getResourceIdentifier()),
-			UInt256.from((isPositive ? bigInteger : bigInteger.negate()).toByteArray())
+			UInt256.from((isPositive ? bigInteger : bigInteger.negate()).toByteArray()),
+			isPositive
 		);
-
-		return Pair.of(isPositive, amount);
 	}
 
 	public Resource resource(ResourceIdentifier resourceIdentifier) throws InvalidAddressException {
@@ -428,7 +455,7 @@ public final class CoreModelMapper {
 			.type("StakeOwnership");
 	}
 
-	public ResourceAmount resourceAmount(Bucket bucket, UInt384 amount, Function<REAddr, String> tokenAddressToSymbol) {
+	public ResourceAmount resourceOperation(Bucket bucket, UInt384 amount, Function<REAddr, String> tokenAddressToSymbol) {
 		return new ResourceAmount()
 			.resourceIdentifier(resourceIdentifier(bucket, tokenAddressToSymbol))
 			.value(amount.toString());
@@ -627,7 +654,7 @@ public final class CoreModelMapper {
 			.substateOperation(bootUp ? Substate.SubstateOperationEnum.BOOTUP : Substate.SubstateOperationEnum.SHUTDOWN);
 	}
 
-	public ResourceAmount resourceAmount(ResourceInBucket resourceInBucket, boolean bootUp, Function<REAddr, String> addressToSymbol) {
+	public ResourceAmount resourceOperation(ResourceInBucket resourceInBucket, boolean bootUp, Function<REAddr, String> addressToSymbol) {
 		var amount = new BigInteger(bootUp ? 1 : -1, resourceInBucket.getAmount().toByteArray());
 		var bucket = resourceInBucket.bucket();
 		var resourceIdentifier = resourceIdentifier(bucket, addressToSymbol);
@@ -716,7 +743,7 @@ public final class CoreModelMapper {
 		 */
 		operation.entityIdentifier(entityIdentifier(substate, addressToSymbol));
 		if (substate instanceof ResourceInBucket resourceInBucket && !resourceInBucket.getAmount().isZero()) {
-			operation.amount(resourceAmount(resourceInBucket, update.isBootUp(), addressToSymbol));
+			operation.amount(resourceOperation(resourceInBucket, update.isBootUp(), addressToSymbol));
 		}
 		data(substate, update.isBootUp()).ifPresent(operation::data);
 		return operation;

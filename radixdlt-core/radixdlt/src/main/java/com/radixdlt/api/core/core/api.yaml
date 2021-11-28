@@ -2913,38 +2913,168 @@ components:
       pattern: "^[0123456789abcdef]{64}$"
       maxLength: 64
       minLength: 64
-    InternalServerError:
+    NetworkNotSupportedErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - supported_networks
+          properties:
+            supported_networks:
+              type: array
+              items:
+                $ref: "#/components/schemas/NetworkIdentifier"
+    PublicKeyNotSupportedErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - unsupported_public_key
+          properties:
+            unsupported_public_key:
+              $ref: "#/components/schemas/PublicKey"
+    InvalidAddressErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_address
+          properties:
+            invalid_address:
+              type: string
+    InvalidPartialStateIdentifierErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_partial_state_identifier
+          properties:
+            invalid_partial_state_identifier:
+              $ref: "#/components/schemas/PartialStateIdentifier"
+    InvalidSubEntityErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_sub_entity
+          properties:
+            invalid_sub_entity:
+              $ref: "#/components/schemas/SubEntity"
+    InvalidTransactionHashErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_transaction_hash
+          properties:
+            invalid_transaction_hash:
+              type: string
+    InvalidPublicKeyErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_public_key
+          properties:
+            invalid_public_key:
+              $ref: "#/components/schemas/PublicKey"
+    InvalidFeePayerEntityErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_fee_payer_entity
+          properties:
+            invalid_fee_payer_entity:
+              $ref: "#/components/schemas/EntityIdentifier"
+    InvalidHexErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_hex
+          properties:
+            invalid_hex:
+              type: string
+    InvalidSignatureErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_hex
+          properties:
+            invalid_signature:
+              type: string
+    TransactionNotFoundErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - transaction_identifier
+          properties:
+            transaction_identifier:
+              $ref: "#/components/schemas/TransactionIdentifier"
+    StateIdentifierNotFoundErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - state_identifier
+          properties:
+            state_identifier:
+              $ref: "#/components/schemas/PartialStateIdentifier"
+    InternalServerErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          properties:
+            exception:
+              type: string
+            cause:
+              type: string
+    InvalidJsonDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          properties:
+            cause:
+              type: string
+    ErrorDetails:
       type: object
+      required:
+        - type
       properties:
-        exception:
+        type:
           type: string
-        cause:
-          type: string
-    InvalidJsonError:
-      type: object
-      properties:
-        cause:
-          type: string
-    InvalidRequestError:
-      type: object
-      properties:
-        pointer:
-          type: string
-        cause:
-          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          NetworkNotSupportedErrorDetails: "#/components/schemas/NetworkNotSupportedErrorDetails"
+          PublicKeyNotSupportedErrorDetails: "#/components/schemas/PublicKeyNotSupportedErrorDetails"
+          InvalidAddressErrorDetails: "#/components/schemas/InvalidAddressErrorDetails"
+          InvalidSubEntityErrorDetails: "#/components/schemas/InvalidSubEntityErrorDetails"
+          InvalidTransactionHashErrorDetails: "#/components/schemas/InvalidTransactionHashErrorDetails"
+          InvalidPartialStateIdentifierErrorDetails: "#/components/schemas/InvalidPartialStateIdentifierErrorDetails"
+          InvalidPublicKeyErrorDetails: "#/components/schemas/InvalidPublicKeyErrorDetails"
+          InvalidFeePayerEntityErrorDetails: "#/components/schemas/InvalidFeePayerEntityErrorDetails"
+          InvalidHexErrorDetails: "#/components/schemas/InvalidHexErrorDetails"
+          InvalidSignatureErrorDetails: "#/components/schemas/InvalidSignatureErrorDetails"
+          TransactionNotFoundErrorDetails: "#/components/schemas/TransactionNotFoundErrorDetails"
+          StateIdentifierNotFoundErrorDetails: "#/components/schemas/StateIdentifierNotFoundErrorDetails"
+          InternalServerErrorDetails: "#/components/schemas/InternalServerErrorDetails"
+          InvalidJsonDetails: "#/components/schemas/InvalidJsonDetails"
     UnexpectedError:
       type: object
       required:
+        - code
         - message
       properties:
+        code:
+          type: integer
         message:
           type: string
-      discriminator:
-        propertyName: message
-        mapping:
-          INTERNAL_SERVER_ERROR: "#/components/schemas/InternalServerError"
-          INVALID_JSON: "#/components/schemas/InvalidJsonError"
-          INVALID_REQUEST: "#/components/schemas/InvalidRequestError"
+        details:
+          $ref: "#/components/schemas/ErrorDetails"
   examples:
     StateIdentifier:
       value:

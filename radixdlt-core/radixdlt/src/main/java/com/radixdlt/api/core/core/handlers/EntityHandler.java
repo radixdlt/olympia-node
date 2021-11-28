@@ -117,7 +117,7 @@ public class EntityHandler extends CoreJsonRpcHandler<EntityRequest, EntityRespo
 				var index = resourceQuery.getIndex();
 				var bucketPredicate = resourceQuery.getPredicate();
 				reader.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
-					.forEach((bucket, amount) -> response.addBalancesItem(modelMapper.resourceAmount(bucket, amount, addressToSymbol)));
+					.forEach((bucket, amount) -> response.addBalancesItem(modelMapper.resourceOperation(bucket, amount, addressToSymbol)));
 			}
 
 			for (var keyQuery : keyQueries) {
