@@ -66,7 +66,9 @@ package com.radixdlt.api.core.core.handlers;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
+import com.radixdlt.api.core.core.model.exceptions.StateIdentifierNotFoundException;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsResponse;
 import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
@@ -74,6 +76,7 @@ import com.radixdlt.api.core.core.BerkeleyProcessedTransactionsStore;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.Bytes;
 
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
@@ -90,33 +93,35 @@ public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransaction
 		this.txnStore = txnStore;
 	}
 
-	private HashCode getAccumulatorHash(long stateVersion) throws CoreModelMapper.StateIdentifierNotFoundException {
+	private Optional<HashCode> getAccumulatorHash(long stateVersion) {
 		var previousStateVersion = stateVersion - 1;
 		if (previousStateVersion >= 0) {
 			try (var stream = txnStore.get(previousStateVersion)) {
-				var prevTxn = stream.findFirst()
-					.orElseThrow(CoreModelMapper.StateIdentifierNotFoundException::new);
-				var bytes = Bytes.fromHexString(prevTxn.getCommittedStateIdentifier().getTransactionAccumulator());
-				return HashCode.fromBytes(bytes);
+				return stream.findFirst()
+					.map(prevTxn -> {
+						var bytes = Bytes.fromHexString(prevTxn.getCommittedStateIdentifier().getTransactionAccumulator());
+						return HashCode.fromBytes(bytes);
+					});
 			}
 		} else {
-			return HashUtils.zero256();
+			return Optional.of(HashUtils.zero256());
 		}
 	}
 
 	@Override
-	public CommittedTransactionsResponse handleRequest(CommittedTransactionsRequest request) throws Exception {
+	public CommittedTransactionsResponse handleRequest(CommittedTransactionsRequest request) throws CoreModelException {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var limit = coreModelMapper.limit(request.getLimit());
 		var stateIdentifier = coreModelMapper.partialStateIdentifier(request.getStateIdentifier());
 		long stateVersion = stateIdentifier.getFirst();
 		var accumulator = stateIdentifier.getSecond();
-		var currentAccumulator = getAccumulatorHash(stateVersion);
+		var currentAccumulator = getAccumulatorHash(stateVersion)
+			.orElseThrow(() -> new StateIdentifierNotFoundException(request.getStateIdentifier()));
 		if (accumulator != null) {
 			var matchesInput = accumulator.equals(currentAccumulator);
 			if (!matchesInput) {
-				throw new CoreModelMapper.StateIdentifierNotFoundException();
+				throw new StateIdentifierNotFoundException(request.getStateIdentifier());
 			}
 		}
 

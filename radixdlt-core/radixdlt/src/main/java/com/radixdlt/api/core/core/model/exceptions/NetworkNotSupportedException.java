@@ -61,27 +61,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.model.exceptions;
 
-public enum Error {
-	BAD_REQUEST(400, "Bad request"),
-	NOT_FOUND(404, "Not found"),
-	STATE_CONFLICT(409, "State Conflict"),
-	NETWORK_NOT_SUPPORTED(501, "Network not supported");
+import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.CoreModelError;
+import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.NetworkNotSupportedErrorDetails;
+import com.radixdlt.networks.Network;
 
-	private final int errorCode;
-	private final String message;
+public final class NetworkNotSupportedException extends CoreModelException {
+	private final Network supportedNetwork;
+	public NetworkNotSupportedException(Network supportedNetwork) {
+		super(CoreModelError.NOT_SUPPORTED);
 
-	Error(int errorCode, String message) {
-		this.errorCode = errorCode;
-		this.message = message;
+		this.supportedNetwork = supportedNetwork;
 	}
 
-	public int getErrorCode() {
-		return errorCode;
-	}
-
-	public String getMessage() {
-		return message;
+	@Override
+	public ErrorDetails getErrorDetails() {
+		return new NetworkNotSupportedErrorDetails()
+			.addSupportedNetworksItem(new NetworkIdentifier().network(supportedNetwork.name().toLowerCase()))
+			.type(NetworkNotSupportedErrorDetails.class.getSimpleName());
 	}
 }

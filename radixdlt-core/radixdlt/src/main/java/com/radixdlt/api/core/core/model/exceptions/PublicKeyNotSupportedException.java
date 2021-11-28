@@ -61,12 +61,26 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model;
+package com.radixdlt.api.core.core.model.exceptions;
 
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.CoreModelError;
+import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.PublicKey;
+import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedErrorDetails;
 
-public class InvalidTokenOwnerException extends TxBuilderException {
-	public InvalidTokenOwnerException(String message) {
-		super(message);
+public final class PublicKeyNotSupportedException extends CoreModelException {
+	private final PublicKey publicKey;
+	public PublicKeyNotSupportedException(PublicKey publicKey) {
+		super(CoreModelError.NOT_SUPPORTED);
+
+		this.publicKey = publicKey;
+	}
+
+	@Override
+	public ErrorDetails getErrorDetails() {
+		return new PublicKeyNotSupportedErrorDetails()
+			.unsupportedPublicKey(publicKey)
+			.type(PublicKeyNotSupportedErrorDetails.class.getSimpleName());
 	}
 }

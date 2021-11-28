@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.core.core.model;
 
+import com.radixdlt.api.core.core.model.exceptions.InvalidTokenOwnerException;
 import com.radixdlt.api.core.core.openapitools.model.DataObject;
 import com.radixdlt.api.core.core.openapitools.model.TokenData;
 import com.radixdlt.api.core.core.openapitools.model.TokenMetadata;

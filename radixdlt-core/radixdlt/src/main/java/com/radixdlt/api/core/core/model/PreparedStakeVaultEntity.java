@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.core.core.model;
 
+import com.radixdlt.api.core.core.model.exceptions.InvalidResourceIdentifierException;
 import com.radixdlt.api.core.core.openapitools.model.DataObject;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;

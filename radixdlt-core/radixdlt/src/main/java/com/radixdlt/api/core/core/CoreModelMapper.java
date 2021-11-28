@@ -68,6 +68,13 @@ import com.google.inject.Inject;
 import com.radixdlt.api.core.core.model.Entity;
 import com.radixdlt.api.core.core.model.AccountVaultEntity;
 import com.radixdlt.api.core.core.model.EntityOperation;
+import com.radixdlt.api.core.core.model.exceptions.InvalidAddressException;
+import com.radixdlt.api.core.core.model.exceptions.InvalidFeePayerEntityException;
+import com.radixdlt.api.core.core.model.exceptions.InvalidHexException;
+import com.radixdlt.api.core.core.model.exceptions.InvalidPartialStateIdentifierException;
+import com.radixdlt.api.core.core.model.exceptions.InvalidPublicKeyException;
+import com.radixdlt.api.core.core.model.exceptions.InvalidSignatureException;
+import com.radixdlt.api.core.core.model.exceptions.InvalidSubEntityException;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.PreparedStakeVaultEntity;
 import com.radixdlt.api.core.core.model.PreparedUnstakeVaultEntity;
@@ -75,6 +82,8 @@ import com.radixdlt.api.core.core.model.Resource;
 import com.radixdlt.api.core.core.model.StakeOwnershipResource;
 import com.radixdlt.api.core.core.model.TokenEntity;
 import com.radixdlt.api.core.core.model.ValidatorEntity;
+import com.radixdlt.api.core.core.model.exceptions.InvalidTransactionHashException;
+import com.radixdlt.api.core.core.model.exceptions.NetworkNotSupportedException;
 import com.radixdlt.api.core.core.openapitools.model.*;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
@@ -144,166 +153,82 @@ public final class CoreModelMapper {
 		this.forks = forks;
 	}
 
-	public abstract static class CoreModelException extends Exception {
-		private final Error error;
-
-		public CoreModelException(Error error) {
-			this.error = error;
-		}
-
-		public UnexpectedError toError() {
-			return new UnexpectedError()
-				.code(error.getErrorCode())
-				.message(error.getMessage())
-				.details(getErrorDetails());
-		}
-
-		abstract ErrorDetails getErrorDetails();
-	}
-
-	public static class NetworkNotSupportedException extends CoreModelException {
-		public NetworkNotSupportedException() {
-			super(Error.NETWORK_NOT_SUPPORTED);
-		}
-
-		@Override
-		ErrorDetails getErrorDetails() {
-			return null;
-		}
-	}
-
-	public static class InvalidAddressException extends CoreModelException {
-		public InvalidAddressException() {
-			super(Error.BAD_REQUEST);
-		}
-
-		@Override
-		ErrorDetails getErrorDetails() {
-			return null;
-		}
-	}
-
-	public static class InvalidTransactionHash extends CoreModelException {
-		public InvalidTransactionHash() {
-			super(Error.BAD_REQUEST);
-		}
-
-		@Override
-		ErrorDetails getErrorDetails() {
-			return null;
-		}
-	}
-
-	public static class TransactionNotFoundException extends CoreModelException {
-		public TransactionNotFoundException() {
-			super(Error.NOT_FOUND);
-		}
-
-		@Override
-		ErrorDetails getErrorDetails() {
-			return null;
-		}
-	}
-
-	public static class InvalidParameterException extends CoreModelException {
-		public InvalidParameterException() {
-			super(Error.BAD_REQUEST);
-		}
-
-		@Override
-		ErrorDetails getErrorDetails() {
-			return null;
-		}
-	}
-
-	public static class StateIdentifierNotFoundException extends CoreModelException {
-		public StateIdentifierNotFoundException() {
-			super(Error.NOT_FOUND);
-		}
-
-		@Override
-		ErrorDetails getErrorDetails() {
-			return null;
-		}
-	}
-
-	public static class InvalidPublicKeyException extends CoreModelException {
-		public InvalidPublicKeyException() {
-			super(Error.BAD_REQUEST);
-		}
-
-		@Override
-		ErrorDetails getErrorDetails() {
-			return null;
-		}
-	}
-
 	public static class InvalidTransactionException extends CoreModelException {
 		public InvalidTransactionException() {
-			super(Error.BAD_REQUEST);
+			super(CoreModelError.BAD_REQUEST);
 		}
 
 		@Override
-		ErrorDetails getErrorDetails() {
+		public ErrorDetails getErrorDetails() {
 			return null;
 		}
 	}
 
 	public static class StateConflictException extends CoreModelException {
 		public StateConflictException() {
-			super(Error.STATE_CONFLICT);
+			super(CoreModelError.STATE_CONFLICT);
 		}
 
 		@Override
-		ErrorDetails getErrorDetails() {
+		public ErrorDetails getErrorDetails() {
 			return null;
 		}
 	}
 
 	public void verifyNetwork(NetworkIdentifier networkIdentifier) throws NetworkNotSupportedException {
 		if (!networkIdentifier.getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new NetworkNotSupportedException();
+			throw new NetworkNotSupportedException(this.network);
 		}
 	}
 
-	public Pair<ECPublicKey, ECDSASignature> keyAndSignature(Signature signature) throws InvalidPublicKeyException, InvalidParameterException {
+	public Pair<ECPublicKey, ECDSASignature> keyAndSignature(Signature signature) throws CoreModelException {
 		var publicKey = ecPublicKey(signature.getPublicKey());
 		var bytes = bytes(signature.getBytes());
+		ECDSASignature sig;
 		try {
-			var sig = ECDSASignature.decodeFromDER(bytes);
-			return Pair.of(publicKey, sig);
+			sig = ECDSASignature.decodeFromDER(bytes);
 		} catch (IllegalArgumentException e) {
-			throw new InvalidParameterException();
+			throw new InvalidSignatureException(signature.getBytes());
 		}
+		return Pair.of(publicKey, sig);
 	}
 
-	public ECPublicKey ecPublicKey(PublicKey publicKey) throws InvalidPublicKeyException {
+	public ECPublicKey ecPublicKey(PublicKey publicKey) throws CoreModelException {
+		var bytes = bytes(publicKey.getHex());
 		try {
-			return ECPublicKey.fromHex(publicKey.getHex());
+			return ECPublicKey.fromBytes(bytes);
 		} catch (PublicKeyException e) {
-			throw new InvalidPublicKeyException();
+			throw new InvalidPublicKeyException(publicKey);
 		}
 	}
 
-	public byte[] bytes(String hex) throws InvalidParameterException {
+	public byte[] bytes(String hex) throws InvalidHexException {
 		try {
 			return Bytes.fromHexString(hex);
 		} catch (IllegalArgumentException e) {
-			throw new InvalidParameterException();
+			throw new InvalidHexException(hex);
 		}
 	}
 
-	public Entity entity(EntityIdentifier entityIdentifier) throws InvalidAddressException {
+	public AccountVaultEntity feePayerEntity(EntityIdentifier entityIdentifier) throws CoreModelException {
+		var feePayer = entity(entityIdentifier);
+		if (!(feePayer instanceof AccountVaultEntity accountVaultEntity)) {
+			throw new InvalidFeePayerEntityException(entityIdentifier);
+		}
+		return accountVaultEntity;
+	}
+
+	public Entity entity(EntityIdentifier entityIdentifier) throws CoreModelException {
 		var address = entityIdentifier.getAddress();
-		var addressType = addressing.getAddressType(address).orElseThrow(InvalidAddressException::new);
+		var addressType = addressing.getAddressType(address).orElseThrow(() -> new InvalidAddressException(address));
 		switch (addressType) {
 			case VALIDATOR -> {
-				var key = addressing.forValidators().parseOrThrow(address, s -> new InvalidAddressException());
+				var key = addressing.forValidators().parseOrThrow(address, s -> new InvalidAddressException(address));
 				return ValidatorEntity.from(key);
 				// TODO: Add Validator System entity
 			}
 			case ACCOUNT -> {
-				var accountAddress = addressing.forAccounts().parseOrThrow(address, s -> new InvalidAddressException());
+				var accountAddress = addressing.forAccounts().parseOrThrow(address, s -> new InvalidAddressException(address));
 				var subEntity = entityIdentifier.getSubEntity();
 				if (subEntity == null) {
 					return AccountVaultEntity.from(accountAddress);
@@ -311,10 +236,10 @@ public final class CoreModelMapper {
 
 				var metadata = subEntity.getMetadata();
 				if (metadata == null) {
-					throw new InvalidAddressException();
+					throw new InvalidSubEntityException(subEntity);
 				}
 
-				var validator = addressing.forValidators().parseOrThrow(metadata.getValidator(), s -> new InvalidAddressException());
+				var validator = addressing.forValidators().parseOrThrow(metadata.getValidator(), s -> new InvalidAddressException(address));
 				return switch (subEntity.getAddress()) {
 					case "prepared_stake" -> PreparedStakeVaultEntity.from(
 						accountAddress,
@@ -324,11 +249,11 @@ public final class CoreModelMapper {
 						accountAddress,
 						validator
 					);
-					default -> throw new InvalidAddressException();
+					default -> throw new InvalidSubEntityException(subEntity);
 				};
 			}
 			case RESOURCE -> {
-				var pair = addressing.forResources().parseOrThrow(address, s -> new InvalidAddressException());
+				var pair = addressing.forResources().parseOrThrow(address, s -> new InvalidAddressException(address));
 				return TokenEntity.from(pair.getFirst(), pair.getSecond());
 			}
 			default -> throw new IllegalStateException("Unknown addressType: " + addressType);
@@ -336,7 +261,7 @@ public final class CoreModelMapper {
 	}
 
 
-	public OperationTxBuilder operationTxBuilder(String message, List<OperationGroup> operationGroups) throws InvalidAddressException {
+	public OperationTxBuilder operationTxBuilder(String message, List<OperationGroup> operationGroups) throws CoreModelException {
 		var entityOperationGroups = new ArrayList<List<EntityOperation>>();
 		for (var group : operationGroups) {
 			var entityOperationGroup = new ArrayList<EntityOperation>();
@@ -357,44 +282,39 @@ public final class CoreModelMapper {
 	}
 
 
-	public Txn txn(String hex) throws InvalidParameterException {
-		byte[] bytes;
-		try {
-			bytes = Bytes.fromHexString(hex);
-		} catch (IllegalArgumentException e) {
-			throw new InvalidParameterException();
-		}
-
+	public Txn txn(String hex) throws InvalidHexException {
+		var bytes = bytes(hex);
 		return Txn.create(bytes);
 	}
 
-	public AID txnId(TransactionIdentifier transactionIdentifier) throws InvalidTransactionHash {
+	public AID txnId(TransactionIdentifier transactionIdentifier) throws InvalidTransactionHashException {
+		var hash = transactionIdentifier.getHash();
 		try {
-			return AID.from(transactionIdentifier.getHash());
+			return AID.from(hash);
 		} catch (IllegalArgumentException e) {
-			throw new InvalidTransactionHash();
+			throw new InvalidTransactionHashException(hash);
 		}
 	}
 
-	public long limit(Long limit) throws InvalidParameterException {
+	public long limit(Long limit) {
 		if (limit == null) {
 			return 0L;
 		}
 
 		if (limit < 0) {
-			throw new InvalidParameterException();
+			throw new IllegalStateException("Limit must be >= 0");
 		}
 
 		return limit;
 	}
 
-	public Pair<Long, HashCode> partialStateIdentifier(PartialStateIdentifier partialStateIdentifier) throws InvalidParameterException {
+	public Pair<Long, HashCode> partialStateIdentifier(PartialStateIdentifier partialStateIdentifier) throws InvalidPartialStateIdentifierException {
 		if (partialStateIdentifier == null) {
 			return Pair.of(0L, null);
 		}
 
 		if (partialStateIdentifier.getStateVersion() < 0L) {
-			throw new InvalidParameterException();
+			throw new InvalidPartialStateIdentifierException(partialStateIdentifier);
 		}
 
 		final HashCode accumulator;
@@ -403,7 +323,7 @@ public final class CoreModelMapper {
 				var bytes = Bytes.fromHexString(partialStateIdentifier.getTransactionAccumulator());
 				accumulator = HashCode.fromBytes(bytes);
 			} catch (IllegalArgumentException e) {
-				throw new InvalidParameterException();
+				throw new InvalidPartialStateIdentifierException(partialStateIdentifier);
 			}
 		} else {
 			accumulator = null;
@@ -427,12 +347,13 @@ public final class CoreModelMapper {
 
 	public Resource resource(ResourceIdentifier resourceIdentifier) throws InvalidAddressException {
 		if (resourceIdentifier instanceof TokenResourceIdentifier tokenResourceIdentifier) {
-			var tokenAddress = addressing.forResources().parseOrThrow(tokenResourceIdentifier.getRri(), s -> new InvalidAddressException())
+			var rri = tokenResourceIdentifier.getRri();
+			var tokenAddress = addressing.forResources().parseOrThrow(rri, s -> new InvalidAddressException(rri))
 				.getSecond();
 			return com.radixdlt.api.core.core.model.TokenResource.from(tokenAddress);
 		} else if (resourceIdentifier instanceof StakeOwnershipResourceIdentifier stakeOwnershipResourceIdentifier) {
 			var validatorAddress = stakeOwnershipResourceIdentifier.getValidator();
-			var key = addressing.forValidators().parseOrThrow(validatorAddress, s -> new InvalidAddressException());
+			var key = addressing.forValidators().parseOrThrow(validatorAddress, s -> new InvalidAddressException(validatorAddress));
 			return StakeOwnershipResource.from(key);
 		} else {
 			throw new IllegalStateException("Unknown resourceIdentifier: " + resourceIdentifier);

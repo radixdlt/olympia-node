@@ -65,10 +65,12 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.model.AccountVaultEntity;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildResponse;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
@@ -88,22 +90,22 @@ public final class ConstructionBuildHandler extends CoreJsonRpcHandler<Construct
 	}
 
 	@Override
-	public ConstructionBuildResponse handleRequest(ConstructionBuildRequest request) throws Exception {
+	public ConstructionBuildResponse handleRequest(ConstructionBuildRequest request) throws CoreModelException {
 		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var operationTxBuilder = modelMapper.operationTxBuilder(
 			request.getMessage(),
 			request.getOperationGroups()
 		);
-		var feePayer = modelMapper.entity(request.getFeePayer());
+		var feePayer = modelMapper.feePayerEntity(request.getFeePayer());
 		var disableAllocAndDestroy = request.getDisableResourceAllocateAndDestroy();
-
 		var disable = disableAllocAndDestroy != null && !disableAllocAndDestroy;
-		if (!(feePayer instanceof AccountVaultEntity accountVaultEntity)) {
-			throw new CoreModelMapper.InvalidParameterException();
+		TxBuilder builder;
+		try {
+			builder = radixEngine.constructWithFees(operationTxBuilder, disable, feePayer.getAccountAddress());
+		} catch (TxBuilderException e) {
+			throw new IllegalStateException(e);
 		}
-
-		var builder = radixEngine.constructWithFees(operationTxBuilder, disable, accountVaultEntity.getAccountAddress());
 		var unsignedTransaction = builder.buildForExternalSign();
 		return new ConstructionBuildResponse()
 			.unsignedTransaction(Bytes.toHexString(unsignedTransaction.blob()))

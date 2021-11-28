@@ -26,11 +26,10 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * InternalServerErrorDetails
+ * InvalidObjectErrorDetails
  */
 @JsonPropertyOrder({
-  InternalServerErrorDetails.JSON_PROPERTY_EXCEPTION,
-  InternalServerErrorDetails.JSON_PROPERTY_CAUSE
+  InvalidObjectErrorDetails.JSON_PROPERTY_INVALID_OBJECT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-28T12:14:26.790567-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
@@ -43,68 +42,39 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = NetworkNotSupportedErrorDetails.class, name = "NetworkNotSupportedErrorDetails"),
 })
 
-public class InternalServerErrorDetails extends ErrorDetails {
-  public static final String JSON_PROPERTY_EXCEPTION = "exception";
-  private String exception;
-
-  public static final String JSON_PROPERTY_CAUSE = "cause";
-  private String cause;
+public class InvalidObjectErrorDetails extends ErrorDetails {
+  public static final String JSON_PROPERTY_INVALID_OBJECT = "invalid_object";
+  private Object invalidObject = null;
 
 
-  public InternalServerErrorDetails exception(String exception) {
-    this.exception = exception;
+  public InvalidObjectErrorDetails invalidObject(Object invalidObject) {
+    this.invalidObject = invalidObject;
     return this;
   }
 
    /**
-   * Get exception
-   * @return exception
+   * Get invalidObject
+   * @return invalidObject
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_EXCEPTION)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_INVALID_OBJECT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getException() {
-    return exception;
+  public Object getInvalidObject() {
+    return invalidObject;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EXCEPTION)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setException(String exception) {
-    this.exception = exception;
-  }
-
-
-  public InternalServerErrorDetails cause(String cause) {
-    this.cause = cause;
-    return this;
-  }
-
-   /**
-   * Get cause
-   * @return cause
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_CAUSE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public String getCause() {
-    return cause;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CAUSE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setCause(String cause) {
-    this.cause = cause;
+  @JsonProperty(JSON_PROPERTY_INVALID_OBJECT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setInvalidObject(Object invalidObject) {
+    this.invalidObject = invalidObject;
   }
 
 
   /**
-   * Return true if this InternalServerErrorDetails object is equal to o.
+   * Return true if this InvalidObjectErrorDetails object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -114,24 +84,22 @@ public class InternalServerErrorDetails extends ErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InternalServerErrorDetails internalServerErrorDetails = (InternalServerErrorDetails) o;
-    return Objects.equals(this.exception, internalServerErrorDetails.exception) &&
-        Objects.equals(this.cause, internalServerErrorDetails.cause) &&
+    InvalidObjectErrorDetails invalidObjectErrorDetails = (InvalidObjectErrorDetails) o;
+    return Objects.equals(this.invalidObject, invalidObjectErrorDetails.invalidObject) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(exception, cause, super.hashCode());
+    return Objects.hash(invalidObject, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InternalServerErrorDetails {\n");
+    sb.append("class InvalidObjectErrorDetails {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    exception: ").append(toIndentedString(exception)).append("\n");
-    sb.append("    cause: ").append(toIndentedString(cause)).append("\n");
+    sb.append("    invalidObject: ").append(toIndentedString(invalidObject)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -156,8 +124,8 @@ static {
   mappings.put("InvalidObjectErrorDetails", InvalidObjectErrorDetails.class);
   mappings.put("InvalidSubEntityErrorDetails", InvalidSubEntityErrorDetails.class);
   mappings.put("NetworkNotSupportedErrorDetails", NetworkNotSupportedErrorDetails.class);
-  mappings.put("InternalServerErrorDetails", InternalServerErrorDetails.class);
-  JSON.registerDiscriminator(InternalServerErrorDetails.class, "type", mappings);
+  mappings.put("InvalidObjectErrorDetails", InvalidObjectErrorDetails.class);
+  JSON.registerDiscriminator(InvalidObjectErrorDetails.class, "type", mappings);
 }
 }
 

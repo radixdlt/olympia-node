@@ -21,90 +21,67 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.radixdlt.api.core.core.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * InternalServerErrorDetails
+ * NetworkNotSupportedErrorDetails
  */
 @JsonPropertyOrder({
-  InternalServerErrorDetails.JSON_PROPERTY_EXCEPTION,
-  InternalServerErrorDetails.JSON_PROPERTY_CAUSE
+  NetworkNotSupportedErrorDetails.JSON_PROPERTY_SUPPORTED_NETWORKS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-28T12:14:26.790567-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-28T13:29:19.187308-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(value = InvalidTransactionHashErrorDetails.class, name = "InavlidTransactionHashErrorDetails"),
   @JsonSubTypes.Type(value = InternalServerErrorDetails.class, name = "InternalServerErrorDetails"),
   @JsonSubTypes.Type(value = InvalidAddressErrorDetails.class, name = "InvalidAddressErrorDetails"),
   @JsonSubTypes.Type(value = InvalidJsonDetails.class, name = "InvalidJsonDetails"),
-  @JsonSubTypes.Type(value = InvalidObjectErrorDetails.class, name = "InvalidObjectErrorDetails"),
   @JsonSubTypes.Type(value = InvalidSubEntityErrorDetails.class, name = "InvalidSubEntityErrorDetails"),
   @JsonSubTypes.Type(value = NetworkNotSupportedErrorDetails.class, name = "NetworkNotSupportedErrorDetails"),
 })
 
-public class InternalServerErrorDetails extends ErrorDetails {
-  public static final String JSON_PROPERTY_EXCEPTION = "exception";
-  private String exception;
-
-  public static final String JSON_PROPERTY_CAUSE = "cause";
-  private String cause;
+public class NetworkNotSupportedErrorDetails extends ErrorDetails {
+  public static final String JSON_PROPERTY_SUPPORTED_NETWORKS = "supported_networks";
+  private List<NetworkIdentifier> supportedNetworks = new ArrayList<>();
 
 
-  public InternalServerErrorDetails exception(String exception) {
-    this.exception = exception;
+  public NetworkNotSupportedErrorDetails supportedNetworks(List<NetworkIdentifier> supportedNetworks) {
+    this.supportedNetworks = supportedNetworks;
+    return this;
+  }
+
+  public NetworkNotSupportedErrorDetails addSupportedNetworksItem(NetworkIdentifier supportedNetworksItem) {
+    this.supportedNetworks.add(supportedNetworksItem);
     return this;
   }
 
    /**
-   * Get exception
-   * @return exception
+   * Get supportedNetworks
+   * @return supportedNetworks
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_EXCEPTION)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_SUPPORTED_NETWORKS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getException() {
-    return exception;
+  public List<NetworkIdentifier> getSupportedNetworks() {
+    return supportedNetworks;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EXCEPTION)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setException(String exception) {
-    this.exception = exception;
-  }
-
-
-  public InternalServerErrorDetails cause(String cause) {
-    this.cause = cause;
-    return this;
-  }
-
-   /**
-   * Get cause
-   * @return cause
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_CAUSE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public String getCause() {
-    return cause;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CAUSE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setCause(String cause) {
-    this.cause = cause;
+  @JsonProperty(JSON_PROPERTY_SUPPORTED_NETWORKS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSupportedNetworks(List<NetworkIdentifier> supportedNetworks) {
+    this.supportedNetworks = supportedNetworks;
   }
 
 
   /**
-   * Return true if this InternalServerErrorDetails object is equal to o.
+   * Return true if this NetworkNotSupportedErrorDetails object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -114,24 +91,22 @@ public class InternalServerErrorDetails extends ErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InternalServerErrorDetails internalServerErrorDetails = (InternalServerErrorDetails) o;
-    return Objects.equals(this.exception, internalServerErrorDetails.exception) &&
-        Objects.equals(this.cause, internalServerErrorDetails.cause) &&
+    NetworkNotSupportedErrorDetails networkNotSupportedErrorDetails = (NetworkNotSupportedErrorDetails) o;
+    return Objects.equals(this.supportedNetworks, networkNotSupportedErrorDetails.supportedNetworks) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(exception, cause, super.hashCode());
+    return Objects.hash(supportedNetworks, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InternalServerErrorDetails {\n");
+    sb.append("class NetworkNotSupportedErrorDetails {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    exception: ").append(toIndentedString(exception)).append("\n");
-    sb.append("    cause: ").append(toIndentedString(cause)).append("\n");
+    sb.append("    supportedNetworks: ").append(toIndentedString(supportedNetworks)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -150,14 +125,14 @@ public class InternalServerErrorDetails extends ErrorDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("InavlidTransactionHashErrorDetails", InvalidTransactionHashErrorDetails.class);
   mappings.put("InternalServerErrorDetails", InternalServerErrorDetails.class);
   mappings.put("InvalidAddressErrorDetails", InvalidAddressErrorDetails.class);
   mappings.put("InvalidJsonDetails", InvalidJsonDetails.class);
-  mappings.put("InvalidObjectErrorDetails", InvalidObjectErrorDetails.class);
   mappings.put("InvalidSubEntityErrorDetails", InvalidSubEntityErrorDetails.class);
   mappings.put("NetworkNotSupportedErrorDetails", NetworkNotSupportedErrorDetails.class);
-  mappings.put("InternalServerErrorDetails", InternalServerErrorDetails.class);
-  JSON.registerDiscriminator(InternalServerErrorDetails.class, "type", mappings);
+  mappings.put("NetworkNotSupportedErrorDetails", NetworkNotSupportedErrorDetails.class);
+  JSON.registerDiscriminator(NetworkNotSupportedErrorDetails.class, "type", mappings);
 }
 }
 

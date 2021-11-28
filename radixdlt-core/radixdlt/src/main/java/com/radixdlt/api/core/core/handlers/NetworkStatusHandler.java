@@ -65,6 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
@@ -79,13 +80,10 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
-	private final Network network;
 	private final REAddr accountAddress;
 	private final ECPublicKey validatorKey;
 	private final InMemorySystemInfo inMemorySystemInfo;
@@ -97,7 +95,6 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 
 	@Inject
 	NetworkStatusHandler(
-		@NetworkId int networkId,
 		@Self REAddr accountAddress,
 		@Self ECPublicKey validatorKey,
 		InMemorySystemInfo inMemorySystemInfo,
@@ -108,7 +105,7 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 		SystemCounters systemCounters
 	) {
 		super(NetworkStatusRequest.class);
-		this.network = Network.ofId(networkId).orElseThrow();
+
 		this.accountAddress = accountAddress;
 		this.validatorKey = validatorKey;
 		this.inMemorySystemInfo = inMemorySystemInfo;
@@ -122,7 +119,7 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 	}
 
 	@Override
-	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws Exception {
+	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws CoreModelException {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var currentProof = inMemorySystemInfo.getCurrentProof();

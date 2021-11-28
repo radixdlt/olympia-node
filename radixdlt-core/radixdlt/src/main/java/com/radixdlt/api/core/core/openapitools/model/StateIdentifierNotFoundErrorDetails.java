@@ -26,85 +26,59 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * InternalServerErrorDetails
+ * StateIdentifierNotFoundErrorDetails
  */
 @JsonPropertyOrder({
-  InternalServerErrorDetails.JSON_PROPERTY_EXCEPTION,
-  InternalServerErrorDetails.JSON_PROPERTY_CAUSE
+  StateIdentifierNotFoundErrorDetails.JSON_PROPERTY_STATE_IDENTIFIER
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-28T12:14:26.790567-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-28T14:03:36.310910-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = InternalServerErrorDetails.class, name = "InternalServerErrorDetails"),
   @JsonSubTypes.Type(value = InvalidAddressErrorDetails.class, name = "InvalidAddressErrorDetails"),
   @JsonSubTypes.Type(value = InvalidJsonDetails.class, name = "InvalidJsonDetails"),
-  @JsonSubTypes.Type(value = InvalidObjectErrorDetails.class, name = "InvalidObjectErrorDetails"),
+  @JsonSubTypes.Type(value = InvalidPartialStateIdentifierErrorDetails.class, name = "InvalidPartialStateIdentifierErrorDetails"),
+  @JsonSubTypes.Type(value = InvalidPublicKeyErrorDetails.class, name = "InvalidPublicKeyErrorDetails"),
   @JsonSubTypes.Type(value = InvalidSubEntityErrorDetails.class, name = "InvalidSubEntityErrorDetails"),
+  @JsonSubTypes.Type(value = InvalidTransactionHashErrorDetails.class, name = "InvalidTransactionHashErrorDetails"),
   @JsonSubTypes.Type(value = NetworkNotSupportedErrorDetails.class, name = "NetworkNotSupportedErrorDetails"),
+  @JsonSubTypes.Type(value = StateIdentifierNotFoundErrorDetails.class, name = "StateIdentifierNotFoundErrorDetails"),
+  @JsonSubTypes.Type(value = TransactionNotFoundErrorDetails.class, name = "TransactionNotFoundErrorDetails"),
 })
 
-public class InternalServerErrorDetails extends ErrorDetails {
-  public static final String JSON_PROPERTY_EXCEPTION = "exception";
-  private String exception;
-
-  public static final String JSON_PROPERTY_CAUSE = "cause";
-  private String cause;
+public class StateIdentifierNotFoundErrorDetails extends ErrorDetails {
+  public static final String JSON_PROPERTY_STATE_IDENTIFIER = "state_identifier";
+  private PartialStateIdentifier stateIdentifier;
 
 
-  public InternalServerErrorDetails exception(String exception) {
-    this.exception = exception;
+  public StateIdentifierNotFoundErrorDetails stateIdentifier(PartialStateIdentifier stateIdentifier) {
+    this.stateIdentifier = stateIdentifier;
     return this;
   }
 
    /**
-   * Get exception
-   * @return exception
+   * Get stateIdentifier
+   * @return stateIdentifier
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_EXCEPTION)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STATE_IDENTIFIER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getException() {
-    return exception;
+  public PartialStateIdentifier getStateIdentifier() {
+    return stateIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EXCEPTION)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setException(String exception) {
-    this.exception = exception;
-  }
-
-
-  public InternalServerErrorDetails cause(String cause) {
-    this.cause = cause;
-    return this;
-  }
-
-   /**
-   * Get cause
-   * @return cause
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_CAUSE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public String getCause() {
-    return cause;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CAUSE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setCause(String cause) {
-    this.cause = cause;
+  @JsonProperty(JSON_PROPERTY_STATE_IDENTIFIER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStateIdentifier(PartialStateIdentifier stateIdentifier) {
+    this.stateIdentifier = stateIdentifier;
   }
 
 
   /**
-   * Return true if this InternalServerErrorDetails object is equal to o.
+   * Return true if this StateIdentifierNotFoundErrorDetails object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -114,24 +88,22 @@ public class InternalServerErrorDetails extends ErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InternalServerErrorDetails internalServerErrorDetails = (InternalServerErrorDetails) o;
-    return Objects.equals(this.exception, internalServerErrorDetails.exception) &&
-        Objects.equals(this.cause, internalServerErrorDetails.cause) &&
+    StateIdentifierNotFoundErrorDetails stateIdentifierNotFoundErrorDetails = (StateIdentifierNotFoundErrorDetails) o;
+    return Objects.equals(this.stateIdentifier, stateIdentifierNotFoundErrorDetails.stateIdentifier) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(exception, cause, super.hashCode());
+    return Objects.hash(stateIdentifier, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InternalServerErrorDetails {\n");
+    sb.append("class StateIdentifierNotFoundErrorDetails {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    exception: ").append(toIndentedString(exception)).append("\n");
-    sb.append("    cause: ").append(toIndentedString(cause)).append("\n");
+    sb.append("    stateIdentifier: ").append(toIndentedString(stateIdentifier)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -153,11 +125,15 @@ static {
   mappings.put("InternalServerErrorDetails", InternalServerErrorDetails.class);
   mappings.put("InvalidAddressErrorDetails", InvalidAddressErrorDetails.class);
   mappings.put("InvalidJsonDetails", InvalidJsonDetails.class);
-  mappings.put("InvalidObjectErrorDetails", InvalidObjectErrorDetails.class);
+  mappings.put("InvalidPartialStateIdentifierErrorDetails", InvalidPartialStateIdentifierErrorDetails.class);
+  mappings.put("InvalidPublicKeyErrorDetails", InvalidPublicKeyErrorDetails.class);
   mappings.put("InvalidSubEntityErrorDetails", InvalidSubEntityErrorDetails.class);
+  mappings.put("InvalidTransactionHashErrorDetails", InvalidTransactionHashErrorDetails.class);
   mappings.put("NetworkNotSupportedErrorDetails", NetworkNotSupportedErrorDetails.class);
-  mappings.put("InternalServerErrorDetails", InternalServerErrorDetails.class);
-  JSON.registerDiscriminator(InternalServerErrorDetails.class, "type", mappings);
+  mappings.put("StateIdentifierNotFoundErrorDetails", StateIdentifierNotFoundErrorDetails.class);
+  mappings.put("TransactionNotFoundErrorDetails", TransactionNotFoundErrorDetails.class);
+  mappings.put("StateIdentifierNotFoundErrorDetails", StateIdentifierNotFoundErrorDetails.class);
+  JSON.registerDiscriminator(StateIdentifierNotFoundErrorDetails.class, "type", mappings);
 }
 }
 

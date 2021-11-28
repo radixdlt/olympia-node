@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model;
+package com.radixdlt.api.core.core.model.exceptions;
 
 import com.radixdlt.atom.TxBuilderException;
 

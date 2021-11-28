@@ -65,6 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeResponse;
@@ -85,7 +86,7 @@ public final class ConstructionFinalizeHandler extends CoreJsonRpcHandler<Constr
 	}
 
 	@Override
-	public ConstructionFinalizeResponse handleRequest(ConstructionFinalizeRequest request) throws Exception {
+	public ConstructionFinalizeResponse handleRequest(ConstructionFinalizeRequest request) throws CoreModelException {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var keyAndSignature = coreModelMapper.keyAndSignature(request.getSignature());

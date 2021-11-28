@@ -65,6 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
@@ -84,7 +85,7 @@ public final class ConstructionDeriveHandler extends CoreJsonRpcHandler<Construc
 	}
 
 	@Override
-	public ConstructionDeriveResponse handleRequest(ConstructionDeriveRequest request) throws Exception {
+	public ConstructionDeriveResponse handleRequest(ConstructionDeriveRequest request) throws CoreModelException {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var publicKey = coreModelMapper.ecPublicKey(request.getPublicKey());

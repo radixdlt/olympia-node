@@ -61,12 +61,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model;
+package com.radixdlt.api.core.core.model.exceptions;
 
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.CoreModelError;
+import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.InvalidSubEntityErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.SubEntity;
 
-public class InvalidAddressIdentifierException extends TxBuilderException {
-	public InvalidAddressIdentifierException(String message) {
-		super(message);
+public final class InvalidSubEntityException extends CoreModelException {
+	private final SubEntity subEntity;
+
+	public InvalidSubEntityException(SubEntity subEntity) {
+		super(CoreModelError.BAD_REQUEST);
+
+		this.subEntity = subEntity;
+	}
+
+	@Override
+	public ErrorDetails getErrorDetails() {
+		return new InvalidSubEntityErrorDetails()
+			.invalidSubEntity(subEntity)
+			.type(InvalidSubEntityErrorDetails.class.getSimpleName());
 	}
 }

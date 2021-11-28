@@ -65,6 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityResponse;
@@ -93,13 +94,14 @@ public class EntityHandler extends CoreJsonRpcHandler<EntityRequest, EntityRespo
 	}
 
 	@Override
-	public EntityResponse handleRequest(EntityRequest request) throws Exception {
+	public EntityResponse handleRequest(EntityRequest request) throws CoreModelException {
 		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var entity = modelMapper.entity(request.getEntityIdentifier());
 		var keyQueries = entity.getKeyQueries();
 		var resourceQueries = entity.getResourceQueries();
 
+		// This must be read atomically
 		return radixEngine.read(reader -> {
 			Function<REAddr, String> addressToSymbol = addr -> {
 				var mapKey = SystemMapKey.ofResourceData(addr, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());

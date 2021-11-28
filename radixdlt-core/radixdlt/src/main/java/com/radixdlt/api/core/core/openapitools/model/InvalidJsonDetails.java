@@ -31,11 +31,15 @@ import java.util.Objects;
 @JsonPropertyOrder({
   InvalidJsonDetails.JSON_PROPERTY_CAUSE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T18:20:00.769970-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-28T12:14:26.790567-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = InternalServerErrorDetails.class, name = "InternalServerErrorDetails"),
+  @JsonSubTypes.Type(value = InvalidAddressErrorDetails.class, name = "InvalidAddressErrorDetails"),
   @JsonSubTypes.Type(value = InvalidJsonDetails.class, name = "InvalidJsonDetails"),
+  @JsonSubTypes.Type(value = InvalidObjectErrorDetails.class, name = "InvalidObjectErrorDetails"),
+  @JsonSubTypes.Type(value = InvalidSubEntityErrorDetails.class, name = "InvalidSubEntityErrorDetails"),
+  @JsonSubTypes.Type(value = NetworkNotSupportedErrorDetails.class, name = "NetworkNotSupportedErrorDetails"),
 })
 
 public class InvalidJsonDetails extends ErrorDetails {
@@ -115,7 +119,11 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("InternalServerErrorDetails", InternalServerErrorDetails.class);
+  mappings.put("InvalidAddressErrorDetails", InvalidAddressErrorDetails.class);
   mappings.put("InvalidJsonDetails", InvalidJsonDetails.class);
+  mappings.put("InvalidObjectErrorDetails", InvalidObjectErrorDetails.class);
+  mappings.put("InvalidSubEntityErrorDetails", InvalidSubEntityErrorDetails.class);
+  mappings.put("NetworkNotSupportedErrorDetails", NetworkNotSupportedErrorDetails.class);
   mappings.put("InvalidJsonDetails", InvalidJsonDetails.class);
   JSON.registerDiscriminator(InvalidJsonDetails.class, "type", mappings);
 }

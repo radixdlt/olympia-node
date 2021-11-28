@@ -66,10 +66,10 @@ package com.radixdlt.api.core.core.handlers;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseResponse;
-import com.radixdlt.api.gateway.transaction.InvalidTransactionException;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -103,7 +103,7 @@ public final class ConstructionParseHandler extends CoreJsonRpcHandler<Construct
 	}
 
 	@Override
-	public ConstructionParseResponse handleRequest(ConstructionParseRequest request) throws Exception {
+	public ConstructionParseResponse handleRequest(ConstructionParseRequest request) throws CoreModelException {
 		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var txn = modelMapper.bytes(request.getTransaction());
@@ -112,7 +112,7 @@ public final class ConstructionParseHandler extends CoreJsonRpcHandler<Construct
 		try {
 			processed = radixEngineProvider.get().test(txn, request.getSigned());
 		} catch (RadixEngineException e) {
-			throw new InvalidTransactionException(e);
+			throw new IllegalStateException(e);
 		}
 
 		var response = new ConstructionParseResponse();

@@ -71,21 +71,23 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
-public abstract class JsonRpcHandler<T, U, E> implements HttpHandler {
+public abstract class JsonRpcHandler<T, U, X extends Exception, E> implements HttpHandler {
 	private static final String CONTENT_TYPE_JSON = "application/json";
 	private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
 	private final Class<T> requestClass;
+	private final Class<X> exceptionClass;
 	private final ObjectMapper objectMapper;
 
-	public abstract U handleRequest(T request) throws Exception;
+	public abstract U handleRequest(T request) throws X;
 
 	public abstract E handleParseException(Exception e);
 
-	public abstract E handleException(Exception e);
+	public abstract E handleException(X e);
 
-	public JsonRpcHandler(Class<T> requestClass, ObjectMapper objectMapper) {
+	public JsonRpcHandler(Class<T> requestClass, Class<X> exceptionClass, ObjectMapper objectMapper) {
 		this.requestClass = requestClass;
+		this.exceptionClass = exceptionClass;
 		this.objectMapper = objectMapper;
 	}
 
@@ -114,13 +116,14 @@ public abstract class JsonRpcHandler<T, U, E> implements HttpHandler {
 		try {
 			response = handleRequest(request);
 		} catch (Exception e) {
-			var errorResponse = handleException(e);
-			if (errorResponse == null) {
-				throw e;
+			if (exceptionClass.isInstance(e)) {
+				var errorResponse = handleException(exceptionClass.cast(e));
+				exchange.setStatusCode(500);
+				exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+				return;
 			}
-			exchange.setStatusCode(500);
-			exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
-			return;
+
+			throw e;
 		}
 
 		exchange.setStatusCode(200);

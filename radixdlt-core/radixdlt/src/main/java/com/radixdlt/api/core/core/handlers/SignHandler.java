@@ -66,7 +66,9 @@ package com.radixdlt.api.core.core.handlers;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
+import com.radixdlt.api.core.core.model.exceptions.PublicKeyNotSupportedException;
 import com.radixdlt.api.core.core.openapitools.model.SignRequest;
 import com.radixdlt.api.core.core.openapitools.model.SignResponse;
 import com.radixdlt.atom.TxLowLevelBuilder;
@@ -75,6 +77,7 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
@@ -102,18 +105,22 @@ public final class SignHandler extends CoreJsonRpcHandler<SignRequest, SignRespo
 	}
 
 	@Override
-	public SignResponse handleRequest(SignRequest request) throws Exception {
+	public SignResponse handleRequest(SignRequest request) throws CoreModelException {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var pubKey = coreModelMapper.ecPublicKey(request.getPublicKey());
 		if (!self.equals(pubKey)) {
-			throw new CoreModelMapper.InvalidParameterException();
+			throw new PublicKeyNotSupportedException(request.getPublicKey());
 		}
 
 		// Verify this is a valid transaction and not anything more malicious
 		var bytes = coreModelMapper.bytes(request.getUnsignedTransaction());
 		var txn = Txn.create(bytes);
-		radixEngineProvider.get().getParser().parse(txn);
+		try {
+			radixEngineProvider.get().getParser().parse(txn);
+		} catch (TxnParseException e) {
+			throw new IllegalStateException(e);
+		}
 
 		var builder = TxLowLevelBuilder.newBuilder(bytes);
 		var hash = builder.hashToSign();
