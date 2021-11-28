@@ -64,9 +64,6 @@
 package com.radixdlt.api.core.core.model;
 
 import com.google.common.base.Suppliers;
-import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
-import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -76,58 +73,47 @@ import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
 
+import java.util.List;
 import java.util.function.Supplier;
 
-public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
-	private final ConstructionBuildRequest request;
+public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 	private final Forks forks;
+	private final List<List<EntityOperation>> operationGroups;
 	private final Addressing addressing;
-	private final CoreModelMapper modelMapper;
+	private final String message;
 
-	private OperationTxBuilder(
-		ConstructionBuildRequest request,
+	public OperationTxBuilder(
+		String message,
+		List<List<EntityOperation>> operationGroups,
 		Addressing addressing,
-		CoreModelMapper modelMapper,
 		Forks forks
 	) {
-		this.request = request;
+		this.message = message;
+		this.operationGroups = operationGroups;
 		this.addressing = addressing;
-		this.modelMapper = modelMapper;
 		this.forks = forks;
 	}
 
-	public static OperationTxBuilder from(
-		ConstructionBuildRequest request,
-		Addressing addressing,
-		CoreModelMapper modelMapper,
-		Forks forks
-	) {
-		return new OperationTxBuilder(request, addressing, modelMapper, forks);
-	}
-
 	private void execute(
-		Operation operation,
+		EntityOperation operation,
 		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {
-		var entityIdentifier = operation.getEntityIdentifier();
-		var entity = modelMapper.entity(entityIdentifier);
+		var entity = operation.getEntity();
 
-		var amount = operation.getAmount();
+		var amount = operation.getResourceAmount();
 		if (amount != null) {
-			var signAndAmount = modelMapper.resourceAmount(amount);
-			var resourceAmount = signAndAmount.getSecond();
-			if (signAndAmount.getFirst()) {
-				entity.deposit(resourceAmount, txBuilder, config);
+			if (operation.isAmountPositive()) {
+				entity.deposit(amount, txBuilder, config);
 			} else {
-				var retrieval = entity.withdraw(resourceAmount.getResource());
+				var retrieval = entity.withdraw(amount.getResource());
 				var change = txBuilder.downFungible(
 					retrieval.getIndex(),
 					retrieval.getPredicate(),
-					resourceAmount.getAmount()
+					amount.getAmount()
 				);
 				if (!change.isZero()) {
-					var changeAmount = new ResourceAmount(resourceAmount.getResource(), change);
+					var changeAmount = new ResourceAmount(amount.getResource(), change);
 					entity.deposit(changeAmount, txBuilder, config);
 				}
 			}
@@ -147,16 +133,15 @@ public class OperationTxBuilder implements RadixEngine.TxBuilderExecutable {
 			return forks.get(epochData.getEpoch()).getConfig();
 		});
 
-		for (var operationGroup : request.getOperationGroups()) {
-			for (var operation : operationGroup.getOperations()) {
+		for (var operationGroup : this.operationGroups) {
+			for (var operation : operationGroup) {
 				execute(operation, txBuilder, configSupplier);
 			}
 			txBuilder.end();
 		}
 
-		var msg = request.getMessage();
-		if (msg != null) {
-			txBuilder.message(Bytes.fromHexString(msg));
+		if (this.message != null) {
+			txBuilder.message(Bytes.fromHexString(message));
 		}
 	}
 }

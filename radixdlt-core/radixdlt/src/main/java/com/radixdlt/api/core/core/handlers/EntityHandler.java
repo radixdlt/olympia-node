@@ -64,6 +64,7 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityResponse;
@@ -73,37 +74,30 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
 import java.util.function.Function;
 
 public class EntityHandler extends CoreJsonRpcHandler<EntityRequest, EntityResponse> {
-	private final Network network;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final CoreModelMapper modelMapper;
 
 	@Inject
 	EntityHandler(
-		@NetworkId int networkId,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
 		CoreModelMapper modelMapper
 	) {
 		super(EntityRequest.class);
-		this.network = Network.ofId(networkId).orElseThrow();
 		this.radixEngine = radixEngine;
 		this.modelMapper = modelMapper;
 	}
 
 	@Override
 	public EntityResponse handleRequest(EntityRequest request) throws Exception {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new IllegalStateException();
-		}
+		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var entityIdentifier = request.getEntityIdentifier();
-		var entity = modelMapper.entity(entityIdentifier);
+		var entity = modelMapper.entity(request.getEntityIdentifier());
+
 		var keyQueries = entity.getKeyQueries();
 		var resourceQueries = entity.getResourceQueries();
 

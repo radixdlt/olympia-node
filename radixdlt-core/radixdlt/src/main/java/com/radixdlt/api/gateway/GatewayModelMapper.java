@@ -119,7 +119,6 @@ import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.ForkConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
@@ -143,27 +142,21 @@ public final class GatewayModelMapper {
 	}
 
 	public ECPublicKey validator(ValidatorIdentifier validatorIdentifier) {
-		try {
-			return addressing.forValidators().parse(validatorIdentifier.getAddress());
-		} catch (DeserializeException e) {
-			throw new IllegalStateException();
-		}
+		return addressing.forValidators().parseOrThrow(
+			validatorIdentifier.getAddress(), IllegalStateException::new
+		);
 	}
 
 	public REAddr account(AccountIdentifier accountIdentifier) {
-		try {
-			return addressing.forAccounts().parse(accountIdentifier.getAddress());
-		} catch (DeserializeException e) {
-			throw new IllegalStateException();
-		}
+		return addressing.forAccounts().parseOrThrow(
+			accountIdentifier.getAddress(), IllegalStateException::new
+		);
 	}
 
 	public REAddr tokenAddress(TokenIdentifier tokenIdentifier) {
-		try {
-			return addressing.forResources().parse2(tokenIdentifier.getRri()).getSecond();
-		} catch (DeserializeException e) {
-			throw new IllegalStateException();
-		}
+		return addressing.forResources().parseOrThrow(
+			tokenIdentifier.getRri(), IllegalStateException::new
+		).getSecond();
 	}
 
 	public ECPublicKey ecPublicKey(String publicKeyHex) {

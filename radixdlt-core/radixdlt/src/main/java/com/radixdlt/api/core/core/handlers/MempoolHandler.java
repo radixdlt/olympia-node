@@ -64,6 +64,7 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.openapitools.model.MempoolRequest;
 import com.radixdlt.api.core.core.openapitools.model.MempoolResponse;
 import com.radixdlt.api.core.core.openapitools.model.TransactionIdentifier;
@@ -85,11 +86,15 @@ public class MempoolHandler extends CoreJsonRpcHandler<MempoolRequest, MempoolRe
 		this.mempool = mempool;
 	}
 
-	@Override
-	public MempoolResponse handleRequest(MempoolRequest request) throws Exception {
+	private void validateRequest(MempoolRequest request) {
 		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
+	}
+
+	@Override
+	public MempoolResponse handleRequest(MempoolRequest request) throws Exception {
+		validateRequest(request);
 
 		return mempool.getData(map -> {
 			var response = new MempoolResponse();

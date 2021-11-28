@@ -65,6 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
+import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;

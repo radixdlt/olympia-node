@@ -73,7 +73,6 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 
@@ -129,13 +128,10 @@ public class TokenEntity implements Entity {
 
 			builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8));
 			builder.downREAddr(tokenAddr);
-			try {
-				var ownerKey = addressing.forAccounts().parse(owner).publicKey().orElseThrow();
-				var tokenResource = new TokenResource(tokenAddr, UInt256.ONE, isMutable, ownerKey);
-				builder.up(tokenResource);
-			} catch (DeserializeException e) {
-				throw new IllegalStateException();
-			}
+			var ownerKey = addressing.forAccounts()
+				.parseOrThrow(owner, s -> new IllegalStateException()).publicKey().orElseThrow();
+			var tokenResource = new TokenResource(tokenAddr, UInt256.ONE, isMutable, ownerKey);
+			builder.up(tokenResource);
 		} else if (dataObject instanceof TokenMetadata tokenMetadata) {
 			builder.up(new TokenResourceMetadata(
 				tokenAddr,

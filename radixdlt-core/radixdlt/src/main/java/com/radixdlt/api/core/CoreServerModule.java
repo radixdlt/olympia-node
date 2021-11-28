@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.core;
 
+import com.google.common.base.Throwables;
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.MapBinder;
@@ -70,18 +71,22 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.core.core.CoreApiModule;
+import com.radixdlt.api.core.core.openapitools.model.InternalServerErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.UnexpectedError;
 import com.radixdlt.api.core.system.SystemApiModule;
+import com.radixdlt.api.gateway.openapitools.JSON;
 import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.ExceptionHandler;
+import io.undertow.util.Headers;
 
 import javax.inject.Qualifier;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.List;
 import java.util.Map;
 
 import static java.lang.annotation.ElementType.*;
@@ -113,15 +118,44 @@ public final class CoreServerModule extends AbstractModule {
 		install(new CoreApiModule(NodeServer.class, transactionsEnable));
 	}
 
+	private static class IntervalServerErrorExceptionHandler implements HttpHandler {
+		@Override
+		public void handleRequest(HttpServerExchange exchange) throws Exception {
+			var ex = exchange.getAttachment(ExceptionHandler.THROWABLE);
+			// TODO: Move this somewhere else
+			ex.printStackTrace();
+
+			var rootCause = Throwables.getRootCause(ex);
+			var unexpectedError = new UnexpectedError()
+				.code(500)
+				.message("Internal Server Error")
+				.details(new InternalServerErrorDetails()
+					.cause(rootCause.getMessage())
+					.exception(rootCause.getClass().getSimpleName())
+					.type("InternalServerErrorDetails")
+				);
+			exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
+			exchange.setStatusCode(500);
+			exchange.getResponseSender().send(JSON.getDefault().getMapper().writeValueAsString(unexpectedError));
+		}
+	}
+
+
 	@ProvidesIntoMap
 	@StringMapKey(Runners.NODE_API)
 	@Singleton
-	public ModuleRunner nodeHttpServer(
+	public ModuleRunner coreHttpServer(
 		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
 		SystemCounters counters
 	) {
-		return new HttpServerRunner(handlers, List.of(), port, bindAddress, "node", addressing, counters);
+		return new HttpServerRunner(
+			handlers,
+			new IntervalServerErrorExceptionHandler(),
+			port,
+			bindAddress,
+			"node",
+			counters
+		);
 	}
 
 	/**

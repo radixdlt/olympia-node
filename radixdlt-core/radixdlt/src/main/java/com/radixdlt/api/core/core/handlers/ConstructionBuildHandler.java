@@ -64,49 +64,37 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.AccountVaultEntity;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildResponse;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.utils.Bytes;
 
 public final class ConstructionBuildHandler extends CoreJsonRpcHandler<ConstructionBuildRequest, ConstructionBuildResponse> {
-	private final Addressing addressing;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
-	private final Forks forks;
-	private final Network network;
 	private final CoreModelMapper modelMapper;
 
 	@Inject
 	ConstructionBuildHandler(
-		@NetworkId int networkId,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		Forks forks,
-		Addressing addressing,
 		CoreModelMapper modelMapper
 	) {
 		super(ConstructionBuildRequest.class);
-		this.network = Network.ofId(networkId).orElseThrow();
 		this.radixEngine = radixEngine;
-		this.forks = forks;
-		this.addressing = addressing;
 		this.modelMapper = modelMapper;
 	}
 
 	@Override
 	public ConstructionBuildResponse handleRequest(ConstructionBuildRequest request) throws Exception {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new IllegalStateException();
-		}
+		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var operationTxBuilder = OperationTxBuilder.from(request, addressing, modelMapper, forks);
+		var operationTxBuilder = modelMapper.operationTxBuilder(
+			request.getMessage(),
+			request.getOperationGroups()
+		);
 		var feePayer = modelMapper.entity(request.getFeePayer());
 		var disableAllocAndDestroy = request.getDisableResourceAllocateAndDestroy();
 

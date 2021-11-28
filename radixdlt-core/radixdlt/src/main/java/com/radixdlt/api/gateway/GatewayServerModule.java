@@ -79,14 +79,12 @@ import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
 
 import javax.inject.Qualifier;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.List;
 import java.util.Map;
 
 import static java.lang.annotation.ElementType.*;
@@ -132,14 +130,8 @@ public class GatewayServerModule extends AbstractModule {
 	@Singleton
 	public ModuleRunner archiveHttpServer(
 		@ArchiveServer Map<HandlerRoute, HttpHandler> handlers,
-		Addressing addressing,
 		SystemCounters counters
 	) {
-		var errorCodes = List.of(
-			ApiErrorCode.MEMPOOL_FULL,
-			ApiErrorCode.STATE_CONFLICT,
-			ApiErrorCode.INVALID_TRANSACTION
-		);
-		return new HttpServerRunner(handlers, errorCodes, port, bindAddress, "archive", addressing, counters);
+		return new HttpServerRunner(handlers, null, port, bindAddress, "archive", counters);
 	}
 }

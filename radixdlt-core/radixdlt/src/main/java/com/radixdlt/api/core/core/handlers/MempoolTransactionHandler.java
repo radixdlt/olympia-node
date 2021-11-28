@@ -65,6 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
 import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionResponse;
@@ -99,6 +100,13 @@ public class MempoolTransactionHandler extends CoreJsonRpcHandler<MempoolTransac
 		this.radixEngineProvider = radixEngineProvider;
 	}
 
+	private AID validateRequest(MempoolTransactionRequest request) {
+		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
+			throw new IllegalStateException();
+		}
+		return AID.from(request.getTransactionIdentifier().getHash());
+	}
+
 	private String symbol(REAddr tokenAddress) {
 		var mapKey = SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
 		var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
@@ -109,11 +117,8 @@ public class MempoolTransactionHandler extends CoreJsonRpcHandler<MempoolTransac
 
 	@Override
 	public MempoolTransactionResponse handleRequest(MempoolTransactionRequest request) throws Exception {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new IllegalStateException();
-		}
+		var txnId = validateRequest(request);
 
-		var txnId = AID.from(request.getTransactionIdentifier().getHash());
 		var transaction = mempool.getData(map -> map.get(txnId));
 		if (transaction == null) {
 			throw new IllegalStateException();

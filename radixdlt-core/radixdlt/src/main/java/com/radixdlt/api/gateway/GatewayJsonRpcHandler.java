@@ -66,8 +66,18 @@ package com.radixdlt.api.gateway;
 import com.radixdlt.api.gateway.openapitools.JSON;
 import com.radixdlt.api.util.JsonRpcHandler;
 
-public abstract class GatewayJsonRpcHandler<T, U> extends JsonRpcHandler<T, U> {
+public abstract class GatewayJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, Object> {
 	public GatewayJsonRpcHandler(Class<T> requestClass) {
 		super(requestClass, JSON.getDefault().getMapper());
+	}
+
+	@Override
+	public Object handleParseException(Exception e) {
+		return new Object();
+	}
+
+	@Override
+	public Object handleException(Exception e) {
+		return new Object();
 	}
 }

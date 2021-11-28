@@ -64,14 +64,17 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsResponse;
+import com.radixdlt.api.core.core.openapitools.model.PartialStateIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
 import com.radixdlt.api.core.core.BerkeleyProcessedTransactionsStore;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.Pair;
 
 import java.util.stream.Collectors;
 
@@ -89,15 +92,26 @@ public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransaction
 		this.txnStore = txnStore;
 	}
 
-	@Override
-	public CommittedTransactionsResponse handleRequest(CommittedTransactionsRequest request) throws Exception {
+	private Pair<PartialStateIdentifier, Long> validateRequest(CommittedTransactionsRequest request) {
 		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
 			throw new IllegalStateException();
 		}
 
 		var limit = request.getLimit() == null ? 0L : request.getLimit();
-		var stateIdentifier = request.getStateIdentifier();
-		var stateVersion = stateIdentifier.getStateVersion();
+
+		var partialStateIdentifier = request.getStateIdentifier() == null
+			? new PartialStateIdentifier().stateVersion(0L) : request.getStateIdentifier();
+
+		return Pair.of(partialStateIdentifier, limit);
+	}
+
+	@Override
+	public CommittedTransactionsResponse handleRequest(CommittedTransactionsRequest request) throws Exception {
+		var validated = validateRequest(request);
+		var stateIdentifier = validated.getFirst();
+		var limit = validated.getSecond();
+
+		long stateVersion = stateIdentifier.getStateVersion();
 		var previousStateVersion = stateVersion - 1;
 		final StateIdentifier committedStateIdentifier;
 		if (previousStateVersion >= 0) {

@@ -64,17 +64,13 @@
 
 package com.radixdlt.identifiers;
 
-import com.radixdlt.serialization.DeserializeException;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.functional.Result;
-import com.radixdlt.utils.functional.Tuple.Tuple2;
 
-import static com.radixdlt.errors.ApiErrors.INVALID_RESOURCE_ADDRESS;
-import static com.radixdlt.utils.functional.Tuple.tuple;
+import java.util.function.Function;
 
 /**
  * A Radix resource identifier which encodes addresses with a resource behind them in
@@ -110,40 +106,21 @@ public final class ResourceAddressing {
 		return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
 	}
 
-	public static Pair<String, REAddr> parseUnknownHrp(String rri) {
-		var data = Bech32.decode(rri);
-		var addrBytes = fromBech32Data(data.data);
-		return Pair.of(data.hrp, REAddr.of(addrBytes));
-	}
-
-	public Pair<String, REAddr> parse2(String rri) throws DeserializeException {
+	public <X extends Exception> Pair<String, REAddr> parseOrThrow(String rri, Function<String, X> exceptionSupplier) throws X {
 		Bech32.Bech32Data bech32Data;
 		try {
 			bech32Data = Bech32.decode(rri);
 		} catch (AddressFormatException e) {
-			throw new DeserializeException("Could not decode string: " + rri, e);
+			throw exceptionSupplier.apply("Could not decode");
 		}
 
 		if (!bech32Data.hrp.endsWith(hrpSuffix)) {
-			throw new DeserializeException("Address hrp suffix must be " + hrpSuffix + "(" + rri + ")");
+			throw exceptionSupplier.apply("Address hrp suffix must be " + hrpSuffix + "(" + rri + ")");
 		}
+
 		var symbol = bech32Data.hrp.substring(0, bech32Data.hrp.length() - hrpSuffix.length());
 		var addrBytes = fromBech32Data(bech32Data.data);
 		return Pair.of(symbol, REAddr.of(addrBytes));
-	}
-
-	public Tuple2<String, REAddr> parse(String rri) {
-		var data = Bech32.decode(rri);
-		if (!data.hrp.endsWith(hrpSuffix)) {
-			throw new IllegalArgumentException("Address hrp suffix must be " + hrpSuffix + "(" + rri + ")");
-		}
-		var symbol = data.hrp.substring(0, data.hrp.length() - hrpSuffix.length());
-		var addrBytes = fromBech32Data(data.data);
-		return tuple(symbol, REAddr.of(addrBytes));
-	}
-
-	public Result<REAddr> parseToAddr(String rri) {
-		return Result.wrap(() -> INVALID_RESOURCE_ADDRESS.with(rri), () -> parse(rri).last());
 	}
 
 	public String of(String symbol, REAddr addr) {

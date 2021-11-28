@@ -65,6 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.openapitools.model.SignRequest;
 import com.radixdlt.api.core.core.openapitools.model.SignResponse;
 import com.radixdlt.atom.TxLowLevelBuilder;

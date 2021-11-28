@@ -61,13 +61,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.handlers;
+package com.radixdlt.api.core.core;
 
 import com.radixdlt.api.core.core.openapitools.JSON;
+import com.radixdlt.api.core.core.openapitools.model.InvalidJsonDetails;
+import com.radixdlt.api.core.core.openapitools.model.UnexpectedError;
 import com.radixdlt.api.util.JsonRpcHandler;
 
-abstract class CoreJsonRpcHandler<T, U> extends JsonRpcHandler<T, U> {
-	CoreJsonRpcHandler(Class<T> requestClass) {
+public abstract class CoreJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, UnexpectedError> {
+	public CoreJsonRpcHandler(Class<T> requestClass) {
 		super(requestClass, JSON.getDefault().getMapper());
+	}
+
+	@Override
+	public UnexpectedError handleParseException(Exception e) {
+		return new UnexpectedError()
+			.code(1)
+			.message("Invalid Json")
+			.details(new InvalidJsonDetails()
+				.cause(e.getMessage())
+				.type("InvalidJsonDetails")
+			);
+	}
+
+	@Override
+	public UnexpectedError handleException(Exception e) {
+		if (e instanceof CoreModelMapper.CoreModelException coreModelException) {
+			return coreModelException.toError();
+		}
+
+		return null;
 	}
 }

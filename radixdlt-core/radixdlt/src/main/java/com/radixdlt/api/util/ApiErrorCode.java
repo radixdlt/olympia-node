@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway;
+package com.radixdlt.api.util;
 
 import com.google.common.base.Throwables;
 import com.radixdlt.api.gateway.transaction.InvalidTransactionException;

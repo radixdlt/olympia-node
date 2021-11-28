@@ -70,11 +70,9 @@ import org.bitcoinj.core.Bech32;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Bits;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.functional.Result;
 
 import java.util.Objects;
-
-import static com.radixdlt.errors.ApiErrors.INVALID_ACCOUNT_ADDRESS;
+import java.util.function.Function;
 
 /**
  * Bech-32 encoding/decoding of account addresses.
@@ -101,12 +99,12 @@ public final class AccountAddressing {
 		return new AccountAddressing(hrp);
 	}
 
-	public static Pair<String, REAddr> parseUnknownHrp(String v) throws DeserializeException {
+	public static <X extends Exception> Pair<String, REAddr> parseUnknownHrp(String v, Function<String, X> exceptionSupplier) throws X {
 		Bech32.Bech32Data bech32Data;
 		try {
 			bech32Data = Bech32.decode(v);
 		} catch (AddressFormatException e) {
-			throw new DeserializeException("Could not decode string: " + v, e);
+			throw exceptionSupplier.apply("Could not decode");
 		}
 
 		final REAddr reAddr;
@@ -114,11 +112,11 @@ public final class AccountAddressing {
 			var addrBytes = fromBech32Data(bech32Data.data);
 			reAddr = REAddr.of(addrBytes);
 		} catch (IllegalArgumentException e) {
-			throw new DeserializeException("Invalid address", e);
+			throw exceptionSupplier.apply("Invalid address");
 		}
 
 		if (!reAddr.isAccount()) {
-			throw new DeserializeException("Address is not an account");
+			throw exceptionSupplier.apply("Address is not an account");
 		}
 
 		return Pair.of(bech32Data.hrp, reAddr);
@@ -137,15 +135,11 @@ public final class AccountAddressing {
 		return Bech32.encode(hrp, convert);
 	}
 
-	public REAddr parse(String v) throws DeserializeException {
-		var p = parseUnknownHrp(v);
+	public <X extends Exception> REAddr parseOrThrow(String v, Function<String, X> exceptionSupplier) throws X {
+		var p = parseUnknownHrp(v, exceptionSupplier);
 		if (!p.getFirst().equals(hrp)) {
-			throw new DeserializeException("hrp must be " + hrp + " but was " + p.getFirst());
+			throw exceptionSupplier.apply("hrp must be " + hrp + " but was " + p.getFirst());
 		}
 		return p.getSecond();
-	}
-
-	public Result<REAddr> parseFunctional(String addr) {
-		return Result.wrap(() -> INVALID_ACCOUNT_ADDRESS.with(addr), () -> parse(addr));
 	}
 }

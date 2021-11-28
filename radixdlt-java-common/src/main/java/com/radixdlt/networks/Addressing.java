@@ -68,6 +68,7 @@ import com.radixdlt.identifiers.AccountAddressing;
 import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.identifiers.ResourceAddressing;
 import com.radixdlt.identifiers.ValidatorAddressing;
+import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
 import java.util.Optional;
@@ -125,7 +126,13 @@ public final class Addressing {
 	}
 
 	public Optional<AddressType> getAddressType(String address) {
-		var data = Bech32.decode(address);
+		Bech32.Bech32Data data;
+		try {
+			data = Bech32.decode(address);
+		} catch (AddressFormatException e) {
+			return Optional.empty();
+		}
+
 		if (data.hrp.startsWith(validatorAddressing.getHrp())) {
 			return Optional.of(AddressType.VALIDATOR);
 		}

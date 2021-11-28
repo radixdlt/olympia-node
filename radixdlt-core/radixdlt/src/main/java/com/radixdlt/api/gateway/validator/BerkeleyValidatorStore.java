@@ -153,8 +153,9 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 						var stake = UInt256.from(stakeString);
 						buf.put(stake.toByteArray());
 
-						var validatorKey = addressing.forValidators().parseNoErr(
-							json.getJSONObject("validator_identifier").getString("address")
+						var validatorKey = addressing.forValidators().parseOrThrow(
+							json.getJSONObject("validator_identifier").getString("address"),
+							IllegalStateException::new
 						);
 						buf.put(validatorKey.getCompressedBytes());
 

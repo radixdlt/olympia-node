@@ -64,56 +64,42 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataToken;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveResponse;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 
-public class ConstructionDeriveHandler extends CoreJsonRpcHandler<ConstructionDeriveRequest, ConstructionDeriveResponse> {
-	private final Network network;
-	private final Addressing addressing;
+public final class ConstructionDeriveHandler extends CoreJsonRpcHandler<ConstructionDeriveRequest, ConstructionDeriveResponse> {
+	private final CoreModelMapper coreModelMapper;
 
 	@Inject
-	ConstructionDeriveHandler(
-		@NetworkId int networkId,
-		Addressing addressing
-	) {
+	ConstructionDeriveHandler(CoreModelMapper coreModelMapper) {
 		super(ConstructionDeriveRequest.class);
-		this.network = Network.ofId(networkId).orElseThrow();
-		this.addressing = addressing;
+
+		this.coreModelMapper = coreModelMapper;
 	}
 
 	@Override
 	public ConstructionDeriveResponse handleRequest(ConstructionDeriveRequest request) throws Exception {
-		if (!request.getNetworkIdentifier().getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new IllegalStateException();
-		}
+		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var publicKey = ECPublicKey.fromHex(request.getPublicKey().getHex());
+		var metadata = request.getMetadata();
+		var publicKey = coreModelMapper.ecPublicKey(request.getPublicKey());
 		var response = new ConstructionDeriveResponse();
-		if (request.getMetadata() instanceof ConstructionDeriveRequestMetadataAccount) {
+		if (metadata instanceof ConstructionDeriveRequestMetadataAccount) {
 			var address = REAddr.ofPubKeyAccount(publicKey);
-			response.entityIdentifier(new EntityIdentifier()
-				.address(addressing.forAccounts().of(address))
-			);
-		} else if (request.getMetadata() instanceof ConstructionDeriveRequestMetadataValidator) {
-			response.entityIdentifier(new EntityIdentifier()
-				.address(addressing.forValidators().of(publicKey))
-			);
-		} else if (request.getMetadata() instanceof ConstructionDeriveRequestMetadataToken token) {
+			response.entityIdentifier(coreModelMapper.entityIdentifier(address));
+		} else if (metadata instanceof ConstructionDeriveRequestMetadataValidator) {
+			response.entityIdentifier(coreModelMapper.entityIdentifier(publicKey));
+		} else if (metadata instanceof ConstructionDeriveRequestMetadataToken token) {
 			var tokenAddress = REAddr.ofHashedKey(publicKey, token.getSymbol());
-			response.entityIdentifier(new EntityIdentifier()
-				.address(addressing.forResources().of(token.getSymbol(), tokenAddress))
-			);
+			response.entityIdentifier(coreModelMapper.entityIdentifier(tokenAddress, token.getSymbol()));
 		} else {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Unknown metadata type: " + metadata);
 		}
 
 		return response;

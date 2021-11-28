@@ -63,12 +63,8 @@
 
 package com.radixdlt.api.util;
 
-import com.radixdlt.api.gateway.ApiErrorCode;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.networks.Addressing;
-import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.server.handlers.RequestLimitingHandler;
-import io.undertow.util.Headers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -76,7 +72,6 @@ import com.radixdlt.ModuleRunner;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -87,7 +82,6 @@ import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.StatusCodes;
-import org.json.JSONObject;
 
 import static java.util.logging.Logger.getLogger;
 
@@ -97,28 +91,25 @@ public final class HttpServerRunner implements ModuleRunner {
 	private static final int QUEUE_SIZE = 2000;
 
 	private final Map<HandlerRoute, HttpHandler> handlers;
-	private final List<ApiErrorCode> errorCodes;
+	private final HttpHandler exceptionHandler;
 	private final String name;
 	private final int port;
 	private final String bindAddress;
-	private final Addressing addressing;
 	private final SystemCounters counters;
 
 	private Undertow server;
 
 	public HttpServerRunner(
 		Map<HandlerRoute, HttpHandler> handlers,
-		List<ApiErrorCode> errorCodes,
+		HttpHandler exceptionHandler,
 		int port,
 		String bindAddress,
 		String name,
-		Addressing addressing,
 		SystemCounters counters
 	) {
 		this.handlers = handlers;
-		this.errorCodes = errorCodes;
+		this.exceptionHandler = exceptionHandler;
 		this.name = name.toLowerCase(Locale.US);
-		this.addressing = addressing;
 		this.bindAddress = bindAddress;
 		this.port = port;
 		this.counters = Objects.requireNonNull(counters);
@@ -165,24 +156,6 @@ public final class HttpServerRunner implements ModuleRunner {
 		server.stop();
 	}
 
-	private void addErrorCodeHandler(ApiErrorCode errorCode, ExceptionHandler handler) {
-		handler.addExceptionHandler(
-			errorCode.getExceptionClass(),
-			exchange -> {
-				var ex = exchange.getAttachment(ExceptionHandler.THROWABLE);
-				ex.printStackTrace();
-				exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
-				exchange.setStatusCode(500);
-				exchange.getResponseSender().send(new JSONObject()
-					.put("code", errorCode.getCode())
-					.put("message", errorCode.name())
-					.put("details", errorCode.getDetails(ex, addressing))
-					.toString()
-				);
-			}
-		);
-	}
-
 	private HttpHandler configureRoutes() {
 		var handler = Handlers.routing(true); // add path params to query params with this flag
 		handlers.forEach((r, h) -> handler.add(r.getMethod(), r.getPath(), h));
@@ -190,8 +163,9 @@ public final class HttpServerRunner implements ModuleRunner {
 		handler.setInvalidMethodHandler(HttpServerRunner::invalidMethodHandler);
 
 		var exceptionHandler = Handlers.exceptionHandler(handler);
-		errorCodes.forEach(e -> addErrorCodeHandler(e, exceptionHandler));
-		addErrorCodeHandler(ApiErrorCode.INTERNAL_SERVER_ERROR, exceptionHandler);
+		if (this.exceptionHandler != null) {
+			exceptionHandler.addExceptionHandler(Exception.class, this.exceptionHandler);
+		}
 
 		return wrapWithCorsFilter(exceptionHandler);
 	}

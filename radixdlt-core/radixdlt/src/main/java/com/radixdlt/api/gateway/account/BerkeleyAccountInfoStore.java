@@ -175,12 +175,9 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			for (int i = 0; i < stakedJson.length(); i++) {
 				var json = stakedJson.getJSONObject(i);
 				var ownership = new BigInteger(json.getString("value"), 10);
-				ECPublicKey validatorKey;
-				try {
-					validatorKey = addressing.forValidators().parse(json.getString("validator_address"));
-				} catch (DeserializeException e) {
-					throw new IllegalStateException("Unable to deserialize", e);
-				}
+				var validatorKey = addressing.forValidators().parseOrThrow(
+					json.getString("validator_address"), IllegalStateException::new
+				);
 				var estimatedStake = computeEstimatedStake(validatorKey, ownership);
 				stakes.compute(json.getString("validator_address"), (v, obj) -> {
 					if (obj == null) {
@@ -426,20 +423,16 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 
 			@Override
 			JSONObject toJSON(BerkeleyAccountInfoStore parent, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper, Object o) {
-				try {
-					var validatorKey = parent.addressing.forValidators().parse((String) o);
-					var validatorDataKey = SystemMapKey.ofSystem(
-						SubstateTypeId.VALIDATOR_STAKE_DATA.id(),
-						validatorKey.getCompressedBytes()
-					);
-					var stakeData = (ValidatorStakeData) parent.deserialize(mapper.apply(validatorDataKey).orElseThrow().getData());
-					return new JSONObject()
-						.put("validator_address", o)
-						.put("validatorTotalStake", stakeData.getTotalStake())
-						.put("validatorTotalOwnership", stakeData.getTotalOwnership());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
+				var validatorKey = parent.addressing.forValidators().parseOrThrow((String) o, IllegalStateException::new);
+				var validatorDataKey = SystemMapKey.ofSystem(
+					SubstateTypeId.VALIDATOR_STAKE_DATA.id(),
+					validatorKey.getCompressedBytes()
+				);
+				var stakeData = (ValidatorStakeData) parent.deserialize(mapper.apply(validatorDataKey).orElseThrow().getData());
+				return new JSONObject()
+					.put("validator_address", o)
+					.put("validatorTotalStake", stakeData.getTotalStake())
+					.put("validatorTotalOwnership", stakeData.getTotalOwnership());
 			}
 		},
 		PREPARED_UNSTAKES {
@@ -466,20 +459,16 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 
 			@Override
 			JSONObject toJSON(BerkeleyAccountInfoStore parent, Function<SystemMapKey, Optional<RawSubstateBytes>> mapper, Object o) {
-				try {
-					var validatorKey = parent.addressing.forValidators().parse((String) o);
-					var validatorDataKey = SystemMapKey.ofSystem(
-						SubstateTypeId.VALIDATOR_STAKE_DATA.id(),
-						validatorKey.getCompressedBytes()
-					);
-					var stakeData = (ValidatorStakeData) parent.deserialize(mapper.apply(validatorDataKey).orElseThrow().getData());
-					return new JSONObject()
-						.put("validator_address", o)
-						.put("validatorTotalStake", stakeData.getTotalStake())
-						.put("validatorTotalOwnership", stakeData.getTotalOwnership());
-				} catch (DeserializeException e) {
-					throw new IllegalStateException();
-				}
+				var validatorKey = parent.addressing.forValidators().parseOrThrow((String) o, IllegalStateException::new);
+				var validatorDataKey = SystemMapKey.ofSystem(
+					SubstateTypeId.VALIDATOR_STAKE_DATA.id(),
+					validatorKey.getCompressedBytes()
+				);
+				var stakeData = (ValidatorStakeData) parent.deserialize(mapper.apply(validatorDataKey).orElseThrow().getData());
+				return new JSONObject()
+					.put("validator_address", o)
+					.put("validatorTotalStake", stakeData.getTotalStake())
+					.put("validatorTotalOwnership", stakeData.getTotalOwnership());
 			}
 		},
 		EXITTING_UNSTAKES {

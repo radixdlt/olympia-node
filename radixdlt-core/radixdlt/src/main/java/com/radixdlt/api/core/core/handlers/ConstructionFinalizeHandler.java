@@ -64,6 +64,7 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeResponse;
 import com.radixdlt.atom.TxLowLevelBuilder;

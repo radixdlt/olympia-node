@@ -74,15 +74,11 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.Bytes;
-import org.json.JSONObject;
 
 import javax.annotation.concurrent.Immutable;
 import java.util.Comparator;
@@ -122,14 +118,6 @@ public final class LedgerProof {
 		this.opaque = Objects.requireNonNull(opaque);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
 		this.signatures = Objects.requireNonNull(signatures);
-	}
-
-	//TODO: remove unused deserialization from JSONObject https://radixdlt.atlassian.net/browse/NT-4
-	public static LedgerProof fromJSON(Addressing addressing, JSONObject jsonObject) throws DeserializeException {
-		var opaque = HashCode.fromBytes(Bytes.fromHexString(jsonObject.getString("opaque")));
-		var header = LedgerHeader.fromJSONObject(addressing, jsonObject.getJSONObject("header"));
-		var sigs = TimestampedECDSASignatures.fromJSON(jsonObject.getJSONArray("sigs"));
-		return new LedgerProof(opaque, header, sigs);
 	}
 
 	public static LedgerProof mock() {

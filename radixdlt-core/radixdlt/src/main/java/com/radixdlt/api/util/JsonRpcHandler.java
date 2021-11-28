@@ -64,12 +64,14 @@
 package com.radixdlt.api.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
-public abstract class JsonRpcHandler<T, U> implements HttpHandler {
+public abstract class JsonRpcHandler<T, U, E> implements HttpHandler {
 	private static final String CONTENT_TYPE_JSON = "application/json";
 	private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
@@ -77,6 +79,10 @@ public abstract class JsonRpcHandler<T, U> implements HttpHandler {
 	private final ObjectMapper objectMapper;
 
 	public abstract U handleRequest(T request) throws Exception;
+
+	public abstract E handleParseException(Exception e);
+
+	public abstract E handleException(Exception e);
 
 	public JsonRpcHandler(Class<T> requestClass, ObjectMapper objectMapper) {
 		this.requestClass = requestClass;
@@ -92,11 +98,31 @@ public abstract class JsonRpcHandler<T, U> implements HttpHandler {
 
 		exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
 		exchange.startBlocking();
-
-		var request = requestClass == Void.class
-			? null : objectMapper.readValue(exchange.getInputStream(), requestClass);
-		var response = handleRequest(request);
 		exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+
+		T request;
+		try {
+			request = objectMapper.readValue(exchange.getInputStream(), requestClass);
+		} catch (JsonMappingException | JsonParseException e) {
+			var errorResponse = handleParseException(e);
+			exchange.setStatusCode(500);
+			exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+			return;
+		}
+
+		U response;
+		try {
+			response = handleRequest(request);
+		} catch (Exception e) {
+			var errorResponse = handleException(e);
+			if (errorResponse == null) {
+				throw e;
+			}
+			exchange.setStatusCode(500);
+			exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+			return;
+		}
+
 		exchange.setStatusCode(200);
 		objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 		exchange.getResponseSender().send(objectMapper.writeValueAsString(response));

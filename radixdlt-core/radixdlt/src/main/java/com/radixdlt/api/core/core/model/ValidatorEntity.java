@@ -85,7 +85,6 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
 
@@ -127,57 +126,54 @@ public class ValidatorEntity implements Entity {
 		TxBuilder builder,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {
-		try {
-			if (dataObject instanceof PreparedValidatorRegistered preparedValidatorRegistered) {
-				builder.down(ValidatorRegisteredCopy.class, validatorKey);
-				var curEpoch = builder.readSystem(EpochData.class);
-				builder.up(new ValidatorRegisteredCopy(
-					OptionalLong.of(curEpoch.getEpoch() + 1),
-					validatorKey,
-					preparedValidatorRegistered.getRegistered()
-				));
-			} else if (dataObject instanceof PreparedValidatorOwner preparedValidatorOwner) {
-				builder.down(ValidatorOwnerCopy.class, validatorKey);
-				var curEpoch = builder.readSystem(EpochData.class);
-				var owner = addressing.forAccounts().parse(preparedValidatorOwner.getOwner());
-				builder.up(new ValidatorOwnerCopy(OptionalLong.of(curEpoch.getEpoch() + 1), validatorKey, owner));
-			} else if (dataObject instanceof PreparedValidatorFee preparedValidatorFee) {
-				builder.down(ValidatorFeeCopy.class, validatorKey);
-				var curRakePercentage = builder.read(ValidatorStakeData.class, validatorKey)
-					.getRakePercentage();
-				int validatorFee = preparedValidatorFee.getFee();
-				var isIncrease = validatorFee > curRakePercentage;
-				var rakeIncrease = validatorFee - curRakePercentage;
-				var maxRakeIncrease = ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE;
-				if (isIncrease && rakeIncrease >= maxRakeIncrease) {
-					throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
-				}
-
-				var rakeIncreaseDebounceEpochLength = config.get().getRakeIncreaseDebouncerEpochLength();
-				var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
-				var curEpoch = builder.readSystem(EpochData.class);
-				var epoch = curEpoch.getEpoch() + epochDiff;
-				builder.up(new ValidatorFeeCopy(OptionalLong.of(epoch), validatorKey, validatorFee));
-			} else if (dataObject instanceof ValidatorMetadata metadata) {
-				var substateDown = builder.down(ValidatorMetaData.class, validatorKey);
-				builder.up(new ValidatorMetaData(
-					validatorKey,
-					metadata.getName() == null ? substateDown.getName() : metadata.getName(),
-					metadata.getUrl() == null ? substateDown.getUrl() : metadata.getUrl()
-				));
-			} else if (dataObject instanceof ValidatorAllowDelegation allowDelegation) {
-				builder.down(AllowDelegationFlag.class, validatorKey);
-				builder.up(new AllowDelegationFlag(validatorKey, allowDelegation.getAllowDelegation()));
-			} else if (dataObject instanceof com.radixdlt.api.core.core.openapitools.model.ValidatorSystemMetadata metadata) {
-				builder.down(com.radixdlt.application.validators.state.ValidatorSystemMetadata.class, validatorKey);
-				builder.up(new com.radixdlt.application.validators.state.ValidatorSystemMetadata(
-					validatorKey,
-					Bytes.fromHexString(metadata.getData())
-				));
-			} else {
-				throw new IllegalStateException();
+		if (dataObject instanceof PreparedValidatorRegistered preparedValidatorRegistered) {
+			builder.down(ValidatorRegisteredCopy.class, validatorKey);
+			var curEpoch = builder.readSystem(EpochData.class);
+			builder.up(new ValidatorRegisteredCopy(
+				OptionalLong.of(curEpoch.getEpoch() + 1),
+				validatorKey,
+				preparedValidatorRegistered.getRegistered()
+			));
+		} else if (dataObject instanceof PreparedValidatorOwner preparedValidatorOwner) {
+			builder.down(ValidatorOwnerCopy.class, validatorKey);
+			var curEpoch = builder.readSystem(EpochData.class);
+			var owner = addressing.forAccounts()
+				.parseOrThrow(preparedValidatorOwner.getOwner(), s -> new IllegalStateException());
+			builder.up(new ValidatorOwnerCopy(OptionalLong.of(curEpoch.getEpoch() + 1), validatorKey, owner));
+		} else if (dataObject instanceof PreparedValidatorFee preparedValidatorFee) {
+			builder.down(ValidatorFeeCopy.class, validatorKey);
+			var curRakePercentage = builder.read(ValidatorStakeData.class, validatorKey)
+				.getRakePercentage();
+			int validatorFee = preparedValidatorFee.getFee();
+			var isIncrease = validatorFee > curRakePercentage;
+			var rakeIncrease = validatorFee - curRakePercentage;
+			var maxRakeIncrease = ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE;
+			if (isIncrease && rakeIncrease >= maxRakeIncrease) {
+				throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
 			}
-		} catch (DeserializeException e) {
+
+			var rakeIncreaseDebounceEpochLength = config.get().getRakeIncreaseDebouncerEpochLength();
+			var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
+			var curEpoch = builder.readSystem(EpochData.class);
+			var epoch = curEpoch.getEpoch() + epochDiff;
+			builder.up(new ValidatorFeeCopy(OptionalLong.of(epoch), validatorKey, validatorFee));
+		} else if (dataObject instanceof ValidatorMetadata metadata) {
+			var substateDown = builder.down(ValidatorMetaData.class, validatorKey);
+			builder.up(new ValidatorMetaData(
+				validatorKey,
+				metadata.getName() == null ? substateDown.getName() : metadata.getName(),
+				metadata.getUrl() == null ? substateDown.getUrl() : metadata.getUrl()
+			));
+		} else if (dataObject instanceof ValidatorAllowDelegation allowDelegation) {
+			builder.down(AllowDelegationFlag.class, validatorKey);
+			builder.up(new AllowDelegationFlag(validatorKey, allowDelegation.getAllowDelegation()));
+		} else if (dataObject instanceof com.radixdlt.api.core.core.openapitools.model.ValidatorSystemMetadata metadata) {
+			builder.down(com.radixdlt.application.validators.state.ValidatorSystemMetadata.class, validatorKey);
+			builder.up(new com.radixdlt.application.validators.state.ValidatorSystemMetadata(
+				validatorKey,
+				Bytes.fromHexString(metadata.getData())
+			));
+		} else {
 			throw new IllegalStateException();
 		}
 	}
