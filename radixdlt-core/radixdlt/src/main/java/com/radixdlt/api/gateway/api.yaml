@@ -845,7 +845,7 @@ components:
             - public_key
             - bytes
           properties:
-            publicKey:
+            public_key:
               type: string
             bytes:
               type: string
@@ -897,6 +897,8 @@ components:
           type: string
         ledger_state:
           $ref: "#/components/schemas/LedgerState"
+        target_ledger_state:
+          $ref: "#/components/schemas/TargetLedgerState"
       example:
         network: mainnet
         ledger_state:
@@ -904,6 +906,8 @@ components:
           round: 1
           version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
+        target_ledger_state:
+          version: 1000
     TokenRequest:
       type: object
       required:
@@ -935,6 +939,14 @@ components:
           type: integer
           format: int64
         round:
+          type: integer
+          format: int64
+    TargetLedgerState:
+      type: object
+      required:
+        - version
+      properties:
+        version:
           type: integer
           format: int64
     TokenResponse:

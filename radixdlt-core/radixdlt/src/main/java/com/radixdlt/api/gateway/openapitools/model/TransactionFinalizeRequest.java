@@ -30,7 +30,7 @@ import java.util.Objects;
   TransactionFinalizeRequest.JSON_PROPERTY_SIGNATURE,
   TransactionFinalizeRequest.JSON_PROPERTY_SUBMIT
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-29T13:12:37.554814-06:00[America/Chicago]")
 public class TransactionFinalizeRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;

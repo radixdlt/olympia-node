@@ -28,9 +28,9 @@ import java.util.Objects;
   TransactionFinalizeRequestSignature.JSON_PROPERTY_PUBLIC_KEY,
   TransactionFinalizeRequestSignature.JSON_PROPERTY_BYTES
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-29T13:12:37.554814-06:00[America/Chicago]")
 public class TransactionFinalizeRequestSignature {
-  public static final String JSON_PROPERTY_PUBLIC_KEY = "publicKey";
+  public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
   private String publicKey;
 
   public static final String JSON_PROPERTY_BYTES = "bytes";
@@ -46,10 +46,10 @@ public class TransactionFinalizeRequestSignature {
    * Get publicKey
    * @return publicKey
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public String getPublicKey() {
     return publicKey;
@@ -57,7 +57,7 @@ public class TransactionFinalizeRequestSignature {
 
 
   @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPublicKey(String publicKey) {
     this.publicKey = publicKey;
   }
