@@ -120,6 +120,7 @@ import com.radixdlt.application.tokens.state.ResourceData;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
@@ -571,6 +572,7 @@ public final class CoreModelMapper {
 
 	public EngineConfiguration engineConfiguration(RERulesConfig config) {
 		return new EngineConfiguration()
+			.maximumValidatorFeeIncrease(ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE)
 			.feeTable(feeTable(config.getFeeTable()))
 			.reservedSymbols(config.getReservedSymbols().stream().toList())
 			.tokenSymbolPattern(config.getTokenSymbolPattern().pattern())

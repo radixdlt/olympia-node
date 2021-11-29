@@ -35,12 +35,13 @@ import java.util.Objects;
   EngineConfiguration.JSON_PROPERTY_MAXIMUM_TRANSACTIONS_PER_ROUND,
   EngineConfiguration.JSON_PROPERTY_VALIDATOR_FEE_INCREASE_DEBOUNCER_EPOCH_LENGTH,
   EngineConfiguration.JSON_PROPERTY_MAXIMUM_ROUNDS_PER_EPOCH,
+  EngineConfiguration.JSON_PROPERTY_MAXIMUM_VALIDATOR_FEE_INCREASE,
   EngineConfiguration.JSON_PROPERTY_MINIMUM_STAKE,
   EngineConfiguration.JSON_PROPERTY_REWARDS_PER_PROPOSAL,
   EngineConfiguration.JSON_PROPERTY_RESERVED_SYMBOLS,
   EngineConfiguration.JSON_PROPERTY_FEE_TABLE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T13:55:21.590683-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-28T23:21:12.755621-06:00[America/Chicago]")
 public class EngineConfiguration {
   public static final String JSON_PROPERTY_MAXIMUM_VALIDATORS = "maximum_validators";
   private Integer maximumValidators;
@@ -65,6 +66,9 @@ public class EngineConfiguration {
 
   public static final String JSON_PROPERTY_MAXIMUM_ROUNDS_PER_EPOCH = "maximum_rounds_per_epoch";
   private Long maximumRoundsPerEpoch;
+
+  public static final String JSON_PROPERTY_MAXIMUM_VALIDATOR_FEE_INCREASE = "maximum_validator_fee_increase";
+  private Integer maximumValidatorFeeIncrease;
 
   public static final String JSON_PROPERTY_MINIMUM_STAKE = "minimum_stake";
   private ResourceAmount minimumStake;
@@ -287,6 +291,32 @@ public class EngineConfiguration {
   }
 
 
+  public EngineConfiguration maximumValidatorFeeIncrease(Integer maximumValidatorFeeIncrease) {
+    this.maximumValidatorFeeIncrease = maximumValidatorFeeIncrease;
+    return this;
+  }
+
+   /**
+   * Get maximumValidatorFeeIncrease
+   * @return maximumValidatorFeeIncrease
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_MAXIMUM_VALIDATOR_FEE_INCREASE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Integer getMaximumValidatorFeeIncrease() {
+    return maximumValidatorFeeIncrease;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_MAXIMUM_VALIDATOR_FEE_INCREASE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMaximumValidatorFeeIncrease(Integer maximumValidatorFeeIncrease) {
+    this.maximumValidatorFeeIncrease = maximumValidatorFeeIncrease;
+  }
+
+
   public EngineConfiguration minimumStake(ResourceAmount minimumStake) {
     this.minimumStake = minimumStake;
     return this;
@@ -416,6 +446,7 @@ public class EngineConfiguration {
         Objects.equals(this.maximumTransactionsPerRound, engineConfiguration.maximumTransactionsPerRound) &&
         Objects.equals(this.validatorFeeIncreaseDebouncerEpochLength, engineConfiguration.validatorFeeIncreaseDebouncerEpochLength) &&
         Objects.equals(this.maximumRoundsPerEpoch, engineConfiguration.maximumRoundsPerEpoch) &&
+        Objects.equals(this.maximumValidatorFeeIncrease, engineConfiguration.maximumValidatorFeeIncrease) &&
         Objects.equals(this.minimumStake, engineConfiguration.minimumStake) &&
         Objects.equals(this.rewardsPerProposal, engineConfiguration.rewardsPerProposal) &&
         Objects.equals(this.reservedSymbols, engineConfiguration.reservedSymbols) &&
@@ -424,7 +455,7 @@ public class EngineConfiguration {
 
   @Override
   public int hashCode() {
-    return Objects.hash(maximumValidators, tokenSymbolPattern, unstakingDelayEpochLength, minimumCompletedProposalsPercentage, maximumTransactionSize, maximumTransactionsPerRound, validatorFeeIncreaseDebouncerEpochLength, maximumRoundsPerEpoch, minimumStake, rewardsPerProposal, reservedSymbols, feeTable);
+    return Objects.hash(maximumValidators, tokenSymbolPattern, unstakingDelayEpochLength, minimumCompletedProposalsPercentage, maximumTransactionSize, maximumTransactionsPerRound, validatorFeeIncreaseDebouncerEpochLength, maximumRoundsPerEpoch, maximumValidatorFeeIncrease, minimumStake, rewardsPerProposal, reservedSymbols, feeTable);
   }
 
   @Override
@@ -439,6 +470,7 @@ public class EngineConfiguration {
     sb.append("    maximumTransactionsPerRound: ").append(toIndentedString(maximumTransactionsPerRound)).append("\n");
     sb.append("    validatorFeeIncreaseDebouncerEpochLength: ").append(toIndentedString(validatorFeeIncreaseDebouncerEpochLength)).append("\n");
     sb.append("    maximumRoundsPerEpoch: ").append(toIndentedString(maximumRoundsPerEpoch)).append("\n");
+    sb.append("    maximumValidatorFeeIncrease: ").append(toIndentedString(maximumValidatorFeeIncrease)).append("\n");
     sb.append("    minimumStake: ").append(toIndentedString(minimumStake)).append("\n");
     sb.append("    rewardsPerProposal: ").append(toIndentedString(rewardsPerProposal)).append("\n");
     sb.append("    reservedSymbols: ").append(toIndentedString(reservedSymbols)).append("\n");
