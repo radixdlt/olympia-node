@@ -80,6 +80,8 @@ import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.ExceptionHandler;
 
 import javax.inject.Qualifier;
 import java.lang.annotation.Retention;
@@ -124,10 +126,19 @@ public class GatewayServerModule extends AbstractModule {
 		install(new TransactionApiModule(GatewayServer.class, "/transaction"));
 	}
 
+	private static class IntervalServerErrorExceptionHandler implements HttpHandler {
+		@Override
+		public void handleRequest(HttpServerExchange exchange) throws Exception {
+			var ex = exchange.getAttachment(ExceptionHandler.THROWABLE);
+			// TODO: Move this somewhere else
+			ex.printStackTrace();
+		}
+	}
+
 	@ProvidesIntoMap
 	@StringMapKey(Runners.GATEWAY_API)
 	@Singleton
 	public ModuleRunner gatewayHttpServer(@GatewayServer Map<HandlerRoute, HttpHandler> handlers) {
-		return new HttpServerRunner(handlers, null, port, bindAddress, "gateway");
+		return new HttpServerRunner(handlers, new IntervalServerErrorExceptionHandler(), port, bindAddress, "gateway");
 	}
 }

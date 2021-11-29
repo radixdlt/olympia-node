@@ -118,9 +118,11 @@ public abstract class JsonRpcHandler<T, U, X extends Exception, E> implements Ht
 		} catch (Exception e) {
 			if (exceptionClass.isInstance(e)) {
 				var errorResponse = handleException(exceptionClass.cast(e));
-				exchange.setStatusCode(500);
-				exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
-				return;
+				if (errorResponse != null) {
+					exchange.setStatusCode(500);
+					exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+					return;
+				}
 			}
 
 			throw e;

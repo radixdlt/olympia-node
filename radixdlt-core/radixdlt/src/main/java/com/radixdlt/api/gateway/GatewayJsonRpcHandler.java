@@ -73,11 +73,11 @@ public abstract class GatewayJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, E
 
 	@Override
 	public Object handleParseException(Exception e) {
-		return new Object();
+		return null;
 	}
 
 	@Override
 	public Object handleException(Exception e) {
-		return new Object();
+		return null;
 	}
 }
