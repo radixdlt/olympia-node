@@ -70,43 +70,38 @@ import com.radixdlt.api.core.core.model.Resource;
 import com.radixdlt.api.core.core.model.ResourceQuery;
 import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
 import com.radixdlt.api.core.core.model.SubstateWithdrawal;
-import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorFee;
-import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorOwner;
-import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorRegistered;
-import com.radixdlt.api.core.core.openapitools.model.ValidatorAllowDelegation;
-import com.radixdlt.api.core.core.openapitools.model.ValidatorMetadata;
-import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
-import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.application.validators.state.ValidatorFeeCopy;
-import com.radixdlt.application.validators.state.ValidatorMetaData;
-import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
+import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.state.ExitingStake;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.Bytes;
 
+import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.OptionalLong;
 import java.util.function.Supplier;
 
-import static com.radixdlt.atom.SubstateTypeId.*;
+import static com.radixdlt.atom.SubstateTypeId.EXITING_STAKE;
 
-public final class ValidatorEntity implements Entity {
+public final class ExitingStakeVaultEntity implements Entity {
+	private final REAddr accountAddress;
 	private final ECPublicKey validatorKey;
+	private final long epochUnlock;
 
-	private ValidatorEntity(ECPublicKey validatorKey) {
+	ExitingStakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey, long epochUnlock) {
+		this.accountAddress = accountAddress;
 		this.validatorKey = validatorKey;
+		this.epochUnlock = epochUnlock;
 	}
 
-	public static ValidatorEntity from(ECPublicKey validatorKey) {
-		return new ValidatorEntity(validatorKey);
+	public long getEpochUnlock() {
+		return epochUnlock;
+	}
+
+	public REAddr getAccountAddress() {
+		return accountAddress;
 	}
 
 	public ECPublicKey getValidatorKey() {
@@ -127,77 +122,31 @@ public final class ValidatorEntity implements Entity {
 	@Override
 	public void overwriteDataObject(
 		ParsedDataObject parsedDataObject,
-		TxBuilder builder,
+		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
 	) throws TxBuilderException {
-		var dataObject = parsedDataObject.getDataObject();
-		if (dataObject instanceof PreparedValidatorRegistered preparedValidatorRegistered) {
-			builder.down(ValidatorRegisteredCopy.class, validatorKey);
-			var curEpoch = builder.readSystem(EpochData.class);
-			builder.up(new ValidatorRegisteredCopy(
-				OptionalLong.of(curEpoch.getEpoch() + 1),
-				validatorKey,
-				preparedValidatorRegistered.getRegistered()
-			));
-		} else if (dataObject instanceof PreparedValidatorOwner) {
-			builder.down(ValidatorOwnerCopy.class, validatorKey);
-			var curEpoch = builder.readSystem(EpochData.class);
-			var owner = parsedDataObject.getParsed(REAddr.class);
-			builder.up(new ValidatorOwnerCopy(OptionalLong.of(curEpoch.getEpoch() + 1), validatorKey, owner));
-		} else if (dataObject instanceof PreparedValidatorFee preparedValidatorFee) {
-			builder.down(ValidatorFeeCopy.class, validatorKey);
-			var curRakePercentage = builder.read(ValidatorStakeData.class, validatorKey)
-				.getRakePercentage();
-			int validatorFee = preparedValidatorFee.getFee();
-			var isIncrease = validatorFee > curRakePercentage;
-			var rakeIncrease = validatorFee - curRakePercentage;
-			var maxRakeIncrease = ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE;
-			if (isIncrease && rakeIncrease >= maxRakeIncrease) {
-				throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
-			}
-
-			var rakeIncreaseDebounceEpochLength = config.get().getRakeIncreaseDebouncerEpochLength();
-			var epochDiff = isIncrease ? (1 + rakeIncreaseDebounceEpochLength) : 1;
-			var curEpoch = builder.readSystem(EpochData.class);
-			var epoch = curEpoch.getEpoch() + epochDiff;
-			builder.up(new ValidatorFeeCopy(OptionalLong.of(epoch), validatorKey, validatorFee));
-		} else if (dataObject instanceof ValidatorMetadata metadata) {
-			var substateDown = builder.down(ValidatorMetaData.class, validatorKey);
-			builder.up(new ValidatorMetaData(
-				validatorKey,
-				metadata.getName() == null ? substateDown.getName() : metadata.getName(),
-				metadata.getUrl() == null ? substateDown.getUrl() : metadata.getUrl()
-			));
-		} else if (dataObject instanceof ValidatorAllowDelegation allowDelegation) {
-			builder.down(AllowDelegationFlag.class, validatorKey);
-			builder.up(new AllowDelegationFlag(validatorKey, allowDelegation.getAllowDelegation()));
-		} else if (dataObject instanceof com.radixdlt.api.core.core.openapitools.model.ValidatorSystemMetadata metadata) {
-			builder.down(com.radixdlt.application.validators.state.ValidatorSystemMetadata.class, validatorKey);
-			builder.up(new com.radixdlt.application.validators.state.ValidatorSystemMetadata(
-				validatorKey,
-				Bytes.fromHexString(metadata.getData())
-			));
-		} else {
-			throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
-		}
+		throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
 	}
 
 	@Override
 	public List<ResourceQuery> getResourceQueries() {
-		return List.of();
+		var buf = ByteBuffer.allocate(2 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
+		buf.put(EXITING_STAKE.id());
+		buf.put((byte) 0); // Reserved byte
+		buf.putLong(epochUnlock);
+		buf.put(validatorKey.getCompressedBytes());
+		buf.put(accountAddress.getBytes());
+		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), ExitingStake.class);
+		return List.of(ResourceQuery.from(index));
 	}
 
 	@Override
 	public List<KeyQuery> getKeyQueries() {
-		return List.of(
-			KeyQuery.fromValidator(validatorKey, VALIDATOR_META_DATA, ValidatorMetaData::createVirtual),
-			KeyQuery.fromValidator(validatorKey, VALIDATOR_STAKE_DATA, ValidatorStakeData::createVirtual),
-			KeyQuery.fromValidator(validatorKey, VALIDATOR_BFT_DATA),
-			KeyQuery.fromValidator(validatorKey, VALIDATOR_ALLOW_DELEGATION_FLAG, AllowDelegationFlag::createVirtual),
-			KeyQuery.fromValidator(validatorKey, VALIDATOR_REGISTERED_FLAG_COPY, ValidatorRegisteredCopy::createVirtual),
-			KeyQuery.fromValidator(validatorKey, VALIDATOR_RAKE_COPY, ValidatorFeeCopy::createVirtual),
-			KeyQuery.fromValidator(validatorKey, VALIDATOR_OWNER_COPY, ValidatorOwnerCopy::createVirtual),
-			KeyQuery.fromValidator(validatorKey, VALIDATOR_SYSTEM_META_DATA, ValidatorSystemMetadata::createVirtual)
-		);
+		return List.of();
+	}
+
+
+	public static ExitingStakeVaultEntity from(REAddr accountAddress, ECPublicKey validatorKey, long epochUnlock) {
+		return new ExitingStakeVaultEntity(accountAddress, validatorKey, epochUnlock);
 	}
 }

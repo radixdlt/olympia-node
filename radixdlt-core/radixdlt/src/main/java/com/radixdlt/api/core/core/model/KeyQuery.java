@@ -67,6 +67,7 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -93,6 +94,16 @@ public class KeyQuery {
 
 	public SubstateTypeId getTypeId() {
 		return typeId;
+	}
+
+	public static KeyQuery fromToken(REAddr tokenAddress, SubstateTypeId typeId) {
+		var key = SystemMapKey.ofResourceData(tokenAddress, typeId.id());
+		return new KeyQuery(key, Optional::empty, typeId);
+	}
+
+	public static KeyQuery fromSystem(SubstateTypeId typeId) {
+		var key = SystemMapKey.ofSystem(typeId.id());
+		return new KeyQuery(key, Optional::empty, typeId);
 	}
 
 	public static KeyQuery fromValidator(ECPublicKey validatorKey, SubstateTypeId typeId, Function<ECPublicKey, Particle> virtualSubstate) {

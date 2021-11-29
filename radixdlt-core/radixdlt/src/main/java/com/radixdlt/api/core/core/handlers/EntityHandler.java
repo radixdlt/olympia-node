@@ -114,10 +114,16 @@ public class EntityHandler extends CoreJsonRpcHandler<EntityRequest, EntityRespo
 				.stateIdentifier(modelMapper.stateIdentifier(proof.getAccumulatorState()));
 
 			for (var resourceQuery : resourceQueries) {
-				var index = resourceQuery.getIndex();
-				var bucketPredicate = resourceQuery.getPredicate();
-				reader.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
-					.forEach((bucket, amount) -> response.addBalancesItem(modelMapper.resourceOperation(bucket, amount, addressToSymbol)));
+				resourceQuery.fold(
+					(index, bucketPredicate) ->
+						reader.reduceResources(index, ResourceInBucket::bucket, bucketPredicate)
+							.entrySet()
+							.stream()
+							.map(e -> modelMapper.resourceOperation(e.getKey(), e.getValue(), addressToSymbol)),
+					systemMapKey ->
+						reader.get(systemMapKey).map(ResourceInBucket.class::cast).stream()
+							.map(b -> modelMapper.resourceOperation(b, true, addressToSymbol))
+				).forEach(response::addBalancesItem);
 			}
 
 			for (var keyQuery : keyQueries) {

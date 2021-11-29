@@ -75,6 +75,7 @@ import com.radixdlt.api.core.core.openapitools.model.TokenMetadata;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -156,11 +157,14 @@ public final class TokenEntity implements Entity {
 
 	@Override
 	public List<ResourceQuery> getResourceQueries() {
-		throw new UnsupportedOperationException();
+		return List.of();
 	}
 
 	@Override
 	public List<KeyQuery> getKeyQueries() {
-		throw new UnsupportedOperationException();
+		return List.of(
+			KeyQuery.fromToken(tokenAddr, SubstateTypeId.TOKEN_RESOURCE),
+			KeyQuery.fromToken(tokenAddr, SubstateTypeId.TOKEN_RESOURCE_METADATA)
+		);
 	}
 }

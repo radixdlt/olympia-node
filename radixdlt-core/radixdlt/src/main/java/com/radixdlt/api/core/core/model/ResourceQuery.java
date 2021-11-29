@@ -65,31 +65,43 @@ package com.radixdlt.api.core.core.model;
 
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.constraintmachine.SystemMapKey;
 
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public final class ResourceQuery {
 	private final SubstateIndex<ResourceInBucket> index;
 	private final Predicate<ResourceInBucket> predicate;
+	private final SystemMapKey systemMapKey;
 
-	private ResourceQuery(SubstateIndex<ResourceInBucket> index, Predicate<ResourceInBucket> predicate) {
+	private ResourceQuery(SubstateIndex<ResourceInBucket> index, Predicate<ResourceInBucket> predicate, SystemMapKey systemMapKey) {
 		this.index = index;
 		this.predicate = predicate;
+		this.systemMapKey = systemMapKey;
 	}
 
-	public Predicate<ResourceInBucket> getPredicate() {
-		return predicate;
+	public <T> T fold(
+		BiFunction<SubstateIndex<ResourceInBucket>, Predicate<ResourceInBucket>, T> indexFunction,
+		Function<SystemMapKey, T> keyFunction
+	) {
+		if (index != null) {
+			return indexFunction.apply(index, predicate);
+		} else {
+			return keyFunction.apply(systemMapKey);
+		}
 	}
 
-	public SubstateIndex<ResourceInBucket> getIndex() {
-		return index;
+	public static ResourceQuery from(SystemMapKey systemMapKey) {
+		return new ResourceQuery(null, null, systemMapKey);
 	}
 
 	public static ResourceQuery from(SubstateIndex<ResourceInBucket> index) {
-		return new ResourceQuery(index, b -> true);
+		return new ResourceQuery(index, b -> true, null);
 	}
 
 	public static ResourceQuery from(SubstateIndex<ResourceInBucket> index, Predicate<ResourceInBucket> predicate) {
-		return new ResourceQuery(index, predicate);
+		return new ResourceQuery(index, predicate, null);
 	}
 }

@@ -76,7 +76,10 @@ import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.core.model.EntityOperation;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceDepositException;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceWithdrawException;
+import com.radixdlt.api.core.core.model.entities.ExitingStakeVaultEntity;
 import com.radixdlt.api.core.core.model.entities.InvalidDataObjectException;
+import com.radixdlt.api.core.core.model.entities.SystemEntity;
+import com.radixdlt.api.core.core.model.entities.ValidatorSystemEntity;
 import com.radixdlt.api.core.core.model.exceptions.BuildAboveMaxValidatorFeeIncreaseException;
 import com.radixdlt.api.core.core.model.exceptions.BuildBelowMinStakeException;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportDataObjectException;
@@ -274,12 +277,35 @@ public final class CoreModelMapper {
 
 	public Entity entity(EntityIdentifier entityIdentifier) throws CoreModelException {
 		var address = entityIdentifier.getAddress();
+		if (address.equals("system")) {
+			var subEntity = entityIdentifier.getSubEntity();
+			if (subEntity != null) {
+				throw new InvalidSubEntityException(subEntity);
+			}
+
+			return SystemEntity.instance();
+		}
+
 		var addressType = addressing.getAddressType(address).orElseThrow(() -> new InvalidAddressException(address));
 		switch (addressType) {
 			case VALIDATOR -> {
 				var key = addressing.forValidators().parseOrThrow(address, s -> new InvalidAddressException(address));
-				return ValidatorEntity.from(key);
-				// TODO: Add Validator System entity
+				var subEntity = entityIdentifier.getSubEntity();
+				if (subEntity == null) {
+					return ValidatorEntity.from(key);
+				}
+
+				var metadata = subEntity.getMetadata();
+				if (metadata != null) {
+					throw new InvalidSubEntityException(subEntity);
+				}
+
+				var subEntityAddress = subEntity.getAddress();
+				if (!subEntityAddress.equals("system")) {
+					throw new InvalidSubEntityException(subEntity);
+				}
+
+				return ValidatorSystemEntity.from(key);
 			}
 			case ACCOUNT -> {
 				var accountAddress = addressing.forAccounts().parseOrThrow(address, s -> new InvalidAddressException(address));
@@ -302,6 +328,11 @@ public final class CoreModelMapper {
 					case "prepared_unstake" -> PreparedUnstakeVaultEntity.from(
 						accountAddress,
 						validator
+					);
+					case "exiting_stake" -> ExitingStakeVaultEntity.from(
+						accountAddress,
+						validator,
+						metadata.getEpochUnlock()
 					);
 					default -> throw new InvalidSubEntityException(subEntity);
 				};
@@ -479,11 +510,28 @@ public final class CoreModelMapper {
 				);
 		} else if (entity instanceof ValidatorEntity validator) {
 			return entityIdentifier(validator.getValidatorKey());
+		} else if (entity instanceof ValidatorSystemEntity validatorSystem) {
+			return entityIdentifier(validatorSystem.getValidatorKey()).subEntity(new SubEntity().address("system"));
 		} else if (entity instanceof TokenEntity tokenEntity) {
 			return entityIdentifier(tokenEntity.getTokenAddr(), tokenEntity.getSymbol());
+		} else if (entity instanceof ExitingStakeVaultEntity exiting) {
+			return entityIdentifier(exiting.getAccountAddress(), exiting.getValidatorKey(), exiting.getEpochUnlock());
+		} else if (entity instanceof SystemEntity) {
+			return new EntityIdentifier().address("system");
 		} else {
 			throw new IllegalStateException("Unkown entity: " + entity);
 		}
+	}
+
+	public EntityIdentifier entityIdentifier(REAddr accountAddress, ECPublicKey validatorKey, long epochUnlock) {
+		return new EntityIdentifier().address(addressing.forAccounts().of(accountAddress))
+			.subEntity(new SubEntity()
+				.address("exiting_stake")
+				.metadata(new SubEntityMetadata()
+					.validator(addressing.forValidators().of(validatorKey))
+					.epochUnlock(epochUnlock)
+				)
+			);
 	}
 
 	public EntityIdentifier entityIdentifier(REAddr tokenAddress, String symbol) {
