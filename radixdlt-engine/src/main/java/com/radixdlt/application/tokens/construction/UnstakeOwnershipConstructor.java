@@ -65,6 +65,7 @@
 package com.radixdlt.application.tokens.construction;
 
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -93,7 +94,8 @@ public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwn
 		var change = txBuilder.downFungible(
 			index,
 			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
-			action.amount()
+			action.amount(),
+			available -> new NotEnoughResourcesException(action.amount(), available)
 		);
 		if (!change.isZero()) {
 			txBuilder.up(new StakeOwnership(action.from(), action.accountAddr(), change));

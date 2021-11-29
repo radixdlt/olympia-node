@@ -77,6 +77,7 @@ import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
+import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.REConstructor;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxnConstructionRequest;
@@ -232,7 +233,8 @@ public class TxnSizeFeeTest {
 			var remainder = txBuilder.downFungible(
 				index,
 				p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(accountAddr),
-				fee
+				fee,
+				available -> new NotEnoughResourcesException(fee, available)
 			);
 			txBuilder.toLowLevelBuilder().syscall(Syscall.FEE_RESERVE_PUT, fee.toByteArray());
 			if (!remainder.isZero()) {
@@ -262,7 +264,8 @@ public class TxnSizeFeeTest {
 			var remainder = txBuilder.downFungible(
 				index,
 				p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(accountAddr),
-				fee
+				fee,
+				available -> new NotEnoughResourcesException(fee, available)
 			);
 
 			var data = new byte[Short.BYTES + 1 + UInt256.BYTES + 1];

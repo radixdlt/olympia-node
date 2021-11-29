@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,52 +61,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.tokens.construction;
+package com.radixdlt.api.core.core.model.exceptions;
 
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.NotEnoughResourcesException;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.application.system.state.StakeOwnership;
-import com.radixdlt.application.system.state.ValidatorStakeData;
-import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.crypto.ECPublicKey;
+public class OverValidatorFeeIncreaseLimitException extends RawCoreTxBuilderException {
+	private final int maxRakeIncrease;
+	private final int increaseAttempt;
 
-import java.nio.ByteBuffer;
+	public OverValidatorFeeIncreaseLimitException(int maxRakeIncrease, int increaseAttempt) {
+		super("Max rake increase is " + maxRakeIncrease + " but trying to increase " + increaseAttempt);
+		this.maxRakeIncrease = maxRakeIncrease;
+		this.increaseAttempt = increaseAttempt;
+	}
 
-public class UnstakeTokensConstructorV2 implements ActionConstructor<UnstakeTokens> {
-	@Override
-	public void construct(UnstakeTokens action, TxBuilder txBuilder) throws TxBuilderException {
-		var validatorStake = txBuilder.find(ValidatorStakeData.class, action.from());
-		var ownershipAmt = action.amount()
-			.multiply(validatorStake.getTotalOwnership())
-			.divide(validatorStake.getAmount());
+	public int getMaxRakeIncrease() {
+		return maxRakeIncrease;
+	}
 
-		// TODO: construct this in substate definition
-		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES));
-		buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
-		buf.put((byte) 0);
-		buf.put(action.from().getCompressedBytes());
-		buf.put(action.accountAddr().getBytes());
-		if (buf.hasRemaining()) {
-			// Sanity
-			throw new IllegalStateException();
-		}
-
-		var index = SubstateIndex.create(buf.array(), StakeOwnership.class);
-		var change = txBuilder.downFungible(
-			index,
-			p -> p.getOwner().equals(action.accountAddr()) && p.getDelegateKey().equals(action.from()),
-			ownershipAmt,
-			available -> new NotEnoughResourcesException(action.amount(), available)
-		);
-		if (!change.isZero()) {
-			txBuilder.up(new StakeOwnership(action.from(), action.accountAddr(), change));
-		}
-		txBuilder.up(new PreparedUnstakeOwnership(action.from(), action.accountAddr(), ownershipAmt));
-		txBuilder.end();
+	public int getIncreaseAttempt() {
+		return increaseAttempt;
 	}
 }

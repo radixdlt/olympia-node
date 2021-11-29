@@ -72,12 +72,13 @@ import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
 import com.radixdlt.api.core.core.model.StakeOwnershipResource;
 import com.radixdlt.api.core.core.model.SubstateWithdrawal;
 import com.radixdlt.api.core.core.model.TokenResource;
+import com.radixdlt.api.core.core.model.exceptions.RawCoreTxBuilderException;
+import com.radixdlt.api.core.core.model.exceptions.EntityDoesNotSupportOperationException;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
@@ -92,7 +93,7 @@ import java.util.function.Supplier;
 import static com.radixdlt.atom.SubstateTypeId.STAKE_OWNERSHIP;
 import static com.radixdlt.atom.SubstateTypeId.TOKENS;
 
-public class AccountVaultEntity implements Entity {
+public final class AccountVaultEntity implements Entity {
 	private final REAddr accountAddress;
 
 	private AccountVaultEntity(REAddr accountAddress) {
@@ -112,13 +113,13 @@ public class AccountVaultEntity implements Entity {
 		} else if (amount.getResource() instanceof StakeOwnershipResource stakeOwnershipResource) {
 			substate = new StakeOwnership(stakeOwnershipResource.getValidatorKey(), accountAddress, amount.getAmount());
 		} else {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Unknown resource type " + amount.getResource());
 		}
 		txBuilder.up(substate);
 	}
 
 	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
+	public SubstateWithdrawal withdraw(Resource resource) {
 		if (resource instanceof TokenResource tokenResource) {
 			var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
 			buf.put(SubstateTypeId.TOKENS.id());
@@ -156,8 +157,8 @@ public class AccountVaultEntity implements Entity {
 		ParsedDataObject parsedDataObject,
 		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
-	) {
-		throw new IllegalStateException();
+	) throws RawCoreTxBuilderException {
+		throw new EntityDoesNotSupportOperationException("Cannot store data objects in account entity");
 	}
 
 	@Override

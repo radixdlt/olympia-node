@@ -349,7 +349,7 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends Particle> T readSystem(Class<T> substateClass) throws TxBuilderException {
+	public <T extends Particle> T readSystem(Class<T> substateClass) {
 		var typeByte = deserialization.classToByte(substateClass);
 		var mapKey = SystemMapKey.ofSystem(typeByte);
 		var localMaybe = lowLevelBuilder.get(mapKey);
@@ -472,11 +472,12 @@ public final class TxBuilder {
 		}
 	}
 
-	public <T extends ResourceInBucket> UInt256 downFungible(
+	public <T extends ResourceInBucket, X extends Exception> UInt256 downFungible(
 		SubstateIndex<T> index,
 		Predicate<T> particlePredicate,
-		UInt256 amount
-	) throws NotEnoughResourcesException {
+		UInt256 amount,
+		Function<UInt256, X> exceptionSupplier
+	) throws X {
 		var spent = UInt256.ZERO;
 		for (var l : lowLevelBuilder.localUpSubstate()) {
 			var p = l.getParticle();
@@ -513,17 +514,18 @@ public final class TxBuilder {
 			}
 		}
 
-		throw new NotEnoughResourcesException(amount, spent);
+		throw exceptionSupplier.apply(spent);
 	}
 
 	public UInt256 getFeeReserve() {
 		return feeReservePut;
 	}
 
-	public <T extends ResourceInBucket> void putFeeReserve(
+	public <T extends ResourceInBucket, X extends Exception> void putFeeReserve(
 		REAddr feePayer,
-		UInt256 amount
-	) throws NotEnoughResourcesException {
+		UInt256 amount,
+		Function<UInt256, X> exceptionSupplier
+	) throws X {
 		var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
 		buf.put(SubstateTypeId.TOKENS.id());
 		buf.put((byte) 0);
@@ -533,7 +535,8 @@ public final class TxBuilder {
 		var remainder = downFungible(
 			index,
 			p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(feePayer),
-			amount
+			amount,
+			exceptionSupplier
 		);
 		lowLevelBuilder.syscall(Syscall.FEE_RESERVE_PUT, amount);
 		if (!remainder.isZero()) {
@@ -553,7 +556,7 @@ public final class TxBuilder {
 		this.feeReserveTake = this.feeReserveTake.add(amount);
 	}
 
-	public TxBuilder mutex(ECPublicKey key, String id) throws TxBuilderException {
+	public TxBuilder mutex(ECPublicKey key, String id) {
 		final var addr = REAddr.ofHashedKey(key, id);
 
 		lowLevelBuilder.syscall(Syscall.READDR_CLAIM, id.getBytes(StandardCharsets.UTF_8));

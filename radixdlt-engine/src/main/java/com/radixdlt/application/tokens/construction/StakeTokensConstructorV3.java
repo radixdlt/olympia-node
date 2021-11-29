@@ -65,6 +65,7 @@
 package com.radixdlt.application.tokens.construction;
 
 import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
@@ -104,7 +105,8 @@ public class StakeTokensConstructorV3 implements ActionConstructor<StakeTokens> 
 			index,
 			p -> p.getResourceAddr().isNativeToken()
 				&& p.getHoldingAddr().equals(action.from()),
-			action.amount()
+			action.amount(),
+			available -> new NotEnoughResourcesException(action.amount(), available)
 		);
 		if (!change.isZero()) {
 			builder.up(new TokensInAccount(action.from(), REAddr.ofNativeToken(), change));

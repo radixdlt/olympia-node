@@ -71,11 +71,12 @@ import com.radixdlt.api.core.core.model.ResourceQuery;
 import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
 import com.radixdlt.api.core.core.model.StakeOwnershipResource;
 import com.radixdlt.api.core.core.model.SubstateWithdrawal;
+import com.radixdlt.api.core.core.model.exceptions.RawCoreTxBuilderException;
+import com.radixdlt.api.core.core.model.exceptions.EntityDoesNotSupportOperationException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidResourceIdentifierException;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -97,7 +98,8 @@ public final class PreparedUnstakeVaultEntity implements Entity {
 	}
 
 	@Override
-	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config) throws TxBuilderException {
+	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
+		throws RawCoreTxBuilderException {
 		if (!(amount.getResource() instanceof StakeOwnershipResource stakeOwnershipResource)) {
 			throw new InvalidResourceIdentifierException("Can only store validator ownership in prepared_unstake address");
 		}
@@ -107,8 +109,8 @@ public final class PreparedUnstakeVaultEntity implements Entity {
 	}
 
 	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
-		throw new IllegalStateException();
+	public SubstateWithdrawal withdraw(Resource resource) throws EntityDoesNotSupportOperationException {
+		throw new EntityDoesNotSupportOperationException("Cannot withdraw from PreparedUnstakeVault Entity");
 	}
 
 	@Override
@@ -116,8 +118,8 @@ public final class PreparedUnstakeVaultEntity implements Entity {
 		ParsedDataObject dataObject,
 		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
-	) {
-		throw new IllegalStateException();
+	) throws RawCoreTxBuilderException {
+		throw new EntityDoesNotSupportOperationException("Cannot store data objects in prepared unstake vault entity");
 	}
 
 	@Override

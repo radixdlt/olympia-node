@@ -63,9 +63,7 @@
 
 package com.radixdlt.api.core.core.model.exceptions;
 
-import com.radixdlt.atom.TxBuilderException;
-
-public class InvalidResourceIdentifierException extends TxBuilderException {
+public class InvalidResourceIdentifierException extends RawCoreTxBuilderException {
 	public InvalidResourceIdentifierException(String message) {
 		super(message);
 	}
