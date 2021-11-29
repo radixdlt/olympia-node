@@ -1,18 +1,9 @@
 package com.radixdlt.store.tree;
 
-import java.nio.ByteBuffer;
-
 public class PMTLeaf extends PMTNode {
 
 	private static final int EVEN_PREFIX = 2;
 	private static final int ODD_PREFIX = 3;
-	private byte[] prefixedKey;
-	byte[] getEvenPrefix() {
-		return ByteBuffer.allocate(8).putInt(EVEN_PREFIX).array();
-	}
-	byte[] getOddPrefix() {
-		return ByteBuffer.allocate(4).putInt(ODD_PREFIX).array();
-	}
 
 	PMTLeaf(PMTKey allNibbles, byte[] newValue) {
 		this(null, allNibbles, newValue);
@@ -29,7 +20,7 @@ public class PMTLeaf extends PMTNode {
 		// INFO: leaf can have empty key. It's because value may not fit branches' hash pointer field
 
 		// XXX TODO: this is probably wrong on bit level?!
-		this.prefixedKey = TreeUtils.applyPrefix(this.getKey().getKey(), getOddPrefix(), getEvenPrefix());
+		var prefixedKey = TreeUtils.applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
 		// TODO: serialize, RLP?
 		this.serialized = "leaf".getBytes();
 		return this.serialized;

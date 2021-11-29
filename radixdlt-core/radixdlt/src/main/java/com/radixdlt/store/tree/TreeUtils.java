@@ -1,5 +1,7 @@
 package com.radixdlt.store.tree;
 
+import org.bouncycastle.util.Arrays;
+
 import java.nio.ByteBuffer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -24,45 +26,14 @@ public class TreeUtils {
 			.collect(Collectors.joining());
 	}
 
-	static final int EVEN_SIZE = 8;
-	static final int ODD_SIZE = 4;
-
-	public static byte[] applyPrefix(byte[] rawKey, byte[] oddPrefix, byte[] evenPrefix) {
+	public static byte[] applyPrefix(byte[] rawKey, int oddPrefix, int evenPrefix) {
 		var keyLength = rawKey.length;
-		byte[] prefixed;
 		if (keyLength % 2 == 0) {
-			ByteBuffer bb = ByteBuffer.allocate(1 + keyLength);
-			bb.put(evenPrefix);
-			bb.put(rawKey);
-			prefixed = bb.array();
+			return Arrays.concatenate(new byte[] {(byte) evenPrefix, 0}, rawKey);
 		} else {
-			ByteBuffer bb = ByteBuffer.allocate(1 + keyLength);
-			bb.put(oddPrefix);
-			bb.put(rawKey);
-			prefixed = bb.array();
+			return Arrays.concatenate(new byte[] {(byte) oddPrefix}, rawKey);
 		}
-		return prefixed;
 	}
-/*
-	public static byte[] applyPrefix(byte[] rawKey, byte[] oddPrefix, byte[] evenPrefix) {
-		var keyLength = rawKey.length;
-		byte[] prefixed;
-		if (keyLength % 8 == 0) {
-			ByteBuffer bb = ByteBuffer.allocate(EVEN_SIZE + keyLength);
-			bb.put(evenPrefix);
-			bb.put(rawKey);
-			prefixed = bb.array();
-		} else if (keyLength % 4 == 0) {
-			ByteBuffer bb = ByteBuffer.allocate(ODD_SIZE + keyLength);
-			bb.put(oddPrefix);
-			bb.put(rawKey);
-			prefixed = bb.array();
-		} else {
-			throw new IllegalArgumentException("Key length must be divisible by 4");
-		}
-		return prefixed;
-	}
-*/
 	public static Integer nibbleToInteger(byte[] nibble) {
 		return ByteBuffer.wrap(nibble).getInt();
 	}
