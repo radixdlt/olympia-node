@@ -22,75 +22,75 @@ import java.util.Objects;
 
 
 /**
- * EntityIdentifier
+ * EntitySetOperation
  */
 @JsonPropertyOrder({
-  EntityIdentifier.JSON_PROPERTY_ADDRESS,
-  EntityIdentifier.JSON_PROPERTY_SUB_ENTITY
+  EntitySetOperation.JSON_PROPERTY_ENTITY_SET_IDENTIFIER,
+  EntitySetOperation.JSON_PROPERTY_DATA
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-29T11:26:14.957491-06:00[America/Chicago]")
-public class EntityIdentifier {
-  public static final String JSON_PROPERTY_ADDRESS = "address";
-  private String address;
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-29T11:45:19.523953-06:00[America/Chicago]")
+public class EntitySetOperation {
+  public static final String JSON_PROPERTY_ENTITY_SET_IDENTIFIER = "entity_set_identifier";
+  private EntitySetIdentifier entitySetIdentifier;
 
-  public static final String JSON_PROPERTY_SUB_ENTITY = "sub_entity";
-  private SubEntity subEntity;
+  public static final String JSON_PROPERTY_DATA = "data";
+  private Data data;
 
 
-  public EntityIdentifier address(String address) {
-    this.address = address;
+  public EntitySetOperation entitySetIdentifier(EntitySetIdentifier entitySetIdentifier) {
+    this.entitySetIdentifier = entitySetIdentifier;
     return this;
   }
 
    /**
-   * The top level identifier for an entity.
-   * @return address
+   * Get entitySetIdentifier
+   * @return entitySetIdentifier
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The top level identifier for an entity.")
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ENTITY_SET_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getAddress() {
-    return address;
+  public EntitySetIdentifier getEntitySetIdentifier() {
+    return entitySetIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_ENTITY_SET_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAddress(String address) {
-    this.address = address;
+  public void setEntitySetIdentifier(EntitySetIdentifier entitySetIdentifier) {
+    this.entitySetIdentifier = entitySetIdentifier;
   }
 
 
-  public EntityIdentifier subEntity(SubEntity subEntity) {
-    this.subEntity = subEntity;
+  public EntitySetOperation data(Data data) {
+    this.data = data;
     return this;
   }
 
    /**
-   * Get subEntity
-   * @return subEntity
+   * Get data
+   * @return data
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_SUB_ENTITY)
+  @JsonProperty(JSON_PROPERTY_DATA)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public SubEntity getSubEntity() {
-    return subEntity;
+  public Data getData() {
+    return data;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SUB_ENTITY)
+  @JsonProperty(JSON_PROPERTY_DATA)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setSubEntity(SubEntity subEntity) {
-    this.subEntity = subEntity;
+  public void setData(Data data) {
+    this.data = data;
   }
 
 
   /**
-   * Return true if this EntityIdentifier object is equal to o.
+   * Return true if this EntitySetOperation object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -100,22 +100,22 @@ public class EntityIdentifier {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EntityIdentifier entityIdentifier = (EntityIdentifier) o;
-    return Objects.equals(this.address, entityIdentifier.address) &&
-        Objects.equals(this.subEntity, entityIdentifier.subEntity);
+    EntitySetOperation entitySetOperation = (EntitySetOperation) o;
+    return Objects.equals(this.entitySetIdentifier, entitySetOperation.entitySetIdentifier) &&
+        Objects.equals(this.data, entitySetOperation.data);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(address, subEntity);
+    return Objects.hash(entitySetIdentifier, data);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EntityIdentifier {\n");
-    sb.append("    address: ").append(toIndentedString(address)).append("\n");
-    sb.append("    subEntity: ").append(toIndentedString(subEntity)).append("\n");
+    sb.append("class EntitySetOperation {\n");
+    sb.append("    entitySetIdentifier: ").append(toIndentedString(entitySetIdentifier)).append("\n");
+    sb.append("    data: ").append(toIndentedString(data)).append("\n");
     sb.append("}");
     return sb.toString();
   }

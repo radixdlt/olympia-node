@@ -88,7 +88,7 @@ public final class SubstateTypeMapping {
 	private static final Map<SubstateTypeId, Pair<OperationType, String>> SUBSTATE_TYPE_ID_STRING_MAP;
 	static {
 		SUBSTATE_TYPE_ID_STRING_MAP = new EnumMap<>(SubstateTypeId.class);
-		SUBSTATE_TYPE_ID_STRING_MAP.put(VIRTUAL_PARENT, Pair.of(DATA, "VirtualParent"));
+		SUBSTATE_TYPE_ID_STRING_MAP.put(VIRTUAL_PARENT, Pair.of(DATA, "VirtualParentData"));
 		SUBSTATE_TYPE_ID_STRING_MAP.put(UNCLAIMED_READDR, Pair.of(DATA, "UnclaimedRadixEngineAddress"));
 		SUBSTATE_TYPE_ID_STRING_MAP.put(ROUND_DATA, Pair.of(DATA, "RoundData"));
 		SUBSTATE_TYPE_ID_STRING_MAP.put(EPOCH_DATA, Pair.of(DATA, "EpochData"));

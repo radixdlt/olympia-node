@@ -22,75 +22,45 @@ import java.util.Objects;
 
 
 /**
- * EntityIdentifier
+ * EntitySetIdentifier
  */
 @JsonPropertyOrder({
-  EntityIdentifier.JSON_PROPERTY_ADDRESS,
-  EntityIdentifier.JSON_PROPERTY_SUB_ENTITY
+  EntitySetIdentifier.JSON_PROPERTY_ADDRESS_REGEX
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-29T11:26:14.957491-06:00[America/Chicago]")
-public class EntityIdentifier {
-  public static final String JSON_PROPERTY_ADDRESS = "address";
-  private String address;
-
-  public static final String JSON_PROPERTY_SUB_ENTITY = "sub_entity";
-  private SubEntity subEntity;
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-29T11:29:46.828712-06:00[America/Chicago]")
+public class EntitySetIdentifier {
+  public static final String JSON_PROPERTY_ADDRESS_REGEX = "address_regex";
+  private String addressRegex;
 
 
-  public EntityIdentifier address(String address) {
-    this.address = address;
+  public EntitySetIdentifier addressRegex(String addressRegex) {
+    this.addressRegex = addressRegex;
     return this;
   }
 
    /**
-   * The top level identifier for an entity.
-   * @return address
+   * Get addressRegex
+   * @return addressRegex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The top level identifier for an entity.")
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ADDRESS_REGEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getAddress() {
-    return address;
+  public String getAddressRegex() {
+    return addressRegex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_ADDRESS_REGEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAddress(String address) {
-    this.address = address;
-  }
-
-
-  public EntityIdentifier subEntity(SubEntity subEntity) {
-    this.subEntity = subEntity;
-    return this;
-  }
-
-   /**
-   * Get subEntity
-   * @return subEntity
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_SUB_ENTITY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public SubEntity getSubEntity() {
-    return subEntity;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SUB_ENTITY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setSubEntity(SubEntity subEntity) {
-    this.subEntity = subEntity;
+  public void setAddressRegex(String addressRegex) {
+    this.addressRegex = addressRegex;
   }
 
 
   /**
-   * Return true if this EntityIdentifier object is equal to o.
+   * Return true if this EntitySetIdentifier object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -100,22 +70,20 @@ public class EntityIdentifier {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EntityIdentifier entityIdentifier = (EntityIdentifier) o;
-    return Objects.equals(this.address, entityIdentifier.address) &&
-        Objects.equals(this.subEntity, entityIdentifier.subEntity);
+    EntitySetIdentifier entitySetIdentifier = (EntitySetIdentifier) o;
+    return Objects.equals(this.addressRegex, entitySetIdentifier.addressRegex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(address, subEntity);
+    return Objects.hash(addressRegex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EntityIdentifier {\n");
-    sb.append("    address: ").append(toIndentedString(address)).append("\n");
-    sb.append("    subEntity: ").append(toIndentedString(subEntity)).append("\n");
+    sb.append("class EntitySetIdentifier {\n");
+    sb.append("    addressRegex: ").append(toIndentedString(addressRegex)).append("\n");
     sb.append("}");
     return sb.toString();
   }

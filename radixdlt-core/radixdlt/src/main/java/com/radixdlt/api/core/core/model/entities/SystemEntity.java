@@ -109,8 +109,16 @@ public final class SystemEntity implements Entity {
 	@Override
 	public List<KeyQuery> getKeyQueries() {
 		return List.of(
+			KeyQuery.fromSystem(UNCLAIMED_READDR),
 			KeyQuery.fromSystem(EPOCH_DATA),
-			KeyQuery.fromSystem(ROUND_DATA)
+			KeyQuery.fromSystem(ROUND_DATA),
+			KeyQuery.fromSystem(VALIDATOR_META_DATA),
+			KeyQuery.fromSystem(VALIDATOR_STAKE_DATA),
+			KeyQuery.fromSystem(VALIDATOR_ALLOW_DELEGATION_FLAG),
+			KeyQuery.fromSystem(VALIDATOR_REGISTERED_FLAG_COPY),
+			KeyQuery.fromSystem(VALIDATOR_RAKE_COPY),
+			KeyQuery.fromSystem(VALIDATOR_OWNER_COPY),
+			KeyQuery.fromSystem(VALIDATOR_SYSTEM_META_DATA)
 		);
 	}
 

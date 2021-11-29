@@ -159,6 +159,7 @@ import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
@@ -170,6 +171,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public final class CoreModelMapper {
+	private static final ECPublicKey MOCK_PUBLIC_KEY = PrivateKeys.ofNumeric(1).getPublicKey();
 	private final Addressing addressing;
 	private final Network network;
 	private final Forks forks;
@@ -742,17 +744,42 @@ public final class CoreModelMapper {
 			.type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_STAKE_DATA));
 	}
 
-	public DataObject unclaimedREAddr(UnclaimedREAddr unclaimedREAddr) {
+	public DataObject unclaimedREAddrData() {
 		var data = new UnclaimedRadixEngineAddressData();
 		return data.type(SubstateTypeMapping.getName(SubstateTypeId.UNCLAIMED_READDR));
 	}
 
+	private EntitySetIdentifier validatorsEntitySetIdentifier() {
+		var regex = addressing.forValidators().getHrp() + "1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,90}";
+		return new EntitySetIdentifier().addressRegex(regex);
+	}
+
+	private EntitySetIdentifier tokensEntitySetIdentifier() {
+		var regex = "[a-z0-9]+" + addressing.forResources().getHrpSuffix() + "1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,90}";
+		return new EntitySetIdentifier().addressRegex(regex);
+	}
 
 	public DataObject virtualParent(VirtualParent virtualParent) {
 		var virtualParentData = new VirtualParentData();
 		var childType = SubstateTypeId.valueOf(virtualParent.getData()[0]);
+		var virtualDataObject = switch (childType) {
+			case UNCLAIMED_READDR -> unclaimedREAddrData();
+			case VALIDATOR_META_DATA -> validatorMetadata(ValidatorMetaData.createVirtual(MOCK_PUBLIC_KEY));
+			case VALIDATOR_STAKE_DATA -> validatorStakeData(ValidatorStakeData.createVirtual(MOCK_PUBLIC_KEY));
+			case VALIDATOR_ALLOW_DELEGATION_FLAG -> allowDelegationFlag(AllowDelegationFlag.createVirtual(MOCK_PUBLIC_KEY));
+			case VALIDATOR_REGISTERED_FLAG_COPY -> preparedValidatorRegistered(ValidatorRegisteredCopy.createVirtual(MOCK_PUBLIC_KEY));
+			case VALIDATOR_RAKE_COPY -> preparedValidatorFee(ValidatorFeeCopy.createVirtual(MOCK_PUBLIC_KEY));
+			case VALIDATOR_OWNER_COPY -> preparedValidatorOwner(ValidatorOwnerCopy.createVirtual(MOCK_PUBLIC_KEY));
+			case VALIDATOR_SYSTEM_META_DATA -> validatorSystemMetadata(ValidatorSystemMetadata.createVirtual(MOCK_PUBLIC_KEY));
+			default -> throw new IllegalStateException("Virtualization of " + childType + " unsupported");
+		};
+
+		var entitySetIdentifier = childType == SubstateTypeId.UNCLAIMED_READDR
+			? tokensEntitySetIdentifier() : validatorsEntitySetIdentifier();
+
 		return virtualParentData
-			.childType(SubstateTypeMapping.getName(childType))
+			.entitySetIdentifier(entitySetIdentifier)
+			.virtualDataObject(virtualDataObject)
 			.type(SubstateTypeMapping.getName(SubstateTypeId.VIRTUAL_PARENT));
 	}
 
@@ -782,8 +809,10 @@ public final class CoreModelMapper {
 			dataObject = validatorSystemMetadata(validatorSystemMetadata);
 		} else if (substate instanceof ValidatorStakeData validatorStakeData) {
 			dataObject = validatorStakeData(validatorStakeData);
-		} else if (substate instanceof UnclaimedREAddr unclaimedREAddr) {
-			dataObject = unclaimedREAddr(unclaimedREAddr);
+		} else if (substate instanceof UnclaimedREAddr) {
+			dataObject = unclaimedREAddrData();
+		} else if (substate instanceof VirtualParent virtualParent) {
+			dataObject = virtualParent(virtualParent);
 		} else {
 			return Optional.empty();
 		}

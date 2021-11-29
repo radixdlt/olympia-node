@@ -2267,6 +2267,7 @@ components:
         - maximum_transactions_per_round
         - validator_fee_increase_debouncer_epoch_length
         - maximum_rounds_per_epoch
+        - maximum_validator_fee_increase
         - minimum_stake
         - rewards_per_proposal
         - reserved_symbols
@@ -2292,6 +2293,8 @@ components:
         maximum_rounds_per_epoch:
           type: integer
           format: int64
+        maximum_validator_fee_increase:
+          type: integer
         minimum_stake:
           "$ref": "#/components/schemas/ResourceAmount"
         rewards_per_proposal:
@@ -2523,7 +2526,7 @@ components:
       discriminator:
         propertyName: type
         mapping:
-          VirtualParent: "#/components/schemas/VirtualParentData"
+          VirtualParentData: "#/components/schemas/VirtualParentData"
           UnclaimedRadixEngineAddress: "#/components/schemas/UnclaimedRadixEngineAddressData"
           RoundData: "#/components/schemas/RoundData"
           EpochData: "#/components/schemas/EpochData"
@@ -2580,16 +2583,25 @@ components:
             icon_url:
               description: A url which points to the icon of the token.
               type: string
+    EntitySetIdentifier:
+      type: object
+      required:
+        - address_regex
+      properties:
+        address_regex:
+          type: string
     VirtualParentData:
       allOf:
         - "$ref": "#/components/schemas/DataObject"
         - type: object
           required:
-            - child_type
+            - entity_set_identifier
+            - virtual_data_object
           properties:
-            child_type:
-              description: The type of the children under this parent
-              type: string
+            entity_set_identifier:
+              $ref: "#/components/schemas/EntitySetIdentifier"
+            virtual_data_object:
+              $ref: "#/components/schemas/DataObject"
     UnclaimedRadixEngineAddressData:
       allOf:
         - "$ref": "#/components/schemas/DataObject"
