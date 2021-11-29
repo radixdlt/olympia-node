@@ -75,10 +75,10 @@ import com.radixdlt.api.core.core.model.EntityOperation;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceDepositException;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceWithdrawException;
 import com.radixdlt.api.core.core.model.entities.InvalidDataObjectException;
-import com.radixdlt.api.core.core.model.exceptions.AboveMaximumValidatorFeeIncreaseException;
-import com.radixdlt.api.core.core.model.exceptions.BelowMinimumStakeException;
+import com.radixdlt.api.core.core.model.exceptions.BuildAboveMaxValidatorFeeIncreaseException;
+import com.radixdlt.api.core.core.model.exceptions.BuildBelowMinStakeException;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportDataObjectException;
-import com.radixdlt.api.core.core.model.exceptions.DataObjectNotSupportedByEntityException;
+import com.radixdlt.api.core.core.model.exceptions.BuildDataObjectNotSupportedByEntityException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidAddressException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidFeePayerEntityException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidHexException;
@@ -95,9 +95,11 @@ import com.radixdlt.api.core.core.model.entities.TokenEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorEntity;
 import com.radixdlt.api.core.core.model.exceptions.InvalidTransactionHashException;
 import com.radixdlt.api.core.core.model.exceptions.NetworkNotSupportedException;
-import com.radixdlt.api.core.core.model.exceptions.NotValidatorOwnerException;
-import com.radixdlt.api.core.core.model.exceptions.ResourceDepositNotSupportedByEntityException;
-import com.radixdlt.api.core.core.model.exceptions.ResourceWithdrawNotSupportedByEntityException;
+import com.radixdlt.api.core.core.model.exceptions.BuildNotValidatorOwnerException;
+import com.radixdlt.api.core.core.model.exceptions.BuildDepositNotSupportedByEntityException;
+import com.radixdlt.api.core.core.model.exceptions.BuildWithdrawNotSupportedByEntityException;
+import com.radixdlt.api.core.core.model.exceptions.BuildMessageTooLongException;
+import com.radixdlt.api.core.core.model.exceptions.BuildFeeException;
 import com.radixdlt.api.core.core.openapitools.model.*;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
@@ -121,6 +123,7 @@ import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.application.validators.state.ValidatorUpdatingData;
+import com.radixdlt.atom.MessageTooLongException;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilderException;
@@ -133,6 +136,7 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
@@ -230,12 +234,12 @@ public final class CoreModelMapper {
 
 	public CoreModelException coreModelException(TxBuilderException e) {
 		if (e instanceof MinimumStakeException minimumStakeException) {
-			return new BelowMinimumStakeException(
+			return new BuildBelowMinStakeException(
 				nativeTokenAmount(minimumStakeException.getMinimumStake()),
 				nativeTokenAmount(minimumStakeException.getAttempt())
 			);
 		} else if (e instanceof DelegateStakePermissionException delegateException) {
-			return new NotValidatorOwnerException(
+			return new BuildNotValidatorOwnerException(
 				entityIdentifier(delegateException.getOwner()),
 				entityIdentifier(delegateException.getUser())
 			);
@@ -245,25 +249,31 @@ public final class CoreModelMapper {
 				invalidDataObjectException.getMessage()
 			);
 		} else if (e instanceof InvalidRakeIncreaseException rakeIncreaseException) {
-			return new AboveMaximumValidatorFeeIncreaseException(
+			return new BuildAboveMaxValidatorFeeIncreaseException(
 				rakeIncreaseException.getMaxRakeIncrease(),
 				rakeIncreaseException.getIncreaseAttempt()
 			);
 		} else if (e instanceof EntityDoesNotSupportDataObjectException dataObjectException) {
-			return new DataObjectNotSupportedByEntityException(
+			return new BuildDataObjectNotSupportedByEntityException(
 				dataObjectException.getDataObject().getDataObject(),
 				entityIdentifier(dataObjectException.getEntity())
 			);
 		} else if (e instanceof EntityDoesNotSupportResourceDepositException depositException) {
-			return new ResourceDepositNotSupportedByEntityException(
+			return new BuildDepositNotSupportedByEntityException(
 				resourceIdentifier(depositException.getResource()),
 				entityIdentifier(depositException.getEntity())
 			);
 		} else if (e instanceof EntityDoesNotSupportResourceWithdrawException withdrawException) {
-			return new ResourceWithdrawNotSupportedByEntityException(
+			return new BuildWithdrawNotSupportedByEntityException(
 				resourceIdentifier(withdrawException.getResource()),
 				entityIdentifier(withdrawException.getEntity())
 			);
+		} else if (e instanceof MessageTooLongException messageTooLongException) {
+			return new BuildMessageTooLongException(
+				255, messageTooLongException.getAttemptedLength()
+			);
+		} else if (e instanceof FeeConstructionException feeConstructionException) {
+			return new BuildFeeException(feeConstructionException.getAttempts());
 		}
 
 		throw new IllegalStateException(e);

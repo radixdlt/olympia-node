@@ -67,14 +67,14 @@ import com.radixdlt.api.core.core.CoreModelError;
 import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.ResourceDepositOperationNotSupportedByEntityErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.ResourceIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.ResourceWithdrawOperationNotSupportedByEntityErrorDetails;
 
-public final class ResourceDepositNotSupportedByEntityException extends CoreModelException {
+public final class BuildWithdrawNotSupportedByEntityException extends CoreModelException {
 	private final ResourceIdentifier resourceIdentifier;
 	private final EntityIdentifier entityIdentifier;
 
-	public ResourceDepositNotSupportedByEntityException(
+	public BuildWithdrawNotSupportedByEntityException(
 		ResourceIdentifier resourceIdentifier, EntityIdentifier entityIdentifier
 	) {
 		super(CoreModelError.BAD_REQUEST);
@@ -85,9 +85,9 @@ public final class ResourceDepositNotSupportedByEntityException extends CoreMode
 
 	@Override
 	public ErrorDetails getErrorDetails() {
-		return new ResourceDepositOperationNotSupportedByEntityErrorDetails()
-			.resourceDepositNotSupported(resourceIdentifier)
+		return new ResourceWithdrawOperationNotSupportedByEntityErrorDetails()
+			.resourceWithdrawNotSupported(resourceIdentifier)
 			.entityIdentifier(entityIdentifier)
-			.type(ResourceDepositOperationNotSupportedByEntityErrorDetails.class.getSimpleName());
+			.type(ResourceWithdrawOperationNotSupportedByEntityErrorDetails.class.getSimpleName());
 	}
 }

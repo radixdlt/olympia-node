@@ -65,25 +65,22 @@ package com.radixdlt.api.core.core.model.exceptions;
 
 import com.radixdlt.api.core.core.CoreModelError;
 import com.radixdlt.api.core.core.CoreModelException;
-import com.radixdlt.api.core.core.openapitools.model.BelowMinimumStakeErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.FeeConstructionErrorDetails;
 
-public final class BelowMinimumStakeException extends CoreModelException {
-	private final ResourceAmount minStake;
-	private final ResourceAmount attempt;
+public final class BuildFeeException extends CoreModelException {
+	private final int attempts;
 
-	public BelowMinimumStakeException(ResourceAmount minStake, ResourceAmount attempt) {
+	public BuildFeeException(int attempts) {
 		super(CoreModelError.BAD_REQUEST);
-		this.minStake = minStake;
-		this.attempt = attempt;
+
+		this.attempts = attempts;
 	}
 
 	@Override
 	public ErrorDetails getErrorDetails() {
-		return new BelowMinimumStakeErrorDetails()
-			.minimumStake(minStake)
-			.attemptedToStake(attempt)
-			.type(BelowMinimumStakeErrorDetails.class.getSimpleName());
+		return new FeeConstructionErrorDetails()
+			.attempts(attempts)
+			.type(FeeConstructionErrorDetails.class.getSimpleName());
 	}
 }

@@ -67,24 +67,27 @@ import com.radixdlt.api.core.core.CoreModelError;
 import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.ResourceDepositOperationNotSupportedByEntityErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.ResourceIdentifier;
 
-public final class NotValidatorOwnerException extends CoreModelException {
-	private final EntityIdentifier owner;
-	private final EntityIdentifier user;
+public final class BuildDepositNotSupportedByEntityException extends CoreModelException {
+	private final ResourceIdentifier resourceIdentifier;
+	private final EntityIdentifier entityIdentifier;
 
-	public NotValidatorOwnerException(EntityIdentifier owner, EntityIdentifier user) {
+	public BuildDepositNotSupportedByEntityException(
+		ResourceIdentifier resourceIdentifier, EntityIdentifier entityIdentifier
+	) {
 		super(CoreModelError.BAD_REQUEST);
 
-		this.owner = owner;
-		this.user = user;
+		this.resourceIdentifier = resourceIdentifier;
+		this.entityIdentifier = entityIdentifier;
 	}
 
 	@Override
 	public ErrorDetails getErrorDetails() {
-		return new NotValidatorOwnerErrorDetails()
-			.owner(owner)
-			.user(user)
-			.type(NotValidatorOwnerErrorDetails.class.getSimpleName());
+		return new ResourceDepositOperationNotSupportedByEntityErrorDetails()
+			.resourceDepositNotSupported(resourceIdentifier)
+			.entityIdentifier(entityIdentifier)
+			.type(ResourceDepositOperationNotSupportedByEntityErrorDetails.class.getSimpleName());
 	}
 }

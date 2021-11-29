@@ -65,27 +65,26 @@ package com.radixdlt.api.core.core.model.exceptions;
 
 import com.radixdlt.api.core.core.CoreModelError;
 import com.radixdlt.api.core.core.CoreModelException;
-import com.radixdlt.api.core.core.openapitools.model.DataObject;
-import com.radixdlt.api.core.core.openapitools.model.DataObjectNotSupportedByEntityErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerErrorDetails;
 
-public final class DataObjectNotSupportedByEntityException extends CoreModelException {
-	private final DataObject dataObject;
-	private final EntityIdentifier entityIdentifier;
+public final class BuildNotValidatorOwnerException extends CoreModelException {
+	private final EntityIdentifier owner;
+	private final EntityIdentifier user;
 
-	public DataObjectNotSupportedByEntityException(DataObject dataObject, EntityIdentifier entityIdentifier) {
+	public BuildNotValidatorOwnerException(EntityIdentifier owner, EntityIdentifier user) {
 		super(CoreModelError.BAD_REQUEST);
 
-		this.dataObject = dataObject;
-		this.entityIdentifier = entityIdentifier;
+		this.owner = owner;
+		this.user = user;
 	}
 
 	@Override
 	public ErrorDetails getErrorDetails() {
-		return new DataObjectNotSupportedByEntityErrorDetails()
-			.dataObjectNotSupported(dataObject)
-			.entityIdentifier(entityIdentifier)
-			.type(DataObjectNotSupportedByEntityErrorDetails.class.getSimpleName());
+		return new NotValidatorOwnerErrorDetails()
+			.owner(owner)
+			.user(user)
+			.type(NotValidatorOwnerErrorDetails.class.getSimpleName());
 	}
 }

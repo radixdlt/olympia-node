@@ -65,29 +65,25 @@ package com.radixdlt.api.core.core.model.exceptions;
 
 import com.radixdlt.api.core.core.CoreModelError;
 import com.radixdlt.api.core.core.CoreModelException;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.ResourceIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.ResourceWithdrawOperationNotSupportedByEntityErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.MessageTooLongErrorDetails;
 
-public final class ResourceWithdrawNotSupportedByEntityException extends CoreModelException {
-	private final ResourceIdentifier resourceIdentifier;
-	private final EntityIdentifier entityIdentifier;
+public final class BuildMessageTooLongException extends CoreModelException {
+	private final int maxMessageLength;
+	private final int attemptedMessageLength;
 
-	public ResourceWithdrawNotSupportedByEntityException(
-		ResourceIdentifier resourceIdentifier, EntityIdentifier entityIdentifier
-	) {
+	public BuildMessageTooLongException(int maxMessageLength, int attemptedMessageLength) {
 		super(CoreModelError.BAD_REQUEST);
 
-		this.resourceIdentifier = resourceIdentifier;
-		this.entityIdentifier = entityIdentifier;
+		this.maxMessageLength = maxMessageLength;
+		this.attemptedMessageLength = attemptedMessageLength;
 	}
 
 	@Override
 	public ErrorDetails getErrorDetails() {
-		return new ResourceWithdrawOperationNotSupportedByEntityErrorDetails()
-			.resourceWithdrawNotSupported(resourceIdentifier)
-			.entityIdentifier(entityIdentifier)
-			.type(ResourceWithdrawOperationNotSupportedByEntityErrorDetails.class.getSimpleName());
+		return new MessageTooLongErrorDetails()
+			.maximumMessageLength(maxMessageLength)
+			.attemptedMessageLength(attemptedMessageLength)
+			.type(MessageTooLongErrorDetails.class.getSimpleName());
 	}
 }

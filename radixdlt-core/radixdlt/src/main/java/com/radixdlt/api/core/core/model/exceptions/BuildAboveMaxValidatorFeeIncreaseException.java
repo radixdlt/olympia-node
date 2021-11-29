@@ -68,11 +68,11 @@ import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.openapitools.model.AboveMaximumValidatorFeeIncreaseErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
 
-public final class AboveMaximumValidatorFeeIncreaseException extends CoreModelException {
+public final class BuildAboveMaxValidatorFeeIncreaseException extends CoreModelException {
 	private final int maxValidatorFeeIncrease;
 	private final int attemptedToIncrease;
 
-	public AboveMaximumValidatorFeeIncreaseException(int maxValidatorFeeIncrease, int attemptedToIncrease) {
+	public BuildAboveMaxValidatorFeeIncreaseException(int maxValidatorFeeIncrease, int attemptedToIncrease) {
 		super(CoreModelError.BAD_REQUEST);
 
 		this.maxValidatorFeeIncrease = maxValidatorFeeIncrease;
