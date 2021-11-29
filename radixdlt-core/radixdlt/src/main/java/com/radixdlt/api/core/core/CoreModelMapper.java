@@ -742,6 +742,12 @@ public final class CoreModelMapper {
 			.type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_STAKE_DATA));
 	}
 
+	public DataObject unclaimedREAddr(UnclaimedREAddr unclaimedREAddr) {
+		var data = new UnclaimedRadixEngineAddressData();
+		return data.type(SubstateTypeMapping.getName(SubstateTypeId.UNCLAIMED_READDR));
+	}
+
+
 	public DataObject virtualParent(VirtualParent virtualParent) {
 		var virtualParentData = new VirtualParentData();
 		var childType = SubstateTypeId.valueOf(virtualParent.getData()[0]);
@@ -776,6 +782,8 @@ public final class CoreModelMapper {
 			dataObject = validatorSystemMetadata(validatorSystemMetadata);
 		} else if (substate instanceof ValidatorStakeData validatorStakeData) {
 			dataObject = validatorStakeData(validatorStakeData);
+		} else if (substate instanceof UnclaimedREAddr unclaimedREAddr) {
+			dataObject = unclaimedREAddr(unclaimedREAddr);
 		} else {
 			return Optional.empty();
 		}
