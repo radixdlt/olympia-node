@@ -1,5 +1,7 @@
 package com.radixdlt.store.tree;
 
+import com.radixdlt.store.tree.serialization.rlp.RLP;
+
 import static com.radixdlt.store.tree.TreeUtils.applyPrefix;
 
 public class PMTExt extends PMTNode {
@@ -27,7 +29,10 @@ public class PMTExt extends PMTNode {
 			var prefixedKey = applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
 
 			// TODO: serialize, RLP?
-			this.serialized = "ext".getBytes();
+			this.serialized = RLP.encodeList(
+					RLP.encodeElement(prefixedKey),
+					RLP.encodeElement(value)
+			);
 			return this.serialized;
 		}
 	}

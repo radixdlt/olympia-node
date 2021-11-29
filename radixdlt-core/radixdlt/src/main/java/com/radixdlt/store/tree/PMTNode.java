@@ -1,6 +1,7 @@
 package com.radixdlt.store.tree;
 
 import com.radixdlt.crypto.HashUtils;
+import org.spongycastle.crypto.digests.SHA3Digest;
 
 public abstract class PMTNode implements Cloneable {
 
@@ -28,11 +29,21 @@ public abstract class PMTNode implements Cloneable {
 		// TODO: use a dirty flag or wrapper to avoid re-serializing
 		var ser = serialize();
 		if (ser.length >= DB_SIZE_COND) {
-			this.hash = HashUtils.sha256(ser).asBytes();
+			this.hash = sha3(ser);
 		} else {
 			this.hash = ser;
 		}
 		return this;
+	}
+
+	private byte[] sha3(byte[] data) {
+		SHA3Digest sha3Digest = new SHA3Digest(256);
+		byte[] hashed = new byte[sha3Digest.getDigestSize()];
+		if (data.length != 0) {
+			sha3Digest.update(data, 0, data.length);
+		}
+		sha3Digest.doFinal(hashed, 0);
+		return hashed;
 	}
 
 	public byte[] getHash() {

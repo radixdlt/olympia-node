@@ -1,5 +1,7 @@
 package com.radixdlt.store.tree;
 
+import com.radixdlt.store.tree.serialization.rlp.RLP;
+
 import java.util.Arrays;
 
 public class PMTBranch extends PMTNode {
@@ -12,10 +14,14 @@ public class PMTBranch extends PMTNode {
 
 	PMTBranch(byte[] value, PMTNode... nextNode) {
 		this.slices = new byte[NUMBER_OF_NIBBLES][];
+		for (int i = 0; i < NUMBER_OF_NIBBLES; i++) {
+			slices[i] = new byte[]{};
+		}
 		Arrays.stream(nextNode).forEach(l -> setNibble(l));
 		if (value != null) {
 			this.value = value;
 		}
+		this.nodeType = NodeType.BRANCH;
 	}
 
 	public byte[] getNextHash(PMTKey key) {
@@ -47,7 +53,17 @@ public class PMTBranch extends PMTNode {
 
 	public byte[] serialize() {
 		// TODO: serilize, RLP? Array RLP serialization. How to serialize nulls?
-		this.serialized = "bran".getBytes();
+		byte[][] slicesRLPEncoded = new byte[NUMBER_OF_NIBBLES][];
+		for (int i = 0; i < NUMBER_OF_NIBBLES; i++) {
+			slicesRLPEncoded[i] = RLP.encodeElement(slices[i]);
+		}
+		byte[] finalSlicesRLPEncoded = RLP.encodeList(slicesRLPEncoded);
+		if (value != null) {
+			this.serialized = RLP.encodeList(finalSlicesRLPEncoded, value);
+		} else {
+			this.serialized = finalSlicesRLPEncoded;
+		}
+
 		return this.serialized;
 	}
 

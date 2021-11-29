@@ -75,6 +75,7 @@ public class PMT {
 				TreeUtils.toHexString(key),
 				TreeUtils.toHexString(val),
 				TreeUtils.toHexString(root == null ? null : root.getHash()));
+			throw e;
 		}
 		return root == null ? null : root.getHash();
 	}
