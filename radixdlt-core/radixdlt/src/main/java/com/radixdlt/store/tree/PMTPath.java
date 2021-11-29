@@ -62,54 +62,59 @@ public class PMTPath {
 
 
 	public static PMTPath findCommonPath(PMTKey current, PMTKey incoming) {
-		byte[] currentNibs =  current.getKey();
-		byte[] incomingNibs = incoming.getKey();
+		// INFO: Branch key doesn't exist
+		if (current == null || current.isEmpty() || incoming.isEmpty()) {
+			return new PMTPath(current, incoming, new PMTKey(new byte[0]));
+		} else {
+			byte[] currentNibs = current.getKey();
+			byte[] incomingNibs = incoming.getKey();
 
-		var shorter = Math.min(currentNibs.length, incomingNibs.length);
+			var shorter = Math.min(currentNibs.length, incomingNibs.length);
 
-		// TODO: * rewrite into streams to avoid two loops
-		//       * doesn't work with primitive ints?
-		//       * maybe move to PMTKey?
-		var commonLength = 0;
-		for (int i = 0; i < shorter; i++) {
-			if (currentNibs[i] == incomingNibs[i]) {
-				commonLength += 1;
+			// TODO: * rewrite into streams to avoid two loops
+			//       * doesn't work with primitive ints?
+			//       * maybe move to PMTKey?
+			var commonLength = 0;
+			for (int i = 0; i < shorter; i++) {
+				if (currentNibs[i] == incomingNibs[i]) {
+					commonLength += 1;
+				} else {
+					break;
+				}
+			}
+
+			byte[] commonElements;
+			if (commonLength > 0) {
+				commonElements = new byte[commonLength];
+				for (int i = 0; i < commonLength; i++) {
+					commonElements[i] = currentNibs[i];
+				}
 			} else {
-				break;
+				commonElements = new byte[0];
 			}
-		}
 
-		byte[] commonElements;
-		if (commonLength > 0) {
-			commonElements = new byte[commonLength];
-			for (int i = 0; i < commonLength; i++) {
-				commonElements[i] = currentNibs[i];
+			byte[] currentRem;
+			if (commonLength < currentNibs.length) {
+				currentRem = new byte[currentNibs.length - commonLength];
+				for (int i = 0; i < currentRem.length; i++) {
+					currentRem[i] = currentNibs[commonLength + i];
+				}
+			} else {
+				currentRem = new byte[0];
 			}
-		} else {
-			commonElements = new byte[0];
-		}
 
-		byte[] currentRem;
-		if (commonLength < currentNibs.length) {
-			currentRem = new byte[currentNibs.length - commonLength];
-			for (int i = 0; i < currentRem.length; i++) {
-				currentRem[i] = currentNibs[commonLength + i];
+			byte[] incomingRem;
+			if (commonLength < incomingNibs.length) {
+				incomingRem = new byte[incomingNibs.length - commonLength];
+				for (int i = 0; i < incomingRem.length; i++) {
+					incomingRem[i] = incomingNibs[commonLength + i];
+				}
+			} else {
+				incomingRem = new byte[0];
 			}
-		} else {
-			currentRem = new byte[0];
-		}
 
-		byte[] incomingRem;
-		if (commonLength < incomingNibs.length) {
-			incomingRem = new byte[incomingNibs.length - commonLength];
-			for (int i = 0; i < incomingRem.length; i++) {
-				incomingRem[i] = incomingNibs[commonLength + i];
-			}
-		} else {
-			incomingRem = new byte[0];
+			return new PMTPath(new PMTKey(currentRem), new PMTKey(incomingRem), new PMTKey(commonElements));
 		}
-
-		return new PMTPath(new PMTKey(currentRem), new PMTKey(incomingRem), new PMTKey(commonElements));
 	}
 
 	public static byte[] intoNibbles(byte[] bytes) {
