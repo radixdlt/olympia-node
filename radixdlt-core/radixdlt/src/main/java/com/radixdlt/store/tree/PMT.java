@@ -33,6 +33,28 @@ public class PMT {
 	private PMTStorage db;
 	private PMTNode root;
 
+	public byte[] get(byte[] key) {
+		var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
+
+		if (this.root != null) {
+			var acc = getValue(this.root, pmtKey, new PMTAcc());
+			if (acc.notFound()) {
+				log.debug("Not found key: {} for root: {}",
+					TreeUtils.toHexString(key),
+					TreeUtils.toHexString(root == null ? null : root.getHash()));
+				// TODO XXX: what shall we return for not found? Maybe lets wrap everything in Option?
+				return new byte[0];
+			} else {
+				return acc.getRetVal().getValue();
+			}
+		} else {
+			log.debug("Tree empty when key: {}",
+				TreeUtils.toHexString(key));
+			// TODO XXX: what shall we return for empty Maybe lets wrap everything in Option?
+			return null;
+		}
+	}
+
 	public byte[] add(byte[] key, byte[] val) {
 
 		try {
@@ -55,6 +77,62 @@ public class PMT {
 				TreeUtils.toHexString(root == null ? null : root.getHash()));
 		}
 		return root == null ? null : root.getHash();
+	}
+
+	PMTAcc getValue(PMTNode current, PMTKey key, PMTAcc acc) {
+		final PMTPath commonPath = PMTPath.findCommonPath(current.getKey(), key);
+		switch (current.getNodeType()) {
+			case LEAF:
+				switch (commonPath.whichRemainderIsLeft()) {
+					case NONE:
+						acc.setRetVal(current);
+						break;
+					case NEW:
+					case OLD:
+					case BOTH:
+						// INFO: not throwing exception as this tree is for flexible tree key length
+						acc.mark(current);
+						acc.setNotFound();
+						break;
+				}
+				break;
+			case BRANCH:
+				var currentBranch = (PMTBranch) current;
+				switch (commonPath.whichRemainderIsLeft()) {
+					case NONE:
+						acc.setRetVal(current);
+						break;
+					case NEW:
+						acc.mark(current);
+						var nextHash = currentBranch.getNextHash(key);
+						if (nextHash == null) {
+							acc.setNotFound();
+						} else {
+							var nextNode = read(nextHash);
+							acc = getValue(nextNode, key.getTailNibbles(), acc);
+						}
+						break;
+				}
+				//INFO: ^^ Branch doesn't have a key, so there must not be OLD nor BOTH
+				break;
+			case EXTENSION:
+				switch (commonPath.whichRemainderIsLeft()) {
+					case NEW:
+					case NONE:
+						acc.mark(current);
+						var nextHash = current.getValue();
+						var nextNode = read(nextHash);
+						acc = getValue(nextNode, key.getTailNibbles(), acc);
+						break;
+					case BOTH:
+					case OLD:
+						acc.mark(current);
+						acc.setNotFound();
+						break;
+				}
+				break;
+		}
+		return acc;
 	}
 
 	PMTAcc insertNode(PMTNode current, PMTKey key, byte[] val, PMTAcc acc) {
@@ -124,7 +202,8 @@ public class PMT {
 							subTip = newLeaf;
 						} else {
 							var nextNode = read(nextHash);
-							subTip = insertNode(nextNode, key.getTailNibbles(), val, acc).getTip();
+							acc = insertNode(nextNode, key.getTailNibbles(), val, acc);
+							subTip = acc.getTip();
 						}
 						var branchWithNext = cloneBranch(currentBranch);
 						branchWithNext.setNibble(key.getFirstNibble(), subTip);
@@ -150,7 +229,8 @@ public class PMT {
 						var nextHash = current.getValue();
 						var nextNode = read(nextHash);
 						// INFO: for NONE, the NEW will be empty
-						var subTip = insertNode(nextNode, commonPath.getRemainder(PMTPath.Subtree.NEW), val, acc).getTip();
+						acc = insertNode(nextNode, commonPath.getRemainder(PMTPath.Subtree.NEW), val, acc);
+						var subTip = acc.getTip();
 						// INFO: for NEW or NONE, the commonPrefix can't be null as it existed here
 						newExt = new PMTExt(commonPath.getCommonPrefix(), subTip.getHash());
 						acc.setNewTip(newExt);
