@@ -166,7 +166,7 @@ public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditio
 				try {
 					next = JSON.getDefault().getMapper().readValue(value.getData(), CommittedTransaction.class);
 				} catch (IOException e) {
-					throw new IllegalStateException();
+					throw new IllegalStateException("Failed to deserialize committed transaction.");
 				}
 
 				status = cursor.getNext(key, value, null);
@@ -188,7 +188,7 @@ public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditio
 		try {
 			return deserialization.deserialize(data);
 		} catch (DeserializeException e) {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Failed to deserialize substate.");
 		}
 	}
 

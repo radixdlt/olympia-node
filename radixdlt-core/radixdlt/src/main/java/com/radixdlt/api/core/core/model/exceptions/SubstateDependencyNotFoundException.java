@@ -61,72 +61,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.handlers;
+package com.radixdlt.api.core.core.model.exceptions;
 
-import com.google.common.base.Throwables;
-import com.google.inject.Inject;
-import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelError;
 import com.radixdlt.api.core.core.CoreModelException;
-import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.model.exceptions.SubstateDependencyNotFoundException;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
-import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.SubstateDependencyNotFoundErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.SubstateIdentifier;
+import com.radixdlt.atom.SubstateId;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+public final class SubstateDependencyNotFoundException extends CoreModelException {
+	private final SubstateId substateId;
 
-public final class ConstructionSubmitHandler extends CoreJsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
-	private final EventDispatcher<MempoolAdd> dispatcher;
-	private final CoreModelMapper modelMapper;
+	public SubstateDependencyNotFoundException(SubstateId substateId) {
+		super(CoreModelError.STATE_CONFLICT);
 
-	@Inject
-	ConstructionSubmitHandler(
-		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
-		CoreModelMapper modelMapper
-	) {
-		super(ConstructionSubmitRequest.class);
-
-		this.dispatcher = mempoolAddEventDispatcher;
-		this.modelMapper = modelMapper;
+		this.substateId = substateId;
 	}
 
 	@Override
-	public ConstructionSubmitResponse handleRequest(ConstructionSubmitRequest request) throws CoreModelException {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
-
-		var txn = modelMapper.txn(request.getSignedTransaction());
-
-		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
-		dispatcher.dispatch(mempoolAdd);
-		try {
-			// We need to block here as we need to complete the request in the same thread
-			var success = completableFuture.get();
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(success.getTxn().getId()))
-				.duplicate(false);
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof MempoolDuplicateException) {
-				return new ConstructionSubmitResponse()
-					.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-					.duplicate(true);
-			}
-
-			if (e.getCause() instanceof MempoolRejectedException ex) {
-				var reException = (RadixEngineException) ex.getCause();
-				throw modelMapper.radixEngineException(reException);
-			}
-
-			throw new IllegalStateException(e);
-		} catch (InterruptedException e) {
-			throw new IllegalStateException(e);
-		}
+	public ErrorDetails getErrorDetails() {
+		return new SubstateDependencyNotFoundErrorDetails()
+			.substateIdentifierNotFound(new SubstateIdentifier()
+				.identifier(substateId.toString())
+			)
+			.type(SubstateDependencyNotFoundErrorDetails.class.getSimpleName());
 	}
 }

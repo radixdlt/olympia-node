@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.core.core;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.hash.HashCode;
@@ -93,6 +94,7 @@ import com.radixdlt.api.core.core.model.Resource;
 import com.radixdlt.api.core.core.model.StakeOwnershipResource;
 import com.radixdlt.api.core.core.model.entities.TokenEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorEntity;
+import com.radixdlt.api.core.core.model.exceptions.InvalidTransactionException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidTransactionHashException;
 import com.radixdlt.api.core.core.model.exceptions.NetworkNotSupportedException;
 import com.radixdlt.api.core.core.model.exceptions.BuildNotValidatorOwnerException;
@@ -100,6 +102,7 @@ import com.radixdlt.api.core.core.model.exceptions.BuildDepositNotSupportedByEnt
 import com.radixdlt.api.core.core.model.exceptions.BuildWithdrawNotSupportedByEntityException;
 import com.radixdlt.api.core.core.model.exceptions.BuildMessageTooLongException;
 import com.radixdlt.api.core.core.model.exceptions.BuildFeeException;
+import com.radixdlt.api.core.core.model.exceptions.SubstateDependencyNotFoundException;
 import com.radixdlt.api.core.core.openapitools.model.*;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
@@ -133,10 +136,12 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.engine.FeeConstructionException;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
@@ -173,28 +178,6 @@ public final class CoreModelMapper {
 		this.network = Network.ofId(networkId).orElseThrow();
 		this.addressing = addressing;
 		this.forks = forks;
-	}
-
-	public static class InvalidTransactionException extends CoreModelException {
-		public InvalidTransactionException() {
-			super(CoreModelError.BAD_REQUEST);
-		}
-
-		@Override
-		public ErrorDetails getErrorDetails() {
-			return null;
-		}
-	}
-
-	public static class StateConflictException extends CoreModelException {
-		public StateConflictException() {
-			super(CoreModelError.STATE_CONFLICT);
-		}
-
-		@Override
-		public ErrorDetails getErrorDetails() {
-			return null;
-		}
 	}
 
 	public void verifyNetwork(NetworkIdentifier networkIdentifier) throws NetworkNotSupportedException {
@@ -825,7 +808,7 @@ public final class CoreModelMapper {
 		} else if (substate instanceof VirtualParent) {
 			entityIdentifier.address("system");
 		} else {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Unknown substate " + substate);
 		}
 
 		return entityIdentifier;
@@ -935,5 +918,14 @@ public final class CoreModelMapper {
 	public TransactionIdentifier transactionIdentifier(AID txnId) {
 		return new TransactionIdentifier()
 			.hash(txnId.toString());
+	}
+
+	public CoreModelException radixEngineException(RadixEngineException exception) {
+		var cause = Throwables.getRootCause(exception);
+		if (cause instanceof SubstateNotFoundException notFoundException) {
+			return new SubstateDependencyNotFoundException(notFoundException.getSubstateId());
+		}
+
+		return new InvalidTransactionException(cause.getMessage());
 	}
 }

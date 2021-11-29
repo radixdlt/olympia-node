@@ -68,6 +68,7 @@ import com.google.inject.Provider;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
+import com.radixdlt.api.core.core.model.exceptions.InvalidTransactionException;
 import com.radixdlt.api.core.core.model.exceptions.PublicKeyNotSupportedException;
 import com.radixdlt.api.core.core.openapitools.model.SignRequest;
 import com.radixdlt.api.core.core.openapitools.model.SignResponse;
@@ -119,7 +120,7 @@ public final class SignHandler extends CoreJsonRpcHandler<SignRequest, SignRespo
 		try {
 			radixEngineProvider.get().getParser().parse(txn);
 		} catch (TxnParseException e) {
-			throw new IllegalStateException(e);
+			throw new InvalidTransactionException(e.getMessage());
 		}
 
 		var builder = TxLowLevelBuilder.newBuilder(bytes);

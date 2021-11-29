@@ -63,17 +63,20 @@
 
 package com.radixdlt.api.core.core.handlers;
 
+import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
+import com.radixdlt.api.core.core.model.exceptions.SubstateDependencyNotFoundException;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseResponse;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
@@ -112,7 +115,7 @@ public final class ConstructionParseHandler extends CoreJsonRpcHandler<Construct
 		try {
 			processed = radixEngineProvider.get().test(txn, request.getSigned());
 		} catch (RadixEngineException e) {
-			throw new IllegalStateException(e);
+			throw modelMapper.radixEngineException(e);
 		}
 
 		var response = new ConstructionParseResponse();

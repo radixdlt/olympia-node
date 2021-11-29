@@ -3001,10 +3001,133 @@ components:
         - $ref: "#/components/schemas/ErrorDetails"
         - type: object
           required:
-            - invalid_hex
+            - invalid_signature
           properties:
             invalid_signature:
               type: string
+    InvalidTransactionErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+    BelowMinimumStakeErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - minimum_stake
+            - attempted_to_stake
+          properties:
+            minimum_stake:
+              $ref: "#/components/schemas/ResourceAmount"
+            attempted_to_stake:
+              $ref: "#/components/schemas/ResourceAmount"
+    AboveMaximumValidatorFeeIncreaseErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - maximum_validator_fee_increase
+            - attempted_validator_fee_increase
+          properties:
+            maximum_validator_fee_increase:
+              type: integer
+            attempted_validator_fee_increase:
+              type: integer
+    DataObjectNotSupportedByEntityErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - entity_identifier
+            - data_object_not_supported
+          properties:
+            entity_identifier:
+              $ref: "#/components/schemas/EntityIdentifier"
+            data_object_not_supported:
+              $ref: "#/components/schemas/DataObject"
+    ResourceDepositOperationNotSupportedByEntityErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - entity_identifier
+            - resource_deposit_not_supported
+          properties:
+            entity_identifier:
+              $ref: "#/components/schemas/EntityIdentifier"
+            resource_deposit_not_supported:
+              $ref: "#/components/schemas/ResourceIdentifier"
+    ResourceWithdrawOperationNotSupportedByEntityErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - entity_identifier
+            - resource_withdraw_not_supported
+          properties:
+            entity_identifier:
+              $ref: "#/components/schemas/EntityIdentifier"
+            resource_withdraw_not_supported:
+              $ref: "#/components/schemas/ResourceIdentifier"
+    NotValidatorOwnerErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - owner
+            - user
+          properties:
+            owner:
+              $ref: "#/components/schemas/EntityIdentifier"
+            user:
+              $ref: "#/components/schemas/EntityIdentifier"
+    InvalidDataObjectErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_data_object
+            - message
+          properties:
+            invalid_data_object:
+              $ref: "#/components/schemas/DataObject"
+            message:
+              type: string
+    MessageTooLongErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - maximum_message_length
+            - attempted_message_length
+          properties:
+            maximum_message_length:
+              type: integer
+            attempted_message_length:
+              type: integer
+    FeeConstructionErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - attempts
+          properties:
+            attempts:
+              type: integer
+    SubstateDependencyNotFoundErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - substate_identifier_not_found
+          properties:
+            substate_identifier_not_found:
+              $ref: "#/components/schemas/SubstateIdentifier"
     TransactionNotFoundErrorDetails:
       allOf:
         - $ref: "#/components/schemas/ErrorDetails"
@@ -3059,6 +3182,16 @@ components:
           InvalidFeePayerEntityErrorDetails: "#/components/schemas/InvalidFeePayerEntityErrorDetails"
           InvalidHexErrorDetails: "#/components/schemas/InvalidHexErrorDetails"
           InvalidSignatureErrorDetails: "#/components/schemas/InvalidSignatureErrorDetails"
+          InvalidTransactionErrorDetails: "#/components/schemas/InvalidTransactionErrorDetails"
+          BelowMinimumStakeErrorDetails: "#/components/schemas/BelowMinimumStakeErrorDetails"
+          DataObjectNotSupportedByEntityErrorDetails: "#/components/schemas/DataObjectNotSupportedByEntityErrorDetails"
+          ResourceDepositOperationNotSupportedByEntityErrorDetails: "#/components/schemas/ResourceDepositOperationNotSupportedByEntityErrorDetails"
+          ResourceWithdrawOperationNotSupportedByEntityErrorDetails: "#/components/schemas/ResourceWithdrawOperationNotSupportedByEntityErrorDetails"
+          NotValidatorOwnerErrorDetails: "#/components/schemas/NotValidatorOwnerErrorDetails"
+          InvalidDataObjectErrorDetails: "#/components/schemas/InvalidDataObjectErrorDetails"
+          MessageTooLongErrorDetails: "#/components/schemas/MessageTooLongErrorDetails"
+          FeeConstructionErrorDetails: "#/components/schemas/FeeConstructionErrorDetails"
+          SubstateDependencyNotFoundErrorDetails: "#/components/schemas/SubstateDependencyNotFoundErrorDetails"
           TransactionNotFoundErrorDetails: "#/components/schemas/TransactionNotFoundErrorDetails"
           StateIdentifierNotFoundErrorDetails: "#/components/schemas/StateIdentifierNotFoundErrorDetails"
           InternalServerErrorDetails: "#/components/schemas/InternalServerErrorDetails"
