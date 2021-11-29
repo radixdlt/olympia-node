@@ -5,12 +5,17 @@ import java.util.List;
 
 public class PMTAcc {
 
-	private List<PMTNode> oldAcc;
-	private List<PMTNode> newAcc;
+	private List<PMTNode> visitedAcc;
+	private List<PMTNode> addedAcc;
 
 	public PMTAcc() { }
 
 	private PMTNode newTip;
+
+	//INFO: it can be Leaf or Branch
+	private PMTNode retVal;
+
+	private Boolean notFound;
 
 	public void setNewTip(PMTNode newTip) {
 		this.newTip = newTip;
@@ -20,24 +25,41 @@ public class PMTAcc {
 		return newTip;
 	}
 
+	public void setRetVal(PMTNode ret) {
+		this.retVal = ret;
+	}
+
+	public PMTNode getRetVal() {
+		return this.retVal;
+	}
+
+	public void setNotFound() {
+		this.notFound = true;
+	}
+
+	public Boolean notFound() {
+		return this.notFound;
+	}
+
+
 	public List<PMTNode> getNewNodes() {
-		return newAcc;
+		return addedAcc;
 	}
 
 	// handle nulls that got added (when Ext was null) or handle them at insertion
 	public void add(PMTNode... nodes) {
-		if (newAcc != null) {
-			newAcc.addAll(Arrays.stream(nodes).toList());
+		if (addedAcc != null) {
+			addedAcc.addAll(Arrays.stream(nodes).toList());
 		} else {
-			newAcc = Arrays.stream(nodes).toList();
+			addedAcc = Arrays.stream(nodes).toList();
 		}
 	}
 
 	public void mark(PMTNode node) {
-		if (oldAcc != null) {
-			oldAcc.add(node);
+		if (visitedAcc != null) {
+			visitedAcc.add(node);
 		} else {
-			oldAcc = List.of(node);
+			visitedAcc = List.of(node);
 		}
 	}
 
