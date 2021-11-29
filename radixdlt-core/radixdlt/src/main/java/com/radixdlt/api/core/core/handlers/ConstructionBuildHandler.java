@@ -67,8 +67,6 @@ import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.model.exceptions.CoreModelTxBuilderException;
-import com.radixdlt.api.core.core.model.exceptions.RawCoreTxBuilderException;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildResponse;
 import com.radixdlt.atom.TxBuilder;
@@ -105,11 +103,10 @@ public final class ConstructionBuildHandler extends CoreJsonRpcHandler<Construct
 		TxBuilder builder;
 		try {
 			builder = radixEngine.constructWithFees(operationTxBuilder, disable, feePayer.getAccountAddress());
-		} catch (RawCoreTxBuilderException e) {
-			throw new CoreModelTxBuilderException(e);
 		} catch (TxBuilderException e) {
-			throw new IllegalStateException(e);
+			throw modelMapper.coreModelException(e);
 		}
+
 		var unsignedTransaction = builder.buildForExternalSign();
 		return new ConstructionBuildResponse()
 			.unsignedTransaction(Bytes.toHexString(unsignedTransaction.blob()))

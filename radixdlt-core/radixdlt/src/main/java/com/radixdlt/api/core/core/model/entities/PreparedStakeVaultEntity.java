@@ -71,16 +71,14 @@ import com.radixdlt.api.core.core.model.ResourceQuery;
 import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
 import com.radixdlt.api.core.core.model.SubstateWithdrawal;
 import com.radixdlt.api.core.core.model.TokenResource;
-import com.radixdlt.api.core.core.model.exceptions.BelowMinimumStakeException;
-import com.radixdlt.api.core.core.model.exceptions.RawCoreTxBuilderException;
-import com.radixdlt.api.core.core.model.exceptions.EntityDoesNotSupportOperationException;
-import com.radixdlt.api.core.core.model.exceptions.InvalidResourceIdentifierException;
-import com.radixdlt.api.core.core.model.exceptions.NotValidatorOwnerException;
 import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
+import com.radixdlt.application.tokens.construction.MinimumStakeException;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -102,20 +100,32 @@ public final class PreparedStakeVaultEntity implements Entity {
 		this.validatorKey = validatorKey;
 	}
 
+	public REAddr getAccountAddress() {
+		return accountAddress;
+	}
+
+	public ECPublicKey getValidatorKey() {
+		return validatorKey;
+	}
+
+	private boolean amountIsNative(ResourceUnsignedAmount amount) {
+		if (!(amount.getResource() instanceof TokenResource tokenResource)) {
+			return false;
+		}
+		return tokenResource.getTokenAddress().isNativeToken();
+	}
+
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-		throws RawCoreTxBuilderException {
-		if (!(amount.getResource() instanceof TokenResource tokenResource)) {
-			throw new InvalidResourceIdentifierException("Can only store native token in prepared_stake address");
-		}
-		if (!tokenResource.getTokenAddress().isNativeToken()) {
-			throw new InvalidResourceIdentifierException("Can only store native token in prepared_stake address");
+		throws TxBuilderException {
+		if (!amountIsNative(amount)) {
+			throw new EntityDoesNotSupportResourceDepositException(this, amount.getResource());
 		}
 
 		var minStake = config.get().getMinimumStake().toSubunits();
 		var attempt = UInt256.from(amount.getAmount().toByteArray());
 		if (attempt.compareTo(minStake) < 0) {
-			throw new BelowMinimumStakeException(minStake, attempt);
+			throw new MinimumStakeException(minStake, attempt);
 		}
 
 		var flag = txBuilder.read(AllowDelegationFlag.class, validatorKey);
@@ -123,7 +133,7 @@ public final class PreparedStakeVaultEntity implements Entity {
 			var validator = txBuilder.read(ValidatorOwnerCopy.class, validatorKey);
 			var owner = validator.getOwner();
 			if (!accountAddress.equals(owner)) {
-				throw new NotValidatorOwnerException(owner, accountAddress);
+				throw new DelegateStakePermissionException(owner, accountAddress);
 			}
 		}
 		var substate = new PreparedStake(attempt, accountAddress, validatorKey);
@@ -131,8 +141,8 @@ public final class PreparedStakeVaultEntity implements Entity {
 	}
 
 	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws RawCoreTxBuilderException {
-		throw new EntityDoesNotSupportOperationException("Cannot withdraw from Prepared Stake Vault Entity");
+	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
+		throw new EntityDoesNotSupportResourceWithdrawException(this, resource);
 	}
 
 	@Override
@@ -140,8 +150,8 @@ public final class PreparedStakeVaultEntity implements Entity {
 		ParsedDataObject parsedDataObject,
 		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
-	) throws RawCoreTxBuilderException {
-		throw new EntityDoesNotSupportOperationException("Cannot store data objects in prepared stake vault entity");
+	) throws TxBuilderException {
+		throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
 	}
 
 	@Override

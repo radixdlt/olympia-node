@@ -63,8 +63,29 @@
 
 package com.radixdlt.api.core.core.model.exceptions;
 
-public class EntityDoesNotSupportOperationException extends RawCoreTxBuilderException {
-	public EntityDoesNotSupportOperationException(String message) {
-		super(message);
+import com.radixdlt.api.core.core.CoreModelError;
+import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.openapitools.model.DataObject;
+import com.radixdlt.api.core.core.openapitools.model.DataObjectNotSupportedByEntityErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
+
+public final class DataObjectNotSupportedByEntityException extends CoreModelException {
+	private final DataObject dataObject;
+	private final EntityIdentifier entityIdentifier;
+
+	public DataObjectNotSupportedByEntityException(DataObject dataObject, EntityIdentifier entityIdentifier) {
+		super(CoreModelError.BAD_REQUEST);
+
+		this.dataObject = dataObject;
+		this.entityIdentifier = entityIdentifier;
+	}
+
+	@Override
+	public ErrorDetails getErrorDetails() {
+		return new DataObjectNotSupportedByEntityErrorDetails()
+			.dataObjectNotSupported(dataObject)
+			.entityIdentifier(entityIdentifier)
+			.type(DataObjectNotSupportedByEntityErrorDetails.class.getSimpleName());
 	}
 }

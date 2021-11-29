@@ -72,13 +72,12 @@ import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
 import com.radixdlt.api.core.core.model.StakeOwnershipResource;
 import com.radixdlt.api.core.core.model.SubstateWithdrawal;
 import com.radixdlt.api.core.core.model.TokenResource;
-import com.radixdlt.api.core.core.model.exceptions.RawCoreTxBuilderException;
-import com.radixdlt.api.core.core.model.exceptions.EntityDoesNotSupportOperationException;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
@@ -157,8 +156,8 @@ public final class AccountVaultEntity implements Entity {
 		ParsedDataObject parsedDataObject,
 		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
-	) throws RawCoreTxBuilderException {
-		throw new EntityDoesNotSupportOperationException("Cannot store data objects in account entity");
+	) throws TxBuilderException {
+		throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
 	}
 
 	@Override

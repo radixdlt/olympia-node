@@ -63,7 +63,9 @@
 
 package com.radixdlt.api.core.core.model.exceptions;
 
-public class InvalidTokenOwnerException extends RawCoreTxBuilderException {
+import com.radixdlt.atom.TxBuilderException;
+
+public class InvalidTokenOwnerException extends TxBuilderException {
 	public InvalidTokenOwnerException(String message) {
 		super(message);
 	}

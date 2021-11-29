@@ -70,9 +70,6 @@ import com.radixdlt.api.core.core.model.Resource;
 import com.radixdlt.api.core.core.model.ResourceQuery;
 import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
 import com.radixdlt.api.core.core.model.SubstateWithdrawal;
-import com.radixdlt.api.core.core.model.exceptions.RawCoreTxBuilderException;
-import com.radixdlt.api.core.core.model.exceptions.EntityDoesNotSupportOperationException;
-import com.radixdlt.api.core.core.model.exceptions.OverValidatorFeeIncreaseLimitException;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorFee;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorOwner;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorRegistered;
@@ -81,6 +78,7 @@ import com.radixdlt.api.core.core.openapitools.model.ValidatorMetadata;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
@@ -89,6 +87,7 @@ import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -118,13 +117,13 @@ public final class ValidatorEntity implements Entity {
 
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-		throws RawCoreTxBuilderException {
-		throw new EntityDoesNotSupportOperationException("Cannot deposit to Validator Entity");
+		throws TxBuilderException {
+		throw new EntityDoesNotSupportResourceDepositException(this, amount.getResource());
 	}
 
 	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws RawCoreTxBuilderException {
-		throw new EntityDoesNotSupportOperationException("Cannot withdraw from Validator Entity");
+	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
+		throw new EntityDoesNotSupportResourceWithdrawException(this, resource);
 	}
 
 	@Override
@@ -132,7 +131,7 @@ public final class ValidatorEntity implements Entity {
 		ParsedDataObject parsedDataObject,
 		TxBuilder builder,
 		Supplier<RERulesConfig> config
-	) throws RawCoreTxBuilderException {
+	) throws TxBuilderException {
 		var dataObject = parsedDataObject.getDataObject();
 		if (dataObject instanceof PreparedValidatorRegistered preparedValidatorRegistered) {
 			builder.down(ValidatorRegisteredCopy.class, validatorKey);
@@ -156,7 +155,7 @@ public final class ValidatorEntity implements Entity {
 			var rakeIncrease = validatorFee - curRakePercentage;
 			var maxRakeIncrease = ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE;
 			if (isIncrease && rakeIncrease >= maxRakeIncrease) {
-				throw new OverValidatorFeeIncreaseLimitException(maxRakeIncrease, rakeIncrease);
+				throw new InvalidRakeIncreaseException(maxRakeIncrease, rakeIncrease);
 			}
 
 			var rakeIncreaseDebounceEpochLength = config.get().getRakeIncreaseDebouncerEpochLength();
@@ -181,7 +180,7 @@ public final class ValidatorEntity implements Entity {
 				Bytes.fromHexString(metadata.getData())
 			));
 		} else {
-			throw new EntityDoesNotSupportOperationException("Entity does not support data object " + dataObject);
+			throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
 		}
 	}
 

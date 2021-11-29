@@ -63,8 +63,8 @@
 
 package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.api.core.core.model.exceptions.RawCoreTxBuilderException;
 import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 
 import java.util.List;
@@ -77,13 +77,13 @@ public interface Entity {
 
 	// Write
 	void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-		throws RawCoreTxBuilderException;
+		throws TxBuilderException;
 
-	SubstateWithdrawal withdraw(Resource resource) throws RawCoreTxBuilderException;
+	SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException;
 
 	void overwriteDataObject(
 		ParsedDataObject parsedDataObject,
 		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
-	) throws RawCoreTxBuilderException;
+	) throws TxBuilderException;
 }

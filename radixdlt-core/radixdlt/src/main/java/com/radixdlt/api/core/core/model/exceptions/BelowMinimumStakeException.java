@@ -63,10 +63,27 @@
 
 package com.radixdlt.api.core.core.model.exceptions;
 
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.api.core.core.CoreModelError;
+import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.openapitools.model.BelowMinimumStakeErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
 
-public class BelowMinimumStakeException extends RawCoreTxBuilderException {
-	public BelowMinimumStakeException(UInt256 minStake, UInt256 attempt) {
-		super("Minimum to stake is " + minStake + " but trying to stake " + attempt);
+public final class BelowMinimumStakeException extends CoreModelException {
+	private final ResourceAmount minStake;
+	private final ResourceAmount attempt;
+
+	public BelowMinimumStakeException(ResourceAmount minStake, ResourceAmount attempt) {
+		super(CoreModelError.BAD_REQUEST);
+		this.minStake = minStake;
+		this.attempt = attempt;
+	}
+
+	@Override
+	public ErrorDetails getErrorDetails() {
+		return new BelowMinimumStakeErrorDetails()
+			.minimumStake(minStake)
+			.attemptedToStake(attempt)
+			.type(BelowMinimumStakeErrorDetails.class.getSimpleName());
 	}
 }

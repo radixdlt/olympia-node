@@ -63,10 +63,31 @@
 
 package com.radixdlt.api.core.core.model.exceptions;
 
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.api.core.core.CoreModelError;
+import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.ResourceDepositOperationNotSupportedByEntityErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.ResourceIdentifier;
 
-public abstract class RawCoreTxBuilderException extends TxBuilderException {
-	public RawCoreTxBuilderException(String message) {
-		super(message);
+public final class ResourceDepositNotSupportedByEntityException extends CoreModelException {
+	private final ResourceIdentifier resourceIdentifier;
+	private final EntityIdentifier entityIdentifier;
+
+	public ResourceDepositNotSupportedByEntityException(
+		ResourceIdentifier resourceIdentifier, EntityIdentifier entityIdentifier
+	) {
+		super(CoreModelError.BAD_REQUEST);
+
+		this.resourceIdentifier = resourceIdentifier;
+		this.entityIdentifier = entityIdentifier;
+	}
+
+	@Override
+	public ErrorDetails getErrorDetails() {
+		return new ResourceDepositOperationNotSupportedByEntityErrorDetails()
+			.resourceDepositNotSupported(resourceIdentifier)
+			.entityIdentifier(entityIdentifier)
+			.type(ResourceDepositOperationNotSupportedByEntityErrorDetails.class.getSimpleName());
 	}
 }

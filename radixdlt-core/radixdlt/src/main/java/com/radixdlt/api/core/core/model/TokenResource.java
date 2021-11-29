@@ -67,16 +67,22 @@ import com.radixdlt.identifiers.REAddr;
 
 public final class TokenResource implements Resource {
 	private final REAddr tokenAddress;
+	private final String symbol;
 
-	private TokenResource(REAddr tokenAddress) {
+	private TokenResource(REAddr tokenAddress, String symbol) {
 		this.tokenAddress = tokenAddress;
+		this.symbol = symbol;
+	}
+
+	public String getSymbol() {
+		return symbol;
 	}
 
 	public REAddr getTokenAddress() {
 		return tokenAddress;
 	}
 
-	public static TokenResource from(REAddr tokenAddress) {
-		return new TokenResource(tokenAddress);
+	public static TokenResource from(String symbol, REAddr tokenAddress) {
+		return new TokenResource(tokenAddress, symbol);
 	}
 }

@@ -63,7 +63,9 @@
 
 package com.radixdlt.api.core.core.model.exceptions;
 
-public class GranularityNotSupportedException extends RawCoreTxBuilderException {
+import com.radixdlt.atom.TxBuilderException;
+
+public class GranularityNotSupportedException extends TxBuilderException {
 	public GranularityNotSupportedException(String message) {
 		super(message);
 	}

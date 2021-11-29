@@ -61,25 +61,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model.exceptions;
+package com.radixdlt.api.core.core.model.entities;
 
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.api.core.core.model.Entity;
+import com.radixdlt.api.core.core.model.Resource;
+import com.radixdlt.atom.TxBuilderException;
 
-public class NotEnoughResourcesException extends RawCoreTxBuilderException {
-	private final UInt256 requested;
-	private final UInt256 available;
+public final class EntityDoesNotSupportResourceWithdrawException extends TxBuilderException {
+	private final Entity entity;
+	private final Resource resource;
 
-	public NotEnoughResourcesException(UInt256 requested, UInt256 available) {
-		super("Requested " + requested + " + but only " + available + " available");
-		this.requested = requested;
-		this.available = available;
+	public EntityDoesNotSupportResourceWithdrawException(Entity entity, Resource resource) {
+		super(entity + " does not support resource withdraw: " + resource);
+
+		this.entity = entity;
+		this.resource = resource;
 	}
 
-	public UInt256 getRequested() {
-		return requested;
+	public Entity getEntity() {
+		return entity;
 	}
 
-	public UInt256 getAvailable() {
-		return available;
+	public Resource getResource() {
+		return resource;
 	}
 }

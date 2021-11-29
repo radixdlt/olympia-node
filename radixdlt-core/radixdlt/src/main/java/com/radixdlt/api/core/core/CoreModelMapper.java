@@ -72,6 +72,11 @@ import com.radixdlt.api.core.core.model.Entity;
 import com.radixdlt.api.core.core.model.ResourceOperation;
 import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.core.model.EntityOperation;
+import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceDepositException;
+import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceWithdrawException;
+import com.radixdlt.api.core.core.model.exceptions.BelowMinimumStakeException;
+import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportDataObjectException;
+import com.radixdlt.api.core.core.model.exceptions.DataObjectNotSupportedByEntityException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidAddressException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidFeePayerEntityException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidHexException;
@@ -88,6 +93,8 @@ import com.radixdlt.api.core.core.model.entities.TokenEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorEntity;
 import com.radixdlt.api.core.core.model.exceptions.InvalidTransactionHashException;
 import com.radixdlt.api.core.core.model.exceptions.NetworkNotSupportedException;
+import com.radixdlt.api.core.core.model.exceptions.ResourceDepositNotSupportedByEntityException;
+import com.radixdlt.api.core.core.model.exceptions.ResourceWithdrawNotSupportedByEntityException;
 import com.radixdlt.api.core.core.openapitools.model.*;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
@@ -98,6 +105,7 @@ import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.construction.MinimumStakeException;
 import com.radixdlt.application.tokens.state.ResourceData;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
@@ -110,6 +118,7 @@ import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
 import com.radixdlt.application.validators.state.ValidatorUpdatingData;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.Particle;
@@ -212,6 +221,32 @@ public final class CoreModelMapper {
 		} catch (IllegalArgumentException e) {
 			throw new InvalidHexException(hex);
 		}
+	}
+
+	public CoreModelException coreModelException(TxBuilderException e) {
+		if (e instanceof MinimumStakeException minimumStakeException) {
+			return new BelowMinimumStakeException(
+				nativeTokenAmount(minimumStakeException.getMinimumStake()),
+				nativeTokenAmount(minimumStakeException.getAttempt())
+			);
+		} else if (e instanceof EntityDoesNotSupportDataObjectException dataObjectException) {
+			return new DataObjectNotSupportedByEntityException(
+				dataObjectException.getDataObject().getDataObject(),
+				entityIdentifier(dataObjectException.getEntity())
+			);
+		} else if (e instanceof EntityDoesNotSupportResourceDepositException depositException) {
+			return new ResourceDepositNotSupportedByEntityException(
+				resourceIdentifier(depositException.getResource()),
+				entityIdentifier(depositException.getEntity())
+			);
+		} else if (e instanceof EntityDoesNotSupportResourceWithdrawException withdrawException) {
+			return new ResourceWithdrawNotSupportedByEntityException(
+				resourceIdentifier(withdrawException.getResource()),
+				entityIdentifier(withdrawException.getEntity())
+			);
+		}
+
+		throw new IllegalStateException(e);
 	}
 
 	public AccountVaultEntity feePayerEntity(EntityIdentifier entityIdentifier) throws CoreModelException {
@@ -375,9 +410,8 @@ public final class CoreModelMapper {
 	public Resource resource(ResourceIdentifier resourceIdentifier) throws InvalidAddressException {
 		if (resourceIdentifier instanceof TokenResourceIdentifier tokenResourceIdentifier) {
 			var rri = tokenResourceIdentifier.getRri();
-			var tokenAddress = addressing.forResources().parseOrThrow(rri, s -> new InvalidAddressException(rri))
-				.getSecond();
-			return com.radixdlt.api.core.core.model.TokenResource.from(tokenAddress);
+			var symbolAndAddr = addressing.forResources().parseOrThrow(rri, s -> new InvalidAddressException(rri));
+			return com.radixdlt.api.core.core.model.TokenResource.from(symbolAndAddr.getFirst(), symbolAndAddr.getSecond());
 		} else if (resourceIdentifier instanceof StakeOwnershipResourceIdentifier stakeOwnershipResourceIdentifier) {
 			var validatorAddress = stakeOwnershipResourceIdentifier.getValidator();
 			var key = addressing.forValidators().parseOrThrow(validatorAddress, s -> new InvalidAddressException(validatorAddress));
@@ -393,6 +427,48 @@ public final class CoreModelMapper {
 
 	public Peer peer(PeersView.PeerInfo peerInfo) {
 		return new Peer().peerId(addressing.forNodes().of(peerInfo.getNodeId().getPublicKey()));
+	}
+
+	public ResourceIdentifier resourceIdentifier(Resource resource) {
+		if (resource instanceof com.radixdlt.api.core.core.model.TokenResource tokenResource) {
+			return new TokenResourceIdentifier()
+				.rri(addressing.forResources().of(tokenResource.getSymbol(), tokenResource.getTokenAddress()))
+				.type("TokenResourceIdentifier");
+		} else if (resource instanceof StakeOwnershipResource stakeOwnership) {
+			return new StakeOwnershipResourceIdentifier()
+				.validator(addressing.forValidators().of(stakeOwnership.getValidatorKey()))
+				.type("StakeOwnershipResourceIdentifier");
+		} else {
+			throw new IllegalStateException("Unknown resource " + resource);
+		}
+	}
+
+	public EntityIdentifier entityIdentifier(Entity entity) {
+		if (entity instanceof AccountVaultEntity account) {
+			return entityIdentifier(account.getAccountAddress());
+		} else if (entity instanceof PreparedStakeVaultEntity stake) {
+			return entityIdentifier(stake.getAccountAddress())
+				.subEntity(new SubEntity()
+					.address("prepared_stake")
+					.metadata(new SubEntityMetadata()
+						.validator(addressing.forValidators().of(stake.getValidatorKey()))
+					)
+				);
+		} else if (entity instanceof PreparedUnstakeVaultEntity unstake) {
+			return entityIdentifier(unstake.getAccountAddress())
+				.subEntity(new SubEntity()
+					.address("prepared_unstake")
+					.metadata(new SubEntityMetadata()
+						.validator(addressing.forValidators().of(unstake.getValidatorKey()))
+					)
+				);
+		} else if (entity instanceof ValidatorEntity validator) {
+			return entityIdentifier(validator.getValidatorKey());
+		} else if (entity instanceof TokenEntity tokenEntity) {
+			return entityIdentifier(tokenEntity.getTokenAddr(), tokenEntity.getSymbol());
+		} else {
+			throw new IllegalStateException("Unkown entity: " + entity);
+		}
 	}
 
 	public EntityIdentifier entityIdentifier(REAddr tokenAddress, String symbol) {
@@ -437,6 +513,12 @@ public final class CoreModelMapper {
 			.type("Token");
 	}
 
+	public ResourceAmount nativeTokenAmount(UInt256 value) {
+		return new ResourceAmount()
+			.resourceIdentifier(nativeToken())
+			.value(value.toString());
+	}
+
 	public ResourceIdentifier nativeToken() {
 		return create(REAddr.ofNativeToken(), "xrd");
 	}
@@ -458,12 +540,6 @@ public final class CoreModelMapper {
 	public ResourceAmount resourceOperation(Bucket bucket, UInt384 amount, Function<REAddr, String> tokenAddressToSymbol) {
 		return new ResourceAmount()
 			.resourceIdentifier(resourceIdentifier(bucket, tokenAddressToSymbol))
-			.value(amount.toString());
-	}
-
-	public ResourceAmount nativeTokenAmount(UInt256 amount) {
-		return new ResourceAmount()
-			.resourceIdentifier(nativeToken())
 			.value(amount.toString());
 	}
 

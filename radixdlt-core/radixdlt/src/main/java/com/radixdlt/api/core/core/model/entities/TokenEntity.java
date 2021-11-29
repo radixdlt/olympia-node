@@ -70,8 +70,6 @@ import com.radixdlt.api.core.core.model.Resource;
 import com.radixdlt.api.core.core.model.ResourceQuery;
 import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
 import com.radixdlt.api.core.core.model.SubstateWithdrawal;
-import com.radixdlt.api.core.core.model.exceptions.RawCoreTxBuilderException;
-import com.radixdlt.api.core.core.model.exceptions.EntityDoesNotSupportOperationException;
 import com.radixdlt.api.core.core.model.exceptions.GranularityNotSupportedException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidTokenOwnerException;
 import com.radixdlt.api.core.core.openapitools.model.TokenData;
@@ -80,6 +78,7 @@ import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -98,19 +97,27 @@ public final class TokenEntity implements Entity {
 		this.tokenAddr = tokenAddr;
 	}
 
+	public String getSymbol() {
+		return symbol;
+	}
+
+	public REAddr getTokenAddr() {
+		return tokenAddr;
+	}
+
 	public static TokenEntity from(String symbol, REAddr tokenAddr) {
 		return new TokenEntity(symbol, tokenAddr);
 	}
 
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-		throws RawCoreTxBuilderException {
-		throw new EntityDoesNotSupportOperationException("Cannot deposit to Token Entity");
+		throws TxBuilderException {
+		throw new EntityDoesNotSupportResourceDepositException(this, amount.getResource());
 	}
 
 	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws RawCoreTxBuilderException {
-		throw new EntityDoesNotSupportOperationException("Cannot withdraw from Token Entity");
+	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
+		throw new EntityDoesNotSupportResourceWithdrawException(this, resource);
 	}
 
 	@Override
@@ -118,7 +125,7 @@ public final class TokenEntity implements Entity {
 		ParsedDataObject parsedDataObject,
 		TxBuilder builder,
 		Supplier<RERulesConfig> config
-	) throws RawCoreTxBuilderException {
+	) throws TxBuilderException {
 		var dataObject = parsedDataObject.getDataObject();
 		if (dataObject instanceof TokenData tokenData) {
 			var isMutable = tokenData.getIsMutable();
@@ -145,7 +152,7 @@ public final class TokenEntity implements Entity {
 				tokenMetadata.getUrl()
 			));
 		} else {
-			throw new EntityDoesNotSupportOperationException("Entity does not support data object " + dataObject);
+			throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
 		}
 	}
 

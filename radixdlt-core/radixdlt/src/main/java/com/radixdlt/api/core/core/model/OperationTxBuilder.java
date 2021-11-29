@@ -64,10 +64,9 @@
 package com.radixdlt.api.core.core.model;
 
 import com.google.common.base.Suppliers;
-import com.radixdlt.api.core.core.model.exceptions.RawCoreTxBuilderException;
-import com.radixdlt.api.core.core.model.exceptions.NotEnoughResourcesException;
 import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.application.system.state.EpochData;
+import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.RadixEngine;
@@ -98,7 +97,7 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
 		ResourceOperation operation,
 		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
-	) throws RawCoreTxBuilderException {
+	) throws TxBuilderException {
 		if (operation == null) {
 			return;
 		}

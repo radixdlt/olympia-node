@@ -61,23 +61,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model.exceptions;
+package com.radixdlt.api.core.core.model.entities;
 
-public class OverValidatorFeeIncreaseLimitException extends RawCoreTxBuilderException {
-	private final int maxRakeIncrease;
-	private final int increaseAttempt;
+import com.radixdlt.api.core.core.model.Entity;
+import com.radixdlt.api.core.core.model.Resource;
+import com.radixdlt.atom.TxBuilderException;
 
-	public OverValidatorFeeIncreaseLimitException(int maxRakeIncrease, int increaseAttempt) {
-		super("Max rake increase is " + maxRakeIncrease + " but trying to increase " + increaseAttempt);
-		this.maxRakeIncrease = maxRakeIncrease;
-		this.increaseAttempt = increaseAttempt;
+public final class EntityDoesNotSupportResourceDepositException extends TxBuilderException {
+	private final Entity entity;
+	private final Resource resource;
+
+	public EntityDoesNotSupportResourceDepositException(Entity entity, Resource resource) {
+		super(entity + " does not support resource deposit: " + resource);
+
+		this.entity = entity;
+		this.resource = resource;
 	}
 
-	public int getMaxRakeIncrease() {
-		return maxRakeIncrease;
+	public Entity getEntity() {
+		return entity;
 	}
 
-	public int getIncreaseAttempt() {
-		return increaseAttempt;
+	public Resource getResource() {
+		return resource;
 	}
 }

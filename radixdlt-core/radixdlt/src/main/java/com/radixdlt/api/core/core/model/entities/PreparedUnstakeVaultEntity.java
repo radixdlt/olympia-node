@@ -71,12 +71,10 @@ import com.radixdlt.api.core.core.model.ResourceQuery;
 import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
 import com.radixdlt.api.core.core.model.StakeOwnershipResource;
 import com.radixdlt.api.core.core.model.SubstateWithdrawal;
-import com.radixdlt.api.core.core.model.exceptions.RawCoreTxBuilderException;
-import com.radixdlt.api.core.core.model.exceptions.EntityDoesNotSupportOperationException;
-import com.radixdlt.api.core.core.model.exceptions.InvalidResourceIdentifierException;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -97,11 +95,19 @@ public final class PreparedUnstakeVaultEntity implements Entity {
 		this.validatorKey = validatorKey;
 	}
 
+	public REAddr getAccountAddress() {
+		return accountAddress;
+	}
+
+	public ECPublicKey getValidatorKey() {
+		return validatorKey;
+	}
+
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-		throws RawCoreTxBuilderException {
+		throws TxBuilderException {
 		if (!(amount.getResource() instanceof StakeOwnershipResource stakeOwnershipResource)) {
-			throw new InvalidResourceIdentifierException("Can only store validator ownership in prepared_unstake address");
+			throw new EntityDoesNotSupportResourceDepositException(this, amount.getResource());
 		}
 		var stakeOwnershipKey = stakeOwnershipResource.getValidatorKey();
 		var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount.getAmount());
@@ -109,8 +115,8 @@ public final class PreparedUnstakeVaultEntity implements Entity {
 	}
 
 	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws EntityDoesNotSupportOperationException {
-		throw new EntityDoesNotSupportOperationException("Cannot withdraw from PreparedUnstakeVault Entity");
+	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
+		throw new EntityDoesNotSupportResourceWithdrawException(this, resource);
 	}
 
 	@Override
@@ -118,8 +124,8 @@ public final class PreparedUnstakeVaultEntity implements Entity {
 		ParsedDataObject dataObject,
 		TxBuilder txBuilder,
 		Supplier<RERulesConfig> config
-	) throws RawCoreTxBuilderException {
-		throw new EntityDoesNotSupportOperationException("Cannot store data objects in prepared unstake vault entity");
+	) throws TxBuilderException {
+		throw new EntityDoesNotSupportDataObjectException(this, dataObject);
 	}
 
 	@Override

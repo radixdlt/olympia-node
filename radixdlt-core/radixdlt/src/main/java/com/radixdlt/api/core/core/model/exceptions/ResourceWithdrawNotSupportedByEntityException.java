@@ -63,8 +63,31 @@
 
 package com.radixdlt.api.core.core.model.exceptions;
 
-public class InvalidResourceIdentifierException extends RawCoreTxBuilderException {
-	public InvalidResourceIdentifierException(String message) {
-		super(message);
+import com.radixdlt.api.core.core.CoreModelError;
+import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.ResourceIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.ResourceWithdrawOperationNotSupportedByEntityErrorDetails;
+
+public final class ResourceWithdrawNotSupportedByEntityException extends CoreModelException {
+	private final ResourceIdentifier resourceIdentifier;
+	private final EntityIdentifier entityIdentifier;
+
+	public ResourceWithdrawNotSupportedByEntityException(
+		ResourceIdentifier resourceIdentifier, EntityIdentifier entityIdentifier
+	) {
+		super(CoreModelError.BAD_REQUEST);
+
+		this.resourceIdentifier = resourceIdentifier;
+		this.entityIdentifier = entityIdentifier;
+	}
+
+	@Override
+	public ErrorDetails getErrorDetails() {
+		return new ResourceWithdrawOperationNotSupportedByEntityErrorDetails()
+			.resourceWithdrawNotSupported(resourceIdentifier)
+			.entityIdentifier(entityIdentifier)
+			.type(ResourceWithdrawOperationNotSupportedByEntityErrorDetails.class.getSimpleName());
 	}
 }

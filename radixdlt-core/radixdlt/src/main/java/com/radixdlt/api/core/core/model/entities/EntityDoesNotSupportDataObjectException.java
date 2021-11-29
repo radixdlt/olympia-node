@@ -61,25 +61,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model.exceptions;
+package com.radixdlt.api.core.core.model.entities;
 
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.api.core.core.model.Entity;
+import com.radixdlt.api.core.core.model.ParsedDataObject;
+import com.radixdlt.atom.TxBuilderException;
 
-public class NotValidatorOwnerException extends RawCoreTxBuilderException {
-	private final REAddr owner;
-	private final REAddr user;
+public class EntityDoesNotSupportDataObjectException extends TxBuilderException {
+	private final Entity entity;
+	private final ParsedDataObject dataObject;
 
-	public NotValidatorOwnerException(REAddr owner, REAddr user) {
-		super("Delegation flag is false with owner " + owner + " but attempting to stake as " + user);
-		this.owner = owner;
-		this.user = user;
+	public EntityDoesNotSupportDataObjectException(Entity entity, ParsedDataObject dataObject) {
+		super(entity + " does not support data operation: " + dataObject);
+
+		this.entity = entity;
+		this.dataObject = dataObject;
 	}
 
-	public REAddr getOwner() {
-		return owner;
+	public Entity getEntity() {
+		return entity;
 	}
 
-	public REAddr getUser() {
-		return user;
+	public ParsedDataObject getDataObject() {
+		return dataObject;
 	}
 }
