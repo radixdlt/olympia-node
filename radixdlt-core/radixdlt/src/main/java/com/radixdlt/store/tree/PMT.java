@@ -197,7 +197,7 @@ public class PMT {
 					case NEW:
 						var nextHash = currentBranch.getNextHash(key);
 						PMTNode subTip;
-						if (nextHash == null) {
+						if (nextHash == null || nextHash.length == 0) {
 							var newLeaf = new PMTLeaf(key.getFirstNibble(), key.getTailNibbles(), val);
 							acc.add(newLeaf);
 							subTip = newLeaf;

@@ -1,12 +1,13 @@
 package com.radixdlt.store.tree;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class PMTAcc {
 
-	private List<PMTNode> visitedAcc;
-	private List<PMTNode> addedAcc;
+	private List<PMTNode> visitedAcc = new ArrayList<>();;
+	private List<PMTNode> addedAcc = new ArrayList<>();
 
 	public PMTAcc() { }
 
@@ -48,19 +49,11 @@ public class PMTAcc {
 
 	// handle nulls that got added (when Ext was null) or handle them at insertion
 	public void add(PMTNode... nodes) {
-		if (addedAcc != null) {
-			addedAcc.addAll(Arrays.stream(nodes).toList());
-		} else {
-			addedAcc = Arrays.stream(nodes).toList();
-		}
+		addedAcc.addAll(Arrays.stream(nodes).toList());
 	}
 
 	public void mark(PMTNode node) {
-		if (visitedAcc != null) {
-			visitedAcc.add(node);
-		} else {
-			visitedAcc = List.of(node);
-		}
+		visitedAcc.add(node);
 	}
 
 }
