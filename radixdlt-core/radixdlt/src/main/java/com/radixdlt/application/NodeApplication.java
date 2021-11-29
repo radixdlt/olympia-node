@@ -65,6 +65,8 @@
 package com.radixdlt.application;
 
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -74,9 +76,7 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
@@ -86,19 +86,19 @@ public final class NodeApplication {
 	private final ECPublicKey self;
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final HashSigner hashSigner;
-	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
+	private final RadixEngineStateComputer radixEngineStateComputer;
 
 	@Inject
 	public NodeApplication(
 		@Self ECPublicKey self,
 		@LocalSigner HashSigner hashSigner,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher
+		RadixEngineStateComputer radixEngineStateComputer
 	) {
 		this.self = self;
 		this.hashSigner = hashSigner;
 		this.radixEngine = radixEngine;
-		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
+		this.radixEngineStateComputer = radixEngineStateComputer;
 	}
 
 	private void processRequest(NodeApplicationRequest request) {
@@ -108,11 +108,8 @@ public final class NodeApplication {
 			// TODO: remove use of mempoolAdd message and add to mempool synchronously
 			var txBuilder = radixEngine.construct(request.getRequest().feePayer(REAddr.ofPubKeyAccount(self)));
 			var txn = txBuilder.signAndBuild(hashSigner::sign);
-			var mempoolAdd = request.completableFuture()
-				.map(f -> MempoolAdd.create(txn, f))
-				.orElseGet(() -> MempoolAdd.create(txn));
-			this.mempoolAddEventDispatcher.dispatch(mempoolAdd);
-		} catch (TxBuilderException | RuntimeException e) {
+			radixEngineStateComputer.addToMempool(txn);
+		} catch (TxBuilderException | RuntimeException | MempoolRejectedException e) {
 			log.warn("Failed to fulfil request {} reason: {}", request, e.getMessage());
 			request.completableFuture().ifPresent(c -> c.completeExceptionally(e));
 		}

@@ -107,7 +107,6 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
@@ -133,12 +132,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
 	private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
 	private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
-	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
-	private final EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
+	private final EventDispatcher<TxnsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
 	private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
 	private final SystemCounters systemCounters;
 	private final Hasher hasher;
 	private final Forks forks;
+	private final Object lock = new Object();
 
 	private ProposerElection proposerElection;
 	private View epochCeilingView;
@@ -153,9 +152,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		@EpochCeilingView View epochCeilingView, // TODO: Move this into radixEngine
 		@MaxSigsPerRound OptionalInt maxSigsPerRound, // TODO: Move this into radixEngine
 		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
-		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher,
 		EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
-		EventDispatcher<AtomsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
+		EventDispatcher<TxnsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
 		EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
 		Hasher hasher,
 		SystemCounters systemCounters
@@ -170,7 +168,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.maxSigsPerRound = maxSigsPerRound;
 		this.mempool = Objects.requireNonNull(mempool);
 		this.mempoolAddSuccessEventDispatcher = Objects.requireNonNull(mempoolAddedCommandEventDispatcher);
-		this.mempoolAddFailureEventDispatcher = Objects.requireNonNull(mempoolAddFailureEventDispatcher);
 		this.invalidProposedCommandEventDispatcher = Objects.requireNonNull(invalidProposedCommandEventDispatcher);
 		this.mempoolAtomsRemovedEventDispatcher = Objects.requireNonNull(mempoolAtomsRemovedEventDispatcher);
 		this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
@@ -204,40 +201,53 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 	}
 
+
+	public REProcessedTxn addToMempool(Txn txn) throws MempoolRejectedException {
+		return addToMempool(txn, null);
+	}
+
+	public REProcessedTxn addToMempool(Txn txn, BFTNode origin) throws MempoolRejectedException {
+		synchronized (lock) {
+			REProcessedTxn processed;
+			try {
+				processed = mempool.add(txn);
+			} catch (MempoolDuplicateException e) {
+				throw e;
+			} catch (MempoolRejectedException e) {
+				systemCounters.increment(SystemCounters.CounterType.MEMPOOL_ADD_FAILURE);
+				throw e;
+			}
+
+			systemCounters.increment(SystemCounters.CounterType.MEMPOOL_ADD_SUCCESS);
+			systemCounters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+			var success = MempoolAddSuccess.create(txn, processed, origin);
+			mempoolAddSuccessEventDispatcher.dispatch(success);
+
+			return processed;
+		}
+	}
+
 	@Override
 	public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
 		mempoolAdd.getTxns().forEach(txn -> {
-			Object processedTxn;
 			try {
-				processedTxn = mempool.add(txn);
-				systemCounters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
-			} catch (MempoolDuplicateException e) {
-				// Idempotent commands
-				log.trace("Mempool duplicate txn: {} origin: {}", txn, origin);
-				return;
-			} catch (MempoolRejectedException e) {
-				var failure = MempoolAddFailure.create(txn, e, origin);
-				mempoolAddFailureEventDispatcher.dispatch(failure);
-				mempoolAdd.onFailure(e); // Required for blocking web apis
-				return;
+				addToMempool(txn);
+			} catch (MempoolRejectedException ignored) {
 			}
-
-			var success = MempoolAddSuccess.create(txn, processedTxn, origin);
-			mempoolAdd.onSuccess(success); // Required for blocking web apis
-			mempoolAddSuccessEventDispatcher.dispatch(success);
 		});
 	}
 
 	@Override
 	public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
-		List<REProcessedTxn> cmds = prepared.stream()
-			.map(p -> (RadixEngineTxn) p)
-			.map(RadixEngineTxn::processedTxn)
-			.collect(Collectors.toList());
+		synchronized (lock) {
+			var cmds = prepared.stream()
+				.map(p -> (RadixEngineTxn) p)
+				.map(RadixEngineTxn::processedTxn)
+				.collect(Collectors.toList());
 
-		// TODO: only return commands which will not cause a missing dependency error
-		final List<Txn> txns = mempool.getTxns(maxSigsPerRound.orElse(50), cmds);
-		return txns;
+			// TODO: only return commands which will not cause a missing dependency error
+			return mempool.getTxns(maxSigsPerRound.orElse(50), cmds);
+		}
 	}
 
 	private LongFunction<ECPublicKey> getValidatorMapping() {
@@ -320,41 +330,43 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public StateComputerResult prepare(List<PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
-		var next = vertex.getTxns();
-		var transientBranch = this.radixEngine.transientBranch();
-		for (PreparedTxn command : previous) {
-			// TODO: fix this cast with generics. Currently the fix would become a bit too messy
-			final var radixEngineCommand = (RadixEngineTxn) command;
-			try {
-				transientBranch.execute(
-					List.of(radixEngineCommand.txn),
-					radixEngineCommand.permissionLevel
-				);
-			} catch (RadixEngineException e) {
-				throw new IllegalStateException("Re-execution of already prepared atom failed: "
-					+ radixEngineCommand.processed.getTxn().getId(), e);
+		synchronized (lock) {
+			var next = vertex.getTxns();
+			var transientBranch = this.radixEngine.transientBranch();
+			for (PreparedTxn command : previous) {
+				// TODO: fix this cast with generics. Currently the fix would become a bit too messy
+				final var radixEngineCommand = (RadixEngineTxn) command;
+				try {
+					transientBranch.execute(
+						List.of(radixEngineCommand.txn),
+						radixEngineCommand.permissionLevel
+					);
+				} catch (RadixEngineException e) {
+					throw new IllegalStateException("Re-execution of already prepared atom failed: "
+						+ radixEngineCommand.processed.getTxn().getId(), e);
+				}
 			}
-		}
 
-		var systemTxn = this.executeSystemUpdate(transientBranch, vertex, timestamp);
-		final ImmutableList.Builder<PreparedTxn> successBuilder = ImmutableList.builder();
-		successBuilder.add(systemTxn);
-		final ImmutableMap.Builder<Txn, Exception> exceptionBuilder = ImmutableMap.builder();
-		var nextValidatorSet = systemTxn.processedTxn().getEvents().stream()
-			.filter(NextValidatorSetEvent.class::isInstance)
-			.map(NextValidatorSetEvent.class::cast)
-			.findFirst()
-			.map(e -> BFTValidatorSet.from(
-				e.nextValidators().stream()
-					.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
-			);
-		// Don't execute command if changing epochs
-		if (nextValidatorSet.isEmpty()) {
-			this.executeUserCommands(vertex.getProposer(), transientBranch, next, successBuilder, exceptionBuilder);
-		}
-		this.radixEngine.deleteBranches();
+			var systemTxn = this.executeSystemUpdate(transientBranch, vertex, timestamp);
+			final ImmutableList.Builder<PreparedTxn> successBuilder = ImmutableList.builder();
+			successBuilder.add(systemTxn);
+			final ImmutableMap.Builder<Txn, Exception> exceptionBuilder = ImmutableMap.builder();
+			var nextValidatorSet = systemTxn.processedTxn().getEvents().stream()
+				.filter(NextValidatorSetEvent.class::isInstance)
+				.map(NextValidatorSetEvent.class::cast)
+				.findFirst()
+				.map(e -> BFTValidatorSet.from(
+					e.nextValidators().stream()
+						.map(v -> BFTValidator.from(BFTNode.create(v.getValidatorKey()), v.getAmount())))
+				);
+			// Don't execute command if changing epochs
+			if (nextValidatorSet.isEmpty()) {
+				this.executeUserCommands(vertex.getProposer(), transientBranch, next, successBuilder, exceptionBuilder);
+			}
+			this.radixEngine.deleteBranches();
 
-		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), nextValidatorSet.orElse(null));
+			return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), nextValidatorSet.orElse(null));
+		}
 	}
 
 	private List<REProcessedTxn> commitInternal(
@@ -406,47 +418,49 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-		var txCommitted = commitInternal(txnsAndProof, vertexStoreState);
+		synchronized (lock) {
+			var txCommitted = commitInternal(txnsAndProof, vertexStoreState);
 
-		// TODO: refactor mempool to be less generic and make this more efficient
-		// TODO: Move this into engine
-		List<Txn> removed = this.mempool.committed(txCommitted);
-		systemCounters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
-		if (!removed.isEmpty()) {
-			AtomsRemovedFromMempool atomsRemovedFromMempool = AtomsRemovedFromMempool.create(removed);
-			mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
-		}
+			// TODO: refactor mempool to be less generic and make this more efficient
+			// TODO: Move this into engine
+			List<Txn> removed = this.mempool.committed(txCommitted);
+			systemCounters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+			if (!removed.isEmpty()) {
+				TxnsRemovedFromMempool atomsRemovedFromMempool = TxnsRemovedFromMempool.create(removed);
+				mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
+			}
 
-		var epochChangeOptional = txnsAndProof.getProof().getNextValidatorSet().map(validatorSet -> {
-			var header = txnsAndProof.getProof();
-			// TODO: Move vertex stuff somewhere else
-			var genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
-			var verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
-			var nextLedgerHeader = LedgerHeader.create(
-				header.getEpoch() + 1,
-				View.genesis(),
-				header.getAccumulatorState(),
-				header.timestamp()
-			);
-			var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-			final var initialState =
-				VerifiedVertexStoreState.create(
-					HighQC.from(genesisQC),
-					verifiedGenesisVertex,
-					Optional.empty(),
-					hasher
+			var epochChangeOptional = txnsAndProof.getProof().getNextValidatorSet().map(validatorSet -> {
+				var header = txnsAndProof.getProof();
+				// TODO: Move vertex stuff somewhere else
+				var genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
+				var verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+				var nextLedgerHeader = LedgerHeader.create(
+					header.getEpoch() + 1,
+					View.genesis(),
+					header.getAccumulatorState(),
+					header.timestamp()
 				);
-			var proposerElection = new WeightedRotatingLeaders(validatorSet);
-			var bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, initialState);
-			return new EpochChange(header, bftConfiguration);
-		});
-		var outputBuilder = ImmutableClassToInstanceMap.builder();
-		epochChangeOptional.ifPresent(e -> {
-			this.proposerElection = e.getBFTConfiguration().getProposerElection();
-			outputBuilder.put(EpochChange.class, e);
-		});
-		outputBuilder.put(REOutput.class, REOutput.create(txCommitted));
-		var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
-		ledgerUpdateDispatcher.dispatch(ledgerUpdate);
+				var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+				final var initialState =
+					VerifiedVertexStoreState.create(
+						HighQC.from(genesisQC),
+						verifiedGenesisVertex,
+						Optional.empty(),
+						hasher
+					);
+				var proposerElection = new WeightedRotatingLeaders(validatorSet);
+				var bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, initialState);
+				return new EpochChange(header, bftConfiguration);
+			});
+			var outputBuilder = ImmutableClassToInstanceMap.builder();
+			epochChangeOptional.ifPresent(e -> {
+				this.proposerElection = e.getBFTConfiguration().getProposerElection();
+				outputBuilder.put(EpochChange.class, e);
+			});
+			outputBuilder.put(REOutput.class, REOutput.create(txCommitted));
+			var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
+			ledgerUpdateDispatcher.dispatch(ledgerUpdate);
+		}
 	}
 }

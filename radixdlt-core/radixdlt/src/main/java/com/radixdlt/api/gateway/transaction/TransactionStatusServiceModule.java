@@ -68,8 +68,8 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.statecomputer.TxnsRemovedFromMempool;
 
 public class TransactionStatusServiceModule extends AbstractModule {
 	@Override
@@ -78,11 +78,11 @@ public class TransactionStatusServiceModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolAddFailureEventProcessor(TransactionStatusService transactionStatusService) {
+	public EventProcessorOnRunner<?> mempoolTxnsRemovedEventProcessor(TransactionStatusService transactionStatusService) {
 		return new EventProcessorOnRunner<>(
 			Runners.APPLICATION,
-			MempoolAddFailure.class,
-			transactionStatusService.mempoolAddFailureEventProcessor()
+			TxnsRemovedFromMempool.class,
+			transactionStatusService.txnsRemovedFromMempoolEventProcessor()
 		);
 	}
 

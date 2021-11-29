@@ -73,6 +73,7 @@ import com.radixdlt.api.gateway.openapitools.model.AccountTransaction;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECPublicKey;
@@ -80,19 +81,19 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.TxnsRemovedFromMempool;
 
 import java.time.Duration;
 import java.util.Optional;
 
-public class TransactionStatusService {
+public final class TransactionStatusService {
 	private final Cache<AID, MempoolAddSuccess> successCache = CacheBuilder.newBuilder()
 		.maximumSize(10000)
 		.expireAfterAccess(Duration.ofMinutes(10))
 		.build();
-	private final Cache<AID, MempoolAddFailure> failureCache = CacheBuilder.newBuilder()
+	private final Cache<AID, Txn> failureCache = CacheBuilder.newBuilder()
 		.maximumSize(10000)
 		.expireAfterAccess(Duration.ofMinutes(10))
 		.build();
@@ -112,17 +113,16 @@ public class TransactionStatusService {
 		this.modelMapper = modelMapper;
 	}
 
-	private void onReject(MempoolAddFailure mempoolAddFailure) {
-		successCache.invalidate(mempoolAddFailure.getTxn().getId());
-		failureCache.put(mempoolAddFailure.getTxn().getId(), mempoolAddFailure);
+	private void onRemoved(TxnsRemovedFromMempool txnsRemovedFromMempool) {
+		txnsRemovedFromMempool.getRemoved().forEach(txn -> failureCache.put(txn.getId(), txn));
 	}
 
 	private void onSuccess(MempoolAddSuccess mempoolAddSuccess) {
 		successCache.put(mempoolAddSuccess.getTxn().getId(), mempoolAddSuccess);
 	}
 
-	public EventProcessor<MempoolAddFailure> mempoolAddFailureEventProcessor() {
-		return this::onReject;
+	public EventProcessor<TxnsRemovedFromMempool> txnsRemovedFromMempoolEventProcessor() {
+		return this::onRemoved;
 	}
 
 	public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {

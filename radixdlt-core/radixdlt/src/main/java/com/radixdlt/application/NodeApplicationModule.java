@@ -78,8 +78,6 @@ import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.mempool.MempoolAddSuccess;
 
 /**
  * Module which manages different applications a node can run with
@@ -94,8 +92,6 @@ public final class NodeApplicationModule extends AbstractModule {
 		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
 			.permitDuplicates();
 		eventBinder.addBinding().toInstance(NodeApplicationRequest.class);
-		eventBinder.addBinding().toInstance(MempoolAddSuccess.class);
-		eventBinder.addBinding().toInstance(MempoolAddFailure.class);
 	}
 
 	@Provides

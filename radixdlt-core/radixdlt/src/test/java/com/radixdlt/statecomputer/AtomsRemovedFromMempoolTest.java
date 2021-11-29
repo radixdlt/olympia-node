@@ -72,7 +72,7 @@ import org.junit.Test;
 public class AtomsRemovedFromMempoolTest {
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(AtomsRemovedFromMempool.class)
+		EqualsVerifier.forClass(TxnsRemovedFromMempool.class)
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}

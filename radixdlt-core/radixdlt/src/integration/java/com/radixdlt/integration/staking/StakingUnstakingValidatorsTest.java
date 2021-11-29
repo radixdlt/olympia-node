@@ -77,14 +77,11 @@ import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintS
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.integration.FailOnEvent;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
-import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
@@ -93,7 +90,6 @@ import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.assertj.core.util.Throwables;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -163,7 +159,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -278,17 +273,6 @@ public class StakingUnstakingValidatorsTest {
 			new PersistedNodeForTestingModule(),
 			new LastEventsModule(LedgerUpdate.class),
 			FailOnEvent.asModule(InvalidProposedTxn.class),
-			FailOnEvent.asModule(MempoolAddFailure.class, e -> {
-				if (!(e.getException().getCause() instanceof RadixEngineException)) {
-					return Optional.empty();
-				}
-				var rootCause = Throwables.getRootCause(e.getException());
-				if (rootCause instanceof SubstateNotFoundException) {
-					return Optional.empty();
-				}
-
-				return Optional.of(e.getException());
-			}),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
@@ -320,7 +304,6 @@ public class StakingUnstakingValidatorsTest {
 		private final LedgerProof lastLedgerProof;
 		private final RadixEngine<LedgerAndBFTProof> radixEngine;
 		private final ClassToInstanceMap<Object> lastEvents;
-		private final BerkeleyValidatorUptimeStore uptimeArchiveStore;
 		private final BerkeleyResourceInfoStore resourceInfoStore;
 		private final BerkeleyAccountInfoStore accountInfoStore;
 		private final Forks forks;
@@ -331,7 +314,6 @@ public class StakingUnstakingValidatorsTest {
 			ClassToInstanceMap<Object> lastEvents,
 			@LastProof LedgerProof lastLedgerProof,
 			RadixEngine<LedgerAndBFTProof> radixEngine,
-			BerkeleyValidatorUptimeStore uptimeArchiveStore,
 			BerkeleyResourceInfoStore resourceInfoStore,
 			BerkeleyAccountInfoStore accountInfoStore,
 			Forks forks
@@ -340,7 +322,6 @@ public class StakingUnstakingValidatorsTest {
 			this.lastEvents = lastEvents;
 			this.lastLedgerProof = lastLedgerProof;
 			this.radixEngine = radixEngine;
-			this.uptimeArchiveStore = uptimeArchiveStore;
 			this.resourceInfoStore = resourceInfoStore;
 			this.accountInfoStore = accountInfoStore;
 			this.forks = forks;

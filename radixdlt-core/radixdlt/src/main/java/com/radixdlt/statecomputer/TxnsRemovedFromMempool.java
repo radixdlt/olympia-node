@@ -62,18 +62,45 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.statecomputer;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import com.radixdlt.atom.Txn;
 
-public class MempoolAddFailureTest {
-    @Test
-    public void equalsVerifier() {
-        EqualsVerifier.forClass(MempoolAddFailure.class)
-                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-                .verify();
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Event describing atoms which have been removed from the mempool
+ * after a commit.
+ */
+public final class TxnsRemovedFromMempool {
+    private final List<Txn> removed;
+
+    private TxnsRemovedFromMempool(List<Txn> removed) {
+        this.removed = removed;
+    }
+
+    public static TxnsRemovedFromMempool create(List<Txn> removed) {
+        Objects.requireNonNull(removed);
+        return new TxnsRemovedFromMempool(removed);
+    }
+
+    public List<Txn> getRemoved() {
+        return removed;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(removed);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof TxnsRemovedFromMempool)) {
+            return false;
+        }
+
+        TxnsRemovedFromMempool other = (TxnsRemovedFromMempool) o;
+        return Objects.equals(this.removed, other.removed);
     }
 }

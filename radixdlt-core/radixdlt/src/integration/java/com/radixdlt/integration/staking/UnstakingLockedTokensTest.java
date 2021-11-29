@@ -99,7 +99,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.LocalSigner;
@@ -193,11 +192,6 @@ public class UnstakingLockedTokensTest {
 			.filter(t -> t.getTxn().getId().equals(mempoolAdd.getTxn().getId()))
 			.findFirst()
 			.orElseThrow();
-	}
-
-	public MempoolAddFailure dispatchAndCheckForError(Txn txn) {
-		mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
-		return runner.runNextEventsThrough(MempoolAddFailure.class);
 	}
 
 	public REProcessedTxn dispatchAndWaitForCommit(Txn txn) {

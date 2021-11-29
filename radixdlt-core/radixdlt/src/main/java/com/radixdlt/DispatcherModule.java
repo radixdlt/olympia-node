@@ -122,10 +122,9 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.statecomputer.InvalidProposedTxn;
-import com.radixdlt.statecomputer.AtomsRemovedFromMempool;
+import com.radixdlt.statecomputer.TxnsRemovedFromMempool;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -153,23 +152,14 @@ public class DispatcherModule extends AbstractModule {
 		bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(
-				MempoolAddSuccess.class,
-				m -> CounterType.MEMPOOL_ADD_SUCCESS
-			)).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(
-				MempoolAddFailure.class,
-				m -> CounterType.MEMPOOL_ADD_FAILURE
-			))
-			.in(Scopes.SINGLETON);
+			.toProvider(Dispatchers.dispatcherProvider(MempoolAddSuccess.class)).in(Scopes.SINGLETON);
 
 		// TODO: Remove, this hack required for initial genesis event emit
 		bind(new TypeLiteral<EventDispatcher<REOutput>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(REOutput.class)).in(Scopes.SINGLETON);
 
-		bind(new TypeLiteral<EventDispatcher<AtomsRemovedFromMempool>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(AtomsRemovedFromMempool.class)).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EventDispatcher<TxnsRemovedFromMempool>>() { })
+			.toProvider(Dispatchers.dispatcherProvider(TxnsRemovedFromMempool.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolRelayTrigger.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolFillerUpdate>>() { })

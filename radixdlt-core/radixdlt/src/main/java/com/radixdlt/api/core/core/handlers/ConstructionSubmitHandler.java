@@ -70,27 +70,22 @@ import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
 public final class ConstructionSubmitHandler extends CoreJsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
-	private final EventDispatcher<MempoolAdd> dispatcher;
+	private final RadixEngineStateComputer radixEngineStateComputer;
 	private final CoreModelMapper modelMapper;
 
 	@Inject
 	ConstructionSubmitHandler(
-		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
+		RadixEngineStateComputer radixEngineStateComputer,
 		CoreModelMapper modelMapper
 	) {
 		super(ConstructionSubmitRequest.class);
 
-		this.dispatcher = mempoolAddEventDispatcher;
+		this.radixEngineStateComputer = radixEngineStateComputer;
 		this.modelMapper = modelMapper;
 	}
 
@@ -99,31 +94,18 @@ public final class ConstructionSubmitHandler extends CoreJsonRpcHandler<Construc
 		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var txn = modelMapper.txn(request.getSignedTransaction());
-
-		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
-		dispatcher.dispatch(mempoolAdd);
 		try {
-			// We need to block here as we need to complete the request in the same thread
-			var success = completableFuture.get();
+			radixEngineStateComputer.addToMempool(txn);
 			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(success.getTxn().getId()))
+				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
 				.duplicate(false);
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof MempoolDuplicateException) {
-				return new ConstructionSubmitResponse()
-					.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-					.duplicate(true);
-			}
-
-			if (e.getCause() instanceof MempoolRejectedException ex) {
-				var reException = (RadixEngineException) ex.getCause();
-				throw modelMapper.radixEngineException(reException);
-			}
-
-			throw new IllegalStateException(e);
-		} catch (InterruptedException e) {
-			throw new IllegalStateException(e);
+		} catch (MempoolDuplicateException e) {
+			return new ConstructionSubmitResponse()
+				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
+				.duplicate(true);
+		} catch (MempoolRejectedException e) {
+			var reException = (RadixEngineException) e.getCause();
+			throw modelMapper.radixEngineException(reException);
 		}
 	}
 }

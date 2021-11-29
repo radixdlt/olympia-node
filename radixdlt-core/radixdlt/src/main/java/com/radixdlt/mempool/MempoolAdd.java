@@ -68,50 +68,29 @@ import com.radixdlt.atom.Txn;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Message to attempt to add commands to the mempool
  */
 public final class MempoolAdd {
 	private final List<Txn> txns;
-	// Web APIs require blocking access so use these futures for now
-	private final CompletableFuture<MempoolAddSuccess> completableFuture;
 
-	private MempoolAdd(List<Txn> txns, CompletableFuture<MempoolAddSuccess> completableFuture) {
+	private MempoolAdd(List<Txn> txns) {
 		this.txns = txns;
-		this.completableFuture = completableFuture;
 	}
 
 	public List<Txn> getTxns() {
 		return txns;
 	}
 
-	public static MempoolAdd create(Txn txn, CompletableFuture<MempoolAddSuccess> completableFuture) {
-		Objects.requireNonNull(txn);
-		return new MempoolAdd(List.of(txn), completableFuture);
-	}
-
 	public static MempoolAdd create(Txn txn) {
 		Objects.requireNonNull(txn);
-		return new MempoolAdd(List.of(txn), null);
+		return new MempoolAdd(List.of(txn));
 	}
 
 	public static MempoolAdd create(List<Txn> txns) {
 		Objects.requireNonNull(txns);
-		return new MempoolAdd(txns, null);
-	}
-
-	public void onSuccess(MempoolAddSuccess addSuccess) {
-		if (completableFuture != null) {
-			completableFuture.complete(addSuccess);
-		}
-	}
-
-	public void onFailure(Exception e) {
-		if (completableFuture != null) {
-			completableFuture.completeExceptionally(e);
-		}
+		return new MempoolAdd(txns);
 	}
 
 	@Override
@@ -121,11 +100,10 @@ public final class MempoolAdd {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof MempoolAdd)) {
+		if (!(o instanceof MempoolAdd other)) {
 			return false;
 		}
 
-		MempoolAdd other = (MempoolAdd) o;
 		return Objects.equals(this.txns, other.txns);
 	}
 

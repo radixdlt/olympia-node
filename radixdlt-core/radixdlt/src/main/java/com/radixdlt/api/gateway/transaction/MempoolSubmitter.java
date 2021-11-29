@@ -68,48 +68,28 @@ import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
 public final class MempoolSubmitter {
-	private final EventDispatcher<MempoolAdd> dispatcher;
+	private final RadixEngineStateComputer radixEngineStateComputer;
 
 	@Inject
-	MempoolSubmitter(EventDispatcher<MempoolAdd> mempoolAddEventDispatcher) {
-		this.dispatcher = mempoolAddEventDispatcher;
+	MempoolSubmitter(RadixEngineStateComputer radixEngineStateComputer) {
+		this.radixEngineStateComputer = radixEngineStateComputer;
 	}
 
 	public void submitToMempool(Txn txn) throws Exception {
-		var completableFuture = new CompletableFuture<MempoolAddSuccess>();
-		var mempoolAdd = MempoolAdd.create(txn, completableFuture);
-
-		dispatcher.dispatch(mempoolAdd);
 		try {
-			// We need to block here as we need to complete the request in the same thread
-			completableFuture.get();
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof MempoolDuplicateException) {
-				return;
+			radixEngineStateComputer.addToMempool(txn);
+		} catch (MempoolDuplicateException ignored) {
+		} catch (MempoolRejectedException e) {
+			var reException = (RadixEngineException) e.getCause();
+			var cause = Throwables.getRootCause(reException);
+			if (cause instanceof SubstateNotFoundException) {
+				throw new StateConflictException(reException);
 			}
-
-			if (e.getCause() instanceof MempoolRejectedException) {
-				var ex = (MempoolRejectedException) e.getCause();
-				var reException = (RadixEngineException) ex.getCause();
-
-				var cause = Throwables.getRootCause(reException);
-				if (cause instanceof SubstateNotFoundException) {
-					throw new StateConflictException(reException);
-				}
-
-				throw new InvalidTransactionException(reException);
-			}
-			throw e;
 		}
 	}
 }
