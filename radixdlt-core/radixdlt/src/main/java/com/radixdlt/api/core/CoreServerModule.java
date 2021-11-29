@@ -77,7 +77,6 @@ import com.radixdlt.api.core.system.SystemApiModule;
 import com.radixdlt.api.gateway.openapitools.JSON;
 import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -144,17 +143,13 @@ public final class CoreServerModule extends AbstractModule {
 	@ProvidesIntoMap
 	@StringMapKey(Runners.NODE_API)
 	@Singleton
-	public ModuleRunner coreHttpServer(
-		@NodeServer Map<HandlerRoute, HttpHandler> handlers,
-		SystemCounters counters
-	) {
+	public ModuleRunner coreHttpServer(@NodeServer Map<HandlerRoute, HttpHandler> handlers) {
 		return new HttpServerRunner(
 			handlers,
 			new IntervalServerErrorExceptionHandler(),
 			port,
 			bindAddress,
-			"node",
-			counters
+			"core"
 		);
 	}
 

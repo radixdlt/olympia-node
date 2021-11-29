@@ -77,7 +77,8 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
 
 	@Override
 	public HealthResponse handleRequest() {
-		switch (networkInfoService.nodeStatus()) {
+		var nodeStatus = networkInfoService.nodeStatus();
+		switch (nodeStatus) {
 			case UP -> {
 				return new HealthResponse().status(HealthResponse.StatusEnum.UP);
 			}
@@ -93,7 +94,7 @@ final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
 			case OUT_OF_SYNC -> {
 				return new HealthResponse().status(HealthResponse.StatusEnum.OUT_OF_SYNC);
 			}
-			default -> throw new IllegalStateException();
+			default -> throw new IllegalStateException("Unknown node status: " + nodeStatus);
 		}
 	}
 }

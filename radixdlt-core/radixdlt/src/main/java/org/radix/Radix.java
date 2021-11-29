@@ -228,9 +228,9 @@ public final class Radix {
 			nodeServer.start();
 		}
 
-		final var archiveServer = moduleRunners.get(Runners.ARCHIVE_API);
-		if (archiveServer != null) {
-			archiveServer.start();
+		final var gatewayServer = moduleRunners.get(Runners.GATEWAY_API);
+		if (gatewayServer != null) {
+			gatewayServer.start();
 		}
 
 		final var consensusRunner = moduleRunners.get(Runners.CONSENSUS);

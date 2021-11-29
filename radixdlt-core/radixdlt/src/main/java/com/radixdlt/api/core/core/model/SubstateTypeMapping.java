@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.model;
 
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.utils.Pair;
@@ -70,7 +70,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import static com.radixdlt.atom.SubstateTypeId.*;
-import static com.radixdlt.api.core.core.SubstateTypeMapping.OperationType.*;
+import static com.radixdlt.api.core.core.model.SubstateTypeMapping.OperationType.*;
 
 public final class SubstateTypeMapping {
 	public enum OperationType {

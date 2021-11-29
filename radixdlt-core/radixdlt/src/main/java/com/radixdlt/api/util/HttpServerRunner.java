@@ -63,7 +63,6 @@
 
 package com.radixdlt.api.util;
 
-import com.radixdlt.counters.SystemCounters;
 import io.undertow.server.handlers.RequestLimitingHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,7 +73,6 @@ import com.stijndewitt.undertow.cors.Filter;
 
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.logging.Level;
 
 import io.undertow.Handlers;
@@ -95,7 +93,6 @@ public final class HttpServerRunner implements ModuleRunner {
 	private final String name;
 	private final int port;
 	private final String bindAddress;
-	private final SystemCounters counters;
 
 	private Undertow server;
 
@@ -104,15 +101,13 @@ public final class HttpServerRunner implements ModuleRunner {
 		HttpHandler exceptionHandler,
 		int port,
 		String bindAddress,
-		String name,
-		SystemCounters counters
+		String name
 	) {
 		this.handlers = handlers;
 		this.exceptionHandler = exceptionHandler;
 		this.name = name.toLowerCase(Locale.US);
 		this.bindAddress = bindAddress;
 		this.port = port;
-		this.counters = Objects.requireNonNull(counters);
 	}
 
 	private static void fallbackHandler(HttpServerExchange exchange) {
@@ -131,15 +126,10 @@ public final class HttpServerRunner implements ModuleRunner {
 
 	@Override
 	public void start() {
-		final var handler = new RequestMetricsHandler(
-			counters,
-			name,
-			new RequestLimitingHandler(
-				MAXIMUM_CONCURRENT_REQUESTS,
-				QUEUE_SIZE,
-				configureRoutes()
-
-			)
+		var handler = new RequestLimitingHandler(
+			MAXIMUM_CONCURRENT_REQUESTS,
+			QUEUE_SIZE,
+			configureRoutes()
 		);
 
 		server = Undertow.builder()

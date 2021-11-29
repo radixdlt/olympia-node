@@ -71,6 +71,7 @@ import com.google.inject.Inject;
 import com.radixdlt.api.core.core.model.DataOperation;
 import com.radixdlt.api.core.core.model.Entity;
 import com.radixdlt.api.core.core.model.ResourceOperation;
+import com.radixdlt.api.core.core.model.SubstateTypeMapping;
 import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.core.model.EntityOperation;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceDepositException;

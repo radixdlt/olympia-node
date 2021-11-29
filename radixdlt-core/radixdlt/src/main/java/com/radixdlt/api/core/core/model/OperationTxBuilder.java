@@ -132,11 +132,12 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
 			return;
 		}
 
-		if (operation.getDataAction().equals(Data.ActionEnum.CREATE)) {
+		var dataAction = operation.getDataAction();
+		if (dataAction == Data.ActionEnum.CREATE) {
 			var parsedDataObject = operation.getParsedDataObject();
 			entity.overwriteDataObject(parsedDataObject, txBuilder, config);
 		} else {
-			throw new IllegalStateException();
+			throw new IllegalStateException("DataAction: " + dataAction + " not supported yet.");
 		}
 	}
 

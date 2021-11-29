@@ -77,7 +77,6 @@ import com.radixdlt.api.gateway.tokens.TokenApiModule;
 import com.radixdlt.api.gateway.validator.ValidatorApiModule;
 import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.api.util.HttpServerRunner;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
@@ -100,12 +99,12 @@ public class GatewayServerModule extends AbstractModule {
 	}
 
 	/**
-	 * Marks elements which run on Archive server
+	 * Marks elements which run on Gateway server
 	 */
 	@Qualifier
 	@Target({ FIELD, PARAMETER, METHOD })
 	@Retention(RUNTIME)
-	private @interface ArchiveServer {
+	private @interface GatewayServer {
 	}
 
 	@Override
@@ -115,23 +114,20 @@ public class GatewayServerModule extends AbstractModule {
 			.addBinding().to(BerkeleyAccountTransactionStore.class);
 
 		var routeBinder = MapBinder.newMapBinder(
-			binder(), HandlerRoute.class, HttpHandler.class, ArchiveServer.class
+			binder(), HandlerRoute.class, HttpHandler.class, GatewayServer.class
 		);
 		routeBinder.addBinding(HandlerRoute.post("/network")).to(NetworkHandler.class);
 
-		install(new AccountApiModule(ArchiveServer.class, "/account"));
-		install(new TokenApiModule(ArchiveServer.class, "/token"));
-		install(new ValidatorApiModule(ArchiveServer.class, "/validator"));
-		install(new TransactionApiModule(ArchiveServer.class, "/transaction"));
+		install(new AccountApiModule(GatewayServer.class, "/account"));
+		install(new TokenApiModule(GatewayServer.class, "/token"));
+		install(new ValidatorApiModule(GatewayServer.class, "/validator"));
+		install(new TransactionApiModule(GatewayServer.class, "/transaction"));
 	}
 
 	@ProvidesIntoMap
-	@StringMapKey(Runners.ARCHIVE_API)
+	@StringMapKey(Runners.GATEWAY_API)
 	@Singleton
-	public ModuleRunner archiveHttpServer(
-		@ArchiveServer Map<HandlerRoute, HttpHandler> handlers,
-		SystemCounters counters
-	) {
-		return new HttpServerRunner(handlers, null, port, bindAddress, "archive", counters);
+	public ModuleRunner gatewayHttpServer(@GatewayServer Map<HandlerRoute, HttpHandler> handlers) {
+		return new HttpServerRunner(handlers, null, port, bindAddress, "gateway");
 	}
 }

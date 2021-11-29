@@ -73,7 +73,7 @@ public final class Runners {
 	public static final String CONSENSUS = "consensus";
 	public static final String SYSTEM_INFO = "info";
 	public static final String NODE_API = "nodeApi";
-	public static final String ARCHIVE_API = "archiveApi";
+	public static final String GATEWAY_API = "gatewayApi";
 
 	private Runners() {
 	}
