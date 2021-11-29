@@ -38,7 +38,7 @@ public class PMT {
 
 		if (this.root != null) {
 			var acc = getValue(this.root, pmtKey, new PMTAcc());
-			if (acc.notFound()) {
+			if (acc.notFound() != null) {
 				log.debug("Not found key: {} for root: {}",
 					TreeUtils.toHexString(key),
 					TreeUtils.toHexString(root == null ? null : root.getHash()));
