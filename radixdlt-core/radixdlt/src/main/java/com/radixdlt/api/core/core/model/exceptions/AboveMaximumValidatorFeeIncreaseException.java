@@ -61,106 +61,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model.entities;
+package com.radixdlt.api.core.core.model.exceptions;
 
-import com.radixdlt.api.core.core.model.Entity;
-import com.radixdlt.api.core.core.model.KeyQuery;
-import com.radixdlt.api.core.core.model.ParsedDataObject;
-import com.radixdlt.api.core.core.model.Resource;
-import com.radixdlt.api.core.core.model.ResourceQuery;
-import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
-import com.radixdlt.api.core.core.model.SubstateWithdrawal;
-import com.radixdlt.api.core.core.openapitools.model.TokenData;
-import com.radixdlt.api.core.core.openapitools.model.TokenMetadata;
-import com.radixdlt.application.system.scrypt.Syscall;
-import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.api.core.core.CoreModelError;
+import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.openapitools.model.AboveMaximumValidatorFeeIncreaseErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
 
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.function.Supplier;
+public final class AboveMaximumValidatorFeeIncreaseException extends CoreModelException {
+	private final int maxValidatorFeeIncrease;
+	private final int attemptedToIncrease;
 
-public final class TokenEntity implements Entity {
-	private final String symbol;
-	private final REAddr tokenAddr;
+	public AboveMaximumValidatorFeeIncreaseException(int maxValidatorFeeIncrease, int attemptedToIncrease) {
+		super(CoreModelError.BAD_REQUEST);
 
-	private TokenEntity(String symbol, REAddr tokenAddr) {
-		this.symbol = symbol;
-		this.tokenAddr = tokenAddr;
-	}
-
-	public String getSymbol() {
-		return symbol;
-	}
-
-	public REAddr getTokenAddr() {
-		return tokenAddr;
-	}
-
-	public static TokenEntity from(String symbol, REAddr tokenAddr) {
-		return new TokenEntity(symbol, tokenAddr);
+		this.maxValidatorFeeIncrease = maxValidatorFeeIncrease;
+		this.attemptedToIncrease = attemptedToIncrease;
 	}
 
 	@Override
-	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
-		throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceDepositException(this, amount.getResource());
-	}
-
-	@Override
-	public SubstateWithdrawal withdraw(Resource resource) throws TxBuilderException {
-		throw new EntityDoesNotSupportResourceWithdrawException(this, resource);
-	}
-
-	@Override
-	public void overwriteDataObject(
-		ParsedDataObject parsedDataObject,
-		TxBuilder builder,
-		Supplier<RERulesConfig> config
-	) throws TxBuilderException {
-		var dataObject = parsedDataObject.getDataObject();
-		if (dataObject instanceof TokenData tokenData) {
-			var isMutable = tokenData.getIsMutable();
-			var ownerKey = parsedDataObject.getParsed(ECPublicKey.class);
-			if (!isMutable && ownerKey != null) {
-				throw new InvalidDataObjectException(parsedDataObject, "Cannot have owner on fixed supply token.");
-			}
-
-			if (!tokenData.getGranularity().equals("1")) {
-				throw new InvalidDataObjectException(parsedDataObject, "granularity must be 1");
-			}
-
-			builder.toLowLevelBuilder().syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8));
-			builder.downREAddr(tokenAddr);
-			var tokenResource = new TokenResource(tokenAddr, UInt256.ONE, isMutable, ownerKey);
-			builder.up(tokenResource);
-		} else if (dataObject instanceof TokenMetadata tokenMetadata) {
-			builder.up(new TokenResourceMetadata(
-				tokenAddr,
-				symbol,
-				tokenMetadata.getName(),
-				tokenMetadata.getDescription(),
-				tokenMetadata.getIconUrl(),
-				tokenMetadata.getUrl()
-			));
-		} else {
-			throw new EntityDoesNotSupportDataObjectException(this, parsedDataObject);
-		}
-	}
-
-	@Override
-	public List<ResourceQuery> getResourceQueries() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public List<KeyQuery> getKeyQueries() {
-		throw new UnsupportedOperationException();
+	public ErrorDetails getErrorDetails() {
+		return new AboveMaximumValidatorFeeIncreaseErrorDetails()
+			.maximumValidatorFeeIncrease(maxValidatorFeeIncrease)
+			.attemptedValidatorFeeIncrease(attemptedToIncrease)
+			.type(AboveMaximumValidatorFeeIncreaseErrorDetails.class.getSimpleName());
 	}
 }

@@ -63,10 +63,28 @@
 
 package com.radixdlt.api.core.core.model.exceptions;
 
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.api.core.core.CoreModelError;
+import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.openapitools.model.DataObject;
+import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.InvalidDataObjectErrorDetails;
 
-public class InvalidTokenOwnerException extends TxBuilderException {
-	public InvalidTokenOwnerException(String message) {
-		super(message);
+public final class InvalidDataObjectException extends CoreModelException {
+	private final DataObject dataObject;
+	private final String message;
+
+	public InvalidDataObjectException(DataObject dataObject, String message) {
+		super(CoreModelError.BAD_REQUEST);
+
+		this.dataObject = dataObject;
+		this.message = message;
+	}
+
+	@Override
+	public ErrorDetails getErrorDetails() {
+		return new InvalidDataObjectErrorDetails()
+			.invalidDataObject(dataObject)
+			.message(message)
+			.type(InvalidDataObjectErrorDetails.class.getSimpleName());
 	}
 }

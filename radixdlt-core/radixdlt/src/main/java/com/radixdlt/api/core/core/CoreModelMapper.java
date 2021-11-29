@@ -74,6 +74,8 @@ import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.core.model.EntityOperation;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceDepositException;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceWithdrawException;
+import com.radixdlt.api.core.core.model.entities.InvalidDataObjectException;
+import com.radixdlt.api.core.core.model.exceptions.AboveMaximumValidatorFeeIncreaseException;
 import com.radixdlt.api.core.core.model.exceptions.BelowMinimumStakeException;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportDataObjectException;
 import com.radixdlt.api.core.core.model.exceptions.DataObjectNotSupportedByEntityException;
@@ -93,6 +95,7 @@ import com.radixdlt.api.core.core.model.entities.TokenEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorEntity;
 import com.radixdlt.api.core.core.model.exceptions.InvalidTransactionHashException;
 import com.radixdlt.api.core.core.model.exceptions.NetworkNotSupportedException;
+import com.radixdlt.api.core.core.model.exceptions.NotValidatorOwnerException;
 import com.radixdlt.api.core.core.model.exceptions.ResourceDepositNotSupportedByEntityException;
 import com.radixdlt.api.core.core.model.exceptions.ResourceWithdrawNotSupportedByEntityException;
 import com.radixdlt.api.core.core.openapitools.model.*;
@@ -105,10 +108,12 @@ import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
+import com.radixdlt.application.tokens.construction.DelegateStakePermissionException;
 import com.radixdlt.application.tokens.construction.MinimumStakeException;
 import com.radixdlt.application.tokens.state.ResourceData;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.application.validators.construction.InvalidRakeIncreaseException;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
@@ -228,6 +233,21 @@ public final class CoreModelMapper {
 			return new BelowMinimumStakeException(
 				nativeTokenAmount(minimumStakeException.getMinimumStake()),
 				nativeTokenAmount(minimumStakeException.getAttempt())
+			);
+		} else if (e instanceof DelegateStakePermissionException delegateException) {
+			return new NotValidatorOwnerException(
+				entityIdentifier(delegateException.getOwner()),
+				entityIdentifier(delegateException.getUser())
+			);
+		} else if (e instanceof InvalidDataObjectException invalidDataObjectException) {
+			return new com.radixdlt.api.core.core.model.exceptions.InvalidDataObjectException(
+				invalidDataObjectException.getDataObject().getDataObject(),
+				invalidDataObjectException.getMessage()
+			);
+		} else if (e instanceof InvalidRakeIncreaseException rakeIncreaseException) {
+			return new AboveMaximumValidatorFeeIncreaseException(
+				rakeIncreaseException.getMaxRakeIncrease(),
+				rakeIncreaseException.getIncreaseAttempt()
 			);
 		} else if (e instanceof EntityDoesNotSupportDataObjectException dataObjectException) {
 			return new DataObjectNotSupportedByEntityException(

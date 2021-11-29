@@ -61,12 +61,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model.exceptions;
+package com.radixdlt.api.core.core.model.entities;
 
+import com.radixdlt.api.core.core.model.ParsedDataObject;
 import com.radixdlt.atom.TxBuilderException;
 
-public class GranularityNotSupportedException extends TxBuilderException {
-	public GranularityNotSupportedException(String message) {
+public final class InvalidDataObjectException extends TxBuilderException {
+	private final ParsedDataObject dataObject;
+
+	public InvalidDataObjectException(ParsedDataObject dataObject, String message) {
 		super(message);
+
+		this.dataObject = dataObject;
+	}
+
+	public ParsedDataObject getDataObject() {
+		return dataObject;
 	}
 }
