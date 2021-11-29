@@ -1,21 +1,11 @@
 package com.radixdlt.store.tree;
 
-import java.nio.ByteBuffer;
-
 import static com.radixdlt.store.tree.TreeUtils.applyPrefix;
 
 public class PMTExt extends PMTNode {
 
 	private static final int EVEN_PREFIX = 0;
 	private static final int ODD_PREFIX = 1;
-	private byte[] prefixedKey;
-	// TODO: explicit test for Nibble prefix! Check java Endianness
-	byte[] getEvenPrefix() {
-		return ByteBuffer.allocate(8).putInt(EVEN_PREFIX).array();
-	}
-	byte[] getOddPrefix() {
-		return ByteBuffer.allocate(4).putInt(ODD_PREFIX).array();
-	}
 
 	PMTExt(PMTKey allNibbles, byte[] newHashPointer) {
 		this(null, allNibbles, newHashPointer);
@@ -34,7 +24,7 @@ public class PMTExt extends PMTNode {
 		if (keyNibbles.isEmpty()) {
 			return this.getValue();
 		} else {
-			this.prefixedKey = applyPrefix(this.getKey().getKey(), getOddPrefix(), getEvenPrefix());
+			var prefixedKey = applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
 
 			// TODO: serialize, RLP?
 			this.serialized = "ext".getBytes();
