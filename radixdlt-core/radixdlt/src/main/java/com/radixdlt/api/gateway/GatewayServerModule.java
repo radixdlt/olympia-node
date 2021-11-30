@@ -63,6 +63,7 @@
 
 package com.radixdlt.api.gateway;
 
+import com.google.common.base.Throwables;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
@@ -72,6 +73,9 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.gateway.account.AccountApiModule;
+import com.radixdlt.api.gateway.openapitools.JSON;
+import com.radixdlt.api.gateway.openapitools.model.UnexpectedError;
+import com.radixdlt.api.gateway.openapitools.model.UnexpectedErrorDetails;
 import com.radixdlt.api.gateway.transaction.TransactionApiModule;
 import com.radixdlt.api.gateway.tokens.TokenApiModule;
 import com.radixdlt.api.gateway.validator.ValidatorApiModule;
@@ -82,6 +86,7 @@ import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ExceptionHandler;
+import io.undertow.util.Headers;
 
 import javax.inject.Qualifier;
 import java.lang.annotation.Retention;
@@ -132,6 +137,18 @@ public class GatewayServerModule extends AbstractModule {
 			var ex = exchange.getAttachment(ExceptionHandler.THROWABLE);
 			// TODO: Move this somewhere else
 			ex.printStackTrace();
+
+			var rootCause = Throwables.getRootCause(ex);
+			var unexpectedError = new UnexpectedError()
+				.code(500)
+				.message("Internal Server Error")
+				.details(new UnexpectedErrorDetails()
+					.cause(rootCause.getMessage())
+					.exception(rootCause.getClass().getSimpleName())
+				);
+			exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
+			exchange.setStatusCode(500);
+			exchange.getResponseSender().send(JSON.getDefault().getMapper().writeValueAsString(unexpectedError));
 		}
 	}
 

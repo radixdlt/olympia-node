@@ -1142,38 +1142,26 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/Validator"
-    InternalServerError:
-      type: object
-      properties:
-        exception:
-          type: string
-        cause:
-          type: string
-    InvalidJsonError:
-      type: object
-      properties:
-        cause:
-          type: string
-    InvalidRequestError:
-      type: object
-      properties:
-        pointer:
-          type: string
-        cause:
-          type: string
     UnexpectedError:
       type: object
       required:
+        - code
         - message
       properties:
+        code:
+          type: integer
         message:
           type: string
-      discriminator:
-        propertyName: message
-        mapping:
-          INTERNAL_SERVER_ERROR: "#/components/schemas/InternalServerError"
-          INVALID_JSON: "#/components/schemas/InvalidJsonError"
-          INVALID_REQUEST: "#/components/schemas/InvalidRequestError"
+        details:
+          type: object
+          required:
+            - cause
+            - exception
+          properties:
+            cause:
+              type: string
+            exception:
+              type: string
     Validator:
       type: object
       required:

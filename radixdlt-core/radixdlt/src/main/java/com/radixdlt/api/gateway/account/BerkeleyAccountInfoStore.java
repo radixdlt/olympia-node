@@ -217,7 +217,9 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 			for (int i = 0; i < jsonArray.length(); i++) {
 				var json = jsonArray.getJSONObject(i);
 				var epochUnlocked = json.getLong("epochUnlocked");
+				var validatorAddress = json.getString("validator_address");
 				unstakes.add(new AccountUnstakeEntry()
+					.validatorIdentifier(new ValidatorIdentifier().address(validatorAddress))
 					.epochsUntilUnlocked(epochUnlocked - curEpoch)
 					.unstakingAmount(new TokenAmount()
 						.tokenIdentifier(gatewayModelMapper.nativeTokenIdentifier())
@@ -234,8 +236,10 @@ public final class BerkeleyAccountInfoStore implements BerkeleyAdditionalStore {
 				var ownership = new BigInteger(json.getString("value"), 10);
 				var totalStake = new BigInteger(json.getString("validatorTotalStake"), 10);
 				var totalOwnership = new BigInteger(json.getString("validatorTotalOwnership"), 10);
+				var validatorAddress = json.getString("validator_address");
 				var estimatedUnstake = ownership.multiply(totalStake).divide(totalOwnership);
 				unstakes.add(new AccountUnstakeEntry()
+					.validatorIdentifier(new ValidatorIdentifier().address(validatorAddress))
 					.epochsUntilUnlocked(500L) // Hardcoded for now
 					.unstakingAmount(new TokenAmount()
 						.tokenIdentifier(gatewayModelMapper.nativeTokenIdentifier())
