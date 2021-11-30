@@ -76,7 +76,6 @@ import org.radix.utils.IOUtils;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -228,9 +227,6 @@ public final class RadixNodeModule extends AbstractModule {
 
 		install(new EventLoggerModule());
 		install(new DispatcherModule());
-
-		// Application
-		install(new NodeApplicationModule());
 
 		// Consensus
 		install(new PersistedBFTKeyModule());

@@ -64,7 +64,6 @@
 
 package com.radixdlt;
 
-import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.api.service.network.ScheduledStatsCollecting;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -89,8 +88,8 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.application.mempoolfiller.MempoolFillerUpdate;
-import com.radixdlt.application.mempoolfiller.ScheduledMempoolFill;
+import com.radixdlt.mempoolfiller.MempoolFillerUpdate;
+import com.radixdlt.mempoolfiller.ScheduledMempoolFill;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -147,8 +146,6 @@ public class DispatcherModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		bind(new TypeLiteral<EventDispatcher<NodeApplicationRequest>>() { })
-			.toProvider(Dispatchers.dispatcherProvider(NodeApplicationRequest.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() { })
 			.toProvider(Dispatchers.dispatcherProvider(MempoolAdd.class)).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() { })

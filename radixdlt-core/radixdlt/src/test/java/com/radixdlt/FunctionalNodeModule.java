@@ -66,7 +66,6 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.radixdlt.application.NodeApplicationModule;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.ledger.MockedCommandGeneratorModule;
@@ -177,7 +176,6 @@ public final class FunctionalNodeModule extends AbstractModule {
 				} else {
 					install(new RadixEngineStateComputerModule());
 					install(new RadixEngineModule());
-					install(new NodeApplicationModule());
 					install(new RadixEngineCheckpointModule());
 				}
 			}

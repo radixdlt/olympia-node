@@ -181,6 +181,8 @@ public class SimulationNodes {
 
 		Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates();
 
+		Injector getNodeInjector(BFTNode node);
+
 		<T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node);
 
 		SimulationNetwork getUnderlyingNetwork();
@@ -256,6 +258,12 @@ public class SimulationNodes {
 					.collect(Collectors.toSet());
 
 				return Observable.merge(committedCommands);
+			}
+
+			@Override
+			public Injector getNodeInjector(BFTNode node) {
+				int index = getNodes().indexOf(node);
+				return nodeInstances.get(index);
 			}
 
 			@Override

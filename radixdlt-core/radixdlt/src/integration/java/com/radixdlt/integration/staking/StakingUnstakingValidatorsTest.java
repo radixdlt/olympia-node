@@ -74,6 +74,8 @@ import com.radixdlt.api.gateway.openapitools.model.Token;
 import com.radixdlt.api.gateway.validator.BerkeleyValidatorUptimeStore;
 import com.radixdlt.api.gateway.tokens.BerkeleyResourceInfoStore;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -82,7 +84,9 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.integration.FailOnEvent;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
+import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.store.LastProof;
@@ -110,7 +114,6 @@ import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
 import com.radixdlt.PersistedNodeForTestingModule;
-import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.state.ExitingStake;
@@ -431,7 +434,7 @@ public class StakingUnstakingValidatorsTest {
 	 * trends to minimum.
 	 */
 	@Test
-	public void stake_unstake_transfers_restarts() {
+	public void stake_unstake_transfers_restarts() throws Exception {
 		var initialCount = reloadNodeState().getTotalNativeTokens();
 
 		var random = new Random(12345);
@@ -440,9 +443,14 @@ public class StakingUnstakingValidatorsTest {
 			deterministicRunner.processForCount(100);
 
 			var nodeIndex = random.nextInt(nodeKeys.size());
-			var dispatcher = this.deterministicRunner.getNode(nodeIndex).getInstance(
-				Key.get(new TypeLiteral<EventDispatcher<NodeApplicationRequest>>() {})
+			var nodeInjector = this.deterministicRunner.getNode(nodeIndex);
+			var radixEngine = nodeInjector.getInstance(
+				Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() { })
 			);
+			var radixEngineStateComputer = nodeInjector.getInstance(
+				RadixEngineStateComputer.class
+			);
+			var hashSigner = nodeInjector.getInstance(HashSigner.class);
 
 			var privKey = nodeKeys.get(nodeIndex);
 			var acct = REAddr.ofPubKeyAccount(privKey.getPublicKey());
@@ -490,7 +498,13 @@ public class StakingUnstakingValidatorsTest {
 			}
 
 			var request = TxnConstructionRequest.create().action(action);
-			dispatcher.dispatch(NodeApplicationRequest.create(request));
+			try {
+				var txBuilder = radixEngine.construct(request.feePayer(acct));
+				var txn = txBuilder.signAndBuild(hashSigner::sign);
+				radixEngineStateComputer.addToMempool(txn);
+			} catch (TxBuilderException | MempoolFullException ignored) {
+			}
+
 			deterministicRunner.dispatchToAll(new Key<EventDispatcher<MempoolRelayTrigger>>() {}, MempoolRelayTrigger.create());
 			deterministicRunner.dispatchToAll(new Key<EventDispatcher<SyncCheckTrigger>>() {}, SyncCheckTrigger.create());
 		}

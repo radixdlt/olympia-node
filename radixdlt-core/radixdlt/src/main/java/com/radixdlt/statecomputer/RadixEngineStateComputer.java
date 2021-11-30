@@ -70,6 +70,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.radixdlt.application.system.NextValidatorSetEvent;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.NextEpoch;
@@ -91,6 +92,7 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.MetadataException;
@@ -201,6 +203,20 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 	}
 
+	public REProcessedTxn test(byte[] payload, boolean isSigned) throws RadixEngineException {
+		synchronized (lock) {
+			var txn = isSigned
+				? Txn.create(payload)
+				: TxLowLevelBuilder.newBuilder(payload).sig(ECDSASignature.zeroSignature()).build();
+			var checker = radixEngine.transientBranch();
+			try {
+				var result = checker.execute(List.of(txn), !isSigned);
+				return result.getProcessedTxn();
+			} finally {
+				radixEngine.deleteBranches();
+			}
+		}
+	}
 
 	public REProcessedTxn addToMempool(Txn txn) throws MempoolRejectedException {
 		return addToMempool(txn, null);

@@ -62,60 +62,156 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application;
+package com.radixdlt.mempoolfiller;
 
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.application.tokens.TokenUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineMempool;
+import com.radixdlt.utils.UInt256;
 
-public final class NodeApplication {
-	private static final Logger log = LogManager.getLogger();
+import java.util.ArrayList;
+import java.util.Random;
 
-	private final ECPublicKey self;
+/**
+ * Periodically fills the mempool with valid transactions
+ */
+public final class MempoolFiller {
+	private static final Logger logger = LogManager.getLogger();
 	private final RadixEngine<LedgerAndBFTProof> radixEngine;
+
+	private final RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher;
+	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
+
+	private final RadixEngineMempool radixEngineMempool;
+	private final ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher;
+	private final SystemCounters systemCounters;
+	private final PeersView peersView;
+	private final Random random;
 	private final HashSigner hashSigner;
-	private final RadixEngineStateComputer radixEngineStateComputer;
+	private final REAddr account;
+
+	private boolean enabled = false;
+	private int numTransactions;
+	private boolean sendToSelf = false;
 
 	@Inject
-	public NodeApplication(
-		@Self ECPublicKey self,
+	public MempoolFiller(
+		@Self REAddr account,
 		@LocalSigner HashSigner hashSigner,
+		RadixEngineMempool radixEngineMempool,
 		RadixEngine<LedgerAndBFTProof> radixEngine,
-		RadixEngineStateComputer radixEngineStateComputer
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
+		RemoteEventDispatcher<MempoolAdd> remoteMempoolAddEventDispatcher,
+		ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher,
+		PeersView peersView,
+		Random random,
+		SystemCounters systemCounters
 	) {
-		this.self = self;
+		this.account = account;
 		this.hashSigner = hashSigner;
 		this.radixEngine = radixEngine;
-		this.radixEngineStateComputer = radixEngineStateComputer;
+		this.radixEngineMempool = radixEngineMempool;
+		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
+		this.remoteMempoolAddEventDispatcher = remoteMempoolAddEventDispatcher;
+		this.mempoolFillDispatcher = mempoolFillDispatcher;
+		this.peersView = peersView;
+		this.random = random;
+		this.systemCounters = systemCounters;
 	}
 
-	private void processRequest(NodeApplicationRequest request) {
-		log.trace("NodeServiceRequest {}", request);
+	public EventProcessor<MempoolFillerUpdate> mempoolFillerUpdateEventProcessor() {
+		return u -> {
+			u.numTransactions().ifPresent(numTx -> this.numTransactions = numTx);
+			u.sendToSelf().ifPresent(sendToSelf -> this.sendToSelf = sendToSelf);
 
-		try {
-			// TODO: remove use of mempoolAdd message and add to mempool synchronously
-			var txBuilder = radixEngine.construct(request.getRequest().feePayer(REAddr.ofPubKeyAccount(self)));
-			var txn = txBuilder.signAndBuild(hashSigner::sign);
-			radixEngineStateComputer.addToMempool(txn);
-		} catch (TxBuilderException | RuntimeException | MempoolRejectedException e) {
-			log.warn("Failed to fulfil request {} reason: {}", request, e.getMessage());
-			request.completableFuture().ifPresent(c -> c.completeExceptionally(e));
-		}
+			if (u.enabled() == enabled) {
+				u.onError("Already " + (enabled ? "enabled." : "disabled."));
+				return;
+			}
+
+			logger.info("Mempool Filler: Updating " + u.enabled());
+			u.onSuccess();
+
+			if (u.enabled()) {
+				enabled = true;
+				mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 50);
+			} else {
+				enabled = false;
+			}
+		};
 	}
 
-	public EventProcessor<NodeApplicationRequest> requestEventProcessor() {
-		return this::processRequest;
+	public EventProcessor<ScheduledMempoolFill> scheduledMempoolFillEventProcessor() {
+		return p -> {
+			if (!enabled) {
+				return;
+			}
+
+			var minSize = UInt256.TWO.multiply(UInt256.TEN.pow(TokenUtils.SUB_UNITS_POW_10 - 4));
+			var shuttingDown = radixEngineMempool.getShuttingDownSubstates();
+			var txnConstructionRequest = TxnConstructionRequest.create()
+				.feePayer(account)
+				.splitNative(REAddr.ofNativeToken(), account, minSize)
+				.avoidSubstates(shuttingDown);
+
+			var txns = new ArrayList<Txn>();
+			for (int i = 0; i < numTransactions; i++) {
+				try {
+					var builder = radixEngine.construct(txnConstructionRequest);
+					shuttingDown.addAll(builder.toLowLevelBuilder().remoteDownSubstate());
+					var txn = builder.signAndBuild(hashSigner::sign);
+					txns.add(txn);
+				} catch (TxBuilderException e) {
+					break;
+				}
+			}
+
+			if (txns.size() == 1) {
+				logger.info("Mempool Filler mempool: {} Adding txn {} to mempool...",
+					systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE),
+					txns.get(0).getId()
+				);
+			} else {
+				logger.info("Mempool Filler mempool: {} Adding {} txns to mempool...",
+					systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE),
+					txns.size()
+				);
+			}
+
+			final var peers = peersView.peers()
+				.map(PeersView.PeerInfo::bftNode)
+				.collect(ImmutableList.toImmutableList());
+			txns.forEach(txn -> {
+				int index = random.nextInt(sendToSelf ? peers.size() + 1 : peers.size());
+				var mempoolAdd = MempoolAdd.create(txn);
+				if (index == peers.size()) {
+					this.mempoolAddEventDispatcher.dispatch(mempoolAdd);
+				} else {
+					this.remoteMempoolAddEventDispatcher.dispatch(peers.get(index), mempoolAdd);
+				}
+			});
+
+			mempoolFillDispatcher.dispatch(ScheduledMempoolFill.create(), 500);
+		};
 	}
 }

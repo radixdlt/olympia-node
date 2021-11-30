@@ -74,7 +74,6 @@ import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.atom.actions.FeeReserveComplete;
@@ -94,7 +93,6 @@ import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.ParsedTxn;
-import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.REAddr;
@@ -521,21 +519,6 @@ public final class RadixEngine<M> {
 		}
 
 		throw new FeeConstructionException(maxTries);
-	}
-
-	public REProcessedTxn test(byte[] payload, boolean isSigned) throws RadixEngineException {
-		synchronized (stateUpdateEngineLock) {
-			var txn = isSigned
-				? Txn.create(payload)
-				: TxLowLevelBuilder.newBuilder(payload).sig(ECDSASignature.zeroSignature()).build();
-			var checker = this.transientBranch();
-			try {
-				var result = checker.execute(List.of(txn), !isSigned);
-				return result.getProcessedTxn();
-			} finally {
-				this.deleteBranches();
-			}
-		}
 	}
 
 	public REParser getParser() {

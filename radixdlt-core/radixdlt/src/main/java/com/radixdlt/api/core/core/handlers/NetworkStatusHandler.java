@@ -95,7 +95,6 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 
 	@Inject
 	NetworkStatusHandler(
-		@Self REAddr accountAddress,
 		@Self ECPublicKey validatorKey,
 		InMemorySystemInfo inMemorySystemInfo,
 		@Genesis Txn genesisTxn,
@@ -106,7 +105,7 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 	) {
 		super(NetworkStatusRequest.class);
 
-		this.accountAddress = accountAddress;
+		this.accountAddress = REAddr.ofPubKeyAccount(validatorKey);
 		this.validatorKey = validatorKey;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.preGenesisAccumulatorState = new AccumulatorState(0, HashUtils.zero256());

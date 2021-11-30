@@ -62,37 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.mempoolfiller;
+package com.radixdlt.mempoolfiller;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.LocalEvents;
+import javax.inject.Qualifier;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Module responsible for the mempool filler chaos attack
+ * Key for the mempool filler
  */
-public final class MempoolFillerModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(MempoolFiller.class).in(Scopes.SINGLETON);
-		var eventBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() { }, LocalEvents.class)
-				.permitDuplicates();
-		eventBinder.addBinding().toInstance(MempoolFillerUpdate.class);
-		eventBinder.addBinding().toInstance(ScheduledMempoolFill.class);
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> mempoolFillerUpdateProcessor(MempoolFiller mempoolFiller) {
-		return new EventProcessorOnRunner<>(Runners.CHAOS, MempoolFillerUpdate.class, mempoolFiller.mempoolFillerUpdateEventProcessor());
-	}
-
-	@ProvidesIntoSet
-	public EventProcessorOnRunner<?> scheduledMessageFloodEventProcessor(MempoolFiller mempoolFiller) {
-		return new EventProcessorOnRunner<>(Runners.CHAOS, ScheduledMempoolFill.class, mempoolFiller.scheduledMempoolFillEventProcessor());
-	}
+@Qualifier
+@Target({ FIELD, PARAMETER, METHOD })
+@Retention(RUNTIME)
+public @interface MempoolFillerKey {
 }

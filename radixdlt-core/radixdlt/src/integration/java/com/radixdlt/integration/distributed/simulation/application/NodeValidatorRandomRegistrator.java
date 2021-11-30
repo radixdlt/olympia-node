@@ -65,11 +65,18 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.google.inject.Inject;
-import com.radixdlt.application.NodeApplicationRequest;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.atom.TxnConstructionRequest;
+import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 
@@ -96,7 +103,6 @@ public final class NodeValidatorRandomRegistrator implements SimulationTest.Simu
 			// Don't unregister node0/node1 so we are assured validatorSet never becomes empty
 			.map(i -> nodes.get(random.nextInt(nodes.size() - 2) + 2))
 			.subscribe(node -> {
-				var d = network.getDispatcher(NodeApplicationRequest.class, node);
 				var txnConstructionRequest = TxnConstructionRequest.create();
 				if (random.nextBoolean()) {
 					txnConstructionRequest.registerAsValidator(node.getKey());
@@ -104,8 +110,18 @@ public final class NodeValidatorRandomRegistrator implements SimulationTest.Simu
 					txnConstructionRequest.unregisterAsValidator(node.getKey());
 				}
 
-				var request = NodeApplicationRequest.create(txnConstructionRequest);
-				d.dispatch(request);
+				var radixEngine = network.getNodeInjector(node)
+					.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() { }));
+				var radixEngineStateComputer = network.getNodeInjector(node)
+					.getInstance(RadixEngineStateComputer.class);
+				var hashSigner = network.getNodeInjector(node).getInstance(HashSigner.class);
+
+				var txBuilder = radixEngine.construct(txnConstructionRequest.feePayer(REAddr.ofPubKeyAccount(node.getKey())));
+				var txn = txBuilder.signAndBuild(hashSigner::sign);
+				try {
+					radixEngineStateComputer.addToMempool(txn);
+				} catch (MempoolRejectedException ignored) {
+				}
 			});
 	}
 

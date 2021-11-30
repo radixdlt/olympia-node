@@ -65,7 +65,10 @@
 package com.radixdlt.integration.staking;
 
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -81,10 +84,8 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.application.NodeApplicationRequest;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.actions.StakeTokens;
 import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.atom.actions.UnstakeTokens;
@@ -95,11 +96,8 @@ import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.qualifier.NumPeers;
@@ -137,9 +135,8 @@ public class UnstakingLockedTokensTest {
 	private HashSigner hashSigner;
 	@Inject @Self private ECPublicKey self;
 	@Inject private SingleNodeDeterministicRunner runner;
-	@Inject private EventDispatcher<NodeApplicationRequest> nodeApplicationRequestEventDispatcher;
-	@Inject private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	@Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
+	@Inject private RadixEngineStateComputer radixEngineStateComputer;
 	private final long stakingEpoch;
 	private final long unstakingEpoch;
 	private final long transferEpoch;
@@ -178,30 +175,27 @@ public class UnstakingLockedTokensTest {
 		);
 	}
 
-	public REProcessedTxn waitForCommit() {
-		var mempoolAdd = runner.runNextEventsThrough(MempoolAddSuccess.class);
+	public REProcessedTxn waitForCommit(AID txnId) {
 		var committed = runner.runNextEventsThrough(
 			LedgerUpdate.class,
 			u -> {
 				var output = u.getStateComputerOutput().getInstance(REOutput.class);
-				return output.getProcessedTxns().stream().anyMatch(txn -> txn.getTxn().getId().equals(mempoolAdd.getTxn().getId()));
+				return output.getProcessedTxns().stream().anyMatch(txn -> txn.getTxn().getId().equals(txnId));
 			}
 		);
 
 		return committed.getStateComputerOutput().getInstance(REOutput.class).getProcessedTxns().stream()
-			.filter(t -> t.getTxn().getId().equals(mempoolAdd.getTxn().getId()))
+			.filter(t -> t.getTxn().getId().equals(txnId))
 			.findFirst()
 			.orElseThrow();
 	}
 
-	public REProcessedTxn dispatchAndWaitForCommit(Txn txn) {
-		mempoolAddEventDispatcher.dispatch(MempoolAdd.create(txn));
-		return waitForCommit();
-	}
-
-	public REProcessedTxn dispatchAndWaitForCommit(TxAction action) {
-		nodeApplicationRequestEventDispatcher.dispatch(NodeApplicationRequest.create(action));
-		return waitForCommit();
+	public REProcessedTxn dispatchAndWaitForCommit(TxAction action) throws Exception {
+		var request = TxnConstructionRequest.create().action(action);
+		var txBuilder = radixEngine.construct(request.feePayer(REAddr.ofPubKeyAccount(self)));
+		var txn = txBuilder.signAndBuild(hashSigner::sign);
+		radixEngineStateComputer.addToMempool(txn);
+		return waitForCommit(txn.getId());
 	}
 
 	@Test

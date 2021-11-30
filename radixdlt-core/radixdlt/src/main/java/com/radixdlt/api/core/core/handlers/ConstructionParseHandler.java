@@ -78,19 +78,23 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
 public final class ConstructionParseHandler extends CoreJsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+	private final RadixEngineStateComputer radixEngineStateComputer;
 	private final CoreModelMapper modelMapper;
 
 	@Inject
 	ConstructionParseHandler(
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+		RadixEngineStateComputer radixEngineStateComputer,
 		CoreModelMapper modelMapper
 	) {
 		super(ConstructionParseRequest.class);
 
 		this.radixEngineProvider = radixEngineProvider;
+		this.radixEngineStateComputer = radixEngineStateComputer;
 		this.modelMapper = modelMapper;
 	}
 
@@ -110,7 +114,7 @@ public final class ConstructionParseHandler extends CoreJsonRpcHandler<Construct
 
 		REProcessedTxn processed;
 		try {
-			processed = radixEngineProvider.get().test(txn, request.getSigned());
+			processed = radixEngineStateComputer.test(txn, request.getSigned());
 		} catch (RadixEngineException e) {
 			throw modelMapper.radixEngineException(e);
 		}
