@@ -1,8 +1,10 @@
 package com.radixdlt.store.tree;
 
 import com.radixdlt.store.tree.serialization.rlp.RLP;
+import org.spongycastle.util.encoders.Hex;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class PMTBranch extends PMTNode {
 
@@ -57,12 +59,25 @@ public class PMTBranch extends PMTNode {
 		for (int i = 0; i < NUMBER_OF_NIBBLES; i++) {
 			slicesRLPEncoded[i] = RLP.encodeElement(slices[i]);
 		}
-		byte[] finalSlicesRLPEncoded = RLP.encodeList(slicesRLPEncoded);
-		if (value != null) {
-			this.serialized = RLP.encodeList(finalSlicesRLPEncoded, value);
-		} else {
-			this.serialized = finalSlicesRLPEncoded;
-		}
+		this.serialized = RLP.encodeList(
+				slicesRLPEncoded[0],
+				slicesRLPEncoded[1],
+				slicesRLPEncoded[2],
+				slicesRLPEncoded[3],
+				slicesRLPEncoded[4],
+				slicesRLPEncoded[5],
+				slicesRLPEncoded[6],
+				slicesRLPEncoded[7],
+				slicesRLPEncoded[8],
+				slicesRLPEncoded[9],
+				slicesRLPEncoded[10],
+				slicesRLPEncoded[11],
+				slicesRLPEncoded[12],
+				slicesRLPEncoded[13],
+				slicesRLPEncoded[14],
+				slicesRLPEncoded[15],
+				RLP.encodeElement(value == null ? new byte[0] : value)
+		);
 
 		return this.serialized;
 	}

@@ -5,6 +5,7 @@ import com.radixdlt.store.tree.PMTCachedStorage;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.spongycastle.crypto.digests.SHA3Digest;
 
 public class EthereumTxTreeTest {
 
@@ -12,6 +13,8 @@ public class EthereumTxTreeTest {
     public void t() {
         var storage = new PMTCachedStorage();
         var tree = new PMT(storage);
+
+        System.out.println(Hex.toHexString(sha3(RLP.encodeElement(new byte[0]))));
 
         tree.add(
                 Hex.decode("80"),
@@ -37,5 +40,14 @@ public class EthereumTxTreeTest {
                 "ab41f886be23cd786d8a69a72b0f988ea72e0b2e03970d0798f5e03763a442cc",
                 Hex.toHexString(rootHash)
         );
+    }
+    private byte[] sha3(byte[] data) {
+        SHA3Digest sha3Digest = new SHA3Digest(256);
+        byte[] hashed = new byte[sha3Digest.getDigestSize()];
+        if (data.length != 0) {
+            sha3Digest.update(data, 0, data.length);
+        }
+        sha3Digest.doFinal(hashed, 0);
+        return hashed;
     }
 }
