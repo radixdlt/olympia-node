@@ -1,6 +1,7 @@
 package com.radixdlt.store.tree;
 
 import com.radixdlt.store.tree.serialization.rlp.RLP;
+import org.spongycastle.util.Arrays;
 
 public class PMTLeaf extends PMTNode {
 
@@ -22,12 +23,23 @@ public class PMTLeaf extends PMTNode {
 		// INFO: leaf can have empty key. It's because value may not fit branches' hash pointer field
 
 		// XXX TODO: this is probably wrong on bit level?!
-		var prefixedKey = TreeUtils.applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
+		var prefixedKey = fromNibblesToBytes(
+			TreeUtils.applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX)
+		);
 		// TODO: serialize, RLP?
 		this.serialized = RLP.encodeList(
 				RLP.encodeElement(prefixedKey),
 				RLP.encodeElement(value)
 		);
 		return this.serialized;
+	}
+
+	public byte[] fromNibblesToBytes(byte[] nibbles) {
+		byte[] bytes = new byte[0];
+		for (int i = 0; i < nibbles.length; i += 2) {
+			byte b = (byte) ((byte) (nibbles[i]<<4) + (nibbles[i+1]));
+			bytes = Arrays.append(bytes, b);
+		}
+		return bytes;
 	}
 }
