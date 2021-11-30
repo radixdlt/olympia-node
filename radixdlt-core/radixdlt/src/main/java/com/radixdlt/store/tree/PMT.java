@@ -3,12 +3,18 @@ package com.radixdlt.store.tree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class PMT {
 
 	private static final Logger log = LogManager.getLogger();
+	public static final int CACHE_MAXIMUM_SIZE = 1000;
+
+	private final PMTStorage db;
+	private final PMTCache cache;
+	private PMTNode root;
 
 	// API:
 	//add
@@ -28,10 +34,12 @@ public class PMT {
 
 	public PMT(PMTStorage db) {
 		this.db = db;
+		this.cache = new PMTCache(
+			CACHE_MAXIMUM_SIZE,
+			Duration.of(10, ChronoUnit.MINUTES),
+			this::nodeLoader
+		);
 	}
-
-	private PMTStorage db;
-	private PMTNode root;
 
 	public byte[] get(byte[] key) {
 		var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
@@ -62,8 +70,15 @@ public class PMT {
 
 			if (this.root != null) {
 				var acc = insertNode(this.root, pmtKey, val, new PMTAcc());
-				var sanitizedAcc = acc.getNewNodes().stream().filter(Objects::nonNull).collect(Collectors.toList());
-				db.save(sanitizedAcc);
+				 acc.getNewNodes().stream()
+					 .filter(Objects::nonNull)
+					 .forEach(sanitizedAcc -> {
+						 this.cache.put(sanitizedAcc.getHash(), sanitizedAcc);
+						 byte[] serialisedNode = sanitizedAcc.serialize();
+						 if (meetCriteriaToPersist(serialisedNode)) {
+							 this.db.save(sanitizedAcc.getHash(), serialisedNode);
+						 }
+					 });
 				this.root = acc.getTip();
 			} else {
 				PMTNode nodeRoot = new PMTLeaf(pmtKey, val);
@@ -282,6 +297,21 @@ public class PMT {
 	}
 
 	private PMTNode read(byte[] hash) {
-		return db.read(hash);
+		return this.cache.get(hash);
 	}
+
+	private boolean meetCriteriaToPersist(byte[] content) {
+		return content.length >= PMTNode.DB_SIZE_COND;
+	}
+
+	private PMTNode nodeLoader(byte[] key) {
+		byte[] node;
+		if (meetCriteriaToPersist(key)) {
+			node = db.read(key);
+		} else {
+			node = key;
+		}
+		return PMTNode.deserialize(node);
+	}
+
 }
