@@ -64,9 +64,9 @@
 package com.radixdlt.api.core.core.model;
 
 import com.google.common.base.Suppliers;
+import com.radixdlt.api.core.core.model.entities.NotEnoughResourcesException;
 import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.application.system.state.EpochData;
-import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.RadixEngine;
@@ -112,7 +112,7 @@ public final class OperationTxBuilder implements RadixEngine.TxBuilderExecutable
 				retrieval.getIndex(),
 				retrieval.getPredicate(),
 				amount.getAmount(),
-				available -> new NotEnoughResourcesException(amount.getAmount(), available)
+				available -> new NotEnoughResourcesException(amount.getResource(), amount.getAmount(), available)
 			);
 
 			if (!change.isZero()) {

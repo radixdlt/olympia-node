@@ -61,47 +61,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.account;
+package com.radixdlt.api.core.core;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
+import com.radixdlt.api.core.core.model.exceptions.BuildDepositNotSupportedByEntityException;
+import com.radixdlt.api.core.core.model.exceptions.BuildNotEnoughResourcesException;
+import com.radixdlt.api.core.core.model.exceptions.BuildNotValidatorOwnerException;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.Operation;
+import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.qualifier.NumPeers;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.REOutput;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
-import org.junit.After;
+import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -110,39 +103,33 @@ import org.junit.rules.TemporaryFolder;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class AccountInfoTest {
+public class ConstructionBuildTransferStakeUnstakeTest {
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
 	private final Amount totalTokenAmount = Amount.ofTokens(110);
-	private final Amount stakeAmount = Amount.ofTokens(100);
+	private final Amount stakeAmount = Amount.ofTokens(10);
 	private final Amount liquidAmount = Amount.ofSubunits(
 		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
 	);
 
 	@Inject
-	@LocalSigner
-	private HashSigner hashSigner;
+	private ConstructionBuildHandler handler;
+	@Inject
+	private CoreModelMapper coreModelMapper;
 	@Inject
 	@Self
 	private ECPublicKey self;
 	@Inject
 	private SingleNodeDeterministicRunner runner;
-	@Inject
-	private RadixEngine<LedgerAndBFTProof> radixEngine;
-	@Inject
-	private EventDispatcher<MempoolAdd> mempoolDispatcher;
-	@Inject
-	private BerkeleyAccountInfoStore store;
-
-	private Injector injector;
 
 	@Before
 	public void setup() {
-		this.injector = Guice.createInjector(
+		var injector = Guice.createInjector(
 			MempoolConfig.asModule(1000, 10),
 			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(
@@ -160,87 +147,102 @@ public class AccountInfoTest {
 				protected void configure() {
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
-					bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
-					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-						.addBinding().to(BerkeleyAccountInfoStore.class);
+					bindConstant().annotatedWith(NetworkId.class).to(99);
 				}
 			}
 		);
-		this.injector.injectMembers(this);
+		injector.injectMembers(this);
 	}
 
-	@After
-	public void teardown() {
-		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
-		injector.getInstance(PersistentSafetyStateStore.class).close();
-		injector.getInstance(DatabaseEnvironment.class).stop();
+	private ConstructionBuildRequest buildTransfer(UInt256 amount, EntityIdentifier to) {
+		var accountAddress = REAddr.ofPubKeyAccount(self);
+		return new ConstructionBuildRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.feePayer(coreModelMapper.entityIdentifier(accountAddress))
+			.addOperationGroupsItem(new OperationGroup()
+				.addOperationsItem(new Operation()
+					.entityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
+					.amount(coreModelMapper.nativeTokenAmount(false, amount))
+				)
+				.addOperationsItem(new Operation()
+					.entityIdentifier(to)
+					.amount(coreModelMapper.nativeTokenAmount(true, amount))
+				)
+			);
 	}
 
 	@Test
-	public void transferring_all_tokens_should_give_no_balance() throws Exception {
+	public void transferring_all_tokens_should_work() throws Exception {
 		// Arrange
 		runner.start();
+		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+		var otherEntity = coreModelMapper.entityIdentifier(otherAddress);
+		var request = buildTransfer(liquidAmount.toSubunits(), otherEntity);
 
 		// Act
-		var acct = REAddr.ofPubKeyAccount(self);
-		var request = TxnConstructionRequest.create()
-			.feePayer(acct)
-			.action(
-				new TransferToken(
-					REAddr.ofNativeToken(),
-					acct,
-					REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey()),
-					liquidAmount.toSubunits()
-				)
-			);
-		var txBuilder = radixEngine.construct(request);
-		var transfer = txBuilder.signAndBuild(hashSigner::sign);
-		mempoolDispatcher.dispatch(MempoolAdd.create(transfer));
-		runner.runNextEventsThrough(
-			LedgerUpdate.class,
-			u -> {
-				var output = u.getStateComputerOutput().getInstance(REOutput.class);
-				return output.getProcessedTxns().stream().anyMatch(txn -> txn.getTxn().getId().equals(transfer.getId()));
-			}
-		);
+		var response = handler.handleRequest(request);
 
 		// Assert
-		var accountBalances = store.getAccountInfo(acct);
-		var liquidBalances = accountBalances.getLiquidBalances();
-		assertThat(liquidBalances).isEmpty();
+		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
+		assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
+	}
+
+
+	@Test
+	public void staking_tokens_directly_to_validator_should_fail() {
+		// Arrange
+		runner.start();
+		var otherEntity = coreModelMapper.entityIdentifier(self);
+		var request = buildTransfer(liquidAmount.toSubunits(), otherEntity);
+
+		// Act
+		// Assert
+		assertThatThrownBy(() -> handler.handleRequest(request))
+			.isInstanceOf(BuildDepositNotSupportedByEntityException.class);
 	}
 
 	@Test
-	public void unstaking_should_not_add_to_balances() throws Exception {
+	public void transferring_too_many_tokens_should_fail() {
 		// Arrange
 		runner.start();
+		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+		var otherEntity = coreModelMapper.entityIdentifier(otherAddress);
+		var tooLargeAmount = liquidAmount.toSubunits().add(UInt256.ONE);
+		var request = buildTransfer(tooLargeAmount, otherEntity);
 
 		// Act
-		var acct = REAddr.ofPubKeyAccount(self);
-		var request = TxnConstructionRequest.create()
-			.feePayer(acct)
-			.action(
-				new UnstakeTokens(
-					PrivateKeys.ofNumeric(1).getPublicKey(),
-					acct,
-					Amount.ofTokens(50).toSubunits()
-				)
-			);
-		var txBuilder = radixEngine.construct(request);
-		var transfer = txBuilder.signAndBuild(hashSigner::sign);
-		mempoolDispatcher.dispatch(MempoolAdd.create(transfer));
-		runner.runNextEventsThrough(
-			LedgerUpdate.class,
-			u -> {
-				var output = u.getStateComputerOutput().getInstance(REOutput.class);
-				return output.getProcessedTxns().stream().anyMatch(txn -> txn.getTxn().getId().equals(transfer.getId()));
-			}
-		);
+		// Assert
+		assertThatThrownBy(() -> handler.handleRequest(request))
+			.isInstanceOf(BuildNotEnoughResourcesException.class);
+	}
+
+	@Test
+	public void staking_tokens_to_self_should_succeed() throws Exception {
+		// Arrange
+		runner.start();
+		var selfAddress = REAddr.ofPubKeyAccount(self);
+		var preparedStakeEntity = coreModelMapper.entityIdentifierPreparedStake(selfAddress, self);
+		var request = buildTransfer(liquidAmount.toSubunits(), preparedStakeEntity);
+
+		// Act
+		var response = handler.handleRequest(request);
 
 		// Assert
-		var accountBalances = store.getAccountInfo(acct);
-		var liquidBalances = accountBalances.getLiquidBalances();
-		var amtString = liquidBalances.get(0).getValue();
-		assertThat(amtString).isEqualTo(Amount.ofTokens(10).toSubunits().toString());
+		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
+		assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
+	}
+
+	@Test
+	public void staking_tokens_to_non_owned_validator_should_fail() {
+		// Arrange
+		runner.start();
+		var selfAddress = REAddr.ofPubKeyAccount(self);
+		var otherKey = PrivateKeys.ofNumeric(2).getPublicKey();
+		var preparedStakeEntity = coreModelMapper.entityIdentifierPreparedStake(selfAddress, otherKey);
+		var request = buildTransfer(liquidAmount.toSubunits(), preparedStakeEntity);
+
+		// Act
+		assertThatThrownBy(() -> handler.handleRequest(request))
+			.isInstanceOf(BuildNotValidatorOwnerException.class);
 	}
 }

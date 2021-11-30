@@ -101,7 +101,7 @@ public final class TokensInAccount implements ResourceInBucket {
 
 	@Override
 	public Bucket bucket() {
-		return new AccountBucket(resourceAddr, holdingAddress);
+		return AccountBucket.from(resourceAddr, holdingAddress);
 	}
 
 	public REAddr getHoldingAddr() {

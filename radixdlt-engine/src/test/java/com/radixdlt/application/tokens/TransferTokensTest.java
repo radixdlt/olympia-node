@@ -211,11 +211,11 @@ public class TransferTokensTest {
 		assertThat(accounting.bucketAccounting())
 			.hasSize(2)
 			.containsEntry(
-				new AccountBucket(tokenAddr, accountAddr),
+				AccountBucket.from(tokenAddr, accountAddr),
 				new BigInteger(-1, transferAmt.toByteArray(), 0, UInt256.BYTES)
 			)
 			.containsEntry(
-				new AccountBucket(tokenAddr, to),
+				AccountBucket.from(tokenAddr, to),
 				new BigInteger(1, transferAmt.toByteArray(), 0, UInt256.BYTES)
 			);
 		assertThat(accounting.resourceAccounting()).isEmpty();

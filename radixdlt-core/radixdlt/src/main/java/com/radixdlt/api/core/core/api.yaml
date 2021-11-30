@@ -3026,6 +3026,18 @@ components:
           properties:
             message:
               type: string
+    NotEnoughResourcesErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - available
+            - attempted_to_take
+          properties:
+            available:
+              $ref: "#/components/schemas/ResourceAmount"
+            attempted_to_take:
+              $ref: "#/components/schemas/ResourceAmount"
     BelowMinimumStakeErrorDetails:
       allOf:
         - $ref: "#/components/schemas/ErrorDetails"
@@ -3195,6 +3207,7 @@ components:
           InvalidHexErrorDetails: "#/components/schemas/InvalidHexErrorDetails"
           InvalidSignatureErrorDetails: "#/components/schemas/InvalidSignatureErrorDetails"
           InvalidTransactionErrorDetails: "#/components/schemas/InvalidTransactionErrorDetails"
+          NotEnoughResourcesErrorDetails: "#/components/schemas/NotEnoughResourcesErrorDetails"
           BelowMinimumStakeErrorDetails: "#/components/schemas/BelowMinimumStakeErrorDetails"
           DataObjectNotSupportedByEntityErrorDetails: "#/components/schemas/DataObjectNotSupportedByEntityErrorDetails"
           ResourceDepositOperationNotSupportedByEntityErrorDetails: "#/components/schemas/ResourceDepositOperationNotSupportedByEntityErrorDetails"

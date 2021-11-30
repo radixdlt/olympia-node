@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,83 +61,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.state;
+package com.radixdlt.api.core.core.model.entities;
 
-import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.application.tokens.Bucket;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.api.core.core.model.Resource;
+import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.utils.UInt256;
 
-import java.util.Objects;
+public class NotEnoughResourcesException extends TxBuilderException {
+	private final UInt256 requested;
+	private final UInt256 available;
+	private final Resource resource;
 
-public final class StakeOwnership implements ResourceInBucket {
-	private final UInt256 amount;
-
-	// Bucket keys
-	private final REAddr owner;
-	private final ECPublicKey delegateKey;
-
-	public StakeOwnership(
-		ECPublicKey delegateKey,
-		REAddr owner,
-		UInt256 amount
-	) {
-		if (amount.isZero()) {
-			throw new IllegalArgumentException("Stake ownership should not be zero");
-		}
-		this.delegateKey = Objects.requireNonNull(delegateKey);
-		this.owner = Objects.requireNonNull(owner);
-		this.amount = Objects.requireNonNull(amount);
+	public NotEnoughResourcesException(Resource resource, UInt256 requested, UInt256 available) {
+		super("Requested " + requested + " but only " + available + " available");
+		this.resource = resource;
+		this.requested = requested;
+		this.available = available;
 	}
 
-	@Override
-	public UInt256 getAmount() {
-		return this.amount;
+	public Resource getResource() {
+		return resource;
 	}
 
-	public Bucket bucket() {
-		return StakeOwnershipBucket.from(delegateKey, owner);
+	public UInt256 getRequested() {
+		return requested;
 	}
 
-	public ECPublicKey getDelegateKey() {
-		return delegateKey;
-	}
-
-	public REAddr getOwner() {
-		return this.owner;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{delegate=%s owner=%s amt=%s}",
-			getClass().getSimpleName(),
-			delegateKey,
-			owner,
-			amount
-		);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof StakeOwnership)) {
-			return false;
-		}
-		StakeOwnership that = (StakeOwnership) o;
-		return Objects.equals(delegateKey, that.delegateKey)
-			&& Objects.equals(owner, that.owner)
-			&& Objects.equals(amount, that.amount);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(
-			delegateKey,
-			owner,
-			amount
-		);
+	public UInt256 getAvailable() {
+		return available;
 	}
 }

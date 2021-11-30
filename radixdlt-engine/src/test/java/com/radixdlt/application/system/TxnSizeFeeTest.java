@@ -70,6 +70,7 @@ import com.radixdlt.application.system.construction.FeeReserveCompleteConstructo
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
+import com.radixdlt.application.system.state.StakeOwnershipBucket;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;
@@ -234,7 +235,10 @@ public class TxnSizeFeeTest {
 				index,
 				p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(accountAddr),
 				fee,
-				available -> new NotEnoughResourcesException(fee, available)
+				available -> {
+					var from = AccountBucket.from(REAddr.ofNativeToken(), accountAddr);
+					return new NotEnoughResourcesException(from, fee, available);
+				}
 			);
 			txBuilder.toLowLevelBuilder().syscall(Syscall.FEE_RESERVE_PUT, fee.toByteArray());
 			if (!remainder.isZero()) {
@@ -265,7 +269,10 @@ public class TxnSizeFeeTest {
 				index,
 				p -> p.getResourceAddr().isNativeToken() && p.getHoldingAddr().equals(accountAddr),
 				fee,
-				available -> new NotEnoughResourcesException(fee, available)
+				available -> {
+					var from = AccountBucket.from(REAddr.ofNativeToken(), accountAddr);
+					return new NotEnoughResourcesException(from, fee, available);
+				}
 			);
 
 			var data = new byte[Short.BYTES + 1 + UInt256.BYTES + 1];
@@ -358,7 +365,7 @@ public class TxnSizeFeeTest {
 		var result = this.engine.execute(List.of(transfer));
 		var refund = REResourceAccounting.compute(result.getProcessedTxn().getGroupedStateUpdates().get(2).stream())
 			.bucketAccounting()
-			.get(new AccountBucket(REAddr.ofNativeToken(), accountAddr));
+			.get(AccountBucket.from(REAddr.ofNativeToken(), accountAddr));
 		assertThat(refund).isEqualTo(expectedRefund);
 	}
 }

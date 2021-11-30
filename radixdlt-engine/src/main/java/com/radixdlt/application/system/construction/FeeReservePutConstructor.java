@@ -64,11 +64,13 @@
 
 package com.radixdlt.application.system.construction;
 
+import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.atom.ActionConstructor;
 import com.radixdlt.atom.NotEnoughResourcesException;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.actions.FeeReservePut;
+import com.radixdlt.identifiers.REAddr;
 
 public class FeeReservePutConstructor implements ActionConstructor<FeeReservePut> {
 	@Override
@@ -79,7 +81,10 @@ public class FeeReservePutConstructor implements ActionConstructor<FeeReservePut
 		txBuilder.putFeeReserve(
 			action.from(),
 			action.amount(),
-			available -> new NotEnoughResourcesException(action.amount(), available)
+			available -> {
+				var from = AccountBucket.from(REAddr.ofNativeToken(), action.from());
+				return new NotEnoughResourcesException(from, action.amount(), available);
+			}
 		);
 		txBuilder.end();
 	}

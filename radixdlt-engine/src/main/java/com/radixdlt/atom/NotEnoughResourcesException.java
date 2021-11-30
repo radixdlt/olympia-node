@@ -63,14 +63,17 @@
 
 package com.radixdlt.atom;
 
+import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.utils.UInt256;
 
 public final class NotEnoughResourcesException extends TxBuilderException {
 	private final UInt256 requested;
 	private final UInt256 available;
+	private final Bucket fromBucket;
 
-	public NotEnoughResourcesException(UInt256 requested, UInt256 available) {
-		super("Requested " + requested + " + but only " + available + " available");
+	public NotEnoughResourcesException(Bucket fromBucket, UInt256 requested, UInt256 available) {
+		super("Requested " + requested + " but only " + available + " available");
+		this.fromBucket = fromBucket;
 		this.requested = requested;
 		this.available = available;
 	}

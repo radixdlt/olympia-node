@@ -78,12 +78,14 @@ import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceDep
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportResourceWithdrawException;
 import com.radixdlt.api.core.core.model.entities.ExitingStakeVaultEntity;
 import com.radixdlt.api.core.core.model.entities.InvalidDataObjectException;
+import com.radixdlt.api.core.core.model.entities.NotEnoughResourcesException;
 import com.radixdlt.api.core.core.model.entities.SystemEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorSystemEntity;
 import com.radixdlt.api.core.core.model.exceptions.BuildAboveMaxValidatorFeeIncreaseException;
 import com.radixdlt.api.core.core.model.exceptions.BuildBelowMinStakeException;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportDataObjectException;
 import com.radixdlt.api.core.core.model.exceptions.BuildDataObjectNotSupportedByEntityException;
+import com.radixdlt.api.core.core.model.exceptions.BuildNotEnoughResourcesException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidAddressException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidFeePayerEntityException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidHexException;
@@ -264,6 +266,16 @@ public final class CoreModelMapper {
 			);
 		} else if (e instanceof FeeConstructionException feeConstructionException) {
 			return new BuildFeeException(feeConstructionException.getAttempts());
+		} else if (e instanceof NotEnoughResourcesException notEnoughResourcesException) {
+			var resourceIdentifier = resourceIdentifier(notEnoughResourcesException.getResource());
+			return new BuildNotEnoughResourcesException(
+				new ResourceAmount()
+					.resourceIdentifier(resourceIdentifier)
+					.value(notEnoughResourcesException.getAvailable().toString()),
+				new ResourceAmount()
+					.resourceIdentifier(resourceIdentifier)
+					.value(notEnoughResourcesException.getRequested().toString())
+			);
 		}
 
 		throw new IllegalStateException(e);
@@ -540,6 +552,17 @@ public final class CoreModelMapper {
 		return new EntityIdentifier().address(addressing.forResources().of(symbol, tokenAddress));
 	}
 
+	public EntityIdentifier entityIdentifierPreparedStake(REAddr accountAddress, ECPublicKey validatorKey) {
+		return new EntityIdentifier()
+			.address(addressing.forAccounts().of(accountAddress))
+			.subEntity(new SubEntity()
+				.address("prepared_stake")
+				.metadata(new SubEntityMetadata()
+					.validator(addressing.forValidators().of(validatorKey))
+				)
+			);
+	}
+
 	public EntityIdentifier entityIdentifier(REAddr accountAddress) {
 		return new EntityIdentifier().address(addressing.forAccounts().of(accountAddress));
 	}
@@ -578,10 +601,14 @@ public final class CoreModelMapper {
 			.type("Token");
 	}
 
-	public ResourceAmount nativeTokenAmount(UInt256 value) {
+	public ResourceAmount nativeTokenAmount(boolean positive, UInt256 value) {
 		return new ResourceAmount()
 			.resourceIdentifier(nativeToken())
-			.value(value.toString());
+			.value(positive ? value.toString() : "-" + value);
+	}
+
+	public ResourceAmount nativeTokenAmount(UInt256 value) {
+		return nativeTokenAmount(true, value);
 	}
 
 	public ResourceIdentifier nativeToken() {

@@ -77,12 +77,16 @@ public final class StakeOwnershipBucket implements Bucket {
 	private final REAddr owner;
 	private final ECPublicKey delegateKey;
 
-	public StakeOwnershipBucket(
+	private StakeOwnershipBucket(
 		ECPublicKey delegateKey,
 		REAddr owner
 	) {
 		this.delegateKey = Objects.requireNonNull(delegateKey);
 		this.owner = Objects.requireNonNull(owner);
+	}
+
+	public static StakeOwnershipBucket from(ECPublicKey validator, REAddr owner) {
+		return new StakeOwnershipBucket(validator, owner);
 	}
 
 	@Override

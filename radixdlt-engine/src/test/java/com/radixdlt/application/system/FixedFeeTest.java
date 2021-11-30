@@ -168,7 +168,7 @@ public class FixedFeeTest {
 		assertThat(accounting0.bucketAccounting())
 			.hasSize(1)
 			.containsEntry(
-				new AccountBucket(REAddr.ofNativeToken(), accountAddr),
+				AccountBucket.from(REAddr.ofNativeToken(), accountAddr),
 				BigInteger.valueOf(-5)
 			);
 		var accounting1 = REResourceAccounting.compute(
@@ -177,11 +177,11 @@ public class FixedFeeTest {
 		assertThat(accounting1.bucketAccounting())
 			.hasSize(2)
 			.containsEntry(
-				new AccountBucket(REAddr.ofNativeToken(), accountAddr),
+				AccountBucket.from(REAddr.ofNativeToken(), accountAddr),
 				BigInteger.valueOf(-5)
 			)
 			.containsEntry(
-				new AccountBucket(REAddr.ofNativeToken(), to),
+				AccountBucket.from(REAddr.ofNativeToken(), to),
 				BigInteger.valueOf(5)
 			);
 	}
@@ -239,7 +239,7 @@ public class FixedFeeTest {
 		assertThat(accounting0.bucketAccounting())
 			.hasSize(1)
 			.containsEntry(
-				new AccountBucket(REAddr.ofNativeToken(), accountAddr),
+				AccountBucket.from(REAddr.ofNativeToken(), accountAddr),
 				BigInteger.valueOf(-8)
 			);
 		var accounting1 = REResourceAccounting.compute(
@@ -248,11 +248,11 @@ public class FixedFeeTest {
 		assertThat(accounting1.bucketAccounting())
 			.hasSize(2)
 			.containsEntry(
-				new AccountBucket(REAddr.ofNativeToken(), accountAddr),
+				AccountBucket.from(REAddr.ofNativeToken(), accountAddr),
 				BigInteger.valueOf(-2)
 			)
 			.containsEntry(
-				new AccountBucket(REAddr.ofNativeToken(), to),
+				AccountBucket.from(REAddr.ofNativeToken(), to),
 				BigInteger.valueOf(2)
 			);
 		var accounting2 = REResourceAccounting.compute(
@@ -261,7 +261,7 @@ public class FixedFeeTest {
 		assertThat(accounting2.bucketAccounting())
 			.hasSize(1)
 			.containsEntry(
-				new AccountBucket(REAddr.ofNativeToken(), accountAddr),
+				AccountBucket.from(REAddr.ofNativeToken(), accountAddr),
 				BigInteger.valueOf(3)
 			);
 	}
