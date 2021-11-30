@@ -68,18 +68,15 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
-import com.radixdlt.api.core.core.model.exceptions.BuildDepositNotSupportedByEntityException;
-import com.radixdlt.api.core.core.model.exceptions.BuildNotEnoughResourcesException;
-import com.radixdlt.api.core.core.model.exceptions.BuildNotValidatorOwnerException;
-import com.radixdlt.api.core.core.model.exceptions.BuildWithdrawNotSupportedByEntityException;
+import com.radixdlt.api.core.core.model.exceptions.InvalidDataObjectException;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
+import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.ResourceIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.SubEntity;
+import com.radixdlt.api.core.core.openapitools.model.TokenData;
+import com.radixdlt.api.core.core.openapitools.model.TokenMetadata;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.Self;
@@ -88,6 +85,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
@@ -98,7 +96,6 @@ import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -109,8 +106,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class ConstructionBuildTransferStakeUnstakeTest {
-
+public final class ConstructionBuildTokenDefinitionTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
@@ -123,6 +119,8 @@ public class ConstructionBuildTransferStakeUnstakeTest {
 
 	@Inject
 	private ConstructionBuildHandler handler;
+	@Inject
+	private Addressing addressing;
 	@Inject
 	private CoreModelMapper coreModelMapper;
 	@Inject
@@ -158,11 +156,13 @@ public class ConstructionBuildTransferStakeUnstakeTest {
 		injector.injectMembers(this);
 	}
 
-	private ConstructionBuildRequest buildTransfer(
-		ResourceIdentifier resourceIdentifier,
-		UInt256 amount,
-		EntityIdentifier from,
-		EntityIdentifier to
+
+	private ConstructionBuildRequest buildTokenDefinition(
+		EntityIdentifier tokenEntityIdentifier,
+		String symbol,
+		REAddr owner,
+		int granularity,
+		boolean isMutable
 	) {
 		var accountAddress = REAddr.ofPubKeyAccount(self);
 		return new ConstructionBuildRequest()
@@ -170,89 +170,43 @@ public class ConstructionBuildTransferStakeUnstakeTest {
 			.feePayer(coreModelMapper.entityIdentifier(accountAddress))
 			.addOperationGroupsItem(new OperationGroup()
 				.addOperationsItem(new Operation()
-					.entityIdentifier(from)
-					.amount(new ResourceAmount()
-						.resourceIdentifier(resourceIdentifier)
-						.value("-" + amount.toString())
+					.entityIdentifier(tokenEntityIdentifier)
+					.data(new Data()
+						.action(Data.ActionEnum.CREATE)
+						.dataObject(new TokenData()
+							.owner(owner == null ? null : addressing.forAccounts().of(owner))
+							.granularity(Integer.toString(granularity))
+							.isMutable(isMutable)
+						)
 					)
 				)
 				.addOperationsItem(new Operation()
-					.entityIdentifier(to)
-					.amount(new ResourceAmount()
-						.resourceIdentifier(resourceIdentifier)
-						.value(amount.toString())
+					.entityIdentifier(tokenEntityIdentifier)
+					.data(new Data()
+						.action(Data.ActionEnum.CREATE)
+						.dataObject(new TokenMetadata()
+							.symbol(symbol)
+							.name("")
+							.url("")
+							.iconUrl("")
+							.description("")
+						)
 					)
 				)
 			);
 	}
 
 	@Test
-	public void transferring_all_tokens_should_work() throws Exception {
+	public void creating_a_new_token_definition_should_work() throws Exception {
 		// Arrange
 		runner.start();
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			liquidAmount.toSubunits(),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifier(otherAddress)
-		);
-
-		// Act
-		var response = handler.handleRequest(request);
-
-		// Assert
-		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
-		assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
-	}
-
-
-	@Test
-	public void staking_tokens_directly_to_validator_should_fail() {
-		// Arrange
-		runner.start();
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			liquidAmount.toSubunits(),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifier(self)
-		);
-
-		// Act
-		// Assert
-		assertThatThrownBy(() -> handler.handleRequest(request))
-			.isInstanceOf(BuildDepositNotSupportedByEntityException.class);
-	}
-
-	@Test
-	public void transferring_too_many_tokens_should_fail() {
-		// Arrange
-		runner.start();
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var tooLargeAmount = liquidAmount.toSubunits().add(UInt256.ONE);
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			tooLargeAmount,
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifier(otherAddress)
-		);
-
-		// Act
-		// Assert
-		assertThatThrownBy(() -> handler.handleRequest(request))
-			.isInstanceOf(BuildNotEnoughResourcesException.class);
-	}
-
-	@Test
-	public void staking_tokens_to_self_should_succeed() throws Exception {
-		// Arrange
-		runner.start();
-		var selfAddress = REAddr.ofPubKeyAccount(self);
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			liquidAmount.toSubunits(),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifierPreparedStake(selfAddress, self)
+		var accountAddress = REAddr.ofPubKeyAccount(self);
+		var request = buildTokenDefinition(
+			coreModelMapper.entityIdentifier(accountAddress, "test"),
+			"test",
+			accountAddress,
+			1,
+			true
 		);
 
 		// Act
@@ -264,61 +218,78 @@ public class ConstructionBuildTransferStakeUnstakeTest {
 	}
 
 	@Test
-	public void staking_tokens_to_non_owned_validator_should_fail() {
+	public void using_different_symbols_should_fail() {
 		// Arrange
 		runner.start();
-		var selfAddress = REAddr.ofPubKeyAccount(self);
-		var otherKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			liquidAmount.toSubunits(),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifierPreparedStake(selfAddress, otherKey)
+		var accountAddress = REAddr.ofPubKeyAccount(self);
+		var request = buildTokenDefinition(
+			coreModelMapper.entityIdentifier(accountAddress, "test2"),
+			"test",
+			accountAddress,
+			1,
+			true
 		);
 
 		// Act
 		// Assert
 		assertThatThrownBy(() -> handler.handleRequest(request))
-			.isInstanceOf(BuildNotValidatorOwnerException.class);
+			.isInstanceOf(InvalidDataObjectException.class);
 	}
 
 	@Test
-	public void withdrawing_staked_tokens_should_fail() {
+	public void using_different_granularity_than_1_should_fail() {
 		// Arrange
 		runner.start();
-		var selfAddress = REAddr.ofPubKeyAccount(self);
-
-		var request = buildTransfer(
-			coreModelMapper.nativeToken(),
-			stakeAmount.toSubunits(),
-			coreModelMapper.entityIdentifier(self).subEntity(new SubEntity().address("system")),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self))
+		var accountAddress = REAddr.ofPubKeyAccount(self);
+		var request = buildTokenDefinition(
+			coreModelMapper.entityIdentifier(accountAddress, "test"),
+			"test",
+			accountAddress,
+			2,
+			true
 		);
 
 		// Act
 		// Assert
 		assertThatThrownBy(() -> handler.handleRequest(request))
-			.isInstanceOf(BuildWithdrawNotSupportedByEntityException.class);
+			.isInstanceOf(InvalidDataObjectException.class);
 	}
 
-
 	@Test
-	public void unstaking_tokens_should_work() throws Exception {
+	public void creating_fixed_supply_token_with_owner_should_fail() {
 		// Arrange
 		runner.start();
-		var selfAddress = REAddr.ofPubKeyAccount(self);
-		var request = buildTransfer(
-			coreModelMapper.stakeOwnership(self),
-			stakeAmount.toSubunits(),
-			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifier(selfAddress)
+		var accountAddress = REAddr.ofPubKeyAccount(self);
+		var request = buildTokenDefinition(
+			coreModelMapper.entityIdentifier(accountAddress, "test"),
+			"test",
+			accountAddress,
+			1,
+			false
 		);
 
 		// Act
-		var response = handler.handleRequest(request);
-
 		// Assert
-		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
-		assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
+		assertThatThrownBy(() -> handler.handleRequest(request))
+			.isInstanceOf(InvalidDataObjectException.class);
+	}
+
+	@Test
+	public void creating_mutable_supply_token_with_no_owner_should_fail() {
+		// Arrange
+		runner.start();
+		var accountAddress = REAddr.ofPubKeyAccount(self);
+		var request = buildTokenDefinition(
+			coreModelMapper.entityIdentifier(accountAddress, "test"),
+			"test",
+			null,
+			1,
+			true
+		);
+
+		// Act
+		// Assert
+		assertThatThrownBy(() -> handler.handleRequest(request))
+			.isInstanceOf(InvalidDataObjectException.class);
 	}
 }

@@ -127,10 +127,14 @@ public final class TokenEntity implements Entity {
 	) throws TxBuilderException {
 		var dataObject = parsedDataObject.getDataObject();
 		if (dataObject instanceof TokenData tokenData) {
-			var isMutable = tokenData.getIsMutable();
+			boolean isMutable = tokenData.getIsMutable();
 			var ownerKey = parsedDataObject.getParsed(ECPublicKey.class);
 			if (!isMutable && ownerKey != null) {
 				throw new InvalidDataObjectException(parsedDataObject, "Cannot have owner on fixed supply token.");
+			}
+
+			if (isMutable && ownerKey == null) {
+				throw new InvalidDataObjectException(parsedDataObject, "Must have an owner on mutable supply token.");
 			}
 
 			if (!tokenData.getGranularity().equals("1")) {
@@ -142,6 +146,13 @@ public final class TokenEntity implements Entity {
 			var tokenResource = new TokenResource(tokenAddr, UInt256.ONE, isMutable, ownerKey);
 			builder.up(tokenResource);
 		} else if (dataObject instanceof TokenMetadata tokenMetadata) {
+			if (!tokenMetadata.getSymbol().equals(this.symbol)) {
+				throw new InvalidDataObjectException(
+					parsedDataObject, "TokenMetadata symbol (" + tokenMetadata.getSymbol()
+					+ " does not match Entity symbol (" + this.symbol + ")"
+				);
+			}
+
 			builder.up(new TokenResourceMetadata(
 				tokenAddr,
 				symbol,

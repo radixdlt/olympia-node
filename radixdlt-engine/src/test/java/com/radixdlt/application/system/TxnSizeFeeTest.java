@@ -70,7 +70,6 @@ import com.radixdlt.application.system.construction.FeeReserveCompleteConstructo
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
-import com.radixdlt.application.system.state.StakeOwnershipBucket;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.construction.CreateMutableTokenConstructor;
 import com.radixdlt.application.tokens.construction.MintTokenConstructor;

@@ -615,6 +615,12 @@ public final class CoreModelMapper {
 		return create(REAddr.ofNativeToken(), "xrd");
 	}
 
+	public ResourceIdentifier stakeOwnership(ECPublicKey validatorKey) {
+		return new StakeOwnershipResourceIdentifier()
+			.validator(addressing.forValidators().of(validatorKey))
+			.type("StakeOwnership");
+	}
+
 	public ResourceIdentifier resourceIdentifier(Bucket bucket, Function<REAddr, String> tokenAddressToSymbol) {
 		if (bucket.resourceAddr() != null) {
 			var addr = bucket.resourceAddr();
