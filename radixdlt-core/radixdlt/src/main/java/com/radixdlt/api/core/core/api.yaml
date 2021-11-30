@@ -1805,10 +1805,7 @@ components:
           items:
             "$ref": "#/components/schemas/OperationGroup"
         metadata:
-          type: object
-          properties:
-            fee:
-              "$ref": "#/components/schemas/ResourceAmount"
+          $ref: "#/components/schemas/ParsedTransactionMetadata"
       example:
         metadata:
           resource_identifier:
@@ -1816,16 +1813,7 @@ components:
             type: Token
           value: '72600000000000000'
         operation_groups:
-          - metadata:
-              action:
-                amount:
-                  resource_identifier:
-                    rri: xrd_rr1qy5wfsfh
-                    type: Token
-                  value: '72600000000000000'
-                from: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
-                type: BurnTokens
-            operations:
+          - operations:
               - amount:
                   resource_identifier:
                     rri: xrd_rr1qy5wfsfh
@@ -1852,17 +1840,7 @@ components:
                 entity_identifier:
                   address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
                 type: Resource
-          - metadata:
-              action:
-                amount:
-                  resource_identifier:
-                    rri: xrd_rr1qy5wfsfh
-                    type: Token
-                  value: '150'
-                from: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
-                to: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
-                type: TokenTransfer
-            operations:
+          - operations:
               - amount:
                   resource_identifier:
                     rri: xrd_rr1qy5wfsfh
@@ -2419,6 +2397,15 @@ components:
           "$ref": "#/components/schemas/PublicKey"
         message:
           description: Optional hex encoded byte array in the transaction.
+          type: string
+    ParsedTransactionMetadata:
+      type: object
+      required:
+        - fee
+      properties:
+        fee:
+          $ref: "#/components/schemas/ResourceAmount"
+        message:
           type: string
     OperationGroup:
       type: object

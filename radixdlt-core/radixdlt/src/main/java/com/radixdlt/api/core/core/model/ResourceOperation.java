@@ -70,7 +70,7 @@ public final class ResourceOperation {
 	private final UInt256 amount;
 	private final boolean deposit;
 
-	public ResourceOperation(Resource resource, UInt256 amount, boolean deposit) {
+	private ResourceOperation(Resource resource, UInt256 amount, boolean deposit) {
 		this.resource = resource;
 		this.amount = amount;
 		this.deposit = deposit;
@@ -82,5 +82,17 @@ public final class ResourceOperation {
 
 	public boolean isDeposit() {
 		return deposit;
+	}
+
+	public static ResourceOperation from(Resource resource, UInt256 amount, boolean deposit) {
+		return new ResourceOperation(resource, amount, deposit);
+	}
+
+	public static ResourceOperation deposit(Resource resource, UInt256 amount) {
+		return new ResourceOperation(resource, amount, true);
+	}
+
+	public static ResourceOperation withdraw(Resource resource, UInt256 amount) {
+		return new ResourceOperation(resource, amount, false);
 	}
 }

@@ -113,12 +113,9 @@ public final class ConstructionBuildTokenDefinitionTest {
 
 	private final Amount totalTokenAmount = Amount.ofTokens(110);
 	private final Amount stakeAmount = Amount.ofTokens(10);
-	private final Amount liquidAmount = Amount.ofSubunits(
-		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
-	);
 
 	@Inject
-	private ConstructionBuildHandler handler;
+	private ConstructionBuildHandler sut;
 	@Inject
 	private Addressing addressing;
 	@Inject
@@ -210,7 +207,7 @@ public final class ConstructionBuildTokenDefinitionTest {
 		);
 
 		// Act
-		var response = handler.handleRequest(request);
+		var response = sut.handleRequest(request);
 
 		// Assert
 		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
@@ -232,7 +229,7 @@ public final class ConstructionBuildTokenDefinitionTest {
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> handler.handleRequest(request))
+		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOf(InvalidDataObjectException.class);
 	}
 
@@ -251,7 +248,7 @@ public final class ConstructionBuildTokenDefinitionTest {
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> handler.handleRequest(request))
+		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOf(InvalidDataObjectException.class);
 	}
 
@@ -270,7 +267,7 @@ public final class ConstructionBuildTokenDefinitionTest {
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> handler.handleRequest(request))
+		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOf(InvalidDataObjectException.class);
 	}
 
@@ -289,7 +286,7 @@ public final class ConstructionBuildTokenDefinitionTest {
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> handler.handleRequest(request))
+		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOf(InvalidDataObjectException.class);
 	}
 }

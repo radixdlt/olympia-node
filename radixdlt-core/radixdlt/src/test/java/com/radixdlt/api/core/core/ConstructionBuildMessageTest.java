@@ -75,7 +75,6 @@ import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -83,7 +82,6 @@ import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
@@ -116,10 +114,7 @@ public class ConstructionBuildMessageTest {
 	);
 
 	@Inject
-	@LocalSigner
-	private HashSigner hashSigner;
-	@Inject
-	private ConstructionBuildHandler handler;
+	private ConstructionBuildHandler sut;
 	@Inject
 	private CoreModelMapper coreModelMapper;
 	@Inject
@@ -184,7 +179,7 @@ public class ConstructionBuildMessageTest {
 		var request = buildRequestWithMessage(hex);
 
 		// Act
-		var response = handler.handleRequest(request);
+		var response = sut.handleRequest(request);
 
 		// Assert
 		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
@@ -204,7 +199,7 @@ public class ConstructionBuildMessageTest {
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> handler.handleRequest(request))
+		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOf(BuildMessageTooLongException.class);
 	}
 }

@@ -68,7 +68,7 @@ public final class EntityOperation {
 	private final ResourceOperation resourceOperation;
 	private final DataOperation dataOperation;
 
-	public EntityOperation(
+	private EntityOperation(
 		Entity entity,
 		ResourceOperation resourceOperation,
 		DataOperation dataOperation
@@ -88,5 +88,13 @@ public final class EntityOperation {
 
 	public DataOperation getDataOperation() {
 		return dataOperation;
+	}
+
+	public static EntityOperation from(Entity entity, ResourceOperation resourceOperation, DataOperation dataOperation) {
+		return new EntityOperation(entity, resourceOperation, dataOperation);
+	}
+
+	public static EntityOperation from(Entity entity, ResourceOperation resourceOperation) {
+		return new EntityOperation(entity, resourceOperation, null);
 	}
 }

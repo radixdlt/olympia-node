@@ -388,7 +388,7 @@ public final class CoreModelMapper {
 		for (var group : operationGroups) {
 			var entityOperationGroup = new ArrayList<EntityOperation>();
 			for (var op : group.getOperations()) {
-				var entityOperation = new EntityOperation(
+				var entityOperation = EntityOperation.from(
 					entity(op.getEntityIdentifier()),
 					resourceOperation(op.getAmount()),
 					dataOperation(op.getData())
@@ -460,7 +460,7 @@ public final class CoreModelMapper {
 		var bigInteger = new BigInteger(resourceAmount.getValue());
 		var isPositive = bigInteger.compareTo(BigInteger.ZERO) > 0;
 
-		return new ResourceOperation(
+		return ResourceOperation.from(
 			resource(resourceAmount.getResourceIdentifier()),
 			UInt256.from((isPositive ? bigInteger : bigInteger.negate()).toByteArray()),
 			isPositive
@@ -550,6 +550,17 @@ public final class CoreModelMapper {
 
 	public EntityIdentifier entityIdentifier(REAddr tokenAddress, String symbol) {
 		return new EntityIdentifier().address(addressing.forResources().of(symbol, tokenAddress));
+	}
+
+	public EntityIdentifier entityIdentifierPreparedUnstake(REAddr accountAddress, ECPublicKey validatorKey) {
+		return new EntityIdentifier()
+			.address(addressing.forAccounts().of(accountAddress))
+			.subEntity(new SubEntity()
+				.address("prepared_unstake")
+				.metadata(new SubEntityMetadata()
+					.validator(addressing.forValidators().of(validatorKey))
+				)
+			);
 	}
 
 	public EntityIdentifier entityIdentifierPreparedStake(REAddr accountAddress, ECPublicKey validatorKey) {
@@ -1027,11 +1038,10 @@ public final class CoreModelMapper {
 			transaction.addOperationGroupsItem(operationGroup);
 		}
 
-		if (!txn.getFeePaid().isZero()) {
-			transaction.metadata(new CommittedTransactionMetadata()
-				.fee(nativeTokenAmount(txn.getFeePaid()))
-			);
-		}
+		transaction.metadata(new CommittedTransactionMetadata()
+			.fee(nativeTokenAmount(txn.getFeePaid()))
+			.message(txn.getMsg().map(Bytes::toHexString).orElse(null))
+		);
 
 		return transaction;
 	}

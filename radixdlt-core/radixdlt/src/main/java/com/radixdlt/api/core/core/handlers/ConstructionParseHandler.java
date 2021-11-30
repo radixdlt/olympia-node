@@ -70,6 +70,7 @@ import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseResponse;
+import com.radixdlt.api.core.core.openapitools.model.ParsedTransactionMetadata;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -123,6 +124,12 @@ public final class ConstructionParseHandler extends CoreJsonRpcHandler<Construct
 		var transaction = modelMapper.transaction(processed, this::symbol);
 		transaction.getOperationGroups()
 			.forEach(response::addOperationGroupsItem);
+
+		response.metadata(new ParsedTransactionMetadata()
+			.fee(transaction.getMetadata().getFee())
+			.message(transaction.getMetadata().getMessage())
+		);
+
 		return response;
 	}
 }

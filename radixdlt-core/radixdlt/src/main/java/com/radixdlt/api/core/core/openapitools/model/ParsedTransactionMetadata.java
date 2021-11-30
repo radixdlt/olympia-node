@@ -18,86 +18,79 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 
 /**
- * ConstructionParseResponse
+ * ParsedTransactionMetadata
  */
 @JsonPropertyOrder({
-  ConstructionParseResponse.JSON_PROPERTY_OPERATION_GROUPS,
-  ConstructionParseResponse.JSON_PROPERTY_METADATA
+  ParsedTransactionMetadata.JSON_PROPERTY_FEE,
+  ParsedTransactionMetadata.JSON_PROPERTY_MESSAGE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-29T22:44:05.729886-06:00[America/Chicago]")
-public class ConstructionParseResponse {
-  public static final String JSON_PROPERTY_OPERATION_GROUPS = "operation_groups";
-  private List<OperationGroup> operationGroups = new ArrayList<>();
+public class ParsedTransactionMetadata {
+  public static final String JSON_PROPERTY_FEE = "fee";
+  private ResourceAmount fee;
 
-  public static final String JSON_PROPERTY_METADATA = "metadata";
-  private ParsedTransactionMetadata metadata;
+  public static final String JSON_PROPERTY_MESSAGE = "message";
+  private String message;
 
 
-  public ConstructionParseResponse operationGroups(List<OperationGroup> operationGroups) {
-    this.operationGroups = operationGroups;
-    return this;
-  }
-
-  public ConstructionParseResponse addOperationGroupsItem(OperationGroup operationGroupsItem) {
-    this.operationGroups.add(operationGroupsItem);
+  public ParsedTransactionMetadata fee(ResourceAmount fee) {
+    this.fee = fee;
     return this;
   }
 
    /**
-   * The parsed operation groups.
-   * @return operationGroups
+   * Get fee
+   * @return fee
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The parsed operation groups.")
-  @JsonProperty(JSON_PROPERTY_OPERATION_GROUPS)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_FEE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<OperationGroup> getOperationGroups() {
-    return operationGroups;
+  public ResourceAmount getFee() {
+    return fee;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_OPERATION_GROUPS)
+  @JsonProperty(JSON_PROPERTY_FEE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setOperationGroups(List<OperationGroup> operationGroups) {
-    this.operationGroups = operationGroups;
+  public void setFee(ResourceAmount fee) {
+    this.fee = fee;
   }
 
 
-  public ConstructionParseResponse metadata(ParsedTransactionMetadata metadata) {
-    this.metadata = metadata;
+  public ParsedTransactionMetadata message(String message) {
+    this.message = message;
     return this;
   }
 
    /**
-   * Get metadata
-   * @return metadata
+   * Get message
+   * @return message
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_METADATA)
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public ParsedTransactionMetadata getMetadata() {
-    return metadata;
+  public String getMessage() {
+    return message;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_METADATA)
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setMetadata(ParsedTransactionMetadata metadata) {
-    this.metadata = metadata;
+  public void setMessage(String message) {
+    this.message = message;
   }
 
 
   /**
-   * Return true if this ConstructionParseResponse object is equal to o.
+   * Return true if this ParsedTransactionMetadata object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -107,22 +100,22 @@ public class ConstructionParseResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ConstructionParseResponse constructionParseResponse = (ConstructionParseResponse) o;
-    return Objects.equals(this.operationGroups, constructionParseResponse.operationGroups) &&
-        Objects.equals(this.metadata, constructionParseResponse.metadata);
+    ParsedTransactionMetadata parsedTransactionMetadata = (ParsedTransactionMetadata) o;
+    return Objects.equals(this.fee, parsedTransactionMetadata.fee) &&
+        Objects.equals(this.message, parsedTransactionMetadata.message);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(operationGroups, metadata);
+    return Objects.hash(fee, message);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ConstructionParseResponse {\n");
-    sb.append("    operationGroups: ").append(toIndentedString(operationGroups)).append("\n");
-    sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("class ParsedTransactionMetadata {\n");
+    sb.append("    fee: ").append(toIndentedString(fee)).append("\n");
+    sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("}");
     return sb.toString();
   }
