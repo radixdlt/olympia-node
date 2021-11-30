@@ -13,7 +13,7 @@ public class SubStateTree {
 	private PMT pmt;
 
 	public SubStateTree() {
-		var storage = new PMTCachedStorage();
+		var storage = new InMemoryPMTStorage();
 		pmt = new PMT(storage);
 	}
 
