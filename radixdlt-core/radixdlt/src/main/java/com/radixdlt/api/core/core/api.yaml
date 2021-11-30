@@ -1645,8 +1645,6 @@ components:
       properties:
         transaction:
           $ref: "#/components/schemas/Transaction"
-        metadata:
-          type: object
     ConstructionDeriveRequest:
       type: object
       required:

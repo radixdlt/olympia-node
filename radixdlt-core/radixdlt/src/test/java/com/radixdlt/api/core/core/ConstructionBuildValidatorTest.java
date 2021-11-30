@@ -68,6 +68,8 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
+import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
+import com.radixdlt.api.core.core.openapitools.model.AboveMaximumValidatorFeeIncreaseErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.DataObject;
@@ -106,6 +108,7 @@ import org.junit.rules.TemporaryFolder;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ConstructionBuildValidatorTest {
 
@@ -204,6 +207,20 @@ public class ConstructionBuildValidatorTest {
 		// Assert
 		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
 		assertThat(Bytes.fromHexString(response.getUnsignedTransaction())).isNotNull();
+	}
+
+	@Test
+	public void create_validator_too_large_fee_update_should_throw() {
+		// Arrange
+		runner.start();
+
+		// Act
+		// Assert
+		var request = buildValidatorUpdate(new PreparedValidatorFee().fee(1000));
+		assertThatThrownBy(() -> sut.handleRequest(request))
+			.isInstanceOf(CoreBadRequestException.class)
+			.extracting("errorDetails")
+				.isInstanceOf(AboveMaximumValidatorFeeIncreaseErrorDetails.class);
 	}
 
 	@Test

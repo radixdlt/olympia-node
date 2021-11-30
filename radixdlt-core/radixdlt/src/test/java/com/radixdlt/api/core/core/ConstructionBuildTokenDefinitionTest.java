@@ -68,10 +68,12 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
-import com.radixdlt.api.core.core.model.exceptions.InvalidDataObjectException;
+import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.Data;
+import com.radixdlt.api.core.core.openapitools.model.DataObjectNotSupportedByEntityErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.InvalidDataObjectErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
@@ -230,7 +232,9 @@ public final class ConstructionBuildTokenDefinitionTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(InvalidDataObjectException.class);
+			.isInstanceOf(CoreBadRequestException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(InvalidDataObjectErrorDetails.class);
 	}
 
 	@Test
@@ -249,7 +253,9 @@ public final class ConstructionBuildTokenDefinitionTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(InvalidDataObjectException.class);
+			.isInstanceOf(CoreBadRequestException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(InvalidDataObjectErrorDetails.class);
 	}
 
 	@Test
@@ -268,7 +274,9 @@ public final class ConstructionBuildTokenDefinitionTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(InvalidDataObjectException.class);
+			.isInstanceOf(CoreBadRequestException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(InvalidDataObjectErrorDetails.class);
 	}
 
 	@Test
@@ -287,6 +295,29 @@ public final class ConstructionBuildTokenDefinitionTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(InvalidDataObjectException.class);
+			.isInstanceOf(CoreBadRequestException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(InvalidDataObjectErrorDetails.class);
+	}
+
+	@Test
+	public void creating_token_in_account_entity_should_fail() {
+		// Arrange
+		runner.start();
+		var accountAddress = REAddr.ofPubKeyAccount(self);
+		var request = buildTokenDefinition(
+			coreModelMapper.entityIdentifier(accountAddress),
+			"test",
+			null,
+			1,
+			true
+		);
+
+		// Act
+		// Assert
+		assertThatThrownBy(() -> sut.handleRequest(request))
+			.isInstanceOf(CoreBadRequestException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(DataObjectNotSupportedByEntityErrorDetails.class);
 	}
 }

@@ -81,11 +81,7 @@ import com.radixdlt.api.core.core.model.entities.InvalidDataObjectException;
 import com.radixdlt.api.core.core.model.entities.NotEnoughResourcesException;
 import com.radixdlt.api.core.core.model.entities.SystemEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorSystemEntity;
-import com.radixdlt.api.core.core.model.exceptions.BuildAboveMaxValidatorFeeIncreaseException;
-import com.radixdlt.api.core.core.model.exceptions.BuildBelowMinStakeException;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportDataObjectException;
-import com.radixdlt.api.core.core.model.exceptions.BuildDataObjectNotSupportedByEntityException;
-import com.radixdlt.api.core.core.model.exceptions.BuildNotEnoughResourcesException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidAddressException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidFeePayerEntityException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidHexException;
@@ -103,11 +99,6 @@ import com.radixdlt.api.core.core.model.entities.ValidatorEntity;
 import com.radixdlt.api.core.core.model.exceptions.InvalidTransactionException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidTransactionHashException;
 import com.radixdlt.api.core.core.model.exceptions.NetworkNotSupportedException;
-import com.radixdlt.api.core.core.model.exceptions.BuildNotValidatorOwnerException;
-import com.radixdlt.api.core.core.model.exceptions.BuildDepositNotSupportedByEntityException;
-import com.radixdlt.api.core.core.model.exceptions.BuildWithdrawNotSupportedByEntityException;
-import com.radixdlt.api.core.core.model.exceptions.BuildMessageTooLongException;
-import com.radixdlt.api.core.core.model.exceptions.BuildFeeException;
 import com.radixdlt.api.core.core.model.exceptions.SubstateDependencyNotFoundException;
 import com.radixdlt.api.core.core.openapitools.model.*;
 import com.radixdlt.application.system.state.EpochData;
@@ -224,58 +215,60 @@ public final class CoreModelMapper {
 		}
 	}
 
-	public CoreModelException coreModelException(TxBuilderException e) {
+	public ErrorDetails builderErrorDetails(TxBuilderException e) {
 		if (e instanceof MinimumStakeException minimumStakeException) {
-			return new BuildBelowMinStakeException(
-				nativeTokenAmount(minimumStakeException.getMinimumStake()),
-				nativeTokenAmount(minimumStakeException.getAttempt())
-			);
+			return new BelowMinimumStakeErrorDetails()
+					.minimumStake(nativeTokenAmount(minimumStakeException.getMinimumStake()))
+					.attemptedToStake(nativeTokenAmount(minimumStakeException.getAttempt()))
+					.type(BelowMinimumStakeErrorDetails.class.getSimpleName());
 		} else if (e instanceof DelegateStakePermissionException delegateException) {
-			return new BuildNotValidatorOwnerException(
-				entityIdentifier(delegateException.getOwner()),
-				entityIdentifier(delegateException.getUser())
-			);
+			return new NotValidatorOwnerErrorDetails()
+				.owner(entityIdentifier(delegateException.getOwner()))
+				.user(entityIdentifier(delegateException.getUser()))
+				.type(NotValidatorOwnerErrorDetails.class.getSimpleName());
 		} else if (e instanceof InvalidDataObjectException invalidDataObjectException) {
-			return new com.radixdlt.api.core.core.model.exceptions.InvalidDataObjectException(
-				invalidDataObjectException.getDataObject().getDataObject(),
-				invalidDataObjectException.getMessage()
-			);
+			return new InvalidDataObjectErrorDetails()
+				.invalidDataObject(invalidDataObjectException.getDataObject().getDataObject())
+				.message(invalidDataObjectException.getMessage())
+				.type(InvalidDataObjectErrorDetails.class.getSimpleName());
 		} else if (e instanceof InvalidRakeIncreaseException rakeIncreaseException) {
-			return new BuildAboveMaxValidatorFeeIncreaseException(
-				rakeIncreaseException.getMaxRakeIncrease(),
-				rakeIncreaseException.getIncreaseAttempt()
-			);
+			return new AboveMaximumValidatorFeeIncreaseErrorDetails()
+				.maximumValidatorFeeIncrease(rakeIncreaseException.getMaxRakeIncrease())
+				.attemptedValidatorFeeIncrease(rakeIncreaseException.getIncreaseAttempt())
+				.type(AboveMaximumValidatorFeeIncreaseErrorDetails.class.getSimpleName());
 		} else if (e instanceof EntityDoesNotSupportDataObjectException dataObjectException) {
-			return new BuildDataObjectNotSupportedByEntityException(
-				dataObjectException.getDataObject().getDataObject(),
-				entityIdentifier(dataObjectException.getEntity())
-			);
+			return new DataObjectNotSupportedByEntityErrorDetails()
+				.dataObjectNotSupported(dataObjectException.getDataObject().getDataObject())
+				.entityIdentifier(entityIdentifier(dataObjectException.getEntity()))
+				.type(DataObjectNotSupportedByEntityErrorDetails.class.getSimpleName());
 		} else if (e instanceof EntityDoesNotSupportResourceDepositException depositException) {
-			return new BuildDepositNotSupportedByEntityException(
-				resourceIdentifier(depositException.getResource()),
-				entityIdentifier(depositException.getEntity())
-			);
+			return new ResourceDepositOperationNotSupportedByEntityErrorDetails()
+				.resourceDepositNotSupported(resourceIdentifier(depositException.getResource()))
+				.entityIdentifier(entityIdentifier(depositException.getEntity()))
+				.type(ResourceDepositOperationNotSupportedByEntityErrorDetails.class.getSimpleName());
 		} else if (e instanceof EntityDoesNotSupportResourceWithdrawException withdrawException) {
-			return new BuildWithdrawNotSupportedByEntityException(
-				resourceIdentifier(withdrawException.getResource()),
-				entityIdentifier(withdrawException.getEntity())
-			);
+			return new ResourceWithdrawOperationNotSupportedByEntityErrorDetails()
+				.resourceWithdrawNotSupported(resourceIdentifier(withdrawException.getResource()))
+				.entityIdentifier(entityIdentifier(withdrawException.getEntity()))
+				.type(ResourceWithdrawOperationNotSupportedByEntityErrorDetails.class.getSimpleName());
 		} else if (e instanceof MessageTooLongException messageTooLongException) {
-			return new BuildMessageTooLongException(
-				255, messageTooLongException.getAttemptedLength()
-			);
+			return new MessageTooLongErrorDetails()
+				.maximumMessageLength(255)
+				.attemptedMessageLength(messageTooLongException.getAttemptedLength())
+				.type(MessageTooLongErrorDetails.class.getSimpleName());
 		} else if (e instanceof FeeConstructionException feeConstructionException) {
-			return new BuildFeeException(feeConstructionException.getAttempts());
+			return new FeeConstructionErrorDetails()
+				.attempts(feeConstructionException.getAttempts())
+				.type(FeeConstructionErrorDetails.class.getSimpleName());
 		} else if (e instanceof NotEnoughResourcesException notEnoughResourcesException) {
 			var resourceIdentifier = resourceIdentifier(notEnoughResourcesException.getResource());
-			return new BuildNotEnoughResourcesException(
-				new ResourceAmount()
+			return new NotEnoughResourcesErrorDetails()
+				.attemptedToTake(new ResourceAmount()
 					.resourceIdentifier(resourceIdentifier)
-					.value(notEnoughResourcesException.getAvailable().toString()),
-				new ResourceAmount()
+					.value(notEnoughResourcesException.getAvailable().toString()))
+				.available(new ResourceAmount()
 					.resourceIdentifier(resourceIdentifier)
-					.value(notEnoughResourcesException.getRequested().toString())
-			);
+					.value(notEnoughResourcesException.getRequested().toString()));
 		}
 
 		throw new IllegalStateException(e);
@@ -1038,10 +1031,18 @@ public final class CoreModelMapper {
 			transaction.addOperationGroupsItem(operationGroup);
 		}
 
-		transaction.metadata(new CommittedTransactionMetadata()
+		var metadata = new CommittedTransactionMetadata()
 			.fee(nativeTokenAmount(txn.getFeePaid()))
-			.message(txn.getMsg().map(Bytes::toHexString).orElse(null))
-		);
+			.message(txn.getMsg().map(Bytes::toHexString).orElse(null));
+		transaction.metadata(metadata);
+
+		// If user transaction is signed then we can return back complete information
+		if (txn.getSignedBy().isPresent()) {
+			metadata.signedBy(publicKey(txn.getSignedBy().get()));
+			metadata.size(txn.getTxn().getPayload().length);
+			metadata.hex(Bytes.toHexString(txn.getTxn().getPayload()));
+			transaction.transactionIdentifier(transactionIdentifier(txn.getTxnId()));
+		}
 
 		return transaction;
 	}

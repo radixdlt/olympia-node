@@ -68,17 +68,19 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
-import com.radixdlt.api.core.core.model.exceptions.BuildDepositNotSupportedByEntityException;
-import com.radixdlt.api.core.core.model.exceptions.BuildNotEnoughResourcesException;
-import com.radixdlt.api.core.core.model.exceptions.BuildNotValidatorOwnerException;
-import com.radixdlt.api.core.core.model.exceptions.BuildWithdrawNotSupportedByEntityException;
+import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
+import com.radixdlt.api.core.core.openapitools.model.BelowMinimumStakeErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.NotEnoughResourcesErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.ResourceDepositOperationNotSupportedByEntityErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.ResourceIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.ResourceWithdrawOperationNotSupportedByEntityErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.SubEntity;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
@@ -91,6 +93,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -98,6 +101,7 @@ import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt128;
 import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Rule;
@@ -130,6 +134,8 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 	private ECPublicKey self;
 	@Inject
 	private SingleNodeDeterministicRunner runner;
+	@Inject
+	private Forks forks;
 
 	@Before
 	public void setup() {
@@ -221,7 +227,9 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(BuildDepositNotSupportedByEntityException.class);
+			.isInstanceOf(CoreBadRequestException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(ResourceDepositOperationNotSupportedByEntityErrorDetails.class);
 	}
 
 	@Test
@@ -240,7 +248,9 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(BuildNotEnoughResourcesException.class);
+			.isInstanceOf(CoreBadRequestException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(NotEnoughResourcesErrorDetails.class);
 	}
 
 	@Test
@@ -264,6 +274,26 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 	}
 
 	@Test
+	public void staking_too_little_tokens_should_fail() {
+		// Arrange
+		runner.start();
+		var selfAddress = REAddr.ofPubKeyAccount(self);
+		var request = buildTransfer(
+			coreModelMapper.nativeToken(),
+			forks.get(1).getConfig().getMinimumStake().toSubunits().subtract(UInt128.ONE),
+			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
+			coreModelMapper.entityIdentifierPreparedStake(selfAddress, self)
+		);
+
+		// Act
+		// Assert
+		assertThatThrownBy(() -> sut.handleRequest(request))
+			.isInstanceOf(CoreBadRequestException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(BelowMinimumStakeErrorDetails.class);
+	}
+
+	@Test
 	public void staking_tokens_to_non_owned_validator_should_fail() {
 		// Arrange
 		runner.start();
@@ -279,7 +309,9 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(BuildNotValidatorOwnerException.class);
+			.isInstanceOf(CoreBadRequestException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(NotValidatorOwnerErrorDetails.class);
 	}
 
 	@Test
@@ -298,7 +330,9 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(BuildWithdrawNotSupportedByEntityException.class);
+			.isInstanceOf(CoreBadRequestException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(ResourceWithdrawOperationNotSupportedByEntityErrorDetails.class);
 	}
 
 

@@ -67,43 +67,51 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
-import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
-import com.radixdlt.api.core.core.openapitools.model.MessageTooLongErrorDetails;
+import com.radixdlt.api.core.core.handlers.MempoolHandler;
+import com.radixdlt.api.core.core.model.EntityOperation;
+import com.radixdlt.api.core.core.model.OperationTxBuilder;
+import com.radixdlt.api.core.core.model.ResourceOperation;
+import com.radixdlt.api.core.core.model.TokenResource;
+import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
+import com.radixdlt.api.core.core.openapitools.model.MempoolRequest;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.Operation;
-import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.qualifier.NumPeers;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.statecomputer.RadixEngineMempool;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class ConstructionBuildMessageTest {
-
+public final class MempoolHandlerTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
@@ -113,16 +121,26 @@ public class ConstructionBuildMessageTest {
 	private final Amount liquidAmount = Amount.ofSubunits(
 		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
 	);
+	private final UInt256 toTransfer = liquidAmount.toSubunits().subtract(Amount.ofTokens(1).toSubunits());
 
 	@Inject
-	private ConstructionBuildHandler sut;
+	private MempoolHandler sut;
 	@Inject
 	private CoreModelMapper coreModelMapper;
+	@Inject
+	@LocalSigner
+	private HashSigner hashSigner;
 	@Inject
 	@Self
 	private ECPublicKey self;
 	@Inject
 	private SingleNodeDeterministicRunner runner;
+	@Inject
+	private RadixEngine<LedgerAndBFTProof> radixEngine;
+	@Inject
+	private Forks forks;
+	@Inject
+	private RadixEngineMempool mempool;
 
 	@Before
 	public void setup() {
@@ -130,7 +148,8 @@ public class ConstructionBuildMessageTest {
 			MempoolConfig.asModule(1000, 10),
 			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.noFees()).overrideMaxRounds(1000)
+				RERulesConfig.testingDefault()
+					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
 			),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
@@ -151,58 +170,47 @@ public class ConstructionBuildMessageTest {
 		injector.injectMembers(this);
 	}
 
-	private ConstructionBuildRequest buildRequestWithMessage(String message) {
+	private Txn buildSignedTxn(REAddr from, REAddr to) throws Exception {
+		var entityOperationGroups =
+			List.of(List.of(
+				EntityOperation.from(
+					AccountVaultEntity.from(from),
+					ResourceOperation.withdraw(
+						TokenResource.from("xrd", REAddr.ofNativeToken()),
+						toTransfer
+					)
+				),
+				EntityOperation.from(
+					AccountVaultEntity.from(to),
+					ResourceOperation.deposit(
+						TokenResource.from("xrd", REAddr.ofNativeToken()),
+						toTransfer
+					)
+				)
+			));
+		var operationTxBuilder = new OperationTxBuilder(null, entityOperationGroups, forks);
+		var builder = radixEngine.constructWithFees(
+			operationTxBuilder, false, from
+		);
+		return builder.signAndBuild(hashSigner::sign);
+	}
+
+	@Test
+	public void transaction_in_mempool_should_be_seen() throws Exception {
+		// Arrange
+		runner.start();
 		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var otherKey = PrivateKeys.ofNumeric(2).getPublicKey();
-		var otherAddress = REAddr.ofPubKeyAccount(otherKey);
-		return new ConstructionBuildRequest()
-			.message(message)
+		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+		var signedTxn = buildSignedTxn(accountAddress, otherAddress);
+		mempool.add(signedTxn);
+
+		// Act
+		var response = sut.handleRequest(new MempoolRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.feePayer(coreModelMapper.entityIdentifier(accountAddress))
-			.addOperationGroupsItem(new OperationGroup()
-				.addOperationsItem(new Operation()
-					.entityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
-					.amount(coreModelMapper.nativeTokenAmount(false, liquidAmount.toSubunits()))
-				)
-				.addOperationsItem(new Operation()
-					.entityIdentifier(coreModelMapper.entityIdentifier(otherAddress))
-					.amount(coreModelMapper.nativeTokenAmount(true, liquidAmount.toSubunits()))
-				)
-			);
-	}
-
-	@Test
-	public void building_with_message_should_be_in_transaction() throws Exception {
-		// Arrange
-		runner.start();
-		var hex = "deadbeefdeadbeef";
-		var messageBytes = Bytes.fromHexString(hex);
-		var request = buildRequestWithMessage(hex);
-
-		// Act
-		var response = sut.handleRequest(request);
+		);
 
 		// Assert
-		assertThat(Bytes.fromHexString(response.getPayloadToSign())).isNotNull();
-		var unsignedTransactionBytes = Bytes.fromHexString(response.getUnsignedTransaction());
-		assertThat(unsignedTransactionBytes).isNotNull();
-		var indexOfMessageBytes = com.google.common.primitives.Bytes.indexOf(unsignedTransactionBytes, messageBytes);
-		assertThat(indexOfMessageBytes).isGreaterThanOrEqualTo(0);
-	}
-
-
-	@Test
-	public void building_with_message_too_large_should_fail() {
-		// Arrange
-		runner.start();
-		var hex = "aa".repeat(256);
-		var request = buildRequestWithMessage(hex);
-
-		// Act
-		// Assert
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(MessageTooLongErrorDetails.class);
+		assertThat(response.getTransactionIdentifiers())
+			.containsExactly(coreModelMapper.transactionIdentifier(signedTxn.getId()));
 	}
 }

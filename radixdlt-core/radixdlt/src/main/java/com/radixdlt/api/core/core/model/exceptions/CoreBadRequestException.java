@@ -66,24 +66,18 @@ package com.radixdlt.api.core.core.model.exceptions;
 import com.radixdlt.api.core.core.CoreModelError;
 import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.MessageTooLongErrorDetails;
 
-public final class BuildMessageTooLongException extends CoreModelException {
-	private final int maxMessageLength;
-	private final int attemptedMessageLength;
+public final class CoreBadRequestException extends CoreModelException {
+	private final ErrorDetails errorDetails;
 
-	public BuildMessageTooLongException(int maxMessageLength, int attemptedMessageLength) {
+	public CoreBadRequestException(ErrorDetails errorDetails) {
 		super(CoreModelError.BAD_REQUEST);
 
-		this.maxMessageLength = maxMessageLength;
-		this.attemptedMessageLength = attemptedMessageLength;
+		this.errorDetails = errorDetails;
 	}
 
 	@Override
 	public ErrorDetails getErrorDetails() {
-		return new MessageTooLongErrorDetails()
-			.maximumMessageLength(maxMessageLength)
-			.attemptedMessageLength(attemptedMessageLength)
-			.type(MessageTooLongErrorDetails.class.getSimpleName());
+		return errorDetails;
 	}
 }
