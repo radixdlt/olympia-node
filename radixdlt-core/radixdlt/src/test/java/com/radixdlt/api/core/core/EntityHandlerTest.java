@@ -61,30 +61,111 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model.exceptions;
+package com.radixdlt.api.core.core;
 
-import com.radixdlt.api.core.core.CoreModelError;
-import com.radixdlt.api.core.core.CoreModelException;
-import com.radixdlt.api.core.core.openapitools.model.DataObject;
-import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.InvalidDataObjectErrorDetails;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.core.core.handlers.EntityHandler;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
+import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.qualifier.NumPeers;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
+import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public final class InvalidDataObjectException extends CoreModelException {
-	private final DataObject dataObject;
-	private final String message;
+import java.util.Map;
+import java.util.Set;
 
-	public InvalidDataObjectException(DataObject dataObject, String message) {
-		super(CoreModelError.BAD_REQUEST);
+import static org.assertj.core.api.Assertions.assertThat;
 
-		this.dataObject = dataObject;
-		this.message = message;
+public class EntityHandlerTest {
+	@Rule
+	public TemporaryFolder folder = new TemporaryFolder();
+	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+
+	private final Amount totalTokenAmount = Amount.ofTokens(110);
+	private final Amount stakeAmount = Amount.ofTokens(10);
+
+	@Inject
+	private EntityHandler sut;
+	@Inject
+	private SingleNodeDeterministicRunner runner;
+	@Inject
+	@Genesis
+	private VerifiedTxnsAndProof genesis;
+
+	@Before
+	public void setup() {
+		var injector = Guice.createInjector(
+			MempoolConfig.asModule(1000, 10),
+			new MainnetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(
+				RERulesConfig.testingDefault()
+					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
+			),
+			new ForksModule(),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new MockedGenesisModule(
+				Set.of(TEST_KEY.getPublicKey()),
+				totalTokenAmount,
+				stakeAmount
+			),
+			new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(BerkeleyProcessedTransactionsStore.class).in(Scopes.SINGLETON);
+					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
+						.addBinding().to(BerkeleyProcessedTransactionsStore.class);
+					bindConstant().annotatedWith(NumPeers.class).to(0);
+					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
+					bindConstant().annotatedWith(NetworkId.class).to(99);
+				}
+			}
+		);
+		injector.injectMembers(this);
 	}
 
-	@Override
-	public ErrorDetails getErrorDetails() {
-		return new InvalidDataObjectErrorDetails()
-			.invalidDataObject(dataObject)
-			.message(message)
-			.type(InvalidDataObjectErrorDetails.class.getSimpleName());
+	@Test
+	public void retrieve_system_entity_on_genesis() throws Exception {
+		// Arrange
+		runner.start();
+
+		// Act
+		var request = new EntityRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.entityIdentifier(new EntityIdentifier().address("system"));
+		var response = sut.handleRequest(request);
+
+		// Assert
+		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+		assertThat(response.getBalances()).isEmpty();
+		assertThat(response.getDataObjects()).isNotEmpty();
 	}
+
 }

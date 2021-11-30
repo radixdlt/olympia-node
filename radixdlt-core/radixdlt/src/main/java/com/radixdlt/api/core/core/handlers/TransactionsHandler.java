@@ -68,7 +68,7 @@ import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.model.exceptions.StateIdentifierNotFoundException;
+import com.radixdlt.api.core.core.model.exceptions.CoreNotFoundException;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsResponse;
 import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
@@ -117,11 +117,11 @@ public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransaction
 		long stateVersion = stateIdentifier.getFirst();
 		var accumulator = stateIdentifier.getSecond();
 		var currentAccumulator = getAccumulatorHash(stateVersion)
-			.orElseThrow(() -> new StateIdentifierNotFoundException(request.getStateIdentifier()));
+			.orElseThrow(() -> new CoreNotFoundException(coreModelMapper.notFoundErrorDetails(request.getStateIdentifier())));
 		if (accumulator != null) {
 			var matchesInput = accumulator.equals(currentAccumulator);
 			if (!matchesInput) {
-				throw new StateIdentifierNotFoundException(request.getStateIdentifier());
+				throw new CoreNotFoundException(coreModelMapper.notFoundErrorDetails(request.getStateIdentifier()));
 			}
 		}
 

@@ -63,10 +63,21 @@
 
 package com.radixdlt.api.core.core.model.exceptions;
 
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.api.core.core.CoreModelError;
+import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
 
-public class InvalidAddressIdentifierException extends TxBuilderException {
-	public InvalidAddressIdentifierException(String message) {
-		super(message);
+public final class CoreNotFoundException extends CoreModelException {
+	private final ErrorDetails errorDetails;
+
+	public CoreNotFoundException(ErrorDetails errorDetails) {
+		super(CoreModelError.NOT_FOUND);
+
+		this.errorDetails = errorDetails;
+	}
+
+	@Override
+	public ErrorDetails getErrorDetails() {
+		return errorDetails;
 	}
 }

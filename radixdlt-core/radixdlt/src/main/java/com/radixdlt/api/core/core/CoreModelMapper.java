@@ -421,6 +421,12 @@ public final class CoreModelMapper {
 		return limit;
 	}
 
+	public ErrorDetails notFoundErrorDetails(PartialStateIdentifier partialStateIdentifier) {
+		return new StateIdentifierNotFoundErrorDetails()
+			.stateIdentifier(partialStateIdentifier)
+			.type(StateIdentifierNotFoundErrorDetails.class.getSimpleName());
+	}
+
 	public Pair<Long, HashCode> partialStateIdentifier(PartialStateIdentifier partialStateIdentifier) throws InvalidPartialStateIdentifierException {
 		if (partialStateIdentifier == null) {
 			return Pair.of(0L, null);
