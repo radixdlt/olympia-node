@@ -2,6 +2,9 @@ package com.radixdlt.store.tree;
 
 import com.radixdlt.crypto.HashUtils;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 public abstract class PMTNode implements Cloneable {
 
 	public enum NodeType {
@@ -71,5 +74,27 @@ public abstract class PMTNode implements Cloneable {
 		//    ...use Prefix for Leaf vs Exp
 		// 3. instantiate with arguments
 		return null;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		PMTNode pmtNode = (PMTNode) o;
+		return Arrays.equals(hash, pmtNode.hash)
+				&& Arrays.equals(serialized, pmtNode.serialized)
+				&& nodeType == pmtNode.nodeType
+				&& Objects.equals(branchNibble, pmtNode.branchNibble)
+				&& Objects.equals(keyNibbles, pmtNode.keyNibbles)
+				&& Arrays.equals(value, pmtNode.value);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(hash, serialized, nodeType, branchNibble, keyNibbles, value);
 	}
 }
