@@ -98,3 +98,10 @@ curl --location --request POST 'localhost:3333/transactions' \
     "limit": 10
 }'
 ```
+
+### Debugging
+
+If your node is crashing a lot, this is possibly because Docker Desktop is killing it because it's using too
+much memory - it needs >2GB, something more like 5GB should be enough.
+
+Check out this stack overflow post: https://stackoverflow.com/a/50770267

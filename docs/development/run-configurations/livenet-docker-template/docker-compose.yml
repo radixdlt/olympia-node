@@ -18,6 +18,8 @@ services:
       JAVA_OPTS: -server -Xms8g -Xmx8g -XX:+HeapDumpOnOutOfMemoryError -XX:+UseCompressedOops -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector
       RADIXDLT_VALIDATOR_KEY_LOCATION: "/home/radixdlt/node-keystore.ks"
       RADIXDLT_NODE_API_PORT: 3333
+      RADIXDLT_CORE_API_PORT: 3333
+      RADIXDLT_GATEWAY_API_PORT: 8080
       RADIXDLT_CLIENT_API_PORT: 8080
       RADIXDLT_ARCHIVE_API_ENABLE : "true"
       RADIXDLT_CONSTRUCT_API_ENABLE : "true"
@@ -30,6 +32,7 @@ services:
       RADIXDLT_UNIVERSE_ENABLE: "true"
       RADIXDLT_TRANSACTIONS_API_ENABLE: "true"
       RADIXDLT_UNIVERSE_API_ENABLE: "true"
+      RADIXDLT_GATEWAY_API_ENABLE: "true"
 
     volumes:
       -  "./node/ledger:/home/radixdlt/RADIXDB"
