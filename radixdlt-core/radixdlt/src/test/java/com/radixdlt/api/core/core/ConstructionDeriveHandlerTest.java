@@ -66,62 +66,64 @@ package com.radixdlt.api.core.core;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.api.core.core.handlers.TransactionsHandler;
+import com.radixdlt.api.core.core.handlers.ConstructionDeriveHandler;
 import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
-import com.radixdlt.api.core.core.model.exceptions.CoreNotFoundException;
-import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
-import com.radixdlt.api.core.core.openapitools.model.InvalidPartialStateIdentifierErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequest;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataToken;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
+import com.radixdlt.api.core.core.openapitools.model.InvalidPublicKeyErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.PartialStateIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.StateIdentifierNotFoundErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.PublicKey;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.qualifier.NumPeers;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TransactionsHandlerTest {
+public class ConstructionDeriveHandlerTest {
+
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
 	private final Amount totalTokenAmount = Amount.ofTokens(110);
 	private final Amount stakeAmount = Amount.ofTokens(10);
+	private final Amount liquidAmount = Amount.ofSubunits(
+		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
+	);
 
 	@Inject
-	private TransactionsHandler sut;
+	private ConstructionDeriveHandler sut;
+	@Inject
+	private CoreModelMapper coreModelMapper;
+	@Inject
+	@Self
+	private ECPublicKey self;
 	@Inject
 	private SingleNodeDeterministicRunner runner;
-	@Inject
-	@Genesis
-	private VerifiedTxnsAndProof genesis;
 
 	@Before
 	public void setup() {
@@ -129,8 +131,7 @@ public class TransactionsHandlerTest {
 			MempoolConfig.asModule(1000, 10),
 			new MainnetForkConfigsModule(),
 			new RadixEngineForksLatestOnlyModule(
-				RERulesConfig.testingDefault()
-					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
+				RERulesConfig.testingDefault().overrideFeeTable(FeeTable.noFees()).overrideMaxRounds(1000)
 			),
 			new ForksModule(),
 			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
@@ -142,9 +143,6 @@ public class TransactionsHandlerTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(BerkeleyProcessedTransactionsStore.class).in(Scopes.SINGLETON);
-					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-						.addBinding().to(BerkeleyProcessedTransactionsStore.class);
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bindConstant().annotatedWith(NetworkId.class).to(99);
@@ -155,74 +153,73 @@ public class TransactionsHandlerTest {
 	}
 
 	@Test
-	public void retrieve_genesis_in_transaction_stream() throws Exception {
+	public void derive_account_request_should_return_account_entity_identifier() throws CoreModelException {
 		// Arrange
 		runner.start();
 
 		// Act
-		var request = new CommittedTransactionsRequest()
+		var request = new ConstructionDeriveRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(0L));
+			.publicKey(coreModelMapper.publicKey(TEST_KEY.getPublicKey()))
+			.metadata(new ConstructionDeriveRequestMetadataAccount().type("Account"));
 		var response = sut.handleRequest(request);
 
 		// Assert
-		assertThat(response.getTransactions()).hasSize(1);
-		var hex = response.getTransactions().get(0).getMetadata().getHex();
-		assertThat(hex).isEqualTo(Bytes.toHexString(genesis.getTxns().get(0).getPayload()));
+		assertThat(response.getEntityIdentifier())
+			.isEqualTo(coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey())));
 	}
 
-
 	@Test
-	public void retrieve_last_state_version() throws Exception {
+	public void derive_validator_request_should_return_validator_entity_identifier() throws CoreModelException {
 		// Arrange
 		runner.start();
 
 		// Act
-		var request = new CommittedTransactionsRequest()
+		var request = new ConstructionDeriveRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(1L));
+			.publicKey(coreModelMapper.publicKey(TEST_KEY.getPublicKey()))
+			.metadata(new ConstructionDeriveRequestMetadataValidator().type("Validator"));
 		var response = sut.handleRequest(request);
 
 		// Assert
-		assertThat(response.getTransactions()).isEmpty();
-		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
-		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
-		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+		assertThat(response.getEntityIdentifier())
+			.isEqualTo(coreModelMapper.entityIdentifier(TEST_KEY.getPublicKey()));
 	}
 
 	@Test
-	public void retrieving_past_last_state_version_should_throw_exception() {
+	public void derive_token_request_should_return_token_entity_identifier() throws CoreModelException {
+		// Arrange
+		runner.start();
+
+		// Act
+		var request = new ConstructionDeriveRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.publicKey(coreModelMapper.publicKey(TEST_KEY.getPublicKey()))
+			.metadata(new ConstructionDeriveRequestMetadataToken().symbol("test").type("Token"));
+		var response = sut.handleRequest(request);
+
+		// Assert
+		assertThat(response.getEntityIdentifier())
+			.isEqualTo(coreModelMapper.entityIdentifier(
+				REAddr.ofHashedKey(TEST_KEY.getPublicKey(), "test"), "test"
+			));
+	}
+
+
+	@Test
+	public void invalid_public_key_should_throw_exception() throws CoreModelException {
 		// Arrange
 		runner.start();
 
 		// Act
 		// Assert
-		var request = new CommittedTransactionsRequest()
+		var request = new ConstructionDeriveRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(2L));
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreNotFoundException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(StateIdentifierNotFoundErrorDetails.class);
-	}
-
-	@Test
-	public void retrieving_illegal_state_version_should_throw_exception() {
-		// Arrange
-		runner.start();
-
-		// Act
-		// Assert
-		var request = new CommittedTransactionsRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.limit(1L)
-			.stateIdentifier(new PartialStateIdentifier().stateVersion(-1L));
+			.publicKey(new PublicKey().hex("deadbeaddeadbead"))
+			.metadata(new ConstructionDeriveRequestMetadataToken().symbol("test").type("Token"));
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOf(CoreBadRequestException.class)
 			.extracting("errorDetails")
-			.isInstanceOf(InvalidPartialStateIdentifierErrorDetails.class);
+			.isInstanceOf(InvalidPublicKeyErrorDetails.class);
 	}
 }

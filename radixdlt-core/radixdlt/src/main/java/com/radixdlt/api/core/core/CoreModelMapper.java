@@ -84,10 +84,7 @@ import com.radixdlt.api.core.core.model.entities.ValidatorSystemEntity;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportDataObjectException;
 import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidHexException;
-import com.radixdlt.api.core.core.model.exceptions.InvalidPartialStateIdentifierException;
-import com.radixdlt.api.core.core.model.exceptions.InvalidPublicKeyException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidSignatureException;
-import com.radixdlt.api.core.core.model.exceptions.InvalidSubEntityException;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.entities.PreparedStakeVaultEntity;
 import com.radixdlt.api.core.core.model.entities.PreparedUnstakeVaultEntity;
@@ -202,7 +199,10 @@ public final class CoreModelMapper {
 		try {
 			return ECPublicKey.fromBytes(bytes);
 		} catch (PublicKeyException e) {
-			throw new InvalidPublicKeyException(publicKey);
+			throw new CoreBadRequestException(new InvalidPublicKeyErrorDetails()
+				.invalidPublicKey(publicKey)
+				.type(InvalidPublicKeyErrorDetails.class.getSimpleName())
+			);
 		}
 	}
 
@@ -290,12 +290,20 @@ public final class CoreModelMapper {
 		);
 	}
 
+	private static CoreBadRequestException invalidSubEntity(SubEntity subEntity) {
+		return new CoreBadRequestException(
+			new InvalidSubEntityErrorDetails()
+				.invalidSubEntity(subEntity)
+				.type(InvalidSubEntityErrorDetails.class.getSimpleName())
+		);
+	}
+
 	public Entity entity(EntityIdentifier entityIdentifier) throws CoreModelException {
 		var address = entityIdentifier.getAddress();
 		if (address.equals("system")) {
 			var subEntity = entityIdentifier.getSubEntity();
 			if (subEntity != null) {
-				throw new InvalidSubEntityException(subEntity);
+				throw invalidSubEntity(subEntity);
 			}
 
 			return SystemEntity.instance();
@@ -312,12 +320,12 @@ public final class CoreModelMapper {
 
 				var metadata = subEntity.getMetadata();
 				if (metadata != null) {
-					throw new InvalidSubEntityException(subEntity);
+					throw invalidSubEntity(subEntity);
 				}
 
 				var subEntityAddress = subEntity.getAddress();
 				if (!subEntityAddress.equals("system")) {
-					throw new InvalidSubEntityException(subEntity);
+					throw invalidSubEntity(subEntity);
 				}
 
 				return ValidatorSystemEntity.from(key);
@@ -331,12 +339,12 @@ public final class CoreModelMapper {
 
 				var metadata = subEntity.getMetadata();
 				if (metadata == null) {
-					throw new InvalidSubEntityException(subEntity);
+					throw invalidSubEntity(subEntity);
 				}
 
 				// Exiting stake is the only enity which should have epoch unlock
 				if ((metadata.getEpochUnlock() == null) == subEntity.getAddress().equals("exiting_stake")) {
-					throw new InvalidSubEntityException(subEntity);
+					throw invalidSubEntity(subEntity);
 				}
 
 				var validator = addressing.forValidators().parseOrThrow(metadata.getValidator(), s -> invalidAddress(address));
@@ -354,7 +362,7 @@ public final class CoreModelMapper {
 						validator,
 						metadata.getEpochUnlock()
 					);
-					default -> throw new InvalidSubEntityException(subEntity);
+					default -> throw invalidSubEntity(subEntity);
 				};
 			}
 			case RESOURCE -> {
@@ -440,23 +448,24 @@ public final class CoreModelMapper {
 			.type(StateIdentifierNotFoundErrorDetails.class.getSimpleName());
 	}
 
-	public Pair<Long, HashCode> partialStateIdentifier(PartialStateIdentifier partialStateIdentifier) throws InvalidPartialStateIdentifierException {
+	public Pair<Long, HashCode> partialStateIdentifier(PartialStateIdentifier partialStateIdentifier)
+		throws CoreModelException {
 		if (partialStateIdentifier == null) {
 			return Pair.of(0L, null);
 		}
 
 		if (partialStateIdentifier.getStateVersion() < 0L) {
-			throw new InvalidPartialStateIdentifierException(partialStateIdentifier);
+			throw new CoreBadRequestException(
+				new InvalidPartialStateIdentifierErrorDetails()
+					.invalidPartialStateIdentifier(partialStateIdentifier)
+					.type(InvalidPartialStateIdentifierErrorDetails.class.getSimpleName())
+			);
 		}
 
 		final HashCode accumulator;
 		if (partialStateIdentifier.getTransactionAccumulator() != null) {
-			try {
-				var bytes = Bytes.fromHexString(partialStateIdentifier.getTransactionAccumulator());
-				accumulator = HashCode.fromBytes(bytes);
-			} catch (IllegalArgumentException e) {
-				throw new InvalidPartialStateIdentifierException(partialStateIdentifier);
-			}
+			var bytes = bytes(partialStateIdentifier.getTransactionAccumulator());
+			accumulator = HashCode.fromBytes(bytes);
 		} else {
 			accumulator = null;
 		}

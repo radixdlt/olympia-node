@@ -75,10 +75,12 @@ import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
 import com.radixdlt.api.core.core.openapitools.model.InvalidAddressErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.InvalidSubEntityErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorFee;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorOwner;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorRegistered;
+import com.radixdlt.api.core.core.openapitools.model.SubEntity;
 import com.radixdlt.api.core.core.openapitools.model.TokenData;
 import com.radixdlt.api.core.core.openapitools.model.TokenMetadata;
 import com.radixdlt.api.core.core.openapitools.model.UnclaimedRadixEngineAddress;
@@ -377,6 +379,26 @@ public class EntityHandlerTest {
 			.isInstanceOf(CoreBadRequestException.class)
 			.extracting("errorDetails")
 			.isInstanceOf(InvalidAddressErrorDetails.class);
+	}
+
+	@Test
+	public void retrieve_invalid_sub_entity_should_throw() {
+		// Arrange
+		runner.start();
+
+		// Act
+		// Assert
+		var address = REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey());
+		var invalidSubEntity = coreModelMapper
+			.entityIdentifier(address)
+			.subEntity(new SubEntity().address("prepared_stakes"));
+		var request = new EntityRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.entityIdentifier(invalidSubEntity);
+		assertThatThrownBy(() -> sut.handleRequest(request))
+			.isInstanceOf(CoreBadRequestException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(InvalidSubEntityErrorDetails.class);
 	}
 
 }
