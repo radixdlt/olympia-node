@@ -5,7 +5,7 @@ public class PMTLeaf extends PMTNode {
 	private static final int EVEN_PREFIX = 2;
 	private static final int ODD_PREFIX = 3;
 
-	PMTLeaf(PMTKey allNibbles, byte[] newValue) {
+	public PMTLeaf(PMTKey allNibbles, byte[] newValue) {
 		this(null, allNibbles, newValue);
 	}
 

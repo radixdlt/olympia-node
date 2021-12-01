@@ -1,6 +1,7 @@
 package com.radixdlt.store.tree;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 public class PMTKey {
 
@@ -46,5 +47,24 @@ public class PMTKey {
 
 	public byte[] getKey() {
 		return this.key;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		PMTKey pmtKey = (PMTKey) o;
+		return Arrays.equals(key, pmtKey.key)
+				&& Objects.equals(firstNibble, pmtKey.firstNibble)
+				&& Objects.equals(tailNibbles, pmtKey.tailNibbles);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(key, firstNibble, tailNibbles);
 	}
 }

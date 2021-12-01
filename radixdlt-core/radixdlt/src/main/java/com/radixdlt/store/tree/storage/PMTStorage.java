@@ -1,4 +1,4 @@
-package com.radixdlt.store.tree;
+package com.radixdlt.store.tree.storage;
 
 public interface PMTStorage {
 	void save(byte[] serialisedNodeHash, byte[] serialisedNode);
