@@ -73,6 +73,7 @@ import com.radixdlt.api.core.core.model.SubstateWithdrawal;
 import com.radixdlt.api.core.core.openapitools.model.TokenData;
 import com.radixdlt.api.core.core.openapitools.model.TokenMetadata;
 import com.radixdlt.application.system.scrypt.Syscall;
+import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
@@ -174,7 +175,7 @@ public final class TokenEntity implements Entity {
 	@Override
 	public List<KeyQuery> getKeyQueries() {
 		return List.of(
-			KeyQuery.fromToken(tokenAddr, SubstateTypeId.TOKEN_RESOURCE),
+			KeyQuery.fromToken(tokenAddr, SubstateTypeId.TOKEN_RESOURCE, UnclaimedREAddr::new),
 			KeyQuery.fromToken(tokenAddr, SubstateTypeId.TOKEN_RESOURCE_METADATA)
 		);
 	}

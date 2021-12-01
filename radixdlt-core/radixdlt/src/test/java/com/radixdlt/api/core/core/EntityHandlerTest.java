@@ -70,13 +70,29 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.EntityHandler;
+import com.radixdlt.api.core.core.model.SubstateTypeMapping;
+import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
+import com.radixdlt.api.core.core.openapitools.model.InvalidAddressErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorFee;
+import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorOwner;
+import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorRegistered;
+import com.radixdlt.api.core.core.openapitools.model.TokenData;
+import com.radixdlt.api.core.core.openapitools.model.TokenMetadata;
+import com.radixdlt.api.core.core.openapitools.model.UnclaimedRadixEngineAddress;
+import com.radixdlt.api.core.core.openapitools.model.ValidatorAllowDelegation;
+import com.radixdlt.api.core.core.openapitools.model.ValidatorBFTData;
+import com.radixdlt.api.core.core.openapitools.model.ValidatorData;
+import com.radixdlt.api.core.core.openapitools.model.ValidatorMetadata;
+import com.radixdlt.api.core.core.openapitools.model.ValidatorSystemMetadata;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
+import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.networks.NetworkId;
@@ -101,6 +117,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class EntityHandlerTest {
 	@Rule
@@ -109,9 +126,14 @@ public class EntityHandlerTest {
 
 	private final Amount totalTokenAmount = Amount.ofTokens(110);
 	private final Amount stakeAmount = Amount.ofTokens(10);
+	private final Amount liquidAmount = Amount.ofSubunits(
+		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
+	);
 
 	@Inject
 	private EntityHandler sut;
+	@Inject
+	private CoreModelMapper coreModelMapper;
 	@Inject
 	private SingleNodeDeterministicRunner runner;
 	@Inject
@@ -166,6 +188,134 @@ public class EntityHandlerTest {
 		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
 		assertThat(response.getBalances()).isEmpty();
 		assertThat(response.getDataObjects()).isNotEmpty();
+	}
+
+	@Test
+	public void retrieve_native_token_on_genesis() throws Exception {
+		// Arrange
+		runner.start();
+
+		// Act
+		var request = new EntityRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.entityIdentifier(coreModelMapper.entityIdentifier(REAddr.ofNativeToken(), "xrd"));
+		var response = sut.handleRequest(request);
+
+		// Assert
+		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+		assertThat(response.getBalances()).isEmpty();
+		assertThat(response.getDataObjects()).hasAtLeastOneElementOfType(TokenData.class);
+		assertThat(response.getDataObjects()).hasAtLeastOneElementOfType(TokenMetadata.class);
+	}
+
+	@Test
+	public void retrieve_non_existent_token_on_genesis() throws Exception {
+		// Arrange
+		runner.start();
+
+		// Act
+		var tokenAddress = REAddr.ofHashedKey(TEST_KEY.getPublicKey(), "test");
+		var request = new EntityRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.entityIdentifier(coreModelMapper.entityIdentifier(tokenAddress, "test"));
+		var response = sut.handleRequest(request);
+
+		// Assert
+		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+		assertThat(response.getBalances()).isEmpty();
+		assertThat(response.getDataObjects())
+			.containsExactly(new UnclaimedRadixEngineAddress()
+				.type(SubstateTypeMapping.getName(SubstateTypeId.UNCLAIMED_READDR))
+			);
+	}
+
+	@Test
+	public void retrieve_account_entity_on_genesis() throws Exception {
+		// Arrange
+		runner.start();
+
+		// Act
+		var request = new EntityRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.entityIdentifier(coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey())));
+		var response = sut.handleRequest(request);
+
+		// Assert
+		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+		assertThat(response.getBalances())
+			.containsExactlyInAnyOrder(
+				coreModelMapper.nativeTokenAmount(liquidAmount.toSubunits()),
+				coreModelMapper.stakeOwnershipAmount(TEST_KEY.getPublicKey(), stakeAmount.toSubunits())
+			);
+	}
+
+	@Test
+	public void retrieve_validator_entity_on_genesis() throws Exception {
+		// Arrange
+		runner.start();
+
+		// Act
+		var request = new EntityRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.entityIdentifier(coreModelMapper.entityIdentifier(TEST_KEY.getPublicKey()));
+		var response = sut.handleRequest(request);
+
+		// Assert
+		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+		assertThat(response.getDataObjects()).hasOnlyElementsOfTypes(
+			ValidatorAllowDelegation.class,
+			ValidatorMetadata.class,
+			ValidatorSystemMetadata.class,
+			PreparedValidatorOwner.class,
+			PreparedValidatorFee.class,
+			PreparedValidatorRegistered.class
+		);
+		assertThat(response.getBalances()).isEmpty();
+	}
+
+	@Test
+	public void retrieve_validator_system_entity_on_genesis() throws Exception {
+		// Arrange
+		runner.start();
+
+		// Act
+		var request = new EntityRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.entityIdentifier(coreModelMapper.entityIdentifierValidatorSystem(TEST_KEY.getPublicKey()));
+		var response = sut.handleRequest(request);
+
+		// Assert
+		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+		assertThat(response.getDataObjects())
+			.hasOnlyElementsOfTypes(ValidatorBFTData.class, ValidatorData.class);
+		assertThat(response.getBalances())
+			.containsExactly(coreModelMapper.nativeTokenAmount(stakeAmount.toSubunits()));
+	}
+
+	@Test
+	public void retrieve_invalid_entity_should_throw() {
+		// Arrange
+		runner.start();
+
+		// Act
+		// Assert
+		var request = new EntityRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.entityIdentifier(new EntityIdentifier().address("some_garbage_address"));
+		assertThatThrownBy(() -> sut.handleRequest(request))
+			.isInstanceOf(CoreBadRequestException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(InvalidAddressErrorDetails.class);
 	}
 
 }

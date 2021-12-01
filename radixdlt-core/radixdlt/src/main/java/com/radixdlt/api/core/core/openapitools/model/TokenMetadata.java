@@ -45,7 +45,7 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = RoundData.class, name = "RoundData"),
   @JsonSubTypes.Type(value = TokenData.class, name = "TokenData"),
   @JsonSubTypes.Type(value = TokenMetadata.class, name = "TokenMetadata"),
-  @JsonSubTypes.Type(value = UnclaimedRadixEngineAddressData.class, name = "UnclaimedRadixEngineAddress"),
+  @JsonSubTypes.Type(value = UnclaimedRadixEngineAddress.class, name = "UnclaimedRadixEngineAddress"),
   @JsonSubTypes.Type(value = ValidatorAllowDelegation.class, name = "ValidatorAllowDelegation"),
   @JsonSubTypes.Type(value = ValidatorBFTData.class, name = "ValidatorBFTData"),
   @JsonSubTypes.Type(value = ValidatorData.class, name = "ValidatorData"),
@@ -261,7 +261,7 @@ static {
   mappings.put("RoundData", RoundData.class);
   mappings.put("TokenData", TokenData.class);
   mappings.put("TokenMetadata", TokenMetadata.class);
-  mappings.put("UnclaimedRadixEngineAddress", UnclaimedRadixEngineAddressData.class);
+  mappings.put("UnclaimedRadixEngineAddress", UnclaimedRadixEngineAddress.class);
   mappings.put("ValidatorAllowDelegation", ValidatorAllowDelegation.class);
   mappings.put("ValidatorBFTData", ValidatorBFTData.class);
   mappings.put("ValidatorData", ValidatorData.class);

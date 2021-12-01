@@ -191,8 +191,6 @@ public final class ValidatorEntity implements Entity {
 	public List<KeyQuery> getKeyQueries() {
 		return List.of(
 			KeyQuery.fromValidator(validatorKey, VALIDATOR_META_DATA, ValidatorMetaData::createVirtual),
-			KeyQuery.fromValidator(validatorKey, VALIDATOR_STAKE_DATA, ValidatorStakeData::createVirtual),
-			KeyQuery.fromValidator(validatorKey, VALIDATOR_BFT_DATA),
 			KeyQuery.fromValidator(validatorKey, VALIDATOR_ALLOW_DELEGATION_FLAG, AllowDelegationFlag::createVirtual),
 			KeyQuery.fromValidator(validatorKey, VALIDATOR_REGISTERED_FLAG_COPY, ValidatorRegisteredCopy::createVirtual),
 			KeyQuery.fromValidator(validatorKey, VALIDATOR_RAKE_COPY, ValidatorFeeCopy::createVirtual),

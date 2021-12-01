@@ -2512,7 +2512,7 @@ components:
         propertyName: type
         mapping:
           VirtualParentData: "#/components/schemas/VirtualParentData"
-          UnclaimedRadixEngineAddress: "#/components/schemas/UnclaimedRadixEngineAddressData"
+          UnclaimedRadixEngineAddress: "#/components/schemas/UnclaimedRadixEngineAddress"
           RoundData: "#/components/schemas/RoundData"
           EpochData: "#/components/schemas/EpochData"
           TokenData: "#/components/schemas/TokenData"
@@ -2587,7 +2587,7 @@ components:
               $ref: "#/components/schemas/EntitySetIdentifier"
             virtual_data_object:
               $ref: "#/components/schemas/DataObject"
-    UnclaimedRadixEngineAddressData:
+    UnclaimedRadixEngineAddress:
       allOf:
         - "$ref": "#/components/schemas/DataObject"
     RoundData:

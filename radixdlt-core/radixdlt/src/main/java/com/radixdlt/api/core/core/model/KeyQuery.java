@@ -96,6 +96,11 @@ public class KeyQuery {
 		return typeId;
 	}
 
+	public static KeyQuery fromToken(REAddr tokenAddress, SubstateTypeId typeId, Function<REAddr, Particle> virtualSubstate) {
+		var key = SystemMapKey.ofResourceData(tokenAddress, typeId.id());
+		return new KeyQuery(key, () -> Optional.of(virtualSubstate.apply(tokenAddress)), typeId);
+	}
+
 	public static KeyQuery fromToken(REAddr tokenAddress, SubstateTypeId typeId) {
 		var key = SystemMapKey.ofResourceData(tokenAddress, typeId.id());
 		return new KeyQuery(key, Optional::empty, typeId);

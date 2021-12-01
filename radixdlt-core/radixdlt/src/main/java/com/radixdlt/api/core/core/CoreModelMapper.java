@@ -82,8 +82,7 @@ import com.radixdlt.api.core.core.model.entities.NotEnoughResourcesException;
 import com.radixdlt.api.core.core.model.entities.SystemEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorSystemEntity;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportDataObjectException;
-import com.radixdlt.api.core.core.model.exceptions.InvalidAddressException;
-import com.radixdlt.api.core.core.model.exceptions.InvalidFeePayerEntityException;
+import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidHexException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidPartialStateIdentifierException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidPublicKeyException;
@@ -277,9 +276,18 @@ public final class CoreModelMapper {
 	public AccountVaultEntity feePayerEntity(EntityIdentifier entityIdentifier) throws CoreModelException {
 		var feePayer = entity(entityIdentifier);
 		if (!(feePayer instanceof AccountVaultEntity accountVaultEntity)) {
-			throw new InvalidFeePayerEntityException(entityIdentifier);
+			throw new CoreBadRequestException(new InvalidFeePayerEntityErrorDetails()
+				.invalidFeePayerEntity(entityIdentifier)
+				.type(InvalidFeePayerEntityErrorDetails.class.getSimpleName())
+			);
 		}
 		return accountVaultEntity;
+	}
+
+	private static CoreBadRequestException invalidAddress(String address) {
+		return new CoreBadRequestException(
+			new InvalidAddressErrorDetails().invalidAddress(address)
+		);
 	}
 
 	public Entity entity(EntityIdentifier entityIdentifier) throws CoreModelException {
@@ -293,10 +301,10 @@ public final class CoreModelMapper {
 			return SystemEntity.instance();
 		}
 
-		var addressType = addressing.getAddressType(address).orElseThrow(() -> new InvalidAddressException(address));
+		var addressType = addressing.getAddressType(address).orElseThrow(() -> invalidAddress(address));
 		switch (addressType) {
 			case VALIDATOR -> {
-				var key = addressing.forValidators().parseOrThrow(address, s -> new InvalidAddressException(address));
+				var key = addressing.forValidators().parseOrThrow(address, s -> invalidAddress(address));
 				var subEntity = entityIdentifier.getSubEntity();
 				if (subEntity == null) {
 					return ValidatorEntity.from(key);
@@ -315,7 +323,7 @@ public final class CoreModelMapper {
 				return ValidatorSystemEntity.from(key);
 			}
 			case ACCOUNT -> {
-				var accountAddress = addressing.forAccounts().parseOrThrow(address, s -> new InvalidAddressException(address));
+				var accountAddress = addressing.forAccounts().parseOrThrow(address, s -> invalidAddress(address));
 				var subEntity = entityIdentifier.getSubEntity();
 				if (subEntity == null) {
 					return AccountVaultEntity.from(accountAddress);
@@ -326,7 +334,7 @@ public final class CoreModelMapper {
 					throw new InvalidSubEntityException(subEntity);
 				}
 
-				var validator = addressing.forValidators().parseOrThrow(metadata.getValidator(), s -> new InvalidAddressException(address));
+				var validator = addressing.forValidators().parseOrThrow(metadata.getValidator(), s -> invalidAddress(address));
 				return switch (subEntity.getAddress()) {
 					case "prepared_stake" -> PreparedStakeVaultEntity.from(
 						accountAddress,
@@ -345,7 +353,7 @@ public final class CoreModelMapper {
 				};
 			}
 			case RESOURCE -> {
-				var pair = addressing.forResources().parseOrThrow(address, s -> new InvalidAddressException(address));
+				var pair = addressing.forResources().parseOrThrow(address, s -> invalidAddress(address));
 				return TokenEntity.from(pair.getFirst(), pair.getSecond());
 			}
 			default -> throw new IllegalStateException("Unknown addressType: " + addressType);
@@ -362,12 +370,12 @@ public final class CoreModelMapper {
 		if (dataObject instanceof PreparedValidatorOwner preparedValidatorOwner) {
 			var owner = preparedValidatorOwner.getOwner();
 			parsed = ImmutableClassToInstanceMap.of(
-				REAddr.class, addressing.forAccounts().parseOrThrow(owner, s -> new InvalidAddressException(owner))
+				REAddr.class, addressing.forAccounts().parseOrThrow(owner, s -> invalidAddress(owner))
 			);
 		} else if (dataObject instanceof TokenData tokenData && tokenData.getOwner() != null) {
 			var owner = tokenData.getOwner();
-			var ownerAddress = addressing.forAccounts().parseOrThrow(owner, s -> new InvalidAddressException(owner));
-			var key = ownerAddress.publicKey().orElseThrow(() -> new InvalidAddressException(owner));
+			var ownerAddress = addressing.forAccounts().parseOrThrow(owner, s -> invalidAddress(owner));
+			var key = ownerAddress.publicKey().orElseThrow(() -> invalidAddress(owner));
 			parsed = ImmutableClassToInstanceMap.of(ECPublicKey.class, key);
 		} else {
 			parsed = ImmutableClassToInstanceMap.of();
@@ -451,7 +459,7 @@ public final class CoreModelMapper {
 		return Pair.of(partialStateIdentifier.getStateVersion(), accumulator);
 	}
 
-	public ResourceOperation resourceOperation(ResourceAmount resourceAmount) throws InvalidAddressException {
+	public ResourceOperation resourceOperation(ResourceAmount resourceAmount) throws CoreModelException {
 		if (resourceAmount == null) {
 			return null;
 		}
@@ -466,14 +474,14 @@ public final class CoreModelMapper {
 		);
 	}
 
-	public Resource resource(ResourceIdentifier resourceIdentifier) throws InvalidAddressException {
+	public Resource resource(ResourceIdentifier resourceIdentifier) throws CoreModelException {
 		if (resourceIdentifier instanceof TokenResourceIdentifier tokenResourceIdentifier) {
 			var rri = tokenResourceIdentifier.getRri();
-			var symbolAndAddr = addressing.forResources().parseOrThrow(rri, s -> new InvalidAddressException(rri));
+			var symbolAndAddr = addressing.forResources().parseOrThrow(rri, s -> invalidAddress(rri));
 			return com.radixdlt.api.core.core.model.TokenResource.from(symbolAndAddr.getFirst(), symbolAndAddr.getSecond());
 		} else if (resourceIdentifier instanceof StakeOwnershipResourceIdentifier stakeOwnershipResourceIdentifier) {
 			var validatorAddress = stakeOwnershipResourceIdentifier.getValidator();
-			var key = addressing.forValidators().parseOrThrow(validatorAddress, s -> new InvalidAddressException(validatorAddress));
+			var key = addressing.forValidators().parseOrThrow(validatorAddress, s -> invalidAddress(validatorAddress));
 			return StakeOwnershipResource.from(key);
 		} else {
 			throw new IllegalStateException("Unknown resourceIdentifier: " + resourceIdentifier);
@@ -581,6 +589,14 @@ public final class CoreModelMapper {
 		return new EntityIdentifier().address(addressing.forValidators().of(validatorKey));
 	}
 
+	public EntityIdentifier entityIdentifierValidatorSystem(ECPublicKey validatorKey) {
+		return new EntityIdentifier()
+			.address(addressing.forValidators().of(validatorKey))
+			.subEntity(new SubEntity()
+				.address("system")
+			);
+	}
+
 	public PublicKey publicKey(ECPublicKey publicKey) {
 		return new PublicKey().hex(publicKey.toHex());
 	}
@@ -615,6 +631,12 @@ public final class CoreModelMapper {
 		return new ResourceAmount()
 			.resourceIdentifier(nativeToken())
 			.value(positive ? value.toString() : "-" + value);
+	}
+
+	public ResourceAmount stakeOwnershipAmount(ECPublicKey validatorKey, UInt256 value) {
+		return new ResourceAmount()
+			.resourceIdentifier(stakeOwnership(validatorKey))
+			.value(value.toString());
 	}
 
 	public ResourceAmount nativeTokenAmount(UInt256 value) {
@@ -788,7 +810,7 @@ public final class CoreModelMapper {
 	}
 
 	public DataObject unclaimedREAddrData() {
-		var data = new UnclaimedRadixEngineAddressData();
+		var data = new UnclaimedRadixEngineAddress();
 		return data.type(SubstateTypeMapping.getName(SubstateTypeId.UNCLAIMED_READDR));
 	}
 
