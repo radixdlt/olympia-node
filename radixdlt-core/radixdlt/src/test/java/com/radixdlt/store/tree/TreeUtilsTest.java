@@ -42,4 +42,54 @@ public class TreeUtilsTest {
         var expected = new byte[] {(byte) oddPrefix, 15, 1, 12, 11, 8};
         Assert.assertArrayEquals(expected, actual);
     }
+
+    @Test
+    public void when_most_significant_nibble_is_always_zero__then_it_is_converted_correctly() {
+        byte[] fromNibblesToBytes = TreeUtils.fromNibblesToBytes(new byte[]{0, 1, 0, 2});
+
+        Assert.assertArrayEquals(new byte[] {1, 2}, fromNibblesToBytes);
+    }
+
+    @Test
+    public void when_least_significant_nibble_is_always_zero__then_it_is_converted_correctly() {
+        byte[] fromNibblesToBytes = TreeUtils.fromNibblesToBytes(new byte[]{1, 0, 2, 0});
+
+        Assert.assertArrayEquals(new byte[] {16, 32}, fromNibblesToBytes);
+    }
+
+    @Test
+    public void when_most_significant_nibble_is_never_zero__then_it_is_converted_correctly() {
+        byte[] fromNibblesToBytes = TreeUtils.fromNibblesToBytes(new byte[]{1, 1, 2, 2});
+
+        Assert.assertArrayEquals(new byte[] {17, 34}, fromNibblesToBytes);
+    }
+
+    @Test
+    public void when_most_significant_nibble_is_zero_once_then_it_is_converted_correctly() {
+        byte[] fromNibblesToBytes = TreeUtils.fromNibblesToBytes(new byte[]{1, 1, 0, 2});
+
+        Assert.assertArrayEquals(new byte[] {17, 2}, fromNibblesToBytes);
+    }
+
+    @Test
+    public void when_least_significant_nibble_is_zero_once_then_it_is_converted_correctly() {
+        byte[] fromNibblesToBytes = TreeUtils.fromNibblesToBytes(new byte[]{1, 0, 2, 2});
+
+        Assert.assertArrayEquals(new byte[] {16, 34}, fromNibblesToBytes);
+    }
+
+    @Test
+    public void when_nibbles_array_is_null__then_null_pointer_exception_is_thrown() {
+        Assert.assertThrows(
+                NullPointerException.class,
+                () -> TreeUtils.fromNibblesToBytes(null)
+        );
+    }
+
+    @Test
+    public void when_nibbles_array_has_odd_length__then_illegal_argument_exception_is_thrown() {
+        Assert.assertThrows(IllegalArgumentException.class,
+                () -> TreeUtils.fromNibblesToBytes(new byte[]{0, 1, 2})
+        );
+    }
 }
