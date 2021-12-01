@@ -3,6 +3,7 @@ package com.radixdlt.store.tree;
 import org.bouncycastle.util.Arrays;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -34,6 +35,33 @@ public class TreeUtils {
 			return Arrays.concatenate(new byte[] {(byte) oddPrefix}, rawKey);
 		}
 	}
+
+	/**
+	 * Convert an array of nibbles to a byte array. Starting from the beginning of the array, it converts each pair
+	 * of nibbles into a byte. The first nibble is the 4 most significant bits and the second one the 4 least.
+	 * <br/>
+	 * Examples: <br/>
+	 *	[0, 1, 0, 2] becomes [1, 2] <br/>
+	 *  [1, 1, 2, 2] becomes [17, 34] <br/>
+	 *
+	 * @param nibbles array to be converted
+	 * @return byte array of the converted nibbles
+	 * @throws NullPointerException if the nibbles array is null
+	 * @throws IllegalArgumentException if nibbles array has odd length
+	 */
+	public static byte[] fromNibblesToBytes(byte[] nibbles) {
+		Objects.requireNonNull(nibbles);
+		if (nibbles.length % 2 != 0) {
+			throw new IllegalArgumentException("Nibbles array must have even length.");
+		}
+		byte[] bytes = new byte[0];
+		for (int i = 0; i < nibbles.length; i += 2) {
+			byte b = (byte) ((byte) (nibbles[i] << 4) + (nibbles[i + 1]));
+			bytes = Arrays.append(bytes, b);
+		}
+		return bytes;
+	}
+
 	public static Integer nibbleToInteger(byte[] nibble) {
 		return ByteBuffer.wrap(nibble).getInt();
 	}
