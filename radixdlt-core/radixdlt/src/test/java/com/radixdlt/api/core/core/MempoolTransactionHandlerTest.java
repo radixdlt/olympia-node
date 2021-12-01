@@ -73,7 +73,7 @@ import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.ResourceOperation;
 import com.radixdlt.api.core.core.model.TokenResource;
 import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
-import com.radixdlt.api.core.core.model.exceptions.TransactionNotFoundException;
+import com.radixdlt.api.core.core.model.exceptions.CoreNotFoundException;
 import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.TransactionNotFoundErrorDetails;
@@ -236,7 +236,7 @@ public class MempoolTransactionHandlerTest {
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.transactionIdentifier(coreModelMapper.transactionIdentifier(signedTxn.getId()));
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(TransactionNotFoundException.class)
+			.isInstanceOf(CoreNotFoundException.class)
 			.extracting("errorDetails")
 			.isInstanceOf(TransactionNotFoundErrorDetails.class);
 	}

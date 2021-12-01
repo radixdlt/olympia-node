@@ -68,9 +68,10 @@ import com.google.inject.Provider;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.model.exceptions.TransactionNotFoundException;
+import com.radixdlt.api.core.core.model.exceptions.CoreNotFoundException;
 import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
 import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionResponse;
+import com.radixdlt.api.core.core.openapitools.model.TransactionNotFoundErrorDetails;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SystemMapKey;
@@ -109,10 +110,15 @@ public class MempoolTransactionHandler extends CoreJsonRpcHandler<MempoolTransac
 	public MempoolTransactionResponse handleRequest(MempoolTransactionRequest request) throws CoreModelException {
 		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var txnId = modelMapper.txnId(request.getTransactionIdentifier());
+		var transactionIdentifier = request.getTransactionIdentifier();
+		var txnId = modelMapper.txnId(transactionIdentifier);
 		var transaction = mempool.getData(map -> map.get(txnId));
 		if (transaction == null) {
-			throw new TransactionNotFoundException(request.getTransactionIdentifier());
+			throw new CoreNotFoundException(
+				new TransactionNotFoundErrorDetails()
+					.transactionIdentifier(transactionIdentifier)
+					.type(TransactionNotFoundErrorDetails.class.getSimpleName())
+			);
 		}
 
 		var processed = transaction.getFirst();

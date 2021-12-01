@@ -80,7 +80,7 @@ import com.radixdlt.utils.Bytes;
 
 import java.util.TreeMap;
 
-public class EngineConfigurationHandler extends CoreJsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
+public final class EngineConfigurationHandler extends CoreJsonRpcHandler<EngineConfigurationRequest, EngineConfigurationResponse> {
 	private final TreeMap<Long, ForkConfig> forks;
 	private final CoreModelMapper modelMapper;
 	private final VerifiedTxnsAndProof genesis;

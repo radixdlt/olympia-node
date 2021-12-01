@@ -83,7 +83,6 @@ import com.radixdlt.api.core.core.model.entities.SystemEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorSystemEntity;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportDataObjectException;
 import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
-import com.radixdlt.api.core.core.model.exceptions.InvalidHexException;
 import com.radixdlt.api.core.core.model.exceptions.InvalidSignatureException;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.entities.PreparedStakeVaultEntity;
@@ -206,11 +205,14 @@ public final class CoreModelMapper {
 		}
 	}
 
-	public byte[] bytes(String hex) throws InvalidHexException {
+	public byte[] bytes(String hex) throws CoreModelException {
 		try {
 			return Bytes.fromHexString(hex);
 		} catch (IllegalArgumentException e) {
-			throw new InvalidHexException(hex);
+			throw new CoreBadRequestException(new InvalidHexErrorDetails()
+				.invalidHex(hex)
+				.type(InvalidHexErrorDetails.class.getSimpleName())
+			);
 		}
 	}
 
@@ -416,7 +418,7 @@ public final class CoreModelMapper {
 	}
 
 
-	public Txn txn(String hex) throws InvalidHexException {
+	public Txn txn(String hex) throws CoreModelException {
 		var bytes = bytes(hex);
 		return Txn.create(bytes);
 	}
