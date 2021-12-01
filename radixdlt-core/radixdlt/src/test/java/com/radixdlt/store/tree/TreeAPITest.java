@@ -1,5 +1,6 @@
 package com.radixdlt.store.tree;
 
+import com.radixdlt.store.tree.storage.InMemoryPMTStorage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
