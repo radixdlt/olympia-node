@@ -18,8 +18,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 
@@ -30,13 +28,13 @@ import java.util.Objects;
   TransactionStatusResponse.JSON_PROPERTY_LEDGER_STATE,
   TransactionStatusResponse.JSON_PROPERTY_TRANSACTION
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T00:31:43.593368-06:00[America/Chicago]")
 public class TransactionStatusResponse {
   public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
   private LedgerState ledgerState;
 
   public static final String JSON_PROPERTY_TRANSACTION = "transaction";
-  private List<AccountTransaction> transaction = new ArrayList<>();
+  private AccountTransaction transaction;
 
 
   public TransactionStatusResponse ledgerState(LedgerState ledgerState) {
@@ -65,13 +63,8 @@ public class TransactionStatusResponse {
   }
 
 
-  public TransactionStatusResponse transaction(List<AccountTransaction> transaction) {
+  public TransactionStatusResponse transaction(AccountTransaction transaction) {
     this.transaction = transaction;
-    return this;
-  }
-
-  public TransactionStatusResponse addTransactionItem(AccountTransaction transactionItem) {
-    this.transaction.add(transactionItem);
     return this;
   }
 
@@ -84,14 +77,14 @@ public class TransactionStatusResponse {
   @JsonProperty(JSON_PROPERTY_TRANSACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<AccountTransaction> getTransaction() {
+  public AccountTransaction getTransaction() {
     return transaction;
   }
 
 
   @JsonProperty(JSON_PROPERTY_TRANSACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTransaction(List<AccountTransaction> transaction) {
+  public void setTransaction(AccountTransaction transaction) {
     this.transaction = transaction;
   }
 

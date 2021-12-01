@@ -64,6 +64,8 @@
 package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.gateway.GatewayErrorCode;
+import com.radixdlt.api.gateway.GatewayException;
 import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.TransactionStatusRequest;
@@ -90,11 +92,14 @@ final class TransactionStatusHandler extends GatewayJsonRpcHandler<TransactionSt
 	}
 
 	@Override
-	public TransactionStatusResponse handleRequest(TransactionStatusRequest request) {
+	public TransactionStatusResponse handleRequest(TransactionStatusRequest request) throws GatewayException {
 		var txnId = AID.from(request.getTransactionIdentifier().getHash());
 		var response = new TransactionStatusResponse();
-		service.getTransactionStatus(txnId).ifPresent(response::addTransactionItem);
+		var transaction = service.getTransactionStatus(txnId)
+			.orElseThrow(() -> new GatewayException(GatewayErrorCode.NOT_FOUND));
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return response.ledgerState(gatewayModelMapper.ledgerState(proof));
+		return response
+			.ledgerState(gatewayModelMapper.ledgerState(proof))
+			.transaction(transaction);
 	}
 }

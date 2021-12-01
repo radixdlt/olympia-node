@@ -957,10 +957,7 @@ components:
         ledger_state:
           "$ref": "#/components/schemas/LedgerState"
         token:
-          type: array
-          maxItems: 1
-          items:
-            "$ref": "#/components/schemas/Token"
+          "$ref": "#/components/schemas/Token"
       example:
         ledger_state:
           epoch: 1
@@ -968,31 +965,31 @@ components:
           version: 1
           timestamp: "2021-08-29T01:19:00.524Z"
         token:
-          - token_identifier:
+          token_identifier:
+            rri: xrd_rr1qy5wfsfh
+          total_supply:
+            token_identifier:
               rri: xrd_rr1qy5wfsfh
-            total_supply:
+            value: '12014560679861300000000000000'
+          info:
+            total_burned:
               token_identifier:
                 rri: xrd_rr1qy5wfsfh
-              value: '12014560679861300000000000000'
-            info:
-              total_burned:
-                token_identifier:
-                  rri: xrd_rr1qy5wfsfh
-                value: '11437173800000000000000'
-              total_minted:
-                token_identifier:
-                  rri: xrd_rr1qy5wfsfh
-                value: '12014572117035100000000000000'
-            properties:
-              icon_url: https://assets.radixdlt.com/icons/icon-xrd-32x32.png
-              is_supply_mutable: true
-              symbol: xrd
-              granularity: '1'
-              name: Radix
-              description: The Radix Public Network's native token, used to pay the
-                network's required transaction fees and to secure the network through
-                staking to its validator nodes.
-              url: https://tokens.radixdlt.com
+              value: '11437173800000000000000'
+            total_minted:
+              token_identifier:
+                rri: xrd_rr1qy5wfsfh
+              value: '12014572117035100000000000000'
+          properties:
+            icon_url: https://assets.radixdlt.com/icons/icon-xrd-32x32.png
+            is_supply_mutable: true
+            symbol: xrd
+            granularity: '1'
+            name: Radix
+            description: The Radix Public Network's native token, used to pay the
+              network's required transaction fees and to secure the network through
+              staking to its validator nodes.
+            url: https://tokens.radixdlt.com
     TokenNativeRequest:
       type: object
       required:
@@ -1092,10 +1089,7 @@ components:
         ledger_state:
           "$ref": "#/components/schemas/LedgerState"
         transaction:
-          type: array
-          maxItems: 1
-          items:
-            "$ref": "#/components/schemas/AccountTransaction"
+          "$ref": "#/components/schemas/AccountTransaction"
     ValidatorInfoRequest:
       type: object
       required:
@@ -1153,14 +1147,6 @@ components:
           type: string
         details:
           type: object
-          required:
-            - cause
-            - exception
-          properties:
-            cause:
-              type: string
-            exception:
-              type: string
     Validator:
       type: object
       required:

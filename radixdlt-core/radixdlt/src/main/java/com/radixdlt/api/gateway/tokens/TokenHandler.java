@@ -95,13 +95,11 @@ final class TokenHandler extends GatewayJsonRpcHandler<TokenRequest, TokenRespon
 		var tokenAddress = gatewayModelMapper.tokenAddress(request.getTokenIdentifier());
 		var proof = inMemorySystemInfo.getCurrentProof();
 
-		var token = store.getResourceInfo(tokenAddress);
-		if (token.isEmpty()) {
-			throw new GatewayException(GatewayErrorCode.NOT_FOUND);
-		}
+		var token = store.getResourceInfo(tokenAddress)
+			.orElseThrow(() -> new GatewayException(GatewayErrorCode.NOT_FOUND));
 
 		return new TokenResponse()
-			.token(token.get())
+			.token(token)
 			.ledgerState(gatewayModelMapper.ledgerState(proof));
 	}
 }

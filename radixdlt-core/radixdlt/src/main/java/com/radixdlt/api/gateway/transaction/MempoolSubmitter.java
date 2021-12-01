@@ -63,13 +63,10 @@
 
 package com.radixdlt.api.gateway.transaction;
 
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import com.radixdlt.api.gateway.GatewayErrorCode;
 import com.radixdlt.api.gateway.GatewayException;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;

@@ -64,7 +64,6 @@
 package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.gateway.GatewayException;
 import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.TransactionRulesRequest;
