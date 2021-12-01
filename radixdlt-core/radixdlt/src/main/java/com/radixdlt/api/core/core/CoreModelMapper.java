@@ -83,7 +83,6 @@ import com.radixdlt.api.core.core.model.entities.SystemEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorSystemEntity;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportDataObjectException;
 import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
-import com.radixdlt.api.core.core.model.exceptions.InvalidSignatureException;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.entities.PreparedStakeVaultEntity;
 import com.radixdlt.api.core.core.model.entities.PreparedUnstakeVaultEntity;
@@ -91,10 +90,8 @@ import com.radixdlt.api.core.core.model.Resource;
 import com.radixdlt.api.core.core.model.StakeOwnershipResource;
 import com.radixdlt.api.core.core.model.entities.TokenEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorEntity;
-import com.radixdlt.api.core.core.model.exceptions.InvalidTransactionException;
-import com.radixdlt.api.core.core.model.exceptions.InvalidTransactionHashException;
-import com.radixdlt.api.core.core.model.exceptions.NetworkNotSupportedException;
-import com.radixdlt.api.core.core.model.exceptions.SubstateDependencyNotFoundException;
+import com.radixdlt.api.core.core.model.exceptions.CoreNotSupportedException;
+import com.radixdlt.api.core.core.model.exceptions.CoreConflictException;
 import com.radixdlt.api.core.core.openapitools.model.*;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
@@ -135,6 +132,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.engine.FeeConstructionException;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
@@ -175,9 +173,13 @@ public final class CoreModelMapper {
 		this.forks = forks;
 	}
 
-	public void verifyNetwork(NetworkIdentifier networkIdentifier) throws NetworkNotSupportedException {
+	public void verifyNetwork(NetworkIdentifier networkIdentifier) throws CoreNotSupportedException {
 		if (!networkIdentifier.getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new NetworkNotSupportedException(this.network);
+			throw new CoreNotSupportedException(
+				new NetworkNotSupportedErrorDetails()
+				.addSupportedNetworksItem(new NetworkIdentifier().network(this.network.name().toLowerCase()))
+				.type(NetworkNotSupportedErrorDetails.class.getSimpleName())
+			);
 		}
 	}
 
@@ -188,7 +190,11 @@ public final class CoreModelMapper {
 		try {
 			sig = ECDSASignature.decodeFromDER(bytes);
 		} catch (IllegalArgumentException e) {
-			throw new InvalidSignatureException(signature.getBytes());
+			throw new CoreBadRequestException(
+				new InvalidSignatureErrorDetails()
+					.invalidSignature(signature.getBytes())
+					.type(InvalidSignatureErrorDetails.class.getSimpleName())
+			);
 		}
 		return Pair.of(publicKey, sig);
 	}
@@ -423,12 +429,14 @@ public final class CoreModelMapper {
 		return Txn.create(bytes);
 	}
 
-	public AID txnId(TransactionIdentifier transactionIdentifier) throws InvalidTransactionHashException {
+	public AID txnId(TransactionIdentifier transactionIdentifier) throws CoreBadRequestException {
 		var hash = transactionIdentifier.getHash();
 		try {
 			return AID.from(hash);
 		} catch (IllegalArgumentException e) {
-			throw new InvalidTransactionHashException(hash);
+			throw new CoreBadRequestException(new InvalidTransactionHashErrorDetails()
+				.invalidTransactionHash(hash)
+				.type(InvalidTransactionHashErrorDetails.class.getSimpleName()));
 		}
 	}
 
@@ -1109,12 +1117,29 @@ public final class CoreModelMapper {
 			.hash(txnId.toString());
 	}
 
+	public CoreModelException parseException(TxnParseException exception) {
+		var cause = Throwables.getRootCause(exception);
+		return new CoreBadRequestException(
+			new InvalidTransactionErrorDetails()
+				.message(cause.getMessage())
+				.type(InvalidTransactionErrorDetails.class.getSimpleName())
+		);
+	}
+
 	public CoreModelException radixEngineException(RadixEngineException exception) {
 		var cause = Throwables.getRootCause(exception);
 		if (cause instanceof SubstateNotFoundException notFoundException) {
-			return new SubstateDependencyNotFoundException(notFoundException.getSubstateId());
+			return new CoreConflictException(
+				new SubstateDependencyNotFoundErrorDetails()
+					.substateIdentifierNotFound(substateIdentifier(notFoundException.getSubstateId()))
+					.type(SubstateDependencyNotFoundErrorDetails.class.getSimpleName())
+			);
 		}
 
-		return new InvalidTransactionException(cause.getMessage());
+		return new CoreBadRequestException(
+			new InvalidTransactionErrorDetails()
+				.message(cause.getMessage())
+				.type(InvalidTransactionErrorDetails.class.getSimpleName())
+		);
 	}
 }

@@ -61,30 +61,100 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model.exceptions;
+package com.radixdlt.api.core.core;
 
-import com.radixdlt.api.core.core.CoreModelError;
-import com.radixdlt.api.core.core.CoreModelException;
-import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.SubstateDependencyNotFoundErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.SubstateIdentifier;
-import com.radixdlt.atom.SubstateId;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.core.core.handlers.EngineConfigurationHandler;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
+import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.qualifier.NumPeers;
+import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public final class SubstateDependencyNotFoundException extends CoreModelException {
-	private final SubstateId substateId;
+import java.util.Map;
+import java.util.Set;
 
-	public SubstateDependencyNotFoundException(SubstateId substateId) {
-		super(CoreModelError.STATE_CONFLICT);
+import static org.assertj.core.api.Assertions.assertThat;
 
-		this.substateId = substateId;
+public class EngineConfigurationHandlerTest {
+	@Rule
+	public TemporaryFolder folder = new TemporaryFolder();
+	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+
+	private final Amount totalTokenAmount = Amount.ofTokens(110);
+	private final Amount stakeAmount = Amount.ofTokens(10);
+
+	@Inject
+	private EngineConfigurationHandler sut;
+	@Inject
+	private SingleNodeDeterministicRunner runner;
+	@Inject
+	@Genesis
+	private VerifiedTxnsAndProof genesis;
+
+	@Before
+	public void setup() {
+		var injector = Guice.createInjector(
+			MempoolConfig.asModule(1000, 10),
+			new MainnetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(
+				RERulesConfig.testingDefault()
+					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
+			),
+			new ForksModule(),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new MockedGenesisModule(
+				Set.of(TEST_KEY.getPublicKey()),
+				totalTokenAmount,
+				stakeAmount
+			),
+			new AbstractModule() {
+				@Override
+				protected void configure() {
+					bindConstant().annotatedWith(NumPeers.class).to(0);
+					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
+					bindConstant().annotatedWith(NetworkId.class).to(99);
+				}
+			}
+		);
+		injector.injectMembers(this);
 	}
 
-	@Override
-	public ErrorDetails getErrorDetails() {
-		return new SubstateDependencyNotFoundErrorDetails()
-			.substateIdentifierNotFound(new SubstateIdentifier()
-				.identifier(substateId.toString())
-			)
-			.type(SubstateDependencyNotFoundErrorDetails.class.getSimpleName());
+	@Test
+	public void engine_configuration_should_return_correct_data() throws Exception {
+		// Arrange
+		runner.start();
+
+		// Act
+		var request = new EngineConfigurationRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"));
+		var response = sut.handleRequest(request);
+
+		// Assert
+		assertThat(response.getCheckpoints()).hasSize(1);
+		assertThat(response.getCheckpoints().get(0).getCheckpointTransaction())
+			.isEqualTo(Bytes.toHexString(genesis.getTxns().get(0).getPayload()));
 	}
 }

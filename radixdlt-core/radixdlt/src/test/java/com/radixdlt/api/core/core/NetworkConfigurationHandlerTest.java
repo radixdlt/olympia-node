@@ -61,26 +61,95 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model.exceptions;
+package com.radixdlt.api.core.core;
 
-import com.radixdlt.api.core.core.CoreModelError;
-import com.radixdlt.api.core.core.CoreModelException;
-import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.InvalidTransactionErrorDetails;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.api.core.core.handlers.NetworkConfigurationHandler;
+import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.qualifier.NumPeers;
+import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.ForksModule;
+import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
+import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public final class InvalidTransactionException extends CoreModelException {
-	private final String message;
+import java.util.Map;
+import java.util.Set;
 
-	public InvalidTransactionException(String message) {
-		super(CoreModelError.BAD_REQUEST);
+import static org.assertj.core.api.Assertions.assertThat;
 
-		this.message = message;
+public class NetworkConfigurationHandlerTest {
+	@Rule
+	public TemporaryFolder folder = new TemporaryFolder();
+	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+
+	private final Amount totalTokenAmount = Amount.ofTokens(110);
+	private final Amount stakeAmount = Amount.ofTokens(10);
+
+	@Inject
+	private NetworkConfigurationHandler sut;
+	@Inject
+	private SingleNodeDeterministicRunner runner;
+	@Inject
+	private Addressing addressing;
+
+	@Before
+	public void setup() {
+		var injector = Guice.createInjector(
+			MempoolConfig.asModule(1000, 10),
+			new MainnetForkConfigsModule(),
+			new RadixEngineForksLatestOnlyModule(
+				RERulesConfig.testingDefault()
+					.overrideFeeTable(FeeTable.create(Amount.ofSubunits(UInt256.ONE), Map.of()))
+			),
+			new ForksModule(),
+			new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+			new MockedGenesisModule(
+				Set.of(TEST_KEY.getPublicKey()),
+				totalTokenAmount,
+				stakeAmount
+			),
+			new AbstractModule() {
+				@Override
+				protected void configure() {
+					bindConstant().annotatedWith(NumPeers.class).to(0);
+					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
+					bindConstant().annotatedWith(NetworkId.class).to(99);
+				}
+			}
+		);
+		injector.injectMembers(this);
 	}
 
-	@Override
-	public ErrorDetails getErrorDetails() {
-		return new InvalidTransactionErrorDetails()
-			.message(message)
-			.type(InvalidTransactionErrorDetails.class.getSimpleName());
+	@Test
+	public void engine_configuration_should_return_correct_data() throws Exception {
+		// Arrange
+		runner.start();
+
+		// Act
+		var response = sut.handleRequest((Void) null);
+
+		// Assert
+		var bech32 = response.getBech32HumanReadableParts();
+		assertThat(bech32.getAccountHrp()).isEqualTo(addressing.forAccounts().getHrp());
+		assertThat(bech32.getNodeHrp()).isEqualTo(addressing.forNodes().getHrp());
+		assertThat(bech32.getValidatorHrp()).isEqualTo(addressing.forValidators().getHrp());
+		assertThat(bech32.getResourceHrpSuffix()).isEqualTo(addressing.forResources().getHrpSuffix());
 	}
 }

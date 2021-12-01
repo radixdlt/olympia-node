@@ -63,24 +63,21 @@
 
 package com.radixdlt.api.core.core.model.exceptions;
 
-import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelError;
+import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.PublicKey;
-import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedErrorDetails;
 
-public final class PublicKeyNotSupportedException extends CoreModelException {
-	private final PublicKey publicKey;
-	public PublicKeyNotSupportedException(PublicKey publicKey) {
-		super(CoreModelError.NOT_SUPPORTED);
+public final class CoreConflictException extends CoreModelException {
+	private final ErrorDetails errorDetails;
 
-		this.publicKey = publicKey;
+	public CoreConflictException(ErrorDetails errorDetails) {
+		super(CoreModelError.CONFLICT);
+
+		this.errorDetails = errorDetails;
 	}
 
 	@Override
 	public ErrorDetails getErrorDetails() {
-		return new PublicKeyNotSupportedErrorDetails()
-			.unsupportedPublicKey(publicKey)
-			.type(PublicKeyNotSupportedErrorDetails.class.getSimpleName());
+		return errorDetails;
 	}
 }

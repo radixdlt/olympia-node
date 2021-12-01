@@ -66,7 +66,7 @@ package com.radixdlt.api.core.core;
 public enum CoreModelError {
 	BAD_REQUEST(400, "Bad request"),
 	NOT_FOUND(404, "Not found"),
-	STATE_CONFLICT(409, "State Conflict"),
+	CONFLICT(409, "State Conflict"),
 	NOT_SUPPORTED(501, "Not supported");
 
 	private final int errorCode;

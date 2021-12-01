@@ -66,20 +66,18 @@ package com.radixdlt.api.core.core.model.exceptions;
 import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelError;
 import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.InvalidTransactionHashErrorDetails;
 
-public final class InvalidTransactionHashException extends CoreModelException {
-	private final String invalidTransactionHash;
-	public InvalidTransactionHashException(String invalidTransactionHash) {
-		super(CoreModelError.BAD_REQUEST);
+public final class CoreNotSupportedException extends CoreModelException {
+	private final ErrorDetails errorDetails;
 
-		this.invalidTransactionHash = invalidTransactionHash;
+	public CoreNotSupportedException(ErrorDetails errorDetails) {
+		super(CoreModelError.NOT_SUPPORTED);
+
+		this.errorDetails = errorDetails;
 	}
 
 	@Override
 	public ErrorDetails getErrorDetails() {
-		return new InvalidTransactionHashErrorDetails()
-			.invalidTransactionHash(invalidTransactionHash)
-			.type(InvalidTransactionHashErrorDetails.class.getSimpleName());
+		return errorDetails;
 	}
 }

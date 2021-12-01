@@ -69,25 +69,21 @@ import com.radixdlt.api.core.core.openapitools.model.Bech32HRPs;
 import com.radixdlt.api.core.core.openapitools.model.NetworkConfigurationResponse;
 import com.radixdlt.api.core.core.openapitools.model.NetworkConfigurationResponseVersion;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
+import org.radix.Radix;
 
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
-import static org.radix.Radix.VERSION_STRING_KEY;
 
 public class NetworkConfigurationHandler extends CoreJsonRpcHandler<Void, NetworkConfigurationResponse> {
 	private final Network network;
-	private final InfoSupplier infoSupplier;
 
 	@Inject
 	NetworkConfigurationHandler(
-		@NetworkId int networkId,
-		InfoSupplier infoSupplier
+		@NetworkId int networkId
 	) {
 		super(Void.class);
 		this.network = Network.ofId(networkId).orElseThrow();
-		this.infoSupplier = infoSupplier;
 	}
 
 	@Override
@@ -104,9 +100,7 @@ public class NetworkConfigurationHandler extends CoreJsonRpcHandler<Void, Networ
 			.version(
 				new NetworkConfigurationResponseVersion()
 					.apiVersion("0.9.0")
-					.coreVersion(infoSupplier.getInfo().get(SYSTEM_VERSION_KEY)
-						.get(VERSION_STRING_KEY).toString()
-					)
+					.coreVersion(Radix.systemVersionInfo().get(SYSTEM_VERSION_KEY).toString())
 			);
 	}
 }

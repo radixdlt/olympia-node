@@ -74,6 +74,7 @@ import com.radixdlt.api.core.core.model.ResourceOperation;
 import com.radixdlt.api.core.core.model.TokenResource;
 import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeRequest;
+import com.radixdlt.api.core.core.openapitools.model.InvalidSignatureErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.Signature;
 import com.radixdlt.application.system.FeeTable;
@@ -116,6 +117,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ConstructionFinalizeTest {
 	@Rule
@@ -229,5 +231,32 @@ public class ConstructionFinalizeTest {
 		// Assert
 		var bytes = Bytes.fromHexString(response.getSignedTransaction());
 		assertThat(bytes).isNotNull();
+	}
+
+
+	@Test
+	public void finalizing_a_transaction_with_invalid_signature_should_throw() throws Exception {
+		// Arrange
+		runner.start();
+		var accountAddress = REAddr.ofPubKeyAccount(self);
+		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
+		var unsignedTxn = buildUnsignedTransferTxn(accountAddress, otherAddress);
+		var sig = hashSigner.sign(unsignedTxn.hashToSign());
+		var invalidSignature = sig.toHexString(); // This is an invalid signature since it must be DER encoded
+
+
+		// Act
+		// Assert
+		var request = new ConstructionFinalizeRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.unsignedTransaction(Bytes.toHexString(unsignedTxn.blob()))
+			.signature(new Signature()
+				.bytes(invalidSignature)
+				.publicKey(coreModelMapper.publicKey(self))
+			);
+		assertThatThrownBy(() -> sut.handleRequest(request))
+			.isInstanceOf(CoreModelException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(InvalidSignatureErrorDetails.class);
 	}
 }

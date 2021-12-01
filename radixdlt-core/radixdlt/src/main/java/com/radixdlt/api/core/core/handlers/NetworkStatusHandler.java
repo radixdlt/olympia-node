@@ -71,7 +71,6 @@ import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.SyncStatus;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
@@ -79,6 +78,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
@@ -97,7 +97,7 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 	NetworkStatusHandler(
 		@Self ECPublicKey validatorKey,
 		InMemorySystemInfo inMemorySystemInfo,
-		@Genesis Txn genesisTxn,
+		@Genesis VerifiedTxnsAndProof txnsAndProof,
 		LedgerAccumulator ledgerAccumulator,
 		PeersView peersView,
 		CoreModelMapper coreModelMapper,
@@ -110,7 +110,7 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.preGenesisAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
 		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
-			preGenesisAccumulatorState, genesisTxn.getId().asHashCode()
+			preGenesisAccumulatorState, txnsAndProof.getTxns().get(0).getId().asHashCode()
 		);
 		this.peersView = peersView;
 		this.coreModelMapper = coreModelMapper;

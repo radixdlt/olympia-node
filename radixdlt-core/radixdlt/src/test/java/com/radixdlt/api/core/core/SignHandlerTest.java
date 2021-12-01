@@ -67,35 +67,26 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.api.core.core.handlers.MempoolTransactionHandler;
+import com.radixdlt.api.core.core.handlers.SignHandler;
 import com.radixdlt.api.core.core.model.EntityOperation;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.ResourceOperation;
 import com.radixdlt.api.core.core.model.TokenResource;
 import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
-import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
-import com.radixdlt.api.core.core.model.exceptions.CoreNotFoundException;
-import com.radixdlt.api.core.core.openapitools.model.InvalidTransactionHashErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
+import com.radixdlt.api.core.core.openapitools.model.InvalidTransactionErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.TransactionIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.TransactionNotFoundErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.SignRequest;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineMempool;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
@@ -118,36 +109,24 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class MempoolTransactionHandlerTest {
+public class SignHandlerTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
 	private final Amount totalTokenAmount = Amount.ofTokens(110);
 	private final Amount stakeAmount = Amount.ofTokens(10);
-	private final Amount liquidAmount = Amount.ofSubunits(
-		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
-	);
-	private final UInt256 toTransfer = liquidAmount.toSubunits().subtract(Amount.ofTokens(1).toSubunits());
 
 	@Inject
-	private MempoolTransactionHandler sut;
-	@Inject
-	private CoreModelMapper coreModelMapper;
-	@Inject
-	@LocalSigner
-	private HashSigner hashSigner;
-	@Inject
-	@Self
-	private ECPublicKey self;
+	private SignHandler sut;
 	@Inject
 	private SingleNodeDeterministicRunner runner;
 	@Inject
-	private RadixEngine<LedgerAndBFTProof> radixEngine;
-	@Inject
 	private Forks forks;
 	@Inject
-	private RadixEngineMempool mempool;
+	private CoreModelMapper mapper;
+	@Inject
+	private RadixEngine<LedgerAndBFTProof> radixEngine;
 
 	@Before
 	public void setup() {
@@ -177,21 +156,21 @@ public class MempoolTransactionHandlerTest {
 		injector.injectMembers(this);
 	}
 
-	private Txn buildSignedTxn(REAddr from, REAddr to) throws Exception {
+	private byte[] buildUnsignedTxn(REAddr from, REAddr to) throws Exception {
 		var entityOperationGroups =
 			List.of(List.of(
 				EntityOperation.from(
 					AccountVaultEntity.from(from),
 					ResourceOperation.withdraw(
 						TokenResource.from("xrd", REAddr.ofNativeToken()),
-						toTransfer
+						UInt256.ONE
 					)
 				),
 				EntityOperation.from(
 					AccountVaultEntity.from(to),
 					ResourceOperation.deposit(
 						TokenResource.from("xrd", REAddr.ofNativeToken()),
-						toTransfer
+						UInt256.ONE
 					)
 				)
 			));
@@ -199,64 +178,66 @@ public class MempoolTransactionHandlerTest {
 		var builder = radixEngine.constructWithFees(
 			operationTxBuilder, false, from
 		);
-		return builder.signAndBuild(hashSigner::sign);
+		return builder.buildForExternalSign().blob();
 	}
 
 	@Test
-	public void transaction_in_mempool_should_be_retrievable() throws Exception {
+	public void sign_should_work_on_correct_transaction() throws Exception {
 		// Arrange
 		runner.start();
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var signedTxn = buildSignedTxn(accountAddress, otherAddress);
-		mempool.add(signedTxn);
 
 		// Act
-		var response = sut.handleRequest(new MempoolTransactionRequest()
+		var from = REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey());
+		var other = PrivateKeys.ofNumeric(2);
+		var to = REAddr.ofPubKeyAccount(other.getPublicKey());
+		var unsignedTxn = buildUnsignedTxn(from, to);
+		var request = new SignRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.transactionIdentifier(coreModelMapper.transactionIdentifier(signedTxn.getId()))
-		);
+			.publicKey(mapper.publicKey(TEST_KEY.getPublicKey()))
+			.unsignedTransaction(Bytes.toHexString(unsignedTxn));
+		var response = sut.handleRequest(request);
 
 		// Assert
-		assertThat(response.getTransaction().getTransactionIdentifier())
-			.isEqualTo(coreModelMapper.transactionIdentifier(signedTxn.getId()));
-		var metadata = response.getTransaction().getMetadata();
-		assertThat(metadata.getHex()).isEqualTo(Bytes.toHexString(signedTxn.getPayload()));
+		assertThat(Bytes.fromHexString(response.getSignedTransaction())).isNotNull();
 	}
 
 	@Test
-	public void retrieving_transaction_not_in_mempool_should_throw() throws Exception {
-		// Arrange
-		runner.start();
-		var accountAddress = REAddr.ofPubKeyAccount(self);
-		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
-		var signedTxn = buildSignedTxn(accountAddress, otherAddress);
-
-		// Act
-		// Assert
-		var request = new MempoolTransactionRequest()
-			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.transactionIdentifier(coreModelMapper.transactionIdentifier(signedTxn.getId()));
-		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreNotFoundException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(TransactionNotFoundErrorDetails.class);
-	}
-
-	@Test
-	public void retrieving_invalid_hash_should_throw() throws Exception {
+	public void sign_given_an_unsupported_public_key_should_fail() throws Exception {
 		// Arrange
 		runner.start();
 
 		// Act
 		// Assert
-		var request = new MempoolTransactionRequest()
+		var from = REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey());
+		var other = PrivateKeys.ofNumeric(2);
+		var to = REAddr.ofPubKeyAccount(other.getPublicKey());
+		var unsignedTxn = buildUnsignedTxn(from, to);
+		var request = new SignRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.transactionIdentifier(new TransactionIdentifier().hash("badbad"));
+			.publicKey(mapper.publicKey(other.getPublicKey()))
+			.unsignedTransaction(Bytes.toHexString(unsignedTxn));
 
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
+			.isInstanceOf(CoreModelException.class)
 			.extracting("errorDetails")
-			.isInstanceOf(InvalidTransactionHashErrorDetails.class);
+			.isInstanceOf(PublicKeyNotSupportedErrorDetails.class);
+	}
+
+	@Test
+	public void sign_should_fail_given_an_invalid_transaction() {
+		// Arrange
+		runner.start();
+
+		// Act
+		// Assert
+		var request = new SignRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.publicKey(mapper.publicKey(TEST_KEY.getPublicKey()))
+			.unsignedTransaction("badbadbadbad");
+
+		assertThatThrownBy(() -> sut.handleRequest(request))
+			.isInstanceOf(CoreModelException.class)
+			.extracting("errorDetails")
+			.isInstanceOf(InvalidTransactionErrorDetails.class);
 	}
 }

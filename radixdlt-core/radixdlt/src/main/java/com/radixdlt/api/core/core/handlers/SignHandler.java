@@ -68,8 +68,8 @@ import com.google.inject.Provider;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.model.exceptions.InvalidTransactionException;
-import com.radixdlt.api.core.core.model.exceptions.PublicKeyNotSupportedException;
+import com.radixdlt.api.core.core.model.exceptions.CoreNotSupportedException;
+import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.SignRequest;
 import com.radixdlt.api.core.core.openapitools.model.SignResponse;
 import com.radixdlt.atom.TxLowLevelBuilder;
@@ -111,7 +111,11 @@ public final class SignHandler extends CoreJsonRpcHandler<SignRequest, SignRespo
 
 		var pubKey = coreModelMapper.ecPublicKey(request.getPublicKey());
 		if (!self.equals(pubKey)) {
-			throw new PublicKeyNotSupportedException(request.getPublicKey());
+			throw new CoreNotSupportedException(
+				new PublicKeyNotSupportedErrorDetails()
+					.unsupportedPublicKey(request.getPublicKey())
+					.type(PublicKeyNotSupportedErrorDetails.class.getSimpleName())
+			);
 		}
 
 		// Verify this is a valid transaction and not anything more malicious
@@ -120,7 +124,7 @@ public final class SignHandler extends CoreJsonRpcHandler<SignRequest, SignRespo
 		try {
 			radixEngineProvider.get().getParser().parse(txn);
 		} catch (TxnParseException e) {
-			throw new InvalidTransactionException(e.getMessage());
+			throw coreModelMapper.parseException(e);
 		}
 
 		var builder = TxLowLevelBuilder.newBuilder(bytes);
