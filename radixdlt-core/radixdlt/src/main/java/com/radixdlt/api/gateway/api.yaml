@@ -7,22 +7,22 @@ info:
 servers:
   - url: http://localhost:8080
 paths:
-  "/network":
+  "/gateway":
     post:
-      summary: Get Network
+      summary: Get Gateway Info
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/NetworkRequest"
+              "$ref": "#/components/schemas/GatewayRequest"
       responses:
         '200':
           description: The Network
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/NetworkResponse"
+                "$ref": "#/components/schemas/GatewayResponse"
         '500':
           description: Unexpected error
           content:
@@ -883,10 +883,10 @@ components:
       properties:
         transaction_identifier:
           $ref: "#/components/schemas/TransactionIdentifier"
-    NetworkRequest:
+    GatewayRequest:
       type: object
       example: {}
-    NetworkResponse:
+    GatewayResponse:
       type: object
       required:
         - network

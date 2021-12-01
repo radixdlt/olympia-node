@@ -22,15 +22,15 @@ import java.util.Objects;
 
 
 /**
- * NetworkResponse
+ * GatewayResponse
  */
 @JsonPropertyOrder({
-  NetworkResponse.JSON_PROPERTY_NETWORK,
-  NetworkResponse.JSON_PROPERTY_LEDGER_STATE,
-  NetworkResponse.JSON_PROPERTY_TARGET_LEDGER_STATE
+  GatewayResponse.JSON_PROPERTY_NETWORK,
+  GatewayResponse.JSON_PROPERTY_LEDGER_STATE,
+  GatewayResponse.JSON_PROPERTY_TARGET_LEDGER_STATE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T17:16:58.694354-06:00[America/Chicago]")
-public class NetworkResponse {
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-30T23:56:46.915165-06:00[America/Chicago]")
+public class GatewayResponse {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
 
@@ -41,7 +41,7 @@ public class NetworkResponse {
   private TargetLedgerState targetLedgerState;
 
 
-  public NetworkResponse network(String network) {
+  public GatewayResponse network(String network) {
     this.network = network;
     return this;
   }
@@ -67,7 +67,7 @@ public class NetworkResponse {
   }
 
 
-  public NetworkResponse ledgerState(LedgerState ledgerState) {
+  public GatewayResponse ledgerState(LedgerState ledgerState) {
     this.ledgerState = ledgerState;
     return this;
   }
@@ -93,7 +93,7 @@ public class NetworkResponse {
   }
 
 
-  public NetworkResponse targetLedgerState(TargetLedgerState targetLedgerState) {
+  public GatewayResponse targetLedgerState(TargetLedgerState targetLedgerState) {
     this.targetLedgerState = targetLedgerState;
     return this;
   }
@@ -120,7 +120,7 @@ public class NetworkResponse {
 
 
   /**
-   * Return true if this NetworkResponse object is equal to o.
+   * Return true if this GatewayResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -130,10 +130,10 @@ public class NetworkResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NetworkResponse networkResponse = (NetworkResponse) o;
-    return Objects.equals(this.network, networkResponse.network) &&
-        Objects.equals(this.ledgerState, networkResponse.ledgerState) &&
-        Objects.equals(this.targetLedgerState, networkResponse.targetLedgerState);
+    GatewayResponse gatewayResponse = (GatewayResponse) o;
+    return Objects.equals(this.network, gatewayResponse.network) &&
+        Objects.equals(this.ledgerState, gatewayResponse.ledgerState) &&
+        Objects.equals(this.targetLedgerState, gatewayResponse.targetLedgerState);
   }
 
   @Override
@@ -144,7 +144,7 @@ public class NetworkResponse {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NetworkResponse {\n");
+    sb.append("class GatewayResponse {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    ledgerState: ").append(toIndentedString(ledgerState)).append("\n");
     sb.append("    targetLedgerState: ").append(toIndentedString(targetLedgerState)).append("\n");

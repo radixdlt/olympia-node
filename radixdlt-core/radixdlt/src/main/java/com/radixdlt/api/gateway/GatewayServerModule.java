@@ -123,7 +123,7 @@ public class GatewayServerModule extends AbstractModule {
 		var routeBinder = MapBinder.newMapBinder(
 			binder(), HandlerRoute.class, HttpHandler.class, GatewayServer.class
 		);
-		routeBinder.addBinding(HandlerRoute.post("/network")).to(NetworkHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/gateway")).to(GatewayHandler.class);
 
 		install(new AccountApiModule(GatewayServer.class, "/account"));
 		install(new TokenApiModule(GatewayServer.class, "/token"));

@@ -64,21 +64,21 @@
 package com.radixdlt.api.gateway;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.gateway.openapitools.model.NetworkResponse;
+import com.radixdlt.api.gateway.openapitools.model.GatewayResponse;
 import com.radixdlt.api.gateway.openapitools.model.TargetLedgerState;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
-final class NetworkHandler extends GatewayJsonRpcHandler<Void, NetworkResponse> {
+final class GatewayHandler extends GatewayJsonRpcHandler<Void, GatewayResponse> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final String networkName;
 	private final GatewayModelMapper gatewayModelMapper;
 	private final SystemCounters systemCounters;
 
 	@Inject
-	NetworkHandler(
+	GatewayHandler(
 		@NetworkId int networkId,
 		InMemorySystemInfo inMemorySystemInfo,
 		GatewayModelMapper gatewayModelMapper,
@@ -92,11 +92,11 @@ final class NetworkHandler extends GatewayJsonRpcHandler<Void, NetworkResponse> 
 	}
 
 	@Override
-	public NetworkResponse handleRequest(Void request) {
+	public GatewayResponse handleRequest(Void request) {
 		var proof = inMemorySystemInfo.getCurrentProof();
 		var targetLedgerState = new TargetLedgerState()
 			.version(systemCounters.get(SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION));
-		return new NetworkResponse()
+		return new GatewayResponse()
 			.network(networkName)
 			.ledgerState(gatewayModelMapper.ledgerState(proof))
 			.targetLedgerState(targetLedgerState);
