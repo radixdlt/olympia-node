@@ -29,10 +29,10 @@ import java.util.Objects;
  * MintTokens
  */
 @JsonPropertyOrder({
-  MintTokens.JSON_PROPERTY_TO,
+  MintTokens.JSON_PROPERTY_TO_ACCOUNT,
   MintTokens.JSON_PROPERTY_AMOUNT
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-30T23:32:02.552056-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BurnTokens.class, name = "BurnTokens"),
@@ -43,36 +43,36 @@ import java.util.Objects;
 })
 
 public class MintTokens extends Action {
-  public static final String JSON_PROPERTY_TO = "to";
-  private AccountIdentifier to;
+  public static final String JSON_PROPERTY_TO_ACCOUNT = "to_account";
+  private AccountIdentifier toAccount;
 
   public static final String JSON_PROPERTY_AMOUNT = "amount";
   private TokenAmount amount;
 
 
-  public MintTokens to(AccountIdentifier to) {
-    this.to = to;
+  public MintTokens toAccount(AccountIdentifier toAccount) {
+    this.toAccount = toAccount;
     return this;
   }
 
    /**
-   * Get to
-   * @return to
+   * Get toAccount
+   * @return toAccount
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TO)
+  @JsonProperty(JSON_PROPERTY_TO_ACCOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccountIdentifier getTo() {
-    return to;
+  public AccountIdentifier getToAccount() {
+    return toAccount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TO)
+  @JsonProperty(JSON_PROPERTY_TO_ACCOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTo(AccountIdentifier to) {
-    this.to = to;
+  public void setToAccount(AccountIdentifier toAccount) {
+    this.toAccount = toAccount;
   }
 
 
@@ -114,14 +114,14 @@ public class MintTokens extends Action {
       return false;
     }
     MintTokens mintTokens = (MintTokens) o;
-    return Objects.equals(this.to, mintTokens.to) &&
+    return Objects.equals(this.toAccount, mintTokens.toAccount) &&
         Objects.equals(this.amount, mintTokens.amount) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(to, amount, super.hashCode());
+    return Objects.hash(toAccount, amount, super.hashCode());
   }
 
   @Override
@@ -129,7 +129,7 @@ public class MintTokens extends Action {
     StringBuilder sb = new StringBuilder();
     sb.append("class MintTokens {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    to: ").append(toIndentedString(to)).append("\n");
+    sb.append("    toAccount: ").append(toIndentedString(toAccount)).append("\n");
     sb.append("    amount: ").append(toIndentedString(amount)).append("\n");
     sb.append("}");
     return sb.toString();

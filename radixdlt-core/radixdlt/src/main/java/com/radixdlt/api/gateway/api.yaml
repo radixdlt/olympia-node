@@ -559,13 +559,13 @@ components:
         - "$ref": "#/components/schemas/Action"
         - type: object
           required:
-            - from
-            - to
+            - from_account
+            - to_account
             - amount
           properties:
-            from:
+            from_account:
               "$ref": "#/components/schemas/AccountIdentifier"
-            to:
+            to_account:
               "$ref": "#/components/schemas/AccountIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
@@ -574,13 +574,13 @@ components:
         - "$ref": "#/components/schemas/Action"
         - type: object
           required:
-            - from
-            - to
+            - from_account
+            - to_validator
             - amount
           properties:
-            from:
+            from_account:
               "$ref": "#/components/schemas/AccountIdentifier"
-            to:
+            to_validator:
               "$ref": "#/components/schemas/ValidatorIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
@@ -589,13 +589,13 @@ components:
         - "$ref": "#/components/schemas/Action"
         - type: object
           required:
-            - from
-            - to
+            - from_validator
+            - to_account
             - amount
           properties:
-            from:
+            from_validator:
               "$ref": "#/components/schemas/ValidatorIdentifier"
-            to:
+            to_account:
               "$ref": "#/components/schemas/AccountIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
@@ -611,17 +611,17 @@ components:
               "$ref": "#/components/schemas/TokenProperties"
             token_supply:
               "$ref": "#/components/schemas/TokenAmount"
-            to:
+            to_account:
               "$ref": "#/components/schemas/AccountIdentifier"
     MintTokens:
       allOf:
         - "$ref": "#/components/schemas/Action"
         - type: object
           required:
-            - to
+            - to_account
             - amount
           properties:
-            to:
+            to_account:
               "$ref": "#/components/schemas/AccountIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
@@ -630,10 +630,10 @@ components:
         - "$ref": "#/components/schemas/Action"
         - type: object
           required:
-            - from
+            - from_account
             - amount
           properties:
-            from:
+            from_account:
               "$ref": "#/components/schemas/AccountIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
@@ -701,9 +701,9 @@ components:
         network: mainnet
         actions:
           - type: TransferTokens
-            from:
+            from_account:
               address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
-            to:
+            to_account:
               address: rdx1qspcvwwuf8s549zyspz683v4n93g9kzpn6u6a9yalwzt00zghg75lmsftwv29
             amount:
               token_identifier:

@@ -29,11 +29,11 @@ import java.util.Objects;
  * TransferTokens
  */
 @JsonPropertyOrder({
-  TransferTokens.JSON_PROPERTY_FROM,
-  TransferTokens.JSON_PROPERTY_TO,
+  TransferTokens.JSON_PROPERTY_FROM_ACCOUNT,
+  TransferTokens.JSON_PROPERTY_TO_ACCOUNT,
   TransferTokens.JSON_PROPERTY_AMOUNT
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-30T23:32:02.552056-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BurnTokens.class, name = "BurnTokens"),
@@ -44,65 +44,65 @@ import java.util.Objects;
 })
 
 public class TransferTokens extends Action {
-  public static final String JSON_PROPERTY_FROM = "from";
-  private AccountIdentifier from;
+  public static final String JSON_PROPERTY_FROM_ACCOUNT = "from_account";
+  private AccountIdentifier fromAccount;
 
-  public static final String JSON_PROPERTY_TO = "to";
-  private AccountIdentifier to;
+  public static final String JSON_PROPERTY_TO_ACCOUNT = "to_account";
+  private AccountIdentifier toAccount;
 
   public static final String JSON_PROPERTY_AMOUNT = "amount";
   private TokenAmount amount;
 
 
-  public TransferTokens from(AccountIdentifier from) {
-    this.from = from;
+  public TransferTokens fromAccount(AccountIdentifier fromAccount) {
+    this.fromAccount = fromAccount;
     return this;
   }
 
    /**
-   * Get from
-   * @return from
+   * Get fromAccount
+   * @return fromAccount
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FROM)
+  @JsonProperty(JSON_PROPERTY_FROM_ACCOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccountIdentifier getFrom() {
-    return from;
+  public AccountIdentifier getFromAccount() {
+    return fromAccount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FROM)
+  @JsonProperty(JSON_PROPERTY_FROM_ACCOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFrom(AccountIdentifier from) {
-    this.from = from;
+  public void setFromAccount(AccountIdentifier fromAccount) {
+    this.fromAccount = fromAccount;
   }
 
 
-  public TransferTokens to(AccountIdentifier to) {
-    this.to = to;
+  public TransferTokens toAccount(AccountIdentifier toAccount) {
+    this.toAccount = toAccount;
     return this;
   }
 
    /**
-   * Get to
-   * @return to
+   * Get toAccount
+   * @return toAccount
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TO)
+  @JsonProperty(JSON_PROPERTY_TO_ACCOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccountIdentifier getTo() {
-    return to;
+  public AccountIdentifier getToAccount() {
+    return toAccount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TO)
+  @JsonProperty(JSON_PROPERTY_TO_ACCOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTo(AccountIdentifier to) {
-    this.to = to;
+  public void setToAccount(AccountIdentifier toAccount) {
+    this.toAccount = toAccount;
   }
 
 
@@ -144,15 +144,15 @@ public class TransferTokens extends Action {
       return false;
     }
     TransferTokens transferTokens = (TransferTokens) o;
-    return Objects.equals(this.from, transferTokens.from) &&
-        Objects.equals(this.to, transferTokens.to) &&
+    return Objects.equals(this.fromAccount, transferTokens.fromAccount) &&
+        Objects.equals(this.toAccount, transferTokens.toAccount) &&
         Objects.equals(this.amount, transferTokens.amount) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(from, to, amount, super.hashCode());
+    return Objects.hash(fromAccount, toAccount, amount, super.hashCode());
   }
 
   @Override
@@ -160,8 +160,8 @@ public class TransferTokens extends Action {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransferTokens {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    from: ").append(toIndentedString(from)).append("\n");
-    sb.append("    to: ").append(toIndentedString(to)).append("\n");
+    sb.append("    fromAccount: ").append(toIndentedString(fromAccount)).append("\n");
+    sb.append("    toAccount: ").append(toIndentedString(toAccount)).append("\n");
     sb.append("    amount: ").append(toIndentedString(amount)).append("\n");
     sb.append("}");
     return sb.toString();

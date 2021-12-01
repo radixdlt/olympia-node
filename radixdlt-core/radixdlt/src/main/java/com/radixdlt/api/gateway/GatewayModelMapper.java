@@ -222,7 +222,7 @@ public final class GatewayModelMapper {
 			} else if (substate instanceof TokensInAccount tokensInAccount) {
 				// Can only mint a single substate for fixed supply tokens so we should
 				// not need to worry about multiple holders
-				createTokenDefinition.to(accountIdentifier(tokensInAccount.getHoldingAddr()));
+				createTokenDefinition.toAccount(accountIdentifier(tokensInAccount.getHoldingAddr()));
 				tokenSupply.value(tokensInAccount.getAmount().toString());
 			}
 		}
@@ -268,7 +268,7 @@ public final class GatewayModelMapper {
 					var value = UInt256.from(e.getValue().toString());
 					var amount = tokenAmount(value, e.getKey().resourceAddr(), addressToSymbol);
 					return new MintTokens()
-							.to(accountIdentifier(e.getKey().getOwner()))
+							.toAccount(accountIdentifier(e.getKey().getOwner()))
 							.amount(amount)
 							.type("MintTokens");
 				})
@@ -289,22 +289,22 @@ public final class GatewayModelMapper {
 			var value = UInt256.from(amount.toString());
 			if (to.resourceAddr() != null && to.getValidatorKey() == null) {
 				actions.add(new TransferTokens()
-					.from(accountIdentifier(from.getOwner()))
-					.to(accountIdentifier(to.getOwner()))
+					.fromAccount(accountIdentifier(from.getOwner()))
+					.toAccount(accountIdentifier(to.getOwner()))
 					.amount(tokenAmount(value, to.resourceAddr(), addressToSymbol))
 					.type("TransferTokens")
 				);
 			} else if (to.resourceAddr() != null && to.getValidatorKey() != null) {
 				actions.add(new StakeTokens()
-					.from(accountIdentifier(from.getOwner()))
-					.to(validatorIdentifier(to.getValidatorKey()))
+					.fromAccount(accountIdentifier(from.getOwner()))
+					.toValidator(validatorIdentifier(to.getValidatorKey()))
 					.amount(tokenAmount(value, to.resourceAddr(), addressToSymbol))
 					.type("StakeTokens")
 				);
 			} else if (to.resourceAddr() == null && from.getValidatorKey() != null) {
 				actions.add(new UnstakeTokens()
-					.from(validatorIdentifier(from.getValidatorKey()))
-					.to(accountIdentifier(to.getOwner()))
+					.fromValidator(validatorIdentifier(from.getValidatorKey()))
+					.toAccount(accountIdentifier(to.getOwner()))
 					.amount(tokenAmount(value, from, to.resourceAddr(), addressToSymbol, (k, ownership) -> {
 						var stakeData = getValidatorStake.apply(k);
 						return ownership.multiply(stakeData.getTotalStake()).divide(stakeData.getTotalOwnership());
@@ -319,7 +319,7 @@ public final class GatewayModelMapper {
 		if (fromAmount.compareTo(BigInteger.ZERO) > 0 && from.resourceAddr() != null && !from.resourceAddr().isNativeToken()) {
 			var value = UInt256.from(fromAmount.toString());
 			actions.add(new BurnTokens()
-				.from(accountIdentifier(from.getOwner()))
+				.fromAccount(accountIdentifier(from.getOwner()))
 				.amount(tokenAmount(value, from.resourceAddr(), addressToSymbol))
 				.type("BurnTokens")
 			);
@@ -428,24 +428,24 @@ public final class GatewayModelMapper {
 
 	public TxAction txAction(Action action) {
 		if (action instanceof TransferTokens transferTokens) {
-			var from = account(transferTokens.getFrom());
-			var to = account(transferTokens.getTo());
+			var from = account(transferTokens.getFromAccount());
+			var to = account(transferTokens.getToAccount());
 			var tokenAddress = tokenAddress(transferTokens.getAmount().getTokenIdentifier());
 			var amount = UInt256.from(transferTokens.getAmount().getValue());
 			return new TransferToken(tokenAddress, from, to, amount);
 		} else if (action instanceof MintTokens mintTokens) {
-			var to = account(mintTokens.getTo());
+			var to = account(mintTokens.getToAccount());
 			var tokenAddress = tokenAddress(mintTokens.getAmount().getTokenIdentifier());
 			var amount = UInt256.from(mintTokens.getAmount().getValue());
 			return new MintToken(tokenAddress, to, amount);
 		} else if (action instanceof BurnTokens burnTokens) {
-			var from = account(burnTokens.getFrom());
+			var from = account(burnTokens.getFromAccount());
 			var tokenAddress = tokenAddress(burnTokens.getAmount().getTokenIdentifier());
 			var amount = UInt256.from(burnTokens.getAmount().getValue());
 			return new BurnToken(tokenAddress, from, amount);
 		} else if (action instanceof StakeTokens stakeTokens) {
-			var from = account(stakeTokens.getFrom());
-			var to = validator(stakeTokens.getTo());
+			var from = account(stakeTokens.getFromAccount());
+			var to = validator(stakeTokens.getToValidator());
 			var tokenAddress = tokenAddress(stakeTokens.getAmount().getTokenIdentifier());
 			if (!tokenAddress.isNativeToken()) {
 				throw new IllegalStateException();
@@ -453,8 +453,8 @@ public final class GatewayModelMapper {
 			var amount = UInt256.from(stakeTokens.getAmount().getValue());
 			return new com.radixdlt.atom.actions.StakeTokens(from, to, amount);
 		} else if (action instanceof UnstakeTokens unstakeTokens) {
-			var from = validator(unstakeTokens.getFrom());
-			var to = account(unstakeTokens.getTo());
+			var from = validator(unstakeTokens.getFromValidator());
+			var to = account(unstakeTokens.getToAccount());
 			var tokenAddress = tokenAddress(unstakeTokens.getAmount().getTokenIdentifier());
 			if (!tokenAddress.isNativeToken()) {
 				throw new IllegalStateException();
@@ -476,7 +476,7 @@ public final class GatewayModelMapper {
 					throw new IllegalStateException();
 				}
 
-				var to = account(createTokenDefinition.getTo());
+				var to = account(createTokenDefinition.getToAccount());
 				return new CreateFixedToken(tokenAddress, to, symbol, name, description, iconUrl, url, supply);
 			} else {
 				if (!supply.isZero() || tokenProperties.getOwner() == null) {

@@ -29,10 +29,10 @@ import java.util.Objects;
  * BurnTokens
  */
 @JsonPropertyOrder({
-  BurnTokens.JSON_PROPERTY_FROM,
+  BurnTokens.JSON_PROPERTY_FROM_ACCOUNT,
   BurnTokens.JSON_PROPERTY_AMOUNT
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-30T23:32:02.552056-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BurnTokens.class, name = "BurnTokens"),
@@ -43,36 +43,36 @@ import java.util.Objects;
 })
 
 public class BurnTokens extends Action {
-  public static final String JSON_PROPERTY_FROM = "from";
-  private AccountIdentifier from;
+  public static final String JSON_PROPERTY_FROM_ACCOUNT = "from_account";
+  private AccountIdentifier fromAccount;
 
   public static final String JSON_PROPERTY_AMOUNT = "amount";
   private TokenAmount amount;
 
 
-  public BurnTokens from(AccountIdentifier from) {
-    this.from = from;
+  public BurnTokens fromAccount(AccountIdentifier fromAccount) {
+    this.fromAccount = fromAccount;
     return this;
   }
 
    /**
-   * Get from
-   * @return from
+   * Get fromAccount
+   * @return fromAccount
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FROM)
+  @JsonProperty(JSON_PROPERTY_FROM_ACCOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccountIdentifier getFrom() {
-    return from;
+  public AccountIdentifier getFromAccount() {
+    return fromAccount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FROM)
+  @JsonProperty(JSON_PROPERTY_FROM_ACCOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFrom(AccountIdentifier from) {
-    this.from = from;
+  public void setFromAccount(AccountIdentifier fromAccount) {
+    this.fromAccount = fromAccount;
   }
 
 
@@ -114,14 +114,14 @@ public class BurnTokens extends Action {
       return false;
     }
     BurnTokens burnTokens = (BurnTokens) o;
-    return Objects.equals(this.from, burnTokens.from) &&
+    return Objects.equals(this.fromAccount, burnTokens.fromAccount) &&
         Objects.equals(this.amount, burnTokens.amount) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(from, amount, super.hashCode());
+    return Objects.hash(fromAccount, amount, super.hashCode());
   }
 
   @Override
@@ -129,7 +129,7 @@ public class BurnTokens extends Action {
     StringBuilder sb = new StringBuilder();
     sb.append("class BurnTokens {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    from: ").append(toIndentedString(from)).append("\n");
+    sb.append("    fromAccount: ").append(toIndentedString(fromAccount)).append("\n");
     sb.append("    amount: ").append(toIndentedString(amount)).append("\n");
     sb.append("}");
     return sb.toString();

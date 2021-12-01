@@ -29,11 +29,11 @@ import java.util.Objects;
  * StakeTokens
  */
 @JsonPropertyOrder({
-  StakeTokens.JSON_PROPERTY_FROM,
-  StakeTokens.JSON_PROPERTY_TO,
+  StakeTokens.JSON_PROPERTY_FROM_ACCOUNT,
+  StakeTokens.JSON_PROPERTY_TO_VALIDATOR,
   StakeTokens.JSON_PROPERTY_AMOUNT
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T12:22:00.029895-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-30T23:32:02.552056-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BurnTokens.class, name = "BurnTokens"),
@@ -44,65 +44,65 @@ import java.util.Objects;
 })
 
 public class StakeTokens extends Action {
-  public static final String JSON_PROPERTY_FROM = "from";
-  private AccountIdentifier from;
+  public static final String JSON_PROPERTY_FROM_ACCOUNT = "from_account";
+  private AccountIdentifier fromAccount;
 
-  public static final String JSON_PROPERTY_TO = "to";
-  private ValidatorIdentifier to;
+  public static final String JSON_PROPERTY_TO_VALIDATOR = "to_validator";
+  private ValidatorIdentifier toValidator;
 
   public static final String JSON_PROPERTY_AMOUNT = "amount";
   private TokenAmount amount;
 
 
-  public StakeTokens from(AccountIdentifier from) {
-    this.from = from;
+  public StakeTokens fromAccount(AccountIdentifier fromAccount) {
+    this.fromAccount = fromAccount;
     return this;
   }
 
    /**
-   * Get from
-   * @return from
+   * Get fromAccount
+   * @return fromAccount
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_FROM)
+  @JsonProperty(JSON_PROPERTY_FROM_ACCOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccountIdentifier getFrom() {
-    return from;
+  public AccountIdentifier getFromAccount() {
+    return fromAccount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FROM)
+  @JsonProperty(JSON_PROPERTY_FROM_ACCOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFrom(AccountIdentifier from) {
-    this.from = from;
+  public void setFromAccount(AccountIdentifier fromAccount) {
+    this.fromAccount = fromAccount;
   }
 
 
-  public StakeTokens to(ValidatorIdentifier to) {
-    this.to = to;
+  public StakeTokens toValidator(ValidatorIdentifier toValidator) {
+    this.toValidator = toValidator;
     return this;
   }
 
    /**
-   * Get to
-   * @return to
+   * Get toValidator
+   * @return toValidator
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TO)
+  @JsonProperty(JSON_PROPERTY_TO_VALIDATOR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ValidatorIdentifier getTo() {
-    return to;
+  public ValidatorIdentifier getToValidator() {
+    return toValidator;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TO)
+  @JsonProperty(JSON_PROPERTY_TO_VALIDATOR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTo(ValidatorIdentifier to) {
-    this.to = to;
+  public void setToValidator(ValidatorIdentifier toValidator) {
+    this.toValidator = toValidator;
   }
 
 
@@ -144,15 +144,15 @@ public class StakeTokens extends Action {
       return false;
     }
     StakeTokens stakeTokens = (StakeTokens) o;
-    return Objects.equals(this.from, stakeTokens.from) &&
-        Objects.equals(this.to, stakeTokens.to) &&
+    return Objects.equals(this.fromAccount, stakeTokens.fromAccount) &&
+        Objects.equals(this.toValidator, stakeTokens.toValidator) &&
         Objects.equals(this.amount, stakeTokens.amount) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(from, to, amount, super.hashCode());
+    return Objects.hash(fromAccount, toValidator, amount, super.hashCode());
   }
 
   @Override
@@ -160,8 +160,8 @@ public class StakeTokens extends Action {
     StringBuilder sb = new StringBuilder();
     sb.append("class StakeTokens {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    from: ").append(toIndentedString(from)).append("\n");
-    sb.append("    to: ").append(toIndentedString(to)).append("\n");
+    sb.append("    fromAccount: ").append(toIndentedString(fromAccount)).append("\n");
+    sb.append("    toValidator: ").append(toIndentedString(toValidator)).append("\n");
     sb.append("    amount: ").append(toIndentedString(amount)).append("\n");
     sb.append("}");
     return sb.toString();

@@ -31,9 +31,9 @@ import java.util.Objects;
 @JsonPropertyOrder({
   CreateTokenDefinition.JSON_PROPERTY_TOKEN_PROPERTIES,
   CreateTokenDefinition.JSON_PROPERTY_TOKEN_SUPPLY,
-  CreateTokenDefinition.JSON_PROPERTY_TO
+  CreateTokenDefinition.JSON_PROPERTY_TO_ACCOUNT
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-30T23:32:02.552056-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BurnTokens.class, name = "BurnTokens"),
@@ -50,8 +50,8 @@ public class CreateTokenDefinition extends Action {
   public static final String JSON_PROPERTY_TOKEN_SUPPLY = "token_supply";
   private TokenAmount tokenSupply;
 
-  public static final String JSON_PROPERTY_TO = "to";
-  private AccountIdentifier to;
+  public static final String JSON_PROPERTY_TO_ACCOUNT = "to_account";
+  private AccountIdentifier toAccount;
 
 
   public CreateTokenDefinition tokenProperties(TokenProperties tokenProperties) {
@@ -106,29 +106,29 @@ public class CreateTokenDefinition extends Action {
   }
 
 
-  public CreateTokenDefinition to(AccountIdentifier to) {
-    this.to = to;
+  public CreateTokenDefinition toAccount(AccountIdentifier toAccount) {
+    this.toAccount = toAccount;
     return this;
   }
 
    /**
-   * Get to
-   * @return to
+   * Get toAccount
+   * @return toAccount
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_TO)
+  @JsonProperty(JSON_PROPERTY_TO_ACCOUNT)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public AccountIdentifier getTo() {
-    return to;
+  public AccountIdentifier getToAccount() {
+    return toAccount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TO)
+  @JsonProperty(JSON_PROPERTY_TO_ACCOUNT)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setTo(AccountIdentifier to) {
-    this.to = to;
+  public void setToAccount(AccountIdentifier toAccount) {
+    this.toAccount = toAccount;
   }
 
 
@@ -146,13 +146,13 @@ public class CreateTokenDefinition extends Action {
     CreateTokenDefinition createTokenDefinition = (CreateTokenDefinition) o;
     return Objects.equals(this.tokenProperties, createTokenDefinition.tokenProperties) &&
         Objects.equals(this.tokenSupply, createTokenDefinition.tokenSupply) &&
-        Objects.equals(this.to, createTokenDefinition.to) &&
+        Objects.equals(this.toAccount, createTokenDefinition.toAccount) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(tokenProperties, tokenSupply, to, super.hashCode());
+    return Objects.hash(tokenProperties, tokenSupply, toAccount, super.hashCode());
   }
 
   @Override
@@ -162,7 +162,7 @@ public class CreateTokenDefinition extends Action {
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    tokenProperties: ").append(toIndentedString(tokenProperties)).append("\n");
     sb.append("    tokenSupply: ").append(toIndentedString(tokenSupply)).append("\n");
-    sb.append("    to: ").append(toIndentedString(to)).append("\n");
+    sb.append("    toAccount: ").append(toIndentedString(toAccount)).append("\n");
     sb.append("}");
     return sb.toString();
   }
