@@ -90,7 +90,7 @@ final class TransactionStatusHandler extends GatewayJsonRpcHandler<TransactionSt
 	}
 
 	@Override
-	public TransactionStatusResponse handleRequest(TransactionStatusRequest request) throws Exception {
+	public TransactionStatusResponse handleRequest(TransactionStatusRequest request) {
 		var txnId = AID.from(request.getTransactionIdentifier().getHash());
 		var response = new TransactionStatusResponse();
 		service.getTransactionStatus(txnId).ifPresent(response::addTransactionItem);

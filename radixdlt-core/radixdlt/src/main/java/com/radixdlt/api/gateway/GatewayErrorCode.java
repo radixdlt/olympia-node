@@ -61,59 +61,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.validator;
+package com.radixdlt.api.gateway;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
-import com.radixdlt.api.gateway.GatewayModelMapper;
-import com.radixdlt.api.gateway.openapitools.model.Validator;
-import com.radixdlt.api.gateway.openapitools.model.ValidatorsRequest;
-import com.radixdlt.api.gateway.openapitools.model.ValidatorsResponse;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
+public enum GatewayErrorCode {
+	BAD_REQUEST(400, "Bad request"),
+	NOT_FOUND(404, "Not found"),
+	STATE_CONFLICT(409, "State Conflict"),
+	NOT_SUPPORTED(501, "Not supported");
 
-import java.util.List;
-import java.util.stream.Collectors;
+	private final int errorCode;
+	private final String message;
 
-final class ValidatorsApiHandler extends GatewayJsonRpcHandler<ValidatorsRequest, ValidatorsResponse> {
-	private final InMemorySystemInfo inMemorySystemInfo;
-	private final GatewayModelMapper gatewayModelMapper;
-	private final BerkeleyValidatorStore validatorStore;
-	private final BerkeleyValidatorUptimeStore uptimeStore;
-
-	@Inject
-	ValidatorsApiHandler(
-		InMemorySystemInfo inMemorySystemInfo,
-		GatewayModelMapper gatewayModelMapper,
-		BerkeleyValidatorStore validatorStore,
-		BerkeleyValidatorUptimeStore uptimeStore
-	) {
-		super(ValidatorsRequest.class);
-
-		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.gatewayModelMapper = gatewayModelMapper;
-		this.validatorStore = validatorStore;
-		this.uptimeStore = uptimeStore;
+	GatewayErrorCode(int errorCode, String message) {
+		this.errorCode = errorCode;
+		this.message = message;
 	}
 
-	private List<Validator> fetchValidators(long offset, long limit) {
-		try (var stream = validatorStore.getValidators(offset)) {
-			return stream
-				.limit(limit)
-				.peek(validator -> {
-					var validatorKey = gatewayModelMapper.validator(validator.getValidatorIdentifier());
-					var uptime = uptimeStore.getUptimeTwoWeeks(validatorKey);
-					validator.getInfo().setUptime(uptime);
-				})
-				.collect(Collectors.toList());
-		}
+	public int getErrorCode() {
+		return errorCode;
 	}
 
-	@Override
-	public ValidatorsResponse handleRequest(ValidatorsRequest request) {
-		var response = new ValidatorsResponse();
-		fetchValidators(0, 1000).forEach(response::addValidatorsItem);
-		var proof = inMemorySystemInfo.getCurrentProof();
-		var ledgerState = gatewayModelMapper.ledgerState(proof);
-		return response.ledgerState(ledgerState);
+	public String getMessage() {
+		return message;
 	}
 }

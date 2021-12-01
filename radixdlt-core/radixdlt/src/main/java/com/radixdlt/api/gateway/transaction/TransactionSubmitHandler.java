@@ -64,6 +64,7 @@
 package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.gateway.GatewayException;
 import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.openapitools.model.TransactionIdentifier;
 import com.radixdlt.api.gateway.openapitools.model.TransactionSubmitRequest;
@@ -81,7 +82,7 @@ final class TransactionSubmitHandler extends GatewayJsonRpcHandler<TransactionSu
 	}
 
 	@Override
-	public TransactionSubmitResponse handleRequest(TransactionSubmitRequest request) throws Exception {
+	public TransactionSubmitResponse handleRequest(TransactionSubmitRequest request) throws GatewayException {
 		var txn = Txn.create(Bytes.fromHexString(request.getSignedTransaction()));
 		mempoolSubmitter.submitToMempool(txn);
 		return new TransactionSubmitResponse()

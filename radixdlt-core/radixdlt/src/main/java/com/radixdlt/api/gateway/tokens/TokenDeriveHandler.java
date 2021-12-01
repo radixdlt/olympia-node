@@ -80,7 +80,7 @@ public final class TokenDeriveHandler extends GatewayJsonRpcHandler<TokenDeriveR
 	}
 
 	@Override
-	public TokenDeriveResponse handleRequest(TokenDeriveRequest request) throws Exception {
+	public TokenDeriveResponse handleRequest(TokenDeriveRequest request) {
 		var accountAddress = gatewayModelMapper.account(request.getCreatorAccountIdentifier());
 		var key = accountAddress.publicKey().orElseThrow();
 		var symbol = request.getSymbol();

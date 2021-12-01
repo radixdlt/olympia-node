@@ -64,6 +64,7 @@
 package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.gateway.GatewayException;
 import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.TransactionRulesRequest;
@@ -93,7 +94,7 @@ public final class TransactionRulesHandler extends GatewayJsonRpcHandler<Transac
 	}
 
 	@Override
-	public TransactionRulesResponse handleRequest(TransactionRulesRequest request) throws Exception {
+	public TransactionRulesResponse handleRequest(TransactionRulesRequest request) {
 		var proof = inMemorySystemInfo.getCurrentProof();
 		var response = new TransactionRulesResponse();
 		response.ledgerState(gatewayModelMapper.ledgerState(proof));

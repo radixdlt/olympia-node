@@ -88,7 +88,7 @@ final class AccountBalancesHandler extends GatewayJsonRpcHandler<AccountBalances
 	}
 
 	@Override
-	public AccountBalancesResponse handleRequest(AccountBalancesRequest request) throws Exception {
+	public AccountBalancesResponse handleRequest(AccountBalancesRequest request) {
 		var accountAddress = gatewayModelMapper.account(request.getAccountIdentifier());
 		var proof = inMemorySystemInfo.getCurrentProof();
 		return new AccountBalancesResponse()

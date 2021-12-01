@@ -91,7 +91,7 @@ final class TransactionBuildHandler extends GatewayJsonRpcHandler<TransactionBui
 	}
 
 	@Override
-	public TransactionBuildResponse handleRequest(TransactionBuildRequest request) throws Exception {
+	public TransactionBuildResponse handleRequest(TransactionBuildRequest request) {
 		var txnConstructionRequest = gatewayModelMapper.txnConstructionRequest(request);
 		TxBuilder builder;
 		try {

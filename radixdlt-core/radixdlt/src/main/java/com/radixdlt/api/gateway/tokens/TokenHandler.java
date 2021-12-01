@@ -64,6 +64,8 @@
 package com.radixdlt.api.gateway.tokens;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.gateway.GatewayErrorCode;
+import com.radixdlt.api.gateway.GatewayException;
 import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.TokenRequest;
@@ -89,12 +91,17 @@ final class TokenHandler extends GatewayJsonRpcHandler<TokenRequest, TokenRespon
 	}
 
 	@Override
-	public TokenResponse handleRequest(TokenRequest request) throws Exception {
+	public TokenResponse handleRequest(TokenRequest request) throws GatewayException {
 		var tokenAddress = gatewayModelMapper.tokenAddress(request.getTokenIdentifier());
 		var proof = inMemorySystemInfo.getCurrentProof();
-		var response = new TokenResponse()
+
+		var token = store.getResourceInfo(tokenAddress);
+		if (token.isEmpty()) {
+			throw new GatewayException(GatewayErrorCode.NOT_FOUND);
+		}
+
+		return new TokenResponse()
+			.token(token.get())
 			.ledgerState(gatewayModelMapper.ledgerState(proof));
-		store.getResourceInfo(tokenAddress).ifPresent(response::addTokenItem);
-		return response;
 	}
 }

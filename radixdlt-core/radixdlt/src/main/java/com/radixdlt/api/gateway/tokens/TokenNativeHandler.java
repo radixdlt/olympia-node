@@ -89,7 +89,7 @@ public class TokenNativeHandler extends GatewayJsonRpcHandler<TokenNativeRequest
 	}
 
 	@Override
-	public TokenNativeResponse handleRequest(TokenNativeRequest request) throws Exception {
+	public TokenNativeResponse handleRequest(TokenNativeRequest request) {
 		var proof = inMemorySystemInfo.getCurrentProof();
 		var response = new TokenNativeResponse()
 			.ledgerState(gatewayModelMapper.ledgerState(proof));

@@ -61,59 +61,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.gateway.validator;
+package com.radixdlt.api.gateway;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
-import com.radixdlt.api.gateway.GatewayModelMapper;
-import com.radixdlt.api.gateway.openapitools.model.Validator;
-import com.radixdlt.api.gateway.openapitools.model.ValidatorsRequest;
-import com.radixdlt.api.gateway.openapitools.model.ValidatorsResponse;
-import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.radixdlt.api.gateway.openapitools.model.UnexpectedError;
 
-import java.util.List;
-import java.util.stream.Collectors;
+public class GatewayException extends Exception {
+	private final GatewayErrorCode error;
 
-final class ValidatorsApiHandler extends GatewayJsonRpcHandler<ValidatorsRequest, ValidatorsResponse> {
-	private final InMemorySystemInfo inMemorySystemInfo;
-	private final GatewayModelMapper gatewayModelMapper;
-	private final BerkeleyValidatorStore validatorStore;
-	private final BerkeleyValidatorUptimeStore uptimeStore;
-
-	@Inject
-	ValidatorsApiHandler(
-		InMemorySystemInfo inMemorySystemInfo,
-		GatewayModelMapper gatewayModelMapper,
-		BerkeleyValidatorStore validatorStore,
-		BerkeleyValidatorUptimeStore uptimeStore
-	) {
-		super(ValidatorsRequest.class);
-
-		this.inMemorySystemInfo = inMemorySystemInfo;
-		this.gatewayModelMapper = gatewayModelMapper;
-		this.validatorStore = validatorStore;
-		this.uptimeStore = uptimeStore;
+	public GatewayException(GatewayErrorCode error) {
+		this.error = error;
 	}
 
-	private List<Validator> fetchValidators(long offset, long limit) {
-		try (var stream = validatorStore.getValidators(offset)) {
-			return stream
-				.limit(limit)
-				.peek(validator -> {
-					var validatorKey = gatewayModelMapper.validator(validator.getValidatorIdentifier());
-					var uptime = uptimeStore.getUptimeTwoWeeks(validatorKey);
-					validator.getInfo().setUptime(uptime);
-				})
-				.collect(Collectors.toList());
-		}
-	}
-
-	@Override
-	public ValidatorsResponse handleRequest(ValidatorsRequest request) {
-		var response = new ValidatorsResponse();
-		fetchValidators(0, 1000).forEach(response::addValidatorsItem);
-		var proof = inMemorySystemInfo.getCurrentProof();
-		var ledgerState = gatewayModelMapper.ledgerState(proof);
-		return response.ledgerState(ledgerState);
+	public UnexpectedError toError() {
+		return new UnexpectedError()
+			.code(error.getErrorCode())
+			.message(error.getMessage());
 	}
 }

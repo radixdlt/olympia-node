@@ -64,6 +64,7 @@
 package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.gateway.GatewayException;
 import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.TransactionFinalizeRequest;
@@ -88,7 +89,7 @@ final class TransactionFinalizeHandler extends GatewayJsonRpcHandler<Transaction
 	}
 
 	@Override
-	public TransactionFinalizeResponse handleRequest(TransactionFinalizeRequest request) throws Exception {
+	public TransactionFinalizeResponse handleRequest(TransactionFinalizeRequest request) throws GatewayException {
 		var unsignedTransaction = Bytes.fromHexString(request.getUnsignedTransaction());
 		var signature = ECDSASignature.decodeFromHexDer(request.getSignature().getBytes());
 		var pubKey = gatewayModelMapper.ecPublicKey(request.getSignature().getPublicKey());

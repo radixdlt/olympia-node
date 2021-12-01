@@ -18,8 +18,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 
@@ -30,13 +28,13 @@ import java.util.Objects;
   TokenResponse.JSON_PROPERTY_LEDGER_STATE,
   TokenResponse.JSON_PROPERTY_TOKEN
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T01:21:01.645550-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T00:11:37.161482-06:00[America/Chicago]")
 public class TokenResponse {
   public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
   private LedgerState ledgerState;
 
   public static final String JSON_PROPERTY_TOKEN = "token";
-  private List<Token> token = new ArrayList<>();
+  private Token token;
 
 
   public TokenResponse ledgerState(LedgerState ledgerState) {
@@ -65,13 +63,8 @@ public class TokenResponse {
   }
 
 
-  public TokenResponse token(List<Token> token) {
+  public TokenResponse token(Token token) {
     this.token = token;
-    return this;
-  }
-
-  public TokenResponse addTokenItem(Token tokenItem) {
-    this.token.add(tokenItem);
     return this;
   }
 
@@ -84,14 +77,14 @@ public class TokenResponse {
   @JsonProperty(JSON_PROPERTY_TOKEN)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Token> getToken() {
+  public Token getToken() {
     return token;
   }
 
 
   @JsonProperty(JSON_PROPERTY_TOKEN)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setToken(List<Token> token) {
+  public void setToken(Token token) {
     this.token = token;
   }
 

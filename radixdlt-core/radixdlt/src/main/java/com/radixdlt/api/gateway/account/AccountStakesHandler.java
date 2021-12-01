@@ -89,7 +89,7 @@ final class AccountStakesHandler extends GatewayJsonRpcHandler<AccountStakesRequ
 	}
 
 	@Override
-	public AccountStakesResponse handleRequest(AccountStakesRequest request) throws Exception {
+	public AccountStakesResponse handleRequest(AccountStakesRequest request) {
 		var proof = inMemorySystemInfo.getCurrentProof();
 		var response = new AccountStakesResponse()
 			.ledgerState(gatewayModelMapper.ledgerState(proof));

@@ -97,7 +97,7 @@ class AccountTransactionsHandler extends GatewayJsonRpcHandler<AccountTransactio
 	}
 
 	@Override
-	public AccountTransactionsResponse handleRequest(AccountTransactionsRequest request) throws Exception {
+	public AccountTransactionsResponse handleRequest(AccountTransactionsRequest request) {
 		var accountAddress = gatewayModelMapper.account(request.getAccountIdentifier());
 		var cursor = Optional.ofNullable(request.getCursor())
 			.map(Long::parseLong).map(OptionalLong::of).orElse(OptionalLong.empty());

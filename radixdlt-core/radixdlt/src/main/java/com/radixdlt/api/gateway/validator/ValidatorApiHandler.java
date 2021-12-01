@@ -92,7 +92,7 @@ final class ValidatorApiHandler extends GatewayJsonRpcHandler<ValidatorInfoReque
 	}
 
 	@Override
-	public ValidatorInfoResponse handleRequest(ValidatorInfoRequest request) throws Exception {
+	public ValidatorInfoResponse handleRequest(ValidatorInfoRequest request) {
 		var response = new ValidatorInfoResponse();
 		var key = gatewayModelMapper.validator(request.getValidatorIdentifier());
 		var validator = validatorStore.getValidatorInfo(key);

@@ -65,6 +65,8 @@ package com.radixdlt.api.gateway.transaction;
 
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
+import com.radixdlt.api.gateway.GatewayErrorCode;
+import com.radixdlt.api.gateway.GatewayException;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.exceptions.SubstateNotFoundException;
 import com.radixdlt.engine.RadixEngineException;
@@ -80,16 +82,12 @@ public final class MempoolSubmitter {
 		this.radixEngineStateComputer = radixEngineStateComputer;
 	}
 
-	public void submitToMempool(Txn txn) throws Exception {
+	public void submitToMempool(Txn txn) throws GatewayException {
 		try {
 			radixEngineStateComputer.addToMempool(txn);
 		} catch (MempoolDuplicateException ignored) {
 		} catch (MempoolRejectedException e) {
-			var reException = (RadixEngineException) e.getCause();
-			var cause = Throwables.getRootCause(reException);
-			if (cause instanceof SubstateNotFoundException) {
-				throw new StateConflictException(reException);
-			}
+			throw new GatewayException(GatewayErrorCode.BAD_REQUEST);
 		}
 	}
 }
