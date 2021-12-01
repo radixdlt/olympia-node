@@ -93,7 +93,7 @@ public class PMT {
 						 this.cache.put(represent(sanitizedAcc), sanitizedAcc);
 						 byte[] serialisedNode = sanitizedAcc.serialize();
 						 if (hasDbRepresentation(serialisedNode)) {
-							 this.db.save(hash(sanitizedAcc), serialisedNode);
+							 this.db.save(hash(serialisedNode), serialisedNode);
 						 }
 					 });
 				this.root = acc.getTip();
