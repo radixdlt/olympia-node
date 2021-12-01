@@ -334,6 +334,11 @@ public final class CoreModelMapper {
 					throw new InvalidSubEntityException(subEntity);
 				}
 
+				// Exiting stake is the only enity which should have epoch unlock
+				if ((metadata.getEpochUnlock() == null) == subEntity.getAddress().equals("exiting_stake")) {
+					throw new InvalidSubEntityException(subEntity);
+				}
+
 				var validator = addressing.forValidators().parseOrThrow(metadata.getValidator(), s -> invalidAddress(address));
 				return switch (subEntity.getAddress()) {
 					case "prepared_stake" -> PreparedStakeVaultEntity.from(
@@ -558,6 +563,19 @@ public final class CoreModelMapper {
 	public EntityIdentifier entityIdentifier(REAddr tokenAddress, String symbol) {
 		return new EntityIdentifier().address(addressing.forResources().of(symbol, tokenAddress));
 	}
+
+	public EntityIdentifier entityIdentifierExitingStake(REAddr accountAddress, ECPublicKey validatorKey, long epochUnlock) {
+		return new EntityIdentifier()
+			.address(addressing.forAccounts().of(accountAddress))
+			.subEntity(new SubEntity()
+				.address("exiting_stake")
+				.metadata(new SubEntityMetadata()
+					.validator(addressing.forValidators().of(validatorKey))
+					.epochUnlock(epochUnlock)
+				)
+			);
+	}
+
 
 	public EntityIdentifier entityIdentifierPreparedUnstake(REAddr accountAddress, ECPublicKey validatorKey) {
 		return new EntityIdentifier()

@@ -119,6 +119,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+// TODO: Refactor so that every entity is just a parameter in a parametrized test
 public class EntityHandlerTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
@@ -300,6 +301,66 @@ public class EntityHandlerTest {
 			.hasOnlyElementsOfTypes(ValidatorBFTData.class, ValidatorData.class);
 		assertThat(response.getBalances())
 			.containsExactly(coreModelMapper.nativeTokenAmount(stakeAmount.toSubunits()));
+	}
+
+	@Test
+	public void retrieve_prepared_stake_entity_on_genesis() throws Exception {
+		// Arrange
+		runner.start();
+
+		// Act
+		var address = REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey());
+		var request = new EntityRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.entityIdentifier(coreModelMapper.entityIdentifierPreparedStake(address, TEST_KEY.getPublicKey()));
+		var response = sut.handleRequest(request);
+
+		// Assert
+		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+		assertThat(response.getDataObjects()).isEmpty();
+		assertThat(response.getBalances()).isEmpty();
+	}
+
+	@Test
+	public void retrieve_prepared_unstake_entity_on_genesis() throws Exception {
+		// Arrange
+		runner.start();
+
+		// Act
+		var address = REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey());
+		var request = new EntityRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.entityIdentifier(coreModelMapper.entityIdentifierPreparedUnstake(address, TEST_KEY.getPublicKey()));
+		var response = sut.handleRequest(request);
+
+		// Assert
+		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+		assertThat(response.getDataObjects()).isEmpty();
+		assertThat(response.getBalances()).isEmpty();
+	}
+
+	@Test
+	public void retrieve_exiting_stake_entity_on_genesis() throws Exception {
+		// Arrange
+		runner.start();
+
+		// Act
+		var address = REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey());
+		var request = new EntityRequest()
+			.networkIdentifier(new NetworkIdentifier().network("localnet"))
+			.entityIdentifier(coreModelMapper.entityIdentifierExitingStake(address, TEST_KEY.getPublicKey(), 1));
+		var response = sut.handleRequest(request);
+
+		// Assert
+		var stateAccumulator = response.getStateIdentifier().getTransactionAccumulator();
+		var genesisAccumulator = genesis.getProof().getAccumulatorState().getAccumulatorHash().asBytes();
+		assertThat(stateAccumulator).isEqualTo(Bytes.toHexString(genesisAccumulator));
+		assertThat(response.getDataObjects()).isEmpty();
+		assertThat(response.getBalances()).isEmpty();
 	}
 
 	@Test
