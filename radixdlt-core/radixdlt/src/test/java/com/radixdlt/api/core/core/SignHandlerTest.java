@@ -218,7 +218,7 @@ public class SignHandlerTest {
 			.unsignedTransaction(Bytes.toHexString(unsignedTxn));
 
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreModelException.class)
+			.isInstanceOf(CoreApiException.class)
 			.extracting("errorDetails")
 			.isInstanceOf(PublicKeyNotSupportedErrorDetails.class);
 	}
@@ -236,7 +236,7 @@ public class SignHandlerTest {
 			.unsignedTransaction("badbadbadbad");
 
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreModelException.class)
+			.isInstanceOf(CoreApiException.class)
 			.extracting("errorDetails")
 			.isInstanceOf(InvalidTransactionErrorDetails.class);
 	}

@@ -65,7 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
@@ -90,7 +90,7 @@ public final class ConstructionSubmitHandler extends CoreJsonRpcHandler<Construc
 	}
 
 	@Override
-	public ConstructionSubmitResponse handleRequest(ConstructionSubmitRequest request) throws CoreModelException {
+	public ConstructionSubmitResponse handleRequest(ConstructionSubmitRequest request) throws CoreApiException {
 		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var txn = modelMapper.txn(request.getSignedTransaction());

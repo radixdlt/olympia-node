@@ -71,7 +71,6 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.EntityHandler;
 import com.radixdlt.api.core.core.model.SubstateTypeMapping;
-import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
 import com.radixdlt.api.core.core.openapitools.model.InvalidAddressErrorDetails;
@@ -376,9 +375,11 @@ public class EntityHandlerTest {
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.entityIdentifier(new EntityIdentifier().address("some_garbage_address"));
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(InvalidAddressErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(InvalidAddressErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 
 	@Test
@@ -396,9 +397,11 @@ public class EntityHandlerTest {
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.entityIdentifier(invalidSubEntity);
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(InvalidSubEntityErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(InvalidSubEntityErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 
 }

@@ -68,7 +68,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionHashHandler;
-import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionHashRequest;
 import com.radixdlt.api.core.core.openapitools.model.InvalidHexErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
@@ -171,8 +170,10 @@ public class ConstructionHashHandlerTest {
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.signedTransaction("this_is_not_hex");
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(InvalidHexErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(InvalidHexErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 }

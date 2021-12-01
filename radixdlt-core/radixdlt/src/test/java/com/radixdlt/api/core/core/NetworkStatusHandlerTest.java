@@ -174,7 +174,7 @@ public class NetworkStatusHandlerTest {
 		var request = new NetworkStatusRequest()
 			.networkIdentifier(new NetworkIdentifier().network("unknown_network"));
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreModelException.class)
+			.isInstanceOf(CoreApiException.class)
 			.extracting("errorDetails")
 			.isInstanceOf(NetworkNotSupportedErrorDetails.class);
 	}

@@ -68,9 +68,9 @@ import com.radixdlt.api.core.core.openapitools.model.InvalidJsonDetails;
 import com.radixdlt.api.core.core.openapitools.model.UnexpectedError;
 import com.radixdlt.api.util.JsonRpcHandler;
 
-public abstract class CoreJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, CoreModelException, UnexpectedError> {
+public abstract class CoreJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, CoreApiException, UnexpectedError> {
 	public CoreJsonRpcHandler(Class<T> requestClass) {
-		super(requestClass, CoreModelException.class, JSON.getDefault().getMapper());
+		super(requestClass, CoreApiException.class, JSON.getDefault().getMapper());
 	}
 
 	@Override
@@ -85,7 +85,7 @@ public abstract class CoreJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, Core
 	}
 
 	@Override
-	public UnexpectedError handleException(CoreModelException e) {
+	public UnexpectedError handleException(CoreApiException e) {
 		return e.toError();
 	}
 }

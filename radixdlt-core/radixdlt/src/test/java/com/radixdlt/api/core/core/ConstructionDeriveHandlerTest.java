@@ -68,7 +68,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionDeriveHandler;
-import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataToken;
@@ -153,7 +152,7 @@ public class ConstructionDeriveHandlerTest {
 	}
 
 	@Test
-	public void derive_account_request_should_return_account_entity_identifier() throws CoreModelException {
+	public void derive_account_request_should_return_account_entity_identifier() throws CoreApiException {
 		// Arrange
 		runner.start();
 
@@ -170,7 +169,7 @@ public class ConstructionDeriveHandlerTest {
 	}
 
 	@Test
-	public void derive_validator_request_should_return_validator_entity_identifier() throws CoreModelException {
+	public void derive_validator_request_should_return_validator_entity_identifier() throws CoreApiException {
 		// Arrange
 		runner.start();
 
@@ -187,7 +186,7 @@ public class ConstructionDeriveHandlerTest {
 	}
 
 	@Test
-	public void derive_token_request_should_return_token_entity_identifier() throws CoreModelException {
+	public void derive_token_request_should_return_token_entity_identifier() throws CoreApiException {
 		// Arrange
 		runner.start();
 
@@ -207,7 +206,7 @@ public class ConstructionDeriveHandlerTest {
 
 
 	@Test
-	public void invalid_public_key_should_throw_exception() throws CoreModelException {
+	public void invalid_public_key_should_throw_exception() throws CoreApiException {
 		// Arrange
 		runner.start();
 
@@ -218,8 +217,10 @@ public class ConstructionDeriveHandlerTest {
 			.publicKey(new PublicKey().hex("deadbeaddeadbead"))
 			.metadata(new ConstructionDeriveRequestMetadataToken().symbol("test").type("Token"));
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(InvalidPublicKeyErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(InvalidPublicKeyErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 }

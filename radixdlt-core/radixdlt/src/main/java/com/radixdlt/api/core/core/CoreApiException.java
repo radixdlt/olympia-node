@@ -61,23 +61,63 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.model.exceptions;
+package com.radixdlt.api.core.core;
 
-import com.radixdlt.api.core.core.CoreModelError;
-import com.radixdlt.api.core.core.CoreModelException;
 import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.UnexpectedError;
 
-public final class CoreConflictException extends CoreModelException {
+public final class CoreApiException extends Exception {
+	private final CoreApiErrorCode errorCode;
 	private final ErrorDetails errorDetails;
 
-	public CoreConflictException(ErrorDetails errorDetails) {
-		super(CoreModelError.CONFLICT);
-
+	private CoreApiException(CoreApiErrorCode errorCode, ErrorDetails errorDetails) {
+		this.errorCode = errorCode;
 		this.errorDetails = errorDetails;
 	}
 
-	@Override
-	public ErrorDetails getErrorDetails() {
-		return errorDetails;
+	public UnexpectedError toError() {
+		return new UnexpectedError()
+			.code(errorCode.getErrorCode())
+			.message(errorCode.getMessage())
+			.details(errorDetails);
+	}
+
+	public static CoreApiException badRequest(ErrorDetails errorDetails) {
+		return new CoreApiException(CoreApiErrorCode.BAD_REQUEST, errorDetails);
+	}
+
+	public static CoreApiException conflict(ErrorDetails errorDetails) {
+		return new CoreApiException(CoreApiErrorCode.CONFLICT, errorDetails);
+	}
+
+	public static CoreApiException notFound(ErrorDetails errorDetails) {
+		return new CoreApiException(CoreApiErrorCode.NOT_FOUND, errorDetails);
+	}
+
+	public static CoreApiException notSupported(ErrorDetails errorDetails) {
+		return new CoreApiException(CoreApiErrorCode.NOT_SUPPORTED, errorDetails);
+	}
+
+	public enum CoreApiErrorCode {
+		BAD_REQUEST(400, "Bad request"),
+		NOT_FOUND(404, "Not found"),
+		CONFLICT(409, "State Conflict"),
+		NOT_SUPPORTED(501, "Not supported");
+
+		private final int errorCode;
+		private final String message;
+
+		CoreApiErrorCode(int errorCode, String message) {
+			this.errorCode = errorCode;
+			this.message = message;
+		}
+
+		public int getErrorCode() {
+			return errorCode;
+		}
+
+		public String getMessage() {
+			return message;
+		}
 	}
 }

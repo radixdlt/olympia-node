@@ -82,7 +82,6 @@ import com.radixdlt.api.core.core.model.entities.NotEnoughResourcesException;
 import com.radixdlt.api.core.core.model.entities.SystemEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorSystemEntity;
 import com.radixdlt.api.core.core.model.entities.EntityDoesNotSupportDataObjectException;
-import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.entities.PreparedStakeVaultEntity;
 import com.radixdlt.api.core.core.model.entities.PreparedUnstakeVaultEntity;
@@ -90,8 +89,6 @@ import com.radixdlt.api.core.core.model.Resource;
 import com.radixdlt.api.core.core.model.StakeOwnershipResource;
 import com.radixdlt.api.core.core.model.entities.TokenEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorEntity;
-import com.radixdlt.api.core.core.model.exceptions.CoreNotSupportedException;
-import com.radixdlt.api.core.core.model.exceptions.CoreConflictException;
 import com.radixdlt.api.core.core.openapitools.model.*;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
@@ -173,24 +170,24 @@ public final class CoreModelMapper {
 		this.forks = forks;
 	}
 
-	public void verifyNetwork(NetworkIdentifier networkIdentifier) throws CoreNotSupportedException {
+	public void verifyNetwork(NetworkIdentifier networkIdentifier) throws CoreApiException {
 		if (!networkIdentifier.getNetwork().equals(this.network.name().toLowerCase())) {
-			throw new CoreNotSupportedException(
+			throw CoreApiException.notSupported(
 				new NetworkNotSupportedErrorDetails()
-				.addSupportedNetworksItem(new NetworkIdentifier().network(this.network.name().toLowerCase()))
-				.type(NetworkNotSupportedErrorDetails.class.getSimpleName())
+					.addSupportedNetworksItem(new NetworkIdentifier().network(this.network.name().toLowerCase()))
+					.type(NetworkNotSupportedErrorDetails.class.getSimpleName())
 			);
 		}
 	}
 
-	public Pair<ECPublicKey, ECDSASignature> keyAndSignature(Signature signature) throws CoreModelException {
+	public Pair<ECPublicKey, ECDSASignature> keyAndSignature(Signature signature) throws CoreApiException {
 		var publicKey = ecPublicKey(signature.getPublicKey());
 		var bytes = bytes(signature.getBytes());
 		ECDSASignature sig;
 		try {
 			sig = ECDSASignature.decodeFromDER(bytes);
 		} catch (IllegalArgumentException e) {
-			throw new CoreBadRequestException(
+			throw CoreApiException.badRequest(
 				new InvalidSignatureErrorDetails()
 					.invalidSignature(signature.getBytes())
 					.type(InvalidSignatureErrorDetails.class.getSimpleName())
@@ -199,23 +196,23 @@ public final class CoreModelMapper {
 		return Pair.of(publicKey, sig);
 	}
 
-	public ECPublicKey ecPublicKey(PublicKey publicKey) throws CoreModelException {
+	public ECPublicKey ecPublicKey(PublicKey publicKey) throws CoreApiException {
 		var bytes = bytes(publicKey.getHex());
 		try {
 			return ECPublicKey.fromBytes(bytes);
 		} catch (PublicKeyException e) {
-			throw new CoreBadRequestException(new InvalidPublicKeyErrorDetails()
+			throw CoreApiException.badRequest(new InvalidPublicKeyErrorDetails()
 				.invalidPublicKey(publicKey)
 				.type(InvalidPublicKeyErrorDetails.class.getSimpleName())
 			);
 		}
 	}
 
-	public byte[] bytes(String hex) throws CoreModelException {
+	public byte[] bytes(String hex) throws CoreApiException {
 		try {
 			return Bytes.fromHexString(hex);
 		} catch (IllegalArgumentException e) {
-			throw new CoreBadRequestException(new InvalidHexErrorDetails()
+			throw CoreApiException.badRequest(new InvalidHexErrorDetails()
 				.invalidHex(hex)
 				.type(InvalidHexErrorDetails.class.getSimpleName())
 			);
@@ -281,10 +278,10 @@ public final class CoreModelMapper {
 		throw new IllegalStateException(e);
 	}
 
-	public AccountVaultEntity feePayerEntity(EntityIdentifier entityIdentifier) throws CoreModelException {
+	public AccountVaultEntity feePayerEntity(EntityIdentifier entityIdentifier) throws CoreApiException {
 		var feePayer = entity(entityIdentifier);
 		if (!(feePayer instanceof AccountVaultEntity accountVaultEntity)) {
-			throw new CoreBadRequestException(new InvalidFeePayerEntityErrorDetails()
+			throw CoreApiException.badRequest(new InvalidFeePayerEntityErrorDetails()
 				.invalidFeePayerEntity(entityIdentifier)
 				.type(InvalidFeePayerEntityErrorDetails.class.getSimpleName())
 			);
@@ -292,21 +289,19 @@ public final class CoreModelMapper {
 		return accountVaultEntity;
 	}
 
-	private static CoreBadRequestException invalidAddress(String address) {
-		return new CoreBadRequestException(
-			new InvalidAddressErrorDetails().invalidAddress(address)
-		);
+	private static CoreApiException invalidAddress(String address) {
+		return CoreApiException.badRequest(new InvalidAddressErrorDetails().invalidAddress(address));
 	}
 
-	private static CoreBadRequestException invalidSubEntity(SubEntity subEntity) {
-		return new CoreBadRequestException(
+	private static CoreApiException invalidSubEntity(SubEntity subEntity) {
+		return CoreApiException.badRequest(
 			new InvalidSubEntityErrorDetails()
 				.invalidSubEntity(subEntity)
 				.type(InvalidSubEntityErrorDetails.class.getSimpleName())
 		);
 	}
 
-	public Entity entity(EntityIdentifier entityIdentifier) throws CoreModelException {
+	public Entity entity(EntityIdentifier entityIdentifier) throws CoreApiException {
 		var address = entityIdentifier.getAddress();
 		if (address.equals("system")) {
 			var subEntity = entityIdentifier.getSubEntity();
@@ -381,7 +376,7 @@ public final class CoreModelMapper {
 		}
 	}
 
-	public DataOperation dataOperation(Data data) throws CoreModelException {
+	public DataOperation dataOperation(Data data) throws CoreApiException {
 		if (data == null) {
 			return null;
 		}
@@ -405,7 +400,7 @@ public final class CoreModelMapper {
 		return new DataOperation(data, parsed);
 	}
 
-	public OperationTxBuilder operationTxBuilder(String message, List<OperationGroup> operationGroups) throws CoreModelException {
+	public OperationTxBuilder operationTxBuilder(String message, List<OperationGroup> operationGroups) throws CoreApiException {
 		var entityOperationGroups = new ArrayList<List<EntityOperation>>();
 		for (var group : operationGroups) {
 			var entityOperationGroup = new ArrayList<EntityOperation>();
@@ -424,17 +419,17 @@ public final class CoreModelMapper {
 	}
 
 
-	public Txn txn(String hex) throws CoreModelException {
+	public Txn txn(String hex) throws CoreApiException {
 		var bytes = bytes(hex);
 		return Txn.create(bytes);
 	}
 
-	public AID txnId(TransactionIdentifier transactionIdentifier) throws CoreBadRequestException {
+	public AID txnId(TransactionIdentifier transactionIdentifier) throws CoreApiException {
 		var hash = transactionIdentifier.getHash();
 		try {
 			return AID.from(hash);
 		} catch (IllegalArgumentException e) {
-			throw new CoreBadRequestException(new InvalidTransactionHashErrorDetails()
+			throw CoreApiException.badRequest(new InvalidTransactionHashErrorDetails()
 				.invalidTransactionHash(hash)
 				.type(InvalidTransactionHashErrorDetails.class.getSimpleName()));
 		}
@@ -459,13 +454,13 @@ public final class CoreModelMapper {
 	}
 
 	public Pair<Long, HashCode> partialStateIdentifier(PartialStateIdentifier partialStateIdentifier)
-		throws CoreModelException {
+		throws CoreApiException {
 		if (partialStateIdentifier == null) {
 			return Pair.of(0L, null);
 		}
 
 		if (partialStateIdentifier.getStateVersion() < 0L) {
-			throw new CoreBadRequestException(
+			throw CoreApiException.badRequest(
 				new InvalidPartialStateIdentifierErrorDetails()
 					.invalidPartialStateIdentifier(partialStateIdentifier)
 					.type(InvalidPartialStateIdentifierErrorDetails.class.getSimpleName())
@@ -483,7 +478,7 @@ public final class CoreModelMapper {
 		return Pair.of(partialStateIdentifier.getStateVersion(), accumulator);
 	}
 
-	public ResourceOperation resourceOperation(ResourceAmount resourceAmount) throws CoreModelException {
+	public ResourceOperation resourceOperation(ResourceAmount resourceAmount) throws CoreApiException {
 		if (resourceAmount == null) {
 			return null;
 		}
@@ -498,7 +493,7 @@ public final class CoreModelMapper {
 		);
 	}
 
-	public Resource resource(ResourceIdentifier resourceIdentifier) throws CoreModelException {
+	public Resource resource(ResourceIdentifier resourceIdentifier) throws CoreApiException {
 		if (resourceIdentifier instanceof TokenResourceIdentifier tokenResourceIdentifier) {
 			var rri = tokenResourceIdentifier.getRri();
 			var symbolAndAddr = addressing.forResources().parseOrThrow(rri, s -> invalidAddress(rri));
@@ -1117,26 +1112,26 @@ public final class CoreModelMapper {
 			.hash(txnId.toString());
 	}
 
-	public CoreModelException parseException(TxnParseException exception) {
+	public CoreApiException parseException(TxnParseException exception) {
 		var cause = Throwables.getRootCause(exception);
-		return new CoreBadRequestException(
+		return CoreApiException.badRequest(
 			new InvalidTransactionErrorDetails()
 				.message(cause.getMessage())
 				.type(InvalidTransactionErrorDetails.class.getSimpleName())
 		);
 	}
 
-	public CoreModelException radixEngineException(RadixEngineException exception) {
+	public CoreApiException radixEngineException(RadixEngineException exception) {
 		var cause = Throwables.getRootCause(exception);
 		if (cause instanceof SubstateNotFoundException notFoundException) {
-			return new CoreConflictException(
+			return CoreApiException.conflict(
 				new SubstateDependencyNotFoundErrorDetails()
 					.substateIdentifierNotFound(substateIdentifier(notFoundException.getSubstateId()))
 					.type(SubstateDependencyNotFoundErrorDetails.class.getSimpleName())
 			);
 		}
 
-		return new CoreBadRequestException(
+		return CoreApiException.badRequest(
 			new InvalidTransactionErrorDetails()
 				.message(cause.getMessage())
 				.type(InvalidTransactionErrorDetails.class.getSimpleName())

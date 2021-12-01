@@ -66,7 +66,7 @@ package com.radixdlt.api.core.core.handlers;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionParseResponse;
@@ -108,7 +108,7 @@ public final class ConstructionParseHandler extends CoreJsonRpcHandler<Construct
 	}
 
 	@Override
-	public ConstructionParseResponse handleRequest(ConstructionParseRequest request) throws CoreModelException {
+	public ConstructionParseResponse handleRequest(ConstructionParseRequest request) throws CoreApiException {
 		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var txn = modelMapper.bytes(request.getTransaction());

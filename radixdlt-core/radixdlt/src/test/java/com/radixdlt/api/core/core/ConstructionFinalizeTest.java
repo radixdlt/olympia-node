@@ -255,8 +255,10 @@ public class ConstructionFinalizeTest {
 				.publicKey(coreModelMapper.publicKey(self))
 			);
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreModelException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(InvalidSignatureErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(InvalidSignatureErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 }

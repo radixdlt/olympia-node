@@ -73,8 +73,6 @@ import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.ResourceOperation;
 import com.radixdlt.api.core.core.model.TokenResource;
 import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
-import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
-import com.radixdlt.api.core.core.model.exceptions.CoreNotFoundException;
 import com.radixdlt.api.core.core.openapitools.model.InvalidTransactionHashErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
@@ -238,9 +236,11 @@ public class MempoolTransactionHandlerTest {
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.transactionIdentifier(coreModelMapper.transactionIdentifier(signedTxn.getId()));
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreNotFoundException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(TransactionNotFoundErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(TransactionNotFoundErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.NOT_FOUND.getErrorCode());
+			});
 	}
 
 	@Test
@@ -255,8 +255,10 @@ public class MempoolTransactionHandlerTest {
 			.transactionIdentifier(new TransactionIdentifier().hash("badbad"));
 
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(InvalidTransactionHashErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(InvalidTransactionHashErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 }

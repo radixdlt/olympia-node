@@ -230,7 +230,7 @@ public class ConstructionSubmitTest {
 
 		// Act
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreModelException.class)
+			.isInstanceOf(CoreApiException.class)
 			.extracting("errorDetails")
 			.isInstanceOf(InvalidTransactionErrorDetails.class);
 

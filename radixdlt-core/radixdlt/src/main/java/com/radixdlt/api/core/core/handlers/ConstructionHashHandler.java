@@ -65,7 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionHashRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionHashResponse;
@@ -80,7 +80,7 @@ public final class ConstructionHashHandler extends CoreJsonRpcHandler<Constructi
 	}
 
 	@Override
-	public ConstructionHashResponse handleRequest(ConstructionHashRequest request) throws CoreModelException {
+	public ConstructionHashResponse handleRequest(ConstructionHashRequest request) throws CoreApiException {
 		var txn = modelMapper.txn(request.getSignedTransaction());
 		return new ConstructionHashResponse()
 			.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()));

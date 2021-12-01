@@ -68,7 +68,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
-import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
 import com.radixdlt.api.core.core.openapitools.model.BelowMinimumStakeErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
@@ -227,9 +226,11 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(ResourceDepositOperationNotSupportedByEntityErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(ResourceDepositOperationNotSupportedByEntityErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 
 	@Test
@@ -248,9 +249,11 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(NotEnoughResourcesErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(NotEnoughResourcesErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 
 	@Test
@@ -288,9 +291,11 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(BelowMinimumStakeErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(BelowMinimumStakeErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 
 	@Test
@@ -309,9 +314,11 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(NotValidatorOwnerErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(NotValidatorOwnerErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 
 	@Test
@@ -330,9 +337,11 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(ResourceWithdrawOperationNotSupportedByEntityErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(ResourceWithdrawOperationNotSupportedByEntityErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 
 

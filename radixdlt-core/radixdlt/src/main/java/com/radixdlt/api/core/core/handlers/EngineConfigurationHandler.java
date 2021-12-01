@@ -65,7 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.EngineCheckpoint;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
@@ -98,7 +98,7 @@ public final class EngineConfigurationHandler extends CoreJsonRpcHandler<EngineC
 	}
 
 	@Override
-	public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request) throws CoreModelException {
+	public EngineConfigurationResponse handleRequest(EngineConfigurationRequest request) throws CoreApiException {
 		modelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var response = new EngineConfigurationResponse();

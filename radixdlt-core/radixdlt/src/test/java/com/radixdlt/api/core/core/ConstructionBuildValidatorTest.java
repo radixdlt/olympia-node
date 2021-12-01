@@ -68,7 +68,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
-import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
 import com.radixdlt.api.core.core.openapitools.model.AboveMaximumValidatorFeeIncreaseErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.Data;
@@ -93,6 +92,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.qualifier.NumPeers;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
@@ -118,9 +118,6 @@ public class ConstructionBuildValidatorTest {
 
 	private final Amount totalTokenAmount = Amount.ofTokens(110);
 	private final Amount stakeAmount = Amount.ofTokens(10);
-	private final Amount liquidAmount = Amount.ofSubunits(
-		totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits())
-	);
 
 	@Inject
 	private ConstructionBuildHandler sut;
@@ -133,6 +130,8 @@ public class ConstructionBuildValidatorTest {
 	private ECPublicKey self;
 	@Inject
 	private SingleNodeDeterministicRunner runner;
+	@Inject
+	private Forks forks;
 
 	@Before
 	public void setup() {
@@ -218,9 +217,13 @@ public class ConstructionBuildValidatorTest {
 		// Assert
 		var request = buildValidatorUpdate(new PreparedValidatorFee().fee(1000));
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-				.isInstanceOf(AboveMaximumValidatorFeeIncreaseErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOfSatisfying(AboveMaximumValidatorFeeIncreaseErrorDetails.class, d -> {
+					assertThat(d.getAttemptedValidatorFeeIncrease()).isEqualTo(1000);
+				});
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 
 	@Test

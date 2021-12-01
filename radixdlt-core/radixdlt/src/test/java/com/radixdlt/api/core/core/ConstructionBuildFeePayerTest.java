@@ -68,7 +68,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
-import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.InvalidFeePayerEntityErrorDetails;
@@ -99,6 +98,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ConstructionBuildFeePayerTest {
@@ -178,8 +178,10 @@ public class ConstructionBuildFeePayerTest {
 		// Assert
 		var request = buildRequestWithFeePayer(coreModelMapper.entityIdentifier(self));
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(InvalidFeePayerEntityErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(InvalidFeePayerEntityErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 }

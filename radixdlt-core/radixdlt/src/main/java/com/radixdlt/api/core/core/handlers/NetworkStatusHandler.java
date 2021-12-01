@@ -65,7 +65,7 @@ package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.CoreModelException;
+import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
@@ -118,7 +118,7 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 	}
 
 	@Override
-	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws CoreModelException {
+	public NetworkStatusResponse handleRequest(NetworkStatusRequest request) throws CoreApiException {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var currentProof = inMemorySystemInfo.getCurrentProof();

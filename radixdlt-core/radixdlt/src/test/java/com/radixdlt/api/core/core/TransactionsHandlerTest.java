@@ -70,8 +70,6 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.TransactionsHandler;
-import com.radixdlt.api.core.core.model.exceptions.CoreBadRequestException;
-import com.radixdlt.api.core.core.model.exceptions.CoreNotFoundException;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
 import com.radixdlt.api.core.core.openapitools.model.InvalidPartialStateIdentifierErrorDetails;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
@@ -204,9 +202,11 @@ public class TransactionsHandlerTest {
 			.limit(1L)
 			.stateIdentifier(new PartialStateIdentifier().stateVersion(2L));
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreNotFoundException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(StateIdentifierNotFoundErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(StateIdentifierNotFoundErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.NOT_FOUND.getErrorCode());
+			});
 	}
 
 	@Test
@@ -221,8 +221,10 @@ public class TransactionsHandlerTest {
 			.limit(1L)
 			.stateIdentifier(new PartialStateIdentifier().stateVersion(-1L));
 		assertThatThrownBy(() -> sut.handleRequest(request))
-			.isInstanceOf(CoreBadRequestException.class)
-			.extracting("errorDetails")
-			.isInstanceOf(InvalidPartialStateIdentifierErrorDetails.class);
+			.isInstanceOfSatisfying(CoreApiException.class, e -> {
+				var error = e.toError();
+				assertThat(error.getDetails()).isInstanceOf(InvalidPartialStateIdentifierErrorDetails.class);
+				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
+			});
 	}
 }
