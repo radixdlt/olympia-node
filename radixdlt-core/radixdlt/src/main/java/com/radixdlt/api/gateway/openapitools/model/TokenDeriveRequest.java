@@ -29,7 +29,7 @@ import java.util.Objects;
   TokenDeriveRequest.JSON_PROPERTY_CREATOR_ACCOUNT_IDENTIFIER,
   TokenDeriveRequest.JSON_PROPERTY_SYMBOL
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T01:21:01.645550-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T17:41:28.920972-06:00[America/Chicago]")
 public class TokenDeriveRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;

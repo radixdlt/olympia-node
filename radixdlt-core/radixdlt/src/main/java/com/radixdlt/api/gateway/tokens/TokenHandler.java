@@ -64,12 +64,14 @@
 package com.radixdlt.api.gateway.tokens;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.gateway.GatewayErrorCode;
 import com.radixdlt.api.gateway.GatewayException;
 import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
+import com.radixdlt.api.gateway.openapitools.model.TokenNotFound;
 import com.radixdlt.api.gateway.openapitools.model.TokenRequest;
 import com.radixdlt.api.gateway.openapitools.model.TokenResponse;
+import com.radixdlt.api.gateway.openapitools.model.TokenResponseError;
+import com.radixdlt.api.gateway.openapitools.model.TokenResponseSuccess;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 final class TokenHandler extends GatewayJsonRpcHandler<TokenRequest, TokenResponse> {
@@ -95,11 +97,18 @@ final class TokenHandler extends GatewayJsonRpcHandler<TokenRequest, TokenRespon
 		var tokenAddress = gatewayModelMapper.tokenAddress(request.getTokenIdentifier());
 		var proof = inMemorySystemInfo.getCurrentProof();
 
-		var token = store.getResourceInfo(tokenAddress)
-			.orElseThrow(() -> new GatewayException(GatewayErrorCode.NOT_FOUND));
-
-		return new TokenResponse()
-			.token(token)
-			.ledgerState(gatewayModelMapper.ledgerState(proof));
+		return store.getResourceInfo(tokenAddress)
+			.map(token -> new TokenResponseSuccess()
+				.token(token)
+				.ledgerState(gatewayModelMapper.ledgerState(proof))
+				.type(TokenResponseSuccess.class.getSimpleName())
+			)
+			.orElseGet(() -> new TokenResponseError()
+				.details(new TokenNotFound()
+					.tokenNotFound(request.getTokenIdentifier())
+					.type(TokenNotFound.class.getSimpleName())
+				)
+				.type(TokenResponseError.class.getSimpleName())
+			);
 	}
 }

@@ -26,26 +26,24 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * TokenDeriveResponse
+ * ErrorDetails
  */
 @JsonPropertyOrder({
-  TokenDeriveResponse.JSON_PROPERTY_TYPE
+  ErrorDetails.JSON_PROPERTY_TYPE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T17:41:28.920972-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T17:07:44.365935-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = TokenDeriveResponseError.class, name = "TokenDeriveResponseError"),
-  @JsonSubTypes.Type(value = TokenDeriveResponseSuccess.class, name = "TokenDeriveResponseSuccess"),
-  @JsonSubTypes.Type(value = TokenDeriveResponseError.class, name = "TokenResponseError"),
-  @JsonSubTypes.Type(value = TokenDeriveResponseSuccess.class, name = "TokenResponseSuccess"),
+  @JsonSubTypes.Type(value = InvalidTokenRRI.class, name = "InvalidTokenRRI"),
+  @JsonSubTypes.Type(value = TokenNotFound.class, name = "TokenNotFound"),
 })
 
-public class TokenDeriveResponse {
+public class ErrorDetails {
   public static final String JSON_PROPERTY_TYPE = "type";
   private String type;
 
 
-  public TokenDeriveResponse type(String type) {
+  public ErrorDetails type(String type) {
     this.type = type;
     return this;
   }
@@ -72,7 +70,7 @@ public class TokenDeriveResponse {
 
 
   /**
-   * Return true if this TokenDeriveResponse object is equal to o.
+   * Return true if this ErrorDetails object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -82,8 +80,8 @@ public class TokenDeriveResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TokenDeriveResponse tokenDeriveResponse = (TokenDeriveResponse) o;
-    return Objects.equals(this.type, tokenDeriveResponse.type);
+    ErrorDetails errorDetails = (ErrorDetails) o;
+    return Objects.equals(this.type, errorDetails.type);
   }
 
   @Override
@@ -94,7 +92,7 @@ public class TokenDeriveResponse {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TokenDeriveResponse {\n");
+    sb.append("class ErrorDetails {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -114,12 +112,10 @@ public class TokenDeriveResponse {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("TokenDeriveResponseError", TokenDeriveResponseError.class);
-  mappings.put("TokenDeriveResponseSuccess", TokenDeriveResponseSuccess.class);
-  mappings.put("TokenResponseError", TokenDeriveResponseError.class);
-  mappings.put("TokenResponseSuccess", TokenDeriveResponseSuccess.class);
-  mappings.put("TokenDeriveResponse", TokenDeriveResponse.class);
-  JSON.registerDiscriminator(TokenDeriveResponse.class, "type", mappings);
+  mappings.put("InvalidTokenRRI", InvalidTokenRRI.class);
+  mappings.put("TokenNotFound", TokenNotFound.class);
+  mappings.put("ErrorDetails", ErrorDetails.class);
+  JSON.registerDiscriminator(ErrorDetails.class, "type", mappings);
 }
 }
 

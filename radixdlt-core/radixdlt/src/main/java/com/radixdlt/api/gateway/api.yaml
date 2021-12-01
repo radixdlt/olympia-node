@@ -951,45 +951,37 @@ components:
     TokenResponse:
       type: object
       required:
-        - ledger_state
-        - token
+        - type
       properties:
-        ledger_state:
-          "$ref": "#/components/schemas/LedgerState"
-        token:
-          "$ref": "#/components/schemas/Token"
-      example:
-        ledger_state:
-          epoch: 1
-          round: 1
-          version: 1
-          timestamp: "2021-08-29T01:19:00.524Z"
-        token:
-          token_identifier:
-            rri: xrd_rr1qy5wfsfh
-          total_supply:
-            token_identifier:
-              rri: xrd_rr1qy5wfsfh
-            value: '12014560679861300000000000000'
-          info:
-            total_burned:
-              token_identifier:
-                rri: xrd_rr1qy5wfsfh
-              value: '11437173800000000000000'
-            total_minted:
-              token_identifier:
-                rri: xrd_rr1qy5wfsfh
-              value: '12014572117035100000000000000'
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          TokenResponseSuccess: "#/components/schemas/TokenResponseSuccess"
+          TokenResponseError: "#/components/schemas/TokenResponseError"
+    TokenResponseSuccess:
+      allOf:
+        - $ref: "#/components/schemas/TokenResponse"
+        - type: object
+          required:
+            - ledger_state
+            - token
           properties:
-            icon_url: https://assets.radixdlt.com/icons/icon-xrd-32x32.png
-            is_supply_mutable: true
-            symbol: xrd
-            granularity: '1'
-            name: Radix
-            description: The Radix Public Network's native token, used to pay the
-              network's required transaction fees and to secure the network through
-              staking to its validator nodes.
-            url: https://tokens.radixdlt.com
+            ledger_state:
+              $ref: "#/components/schemas/LedgerState"
+            token:
+              $ref: "#/components/schemas/Token"
+    TokenResponseError:
+      allOf:
+        - $ref: "#/components/schemas/TokenResponse"
+        - type: object
+          required:
+            - details
+          properties:
+            details:
+              $ref: "#/components/schemas/ErrorDetails"
+
     TokenNativeRequest:
       type: object
       required:
@@ -1062,10 +1054,33 @@ components:
     TokenDeriveResponse:
       type: object
       required:
-        - token_identifier
+        - type
       properties:
-        token_identifier:
-          "$ref": "#/components/schemas/TokenIdentifier"
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          TokenResponseSuccess: "#/components/schemas/TokenDeriveResponseSuccess"
+          TokenResponseError: "#/components/schemas/TokenDeriveResponseError"
+    TokenDeriveResponseSuccess:
+      allOf:
+        - $ref: "#/components/schemas/TokenDeriveResponse"
+        - type: object
+          required:
+            - token_identifier
+          properties:
+            token_identifier:
+              "$ref": "#/components/schemas/TokenIdentifier"
+    TokenDeriveResponseError:
+      allOf:
+        - $ref: "#/components/schemas/TokenDeriveResponse"
+        - type: object
+          required:
+            - details
+          properties:
+            details:
+              "$ref": "#/components/schemas/ErrorDetails"
     TransactionStatusRequest:
       type: object
       required:
@@ -1412,7 +1427,7 @@ components:
         - rri
       properties:
         rri:
-          $ref: "#/components/schemas/ResourceIdentifier"
+          type: string
     TransactionIdentifier:
       type: object
       required:
@@ -1423,12 +1438,57 @@ components:
           pattern: "^[0123456789abcdef]{64}$"
           maxLength: 64
           minLength: 64
+    ErrorDetails:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          InvalidTokenRRI: "#/components/schemas/InvalidTokenRRI"
+          TokenNotFound: "#/components/schemas/TokenNotFound"
+    InvalidPublicKey:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_public_key
+          properties:
+            invalid_public_key:
+              type: string
+    InvalidTokenSymbol:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_token_symbol
+          properties:
+            invalid_token_symbol:
+              type: string
+    InvalidTokenRRI:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_rri
+          properties:
+            invalid_rri:
+              type: string
+    TokenNotFound:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - token_not_found
+          properties:
+            token_not_found:
+              $ref: "#/components/schemas/TokenIdentifier"
     AccountAddress:
       type: string
       pattern: "^[rtd]dx[2-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$"
     ValidatorAddress:
       type: string
       pattern: "^[rtd]v[2-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$"
-    ResourceIdentifier:
-      type: string
-      pattern: "^[a-z0-9]{1,83}_[rtd]r[2-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,90}$"

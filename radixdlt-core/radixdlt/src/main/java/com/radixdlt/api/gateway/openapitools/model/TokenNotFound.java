@@ -26,53 +26,51 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * TokenDeriveResponse
+ * TokenNotFound
  */
 @JsonPropertyOrder({
-  TokenDeriveResponse.JSON_PROPERTY_TYPE
+  TokenNotFound.JSON_PROPERTY_TOKEN_NOT_FOUND
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T17:41:28.920972-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T17:07:44.365935-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = TokenDeriveResponseError.class, name = "TokenDeriveResponseError"),
-  @JsonSubTypes.Type(value = TokenDeriveResponseSuccess.class, name = "TokenDeriveResponseSuccess"),
-  @JsonSubTypes.Type(value = TokenDeriveResponseError.class, name = "TokenResponseError"),
-  @JsonSubTypes.Type(value = TokenDeriveResponseSuccess.class, name = "TokenResponseSuccess"),
+  @JsonSubTypes.Type(value = InvalidTokenRRI.class, name = "InvalidTokenRRI"),
+  @JsonSubTypes.Type(value = TokenNotFound.class, name = "TokenNotFound"),
 })
 
-public class TokenDeriveResponse {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+public class TokenNotFound extends ErrorDetails {
+  public static final String JSON_PROPERTY_TOKEN_NOT_FOUND = "token_not_found";
+  private TokenIdentifier tokenNotFound;
 
 
-  public TokenDeriveResponse type(String type) {
-    this.type = type;
+  public TokenNotFound tokenNotFound(TokenIdentifier tokenNotFound) {
+    this.tokenNotFound = tokenNotFound;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get tokenNotFound
+   * @return tokenNotFound
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TOKEN_NOT_FOUND)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public TokenIdentifier getTokenNotFound() {
+    return tokenNotFound;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TOKEN_NOT_FOUND)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setTokenNotFound(TokenIdentifier tokenNotFound) {
+    this.tokenNotFound = tokenNotFound;
   }
 
 
   /**
-   * Return true if this TokenDeriveResponse object is equal to o.
+   * Return true if this TokenNotFound object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -82,20 +80,22 @@ public class TokenDeriveResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TokenDeriveResponse tokenDeriveResponse = (TokenDeriveResponse) o;
-    return Objects.equals(this.type, tokenDeriveResponse.type);
+    TokenNotFound tokenNotFound = (TokenNotFound) o;
+    return Objects.equals(this.tokenNotFound, tokenNotFound.tokenNotFound) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(tokenNotFound, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TokenDeriveResponse {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class TokenNotFound {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    tokenNotFound: ").append(toIndentedString(tokenNotFound)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -114,12 +114,10 @@ public class TokenDeriveResponse {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("TokenDeriveResponseError", TokenDeriveResponseError.class);
-  mappings.put("TokenDeriveResponseSuccess", TokenDeriveResponseSuccess.class);
-  mappings.put("TokenResponseError", TokenDeriveResponseError.class);
-  mappings.put("TokenResponseSuccess", TokenDeriveResponseSuccess.class);
-  mappings.put("TokenDeriveResponse", TokenDeriveResponse.class);
-  JSON.registerDiscriminator(TokenDeriveResponse.class, "type", mappings);
+  mappings.put("InvalidTokenRRI", InvalidTokenRRI.class);
+  mappings.put("TokenNotFound", TokenNotFound.class);
+  mappings.put("TokenNotFound", TokenNotFound.class);
+  JSON.registerDiscriminator(TokenNotFound.class, "type", mappings);
 }
 }
 
