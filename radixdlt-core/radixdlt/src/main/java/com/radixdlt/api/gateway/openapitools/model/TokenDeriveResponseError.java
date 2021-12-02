@@ -29,9 +29,9 @@ import java.util.Objects;
  * TokenDeriveResponseError
  */
 @JsonPropertyOrder({
-  TokenDeriveResponseError.JSON_PROPERTY_DETAILS
+  TokenDeriveResponseError.JSON_PROPERTY_ERROR
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T17:41:28.920972-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T19:47:34.403843-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = TokenDeriveResponseError.class, name = "TokenResponseError"),
@@ -39,33 +39,33 @@ import java.util.Objects;
 })
 
 public class TokenDeriveResponseError extends TokenDeriveResponse {
-  public static final String JSON_PROPERTY_DETAILS = "details";
-  private ErrorDetails details;
+  public static final String JSON_PROPERTY_ERROR = "error";
+  private ErrorDetails error;
 
 
-  public TokenDeriveResponseError details(ErrorDetails details) {
-    this.details = details;
+  public TokenDeriveResponseError error(ErrorDetails error) {
+    this.error = error;
     return this;
   }
 
    /**
-   * Get details
-   * @return details
+   * Get error
+   * @return error
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ErrorDetails getDetails() {
-    return details;
+  public ErrorDetails getError() {
+    return error;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDetails(ErrorDetails details) {
-    this.details = details;
+  public void setError(ErrorDetails error) {
+    this.error = error;
   }
 
 
@@ -81,13 +81,13 @@ public class TokenDeriveResponseError extends TokenDeriveResponse {
       return false;
     }
     TokenDeriveResponseError tokenDeriveResponseError = (TokenDeriveResponseError) o;
-    return Objects.equals(this.details, tokenDeriveResponseError.details) &&
+    return Objects.equals(this.error, tokenDeriveResponseError.error) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(details, super.hashCode());
+    return Objects.hash(error, super.hashCode());
   }
 
   @Override
@@ -95,7 +95,7 @@ public class TokenDeriveResponseError extends TokenDeriveResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class TokenDeriveResponseError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    details: ").append(toIndentedString(details)).append("\n");
+    sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("}");
     return sb.toString();
   }

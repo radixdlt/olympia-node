@@ -29,9 +29,9 @@ import java.util.Objects;
  * AccountStakesResponseError
  */
 @JsonPropertyOrder({
-  AccountStakesResponseError.JSON_PROPERTY_DETAILS
+  AccountStakesResponseError.JSON_PROPERTY_ERROR
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:09:44.037426-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T19:44:55.098351-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccountStakesResponseError.class, name = "AccountStakesResponseError"),
@@ -39,33 +39,33 @@ import java.util.Objects;
 })
 
 public class AccountStakesResponseError extends AccountStakesResponse {
-  public static final String JSON_PROPERTY_DETAILS = "details";
-  private ErrorDetails details;
+  public static final String JSON_PROPERTY_ERROR = "error";
+  private ErrorDetails error;
 
 
-  public AccountStakesResponseError details(ErrorDetails details) {
-    this.details = details;
+  public AccountStakesResponseError error(ErrorDetails error) {
+    this.error = error;
     return this;
   }
 
    /**
-   * Get details
-   * @return details
+   * Get error
+   * @return error
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ErrorDetails getDetails() {
-    return details;
+  public ErrorDetails getError() {
+    return error;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDetails(ErrorDetails details) {
-    this.details = details;
+  public void setError(ErrorDetails error) {
+    this.error = error;
   }
 
 
@@ -81,13 +81,13 @@ public class AccountStakesResponseError extends AccountStakesResponse {
       return false;
     }
     AccountStakesResponseError accountStakesResponseError = (AccountStakesResponseError) o;
-    return Objects.equals(this.details, accountStakesResponseError.details) &&
+    return Objects.equals(this.error, accountStakesResponseError.error) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(details, super.hashCode());
+    return Objects.hash(error, super.hashCode());
   }
 
   @Override
@@ -95,7 +95,7 @@ public class AccountStakesResponseError extends AccountStakesResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccountStakesResponseError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    details: ").append(toIndentedString(details)).append("\n");
+    sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("}");
     return sb.toString();
   }

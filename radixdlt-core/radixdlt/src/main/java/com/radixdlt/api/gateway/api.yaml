@@ -29,28 +29,6 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
-  "/token":
-    post:
-      summary: Get Token Info
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              "$ref": "#/components/schemas/TokenRequest"
-      responses:
-        '200':
-          description: Token info
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/TokenResponse"
-        '500':
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/UnexpectedError"
   "/token/native":
     post:
       summary: Get Native Token Info
@@ -67,6 +45,28 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/TokenNativeResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/token":
+    post:
+      summary: Get Token Info
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/TokenRequest"
+      responses:
+        '200':
+          description: Token info
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/TokenResponse"
         '500':
           description: Unexpected error
           content:
@@ -382,9 +382,9 @@ components:
         - $ref: "#/components/schemas/AccountBalancesResponse"
         - type: object
           required:
-            - details
+            - error
           properties:
-            details:
+            error:
               $ref: "#/components/schemas/ErrorDetails"
     AccountBalances:
       type: object
@@ -443,9 +443,9 @@ components:
         - $ref: "#/components/schemas/AccountStakesResponse"
         - type: object
           required:
-            - details
+            - error
           properties:
-            details:
+            error:
               $ref: "#/components/schemas/ErrorDetails"
     AccountStakeEntry:
       type: object
@@ -502,9 +502,9 @@ components:
         - $ref: "#/components/schemas/AccountUnstakesResponse"
         - type: object
           required:
-            - details
+            - error
           properties:
-            details:
+            error:
               $ref: "#/components/schemas/ErrorDetails"
     AccountUnstakeEntry:
       type: object
@@ -575,9 +575,9 @@ components:
         - $ref: "#/components/schemas/AccountTransactionsResponse"
         - type: object
           required:
-            - details
+            - error
           properties:
-            details:
+            error:
               $ref: "#/components/schemas/ErrorDetails"
     TransferTokens:
       allOf:
@@ -776,9 +776,9 @@ components:
         - "$ref": "#/components/schemas/TransactionBuildResponse"
         - type: object
           required:
-            - details
+            - error
           properties:
-            details:
+            error:
               $ref: "#/components/schemas/ErrorDetails"
     TransactionFinalizeRequest:
       type: object
@@ -838,9 +838,9 @@ components:
         - "$ref": "#/components/schemas/TransactionFinalizeResponse"
         - type: object
           required:
-            - details
+            - error
           properties:
-            details:
+            error:
               $ref: "#/components/schemas/ErrorDetails"
     TransactionSubmitRequest:
       type: object
@@ -878,9 +878,9 @@ components:
         - "$ref": "#/components/schemas/TransactionSubmitResponse"
         - type: object
           required:
-            - details
+            - error
           properties:
-            details:
+            error:
               $ref: "#/components/schemas/ErrorDetails"
     GatewayRequest:
       type: object
@@ -976,9 +976,9 @@ components:
         - $ref: "#/components/schemas/TokenResponse"
         - type: object
           required:
-            - details
+            - error
           properties:
-            details:
+            error:
               $ref: "#/components/schemas/ErrorDetails"
 
     TokenNativeRequest:
@@ -1076,9 +1076,9 @@ components:
         - $ref: "#/components/schemas/TokenDeriveResponse"
         - type: object
           required:
-            - details
+            - error
           properties:
-            details:
+            error:
               "$ref": "#/components/schemas/ErrorDetails"
     TransactionStatusRequest:
       type: object
@@ -1123,9 +1123,9 @@ components:
         - "$ref": "#/components/schemas/TransactionStatusResponse"
         - type: object
           required:
-            - details
+            - error
           properties:
-            details:
+            error:
               $ref: "#/components/schemas/ErrorDetails"
     ValidatorInfoRequest:
       type: object
@@ -1170,9 +1170,9 @@ components:
         - $ref: "#/components/schemas/ValidatorInfoResponse"
         - type: object
           required:
-            - details
+            - error
           properties:
-            details:
+            error:
               $ref: "#/components/schemas/ErrorDetails"
     ValidatorsRequest:
       type: object

@@ -97,9 +97,9 @@ final class TransactionBuildHandler extends GatewayJsonRpcHandler<TransactionBui
 		try {
 			builder = radixEngine.construct(txnConstructionRequest);
 		} catch (TxBuilderException e) {
-			var errorDetails = gatewayModelMapper.transactionBuildError(e);
+			var error = gatewayModelMapper.transactionBuildError(e);
 			return new TransactionBuildResponseError()
-				.details(errorDetails)
+				.error(error)
 				.type(TransactionBuildResponseError.class.getSimpleName());
 		}
 

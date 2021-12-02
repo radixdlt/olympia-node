@@ -104,7 +104,7 @@ final class TokenHandler extends GatewayJsonRpcHandler<TokenRequest, TokenRespon
 				.type(TokenResponseSuccess.class.getSimpleName())
 			)
 			.orElseGet(() -> new TokenResponseError()
-				.details(new TokenNotFound()
+				.error(new TokenNotFound()
 					.tokenNotFound(request.getTokenIdentifier())
 					.type(TokenNotFound.class.getSimpleName())
 				)

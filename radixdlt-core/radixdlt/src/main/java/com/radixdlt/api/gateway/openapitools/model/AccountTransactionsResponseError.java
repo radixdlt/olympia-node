@@ -29,42 +29,42 @@ import java.util.Objects;
  * AccountTransactionsResponseError
  */
 @JsonPropertyOrder({
-  AccountTransactionsResponseError.JSON_PROPERTY_DETAILS
+  AccountTransactionsResponseError.JSON_PROPERTY_ERROR
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:21:18.592676-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T19:44:55.098351-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccountTransactionsResponseSuccess.class, name = "AccountTransactionsResponseSuccess"),
 })
 
 public class AccountTransactionsResponseError extends AccountTransactionsResponse {
-  public static final String JSON_PROPERTY_DETAILS = "details";
-  private ErrorDetails details;
+  public static final String JSON_PROPERTY_ERROR = "error";
+  private ErrorDetails error;
 
 
-  public AccountTransactionsResponseError details(ErrorDetails details) {
-    this.details = details;
+  public AccountTransactionsResponseError error(ErrorDetails error) {
+    this.error = error;
     return this;
   }
 
    /**
-   * Get details
-   * @return details
+   * Get error
+   * @return error
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ErrorDetails getDetails() {
-    return details;
+  public ErrorDetails getError() {
+    return error;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDetails(ErrorDetails details) {
-    this.details = details;
+  public void setError(ErrorDetails error) {
+    this.error = error;
   }
 
 
@@ -80,13 +80,13 @@ public class AccountTransactionsResponseError extends AccountTransactionsRespons
       return false;
     }
     AccountTransactionsResponseError accountTransactionsResponseError = (AccountTransactionsResponseError) o;
-    return Objects.equals(this.details, accountTransactionsResponseError.details) &&
+    return Objects.equals(this.error, accountTransactionsResponseError.error) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(details, super.hashCode());
+    return Objects.hash(error, super.hashCode());
   }
 
   @Override
@@ -94,7 +94,7 @@ public class AccountTransactionsResponseError extends AccountTransactionsRespons
     StringBuilder sb = new StringBuilder();
     sb.append("class AccountTransactionsResponseError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    details: ").append(toIndentedString(details)).append("\n");
+    sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("}");
     return sb.toString();
   }
