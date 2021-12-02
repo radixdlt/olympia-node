@@ -1,6 +1,6 @@
 package com.radixdlt.store.tree;
 
-import static com.radixdlt.store.tree.TreeUtils.applyPrefix;
+import com.radixdlt.store.tree.serialization.rlp.RLP;
 
 public class PMTExt extends PMTNode {
 
@@ -21,14 +21,16 @@ public class PMTExt extends PMTNode {
 	public byte[] serialize() {
 		// INFO: It doesn't make sense for Extension to have empty key-part.
 		//       We rewrite hash pointer to Branches' nibble position
+		// TODO check if this is correct, we should probably forbid this state in the constructor
 		if (keyNibbles.isEmpty()) {
 			return this.getValue();
 		} else {
-			var prefixedKey = applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
-
-			// TODO: serialize, RLP?
-			var serialized = "ext".getBytes();
-			return serialized;
+			var nibblesWithPrefix = TreeUtils.applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
+			byte[] bytesWithPrefix = TreeUtils.fromNibblesToBytes(nibblesWithPrefix);
+			return RLP.encodeList(
+					RLP.encodeElement(bytesWithPrefix),
+					RLP.encodeElement(value)
+			);
 		}
 	}
 }
