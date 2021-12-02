@@ -26,91 +26,97 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * CannotStakeError
+ * NotEnoughTokensForStakeError
  */
 @JsonPropertyOrder({
-  CannotStakeError.JSON_PROPERTY_OWNER,
-  CannotStakeError.JSON_PROPERTY_USER
+  NotEnoughTokensForStakeError.JSON_PROPERTY_REQUESTED_AMOUNT,
+  NotEnoughTokensForStakeError.JSON_PROPERTY_AVAILABLE_AMOUNT
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T23:25:49.735663-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T12:28:18.350415-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
   @JsonSubTypes.Type(value = CannotStakeError.class, name = "CannotStakeError"),
   @JsonSubTypes.Type(value = CouldNotConstructFeesError.class, name = "CouldNotConstructFeesError"),
   @JsonSubTypes.Type(value = InvalidAccountAddressError.class, name = "InvalidAccountAddressError"),
+  @JsonSubTypes.Type(value = InvalidActionError.class, name = "InvalidActionError"),
   @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
+  @JsonSubTypes.Type(value = InvalidSignatureError.class, name = "InvalidSignatureError"),
   @JsonSubTypes.Type(value = InvalidTokenRRIError.class, name = "InvalidTokenRRIError"),
   @JsonSubTypes.Type(value = InvalidTokenSymbolError.class, name = "InvalidTokenSymbolError"),
+  @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
   @JsonSubTypes.Type(value = InvalidValidatorAddressError.class, name = "InvalidValidatorAddressError"),
   @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
   @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
-  @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
+  @JsonSubTypes.Type(value = NotEnoughNativeTokenForFeesError.class, name = "NotEnoughNativeTokenForFeesError"),
+  @JsonSubTypes.Type(value = NotEnoughTokensForStakeError.class, name = "NotEnoughTokensForStakeError"),
+  @JsonSubTypes.Type(value = NotEnoughTokensForTransferError.class, name = "NotEnoughTokensForTransferError"),
+  @JsonSubTypes.Type(value = NotEnoughTokensForUnstakeError.class, name = "NotEnoughTokensForUnstakeError"),
   @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFoundError"),
 })
 
-public class CannotStakeError extends GatewayError {
-  public static final String JSON_PROPERTY_OWNER = "owner";
-  private AccountIdentifier owner;
+public class NotEnoughTokensForStakeError extends GatewayError {
+  public static final String JSON_PROPERTY_REQUESTED_AMOUNT = "requested_amount";
+  private TokenAmount requestedAmount;
 
-  public static final String JSON_PROPERTY_USER = "user";
-  private AccountIdentifier user;
+  public static final String JSON_PROPERTY_AVAILABLE_AMOUNT = "available_amount";
+  private TokenAmount availableAmount;
 
 
-  public CannotStakeError owner(AccountIdentifier owner) {
-    this.owner = owner;
+  public NotEnoughTokensForStakeError requestedAmount(TokenAmount requestedAmount) {
+    this.requestedAmount = requestedAmount;
     return this;
   }
 
    /**
-   * Get owner
-   * @return owner
+   * Get requestedAmount
+   * @return requestedAmount
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_OWNER)
+  @JsonProperty(JSON_PROPERTY_REQUESTED_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccountIdentifier getOwner() {
-    return owner;
+  public TokenAmount getRequestedAmount() {
+    return requestedAmount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_OWNER)
+  @JsonProperty(JSON_PROPERTY_REQUESTED_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setOwner(AccountIdentifier owner) {
-    this.owner = owner;
+  public void setRequestedAmount(TokenAmount requestedAmount) {
+    this.requestedAmount = requestedAmount;
   }
 
 
-  public CannotStakeError user(AccountIdentifier user) {
-    this.user = user;
+  public NotEnoughTokensForStakeError availableAmount(TokenAmount availableAmount) {
+    this.availableAmount = availableAmount;
     return this;
   }
 
    /**
-   * Get user
-   * @return user
+   * Get availableAmount
+   * @return availableAmount
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_USER)
+  @JsonProperty(JSON_PROPERTY_AVAILABLE_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccountIdentifier getUser() {
-    return user;
+  public TokenAmount getAvailableAmount() {
+    return availableAmount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_USER)
+  @JsonProperty(JSON_PROPERTY_AVAILABLE_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUser(AccountIdentifier user) {
-    this.user = user;
+  public void setAvailableAmount(TokenAmount availableAmount) {
+    this.availableAmount = availableAmount;
   }
 
 
   /**
-   * Return true if this CannotStakeError object is equal to o.
+   * Return true if this NotEnoughTokensForStakeError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -120,24 +126,24 @@ public class CannotStakeError extends GatewayError {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CannotStakeError cannotStakeError = (CannotStakeError) o;
-    return Objects.equals(this.owner, cannotStakeError.owner) &&
-        Objects.equals(this.user, cannotStakeError.user) &&
+    NotEnoughTokensForStakeError notEnoughTokensForStakeError = (NotEnoughTokensForStakeError) o;
+    return Objects.equals(this.requestedAmount, notEnoughTokensForStakeError.requestedAmount) &&
+        Objects.equals(this.availableAmount, notEnoughTokensForStakeError.availableAmount) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(owner, user, super.hashCode());
+    return Objects.hash(requestedAmount, availableAmount, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CannotStakeError {\n");
+    sb.append("class NotEnoughTokensForStakeError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    owner: ").append(toIndentedString(owner)).append("\n");
-    sb.append("    user: ").append(toIndentedString(user)).append("\n");
+    sb.append("    requestedAmount: ").append(toIndentedString(requestedAmount)).append("\n");
+    sb.append("    availableAmount: ").append(toIndentedString(availableAmount)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -160,16 +166,22 @@ static {
   mappings.put("CannotStakeError", CannotStakeError.class);
   mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
   mappings.put("InvalidAccountAddressError", InvalidAccountAddressError.class);
+  mappings.put("InvalidActionError", InvalidActionError.class);
   mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
+  mappings.put("InvalidSignatureError", InvalidSignatureError.class);
   mappings.put("InvalidTokenRRIError", InvalidTokenRRIError.class);
   mappings.put("InvalidTokenSymbolError", InvalidTokenSymbolError.class);
+  mappings.put("InvalidTransactionError", InvalidTransactionError.class);
   mappings.put("InvalidValidatorAddressError", InvalidValidatorAddressError.class);
   mappings.put("MessageTooLongError", MessageTooLongError.class);
   mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
-  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
+  mappings.put("NotEnoughNativeTokenForFeesError", NotEnoughNativeTokenForFeesError.class);
+  mappings.put("NotEnoughTokensForStakeError", NotEnoughTokensForStakeError.class);
+  mappings.put("NotEnoughTokensForTransferError", NotEnoughTokensForTransferError.class);
+  mappings.put("NotEnoughTokensForUnstakeError", NotEnoughTokensForUnstakeError.class);
   mappings.put("TokenNotFoundError", TokenNotFoundError.class);
-  mappings.put("CannotStakeError", CannotStakeError.class);
-  JSON.registerDiscriminator(CannotStakeError.class, "type", mappings);
+  mappings.put("NotEnoughTokensForStakeError", NotEnoughTokensForStakeError.class);
+  JSON.registerDiscriminator(NotEnoughTokensForStakeError.class, "type", mappings);
 }
 }
 

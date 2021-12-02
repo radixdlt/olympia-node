@@ -74,8 +74,8 @@ import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.gateway.account.AccountApiModule;
 import com.radixdlt.api.gateway.openapitools.JSON;
-import com.radixdlt.api.gateway.openapitools.model.UnexpectedError;
-import com.radixdlt.api.gateway.openapitools.model.UnexpectedErrorDetails;
+import com.radixdlt.api.gateway.openapitools.model.ErrorResponse;
+import com.radixdlt.api.gateway.openapitools.model.InternalServerError;
 import com.radixdlt.api.gateway.transaction.TransactionApiModule;
 import com.radixdlt.api.gateway.tokens.TokenApiModule;
 import com.radixdlt.api.gateway.validator.ValidatorApiModule;
@@ -139,10 +139,10 @@ public class GatewayServerModule extends AbstractModule {
 			ex.printStackTrace();
 
 			var rootCause = Throwables.getRootCause(ex);
-			var unexpectedError = new UnexpectedError()
+			var unexpectedError = new ErrorResponse()
 				.code(500)
 				.message("Internal Server Error")
-				.details(new UnexpectedErrorDetails()
+				.details(new InternalServerError()
 					.cause(rootCause.getMessage())
 					.exception(rootCause.getClass().getSimpleName())
 				);

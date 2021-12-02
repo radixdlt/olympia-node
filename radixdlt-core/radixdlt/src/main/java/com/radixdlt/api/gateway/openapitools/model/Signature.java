@@ -22,75 +22,75 @@ import java.util.Objects;
 
 
 /**
- * UnexpectedErrorDetails
+ * Signature
  */
 @JsonPropertyOrder({
-  UnexpectedErrorDetails.JSON_PROPERTY_CAUSE,
-  UnexpectedErrorDetails.JSON_PROPERTY_EXCEPTION
+  Signature.JSON_PROPERTY_PUBLIC_KEY,
+  Signature.JSON_PROPERTY_BYTES
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-30T13:55:26.722890-06:00[America/Chicago]")
-public class UnexpectedErrorDetails {
-  public static final String JSON_PROPERTY_CAUSE = "cause";
-  private String cause;
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T12:28:18.350415-06:00[America/Chicago]")
+public class Signature {
+  public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
+  private String publicKey;
 
-  public static final String JSON_PROPERTY_EXCEPTION = "exception";
-  private String exception;
+  public static final String JSON_PROPERTY_BYTES = "bytes";
+  private String bytes;
 
 
-  public UnexpectedErrorDetails cause(String cause) {
-    this.cause = cause;
+  public Signature publicKey(String publicKey) {
+    this.publicKey = publicKey;
     return this;
   }
 
    /**
-   * Get cause
-   * @return cause
+   * Get publicKey
+   * @return publicKey
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_CAUSE)
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getCause() {
-    return cause;
+  public String getPublicKey() {
+    return publicKey;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CAUSE)
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCause(String cause) {
-    this.cause = cause;
+  public void setPublicKey(String publicKey) {
+    this.publicKey = publicKey;
   }
 
 
-  public UnexpectedErrorDetails exception(String exception) {
-    this.exception = exception;
+  public Signature bytes(String bytes) {
+    this.bytes = bytes;
     return this;
   }
 
    /**
-   * Get exception
-   * @return exception
+   * Get bytes
+   * @return bytes
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_EXCEPTION)
+  @JsonProperty(JSON_PROPERTY_BYTES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getException() {
-    return exception;
+  public String getBytes() {
+    return bytes;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EXCEPTION)
+  @JsonProperty(JSON_PROPERTY_BYTES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setException(String exception) {
-    this.exception = exception;
+  public void setBytes(String bytes) {
+    this.bytes = bytes;
   }
 
 
   /**
-   * Return true if this UnexpectedError_details object is equal to o.
+   * Return true if this Signature object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -100,22 +100,22 @@ public class UnexpectedErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    UnexpectedErrorDetails unexpectedErrorDetails = (UnexpectedErrorDetails) o;
-    return Objects.equals(this.cause, unexpectedErrorDetails.cause) &&
-        Objects.equals(this.exception, unexpectedErrorDetails.exception);
+    Signature signature = (Signature) o;
+    return Objects.equals(this.publicKey, signature.publicKey) &&
+        Objects.equals(this.bytes, signature.bytes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(cause, exception);
+    return Objects.hash(publicKey, bytes);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class UnexpectedErrorDetails {\n");
-    sb.append("    cause: ").append(toIndentedString(cause)).append("\n");
-    sb.append("    exception: ").append(toIndentedString(exception)).append("\n");
+    sb.append("class Signature {\n");
+    sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
+    sb.append("    bytes: ").append(toIndentedString(bytes)).append("\n");
     sb.append("}");
     return sb.toString();
   }

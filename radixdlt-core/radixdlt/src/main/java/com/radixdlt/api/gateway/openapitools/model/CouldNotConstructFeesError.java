@@ -47,7 +47,7 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFound"),
 })
 
-public class CouldNotConstructFeesError extends Error {
+public class CouldNotConstructFeesError extends GatewayError {
   public static final String JSON_PROPERTY_ATTEMPTS = "attempts";
   private Integer attempts;
 

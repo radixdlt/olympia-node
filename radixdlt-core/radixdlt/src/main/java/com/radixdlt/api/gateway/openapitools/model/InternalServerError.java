@@ -26,91 +26,98 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * CannotStakeError
+ * InternalServerError
  */
 @JsonPropertyOrder({
-  CannotStakeError.JSON_PROPERTY_OWNER,
-  CannotStakeError.JSON_PROPERTY_USER
+  InternalServerError.JSON_PROPERTY_EXCEPTION,
+  InternalServerError.JSON_PROPERTY_CAUSE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T23:25:49.735663-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T12:44:36.677977-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
   @JsonSubTypes.Type(value = CannotStakeError.class, name = "CannotStakeError"),
   @JsonSubTypes.Type(value = CouldNotConstructFeesError.class, name = "CouldNotConstructFeesError"),
+  @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
   @JsonSubTypes.Type(value = InvalidAccountAddressError.class, name = "InvalidAccountAddressError"),
+  @JsonSubTypes.Type(value = InvalidActionError.class, name = "InvalidActionError"),
   @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
+  @JsonSubTypes.Type(value = InvalidSignatureError.class, name = "InvalidSignatureError"),
   @JsonSubTypes.Type(value = InvalidTokenRRIError.class, name = "InvalidTokenRRIError"),
   @JsonSubTypes.Type(value = InvalidTokenSymbolError.class, name = "InvalidTokenSymbolError"),
+  @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
   @JsonSubTypes.Type(value = InvalidValidatorAddressError.class, name = "InvalidValidatorAddressError"),
   @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
   @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
-  @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
+  @JsonSubTypes.Type(value = NotEnoughNativeTokenForFeesError.class, name = "NotEnoughNativeTokenForFeesError"),
+  @JsonSubTypes.Type(value = NotEnoughTokensForStakeError.class, name = "NotEnoughTokensForStakeError"),
+  @JsonSubTypes.Type(value = NotEnoughTokensForTransferError.class, name = "NotEnoughTokensForTransferError"),
+  @JsonSubTypes.Type(value = NotEnoughTokensForUnstakeError.class, name = "NotEnoughTokensForUnstakeError"),
   @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFoundError"),
 })
 
-public class CannotStakeError extends GatewayError {
-  public static final String JSON_PROPERTY_OWNER = "owner";
-  private AccountIdentifier owner;
+public class InternalServerError extends GatewayError {
+  public static final String JSON_PROPERTY_EXCEPTION = "exception";
+  private String exception;
 
-  public static final String JSON_PROPERTY_USER = "user";
-  private AccountIdentifier user;
+  public static final String JSON_PROPERTY_CAUSE = "cause";
+  private String cause;
 
 
-  public CannotStakeError owner(AccountIdentifier owner) {
-    this.owner = owner;
+  public InternalServerError exception(String exception) {
+    this.exception = exception;
     return this;
   }
 
    /**
-   * Get owner
-   * @return owner
+   * Get exception
+   * @return exception
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_OWNER)
+  @JsonProperty(JSON_PROPERTY_EXCEPTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccountIdentifier getOwner() {
-    return owner;
+  public String getException() {
+    return exception;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_OWNER)
+  @JsonProperty(JSON_PROPERTY_EXCEPTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setOwner(AccountIdentifier owner) {
-    this.owner = owner;
+  public void setException(String exception) {
+    this.exception = exception;
   }
 
 
-  public CannotStakeError user(AccountIdentifier user) {
-    this.user = user;
+  public InternalServerError cause(String cause) {
+    this.cause = cause;
     return this;
   }
 
    /**
-   * Get user
-   * @return user
+   * Get cause
+   * @return cause
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_USER)
+  @JsonProperty(JSON_PROPERTY_CAUSE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccountIdentifier getUser() {
-    return user;
+  public String getCause() {
+    return cause;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_USER)
+  @JsonProperty(JSON_PROPERTY_CAUSE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUser(AccountIdentifier user) {
-    this.user = user;
+  public void setCause(String cause) {
+    this.cause = cause;
   }
 
 
   /**
-   * Return true if this CannotStakeError object is equal to o.
+   * Return true if this InternalServerError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -120,24 +127,24 @@ public class CannotStakeError extends GatewayError {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CannotStakeError cannotStakeError = (CannotStakeError) o;
-    return Objects.equals(this.owner, cannotStakeError.owner) &&
-        Objects.equals(this.user, cannotStakeError.user) &&
+    InternalServerError internalServerError = (InternalServerError) o;
+    return Objects.equals(this.exception, internalServerError.exception) &&
+        Objects.equals(this.cause, internalServerError.cause) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(owner, user, super.hashCode());
+    return Objects.hash(exception, cause, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CannotStakeError {\n");
+    sb.append("class InternalServerError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    owner: ").append(toIndentedString(owner)).append("\n");
-    sb.append("    user: ").append(toIndentedString(user)).append("\n");
+    sb.append("    exception: ").append(toIndentedString(exception)).append("\n");
+    sb.append("    cause: ").append(toIndentedString(cause)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -159,17 +166,24 @@ static {
   mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
   mappings.put("CannotStakeError", CannotStakeError.class);
   mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
+  mappings.put("InternalServerError", InternalServerError.class);
   mappings.put("InvalidAccountAddressError", InvalidAccountAddressError.class);
+  mappings.put("InvalidActionError", InvalidActionError.class);
   mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
+  mappings.put("InvalidSignatureError", InvalidSignatureError.class);
   mappings.put("InvalidTokenRRIError", InvalidTokenRRIError.class);
   mappings.put("InvalidTokenSymbolError", InvalidTokenSymbolError.class);
+  mappings.put("InvalidTransactionError", InvalidTransactionError.class);
   mappings.put("InvalidValidatorAddressError", InvalidValidatorAddressError.class);
   mappings.put("MessageTooLongError", MessageTooLongError.class);
   mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
-  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
+  mappings.put("NotEnoughNativeTokenForFeesError", NotEnoughNativeTokenForFeesError.class);
+  mappings.put("NotEnoughTokensForStakeError", NotEnoughTokensForStakeError.class);
+  mappings.put("NotEnoughTokensForTransferError", NotEnoughTokensForTransferError.class);
+  mappings.put("NotEnoughTokensForUnstakeError", NotEnoughTokensForUnstakeError.class);
   mappings.put("TokenNotFoundError", TokenNotFoundError.class);
-  mappings.put("CannotStakeError", CannotStakeError.class);
-  JSON.registerDiscriminator(CannotStakeError.class, "type", mappings);
+  mappings.put("InternalServerError", InternalServerError.class);
+  JSON.registerDiscriminator(InternalServerError.class, "type", mappings);
 }
 }
 

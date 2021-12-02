@@ -48,7 +48,7 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFound"),
 })
 
-public class MessageTooLongError extends Error {
+public class MessageTooLongError extends GatewayError {
   public static final String JSON_PROPERTY_LENGTH_LIMIT = "length_limit";
   private Integer lengthLimit;
 

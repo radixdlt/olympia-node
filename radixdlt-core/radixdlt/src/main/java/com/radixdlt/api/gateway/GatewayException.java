@@ -63,7 +63,7 @@
 
 package com.radixdlt.api.gateway;
 
-import com.radixdlt.api.gateway.openapitools.model.UnexpectedError;
+import com.radixdlt.api.gateway.openapitools.model.ErrorResponse;
 
 public class GatewayException extends Exception {
 	private final GatewayErrorCode error;
@@ -72,8 +72,8 @@ public class GatewayException extends Exception {
 		this.error = error;
 	}
 
-	public UnexpectedError toError() {
-		return new UnexpectedError()
+	public ErrorResponse toError() {
+		return new ErrorResponse()
 			.code(error.getErrorCode())
 			.message(error.getMessage());
 	}

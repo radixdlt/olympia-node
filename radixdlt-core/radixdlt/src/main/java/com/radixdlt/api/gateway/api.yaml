@@ -28,7 +28,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/token/native":
     post:
       summary: Get Native Token Info
@@ -50,7 +50,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/token":
     post:
       summary: Get Token Info
@@ -72,7 +72,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/token/derive":
     post:
       summary: Derive Token Identifier
@@ -94,7 +94,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/account/balances":
     post:
       summary: Get Account Balances
@@ -116,7 +116,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/account/stakes":
     post:
       summary: Get Stake Positions
@@ -138,7 +138,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/account/unstakes":
     post:
       summary: Get Unstake Positions
@@ -160,7 +160,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/account/transactions":
     post:
       summary: Get Account Transactions
@@ -182,7 +182,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/validator":
     post:
       summary: Get Validator
@@ -204,7 +204,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/validators":
     post:
       summary: Get Validators
@@ -226,7 +226,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/transaction/rules":
     post:
       summary: Get Transaction Rules
@@ -248,7 +248,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/transaction/build":
     post:
       summary: Build Transaction
@@ -270,7 +270,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/transaction/finalize":
     post:
       summary: Finalize Transaction
@@ -292,7 +292,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/transaction/submit":
     post:
       summary: Submit Transaction
@@ -314,7 +314,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
   "/transaction/status":
     post:
       summary: Get Transaction
@@ -336,7 +336,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnexpectedError"
+                "$ref": "#/components/schemas/ErrorResponse"
 components:
   schemas:
     AccountBalancesRequest:
@@ -385,7 +385,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/Error"
+              $ref: "#/components/schemas/GatewayError"
     AccountBalances:
       type: object
       required:
@@ -446,7 +446,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/Error"
+              $ref: "#/components/schemas/GatewayError"
     AccountStakeEntry:
       type: object
       required:
@@ -505,7 +505,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/Error"
+              $ref: "#/components/schemas/GatewayError"
     AccountUnstakeEntry:
       type: object
       required:
@@ -578,7 +578,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/Error"
+              $ref: "#/components/schemas/GatewayError"
     TransferTokens:
       allOf:
         - "$ref": "#/components/schemas/Action"
@@ -779,7 +779,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/Error"
+              $ref: "#/components/schemas/GatewayError"
     TransactionFinalizeRequest:
       type: object
       required:
@@ -843,7 +843,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/Error"
+              $ref: "#/components/schemas/GatewayError"
     TransactionSubmitRequest:
       type: object
       required:
@@ -883,7 +883,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/Error"
+              $ref: "#/components/schemas/GatewayError"
     GatewayRequest:
       type: object
       example: {}
@@ -981,7 +981,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/Error"
+              $ref: "#/components/schemas/GatewayError"
     TokenNativeRequest:
       type: object
       required:
@@ -1023,7 +1023,7 @@ components:
             - error
           properties:
             error:
-              "$ref": "#/components/schemas/Error"
+              "$ref": "#/components/schemas/GatewayError"
     TokenDeriveRequest:
       type: object
       required:
@@ -1071,7 +1071,7 @@ components:
             - error
           properties:
             error:
-              "$ref": "#/components/schemas/Error"
+              "$ref": "#/components/schemas/GatewayError"
     TransactionStatusRequest:
       type: object
       required:
@@ -1118,7 +1118,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/Error"
+              $ref: "#/components/schemas/GatewayError"
     ValidatorInfoRequest:
       type: object
       required:
@@ -1165,7 +1165,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/Error"
+              $ref: "#/components/schemas/GatewayError"
     ValidatorsRequest:
       type: object
       required:
@@ -1209,19 +1209,8 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/Error"
-    UnexpectedError:
-      type: object
-      required:
-        - code
-        - message
-      properties:
-        code:
-          type: integer
-        message:
-          type: string
-        details:
-          type: object
+              $ref: "#/components/schemas/GatewayError"
+
     Validator:
       type: object
       required:
@@ -1498,7 +1487,19 @@ components:
           pattern: "^[0123456789abcdef]{64}$"
           maxLength: 64
           minLength: 64
-    Error:
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        details:
+          $ref: "#/components/schemas/GatewayError"
+    GatewayError:
       type: object
       required:
         - type
@@ -1526,9 +1527,22 @@ components:
           CannotStakeError: "#/components/schemas/CannotStakeError"
           MessageTooLongError: "#/components/schemas/MessageTooLongError"
           CouldNotConstructFeesError: "#/components/schemas/CouldNotConstructFeesError"
+          InternalServerError: "#/components/schemas/InternalServerError"
+    InternalServerError:
+      allOf:
+        - $ref: "#/components/schemas/GatewayError"
+        - type: object
+          required:
+            - exception
+            - cause
+          properties:
+            exception:
+              type: string
+            cause:
+              type: string
     NetworkNotSupportedError:
       allOf:
-        - "$ref": "#/components/schemas/Error"
+        - "$ref": "#/components/schemas/GatewayError"
         - type: object
           required:
             - networks_supported
@@ -1539,7 +1553,7 @@ components:
                 type: string
     InvalidActionError:
       allOf:
-        - "$ref": "#/components/schemas/Error"
+        - "$ref": "#/components/schemas/GatewayError"
         - type: object
           required:
             - invalid_action
@@ -1548,7 +1562,7 @@ components:
               $ref: "#/components/schemas/Action"
     InvalidSignatureError:
       allOf:
-        - "$ref": "#/components/schemas/Error"
+        - "$ref": "#/components/schemas/GatewayError"
         - type: object
           required:
             - invalid_signature
@@ -1557,7 +1571,7 @@ components:
               $ref: "#/components/schemas/Signature"
     InvalidTransactionError:
       allOf:
-        - "$ref": "#/components/schemas/Error"
+        - "$ref": "#/components/schemas/GatewayError"
         - type: object
           required:
             - invalid_transaction
@@ -1569,7 +1583,7 @@ components:
               type: string
     NotEnoughNativeTokenForFeesError:
       allOf:
-        - "$ref": "#/components/schemas/Error"
+        - "$ref": "#/components/schemas/GatewayError"
         - type: object
           required:
             - requested_amount
@@ -1581,7 +1595,7 @@ components:
               $ref: "#/components/schemas/TokenAmount"
     NotEnoughTokensForTransferError:
       allOf:
-        - "$ref": "#/components/schemas/Error"
+        - "$ref": "#/components/schemas/GatewayError"
         - type: object
           required:
             - requested_amount
@@ -1593,7 +1607,7 @@ components:
               $ref: "#/components/schemas/TokenAmount"
     NotEnoughTokensForStakeError:
       allOf:
-        - "$ref": "#/components/schemas/Error"
+        - "$ref": "#/components/schemas/GatewayError"
         - type: object
           required:
             - requested_amount
@@ -1605,7 +1619,7 @@ components:
               $ref: "#/components/schemas/TokenAmount"
     NotEnoughTokensForUnstakeError:
       allOf:
-        - "$ref": "#/components/schemas/Error"
+        - "$ref": "#/components/schemas/GatewayError"
         - type: object
           required:
             - requested_amount
@@ -1619,7 +1633,7 @@ components:
               $ref: "#/components/schemas/TokenAmount"
     BelowMinimumStakeError:
       allOf:
-        - "$ref": "#/components/schemas/Error"
+        - "$ref": "#/components/schemas/GatewayError"
         - type: object
           required:
             - requested_amount
@@ -1631,7 +1645,7 @@ components:
               $ref: "#/components/schemas/BigInteger"
     CannotStakeError:
       allOf:
-        - "$ref": "#/components/schemas/Error"
+        - "$ref": "#/components/schemas/GatewayError"
         - type: object
           required:
             - owner
@@ -1643,7 +1657,7 @@ components:
               $ref: "#/components/schemas/AccountIdentifier"
     MessageTooLongError:
       allOf:
-        - "$ref": "#/components/schemas/Error"
+        - "$ref": "#/components/schemas/GatewayError"
         - type: object
           required:
             - length_limit
@@ -1655,7 +1669,7 @@ components:
               type: integer
     CouldNotConstructFeesError:
       allOf:
-        - "$ref": "#/components/schemas/Error"
+        - "$ref": "#/components/schemas/GatewayError"
         - type: object
           required:
             - attempts
@@ -1664,7 +1678,7 @@ components:
               type: integer
     InvalidPublicKeyError:
       allOf:
-        - $ref: "#/components/schemas/Error"
+        - $ref: "#/components/schemas/GatewayError"
         - type: object
           required:
             - invalid_public_key
@@ -1673,7 +1687,7 @@ components:
               type: string
     InvalidTokenSymbolError:
       allOf:
-        - $ref: "#/components/schemas/Error"
+        - $ref: "#/components/schemas/GatewayError"
         - type: object
           required:
             - invalid_token_symbol
@@ -1682,7 +1696,7 @@ components:
               type: string
     InvalidTokenRRIError:
       allOf:
-        - $ref: "#/components/schemas/Error"
+        - $ref: "#/components/schemas/GatewayError"
         - type: object
           required:
             - invalid_rri
@@ -1691,7 +1705,7 @@ components:
               type: string
     InvalidAccountAddressError:
       allOf:
-        - $ref: "#/components/schemas/Error"
+        - $ref: "#/components/schemas/GatewayError"
         - type: object
           required:
             - invalid_account_address
@@ -1700,7 +1714,7 @@ components:
               type: string
     InvalidValidatorAddressError:
       allOf:
-        - $ref: "#/components/schemas/Error"
+        - $ref: "#/components/schemas/GatewayError"
         - type: object
           required:
             - invalid_validator_address
@@ -1709,7 +1723,7 @@ components:
               type: string
     TokenNotFoundError:
       allOf:
-        - $ref: "#/components/schemas/Error"
+        - $ref: "#/components/schemas/GatewayError"
         - type: object
           required:
             - token_not_found

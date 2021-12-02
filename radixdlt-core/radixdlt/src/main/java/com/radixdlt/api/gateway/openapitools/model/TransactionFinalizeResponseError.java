@@ -40,10 +40,10 @@ import java.util.Objects;
 
 public class TransactionFinalizeResponseError extends TransactionFinalizeResponse {
   public static final String JSON_PROPERTY_ERROR = "error";
-  private Error error;
+  private GatewayError error;
 
 
-  public TransactionFinalizeResponseError error(Error error) {
+  public TransactionFinalizeResponseError error(GatewayError error) {
     this.error = error;
     return this;
   }
@@ -57,14 +57,14 @@ public class TransactionFinalizeResponseError extends TransactionFinalizeRespons
   @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Error getError() {
+  public GatewayError getError() {
     return error;
   }
 
 
   @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setError(Error error) {
+  public void setError(GatewayError error) {
     this.error = error;
   }
 

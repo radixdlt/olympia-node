@@ -40,10 +40,10 @@ import java.util.Objects;
 
 public class AccountStakesResponseError extends AccountStakesResponse {
   public static final String JSON_PROPERTY_ERROR = "error";
-  private Error error;
+  private GatewayError error;
 
 
-  public AccountStakesResponseError error(Error error) {
+  public AccountStakesResponseError error(GatewayError error) {
     this.error = error;
     return this;
   }
@@ -57,14 +57,14 @@ public class AccountStakesResponseError extends AccountStakesResponse {
   @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Error getError() {
+  public GatewayError getError() {
     return error;
   }
 
 
   @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setError(Error error) {
+  public void setError(GatewayError error) {
     this.error = error;
   }
 

@@ -48,7 +48,7 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFound"),
 })
 
-public class BelowMinimumStakeError extends Error {
+public class BelowMinimumStakeError extends GatewayError {
   public static final String JSON_PROPERTY_REQUESTED_AMOUNT = "requested_amount";
   private String requestedAmount;
 

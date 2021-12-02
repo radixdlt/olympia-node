@@ -64,21 +64,21 @@
 package com.radixdlt.api.gateway;
 
 import com.radixdlt.api.gateway.openapitools.JSON;
-import com.radixdlt.api.gateway.openapitools.model.UnexpectedError;
+import com.radixdlt.api.gateway.openapitools.model.ErrorResponse;
 import com.radixdlt.api.util.JsonRpcHandler;
 
-public abstract class GatewayJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, GatewayException, UnexpectedError> {
+public abstract class GatewayJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, GatewayException, ErrorResponse> {
 	public GatewayJsonRpcHandler(Class<T> requestClass) {
 		super(requestClass, GatewayException.class, JSON.getDefault().getMapper());
 	}
 
 	@Override
-	public UnexpectedError handleParseException(Exception e) {
+	public ErrorResponse handleParseException(Exception e) {
 		return null;
 	}
 
 	@Override
-	public UnexpectedError handleException(GatewayException e) {
+	public ErrorResponse handleException(GatewayException e) {
 		return e.toError();
 	}
 }

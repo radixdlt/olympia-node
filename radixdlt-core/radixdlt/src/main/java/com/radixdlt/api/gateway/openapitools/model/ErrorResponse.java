@@ -22,15 +22,15 @@ import java.util.Objects;
 
 
 /**
- * UnexpectedError
+ * ErrorResponse
  */
 @JsonPropertyOrder({
-  UnexpectedError.JSON_PROPERTY_CODE,
-  UnexpectedError.JSON_PROPERTY_MESSAGE,
-  UnexpectedError.JSON_PROPERTY_DETAILS
+  ErrorResponse.JSON_PROPERTY_CODE,
+  ErrorResponse.JSON_PROPERTY_MESSAGE,
+  ErrorResponse.JSON_PROPERTY_DETAILS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-30T13:55:26.722890-06:00[America/Chicago]")
-public class UnexpectedError {
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T12:44:36.677977-06:00[America/Chicago]")
+public class ErrorResponse {
   public static final String JSON_PROPERTY_CODE = "code";
   private Integer code;
 
@@ -38,10 +38,10 @@ public class UnexpectedError {
   private String message;
 
   public static final String JSON_PROPERTY_DETAILS = "details";
-  private UnexpectedErrorDetails details;
+  private GatewayError details;
 
 
-  public UnexpectedError code(Integer code) {
+  public ErrorResponse code(Integer code) {
     this.code = code;
     return this;
   }
@@ -67,7 +67,7 @@ public class UnexpectedError {
   }
 
 
-  public UnexpectedError message(String message) {
+  public ErrorResponse message(String message) {
     this.message = message;
     return this;
   }
@@ -93,7 +93,7 @@ public class UnexpectedError {
   }
 
 
-  public UnexpectedError details(UnexpectedErrorDetails details) {
+  public ErrorResponse details(GatewayError details) {
     this.details = details;
     return this;
   }
@@ -107,20 +107,20 @@ public class UnexpectedError {
   @JsonProperty(JSON_PROPERTY_DETAILS)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public UnexpectedErrorDetails getDetails() {
+  public GatewayError getDetails() {
     return details;
   }
 
 
   @JsonProperty(JSON_PROPERTY_DETAILS)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDetails(UnexpectedErrorDetails details) {
+  public void setDetails(GatewayError details) {
     this.details = details;
   }
 
 
   /**
-   * Return true if this UnexpectedError object is equal to o.
+   * Return true if this ErrorResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -130,10 +130,10 @@ public class UnexpectedError {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    UnexpectedError unexpectedError = (UnexpectedError) o;
-    return Objects.equals(this.code, unexpectedError.code) &&
-        Objects.equals(this.message, unexpectedError.message) &&
-        Objects.equals(this.details, unexpectedError.details);
+    ErrorResponse errorResponse = (ErrorResponse) o;
+    return Objects.equals(this.code, errorResponse.code) &&
+        Objects.equals(this.message, errorResponse.message) &&
+        Objects.equals(this.details, errorResponse.details);
   }
 
   @Override
@@ -144,7 +144,7 @@ public class UnexpectedError {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class UnexpectedError {\n");
+    sb.append("class ErrorResponse {\n");
     sb.append("    code: ").append(toIndentedString(code)).append("\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("    details: ").append(toIndentedString(details)).append("\n");

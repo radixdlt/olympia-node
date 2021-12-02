@@ -26,60 +26,67 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * TokenNotFoundError
+ * InvalidActionError
  */
 @JsonPropertyOrder({
-  TokenNotFoundError.JSON_PROPERTY_TOKEN_NOT_FOUND
+  InvalidActionError.JSON_PROPERTY_INVALID_ACTION
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T23:01:03.351839-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T12:28:18.350415-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
+  @JsonSubTypes.Type(value = CannotStakeError.class, name = "CannotStakeError"),
   @JsonSubTypes.Type(value = CouldNotConstructFeesError.class, name = "CouldNotConstructFeesError"),
   @JsonSubTypes.Type(value = InvalidAccountAddressError.class, name = "InvalidAccountAddressError"),
+  @JsonSubTypes.Type(value = InvalidActionError.class, name = "InvalidActionError"),
   @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
+  @JsonSubTypes.Type(value = InvalidSignatureError.class, name = "InvalidSignatureError"),
   @JsonSubTypes.Type(value = InvalidTokenRRIError.class, name = "InvalidTokenRRIError"),
   @JsonSubTypes.Type(value = InvalidTokenSymbolError.class, name = "InvalidTokenSymbolError"),
+  @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
   @JsonSubTypes.Type(value = InvalidValidatorAddressError.class, name = "InvalidValidatorAddressError"),
   @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
-  @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
-  @JsonSubTypes.Type(value = CannotStakeError.class, name = "NotValidatorOwnerError"),
+  @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
+  @JsonSubTypes.Type(value = NotEnoughNativeTokenForFeesError.class, name = "NotEnoughNativeTokenForFeesError"),
+  @JsonSubTypes.Type(value = NotEnoughTokensForStakeError.class, name = "NotEnoughTokensForStakeError"),
+  @JsonSubTypes.Type(value = NotEnoughTokensForTransferError.class, name = "NotEnoughTokensForTransferError"),
+  @JsonSubTypes.Type(value = NotEnoughTokensForUnstakeError.class, name = "NotEnoughTokensForUnstakeError"),
   @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFoundError"),
 })
 
-public class TokenNotFoundError extends GatewayError {
-  public static final String JSON_PROPERTY_TOKEN_NOT_FOUND = "token_not_found";
-  private TokenIdentifier tokenNotFound;
+public class InvalidActionError extends GatewayError {
+  public static final String JSON_PROPERTY_INVALID_ACTION = "invalid_action";
+  private Action invalidAction;
 
 
-  public TokenNotFoundError tokenNotFound(TokenIdentifier tokenNotFound) {
-    this.tokenNotFound = tokenNotFound;
+  public InvalidActionError invalidAction(Action invalidAction) {
+    this.invalidAction = invalidAction;
     return this;
   }
 
    /**
-   * Get tokenNotFound
-   * @return tokenNotFound
+   * Get invalidAction
+   * @return invalidAction
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TOKEN_NOT_FOUND)
+  @JsonProperty(JSON_PROPERTY_INVALID_ACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TokenIdentifier getTokenNotFound() {
-    return tokenNotFound;
+  public Action getInvalidAction() {
+    return invalidAction;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TOKEN_NOT_FOUND)
+  @JsonProperty(JSON_PROPERTY_INVALID_ACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTokenNotFound(TokenIdentifier tokenNotFound) {
-    this.tokenNotFound = tokenNotFound;
+  public void setInvalidAction(Action invalidAction) {
+    this.invalidAction = invalidAction;
   }
 
 
   /**
-   * Return true if this TokenNotFoundError object is equal to o.
+   * Return true if this InvalidActionError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -89,22 +96,22 @@ public class TokenNotFoundError extends GatewayError {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TokenNotFoundError tokenNotFoundError = (TokenNotFoundError) o;
-    return Objects.equals(this.tokenNotFound, tokenNotFoundError.tokenNotFound) &&
+    InvalidActionError invalidActionError = (InvalidActionError) o;
+    return Objects.equals(this.invalidAction, invalidActionError.invalidAction) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(tokenNotFound, super.hashCode());
+    return Objects.hash(invalidAction, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TokenNotFoundError {\n");
+    sb.append("class InvalidActionError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    tokenNotFound: ").append(toIndentedString(tokenNotFound)).append("\n");
+    sb.append("    invalidAction: ").append(toIndentedString(invalidAction)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -124,18 +131,25 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
+  mappings.put("CannotStakeError", CannotStakeError.class);
   mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
   mappings.put("InvalidAccountAddressError", InvalidAccountAddressError.class);
+  mappings.put("InvalidActionError", InvalidActionError.class);
   mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
+  mappings.put("InvalidSignatureError", InvalidSignatureError.class);
   mappings.put("InvalidTokenRRIError", InvalidTokenRRIError.class);
   mappings.put("InvalidTokenSymbolError", InvalidTokenSymbolError.class);
+  mappings.put("InvalidTransactionError", InvalidTransactionError.class);
   mappings.put("InvalidValidatorAddressError", InvalidValidatorAddressError.class);
   mappings.put("MessageTooLongError", MessageTooLongError.class);
-  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
-  mappings.put("NotValidatorOwnerError", CannotStakeError.class);
+  mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
+  mappings.put("NotEnoughNativeTokenForFeesError", NotEnoughNativeTokenForFeesError.class);
+  mappings.put("NotEnoughTokensForStakeError", NotEnoughTokensForStakeError.class);
+  mappings.put("NotEnoughTokensForTransferError", NotEnoughTokensForTransferError.class);
+  mappings.put("NotEnoughTokensForUnstakeError", NotEnoughTokensForUnstakeError.class);
   mappings.put("TokenNotFoundError", TokenNotFoundError.class);
-  mappings.put("TokenNotFoundError", TokenNotFoundError.class);
-  JSON.registerDiscriminator(TokenNotFoundError.class, "type", mappings);
+  mappings.put("InvalidActionError", InvalidActionError.class);
+  JSON.registerDiscriminator(InvalidActionError.class, "type", mappings);
 }
 }
 
