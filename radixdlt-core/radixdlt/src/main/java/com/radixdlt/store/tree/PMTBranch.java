@@ -28,11 +28,11 @@ public class PMTBranch extends PMTNode {
 		if (this.slices[sliceKey] == null) {
 			slicesCounter++;
 		}
-		this.slices[sliceKey] = nextNode.getHash();
+		this.slices[sliceKey] = PMT.represent(nextNode);
 		return this;
 	}
 
-	public PMTBranch setNibble(PMTNode nextNode) {
+	private PMTBranch setNibble(PMTNode nextNode) {
 		return setNibble(nextNode.getBranchNibble(), nextNode);
 	}
 
@@ -47,8 +47,8 @@ public class PMTBranch extends PMTNode {
 
 	public byte[] serialize() {
 		// TODO: serilize, RLP? Array RLP serialization. How to serialize nulls?
-		this.serialized = "bran".getBytes();
-		return this.serialized;
+		var serialized = "bran".getBytes();
+		return serialized;
 	}
 
 }
