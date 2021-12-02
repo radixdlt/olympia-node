@@ -26,56 +26,105 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * InvalidPartialStateIdentifierErrorDetails
+ * NotValidatorOwnerError
  */
 @JsonPropertyOrder({
-  InvalidPartialStateIdentifierErrorDetails.JSON_PROPERTY_INVALID_PARTIAL_STATE_IDENTIFIER
+  NotValidatorOwnerError.JSON_PROPERTY_OWNER,
+  NotValidatorOwnerError.JSON_PROPERTY_USER
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-28T13:39:26.577722-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T17:26:14.947922-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = InternalServerErrorDetails.class, name = "InternalServerErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidAddressErrorDetails.class, name = "InvalidAddressErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidJsonDetails.class, name = "InvalidJsonDetails"),
-  @JsonSubTypes.Type(value = InvalidPartialStateIdentifierErrorDetails.class, name = "InvalidPartialStateIdentifierErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidSubEntityErrorDetails.class, name = "InvalidSubEntityErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidTransactionHashErrorDetails.class, name = "InvalidTransactionHashErrorDetails"),
-  @JsonSubTypes.Type(value = NetworkNotSupportedErrorDetails.class, name = "NetworkNotSupportedErrorDetails"),
+  @JsonSubTypes.Type(value = AboveMaximumValidatorFeeIncreaseError.class, name = "AboveMaximumValidatorFeeIncreaseError"),
+  @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
+  @JsonSubTypes.Type(value = DataObjectNotSupportedByEntityError.class, name = "DataObjectNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = FeeConstructionError.class, name = "FeeConstructionError"),
+  @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
+  @JsonSubTypes.Type(value = InvalidAddressError.class, name = "InvalidAddressError"),
+  @JsonSubTypes.Type(value = InvalidDataObjectError.class, name = "InvalidDataObjectError"),
+  @JsonSubTypes.Type(value = InvalidFeePayerEntityError.class, name = "InvalidFeePayerEntityError"),
+  @JsonSubTypes.Type(value = InvalidHexError.class, name = "InvalidHexError"),
+  @JsonSubTypes.Type(value = InvalidJsonError.class, name = "InvalidJsonError"),
+  @JsonSubTypes.Type(value = InvalidPartialStateIdentifierError.class, name = "InvalidPartialStateIdentifierError"),
+  @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
+  @JsonSubTypes.Type(value = InvalidSignatureError.class, name = "InvalidSignatureError"),
+  @JsonSubTypes.Type(value = InvalidSubEntityError.class, name = "InvalidSubEntityError"),
+  @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
+  @JsonSubTypes.Type(value = InvalidTransactionHashError.class, name = "InvalidTransactionHashError"),
+  @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
+  @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
+  @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
+  @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
+  @JsonSubTypes.Type(value = PublicKeyNotSupportedError.class, name = "PublicKeyNotSupportedError"),
+  @JsonSubTypes.Type(value = ResourceDepositOperationNotSupportedByEntityError.class, name = "ResourceDepositOperationNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = ResourceWithdrawOperationNotSupportedByEntityError.class, name = "ResourceWithdrawOperationNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = StateIdentifierNotFoundError.class, name = "StateIdentifierNotFoundError"),
+  @JsonSubTypes.Type(value = SubstateDependencyNotFoundError.class, name = "SubstateDependencyNotFoundError"),
+  @JsonSubTypes.Type(value = TransactionNotFoundError.class, name = "TransactionNotFoundError"),
 })
 
-public class InvalidPartialStateIdentifierErrorDetails extends ErrorDetails {
-  public static final String JSON_PROPERTY_INVALID_PARTIAL_STATE_IDENTIFIER = "invalid_partial_state_identifier";
-  private PartialStateIdentifier invalidPartialStateIdentifier;
+public class NotValidatorOwnerError extends CoreError {
+  public static final String JSON_PROPERTY_OWNER = "owner";
+  private EntityIdentifier owner;
+
+  public static final String JSON_PROPERTY_USER = "user";
+  private EntityIdentifier user;
 
 
-  public InvalidPartialStateIdentifierErrorDetails invalidPartialStateIdentifier(PartialStateIdentifier invalidPartialStateIdentifier) {
-    this.invalidPartialStateIdentifier = invalidPartialStateIdentifier;
+  public NotValidatorOwnerError owner(EntityIdentifier owner) {
+    this.owner = owner;
     return this;
   }
 
    /**
-   * Get invalidPartialStateIdentifier
-   * @return invalidPartialStateIdentifier
+   * Get owner
+   * @return owner
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_INVALID_PARTIAL_STATE_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_OWNER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public PartialStateIdentifier getInvalidPartialStateIdentifier() {
-    return invalidPartialStateIdentifier;
+  public EntityIdentifier getOwner() {
+    return owner;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INVALID_PARTIAL_STATE_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_OWNER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setInvalidPartialStateIdentifier(PartialStateIdentifier invalidPartialStateIdentifier) {
-    this.invalidPartialStateIdentifier = invalidPartialStateIdentifier;
+  public void setOwner(EntityIdentifier owner) {
+    this.owner = owner;
+  }
+
+
+  public NotValidatorOwnerError user(EntityIdentifier user) {
+    this.user = user;
+    return this;
+  }
+
+   /**
+   * Get user
+   * @return user
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_USER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public EntityIdentifier getUser() {
+    return user;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_USER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setUser(EntityIdentifier user) {
+    this.user = user;
   }
 
 
   /**
-   * Return true if this InvalidPartialStateIdentifierErrorDetails object is equal to o.
+   * Return true if this NotValidatorOwnerError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -85,22 +134,24 @@ public class InvalidPartialStateIdentifierErrorDetails extends ErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InvalidPartialStateIdentifierErrorDetails invalidPartialStateIdentifierErrorDetails = (InvalidPartialStateIdentifierErrorDetails) o;
-    return Objects.equals(this.invalidPartialStateIdentifier, invalidPartialStateIdentifierErrorDetails.invalidPartialStateIdentifier) &&
+    NotValidatorOwnerError notValidatorOwnerError = (NotValidatorOwnerError) o;
+    return Objects.equals(this.owner, notValidatorOwnerError.owner) &&
+        Objects.equals(this.user, notValidatorOwnerError.user) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(invalidPartialStateIdentifier, super.hashCode());
+    return Objects.hash(owner, user, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InvalidPartialStateIdentifierErrorDetails {\n");
+    sb.append("class NotValidatorOwnerError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    invalidPartialStateIdentifier: ").append(toIndentedString(invalidPartialStateIdentifier)).append("\n");
+    sb.append("    owner: ").append(toIndentedString(owner)).append("\n");
+    sb.append("    user: ").append(toIndentedString(user)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -119,15 +170,34 @@ public class InvalidPartialStateIdentifierErrorDetails extends ErrorDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("InternalServerErrorDetails", InternalServerErrorDetails.class);
-  mappings.put("InvalidAddressErrorDetails", InvalidAddressErrorDetails.class);
-  mappings.put("InvalidJsonDetails", InvalidJsonDetails.class);
-  mappings.put("InvalidPartialStateIdentifierErrorDetails", InvalidPartialStateIdentifierErrorDetails.class);
-  mappings.put("InvalidSubEntityErrorDetails", InvalidSubEntityErrorDetails.class);
-  mappings.put("InvalidTransactionHashErrorDetails", InvalidTransactionHashErrorDetails.class);
-  mappings.put("NetworkNotSupportedErrorDetails", NetworkNotSupportedErrorDetails.class);
-  mappings.put("InvalidPartialStateIdentifierErrorDetails", InvalidPartialStateIdentifierErrorDetails.class);
-  JSON.registerDiscriminator(InvalidPartialStateIdentifierErrorDetails.class, "type", mappings);
+  mappings.put("AboveMaximumValidatorFeeIncreaseError", AboveMaximumValidatorFeeIncreaseError.class);
+  mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
+  mappings.put("DataObjectNotSupportedByEntityError", DataObjectNotSupportedByEntityError.class);
+  mappings.put("FeeConstructionError", FeeConstructionError.class);
+  mappings.put("InternalServerError", InternalServerError.class);
+  mappings.put("InvalidAddressError", InvalidAddressError.class);
+  mappings.put("InvalidDataObjectError", InvalidDataObjectError.class);
+  mappings.put("InvalidFeePayerEntityError", InvalidFeePayerEntityError.class);
+  mappings.put("InvalidHexError", InvalidHexError.class);
+  mappings.put("InvalidJsonError", InvalidJsonError.class);
+  mappings.put("InvalidPartialStateIdentifierError", InvalidPartialStateIdentifierError.class);
+  mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
+  mappings.put("InvalidSignatureError", InvalidSignatureError.class);
+  mappings.put("InvalidSubEntityError", InvalidSubEntityError.class);
+  mappings.put("InvalidTransactionError", InvalidTransactionError.class);
+  mappings.put("InvalidTransactionHashError", InvalidTransactionHashError.class);
+  mappings.put("MessageTooLongError", MessageTooLongError.class);
+  mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
+  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
+  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
+  mappings.put("PublicKeyNotSupportedError", PublicKeyNotSupportedError.class);
+  mappings.put("ResourceDepositOperationNotSupportedByEntityError", ResourceDepositOperationNotSupportedByEntityError.class);
+  mappings.put("ResourceWithdrawOperationNotSupportedByEntityError", ResourceWithdrawOperationNotSupportedByEntityError.class);
+  mappings.put("StateIdentifierNotFoundError", StateIdentifierNotFoundError.class);
+  mappings.put("SubstateDependencyNotFoundError", SubstateDependencyNotFoundError.class);
+  mappings.put("TransactionNotFoundError", TransactionNotFoundError.class);
+  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
+  JSON.registerDiscriminator(NotValidatorOwnerError.class, "type", mappings);
 }
 }
 

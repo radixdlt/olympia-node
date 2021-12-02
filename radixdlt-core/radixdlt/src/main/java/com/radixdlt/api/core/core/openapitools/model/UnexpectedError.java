@@ -38,7 +38,7 @@ public class UnexpectedError {
   private String message;
 
   public static final String JSON_PROPERTY_DETAILS = "details";
-  private ErrorDetails details;
+  private CoreError details;
 
 
   public UnexpectedError code(Integer code) {
@@ -93,7 +93,7 @@ public class UnexpectedError {
   }
 
 
-  public UnexpectedError details(ErrorDetails details) {
+  public UnexpectedError details(CoreError details) {
     this.details = details;
     return this;
   }
@@ -107,14 +107,14 @@ public class UnexpectedError {
   @JsonProperty(JSON_PROPERTY_DETAILS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ErrorDetails getDetails() {
+  public CoreError getDetails() {
     return details;
   }
 
 
   @JsonProperty(JSON_PROPERTY_DETAILS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDetails(ErrorDetails details) {
+  public void setDetails(CoreError details) {
     this.details = details;
   }
 

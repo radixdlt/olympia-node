@@ -71,10 +71,10 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.TransactionsHandler;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
-import com.radixdlt.api.core.core.openapitools.model.InvalidPartialStateIdentifierErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.InvalidPartialStateIdentifierError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.PartialStateIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.StateIdentifierNotFoundErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.StateIdentifierNotFoundError;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.crypto.ECKeyPair;
@@ -204,7 +204,7 @@ public class TransactionsHandlerTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(StateIdentifierNotFoundErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(StateIdentifierNotFoundError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.NOT_FOUND.getErrorCode());
 			});
 	}
@@ -223,7 +223,7 @@ public class TransactionsHandlerTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidPartialStateIdentifierErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(InvalidPartialStateIdentifierError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}

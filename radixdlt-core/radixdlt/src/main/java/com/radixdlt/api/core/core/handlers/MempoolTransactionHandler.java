@@ -70,7 +70,7 @@ import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
 import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionResponse;
-import com.radixdlt.api.core.core.openapitools.model.TransactionNotFoundErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.TransactionNotFoundError;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SystemMapKey;
@@ -114,9 +114,9 @@ public class MempoolTransactionHandler extends CoreJsonRpcHandler<MempoolTransac
 		var transaction = mempool.getData(map -> map.get(txnId));
 		if (transaction == null) {
 			throw CoreApiException.notFound(
-				new TransactionNotFoundErrorDetails()
+				new TransactionNotFoundError()
 					.transactionIdentifier(transactionIdentifier)
-					.type(TransactionNotFoundErrorDetails.class.getSimpleName())
+					.type(TransactionNotFoundError.class.getSimpleName())
 			);
 		}
 

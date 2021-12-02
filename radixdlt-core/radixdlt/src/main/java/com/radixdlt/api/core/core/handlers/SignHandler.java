@@ -68,7 +68,7 @@ import com.google.inject.Provider;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedError;
 import com.radixdlt.api.core.core.openapitools.model.SignRequest;
 import com.radixdlt.api.core.core.openapitools.model.SignResponse;
 import com.radixdlt.atom.TxLowLevelBuilder;
@@ -111,9 +111,9 @@ public final class SignHandler extends CoreJsonRpcHandler<SignRequest, SignRespo
 		var pubKey = coreModelMapper.ecPublicKey(request.getPublicKey());
 		if (!self.equals(pubKey)) {
 			throw CoreApiException.notSupported(
-				new PublicKeyNotSupportedErrorDetails()
+				new PublicKeyNotSupportedError()
 					.unsupportedPublicKey(request.getPublicKey())
-					.type(PublicKeyNotSupportedErrorDetails.class.getSimpleName())
+					.type(PublicKeyNotSupportedError.class.getSimpleName())
 			);
 		}
 

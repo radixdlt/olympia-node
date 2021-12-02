@@ -26,95 +26,75 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * BelowMinimumStakeErrorDetails
+ * InvalidSignatureError
  */
 @JsonPropertyOrder({
-  BelowMinimumStakeErrorDetails.JSON_PROPERTY_MINIMUM_STAKE,
-  BelowMinimumStakeErrorDetails.JSON_PROPERTY_ATTEMPTED_TO_STAKE
+  InvalidSignatureError.JSON_PROPERTY_INVALID_SIGNATURE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-28T20:57:42.217258-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T17:26:14.947922-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = BelowMinimumStakeErrorDetails.class, name = "BelowMinimumStakeErrorDetails"),
-  @JsonSubTypes.Type(value = DataObjectNotSupportedByEntityErrorDetails.class, name = "DataObjectNotSupportedByEntityErrorDetails"),
-  @JsonSubTypes.Type(value = InternalServerErrorDetails.class, name = "InternalServerErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidAddressErrorDetails.class, name = "InvalidAddressErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidFeePayerEntityErrorDetails.class, name = "InvalidFeePayerEntityErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidHexErrorDetails.class, name = "InvalidHexErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidJsonDetails.class, name = "InvalidJsonDetails"),
-  @JsonSubTypes.Type(value = InvalidPartialStateIdentifierErrorDetails.class, name = "InvalidPartialStateIdentifierErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidPublicKeyErrorDetails.class, name = "InvalidPublicKeyErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidSignatureErrorDetails.class, name = "InvalidSignatureErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidSubEntityErrorDetails.class, name = "InvalidSubEntityErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidTransactionHashErrorDetails.class, name = "InvalidTransactionHashErrorDetails"),
-  @JsonSubTypes.Type(value = NetworkNotSupportedErrorDetails.class, name = "NetworkNotSupportedErrorDetails"),
-  @JsonSubTypes.Type(value = PublicKeyNotSupportedErrorDetails.class, name = "PublicKeyNotSupportedErrorDetails"),
-  @JsonSubTypes.Type(value = StateIdentifierNotFoundErrorDetails.class, name = "StateIdentifierNotFoundErrorDetails"),
-  @JsonSubTypes.Type(value = TransactionNotFoundErrorDetails.class, name = "TransactionNotFoundErrorDetails"),
+  @JsonSubTypes.Type(value = AboveMaximumValidatorFeeIncreaseError.class, name = "AboveMaximumValidatorFeeIncreaseError"),
+  @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
+  @JsonSubTypes.Type(value = DataObjectNotSupportedByEntityError.class, name = "DataObjectNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = FeeConstructionError.class, name = "FeeConstructionError"),
+  @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
+  @JsonSubTypes.Type(value = InvalidAddressError.class, name = "InvalidAddressError"),
+  @JsonSubTypes.Type(value = InvalidDataObjectError.class, name = "InvalidDataObjectError"),
+  @JsonSubTypes.Type(value = InvalidFeePayerEntityError.class, name = "InvalidFeePayerEntityError"),
+  @JsonSubTypes.Type(value = InvalidHexError.class, name = "InvalidHexError"),
+  @JsonSubTypes.Type(value = InvalidJsonError.class, name = "InvalidJsonError"),
+  @JsonSubTypes.Type(value = InvalidPartialStateIdentifierError.class, name = "InvalidPartialStateIdentifierError"),
+  @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
+  @JsonSubTypes.Type(value = InvalidSignatureError.class, name = "InvalidSignatureError"),
+  @JsonSubTypes.Type(value = InvalidSubEntityError.class, name = "InvalidSubEntityError"),
+  @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
+  @JsonSubTypes.Type(value = InvalidTransactionHashError.class, name = "InvalidTransactionHashError"),
+  @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
+  @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
+  @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
+  @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
+  @JsonSubTypes.Type(value = PublicKeyNotSupportedError.class, name = "PublicKeyNotSupportedError"),
+  @JsonSubTypes.Type(value = ResourceDepositOperationNotSupportedByEntityError.class, name = "ResourceDepositOperationNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = ResourceWithdrawOperationNotSupportedByEntityError.class, name = "ResourceWithdrawOperationNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = StateIdentifierNotFoundError.class, name = "StateIdentifierNotFoundError"),
+  @JsonSubTypes.Type(value = SubstateDependencyNotFoundError.class, name = "SubstateDependencyNotFoundError"),
+  @JsonSubTypes.Type(value = TransactionNotFoundError.class, name = "TransactionNotFoundError"),
 })
 
-public class BelowMinimumStakeErrorDetails extends ErrorDetails {
-  public static final String JSON_PROPERTY_MINIMUM_STAKE = "minimum_stake";
-  private ResourceAmount minimumStake;
-
-  public static final String JSON_PROPERTY_ATTEMPTED_TO_STAKE = "attempted_to_stake";
-  private ResourceAmount attemptedToStake;
+public class InvalidSignatureError extends CoreError {
+  public static final String JSON_PROPERTY_INVALID_SIGNATURE = "invalid_signature";
+  private String invalidSignature;
 
 
-  public BelowMinimumStakeErrorDetails minimumStake(ResourceAmount minimumStake) {
-    this.minimumStake = minimumStake;
+  public InvalidSignatureError invalidSignature(String invalidSignature) {
+    this.invalidSignature = invalidSignature;
     return this;
   }
 
    /**
-   * Get minimumStake
-   * @return minimumStake
+   * Get invalidSignature
+   * @return invalidSignature
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_MINIMUM_STAKE)
+  @JsonProperty(JSON_PROPERTY_INVALID_SIGNATURE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ResourceAmount getMinimumStake() {
-    return minimumStake;
+  public String getInvalidSignature() {
+    return invalidSignature;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MINIMUM_STAKE)
+  @JsonProperty(JSON_PROPERTY_INVALID_SIGNATURE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMinimumStake(ResourceAmount minimumStake) {
-    this.minimumStake = minimumStake;
-  }
-
-
-  public BelowMinimumStakeErrorDetails attemptedToStake(ResourceAmount attemptedToStake) {
-    this.attemptedToStake = attemptedToStake;
-    return this;
-  }
-
-   /**
-   * Get attemptedToStake
-   * @return attemptedToStake
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_ATTEMPTED_TO_STAKE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public ResourceAmount getAttemptedToStake() {
-    return attemptedToStake;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ATTEMPTED_TO_STAKE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setAttemptedToStake(ResourceAmount attemptedToStake) {
-    this.attemptedToStake = attemptedToStake;
+  public void setInvalidSignature(String invalidSignature) {
+    this.invalidSignature = invalidSignature;
   }
 
 
   /**
-   * Return true if this BelowMinimumStakeErrorDetails object is equal to o.
+   * Return true if this InvalidSignatureError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -124,24 +104,22 @@ public class BelowMinimumStakeErrorDetails extends ErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    BelowMinimumStakeErrorDetails belowMinimumStakeErrorDetails = (BelowMinimumStakeErrorDetails) o;
-    return Objects.equals(this.minimumStake, belowMinimumStakeErrorDetails.minimumStake) &&
-        Objects.equals(this.attemptedToStake, belowMinimumStakeErrorDetails.attemptedToStake) &&
+    InvalidSignatureError invalidSignatureError = (InvalidSignatureError) o;
+    return Objects.equals(this.invalidSignature, invalidSignatureError.invalidSignature) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(minimumStake, attemptedToStake, super.hashCode());
+    return Objects.hash(invalidSignature, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class BelowMinimumStakeErrorDetails {\n");
+    sb.append("class InvalidSignatureError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    minimumStake: ").append(toIndentedString(minimumStake)).append("\n");
-    sb.append("    attemptedToStake: ").append(toIndentedString(attemptedToStake)).append("\n");
+    sb.append("    invalidSignature: ").append(toIndentedString(invalidSignature)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -160,24 +138,34 @@ public class BelowMinimumStakeErrorDetails extends ErrorDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("BelowMinimumStakeErrorDetails", BelowMinimumStakeErrorDetails.class);
-  mappings.put("DataObjectNotSupportedByEntityErrorDetails", DataObjectNotSupportedByEntityErrorDetails.class);
-  mappings.put("InternalServerErrorDetails", InternalServerErrorDetails.class);
-  mappings.put("InvalidAddressErrorDetails", InvalidAddressErrorDetails.class);
-  mappings.put("InvalidFeePayerEntityErrorDetails", InvalidFeePayerEntityErrorDetails.class);
-  mappings.put("InvalidHexErrorDetails", InvalidHexErrorDetails.class);
-  mappings.put("InvalidJsonDetails", InvalidJsonDetails.class);
-  mappings.put("InvalidPartialStateIdentifierErrorDetails", InvalidPartialStateIdentifierErrorDetails.class);
-  mappings.put("InvalidPublicKeyErrorDetails", InvalidPublicKeyErrorDetails.class);
-  mappings.put("InvalidSignatureErrorDetails", InvalidSignatureErrorDetails.class);
-  mappings.put("InvalidSubEntityErrorDetails", InvalidSubEntityErrorDetails.class);
-  mappings.put("InvalidTransactionHashErrorDetails", InvalidTransactionHashErrorDetails.class);
-  mappings.put("NetworkNotSupportedErrorDetails", NetworkNotSupportedErrorDetails.class);
-  mappings.put("PublicKeyNotSupportedErrorDetails", PublicKeyNotSupportedErrorDetails.class);
-  mappings.put("StateIdentifierNotFoundErrorDetails", StateIdentifierNotFoundErrorDetails.class);
-  mappings.put("TransactionNotFoundErrorDetails", TransactionNotFoundErrorDetails.class);
-  mappings.put("BelowMinimumStakeErrorDetails", BelowMinimumStakeErrorDetails.class);
-  JSON.registerDiscriminator(BelowMinimumStakeErrorDetails.class, "type", mappings);
+  mappings.put("AboveMaximumValidatorFeeIncreaseError", AboveMaximumValidatorFeeIncreaseError.class);
+  mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
+  mappings.put("DataObjectNotSupportedByEntityError", DataObjectNotSupportedByEntityError.class);
+  mappings.put("FeeConstructionError", FeeConstructionError.class);
+  mappings.put("InternalServerError", InternalServerError.class);
+  mappings.put("InvalidAddressError", InvalidAddressError.class);
+  mappings.put("InvalidDataObjectError", InvalidDataObjectError.class);
+  mappings.put("InvalidFeePayerEntityError", InvalidFeePayerEntityError.class);
+  mappings.put("InvalidHexError", InvalidHexError.class);
+  mappings.put("InvalidJsonError", InvalidJsonError.class);
+  mappings.put("InvalidPartialStateIdentifierError", InvalidPartialStateIdentifierError.class);
+  mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
+  mappings.put("InvalidSignatureError", InvalidSignatureError.class);
+  mappings.put("InvalidSubEntityError", InvalidSubEntityError.class);
+  mappings.put("InvalidTransactionError", InvalidTransactionError.class);
+  mappings.put("InvalidTransactionHashError", InvalidTransactionHashError.class);
+  mappings.put("MessageTooLongError", MessageTooLongError.class);
+  mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
+  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
+  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
+  mappings.put("PublicKeyNotSupportedError", PublicKeyNotSupportedError.class);
+  mappings.put("ResourceDepositOperationNotSupportedByEntityError", ResourceDepositOperationNotSupportedByEntityError.class);
+  mappings.put("ResourceWithdrawOperationNotSupportedByEntityError", ResourceWithdrawOperationNotSupportedByEntityError.class);
+  mappings.put("StateIdentifierNotFoundError", StateIdentifierNotFoundError.class);
+  mappings.put("SubstateDependencyNotFoundError", SubstateDependencyNotFoundError.class);
+  mappings.put("TransactionNotFoundError", TransactionNotFoundError.class);
+  mappings.put("InvalidSignatureError", InvalidSignatureError.class);
+  JSON.registerDiscriminator(InvalidSignatureError.class, "type", mappings);
 }
 }
 

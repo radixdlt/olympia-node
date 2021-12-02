@@ -64,7 +64,7 @@
 package com.radixdlt.api.core.core;
 
 import com.radixdlt.api.core.core.openapitools.JSON;
-import com.radixdlt.api.core.core.openapitools.model.InvalidJsonDetails;
+import com.radixdlt.api.core.core.openapitools.model.InvalidJsonError;
 import com.radixdlt.api.core.core.openapitools.model.UnexpectedError;
 import com.radixdlt.api.util.JsonRpcHandler;
 
@@ -78,7 +78,7 @@ public abstract class CoreJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, Core
 		return new UnexpectedError()
 			.code(1)
 			.message("Invalid Json")
-			.details(new InvalidJsonDetails()
+			.details(new InvalidJsonError()
 				.cause(e.getMessage())
 				.type("InvalidJsonDetails")
 			);

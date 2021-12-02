@@ -71,7 +71,7 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.api.core.core.CoreApiModule;
-import com.radixdlt.api.core.core.openapitools.model.InternalServerErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.InternalServerError;
 import com.radixdlt.api.core.core.openapitools.model.UnexpectedError;
 import com.radixdlt.api.core.system.SystemApiModule;
 import com.radixdlt.api.gateway.openapitools.JSON;
@@ -128,7 +128,7 @@ public final class CoreServerModule extends AbstractModule {
 			var unexpectedError = new UnexpectedError()
 				.code(500)
 				.message("Internal Server Error")
-				.details(new InternalServerErrorDetails()
+				.details(new InternalServerError()
 					.cause(rootCause.getMessage())
 					.exception(rootCause.getClass().getSimpleName())
 					.type("InternalServerErrorDetails")

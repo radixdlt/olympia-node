@@ -2910,9 +2910,9 @@ components:
       pattern: "^[0123456789abcdef]{64}$"
       maxLength: 64
       minLength: 64
-    NetworkNotSupportedErrorDetails:
+    NetworkNotSupportedError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - supported_networks
@@ -2921,99 +2921,99 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/NetworkIdentifier"
-    PublicKeyNotSupportedErrorDetails:
+    PublicKeyNotSupportedError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - unsupported_public_key
           properties:
             unsupported_public_key:
               $ref: "#/components/schemas/PublicKey"
-    InvalidAddressErrorDetails:
+    InvalidAddressError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - invalid_address
           properties:
             invalid_address:
               type: string
-    InvalidPartialStateIdentifierErrorDetails:
+    InvalidPartialStateIdentifierError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - invalid_partial_state_identifier
           properties:
             invalid_partial_state_identifier:
               $ref: "#/components/schemas/PartialStateIdentifier"
-    InvalidSubEntityErrorDetails:
+    InvalidSubEntityError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - invalid_sub_entity
           properties:
             invalid_sub_entity:
               $ref: "#/components/schemas/SubEntity"
-    InvalidTransactionHashErrorDetails:
+    InvalidTransactionHashError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - invalid_transaction_hash
           properties:
             invalid_transaction_hash:
               type: string
-    InvalidPublicKeyErrorDetails:
+    InvalidPublicKeyError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - invalid_public_key
           properties:
             invalid_public_key:
               $ref: "#/components/schemas/PublicKey"
-    InvalidFeePayerEntityErrorDetails:
+    InvalidFeePayerEntityError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - invalid_fee_payer_entity
           properties:
             invalid_fee_payer_entity:
               $ref: "#/components/schemas/EntityIdentifier"
-    InvalidHexErrorDetails:
+    InvalidHexError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - invalid_hex
           properties:
             invalid_hex:
               type: string
-    InvalidSignatureErrorDetails:
+    InvalidSignatureError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - invalid_signature
           properties:
             invalid_signature:
               type: string
-    InvalidTransactionErrorDetails:
+    InvalidTransactionError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - message
           properties:
             message:
               type: string
-    NotEnoughResourcesErrorDetails:
+    NotEnoughResourcesError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - available
@@ -3023,9 +3023,9 @@ components:
               $ref: "#/components/schemas/ResourceAmount"
             attempted_to_take:
               $ref: "#/components/schemas/ResourceAmount"
-    BelowMinimumStakeErrorDetails:
+    BelowMinimumStakeError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - minimum_stake
@@ -3035,9 +3035,9 @@ components:
               $ref: "#/components/schemas/ResourceAmount"
             attempted_to_stake:
               $ref: "#/components/schemas/ResourceAmount"
-    AboveMaximumValidatorFeeIncreaseErrorDetails:
+    AboveMaximumValidatorFeeIncreaseError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - maximum_validator_fee_increase
@@ -3047,9 +3047,9 @@ components:
               type: integer
             attempted_validator_fee_increase:
               type: integer
-    DataObjectNotSupportedByEntityErrorDetails:
+    DataObjectNotSupportedByEntityError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - entity_identifier
@@ -3059,9 +3059,9 @@ components:
               $ref: "#/components/schemas/EntityIdentifier"
             data_object_not_supported:
               $ref: "#/components/schemas/DataObject"
-    ResourceDepositOperationNotSupportedByEntityErrorDetails:
+    ResourceDepositOperationNotSupportedByEntityError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - entity_identifier
@@ -3071,9 +3071,9 @@ components:
               $ref: "#/components/schemas/EntityIdentifier"
             resource_deposit_not_supported:
               $ref: "#/components/schemas/ResourceIdentifier"
-    ResourceWithdrawOperationNotSupportedByEntityErrorDetails:
+    ResourceWithdrawOperationNotSupportedByEntityError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - entity_identifier
@@ -3083,9 +3083,9 @@ components:
               $ref: "#/components/schemas/EntityIdentifier"
             resource_withdraw_not_supported:
               $ref: "#/components/schemas/ResourceIdentifier"
-    NotValidatorOwnerErrorDetails:
+    NotValidatorOwnerError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - owner
@@ -3095,9 +3095,9 @@ components:
               $ref: "#/components/schemas/EntityIdentifier"
             user:
               $ref: "#/components/schemas/EntityIdentifier"
-    InvalidDataObjectErrorDetails:
+    InvalidDataObjectError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - invalid_data_object
@@ -3107,9 +3107,9 @@ components:
               $ref: "#/components/schemas/DataObject"
             message:
               type: string
-    MessageTooLongErrorDetails:
+    MessageTooLongError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - maximum_message_length
@@ -3119,59 +3119,59 @@ components:
               type: integer
             attempted_message_length:
               type: integer
-    FeeConstructionErrorDetails:
+    FeeConstructionError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - attempts
           properties:
             attempts:
               type: integer
-    SubstateDependencyNotFoundErrorDetails:
+    SubstateDependencyNotFoundError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - substate_identifier_not_found
           properties:
             substate_identifier_not_found:
               $ref: "#/components/schemas/SubstateIdentifier"
-    TransactionNotFoundErrorDetails:
+    TransactionNotFoundError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - transaction_identifier
           properties:
             transaction_identifier:
               $ref: "#/components/schemas/TransactionIdentifier"
-    StateIdentifierNotFoundErrorDetails:
+    StateIdentifierNotFoundError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           required:
             - state_identifier
           properties:
             state_identifier:
               $ref: "#/components/schemas/PartialStateIdentifier"
-    InternalServerErrorDetails:
+    InternalServerError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           properties:
             exception:
               type: string
             cause:
               type: string
-    InvalidJsonDetails:
+    InvalidJsonError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/CoreError"
         - type: object
           properties:
             cause:
               type: string
-    ErrorDetails:
+    CoreError:
       type: object
       required:
         - type
@@ -3181,31 +3181,32 @@ components:
       discriminator:
         propertyName: type
         mapping:
-          NetworkNotSupportedErrorDetails: "#/components/schemas/NetworkNotSupportedErrorDetails"
-          PublicKeyNotSupportedErrorDetails: "#/components/schemas/PublicKeyNotSupportedErrorDetails"
-          InvalidAddressErrorDetails: "#/components/schemas/InvalidAddressErrorDetails"
-          InvalidSubEntityErrorDetails: "#/components/schemas/InvalidSubEntityErrorDetails"
-          InvalidTransactionHashErrorDetails: "#/components/schemas/InvalidTransactionHashErrorDetails"
-          InvalidPartialStateIdentifierErrorDetails: "#/components/schemas/InvalidPartialStateIdentifierErrorDetails"
-          InvalidPublicKeyErrorDetails: "#/components/schemas/InvalidPublicKeyErrorDetails"
-          InvalidFeePayerEntityErrorDetails: "#/components/schemas/InvalidFeePayerEntityErrorDetails"
-          InvalidHexErrorDetails: "#/components/schemas/InvalidHexErrorDetails"
-          InvalidSignatureErrorDetails: "#/components/schemas/InvalidSignatureErrorDetails"
-          InvalidTransactionErrorDetails: "#/components/schemas/InvalidTransactionErrorDetails"
-          NotEnoughResourcesErrorDetails: "#/components/schemas/NotEnoughResourcesErrorDetails"
-          BelowMinimumStakeErrorDetails: "#/components/schemas/BelowMinimumStakeErrorDetails"
-          DataObjectNotSupportedByEntityErrorDetails: "#/components/schemas/DataObjectNotSupportedByEntityErrorDetails"
-          ResourceDepositOperationNotSupportedByEntityErrorDetails: "#/components/schemas/ResourceDepositOperationNotSupportedByEntityErrorDetails"
-          ResourceWithdrawOperationNotSupportedByEntityErrorDetails: "#/components/schemas/ResourceWithdrawOperationNotSupportedByEntityErrorDetails"
-          NotValidatorOwnerErrorDetails: "#/components/schemas/NotValidatorOwnerErrorDetails"
-          InvalidDataObjectErrorDetails: "#/components/schemas/InvalidDataObjectErrorDetails"
-          MessageTooLongErrorDetails: "#/components/schemas/MessageTooLongErrorDetails"
-          FeeConstructionErrorDetails: "#/components/schemas/FeeConstructionErrorDetails"
-          SubstateDependencyNotFoundErrorDetails: "#/components/schemas/SubstateDependencyNotFoundErrorDetails"
-          TransactionNotFoundErrorDetails: "#/components/schemas/TransactionNotFoundErrorDetails"
-          StateIdentifierNotFoundErrorDetails: "#/components/schemas/StateIdentifierNotFoundErrorDetails"
-          InternalServerErrorDetails: "#/components/schemas/InternalServerErrorDetails"
-          InvalidJsonDetails: "#/components/schemas/InvalidJsonDetails"
+          NetworkNotSupportedError: "#/components/schemas/NetworkNotSupportedError"
+          PublicKeyNotSupportedError: "#/components/schemas/PublicKeyNotSupportedError"
+          InvalidAddressError: "#/components/schemas/InvalidAddressError"
+          InvalidSubEntityError: "#/components/schemas/InvalidSubEntityError"
+          InvalidTransactionHashError: "#/components/schemas/InvalidTransactionHashError"
+          InvalidPartialStateIdentifierError: "#/components/schemas/InvalidPartialStateIdentifierError"
+          InvalidPublicKeyError: "#/components/schemas/InvalidPublicKeyError"
+          InvalidFeePayerEntityError: "#/components/schemas/InvalidFeePayerEntityError"
+          InvalidHexError: "#/components/schemas/InvalidHexError"
+          InvalidSignatureError: "#/components/schemas/InvalidSignatureError"
+          InvalidTransactionError: "#/components/schemas/InvalidTransactionError"
+          AboveMaximumValidatorFeeIncreaseError: "#/components/schemas/AboveMaximumValidatorFeeIncreaseError"
+          NotEnoughResourcesError: "#/components/schemas/NotEnoughResourcesError"
+          BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"
+          DataObjectNotSupportedByEntityError: "#/components/schemas/DataObjectNotSupportedByEntityError"
+          ResourceDepositOperationNotSupportedByEntityError: "#/components/schemas/ResourceDepositOperationNotSupportedByEntityError"
+          ResourceWithdrawOperationNotSupportedByEntityError: "#/components/schemas/ResourceWithdrawOperationNotSupportedByEntityError"
+          NotValidatorOwnerError: "#/components/schemas/NotValidatorOwnerError"
+          InvalidDataObjectError: "#/components/schemas/InvalidDataObjectError"
+          MessageTooLongError: "#/components/schemas/MessageTooLongError"
+          FeeConstructionError: "#/components/schemas/FeeConstructionError"
+          SubstateDependencyNotFoundError: "#/components/schemas/SubstateDependencyNotFoundError"
+          TransactionNotFoundError: "#/components/schemas/TransactionNotFoundError"
+          StateIdentifierNotFoundError: "#/components/schemas/StateIdentifierNotFoundError"
+          InternalServerError: "#/components/schemas/InternalServerError"
+          InvalidJsonError: "#/components/schemas/InvalidJsonError"
     UnexpectedError:
       type: object
       required:
@@ -3217,7 +3218,7 @@ components:
         message:
           type: string
         details:
-          $ref: "#/components/schemas/ErrorDetails"
+          $ref: "#/components/schemas/CoreError"
   examples:
     StateIdentifier:
       value:

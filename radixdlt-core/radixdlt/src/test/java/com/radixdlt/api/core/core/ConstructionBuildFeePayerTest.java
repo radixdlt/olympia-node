@@ -70,7 +70,7 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.InvalidFeePayerEntityErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.InvalidFeePayerEntityError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
@@ -180,7 +180,7 @@ public class ConstructionBuildFeePayerTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidFeePayerEntityErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(InvalidFeePayerEntityError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}

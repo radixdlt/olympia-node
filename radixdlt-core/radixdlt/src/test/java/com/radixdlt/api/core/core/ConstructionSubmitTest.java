@@ -74,7 +74,7 @@ import com.radixdlt.api.core.core.model.ResourceOperation;
 import com.radixdlt.api.core.core.model.TokenResource;
 import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
-import com.radixdlt.api.core.core.openapitools.model.InvalidTransactionErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.InvalidTransactionError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
@@ -232,7 +232,7 @@ public class ConstructionSubmitTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOf(CoreApiException.class)
 			.extracting("errorDetails")
-			.isInstanceOf(InvalidTransactionErrorDetails.class);
+			.isInstanceOf(InvalidTransactionError.class);
 
 		// Assert
 		assertThat(mempool.getData(m -> m.containsKey(malformedTxn.getId())).booleanValue()).isFalse();

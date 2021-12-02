@@ -74,7 +74,7 @@ import com.radixdlt.api.core.core.model.ResourceOperation;
 import com.radixdlt.api.core.core.model.TokenResource;
 import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionFinalizeRequest;
-import com.radixdlt.api.core.core.openapitools.model.InvalidSignatureErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.InvalidSignatureError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.Signature;
 import com.radixdlt.application.system.FeeTable;
@@ -257,7 +257,7 @@ public class ConstructionFinalizeTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidSignatureErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(InvalidSignatureError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}

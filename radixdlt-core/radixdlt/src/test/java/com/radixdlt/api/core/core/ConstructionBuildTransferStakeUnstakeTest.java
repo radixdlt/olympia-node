@@ -68,18 +68,18 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
-import com.radixdlt.api.core.core.openapitools.model.BelowMinimumStakeErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.BelowMinimumStakeError;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.NotEnoughResourcesErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.NotEnoughResourcesError;
+import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerError;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.ResourceDepositOperationNotSupportedByEntityErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.ResourceDepositOperationNotSupportedByEntityError;
 import com.radixdlt.api.core.core.openapitools.model.ResourceIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.ResourceWithdrawOperationNotSupportedByEntityErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.ResourceWithdrawOperationNotSupportedByEntityError;
 import com.radixdlt.api.core.core.openapitools.model.SubEntity;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
@@ -228,7 +228,7 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(ResourceDepositOperationNotSupportedByEntityErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(ResourceDepositOperationNotSupportedByEntityError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
@@ -251,7 +251,7 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(NotEnoughResourcesErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(NotEnoughResourcesError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
@@ -293,7 +293,7 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(BelowMinimumStakeErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(BelowMinimumStakeError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
@@ -316,7 +316,7 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(NotValidatorOwnerErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(NotValidatorOwnerError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
@@ -339,7 +339,7 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(ResourceWithdrawOperationNotSupportedByEntityErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(ResourceWithdrawOperationNotSupportedByEntityError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}

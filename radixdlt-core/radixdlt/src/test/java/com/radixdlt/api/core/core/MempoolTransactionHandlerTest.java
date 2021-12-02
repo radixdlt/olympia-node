@@ -73,11 +73,11 @@ import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.ResourceOperation;
 import com.radixdlt.api.core.core.model.TokenResource;
 import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
-import com.radixdlt.api.core.core.openapitools.model.InvalidTransactionHashErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.InvalidTransactionHashError;
 import com.radixdlt.api.core.core.openapitools.model.MempoolTransactionRequest;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.TransactionIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.TransactionNotFoundErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.TransactionNotFoundError;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.Txn;
@@ -238,7 +238,7 @@ public class MempoolTransactionHandlerTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(TransactionNotFoundErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(TransactionNotFoundError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.NOT_FOUND.getErrorCode());
 			});
 	}
@@ -257,7 +257,7 @@ public class MempoolTransactionHandlerTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidTransactionHashErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(InvalidTransactionHashError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}

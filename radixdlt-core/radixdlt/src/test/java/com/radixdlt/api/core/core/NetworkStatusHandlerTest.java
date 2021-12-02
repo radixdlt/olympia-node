@@ -69,7 +69,7 @@ import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.NetworkStatusHandler;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.NetworkNotSupportedErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.NetworkNotSupportedError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
@@ -176,6 +176,6 @@ public class NetworkStatusHandlerTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOf(CoreApiException.class)
 			.extracting("errorDetails")
-			.isInstanceOf(NetworkNotSupportedErrorDetails.class);
+			.isInstanceOf(NetworkNotSupportedError.class);
 	}
 }

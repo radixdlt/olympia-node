@@ -26,95 +26,75 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * DataObjectNotSupportedByEntityErrorDetails
+ * FeeConstructionError
  */
 @JsonPropertyOrder({
-  DataObjectNotSupportedByEntityErrorDetails.JSON_PROPERTY_ENTITY_IDENTIFIER,
-  DataObjectNotSupportedByEntityErrorDetails.JSON_PROPERTY_DATA_OBJECT_NOT_SUPPORTED
+  FeeConstructionError.JSON_PROPERTY_ATTEMPTS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-28T20:57:42.217258-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T17:26:14.947922-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = BelowMinimumStakeErrorDetails.class, name = "BelowMinimumStakeErrorDetails"),
-  @JsonSubTypes.Type(value = DataObjectNotSupportedByEntityErrorDetails.class, name = "DataObjectNotSupportedByEntityErrorDetails"),
-  @JsonSubTypes.Type(value = InternalServerErrorDetails.class, name = "InternalServerErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidAddressErrorDetails.class, name = "InvalidAddressErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidFeePayerEntityErrorDetails.class, name = "InvalidFeePayerEntityErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidHexErrorDetails.class, name = "InvalidHexErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidJsonDetails.class, name = "InvalidJsonDetails"),
-  @JsonSubTypes.Type(value = InvalidPartialStateIdentifierErrorDetails.class, name = "InvalidPartialStateIdentifierErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidPublicKeyErrorDetails.class, name = "InvalidPublicKeyErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidSignatureErrorDetails.class, name = "InvalidSignatureErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidSubEntityErrorDetails.class, name = "InvalidSubEntityErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidTransactionHashErrorDetails.class, name = "InvalidTransactionHashErrorDetails"),
-  @JsonSubTypes.Type(value = NetworkNotSupportedErrorDetails.class, name = "NetworkNotSupportedErrorDetails"),
-  @JsonSubTypes.Type(value = PublicKeyNotSupportedErrorDetails.class, name = "PublicKeyNotSupportedErrorDetails"),
-  @JsonSubTypes.Type(value = StateIdentifierNotFoundErrorDetails.class, name = "StateIdentifierNotFoundErrorDetails"),
-  @JsonSubTypes.Type(value = TransactionNotFoundErrorDetails.class, name = "TransactionNotFoundErrorDetails"),
+  @JsonSubTypes.Type(value = AboveMaximumValidatorFeeIncreaseError.class, name = "AboveMaximumValidatorFeeIncreaseError"),
+  @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
+  @JsonSubTypes.Type(value = DataObjectNotSupportedByEntityError.class, name = "DataObjectNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = FeeConstructionError.class, name = "FeeConstructionError"),
+  @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
+  @JsonSubTypes.Type(value = InvalidAddressError.class, name = "InvalidAddressError"),
+  @JsonSubTypes.Type(value = InvalidDataObjectError.class, name = "InvalidDataObjectError"),
+  @JsonSubTypes.Type(value = InvalidFeePayerEntityError.class, name = "InvalidFeePayerEntityError"),
+  @JsonSubTypes.Type(value = InvalidHexError.class, name = "InvalidHexError"),
+  @JsonSubTypes.Type(value = InvalidJsonError.class, name = "InvalidJsonError"),
+  @JsonSubTypes.Type(value = InvalidPartialStateIdentifierError.class, name = "InvalidPartialStateIdentifierError"),
+  @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
+  @JsonSubTypes.Type(value = InvalidSignatureError.class, name = "InvalidSignatureError"),
+  @JsonSubTypes.Type(value = InvalidSubEntityError.class, name = "InvalidSubEntityError"),
+  @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
+  @JsonSubTypes.Type(value = InvalidTransactionHashError.class, name = "InvalidTransactionHashError"),
+  @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
+  @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
+  @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
+  @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
+  @JsonSubTypes.Type(value = PublicKeyNotSupportedError.class, name = "PublicKeyNotSupportedError"),
+  @JsonSubTypes.Type(value = ResourceDepositOperationNotSupportedByEntityError.class, name = "ResourceDepositOperationNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = ResourceWithdrawOperationNotSupportedByEntityError.class, name = "ResourceWithdrawOperationNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = StateIdentifierNotFoundError.class, name = "StateIdentifierNotFoundError"),
+  @JsonSubTypes.Type(value = SubstateDependencyNotFoundError.class, name = "SubstateDependencyNotFoundError"),
+  @JsonSubTypes.Type(value = TransactionNotFoundError.class, name = "TransactionNotFoundError"),
 })
 
-public class DataObjectNotSupportedByEntityErrorDetails extends ErrorDetails {
-  public static final String JSON_PROPERTY_ENTITY_IDENTIFIER = "entity_identifier";
-  private EntityIdentifier entityIdentifier;
-
-  public static final String JSON_PROPERTY_DATA_OBJECT_NOT_SUPPORTED = "data_object_not_supported";
-  private DataObject dataObjectNotSupported;
+public class FeeConstructionError extends CoreError {
+  public static final String JSON_PROPERTY_ATTEMPTS = "attempts";
+  private Integer attempts;
 
 
-  public DataObjectNotSupportedByEntityErrorDetails entityIdentifier(EntityIdentifier entityIdentifier) {
-    this.entityIdentifier = entityIdentifier;
+  public FeeConstructionError attempts(Integer attempts) {
+    this.attempts = attempts;
     return this;
   }
 
    /**
-   * Get entityIdentifier
-   * @return entityIdentifier
+   * Get attempts
+   * @return attempts
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENTITY_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_ATTEMPTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityIdentifier getEntityIdentifier() {
-    return entityIdentifier;
+  public Integer getAttempts() {
+    return attempts;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENTITY_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_ATTEMPTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityIdentifier(EntityIdentifier entityIdentifier) {
-    this.entityIdentifier = entityIdentifier;
-  }
-
-
-  public DataObjectNotSupportedByEntityErrorDetails dataObjectNotSupported(DataObject dataObjectNotSupported) {
-    this.dataObjectNotSupported = dataObjectNotSupported;
-    return this;
-  }
-
-   /**
-   * Get dataObjectNotSupported
-   * @return dataObjectNotSupported
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_OBJECT_NOT_SUPPORTED)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public DataObject getDataObjectNotSupported() {
-    return dataObjectNotSupported;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_DATA_OBJECT_NOT_SUPPORTED)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDataObjectNotSupported(DataObject dataObjectNotSupported) {
-    this.dataObjectNotSupported = dataObjectNotSupported;
+  public void setAttempts(Integer attempts) {
+    this.attempts = attempts;
   }
 
 
   /**
-   * Return true if this DataObjectNotSupportedByEntityErrorDetails object is equal to o.
+   * Return true if this FeeConstructionError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -124,24 +104,22 @@ public class DataObjectNotSupportedByEntityErrorDetails extends ErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    DataObjectNotSupportedByEntityErrorDetails dataObjectNotSupportedByEntityErrorDetails = (DataObjectNotSupportedByEntityErrorDetails) o;
-    return Objects.equals(this.entityIdentifier, dataObjectNotSupportedByEntityErrorDetails.entityIdentifier) &&
-        Objects.equals(this.dataObjectNotSupported, dataObjectNotSupportedByEntityErrorDetails.dataObjectNotSupported) &&
+    FeeConstructionError feeConstructionError = (FeeConstructionError) o;
+    return Objects.equals(this.attempts, feeConstructionError.attempts) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityIdentifier, dataObjectNotSupported, super.hashCode());
+    return Objects.hash(attempts, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class DataObjectNotSupportedByEntityErrorDetails {\n");
+    sb.append("class FeeConstructionError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    entityIdentifier: ").append(toIndentedString(entityIdentifier)).append("\n");
-    sb.append("    dataObjectNotSupported: ").append(toIndentedString(dataObjectNotSupported)).append("\n");
+    sb.append("    attempts: ").append(toIndentedString(attempts)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -160,24 +138,34 @@ public class DataObjectNotSupportedByEntityErrorDetails extends ErrorDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("BelowMinimumStakeErrorDetails", BelowMinimumStakeErrorDetails.class);
-  mappings.put("DataObjectNotSupportedByEntityErrorDetails", DataObjectNotSupportedByEntityErrorDetails.class);
-  mappings.put("InternalServerErrorDetails", InternalServerErrorDetails.class);
-  mappings.put("InvalidAddressErrorDetails", InvalidAddressErrorDetails.class);
-  mappings.put("InvalidFeePayerEntityErrorDetails", InvalidFeePayerEntityErrorDetails.class);
-  mappings.put("InvalidHexErrorDetails", InvalidHexErrorDetails.class);
-  mappings.put("InvalidJsonDetails", InvalidJsonDetails.class);
-  mappings.put("InvalidPartialStateIdentifierErrorDetails", InvalidPartialStateIdentifierErrorDetails.class);
-  mappings.put("InvalidPublicKeyErrorDetails", InvalidPublicKeyErrorDetails.class);
-  mappings.put("InvalidSignatureErrorDetails", InvalidSignatureErrorDetails.class);
-  mappings.put("InvalidSubEntityErrorDetails", InvalidSubEntityErrorDetails.class);
-  mappings.put("InvalidTransactionHashErrorDetails", InvalidTransactionHashErrorDetails.class);
-  mappings.put("NetworkNotSupportedErrorDetails", NetworkNotSupportedErrorDetails.class);
-  mappings.put("PublicKeyNotSupportedErrorDetails", PublicKeyNotSupportedErrorDetails.class);
-  mappings.put("StateIdentifierNotFoundErrorDetails", StateIdentifierNotFoundErrorDetails.class);
-  mappings.put("TransactionNotFoundErrorDetails", TransactionNotFoundErrorDetails.class);
-  mappings.put("DataObjectNotSupportedByEntityErrorDetails", DataObjectNotSupportedByEntityErrorDetails.class);
-  JSON.registerDiscriminator(DataObjectNotSupportedByEntityErrorDetails.class, "type", mappings);
+  mappings.put("AboveMaximumValidatorFeeIncreaseError", AboveMaximumValidatorFeeIncreaseError.class);
+  mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
+  mappings.put("DataObjectNotSupportedByEntityError", DataObjectNotSupportedByEntityError.class);
+  mappings.put("FeeConstructionError", FeeConstructionError.class);
+  mappings.put("InternalServerError", InternalServerError.class);
+  mappings.put("InvalidAddressError", InvalidAddressError.class);
+  mappings.put("InvalidDataObjectError", InvalidDataObjectError.class);
+  mappings.put("InvalidFeePayerEntityError", InvalidFeePayerEntityError.class);
+  mappings.put("InvalidHexError", InvalidHexError.class);
+  mappings.put("InvalidJsonError", InvalidJsonError.class);
+  mappings.put("InvalidPartialStateIdentifierError", InvalidPartialStateIdentifierError.class);
+  mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
+  mappings.put("InvalidSignatureError", InvalidSignatureError.class);
+  mappings.put("InvalidSubEntityError", InvalidSubEntityError.class);
+  mappings.put("InvalidTransactionError", InvalidTransactionError.class);
+  mappings.put("InvalidTransactionHashError", InvalidTransactionHashError.class);
+  mappings.put("MessageTooLongError", MessageTooLongError.class);
+  mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
+  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
+  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
+  mappings.put("PublicKeyNotSupportedError", PublicKeyNotSupportedError.class);
+  mappings.put("ResourceDepositOperationNotSupportedByEntityError", ResourceDepositOperationNotSupportedByEntityError.class);
+  mappings.put("ResourceWithdrawOperationNotSupportedByEntityError", ResourceWithdrawOperationNotSupportedByEntityError.class);
+  mappings.put("StateIdentifierNotFoundError", StateIdentifierNotFoundError.class);
+  mappings.put("SubstateDependencyNotFoundError", SubstateDependencyNotFoundError.class);
+  mappings.put("TransactionNotFoundError", TransactionNotFoundError.class);
+  mappings.put("FeeConstructionError", FeeConstructionError.class);
+  JSON.registerDiscriminator(FeeConstructionError.class, "type", mappings);
 }
 }
 

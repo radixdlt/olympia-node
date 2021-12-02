@@ -73,8 +73,8 @@ import com.radixdlt.api.core.core.handlers.EntityHandler;
 import com.radixdlt.api.core.core.model.SubstateTypeMapping;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
-import com.radixdlt.api.core.core.openapitools.model.InvalidAddressErrorDetails;
-import com.radixdlt.api.core.core.openapitools.model.InvalidSubEntityErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.InvalidAddressError;
+import com.radixdlt.api.core.core.openapitools.model.InvalidSubEntityError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorFee;
 import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorOwner;
@@ -377,7 +377,7 @@ public class EntityHandlerTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidAddressErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(InvalidAddressError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
@@ -399,7 +399,7 @@ public class EntityHandlerTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidSubEntityErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(InvalidSubEntityError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}

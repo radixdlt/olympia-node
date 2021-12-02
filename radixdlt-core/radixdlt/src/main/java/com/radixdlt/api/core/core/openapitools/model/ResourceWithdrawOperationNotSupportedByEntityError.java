@@ -26,34 +26,44 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * ResourceWithdrawOperationNotSupportedByEntityErrorDetails
+ * ResourceWithdrawOperationNotSupportedByEntityError
  */
 @JsonPropertyOrder({
-  ResourceWithdrawOperationNotSupportedByEntityErrorDetails.JSON_PROPERTY_ENTITY_IDENTIFIER,
-  ResourceWithdrawOperationNotSupportedByEntityErrorDetails.JSON_PROPERTY_RESOURCE_WITHDRAW_NOT_SUPPORTED
+  ResourceWithdrawOperationNotSupportedByEntityError.JSON_PROPERTY_ENTITY_IDENTIFIER,
+  ResourceWithdrawOperationNotSupportedByEntityError.JSON_PROPERTY_RESOURCE_WITHDRAW_NOT_SUPPORTED
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-28T21:17:29.895138-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T17:26:14.947922-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = BelowMinimumStakeErrorDetails.class, name = "BelowMinimumStakeErrorDetails"),
-  @JsonSubTypes.Type(value = DataObjectNotSupportedByEntityErrorDetails.class, name = "DataObjectNotSupportedByEntityErrorDetails"),
-  @JsonSubTypes.Type(value = InternalServerErrorDetails.class, name = "InternalServerErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidAddressErrorDetails.class, name = "InvalidAddressErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidFeePayerEntityErrorDetails.class, name = "InvalidFeePayerEntityErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidHexErrorDetails.class, name = "InvalidHexErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidJsonDetails.class, name = "InvalidJsonDetails"),
-  @JsonSubTypes.Type(value = InvalidPartialStateIdentifierErrorDetails.class, name = "InvalidPartialStateIdentifierErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidPublicKeyErrorDetails.class, name = "InvalidPublicKeyErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidSignatureErrorDetails.class, name = "InvalidSignatureErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidSubEntityErrorDetails.class, name = "InvalidSubEntityErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidTransactionHashErrorDetails.class, name = "InvalidTransactionHashErrorDetails"),
-  @JsonSubTypes.Type(value = NetworkNotSupportedErrorDetails.class, name = "NetworkNotSupportedErrorDetails"),
-  @JsonSubTypes.Type(value = PublicKeyNotSupportedErrorDetails.class, name = "PublicKeyNotSupportedErrorDetails"),
-  @JsonSubTypes.Type(value = StateIdentifierNotFoundErrorDetails.class, name = "StateIdentifierNotFoundErrorDetails"),
-  @JsonSubTypes.Type(value = TransactionNotFoundErrorDetails.class, name = "TransactionNotFoundErrorDetails"),
+  @JsonSubTypes.Type(value = AboveMaximumValidatorFeeIncreaseError.class, name = "AboveMaximumValidatorFeeIncreaseError"),
+  @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
+  @JsonSubTypes.Type(value = DataObjectNotSupportedByEntityError.class, name = "DataObjectNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = FeeConstructionError.class, name = "FeeConstructionError"),
+  @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
+  @JsonSubTypes.Type(value = InvalidAddressError.class, name = "InvalidAddressError"),
+  @JsonSubTypes.Type(value = InvalidDataObjectError.class, name = "InvalidDataObjectError"),
+  @JsonSubTypes.Type(value = InvalidFeePayerEntityError.class, name = "InvalidFeePayerEntityError"),
+  @JsonSubTypes.Type(value = InvalidHexError.class, name = "InvalidHexError"),
+  @JsonSubTypes.Type(value = InvalidJsonError.class, name = "InvalidJsonError"),
+  @JsonSubTypes.Type(value = InvalidPartialStateIdentifierError.class, name = "InvalidPartialStateIdentifierError"),
+  @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
+  @JsonSubTypes.Type(value = InvalidSignatureError.class, name = "InvalidSignatureError"),
+  @JsonSubTypes.Type(value = InvalidSubEntityError.class, name = "InvalidSubEntityError"),
+  @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
+  @JsonSubTypes.Type(value = InvalidTransactionHashError.class, name = "InvalidTransactionHashError"),
+  @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
+  @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
+  @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
+  @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
+  @JsonSubTypes.Type(value = PublicKeyNotSupportedError.class, name = "PublicKeyNotSupportedError"),
+  @JsonSubTypes.Type(value = ResourceDepositOperationNotSupportedByEntityError.class, name = "ResourceDepositOperationNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = ResourceWithdrawOperationNotSupportedByEntityError.class, name = "ResourceWithdrawOperationNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = StateIdentifierNotFoundError.class, name = "StateIdentifierNotFoundError"),
+  @JsonSubTypes.Type(value = SubstateDependencyNotFoundError.class, name = "SubstateDependencyNotFoundError"),
+  @JsonSubTypes.Type(value = TransactionNotFoundError.class, name = "TransactionNotFoundError"),
 })
 
-public class ResourceWithdrawOperationNotSupportedByEntityErrorDetails extends ErrorDetails {
+public class ResourceWithdrawOperationNotSupportedByEntityError extends CoreError {
   public static final String JSON_PROPERTY_ENTITY_IDENTIFIER = "entity_identifier";
   private EntityIdentifier entityIdentifier;
 
@@ -61,7 +71,7 @@ public class ResourceWithdrawOperationNotSupportedByEntityErrorDetails extends E
   private ResourceIdentifier resourceWithdrawNotSupported;
 
 
-  public ResourceWithdrawOperationNotSupportedByEntityErrorDetails entityIdentifier(EntityIdentifier entityIdentifier) {
+  public ResourceWithdrawOperationNotSupportedByEntityError entityIdentifier(EntityIdentifier entityIdentifier) {
     this.entityIdentifier = entityIdentifier;
     return this;
   }
@@ -87,7 +97,7 @@ public class ResourceWithdrawOperationNotSupportedByEntityErrorDetails extends E
   }
 
 
-  public ResourceWithdrawOperationNotSupportedByEntityErrorDetails resourceWithdrawNotSupported(ResourceIdentifier resourceWithdrawNotSupported) {
+  public ResourceWithdrawOperationNotSupportedByEntityError resourceWithdrawNotSupported(ResourceIdentifier resourceWithdrawNotSupported) {
     this.resourceWithdrawNotSupported = resourceWithdrawNotSupported;
     return this;
   }
@@ -114,7 +124,7 @@ public class ResourceWithdrawOperationNotSupportedByEntityErrorDetails extends E
 
 
   /**
-   * Return true if this ResourceWithdrawOperationNotSupportedByEntityErrorDetails object is equal to o.
+   * Return true if this ResourceWithdrawOperationNotSupportedByEntityError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -124,9 +134,9 @@ public class ResourceWithdrawOperationNotSupportedByEntityErrorDetails extends E
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ResourceWithdrawOperationNotSupportedByEntityErrorDetails resourceWithdrawOperationNotSupportedByEntityErrorDetails = (ResourceWithdrawOperationNotSupportedByEntityErrorDetails) o;
-    return Objects.equals(this.entityIdentifier, resourceWithdrawOperationNotSupportedByEntityErrorDetails.entityIdentifier) &&
-        Objects.equals(this.resourceWithdrawNotSupported, resourceWithdrawOperationNotSupportedByEntityErrorDetails.resourceWithdrawNotSupported) &&
+    ResourceWithdrawOperationNotSupportedByEntityError resourceWithdrawOperationNotSupportedByEntityError = (ResourceWithdrawOperationNotSupportedByEntityError) o;
+    return Objects.equals(this.entityIdentifier, resourceWithdrawOperationNotSupportedByEntityError.entityIdentifier) &&
+        Objects.equals(this.resourceWithdrawNotSupported, resourceWithdrawOperationNotSupportedByEntityError.resourceWithdrawNotSupported) &&
         super.equals(o);
   }
 
@@ -138,7 +148,7 @@ public class ResourceWithdrawOperationNotSupportedByEntityErrorDetails extends E
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ResourceWithdrawOperationNotSupportedByEntityErrorDetails {\n");
+    sb.append("class ResourceWithdrawOperationNotSupportedByEntityError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    entityIdentifier: ").append(toIndentedString(entityIdentifier)).append("\n");
     sb.append("    resourceWithdrawNotSupported: ").append(toIndentedString(resourceWithdrawNotSupported)).append("\n");
@@ -160,24 +170,34 @@ public class ResourceWithdrawOperationNotSupportedByEntityErrorDetails extends E
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("BelowMinimumStakeErrorDetails", BelowMinimumStakeErrorDetails.class);
-  mappings.put("DataObjectNotSupportedByEntityErrorDetails", DataObjectNotSupportedByEntityErrorDetails.class);
-  mappings.put("InternalServerErrorDetails", InternalServerErrorDetails.class);
-  mappings.put("InvalidAddressErrorDetails", InvalidAddressErrorDetails.class);
-  mappings.put("InvalidFeePayerEntityErrorDetails", InvalidFeePayerEntityErrorDetails.class);
-  mappings.put("InvalidHexErrorDetails", InvalidHexErrorDetails.class);
-  mappings.put("InvalidJsonDetails", InvalidJsonDetails.class);
-  mappings.put("InvalidPartialStateIdentifierErrorDetails", InvalidPartialStateIdentifierErrorDetails.class);
-  mappings.put("InvalidPublicKeyErrorDetails", InvalidPublicKeyErrorDetails.class);
-  mappings.put("InvalidSignatureErrorDetails", InvalidSignatureErrorDetails.class);
-  mappings.put("InvalidSubEntityErrorDetails", InvalidSubEntityErrorDetails.class);
-  mappings.put("InvalidTransactionHashErrorDetails", InvalidTransactionHashErrorDetails.class);
-  mappings.put("NetworkNotSupportedErrorDetails", NetworkNotSupportedErrorDetails.class);
-  mappings.put("PublicKeyNotSupportedErrorDetails", PublicKeyNotSupportedErrorDetails.class);
-  mappings.put("StateIdentifierNotFoundErrorDetails", StateIdentifierNotFoundErrorDetails.class);
-  mappings.put("TransactionNotFoundErrorDetails", TransactionNotFoundErrorDetails.class);
-  mappings.put("ResourceWithdrawOperationNotSupportedByEntityErrorDetails", ResourceWithdrawOperationNotSupportedByEntityErrorDetails.class);
-  JSON.registerDiscriminator(ResourceWithdrawOperationNotSupportedByEntityErrorDetails.class, "type", mappings);
+  mappings.put("AboveMaximumValidatorFeeIncreaseError", AboveMaximumValidatorFeeIncreaseError.class);
+  mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
+  mappings.put("DataObjectNotSupportedByEntityError", DataObjectNotSupportedByEntityError.class);
+  mappings.put("FeeConstructionError", FeeConstructionError.class);
+  mappings.put("InternalServerError", InternalServerError.class);
+  mappings.put("InvalidAddressError", InvalidAddressError.class);
+  mappings.put("InvalidDataObjectError", InvalidDataObjectError.class);
+  mappings.put("InvalidFeePayerEntityError", InvalidFeePayerEntityError.class);
+  mappings.put("InvalidHexError", InvalidHexError.class);
+  mappings.put("InvalidJsonError", InvalidJsonError.class);
+  mappings.put("InvalidPartialStateIdentifierError", InvalidPartialStateIdentifierError.class);
+  mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
+  mappings.put("InvalidSignatureError", InvalidSignatureError.class);
+  mappings.put("InvalidSubEntityError", InvalidSubEntityError.class);
+  mappings.put("InvalidTransactionError", InvalidTransactionError.class);
+  mappings.put("InvalidTransactionHashError", InvalidTransactionHashError.class);
+  mappings.put("MessageTooLongError", MessageTooLongError.class);
+  mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
+  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
+  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
+  mappings.put("PublicKeyNotSupportedError", PublicKeyNotSupportedError.class);
+  mappings.put("ResourceDepositOperationNotSupportedByEntityError", ResourceDepositOperationNotSupportedByEntityError.class);
+  mappings.put("ResourceWithdrawOperationNotSupportedByEntityError", ResourceWithdrawOperationNotSupportedByEntityError.class);
+  mappings.put("StateIdentifierNotFoundError", StateIdentifierNotFoundError.class);
+  mappings.put("SubstateDependencyNotFoundError", SubstateDependencyNotFoundError.class);
+  mappings.put("TransactionNotFoundError", TransactionNotFoundError.class);
+  mappings.put("ResourceWithdrawOperationNotSupportedByEntityError", ResourceWithdrawOperationNotSupportedByEntityError.class);
+  JSON.registerDiscriminator(ResourceWithdrawOperationNotSupportedByEntityError.class, "type", mappings);
 }
 }
 

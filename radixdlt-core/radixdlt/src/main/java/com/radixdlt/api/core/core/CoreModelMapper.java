@@ -173,9 +173,9 @@ public final class CoreModelMapper {
 	public void verifyNetwork(NetworkIdentifier networkIdentifier) throws CoreApiException {
 		if (!networkIdentifier.getNetwork().equals(this.network.name().toLowerCase())) {
 			throw CoreApiException.notSupported(
-				new NetworkNotSupportedErrorDetails()
+				new NetworkNotSupportedError()
 					.addSupportedNetworksItem(new NetworkIdentifier().network(this.network.name().toLowerCase()))
-					.type(NetworkNotSupportedErrorDetails.class.getSimpleName())
+					.type(NetworkNotSupportedError.class.getSimpleName())
 			);
 		}
 	}
@@ -188,9 +188,9 @@ public final class CoreModelMapper {
 			sig = ECDSASignature.decodeFromDER(bytes);
 		} catch (IllegalArgumentException e) {
 			throw CoreApiException.badRequest(
-				new InvalidSignatureErrorDetails()
+				new InvalidSignatureError()
 					.invalidSignature(signature.getBytes())
-					.type(InvalidSignatureErrorDetails.class.getSimpleName())
+					.type(InvalidSignatureError.class.getSimpleName())
 			);
 		}
 		return Pair.of(publicKey, sig);
@@ -201,9 +201,9 @@ public final class CoreModelMapper {
 		try {
 			return ECPublicKey.fromBytes(bytes);
 		} catch (PublicKeyException e) {
-			throw CoreApiException.badRequest(new InvalidPublicKeyErrorDetails()
+			throw CoreApiException.badRequest(new InvalidPublicKeyError()
 				.invalidPublicKey(publicKey)
-				.type(InvalidPublicKeyErrorDetails.class.getSimpleName())
+				.type(InvalidPublicKeyError.class.getSimpleName())
 			);
 		}
 	}
@@ -212,61 +212,61 @@ public final class CoreModelMapper {
 		try {
 			return Bytes.fromHexString(hex);
 		} catch (IllegalArgumentException e) {
-			throw CoreApiException.badRequest(new InvalidHexErrorDetails()
+			throw CoreApiException.badRequest(new InvalidHexError()
 				.invalidHex(hex)
-				.type(InvalidHexErrorDetails.class.getSimpleName())
+				.type(InvalidHexError.class.getSimpleName())
 			);
 		}
 	}
 
-	public ErrorDetails builderErrorDetails(TxBuilderException e) {
+	public CoreError builderErrorDetails(TxBuilderException e) {
 		if (e instanceof MinimumStakeException minimumStakeException) {
-			return new BelowMinimumStakeErrorDetails()
+			return new BelowMinimumStakeError()
 					.minimumStake(nativeTokenAmount(minimumStakeException.getMinimumStake()))
 					.attemptedToStake(nativeTokenAmount(minimumStakeException.getAttempt()))
-					.type(BelowMinimumStakeErrorDetails.class.getSimpleName());
+					.type(BelowMinimumStakeError.class.getSimpleName());
 		} else if (e instanceof DelegateStakePermissionException delegateException) {
-			return new NotValidatorOwnerErrorDetails()
+			return new NotValidatorOwnerError()
 				.owner(entityIdentifier(delegateException.getOwner()))
 				.user(entityIdentifier(delegateException.getUser()))
-				.type(NotValidatorOwnerErrorDetails.class.getSimpleName());
+				.type(NotValidatorOwnerError.class.getSimpleName());
 		} else if (e instanceof InvalidDataObjectException invalidDataObjectException) {
-			return new InvalidDataObjectErrorDetails()
+			return new InvalidDataObjectError()
 				.invalidDataObject(invalidDataObjectException.getDataObject().getDataObject())
 				.message(invalidDataObjectException.getMessage())
-				.type(InvalidDataObjectErrorDetails.class.getSimpleName());
+				.type(InvalidDataObjectError.class.getSimpleName());
 		} else if (e instanceof InvalidRakeIncreaseException rakeIncreaseException) {
-			return new AboveMaximumValidatorFeeIncreaseErrorDetails()
+			return new AboveMaximumValidatorFeeIncreaseError()
 				.maximumValidatorFeeIncrease(rakeIncreaseException.getMaxRakeIncrease())
 				.attemptedValidatorFeeIncrease(rakeIncreaseException.getIncreaseAttempt())
-				.type(AboveMaximumValidatorFeeIncreaseErrorDetails.class.getSimpleName());
+				.type(AboveMaximumValidatorFeeIncreaseError.class.getSimpleName());
 		} else if (e instanceof EntityDoesNotSupportDataObjectException dataObjectException) {
-			return new DataObjectNotSupportedByEntityErrorDetails()
+			return new DataObjectNotSupportedByEntityError()
 				.dataObjectNotSupported(dataObjectException.getDataObject().getDataObject())
 				.entityIdentifier(entityIdentifier(dataObjectException.getEntity()))
-				.type(DataObjectNotSupportedByEntityErrorDetails.class.getSimpleName());
+				.type(DataObjectNotSupportedByEntityError.class.getSimpleName());
 		} else if (e instanceof EntityDoesNotSupportResourceDepositException depositException) {
-			return new ResourceDepositOperationNotSupportedByEntityErrorDetails()
+			return new ResourceDepositOperationNotSupportedByEntityError()
 				.resourceDepositNotSupported(resourceIdentifier(depositException.getResource()))
 				.entityIdentifier(entityIdentifier(depositException.getEntity()))
-				.type(ResourceDepositOperationNotSupportedByEntityErrorDetails.class.getSimpleName());
+				.type(ResourceDepositOperationNotSupportedByEntityError.class.getSimpleName());
 		} else if (e instanceof EntityDoesNotSupportResourceWithdrawException withdrawException) {
-			return new ResourceWithdrawOperationNotSupportedByEntityErrorDetails()
+			return new ResourceWithdrawOperationNotSupportedByEntityError()
 				.resourceWithdrawNotSupported(resourceIdentifier(withdrawException.getResource()))
 				.entityIdentifier(entityIdentifier(withdrawException.getEntity()))
-				.type(ResourceWithdrawOperationNotSupportedByEntityErrorDetails.class.getSimpleName());
+				.type(ResourceWithdrawOperationNotSupportedByEntityError.class.getSimpleName());
 		} else if (e instanceof MessageTooLongException messageTooLongException) {
-			return new MessageTooLongErrorDetails()
+			return new MessageTooLongError()
 				.maximumMessageLength(255)
 				.attemptedMessageLength(messageTooLongException.getAttemptedLength())
-				.type(MessageTooLongErrorDetails.class.getSimpleName());
+				.type(MessageTooLongError.class.getSimpleName());
 		} else if (e instanceof FeeConstructionException feeConstructionException) {
-			return new FeeConstructionErrorDetails()
+			return new FeeConstructionError()
 				.attempts(feeConstructionException.getAttempts())
-				.type(FeeConstructionErrorDetails.class.getSimpleName());
+				.type(FeeConstructionError.class.getSimpleName());
 		} else if (e instanceof NotEnoughResourcesException notEnoughResourcesException) {
 			var resourceIdentifier = resourceIdentifier(notEnoughResourcesException.getResource());
-			return new NotEnoughResourcesErrorDetails()
+			return new NotEnoughResourcesError()
 				.attemptedToTake(new ResourceAmount()
 					.resourceIdentifier(resourceIdentifier)
 					.value(notEnoughResourcesException.getAvailable().toString()))
@@ -281,23 +281,23 @@ public final class CoreModelMapper {
 	public AccountVaultEntity feePayerEntity(EntityIdentifier entityIdentifier) throws CoreApiException {
 		var feePayer = entity(entityIdentifier);
 		if (!(feePayer instanceof AccountVaultEntity accountVaultEntity)) {
-			throw CoreApiException.badRequest(new InvalidFeePayerEntityErrorDetails()
+			throw CoreApiException.badRequest(new InvalidFeePayerEntityError()
 				.invalidFeePayerEntity(entityIdentifier)
-				.type(InvalidFeePayerEntityErrorDetails.class.getSimpleName())
+				.type(InvalidFeePayerEntityError.class.getSimpleName())
 			);
 		}
 		return accountVaultEntity;
 	}
 
 	private static CoreApiException invalidAddress(String address) {
-		return CoreApiException.badRequest(new InvalidAddressErrorDetails().invalidAddress(address));
+		return CoreApiException.badRequest(new InvalidAddressError().invalidAddress(address));
 	}
 
 	private static CoreApiException invalidSubEntity(SubEntity subEntity) {
 		return CoreApiException.badRequest(
-			new InvalidSubEntityErrorDetails()
+			new InvalidSubEntityError()
 				.invalidSubEntity(subEntity)
-				.type(InvalidSubEntityErrorDetails.class.getSimpleName())
+				.type(InvalidSubEntityError.class.getSimpleName())
 		);
 	}
 
@@ -429,9 +429,9 @@ public final class CoreModelMapper {
 		try {
 			return AID.from(hash);
 		} catch (IllegalArgumentException e) {
-			throw CoreApiException.badRequest(new InvalidTransactionHashErrorDetails()
+			throw CoreApiException.badRequest(new InvalidTransactionHashError()
 				.invalidTransactionHash(hash)
-				.type(InvalidTransactionHashErrorDetails.class.getSimpleName()));
+				.type(InvalidTransactionHashError.class.getSimpleName()));
 		}
 	}
 
@@ -447,10 +447,10 @@ public final class CoreModelMapper {
 		return limit;
 	}
 
-	public ErrorDetails notFoundErrorDetails(PartialStateIdentifier partialStateIdentifier) {
-		return new StateIdentifierNotFoundErrorDetails()
+	public CoreError notFoundErrorDetails(PartialStateIdentifier partialStateIdentifier) {
+		return new StateIdentifierNotFoundError()
 			.stateIdentifier(partialStateIdentifier)
-			.type(StateIdentifierNotFoundErrorDetails.class.getSimpleName());
+			.type(StateIdentifierNotFoundError.class.getSimpleName());
 	}
 
 	public Pair<Long, HashCode> partialStateIdentifier(PartialStateIdentifier partialStateIdentifier)
@@ -461,9 +461,9 @@ public final class CoreModelMapper {
 
 		if (partialStateIdentifier.getStateVersion() < 0L) {
 			throw CoreApiException.badRequest(
-				new InvalidPartialStateIdentifierErrorDetails()
+				new InvalidPartialStateIdentifierError()
 					.invalidPartialStateIdentifier(partialStateIdentifier)
-					.type(InvalidPartialStateIdentifierErrorDetails.class.getSimpleName())
+					.type(InvalidPartialStateIdentifierError.class.getSimpleName())
 			);
 		}
 
@@ -1115,9 +1115,9 @@ public final class CoreModelMapper {
 	public CoreApiException parseException(TxnParseException exception) {
 		var cause = Throwables.getRootCause(exception);
 		return CoreApiException.badRequest(
-			new InvalidTransactionErrorDetails()
+			new InvalidTransactionError()
 				.message(cause.getMessage())
-				.type(InvalidTransactionErrorDetails.class.getSimpleName())
+				.type(InvalidTransactionError.class.getSimpleName())
 		);
 	}
 
@@ -1125,16 +1125,16 @@ public final class CoreModelMapper {
 		var cause = Throwables.getRootCause(exception);
 		if (cause instanceof SubstateNotFoundException notFoundException) {
 			return CoreApiException.conflict(
-				new SubstateDependencyNotFoundErrorDetails()
+				new SubstateDependencyNotFoundError()
 					.substateIdentifierNotFound(substateIdentifier(notFoundException.getSubstateId()))
-					.type(SubstateDependencyNotFoundErrorDetails.class.getSimpleName())
+					.type(SubstateDependencyNotFoundError.class.getSimpleName())
 			);
 		}
 
 		return CoreApiException.badRequest(
-			new InvalidTransactionErrorDetails()
+			new InvalidTransactionError()
 				.message(cause.getMessage())
-				.type(InvalidTransactionErrorDetails.class.getSimpleName())
+				.type(InvalidTransactionError.class.getSimpleName())
 		);
 	}
 }

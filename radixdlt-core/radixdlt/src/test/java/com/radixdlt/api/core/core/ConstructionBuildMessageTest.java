@@ -69,7 +69,7 @@ import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
-import com.radixdlt.api.core.core.openapitools.model.MessageTooLongErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.MessageTooLongError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
@@ -202,7 +202,7 @@ public class ConstructionBuildMessageTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(MessageTooLongErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(MessageTooLongError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}

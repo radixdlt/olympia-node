@@ -70,9 +70,9 @@ import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.Data;
-import com.radixdlt.api.core.core.openapitools.model.DataObjectNotSupportedByEntityErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.DataObjectNotSupportedByEntityError;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.InvalidDataObjectErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.InvalidDataObjectError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
@@ -233,7 +233,7 @@ public final class ConstructionBuildTokenDefinitionTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidDataObjectErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(InvalidDataObjectError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
@@ -256,7 +256,7 @@ public final class ConstructionBuildTokenDefinitionTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidDataObjectErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(InvalidDataObjectError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
@@ -279,7 +279,7 @@ public final class ConstructionBuildTokenDefinitionTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidDataObjectErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(InvalidDataObjectError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
@@ -302,7 +302,7 @@ public final class ConstructionBuildTokenDefinitionTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidDataObjectErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(InvalidDataObjectError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
@@ -325,7 +325,7 @@ public final class ConstructionBuildTokenDefinitionTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(DataObjectNotSupportedByEntityErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(DataObjectNotSupportedByEntityError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}

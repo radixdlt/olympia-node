@@ -26,59 +26,75 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * TransactionNotFoundErrorDetails
+ * InvalidTransactionHashError
  */
 @JsonPropertyOrder({
-  TransactionNotFoundErrorDetails.JSON_PROPERTY_TRANSACTION_IDENTIFIER
+  InvalidTransactionHashError.JSON_PROPERTY_INVALID_TRANSACTION_HASH
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-28T14:02:04.181074-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T17:26:14.947922-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = InternalServerErrorDetails.class, name = "InternalServerErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidAddressErrorDetails.class, name = "InvalidAddressErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidJsonDetails.class, name = "InvalidJsonDetails"),
-  @JsonSubTypes.Type(value = InvalidPartialStateIdentifierErrorDetails.class, name = "InvalidPartialStateIdentifierErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidPublicKeyErrorDetails.class, name = "InvalidPublicKeyErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidSubEntityErrorDetails.class, name = "InvalidSubEntityErrorDetails"),
-  @JsonSubTypes.Type(value = InvalidTransactionHashErrorDetails.class, name = "InvalidTransactionHashErrorDetails"),
-  @JsonSubTypes.Type(value = NetworkNotSupportedErrorDetails.class, name = "NetworkNotSupportedErrorDetails"),
-  @JsonSubTypes.Type(value = StateIdentifierNotFoundErrorDetails.class, name = "StateIdentifierNotFoundErrorDetails"),
-  @JsonSubTypes.Type(value = TransactionNotFoundErrorDetails.class, name = "TransactionNotFoundErrorDetails"),
+  @JsonSubTypes.Type(value = AboveMaximumValidatorFeeIncreaseError.class, name = "AboveMaximumValidatorFeeIncreaseError"),
+  @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
+  @JsonSubTypes.Type(value = DataObjectNotSupportedByEntityError.class, name = "DataObjectNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = FeeConstructionError.class, name = "FeeConstructionError"),
+  @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
+  @JsonSubTypes.Type(value = InvalidAddressError.class, name = "InvalidAddressError"),
+  @JsonSubTypes.Type(value = InvalidDataObjectError.class, name = "InvalidDataObjectError"),
+  @JsonSubTypes.Type(value = InvalidFeePayerEntityError.class, name = "InvalidFeePayerEntityError"),
+  @JsonSubTypes.Type(value = InvalidHexError.class, name = "InvalidHexError"),
+  @JsonSubTypes.Type(value = InvalidJsonError.class, name = "InvalidJsonError"),
+  @JsonSubTypes.Type(value = InvalidPartialStateIdentifierError.class, name = "InvalidPartialStateIdentifierError"),
+  @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
+  @JsonSubTypes.Type(value = InvalidSignatureError.class, name = "InvalidSignatureError"),
+  @JsonSubTypes.Type(value = InvalidSubEntityError.class, name = "InvalidSubEntityError"),
+  @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
+  @JsonSubTypes.Type(value = InvalidTransactionHashError.class, name = "InvalidTransactionHashError"),
+  @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
+  @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
+  @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
+  @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
+  @JsonSubTypes.Type(value = PublicKeyNotSupportedError.class, name = "PublicKeyNotSupportedError"),
+  @JsonSubTypes.Type(value = ResourceDepositOperationNotSupportedByEntityError.class, name = "ResourceDepositOperationNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = ResourceWithdrawOperationNotSupportedByEntityError.class, name = "ResourceWithdrawOperationNotSupportedByEntityError"),
+  @JsonSubTypes.Type(value = StateIdentifierNotFoundError.class, name = "StateIdentifierNotFoundError"),
+  @JsonSubTypes.Type(value = SubstateDependencyNotFoundError.class, name = "SubstateDependencyNotFoundError"),
+  @JsonSubTypes.Type(value = TransactionNotFoundError.class, name = "TransactionNotFoundError"),
 })
 
-public class TransactionNotFoundErrorDetails extends ErrorDetails {
-  public static final String JSON_PROPERTY_TRANSACTION_IDENTIFIER = "transaction_identifier";
-  private TransactionIdentifier transactionIdentifier;
+public class InvalidTransactionHashError extends CoreError {
+  public static final String JSON_PROPERTY_INVALID_TRANSACTION_HASH = "invalid_transaction_hash";
+  private String invalidTransactionHash;
 
 
-  public TransactionNotFoundErrorDetails transactionIdentifier(TransactionIdentifier transactionIdentifier) {
-    this.transactionIdentifier = transactionIdentifier;
+  public InvalidTransactionHashError invalidTransactionHash(String invalidTransactionHash) {
+    this.invalidTransactionHash = invalidTransactionHash;
     return this;
   }
 
    /**
-   * Get transactionIdentifier
-   * @return transactionIdentifier
+   * Get invalidTransactionHash
+   * @return invalidTransactionHash
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TRANSACTION_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_INVALID_TRANSACTION_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TransactionIdentifier getTransactionIdentifier() {
-    return transactionIdentifier;
+  public String getInvalidTransactionHash() {
+    return invalidTransactionHash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TRANSACTION_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_INVALID_TRANSACTION_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTransactionIdentifier(TransactionIdentifier transactionIdentifier) {
-    this.transactionIdentifier = transactionIdentifier;
+  public void setInvalidTransactionHash(String invalidTransactionHash) {
+    this.invalidTransactionHash = invalidTransactionHash;
   }
 
 
   /**
-   * Return true if this TransactionNotFoundErrorDetails object is equal to o.
+   * Return true if this InvalidTransactionHashError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -88,22 +104,22 @@ public class TransactionNotFoundErrorDetails extends ErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionNotFoundErrorDetails transactionNotFoundErrorDetails = (TransactionNotFoundErrorDetails) o;
-    return Objects.equals(this.transactionIdentifier, transactionNotFoundErrorDetails.transactionIdentifier) &&
+    InvalidTransactionHashError invalidTransactionHashError = (InvalidTransactionHashError) o;
+    return Objects.equals(this.invalidTransactionHash, invalidTransactionHashError.invalidTransactionHash) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(transactionIdentifier, super.hashCode());
+    return Objects.hash(invalidTransactionHash, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionNotFoundErrorDetails {\n");
+    sb.append("class InvalidTransactionHashError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    transactionIdentifier: ").append(toIndentedString(transactionIdentifier)).append("\n");
+    sb.append("    invalidTransactionHash: ").append(toIndentedString(invalidTransactionHash)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -122,18 +138,34 @@ public class TransactionNotFoundErrorDetails extends ErrorDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("InternalServerErrorDetails", InternalServerErrorDetails.class);
-  mappings.put("InvalidAddressErrorDetails", InvalidAddressErrorDetails.class);
-  mappings.put("InvalidJsonDetails", InvalidJsonDetails.class);
-  mappings.put("InvalidPartialStateIdentifierErrorDetails", InvalidPartialStateIdentifierErrorDetails.class);
-  mappings.put("InvalidPublicKeyErrorDetails", InvalidPublicKeyErrorDetails.class);
-  mappings.put("InvalidSubEntityErrorDetails", InvalidSubEntityErrorDetails.class);
-  mappings.put("InvalidTransactionHashErrorDetails", InvalidTransactionHashErrorDetails.class);
-  mappings.put("NetworkNotSupportedErrorDetails", NetworkNotSupportedErrorDetails.class);
-  mappings.put("StateIdentifierNotFoundErrorDetails", StateIdentifierNotFoundErrorDetails.class);
-  mappings.put("TransactionNotFoundErrorDetails", TransactionNotFoundErrorDetails.class);
-  mappings.put("TransactionNotFoundErrorDetails", TransactionNotFoundErrorDetails.class);
-  JSON.registerDiscriminator(TransactionNotFoundErrorDetails.class, "type", mappings);
+  mappings.put("AboveMaximumValidatorFeeIncreaseError", AboveMaximumValidatorFeeIncreaseError.class);
+  mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
+  mappings.put("DataObjectNotSupportedByEntityError", DataObjectNotSupportedByEntityError.class);
+  mappings.put("FeeConstructionError", FeeConstructionError.class);
+  mappings.put("InternalServerError", InternalServerError.class);
+  mappings.put("InvalidAddressError", InvalidAddressError.class);
+  mappings.put("InvalidDataObjectError", InvalidDataObjectError.class);
+  mappings.put("InvalidFeePayerEntityError", InvalidFeePayerEntityError.class);
+  mappings.put("InvalidHexError", InvalidHexError.class);
+  mappings.put("InvalidJsonError", InvalidJsonError.class);
+  mappings.put("InvalidPartialStateIdentifierError", InvalidPartialStateIdentifierError.class);
+  mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
+  mappings.put("InvalidSignatureError", InvalidSignatureError.class);
+  mappings.put("InvalidSubEntityError", InvalidSubEntityError.class);
+  mappings.put("InvalidTransactionError", InvalidTransactionError.class);
+  mappings.put("InvalidTransactionHashError", InvalidTransactionHashError.class);
+  mappings.put("MessageTooLongError", MessageTooLongError.class);
+  mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
+  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
+  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
+  mappings.put("PublicKeyNotSupportedError", PublicKeyNotSupportedError.class);
+  mappings.put("ResourceDepositOperationNotSupportedByEntityError", ResourceDepositOperationNotSupportedByEntityError.class);
+  mappings.put("ResourceWithdrawOperationNotSupportedByEntityError", ResourceWithdrawOperationNotSupportedByEntityError.class);
+  mappings.put("StateIdentifierNotFoundError", StateIdentifierNotFoundError.class);
+  mappings.put("SubstateDependencyNotFoundError", SubstateDependencyNotFoundError.class);
+  mappings.put("TransactionNotFoundError", TransactionNotFoundError.class);
+  mappings.put("InvalidTransactionHashError", InvalidTransactionHashError.class);
+  JSON.registerDiscriminator(InvalidTransactionHashError.class, "type", mappings);
 }
 }
 

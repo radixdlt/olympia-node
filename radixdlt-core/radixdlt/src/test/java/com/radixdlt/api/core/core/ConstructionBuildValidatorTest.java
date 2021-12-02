@@ -68,7 +68,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
-import com.radixdlt.api.core.core.openapitools.model.AboveMaximumValidatorFeeIncreaseErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.AboveMaximumValidatorFeeIncreaseError;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.DataObject;
@@ -219,7 +219,7 @@ public class ConstructionBuildValidatorTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOfSatisfying(AboveMaximumValidatorFeeIncreaseErrorDetails.class, d -> {
+				assertThat(error.getDetails()).isInstanceOfSatisfying(AboveMaximumValidatorFeeIncreaseError.class, d -> {
 					assertThat(d.getAttemptedValidatorFeeIncrease()).isEqualTo(1000);
 				});
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());

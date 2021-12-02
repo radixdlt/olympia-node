@@ -63,14 +63,14 @@
 
 package com.radixdlt.api.core.core;
 
-import com.radixdlt.api.core.core.openapitools.model.ErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.CoreError;
 import com.radixdlt.api.core.core.openapitools.model.UnexpectedError;
 
 public final class CoreApiException extends Exception {
 	private final CoreApiErrorCode errorCode;
-	private final ErrorDetails errorDetails;
+	private final CoreError errorDetails;
 
-	private CoreApiException(CoreApiErrorCode errorCode, ErrorDetails errorDetails) {
+	private CoreApiException(CoreApiErrorCode errorCode, CoreError errorDetails) {
 		this.errorCode = errorCode;
 		this.errorDetails = errorDetails;
 	}
@@ -82,19 +82,19 @@ public final class CoreApiException extends Exception {
 			.details(errorDetails);
 	}
 
-	public static CoreApiException badRequest(ErrorDetails errorDetails) {
+	public static CoreApiException badRequest(CoreError errorDetails) {
 		return new CoreApiException(CoreApiErrorCode.BAD_REQUEST, errorDetails);
 	}
 
-	public static CoreApiException conflict(ErrorDetails errorDetails) {
+	public static CoreApiException conflict(CoreError errorDetails) {
 		return new CoreApiException(CoreApiErrorCode.CONFLICT, errorDetails);
 	}
 
-	public static CoreApiException notFound(ErrorDetails errorDetails) {
+	public static CoreApiException notFound(CoreError errorDetails) {
 		return new CoreApiException(CoreApiErrorCode.NOT_FOUND, errorDetails);
 	}
 
-	public static CoreApiException notSupported(ErrorDetails errorDetails) {
+	public static CoreApiException notSupported(CoreError errorDetails) {
 		return new CoreApiException(CoreApiErrorCode.NOT_SUPPORTED, errorDetails);
 	}
 

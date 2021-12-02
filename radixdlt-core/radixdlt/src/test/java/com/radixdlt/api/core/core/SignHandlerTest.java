@@ -73,9 +73,9 @@ import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.ResourceOperation;
 import com.radixdlt.api.core.core.model.TokenResource;
 import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
-import com.radixdlt.api.core.core.openapitools.model.InvalidTransactionErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.InvalidTransactionError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedError;
 import com.radixdlt.api.core.core.openapitools.model.SignRequest;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
@@ -220,7 +220,7 @@ public class SignHandlerTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOf(CoreApiException.class)
 			.extracting("errorDetails")
-			.isInstanceOf(PublicKeyNotSupportedErrorDetails.class);
+			.isInstanceOf(PublicKeyNotSupportedError.class);
 	}
 
 	@Test
@@ -238,6 +238,6 @@ public class SignHandlerTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOf(CoreApiException.class)
 			.extracting("errorDetails")
-			.isInstanceOf(InvalidTransactionErrorDetails.class);
+			.isInstanceOf(InvalidTransactionError.class);
 	}
 }

@@ -72,7 +72,7 @@ import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataToken;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
-import com.radixdlt.api.core.core.openapitools.model.InvalidPublicKeyErrorDetails;
+import com.radixdlt.api.core.core.openapitools.model.InvalidPublicKeyError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.PublicKey;
 import com.radixdlt.application.system.FeeTable;
@@ -219,7 +219,7 @@ public class ConstructionDeriveHandlerTest {
 		assertThatThrownBy(() -> sut.handleRequest(request))
 			.isInstanceOfSatisfying(CoreApiException.class, e -> {
 				var error = e.toError();
-				assertThat(error.getDetails()).isInstanceOf(InvalidPublicKeyErrorDetails.class);
+				assertThat(error.getDetails()).isInstanceOf(InvalidPublicKeyError.class);
 				assertThat(error.getCode()).isEqualTo(CoreApiException.CoreApiErrorCode.BAD_REQUEST.getErrorCode());
 			});
 	}
