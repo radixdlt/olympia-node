@@ -27,8 +27,8 @@ public class PMTExt extends PMTNode {
 			var prefixedKey = applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
 
 			// TODO: serialize, RLP?
-			this.serialized = "ext".getBytes();
-			return this.serialized;
+			var serialized = "ext".getBytes();
+			return serialized;
 		}
 	}
 }

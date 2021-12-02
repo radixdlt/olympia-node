@@ -22,7 +22,7 @@ public class PMTLeaf extends PMTNode {
 		// XXX TODO: this is probably wrong on bit level?!
 		var prefixedKey = TreeUtils.applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
 		// TODO: serialize, RLP?
-		this.serialized = "leaf".getBytes();
-		return this.serialized;
+		var serialized = "leaf".getBytes();
+		return serialized;
 	}
 }
