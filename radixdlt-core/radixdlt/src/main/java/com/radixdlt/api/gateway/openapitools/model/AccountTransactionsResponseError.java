@@ -39,10 +39,10 @@ import java.util.Objects;
 
 public class AccountTransactionsResponseError extends AccountTransactionsResponse {
   public static final String JSON_PROPERTY_ERROR = "error";
-  private ErrorDetails error;
+  private Error error;
 
 
-  public AccountTransactionsResponseError error(ErrorDetails error) {
+  public AccountTransactionsResponseError error(Error error) {
     this.error = error;
     return this;
   }
@@ -56,14 +56,14 @@ public class AccountTransactionsResponseError extends AccountTransactionsRespons
   @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ErrorDetails getError() {
+  public Error getError() {
     return error;
   }
 
 
   @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setError(ErrorDetails error) {
+  public void setError(Error error) {
     this.error = error;
   }
 

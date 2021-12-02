@@ -26,24 +26,33 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * TokenNotFound
+ * TokenNotFoundError
  */
 @JsonPropertyOrder({
-  TokenNotFound.JSON_PROPERTY_TOKEN_NOT_FOUND
+  TokenNotFoundError.JSON_PROPERTY_TOKEN_NOT_FOUND
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T17:07:44.365935-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T23:01:03.351839-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = InvalidTokenRRI.class, name = "InvalidTokenRRI"),
-  @JsonSubTypes.Type(value = TokenNotFound.class, name = "TokenNotFound"),
+  @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
+  @JsonSubTypes.Type(value = CouldNotConstructFeesError.class, name = "CouldNotConstructFeesError"),
+  @JsonSubTypes.Type(value = InvalidAccountAddressError.class, name = "InvalidAccountAddressError"),
+  @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
+  @JsonSubTypes.Type(value = InvalidTokenRRIError.class, name = "InvalidTokenRRIError"),
+  @JsonSubTypes.Type(value = InvalidTokenSymbolError.class, name = "InvalidTokenSymbolError"),
+  @JsonSubTypes.Type(value = InvalidValidatorAddressError.class, name = "InvalidValidatorAddressError"),
+  @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
+  @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
+  @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
+  @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFoundError"),
 })
 
-public class TokenNotFound extends ErrorDetails {
+public class TokenNotFoundError extends Error {
   public static final String JSON_PROPERTY_TOKEN_NOT_FOUND = "token_not_found";
   private TokenIdentifier tokenNotFound;
 
 
-  public TokenNotFound tokenNotFound(TokenIdentifier tokenNotFound) {
+  public TokenNotFoundError tokenNotFound(TokenIdentifier tokenNotFound) {
     this.tokenNotFound = tokenNotFound;
     return this;
   }
@@ -70,7 +79,7 @@ public class TokenNotFound extends ErrorDetails {
 
 
   /**
-   * Return true if this TokenNotFound object is equal to o.
+   * Return true if this TokenNotFoundError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,8 +89,8 @@ public class TokenNotFound extends ErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TokenNotFound tokenNotFound = (TokenNotFound) o;
-    return Objects.equals(this.tokenNotFound, tokenNotFound.tokenNotFound) &&
+    TokenNotFoundError tokenNotFoundError = (TokenNotFoundError) o;
+    return Objects.equals(this.tokenNotFound, tokenNotFoundError.tokenNotFound) &&
         super.equals(o);
   }
 
@@ -93,7 +102,7 @@ public class TokenNotFound extends ErrorDetails {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TokenNotFound {\n");
+    sb.append("class TokenNotFoundError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    tokenNotFound: ").append(toIndentedString(tokenNotFound)).append("\n");
     sb.append("}");
@@ -114,10 +123,19 @@ public class TokenNotFound extends ErrorDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("InvalidTokenRRI", InvalidTokenRRI.class);
-  mappings.put("TokenNotFound", TokenNotFound.class);
-  mappings.put("TokenNotFound", TokenNotFound.class);
-  JSON.registerDiscriminator(TokenNotFound.class, "type", mappings);
+  mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
+  mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
+  mappings.put("InvalidAccountAddressError", InvalidAccountAddressError.class);
+  mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
+  mappings.put("InvalidTokenRRIError", InvalidTokenRRIError.class);
+  mappings.put("InvalidTokenSymbolError", InvalidTokenSymbolError.class);
+  mappings.put("InvalidValidatorAddressError", InvalidValidatorAddressError.class);
+  mappings.put("MessageTooLongError", MessageTooLongError.class);
+  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
+  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
+  mappings.put("TokenNotFoundError", TokenNotFoundError.class);
+  mappings.put("TokenNotFoundError", TokenNotFoundError.class);
+  JSON.registerDiscriminator(TokenNotFoundError.class, "type", mappings);
 }
 }
 

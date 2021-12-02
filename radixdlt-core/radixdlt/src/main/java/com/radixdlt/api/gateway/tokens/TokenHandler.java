@@ -67,7 +67,7 @@ import com.google.inject.Inject;
 import com.radixdlt.api.gateway.GatewayException;
 import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
-import com.radixdlt.api.gateway.openapitools.model.TokenNotFound;
+import com.radixdlt.api.gateway.openapitools.model.TokenNotFoundError;
 import com.radixdlt.api.gateway.openapitools.model.TokenRequest;
 import com.radixdlt.api.gateway.openapitools.model.TokenResponse;
 import com.radixdlt.api.gateway.openapitools.model.TokenResponseError;
@@ -104,9 +104,9 @@ final class TokenHandler extends GatewayJsonRpcHandler<TokenRequest, TokenRespon
 				.type(TokenResponseSuccess.class.getSimpleName())
 			)
 			.orElseGet(() -> new TokenResponseError()
-				.error(new TokenNotFound()
+				.error(new TokenNotFoundError()
 					.tokenNotFound(request.getTokenIdentifier())
-					.type(TokenNotFound.class.getSimpleName())
+					.type(TokenNotFoundError.class.getSimpleName())
 				)
 				.type(TokenResponseError.class.getSimpleName())
 			);

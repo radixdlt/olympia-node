@@ -26,60 +26,60 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * CouldNotConstructFeesError
+ * InvalidValidatorAddressError
  */
 @JsonPropertyOrder({
-  CouldNotConstructFeesError.JSON_PROPERTY_ATTEMPTS
+  InvalidValidatorAddressError.JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:41:04.998487-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T22:57:23.640286-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
   @JsonSubTypes.Type(value = CouldNotConstructFeesError.class, name = "CouldNotConstructFeesError"),
-  @JsonSubTypes.Type(value = InvalidAccountAddressError.class, name = "InvalidAccountAddress"),
-  @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKey"),
-  @JsonSubTypes.Type(value = InvalidTokenRRIError.class, name = "InvalidTokenRRI"),
-  @JsonSubTypes.Type(value = InvalidTokenSymbolError.class, name = "InvalidTokenSymbol"),
-  @JsonSubTypes.Type(value = InvalidValidatorAddressError.class, name = "InvalidValidatorAddress"),
+  @JsonSubTypes.Type(value = InvalidAccountAddressError.class, name = "InvalidAccountAddressError"),
+  @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
+  @JsonSubTypes.Type(value = InvalidTokenRRIError.class, name = "InvalidTokenRRIError"),
+  @JsonSubTypes.Type(value = InvalidTokenSymbolError.class, name = "InvalidTokenSymbolError"),
+  @JsonSubTypes.Type(value = InvalidValidatorAddressError.class, name = "InvalidValidatorAddressError"),
   @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
   @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
   @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
   @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFound"),
 })
 
-public class CouldNotConstructFeesError extends Error {
-  public static final String JSON_PROPERTY_ATTEMPTS = "attempts";
-  private Integer attempts;
+public class InvalidValidatorAddressError extends java.lang.Error {
+  public static final String JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS = "invalid_account_address";
+  private String invalidAccountAddress;
 
 
-  public CouldNotConstructFeesError attempts(Integer attempts) {
-    this.attempts = attempts;
+  public InvalidValidatorAddressError invalidAccountAddress(String invalidAccountAddress) {
+    this.invalidAccountAddress = invalidAccountAddress;
     return this;
   }
 
    /**
-   * Get attempts
-   * @return attempts
+   * Get invalidAccountAddress
+   * @return invalidAccountAddress
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ATTEMPTS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Integer getAttempts() {
-    return attempts;
+  public String getInvalidAccountAddress() {
+    return invalidAccountAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ATTEMPTS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAttempts(Integer attempts) {
-    this.attempts = attempts;
+  @JsonProperty(JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setInvalidAccountAddress(String invalidAccountAddress) {
+    this.invalidAccountAddress = invalidAccountAddress;
   }
 
 
   /**
-   * Return true if this CouldNotConstructFeesError object is equal to o.
+   * Return true if this InvalidValidatorAddressError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -89,22 +89,22 @@ public class CouldNotConstructFeesError extends Error {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CouldNotConstructFeesError couldNotConstructFeesError = (CouldNotConstructFeesError) o;
-    return Objects.equals(this.attempts, couldNotConstructFeesError.attempts) &&
+    InvalidValidatorAddressError invalidValidatorAddressError = (InvalidValidatorAddressError) o;
+    return Objects.equals(this.invalidAccountAddress, invalidValidatorAddressError.invalidAccountAddress) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(attempts, super.hashCode());
+    return Objects.hash(invalidAccountAddress, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CouldNotConstructFeesError {\n");
+    sb.append("class InvalidValidatorAddressError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    attempts: ").append(toIndentedString(attempts)).append("\n");
+    sb.append("    invalidAccountAddress: ").append(toIndentedString(invalidAccountAddress)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -125,17 +125,17 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
   mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
-  mappings.put("InvalidAccountAddress", InvalidAccountAddressError.class);
-  mappings.put("InvalidPublicKey", InvalidPublicKeyError.class);
-  mappings.put("InvalidTokenRRI", InvalidTokenRRIError.class);
-  mappings.put("InvalidTokenSymbol", InvalidTokenSymbolError.class);
-  mappings.put("InvalidValidatorAddress", InvalidValidatorAddressError.class);
+  mappings.put("InvalidAccountAddressError", InvalidAccountAddressError.class);
+  mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
+  mappings.put("InvalidTokenRRIError", InvalidTokenRRIError.class);
+  mappings.put("InvalidTokenSymbolError", InvalidTokenSymbolError.class);
+  mappings.put("InvalidValidatorAddressError", InvalidValidatorAddressError.class);
   mappings.put("MessageTooLongError", MessageTooLongError.class);
   mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
   mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
   mappings.put("TokenNotFound", TokenNotFoundError.class);
-  mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
-  JSON.registerDiscriminator(CouldNotConstructFeesError.class, "type", mappings);
+  mappings.put("InvalidValidatorAddressError", InvalidValidatorAddressError.class);
+  JSON.registerDiscriminator(InvalidValidatorAddressError.class, "type", mappings);
 }
 }
 

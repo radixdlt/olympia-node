@@ -26,60 +26,60 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * InvalidValidatorAddress
+ * InvalidTokenSymbolError
  */
 @JsonPropertyOrder({
-  InvalidValidatorAddress.JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS
+  InvalidTokenSymbolError.JSON_PROPERTY_INVALID_TOKEN_SYMBOL
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:41:04.998487-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T22:57:23.640286-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
   @JsonSubTypes.Type(value = CouldNotConstructFeesError.class, name = "CouldNotConstructFeesError"),
-  @JsonSubTypes.Type(value = InvalidAccountAddress.class, name = "InvalidAccountAddress"),
-  @JsonSubTypes.Type(value = InvalidPublicKey.class, name = "InvalidPublicKey"),
-  @JsonSubTypes.Type(value = InvalidTokenRRI.class, name = "InvalidTokenRRI"),
-  @JsonSubTypes.Type(value = InvalidTokenSymbol.class, name = "InvalidTokenSymbol"),
-  @JsonSubTypes.Type(value = InvalidValidatorAddress.class, name = "InvalidValidatorAddress"),
+  @JsonSubTypes.Type(value = InvalidAccountAddressError.class, name = "InvalidAccountAddressError"),
+  @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
+  @JsonSubTypes.Type(value = InvalidTokenRRIError.class, name = "InvalidTokenRRIError"),
+  @JsonSubTypes.Type(value = InvalidTokenSymbolError.class, name = "InvalidTokenSymbolError"),
+  @JsonSubTypes.Type(value = InvalidValidatorAddressError.class, name = "InvalidValidatorAddressError"),
   @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
   @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
   @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
-  @JsonSubTypes.Type(value = TokenNotFound.class, name = "TokenNotFound"),
+  @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFound"),
 })
 
-public class InvalidValidatorAddress extends ErrorDetails {
-  public static final String JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS = "invalid_account_address";
-  private String invalidAccountAddress;
+public class InvalidTokenSymbolError extends java.lang.Error {
+  public static final String JSON_PROPERTY_INVALID_TOKEN_SYMBOL = "invalid_token_symbol";
+  private String invalidTokenSymbol;
 
 
-  public InvalidValidatorAddress invalidAccountAddress(String invalidAccountAddress) {
-    this.invalidAccountAddress = invalidAccountAddress;
+  public InvalidTokenSymbolError invalidTokenSymbol(String invalidTokenSymbol) {
+    this.invalidTokenSymbol = invalidTokenSymbol;
     return this;
   }
 
    /**
-   * Get invalidAccountAddress
-   * @return invalidAccountAddress
+   * Get invalidTokenSymbol
+   * @return invalidTokenSymbol
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_INVALID_TOKEN_SYMBOL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getInvalidAccountAddress() {
-    return invalidAccountAddress;
+  public String getInvalidTokenSymbol() {
+    return invalidTokenSymbol;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setInvalidAccountAddress(String invalidAccountAddress) {
-    this.invalidAccountAddress = invalidAccountAddress;
+  @JsonProperty(JSON_PROPERTY_INVALID_TOKEN_SYMBOL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setInvalidTokenSymbol(String invalidTokenSymbol) {
+    this.invalidTokenSymbol = invalidTokenSymbol;
   }
 
 
   /**
-   * Return true if this InvalidValidatorAddress object is equal to o.
+   * Return true if this InvalidTokenSymbolError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -89,22 +89,22 @@ public class InvalidValidatorAddress extends ErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InvalidValidatorAddress invalidValidatorAddress = (InvalidValidatorAddress) o;
-    return Objects.equals(this.invalidAccountAddress, invalidValidatorAddress.invalidAccountAddress) &&
+    InvalidTokenSymbolError invalidTokenSymbolError = (InvalidTokenSymbolError) o;
+    return Objects.equals(this.invalidTokenSymbol, invalidTokenSymbolError.invalidTokenSymbol) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(invalidAccountAddress, super.hashCode());
+    return Objects.hash(invalidTokenSymbol, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InvalidValidatorAddress {\n");
+    sb.append("class InvalidTokenSymbolError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    invalidAccountAddress: ").append(toIndentedString(invalidAccountAddress)).append("\n");
+    sb.append("    invalidTokenSymbol: ").append(toIndentedString(invalidTokenSymbol)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -125,17 +125,17 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
   mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
-  mappings.put("InvalidAccountAddress", InvalidAccountAddress.class);
-  mappings.put("InvalidPublicKey", InvalidPublicKey.class);
-  mappings.put("InvalidTokenRRI", InvalidTokenRRI.class);
-  mappings.put("InvalidTokenSymbol", InvalidTokenSymbol.class);
-  mappings.put("InvalidValidatorAddress", InvalidValidatorAddress.class);
+  mappings.put("InvalidAccountAddressError", InvalidAccountAddressError.class);
+  mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
+  mappings.put("InvalidTokenRRIError", InvalidTokenRRIError.class);
+  mappings.put("InvalidTokenSymbolError", InvalidTokenSymbolError.class);
+  mappings.put("InvalidValidatorAddressError", InvalidValidatorAddressError.class);
   mappings.put("MessageTooLongError", MessageTooLongError.class);
   mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
   mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
-  mappings.put("TokenNotFound", TokenNotFound.class);
-  mappings.put("InvalidValidatorAddress", InvalidValidatorAddress.class);
-  JSON.registerDiscriminator(InvalidValidatorAddress.class, "type", mappings);
+  mappings.put("TokenNotFound", TokenNotFoundError.class);
+  mappings.put("InvalidTokenSymbolError", InvalidTokenSymbolError.class);
+  JSON.registerDiscriminator(InvalidTokenSymbolError.class, "type", mappings);
 }
 }
 

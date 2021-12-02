@@ -40,10 +40,10 @@ import java.util.Objects;
 
 public class TokenResponseError extends TokenResponse {
   public static final String JSON_PROPERTY_ERROR = "error";
-  private ErrorDetails error;
+  private Error error;
 
 
-  public TokenResponseError error(ErrorDetails error) {
+  public TokenResponseError error(Error error) {
     this.error = error;
     return this;
   }
@@ -57,14 +57,14 @@ public class TokenResponseError extends TokenResponse {
   @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ErrorDetails getError() {
+  public Error getError() {
     return error;
   }
 
 
   @JsonProperty(JSON_PROPERTY_ERROR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setError(ErrorDetails error) {
+  public void setError(Error error) {
     this.error = error;
   }
 
