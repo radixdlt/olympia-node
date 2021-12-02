@@ -953,7 +953,7 @@ components:
         url:
           type: string
         validator_fee:
-          type: string
+          type: number
         name:
           type: string
         registered:
@@ -983,7 +983,7 @@ components:
         epoch_range:
           "$ref": "#/components/schemas/EpochRange"
         uptime_percentage:
-          type: string
+          type: number
         proposals_missed:
           type: integer
           format: int64
@@ -1206,7 +1206,7 @@ components:
           InvalidActionError: "#/components/schemas/InvalidActionError"
           TokenNotFoundError: "#/components/schemas/TokenNotFoundError"
           TransactionNotFoundError: "#/components/schemas/TransactionNotFoundError"
-          NotEnoughNativeTokenForFeesError: "#/components/schemas/NotEnoughNativeTokenForFeesError"
+          NotEnoughNativeTokensForFeesError: "#/components/schemas/NotEnoughNativeTokensForFeesError"
           NotEnoughTokensForTransferError: "#/components/schemas/NotEnoughTokensForTransferError"
           NotEnoughTokensForStakeError: "#/components/schemas/NotEnoughTokensForStakeError"
           NotEnoughTokensForUnstakeError: "#/components/schemas/NotEnoughTokensForUnstakeError"
@@ -1214,8 +1214,21 @@ components:
           CannotStakeError: "#/components/schemas/CannotStakeError"
           MessageTooLongError: "#/components/schemas/MessageTooLongError"
           CouldNotConstructFeesError: "#/components/schemas/CouldNotConstructFeesError"
+          InvalidRequestError: "#/components/schemas/InvalidRequestError"
           InternalServerError: "#/components/schemas/InternalServerError"
     InternalServerError:
+      allOf:
+        - $ref: "#/components/schemas/GatewayError"
+        - type: object
+          required:
+            - exception
+            - cause
+          properties:
+            exception:
+              type: string
+            cause:
+              type: string
+    InvalidRequestError:
       allOf:
         - $ref: "#/components/schemas/GatewayError"
         - type: object
@@ -1268,15 +1281,15 @@ components:
               type: string
             message:
               type: string
-    NotEnoughNativeTokenForFeesError:
+    NotEnoughNativeTokensForFeesError:
       allOf:
         - "$ref": "#/components/schemas/GatewayError"
         - type: object
           required:
-            - requested_amount
+            - required_amount
             - available_amount
           properties:
-            requested_amount:
+            required_amount:
               $ref: "#/components/schemas/TokenAmount"
             available_amount:
               $ref: "#/components/schemas/TokenAmount"
@@ -1310,14 +1323,15 @@ components:
         - type: object
           required:
             - requested_amount
-            - available_amount
+            - stake
+            - pending_stake
           properties:
             requested_amount:
               $ref: "#/components/schemas/TokenAmount"
-            pending_staked_amount:
-              $ref: "#/components/schemas/TokenAmount"
-            available_staked_amount:
-              $ref: "#/components/schemas/TokenAmount"
+            stake:
+              $ref: "#/components/schemas/AccountStakeEntry"
+            pending_stake:
+              $ref: "#/components/schemas/AccountStakeEntry"
     BelowMinimumStakeError:
       allOf:
         - "$ref": "#/components/schemas/GatewayError"
@@ -1327,9 +1341,9 @@ components:
             - minimum_amount
           properties:
             requested_amount:
-              $ref: "#/components/schemas/BigInteger"
+              $ref: "#/components/schemas/TokenAmount"
             minimum_amount:
-              $ref: "#/components/schemas/BigInteger"
+              $ref: "#/components/schemas/TokenAmount"
     CannotStakeError:
       allOf:
         - "$ref": "#/components/schemas/GatewayError"
