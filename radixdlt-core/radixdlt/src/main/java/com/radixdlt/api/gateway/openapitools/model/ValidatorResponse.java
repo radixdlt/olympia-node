@@ -16,30 +16,20 @@ package com.radixdlt.api.gateway.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
+
 /**
- * ValidatorInfoResponseSuccess
+ * ValidatorResponse
  */
 @JsonPropertyOrder({
-  ValidatorInfoResponseSuccess.JSON_PROPERTY_LEDGER_STATE,
-  ValidatorInfoResponseSuccess.JSON_PROPERTY_VALIDATOR
+  ValidatorResponse.JSON_PROPERTY_LEDGER_STATE,
+  ValidatorResponse.JSON_PROPERTY_VALIDATOR
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T23:17:20.933920-06:00[America/Chicago]")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
-@JsonSubTypes({
-  @JsonSubTypes.Type(value = ValidatorInfoResponseError.class, name = "ValidatorInfoResponseError"),
-  @JsonSubTypes.Type(value = ValidatorInfoResponseSuccess.class, name = "ValidatorInfoResponseSuccess"),
-})
-
-public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T13:18:58.008003-06:00[America/Chicago]")
+public class ValidatorResponse {
   public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
   private LedgerState ledgerState;
 
@@ -47,7 +37,7 @@ public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
   private Validator validator;
 
 
-  public ValidatorInfoResponseSuccess ledgerState(LedgerState ledgerState) {
+  public ValidatorResponse ledgerState(LedgerState ledgerState) {
     this.ledgerState = ledgerState;
     return this;
   }
@@ -73,7 +63,7 @@ public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
   }
 
 
-  public ValidatorInfoResponseSuccess validator(Validator validator) {
+  public ValidatorResponse validator(Validator validator) {
     this.validator = validator;
     return this;
   }
@@ -100,7 +90,7 @@ public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
 
 
   /**
-   * Return true if this ValidatorInfoResponseSuccess object is equal to o.
+   * Return true if this ValidatorResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,22 +100,20 @@ public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ValidatorInfoResponseSuccess validatorInfoResponseSuccess = (ValidatorInfoResponseSuccess) o;
-    return Objects.equals(this.ledgerState, validatorInfoResponseSuccess.ledgerState) &&
-        Objects.equals(this.validator, validatorInfoResponseSuccess.validator) &&
-        super.equals(o);
+    ValidatorResponse validatorResponse = (ValidatorResponse) o;
+    return Objects.equals(this.ledgerState, validatorResponse.ledgerState) &&
+        Objects.equals(this.validator, validatorResponse.validator);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ledgerState, validator, super.hashCode());
+    return Objects.hash(ledgerState, validator);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ValidatorInfoResponseSuccess {\n");
-    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("class ValidatorResponse {\n");
     sb.append("    ledgerState: ").append(toIndentedString(ledgerState)).append("\n");
     sb.append("    validator: ").append(toIndentedString(validator)).append("\n");
     sb.append("}");
@@ -143,13 +131,5 @@ public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
-static {
-  // Initialize and register the discriminator mappings.
-  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("ValidatorInfoResponseError", ValidatorInfoResponseError.class);
-  mappings.put("ValidatorInfoResponseSuccess", ValidatorInfoResponseSuccess.class);
-  mappings.put("ValidatorInfoResponseSuccess", ValidatorInfoResponseSuccess.class);
-  JSON.registerDiscriminator(ValidatorInfoResponseSuccess.class, "type", mappings);
-}
 }
 

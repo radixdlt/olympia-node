@@ -191,14 +191,14 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/ValidatorInfoRequest"
+              "$ref": "#/components/schemas/ValidatorRequest"
       responses:
         '200':
           description: Validator Info
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ValidatorInfoResponse"
+                "$ref": "#/components/schemas/ValidatorResponse"
         '500':
           description: Unexpected error
           content:
@@ -959,7 +959,7 @@ components:
           properties:
             error:
               $ref: "#/components/schemas/GatewayError"
-    ValidatorInfoRequest:
+    ValidatorRequest:
       type: object
       required:
         - network
@@ -973,39 +973,16 @@ components:
         network: mainnet
         validator_identifier:
           address: rv1qf2x63qx4jdaxj83kkw2yytehvvmu6r2xll5gcp6c9rancmrfsgfwttnczx
-    ValidatorInfoResponse:
+    ValidatorResponse:
       type: object
       required:
-        - type
+        - ledger_state
+        - validator
       properties:
-        type:
-          type: string
-      discriminator:
-        propertyName: type
-        mapping:
-          ValidatorInfoResponseSuccess: "#/components/schemas/ValidatorInfoResponseSuccess"
-          ValidatorInfoResponseError: "#/components/schemas/ValidatorInfoResponseError"
-    ValidatorInfoResponseSuccess:
-      allOf:
-        - $ref: "#/components/schemas/ValidatorInfoResponse"
-        - type: object
-          required:
-            - ledger_state
-            - validator
-          properties:
-            ledger_state:
-              $ref: "#/components/schemas/LedgerState"
-            validator:
-              $ref: "#/components/schemas/Validator"
-    ValidatorInfoResponseError:
-      allOf:
-        - $ref: "#/components/schemas/ValidatorInfoResponse"
-        - type: object
-          required:
-            - error
-          properties:
-            error:
-              $ref: "#/components/schemas/GatewayError"
+        ledger_state:
+          $ref: "#/components/schemas/LedgerState"
+        validator:
+          $ref: "#/components/schemas/Validator"
     ValidatorsRequest:
       type: object
       required:
@@ -1018,39 +995,15 @@ components:
     ValidatorsResponse:
       type: object
       required:
-        - type
+        - ledger_state
+        - validators
       properties:
-        type:
-          type: string
-      discriminator:
-        propertyName: type
-        mapping:
-          ValidatorsResponseSuccess: "#/components/schemas/ValidatorsResponseSuccess"
-          ValidatorsResponseError: "#/components/schemas/ValidatorsResponseError"
-    ValidatorsResponseSuccess:
-      allOf:
-        - $ref: "#/components/schemas/ValidatorsResponse"
-        - type: object
-          required:
-            - ledger_state
-            - validators
-          properties:
-            ledger_state:
-              "$ref": "#/components/schemas/LedgerState"
-            validators:
-              type: array
-              items:
-                "$ref": "#/components/schemas/Validator"
-    ValidatorsResponseError:
-      allOf:
-        - $ref: "#/components/schemas/ValidatorsResponse"
-        - type: object
-          required:
-            - error
-          properties:
-            error:
-              $ref: "#/components/schemas/GatewayError"
-
+        ledger_state:
+          $ref: "#/components/schemas/LedgerState"
+        validators:
+          type: array
+          items:
+            $ref: "#/components/schemas/Validator"
     Validator:
       type: object
       required:

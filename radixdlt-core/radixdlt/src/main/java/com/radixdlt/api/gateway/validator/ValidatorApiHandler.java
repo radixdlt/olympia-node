@@ -66,12 +66,11 @@ package com.radixdlt.api.gateway.validator;
 import com.google.inject.Inject;
 import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
-import com.radixdlt.api.gateway.openapitools.model.ValidatorInfoRequest;
-import com.radixdlt.api.gateway.openapitools.model.ValidatorInfoResponse;
-import com.radixdlt.api.gateway.openapitools.model.ValidatorInfoResponseSuccess;
+import com.radixdlt.api.gateway.openapitools.model.ValidatorRequest;
+import com.radixdlt.api.gateway.openapitools.model.ValidatorResponse;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
-final class ValidatorApiHandler extends GatewayJsonRpcHandler<ValidatorInfoRequest, ValidatorInfoResponse> {
+final class ValidatorApiHandler extends GatewayJsonRpcHandler<ValidatorRequest, ValidatorResponse> {
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final BerkeleyValidatorStore validatorStore;
 	private final BerkeleyValidatorUptimeStore uptimeStore;
@@ -84,7 +83,7 @@ final class ValidatorApiHandler extends GatewayJsonRpcHandler<ValidatorInfoReque
 		BerkeleyValidatorUptimeStore uptimeStore,
 		GatewayModelMapper gatewayModelMapper
 	) {
-		super(ValidatorInfoRequest.class);
+		super(ValidatorRequest.class);
 
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.validatorStore = validatorStore;
@@ -93,8 +92,8 @@ final class ValidatorApiHandler extends GatewayJsonRpcHandler<ValidatorInfoReque
 	}
 
 	@Override
-	public ValidatorInfoResponse handleRequest(ValidatorInfoRequest request) {
-		var response = new ValidatorInfoResponseSuccess();
+	public ValidatorResponse handleRequest(ValidatorRequest request) {
+		var response = new ValidatorResponse();
 		var key = gatewayModelMapper.validator(request.getValidatorIdentifier());
 		var validator = validatorStore.getValidatorInfo(key);
 		var uptime = uptimeStore.getUptimeTwoWeeks(key);
@@ -102,6 +101,6 @@ final class ValidatorApiHandler extends GatewayJsonRpcHandler<ValidatorInfoReque
 		response.validator(validator);
 		var proof = inMemorySystemInfo.getCurrentProof();
 		response.ledgerState(gatewayModelMapper.ledgerState(proof));
-		return response.type(ValidatorInfoResponseSuccess.class.getSimpleName());
+		return response;
 	}
 }

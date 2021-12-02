@@ -22,14 +22,14 @@ import java.util.Objects;
 
 
 /**
- * ValidatorInfoRequest
+ * ValidatorRequest
  */
 @JsonPropertyOrder({
-  ValidatorInfoRequest.JSON_PROPERTY_NETWORK,
-  ValidatorInfoRequest.JSON_PROPERTY_VALIDATOR_IDENTIFIER
+  ValidatorRequest.JSON_PROPERTY_NETWORK,
+  ValidatorRequest.JSON_PROPERTY_VALIDATOR_IDENTIFIER
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T01:49:33.060927-06:00[America/Chicago]")
-public class ValidatorInfoRequest {
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T13:18:58.008003-06:00[America/Chicago]")
+public class ValidatorRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
 
@@ -37,7 +37,7 @@ public class ValidatorInfoRequest {
   private ValidatorIdentifier validatorIdentifier;
 
 
-  public ValidatorInfoRequest network(String network) {
+  public ValidatorRequest network(String network) {
     this.network = network;
     return this;
   }
@@ -63,7 +63,7 @@ public class ValidatorInfoRequest {
   }
 
 
-  public ValidatorInfoRequest validatorIdentifier(ValidatorIdentifier validatorIdentifier) {
+  public ValidatorRequest validatorIdentifier(ValidatorIdentifier validatorIdentifier) {
     this.validatorIdentifier = validatorIdentifier;
     return this;
   }
@@ -90,7 +90,7 @@ public class ValidatorInfoRequest {
 
 
   /**
-   * Return true if this ValidatorInfoRequest object is equal to o.
+   * Return true if this ValidatorRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -100,9 +100,9 @@ public class ValidatorInfoRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ValidatorInfoRequest validatorInfoRequest = (ValidatorInfoRequest) o;
-    return Objects.equals(this.network, validatorInfoRequest.network) &&
-        Objects.equals(this.validatorIdentifier, validatorInfoRequest.validatorIdentifier);
+    ValidatorRequest validatorRequest = (ValidatorRequest) o;
+    return Objects.equals(this.network, validatorRequest.network) &&
+        Objects.equals(this.validatorIdentifier, validatorRequest.validatorIdentifier);
   }
 
   @Override
@@ -113,7 +113,7 @@ public class ValidatorInfoRequest {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ValidatorInfoRequest {\n");
+    sb.append("class ValidatorRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    validatorIdentifier: ").append(toIndentedString(validatorIdentifier)).append("\n");
     sb.append("}");

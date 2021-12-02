@@ -27,7 +27,7 @@ import java.util.Objects;
 @JsonPropertyOrder({
   ValidatorsRequest.JSON_PROPERTY_NETWORK
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T01:49:33.060927-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T13:18:58.008003-06:00[America/Chicago]")
 public class ValidatorsRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
