@@ -196,7 +196,7 @@ tags:
 
       ## Resource Identifiers
 
-      A Resource Identifier uniquely describes either some token or stake ownership of a validator.
+      A Resource Identifier uniquely describes either some token or stake units for a validator.
 
       <SchemaDefinition schemaRef="#/components/schemas/ResourceIdentifier" exampleRef="#/components/examples/ResourceIdentifier" showReadOnly={true} showWriteOnly={true} />
 
@@ -220,7 +220,7 @@ tags:
 
       Overall, there are four main types of entities on Radix:
       * **Account** is a regular public key account which can contain token balances and contain
-      StakeOwnership, which represents a delegated amount of stake to a specific validator. Subentities under
+      StakeUnits, which represents a delegated amount of stake to a specific validator. Subentities under
       an account-address contain assets which the account-address owns but is currently locked by the system.
       An account is represented by its Bech32 account address.
       * **Validator** is an entity representing a validating node on the network. The subentity `system` holds XRD
@@ -283,10 +283,10 @@ tags:
       to the receiving account.
       2. **Staking** may be started by transferring XRD from an account to a `prepared_stake` entity
       with a specific validator. Once XRD is in this entity, at some point the system will move this
-      XRD to a Validator entity and mint StakeOwnership into the originating account.
-      3. **Unstaking** may be started by transfering StakeOwnership from an account to a `prepared_unstake`
-      entity. Once StakeOwnership is in this entity, at some point the system will destroy this
-      StakeOwnership and transfer XRD from the Validator entity into your `exiting_stake` entity. Once
+      XRD to a Validator entity and mint StakeUnits into the originating account.
+      3. **Unstaking** may be started by transfering StakeUnits from an account to a `prepared_unstake`
+      entity. Once StakeUnits is in this entity, at some point the system will destroy this
+      StakeUnits and transfer XRD from the Validator entity into your `exiting_stake` entity. Once
       the unlocking period is over the system will move that XRD from the `exiting_stake` entity into your
       account.
       4. **Validator Updates** may be started by destroying the current data object and creating a new
@@ -1601,7 +1601,7 @@ components:
             value: '1000000000000000000'
           - resource_identifier:
               validator: rv1q04u5zwtgffsqkvr08xqm6vpm3gwxh4uqwtjpx5p47ew0m0v8m5zs3m3jed
-              type: stake_ownership
+              type: StakeUnit
             value: '15000000000000000000000'
         data_objects: []
     MempoolRequest:
@@ -2821,7 +2821,7 @@ components:
         propertyName: type
         mapping:
           Token: "#/components/schemas/TokenResourceIdentifier"
-          StakeOwnership: "#/components/schemas/StakeOwnershipResourceIdentifier"
+          StakeUnit: "#/components/schemas/StakeUnitResourceIdentifier"
     TokenResourceIdentifier:
       allOf:
         - "$ref": "#/components/schemas/ResourceIdentifier"
@@ -2832,7 +2832,7 @@ components:
             rri:
               description: The Radix Resource Identifier "RRI" of the token.
               "$ref": "#/components/schemas/RRI"
-    StakeOwnershipResourceIdentifier:
+    StakeUnitResourceIdentifier:
       allOf:
         - "$ref": "#/components/schemas/ResourceIdentifier"
         - type: object
@@ -2840,7 +2840,7 @@ components:
             - validator
           properties:
             validator:
-              description: The validator associated with this stake ownership.
+              description: The validator associated with this stake unit.
               "$ref": "#/components/schemas/ValidatorAddress"
     Signature:
       type: object

@@ -498,8 +498,8 @@ public final class CoreModelMapper {
 			var rri = tokenResourceIdentifier.getRri();
 			var symbolAndAddr = addressing.forResources().parseOrThrow(rri, s -> invalidAddress(rri));
 			return com.radixdlt.api.core.core.model.TokenResource.from(symbolAndAddr.getFirst(), symbolAndAddr.getSecond());
-		} else if (resourceIdentifier instanceof StakeOwnershipResourceIdentifier stakeOwnershipResourceIdentifier) {
-			var validatorAddress = stakeOwnershipResourceIdentifier.getValidator();
+		} else if (resourceIdentifier instanceof StakeUnitResourceIdentifier stakeUnitResourceIdentifier) {
+			var validatorAddress = stakeUnitResourceIdentifier.getValidator();
 			var key = addressing.forValidators().parseOrThrow(validatorAddress, s -> invalidAddress(validatorAddress));
 			return StakeOwnershipResource.from(key);
 		} else {
@@ -521,7 +521,7 @@ public final class CoreModelMapper {
 				.rri(addressing.forResources().of(tokenResource.getSymbol(), tokenResource.getTokenAddress()))
 				.type("TokenResourceIdentifier");
 		} else if (resource instanceof StakeOwnershipResource stakeOwnership) {
-			return new StakeOwnershipResourceIdentifier()
+			return new StakeUnitResourceIdentifier()
 				.validator(addressing.forValidators().of(stakeOwnership.getValidatorKey()))
 				.type("StakeOwnershipResourceIdentifier");
 		} else {
@@ -680,7 +680,7 @@ public final class CoreModelMapper {
 	}
 
 	public ResourceIdentifier stakeOwnership(ECPublicKey validatorKey) {
-		return new StakeOwnershipResourceIdentifier()
+		return new StakeUnitResourceIdentifier()
 			.validator(addressing.forValidators().of(validatorKey))
 			.type("StakeOwnership");
 	}
@@ -694,7 +694,7 @@ public final class CoreModelMapper {
 				.type("Token");
 		}
 
-		return new StakeOwnershipResourceIdentifier()
+		return new StakeUnitResourceIdentifier()
 			.validator(addressing.forValidators().of(bucket.getValidatorKey()))
 			.type("StakeOwnership");
 	}

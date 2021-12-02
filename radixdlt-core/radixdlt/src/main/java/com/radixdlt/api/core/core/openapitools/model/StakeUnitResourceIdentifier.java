@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.radixdlt.api.core.core.openapitools.JSON;
+import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
 import java.util.HashMap;
@@ -26,53 +26,51 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * ResourceIdentifier
+ * StakeUnitResourceIdentifier
  */
 @JsonPropertyOrder({
-  ResourceIdentifier.JSON_PROPERTY_TYPE
+  StakeUnitResourceIdentifier.JSON_PROPERTY_VALIDATOR
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T16:28:59.363198-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = StakeUnitResourceIdentifier.class, name = "StakeUnit"),
-  @JsonSubTypes.Type(value = StakeUnitResourceIdentifier.class, name = "StakeUnitResourceIdentifier"),
   @JsonSubTypes.Type(value = TokenResourceIdentifier.class, name = "Token"),
-  @JsonSubTypes.Type(value = TokenResourceIdentifier.class, name = "TokenResourceIdentifier"),
 })
 
-public class ResourceIdentifier {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+public class StakeUnitResourceIdentifier extends ResourceIdentifier {
+  public static final String JSON_PROPERTY_VALIDATOR = "validator";
+  private String validator;
 
 
-  public ResourceIdentifier type(String type) {
-    this.type = type;
+  public StakeUnitResourceIdentifier validator(String validator) {
+    this.validator = validator;
     return this;
   }
 
    /**
-   * The type of resource.
-   * @return type
+   * Get validator
+   * @return validator
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The type of resource.")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALIDATOR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public String getValidator() {
+    return validator;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setValidator(String validator) {
+    this.validator = validator;
   }
 
 
   /**
-   * Return true if this ResourceIdentifier object is equal to o.
+   * Return true if this StakeUnitResourceIdentifier object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -82,20 +80,22 @@ public class ResourceIdentifier {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ResourceIdentifier resourceIdentifier = (ResourceIdentifier) o;
-    return Objects.equals(this.type, resourceIdentifier.type);
+    StakeUnitResourceIdentifier stakeUnitResourceIdentifier = (StakeUnitResourceIdentifier) o;
+    return Objects.equals(this.validator, stakeUnitResourceIdentifier.validator) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(validator, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ResourceIdentifier {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class StakeUnitResourceIdentifier {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    validator: ").append(toIndentedString(validator)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -115,11 +115,9 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("StakeUnit", StakeUnitResourceIdentifier.class);
-  mappings.put("StakeUnitResourceIdentifier", StakeUnitResourceIdentifier.class);
   mappings.put("Token", TokenResourceIdentifier.class);
-  mappings.put("TokenResourceIdentifier", TokenResourceIdentifier.class);
-  mappings.put("ResourceIdentifier", ResourceIdentifier.class);
-  JSON.registerDiscriminator(ResourceIdentifier.class, "type", mappings);
+  mappings.put("StakeUnitResourceIdentifier", StakeUnitResourceIdentifier.class);
+  JSON.registerDiscriminator(StakeUnitResourceIdentifier.class, "type", mappings);
 }
 }
 

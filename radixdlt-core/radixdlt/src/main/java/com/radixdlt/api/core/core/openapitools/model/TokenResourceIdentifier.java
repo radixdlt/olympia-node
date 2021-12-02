@@ -34,7 +34,7 @@ import java.util.Objects;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-24T23:25:44.231186-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = StakeOwnershipResourceIdentifier.class, name = "StakeOwnership"),
+  @JsonSubTypes.Type(value = StakeUnitResourceIdentifier.class, name = "StakeOwnership"),
   @JsonSubTypes.Type(value = TokenResourceIdentifier.class, name = "Token"),
 })
 
@@ -114,7 +114,7 @@ public class TokenResourceIdentifier extends ResourceIdentifier {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("StakeOwnership", StakeOwnershipResourceIdentifier.class);
+  mappings.put("StakeOwnership", StakeUnitResourceIdentifier.class);
   mappings.put("Token", TokenResourceIdentifier.class);
   mappings.put("TokenResourceIdentifier", TokenResourceIdentifier.class);
   JSON.registerDiscriminator(TokenResourceIdentifier.class, "type", mappings);
