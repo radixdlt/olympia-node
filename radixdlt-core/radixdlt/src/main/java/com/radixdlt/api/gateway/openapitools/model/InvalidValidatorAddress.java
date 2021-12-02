@@ -26,10 +26,10 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * CouldNotConstructFeesError
+ * InvalidValidatorAddress
  */
 @JsonPropertyOrder({
-  CouldNotConstructFeesError.JSON_PROPERTY_ATTEMPTS
+  InvalidValidatorAddress.JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:41:04.998487-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
@@ -47,39 +47,39 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = TokenNotFound.class, name = "TokenNotFound"),
 })
 
-public class CouldNotConstructFeesError extends ErrorDetails {
-  public static final String JSON_PROPERTY_ATTEMPTS = "attempts";
-  private Integer attempts;
+public class InvalidValidatorAddress extends ErrorDetails {
+  public static final String JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS = "invalid_account_address";
+  private String invalidAccountAddress;
 
 
-  public CouldNotConstructFeesError attempts(Integer attempts) {
-    this.attempts = attempts;
+  public InvalidValidatorAddress invalidAccountAddress(String invalidAccountAddress) {
+    this.invalidAccountAddress = invalidAccountAddress;
     return this;
   }
 
    /**
-   * Get attempts
-   * @return attempts
+   * Get invalidAccountAddress
+   * @return invalidAccountAddress
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ATTEMPTS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Integer getAttempts() {
-    return attempts;
+  public String getInvalidAccountAddress() {
+    return invalidAccountAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ATTEMPTS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAttempts(Integer attempts) {
-    this.attempts = attempts;
+  @JsonProperty(JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setInvalidAccountAddress(String invalidAccountAddress) {
+    this.invalidAccountAddress = invalidAccountAddress;
   }
 
 
   /**
-   * Return true if this CouldNotConstructFeesError object is equal to o.
+   * Return true if this InvalidValidatorAddress object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -89,22 +89,22 @@ public class CouldNotConstructFeesError extends ErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CouldNotConstructFeesError couldNotConstructFeesError = (CouldNotConstructFeesError) o;
-    return Objects.equals(this.attempts, couldNotConstructFeesError.attempts) &&
+    InvalidValidatorAddress invalidValidatorAddress = (InvalidValidatorAddress) o;
+    return Objects.equals(this.invalidAccountAddress, invalidValidatorAddress.invalidAccountAddress) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(attempts, super.hashCode());
+    return Objects.hash(invalidAccountAddress, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CouldNotConstructFeesError {\n");
+    sb.append("class InvalidValidatorAddress {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    attempts: ").append(toIndentedString(attempts)).append("\n");
+    sb.append("    invalidAccountAddress: ").append(toIndentedString(invalidAccountAddress)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -134,8 +134,8 @@ static {
   mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
   mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
   mappings.put("TokenNotFound", TokenNotFound.class);
-  mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
-  JSON.registerDiscriminator(CouldNotConstructFeesError.class, "type", mappings);
+  mappings.put("InvalidValidatorAddress", InvalidValidatorAddress.class);
+  JSON.registerDiscriminator(InvalidValidatorAddress.class, "type", mappings);
 }
 }
 

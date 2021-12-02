@@ -26,24 +26,24 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * TransactionBuildResponseError
+ * ValidatorInfoResponseError
  */
 @JsonPropertyOrder({
-  TransactionBuildResponseError.JSON_PROPERTY_DETAILS
+  ValidatorInfoResponseError.JSON_PROPERTY_DETAILS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:41:04.998487-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:32:29.076433-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = TransactionBuildResponseError.class, name = "TransactionBuildResponseError"),
-  @JsonSubTypes.Type(value = TransactionBuildResponseSuccess.class, name = "TransactionBuildResponseSuccess"),
+  @JsonSubTypes.Type(value = ValidatorInfoResponseError.class, name = "ValidatorInfoResponseError"),
+  @JsonSubTypes.Type(value = ValidatorInfoResponseSuccess.class, name = "ValidatorInfoResponseSuccess"),
 })
 
-public class TransactionBuildResponseError extends TransactionBuildResponse {
+public class ValidatorInfoResponseError extends ValidatorInfoResponse {
   public static final String JSON_PROPERTY_DETAILS = "details";
   private ErrorDetails details;
 
 
-  public TransactionBuildResponseError details(ErrorDetails details) {
+  public ValidatorInfoResponseError details(ErrorDetails details) {
     this.details = details;
     return this;
   }
@@ -70,7 +70,7 @@ public class TransactionBuildResponseError extends TransactionBuildResponse {
 
 
   /**
-   * Return true if this TransactionBuildResponseError object is equal to o.
+   * Return true if this ValidatorInfoResponseError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,8 +80,8 @@ public class TransactionBuildResponseError extends TransactionBuildResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionBuildResponseError transactionBuildResponseError = (TransactionBuildResponseError) o;
-    return Objects.equals(this.details, transactionBuildResponseError.details) &&
+    ValidatorInfoResponseError validatorInfoResponseError = (ValidatorInfoResponseError) o;
+    return Objects.equals(this.details, validatorInfoResponseError.details) &&
         super.equals(o);
   }
 
@@ -93,7 +93,7 @@ public class TransactionBuildResponseError extends TransactionBuildResponse {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionBuildResponseError {\n");
+    sb.append("class ValidatorInfoResponseError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    details: ").append(toIndentedString(details)).append("\n");
     sb.append("}");
@@ -114,10 +114,10 @@ public class TransactionBuildResponseError extends TransactionBuildResponse {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("TransactionBuildResponseError", TransactionBuildResponseError.class);
-  mappings.put("TransactionBuildResponseSuccess", TransactionBuildResponseSuccess.class);
-  mappings.put("TransactionBuildResponseError", TransactionBuildResponseError.class);
-  JSON.registerDiscriminator(TransactionBuildResponseError.class, "type", mappings);
+  mappings.put("ValidatorInfoResponseError", ValidatorInfoResponseError.class);
+  mappings.put("ValidatorInfoResponseSuccess", ValidatorInfoResponseSuccess.class);
+  mappings.put("ValidatorInfoResponseError", ValidatorInfoResponseError.class);
+  JSON.registerDiscriminator(ValidatorInfoResponseError.class, "type", mappings);
 }
 }
 

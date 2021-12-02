@@ -74,6 +74,7 @@ import com.radixdlt.api.gateway.openapitools.model.BelowMinimumStakeError;
 import com.radixdlt.api.gateway.openapitools.model.BurnTokens;
 import com.radixdlt.api.gateway.openapitools.model.CouldNotConstructFeesError;
 import com.radixdlt.api.gateway.openapitools.model.CreateTokenDefinition;
+import com.radixdlt.api.gateway.openapitools.model.ErrorDetails;
 import com.radixdlt.api.gateway.openapitools.model.LedgerState;
 import com.radixdlt.api.gateway.openapitools.model.MessageTooLongError;
 import com.radixdlt.api.gateway.openapitools.model.MintTokens;
@@ -84,7 +85,6 @@ import com.radixdlt.api.gateway.openapitools.model.TokenAmount;
 import com.radixdlt.api.gateway.openapitools.model.TokenIdentifier;
 import com.radixdlt.api.gateway.openapitools.model.TokenProperties;
 import com.radixdlt.api.gateway.openapitools.model.TransactionBuild;
-import com.radixdlt.api.gateway.openapitools.model.TransactionBuildError;
 import com.radixdlt.api.gateway.openapitools.model.TransactionBuildRequest;
 import com.radixdlt.api.gateway.openapitools.model.TransactionIdentifier;
 import com.radixdlt.api.gateway.openapitools.model.TransactionRules;
@@ -508,7 +508,7 @@ public final class GatewayModelMapper {
 		return constructionRequest;
 	}
 
-	public TransactionBuildError transactionBuildError(TxBuilderException e) {
+	public ErrorDetails transactionBuildError(TxBuilderException e) {
 		if (e instanceof NotEnoughResourcesException notEnoughResourcesException) {
 			return new NotEnoughResourcesError()
 				.availableAmount(notEnoughResourcesException.getAvailable().toString())

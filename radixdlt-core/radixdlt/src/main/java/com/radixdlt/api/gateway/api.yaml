@@ -776,82 +776,10 @@ components:
         - "$ref": "#/components/schemas/TransactionBuildResponse"
         - type: object
           required:
-            - error
+            - details
           properties:
-            error:
-              $ref: "#/components/schemas/TransactionBuildError"
-    TransactionBuildError:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          type: string
-      discriminator:
-        propertyName: type
-        mapping:
-          NotEnoughResourcesError: "#/components/schemas/NotEnoughResourcesError"
-          BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"
-          NotValidatorOwnerError: "#/components/schemas/NotValidatorOwnerError"
-          MessageTooLongError: "#/components/schemas/MessageTooLongError"
-          CouldNotConstructFeesError: "#/components/schemas/CouldNotConstructFeesError"
-    NotEnoughResourcesError:
-      allOf:
-        - "$ref": "#/components/schemas/TransactionBuildError"
-        - type: object
-          required:
-            - requested_amount
-            - available_amount
-          properties:
-            requested_amount:
-              $ref: "#/components/schemas/BigInteger"
-            available_amount:
-              $ref: "#/components/schemas/BigInteger"
-    BelowMinimumStakeError:
-      allOf:
-        - "$ref": "#/components/schemas/TransactionBuildError"
-        - type: object
-          required:
-            - requested_amount
-            - minimum_amount
-          properties:
-            requested_amount:
-              $ref: "#/components/schemas/BigInteger"
-            minimum_amount:
-              $ref: "#/components/schemas/BigInteger"
-    NotValidatorOwnerError:
-      allOf:
-        - "$ref": "#/components/schemas/TransactionBuildError"
-        - type: object
-          required:
-            - owner
-            - user
-          properties:
-            owner:
-              $ref: "#/components/schemas/AccountIdentifier"
-            user:
-              $ref: "#/components/schemas/AccountIdentifier"
-    MessageTooLongError:
-      allOf:
-        - "$ref": "#/components/schemas/TransactionBuildError"
-        - type: object
-          required:
-            - length_limit
-            - attempted_length
-          properties:
-            length_limit:
-              type: integer
-            attempted_length:
-              type: integer
-    CouldNotConstructFeesError:
-      allOf:
-        - "$ref": "#/components/schemas/TransactionBuildError"
-        - type: object
-          required:
-            - attempts
-          properties:
-            attempts:
-              type: integer
+            details:
+              $ref: "#/components/schemas/ErrorDetails"
     TransactionFinalizeRequest:
       type: object
       required:
@@ -1147,13 +1075,36 @@ components:
     ValidatorInfoResponse:
       type: object
       required:
-        - ledger_state
-        - validator
+        - type
       properties:
-        ledger_state:
-          "$ref": "#/components/schemas/LedgerState"
-        validator:
-          "$ref": "#/components/schemas/Validator"
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          ValidatorInfoResponseSuccess: "#/components/schemas/ValidatorInfoResponseSuccess"
+          ValidatorInfoResponseError: "#/components/schemas/ValidatorInfoResponseError"
+    ValidatorInfoResponseSuccess:
+      allOf:
+        - $ref: "#/components/schemas/ValidatorInfoResponse"
+        - type: object
+          required:
+            - ledger_state
+            - validator
+          properties:
+            ledger_state:
+              $ref: "#/components/schemas/LedgerState"
+            validator:
+              $ref: "#/components/schemas/Validator"
+    ValidatorInfoResponseError:
+      allOf:
+        - $ref: "#/components/schemas/ValidatorInfoResponse"
+        - type: object
+          required:
+            - details
+          properties:
+            details:
+              $ref: "#/components/schemas/ErrorDetails"
     ValidatorsRequest:
       type: object
       required:
@@ -1438,14 +1389,14 @@ components:
         - address
       properties:
         address:
-          $ref: "#/components/schemas/AccountAddress"
+          type: string
     ValidatorIdentifier:
       type: object
       required:
         - address
       properties:
         address:
-          $ref: "#/components/schemas/ValidatorAddress"
+          type: string
     TokenIdentifier:
       type: object
       required:
@@ -1474,7 +1425,73 @@ components:
         propertyName: type
         mapping:
           InvalidTokenRRI: "#/components/schemas/InvalidTokenRRI"
+          InvalidAccountAddress: "#/components/schemas/InvalidAccountAddress"
+          InvalidValidatorAddress: "#/components/schemas/InvalidValidatorAddress"
+          InvalidPublicKey: "#/components/schemas/InvalidPublicKey"
+          InvalidTokenSymbol: "#/components/schemas/InvalidTokenSymbol"
           TokenNotFound: "#/components/schemas/TokenNotFound"
+          NotEnoughResourcesError: "#/components/schemas/NotEnoughResourcesError"
+          BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"
+          NotValidatorOwnerError: "#/components/schemas/NotValidatorOwnerError"
+          MessageTooLongError: "#/components/schemas/MessageTooLongError"
+          CouldNotConstructFeesError: "#/components/schemas/CouldNotConstructFeesError"
+    NotEnoughResourcesError:
+      allOf:
+        - "$ref": "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - requested_amount
+            - available_amount
+          properties:
+            requested_amount:
+              $ref: "#/components/schemas/BigInteger"
+            available_amount:
+              $ref: "#/components/schemas/BigInteger"
+    BelowMinimumStakeError:
+      allOf:
+        - "$ref": "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - requested_amount
+            - minimum_amount
+          properties:
+            requested_amount:
+              $ref: "#/components/schemas/BigInteger"
+            minimum_amount:
+              $ref: "#/components/schemas/BigInteger"
+    NotValidatorOwnerError:
+      allOf:
+        - "$ref": "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - owner
+            - user
+          properties:
+            owner:
+              $ref: "#/components/schemas/AccountIdentifier"
+            user:
+              $ref: "#/components/schemas/AccountIdentifier"
+    MessageTooLongError:
+      allOf:
+        - "$ref": "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - length_limit
+            - attempted_length
+          properties:
+            length_limit:
+              type: integer
+            attempted_length:
+              type: integer
+    CouldNotConstructFeesError:
+      allOf:
+        - "$ref": "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - attempts
+          properties:
+            attempts:
+              type: integer
     InvalidPublicKey:
       allOf:
         - $ref: "#/components/schemas/ErrorDetails"
@@ -1511,6 +1528,15 @@ components:
           properties:
             invalid_account_address:
               type: string
+    InvalidValidatorAddress:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_validator_address
+          properties:
+            invalid_account_address:
+              type: string
     TokenNotFound:
       allOf:
         - $ref: "#/components/schemas/ErrorDetails"
@@ -1520,9 +1546,3 @@ components:
           properties:
             token_not_found:
               $ref: "#/components/schemas/TokenIdentifier"
-    AccountAddress:
-      type: string
-      pattern: "^[rtd]dx[2-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$"
-    ValidatorAddress:
-      type: string
-      pattern: "^[rtd]v[2-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$"

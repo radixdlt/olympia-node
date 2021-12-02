@@ -32,17 +32,23 @@ import java.util.Objects;
   NotEnoughResourcesError.JSON_PROPERTY_REQUESTED_AMOUNT,
   NotEnoughResourcesError.JSON_PROPERTY_AVAILABLE_AMOUNT
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:41:04.998487-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
   @JsonSubTypes.Type(value = CouldNotConstructFeesError.class, name = "CouldNotConstructFeesError"),
+  @JsonSubTypes.Type(value = InvalidAccountAddress.class, name = "InvalidAccountAddress"),
+  @JsonSubTypes.Type(value = InvalidPublicKey.class, name = "InvalidPublicKey"),
+  @JsonSubTypes.Type(value = InvalidTokenRRI.class, name = "InvalidTokenRRI"),
+  @JsonSubTypes.Type(value = InvalidTokenSymbol.class, name = "InvalidTokenSymbol"),
+  @JsonSubTypes.Type(value = InvalidValidatorAddress.class, name = "InvalidValidatorAddress"),
   @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
   @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
   @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
+  @JsonSubTypes.Type(value = TokenNotFound.class, name = "TokenNotFound"),
 })
 
-public class NotEnoughResourcesError extends TransactionBuildError {
+public class NotEnoughResourcesError extends ErrorDetails {
   public static final String JSON_PROPERTY_REQUESTED_AMOUNT = "requested_amount";
   private String requestedAmount;
 
@@ -151,9 +157,15 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
   mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
+  mappings.put("InvalidAccountAddress", InvalidAccountAddress.class);
+  mappings.put("InvalidPublicKey", InvalidPublicKey.class);
+  mappings.put("InvalidTokenRRI", InvalidTokenRRI.class);
+  mappings.put("InvalidTokenSymbol", InvalidTokenSymbol.class);
+  mappings.put("InvalidValidatorAddress", InvalidValidatorAddress.class);
   mappings.put("MessageTooLongError", MessageTooLongError.class);
   mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
   mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
+  mappings.put("TokenNotFound", TokenNotFound.class);
   mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
   JSON.registerDiscriminator(NotEnoughResourcesError.class, "type", mappings);
 }

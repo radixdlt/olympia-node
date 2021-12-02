@@ -31,7 +31,7 @@ import java.util.Objects;
 @JsonPropertyOrder({
   TransactionBuildResponseSuccess.JSON_PROPERTY_TRANSACTION_BUILD
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:41:04.998487-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = TransactionBuildResponseError.class, name = "TransactionBuildResponseError"),

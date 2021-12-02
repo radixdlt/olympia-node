@@ -68,6 +68,7 @@ import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.ValidatorInfoRequest;
 import com.radixdlt.api.gateway.openapitools.model.ValidatorInfoResponse;
+import com.radixdlt.api.gateway.openapitools.model.ValidatorInfoResponseSuccess;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 final class ValidatorApiHandler extends GatewayJsonRpcHandler<ValidatorInfoRequest, ValidatorInfoResponse> {
@@ -93,7 +94,7 @@ final class ValidatorApiHandler extends GatewayJsonRpcHandler<ValidatorInfoReque
 
 	@Override
 	public ValidatorInfoResponse handleRequest(ValidatorInfoRequest request) {
-		var response = new ValidatorInfoResponse();
+		var response = new ValidatorInfoResponseSuccess();
 		var key = gatewayModelMapper.validator(request.getValidatorIdentifier());
 		var validator = validatorStore.getValidatorInfo(key);
 		var uptime = uptimeStore.getUptimeTwoWeeks(key);
@@ -101,6 +102,6 @@ final class ValidatorApiHandler extends GatewayJsonRpcHandler<ValidatorInfoReque
 		response.validator(validator);
 		var proof = inMemorySystemInfo.getCurrentProof();
 		response.ledgerState(gatewayModelMapper.ledgerState(proof));
-		return response;
+		return response.type(ValidatorInfoResponseSuccess.class.getSimpleName());
 	}
 }
