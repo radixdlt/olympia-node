@@ -1,7 +1,5 @@
 package com.radixdlt.store.tree;
 
-import com.radixdlt.crypto.HashUtils;
-
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -17,7 +15,6 @@ public abstract class PMTNode implements Cloneable {
 	public static final int DB_SIZE_COND = 32;
 
 	protected byte[] hash;
-	protected byte[] serialized;
 	protected NodeType nodeType;
 	protected PMTKey branchNibble;
 	protected PMTKey keyNibbles;
@@ -25,23 +22,6 @@ public abstract class PMTNode implements Cloneable {
 
 	protected PMTKey getBranchNibble() {
 		return branchNibble;
-	}
-
-	protected PMTNode hash() {
-		// TODO: use a dirty flag or wrapper to avoid re-serializing
-		var ser = serialize();
-		if (ser.length >= DB_SIZE_COND) {
-			this.hash = HashUtils.sha256(ser).asBytes();
-		} else {
-			this.hash = ser;
-		}
-		return this;
-	}
-
-	public byte[] getHash() {
-		// TODO: introduce isDirty/null-on-write to avoid hashing and serialization
-		this.hash();
-		return this.hash;
 	}
 
 	public PMTKey getKey() {
@@ -86,7 +66,6 @@ public abstract class PMTNode implements Cloneable {
 		}
 		PMTNode pmtNode = (PMTNode) o;
 		return Arrays.equals(hash, pmtNode.hash)
-				&& Arrays.equals(serialized, pmtNode.serialized)
 				&& nodeType == pmtNode.nodeType
 				&& Objects.equals(branchNibble, pmtNode.branchNibble)
 				&& Objects.equals(keyNibbles, pmtNode.keyNibbles)
@@ -95,6 +74,6 @@ public abstract class PMTNode implements Cloneable {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(hash, serialized, nodeType, branchNibble, keyNibbles, value);
+		return Objects.hash(hash, nodeType, branchNibble, keyNibbles, value);
 	}
 }

@@ -1,5 +1,6 @@
 package com.radixdlt.store.tree;
 
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.store.tree.storage.PMTCache;
 import com.radixdlt.store.tree.storage.PMTStorage;
 import org.apache.logging.log4j.LogManager;
@@ -43,6 +44,20 @@ public class PMT {
 		);
 	}
 
+	public static boolean hasDbRepresentation(byte[] serializedNode) {
+		// INFO: the DB_SIZE_CONDITION relates to hash size
+		return serializedNode.length >= PMTNode.DB_SIZE_COND;
+	}
+
+	public static byte[] represent(PMTNode node) {
+		var ser = node.serialize();
+		if (hasDbRepresentation(ser)) {
+			return hash(ser);
+		} else {
+			return ser;
+		}
+	}
+
 	public byte[] get(byte[] key) {
 		var pmtKey = new PMTKey(PMTPath.intoNibbles(key));
 
@@ -51,7 +66,7 @@ public class PMT {
 			if (acc.notFound() != null) {
 				log.debug("Not found key: {} for root: {}",
 					TreeUtils.toHexString(key),
-					TreeUtils.toHexString(root == null ? null : root.getHash()));
+					TreeUtils.toHexString(root == null ? null : represent(root)));
 				// TODO XXX: what shall we return for not found? Maybe lets wrap everything in Option?
 				return new byte[0];
 			} else {
@@ -75,10 +90,10 @@ public class PMT {
 				 acc.getNewNodes().stream()
 					 .filter(Objects::nonNull)
 					 .forEach(sanitizedAcc -> {
-						 this.cache.put(sanitizedAcc.getHash(), sanitizedAcc);
+						 this.cache.put(represent(sanitizedAcc), sanitizedAcc);
 						 byte[] serialisedNode = sanitizedAcc.serialize();
-						 if (meetCriteriaToPersist(serialisedNode)) {
-							 this.db.save(sanitizedAcc.getHash(), serialisedNode);
+						 if (hasDbRepresentation(serialisedNode)) {
+							 this.db.save(hash(serialisedNode), serialisedNode);
 						 }
 					 });
 				this.root = acc.getTip();
@@ -91,9 +106,9 @@ public class PMT {
 				e.getMessage(),
 				TreeUtils.toHexString(key),
 				TreeUtils.toHexString(val),
-				TreeUtils.toHexString(root == null ? null : root.getHash()));
+				TreeUtils.toHexString(root == null ? null : hash(root)));
 		}
-		return root == null ? null : root.getHash();
+		return root == null ? null : hash(root);
 	}
 
 	PMTAcc getValue(PMTNode current, PMTKey key, PMTAcc acc) {
@@ -249,7 +264,7 @@ public class PMT {
 						acc = insertNode(nextNode, commonPath.getRemainder(PMTPath.Subtree.NEW), val, acc);
 						var subTip = acc.getTip();
 						// INFO: for NEW or NONE, the commonPrefix can't be null as it existed here
-						newExt = new PMTExt(commonPath.getCommonPrefix(), subTip.getHash());
+						newExt = new PMTExt(commonPath.getCommonPrefix(), represent(subTip));
 						acc.setNewTip(newExt);
 						acc.add(newExt);
 						acc.mark(current);
@@ -276,7 +291,7 @@ public class PMT {
 		if (pmtPath.getCommonPrefix().isEmpty()) {
 			return null;
 		} else {
-			return new PMTExt(pmtPath.getCommonPrefix(), branch.getHash());
+			return new PMTExt(pmtPath.getCommonPrefix(), represent(branch));
 		}
 	}
 
@@ -290,6 +305,9 @@ public class PMT {
 			//       * it's not necessarily a leaf as it has hash pointer to another branch
 			//       * hash pointer will be rewritten to nibble position in a branch
 			//       * this is why we dont save it as it's only container to pass the first nibble to branch
+
+			// XXX TODO: should this go to cache?! (now it won't as it's not added to accumulator)
+			// XXX TODO: this is probably illegal. See page 21 of the yellowpaper
 			return new PMTExt(remainder.getFirstNibble(), remainder.getTailNibbles(), current.getValue());
 		} else {
 			var newShorter = new PMTExt(remainder.getFirstNibble(), remainder.getTailNibbles(), current.getValue());
@@ -302,18 +320,23 @@ public class PMT {
 		return this.cache.get(hash);
 	}
 
-	private boolean meetCriteriaToPersist(byte[] content) {
-		return content.length >= PMTNode.DB_SIZE_COND;
-	}
-
 	private PMTNode nodeLoader(byte[] key) {
 		byte[] node;
-		if (meetCriteriaToPersist(key)) {
+		if (hasDbRepresentation(key)) {
 			node = db.read(key);
 		} else {
 			node = key;
 		}
 		return PMTNode.deserialize(node);
+	}
+
+	private static byte[] hash(byte[] serialized) {
+		var hash = HashUtils.sha256(serialized).asBytes();
+		return hash;
+	}
+
+	private byte[] hash(PMTNode node) {
+		return hash(node.serialize());
 	}
 
 }
