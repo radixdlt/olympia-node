@@ -64,17 +64,21 @@
 package com.radixdlt.api.gateway;
 
 import com.radixdlt.api.gateway.openapitools.model.ErrorResponse;
+import com.radixdlt.api.gateway.openapitools.model.GatewayError;
 
 public class GatewayException extends Exception {
 	private final GatewayErrorCode error;
+	private final GatewayError gatewayError;
 
-	public GatewayException(GatewayErrorCode error) {
+	public GatewayException(GatewayErrorCode error, GatewayError gatewayError) {
 		this.error = error;
+		this.gatewayError = gatewayError;
 	}
 
 	public ErrorResponse toError() {
 		return new ErrorResponse()
 			.code(error.getErrorCode())
-			.message(error.getMessage());
+			.message(error.getMessage())
+			.details(gatewayError);
 	}
 }

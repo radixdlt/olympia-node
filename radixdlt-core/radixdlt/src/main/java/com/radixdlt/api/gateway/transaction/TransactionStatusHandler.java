@@ -68,6 +68,7 @@ import com.radixdlt.api.gateway.GatewayErrorCode;
 import com.radixdlt.api.gateway.GatewayException;
 import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
+import com.radixdlt.api.gateway.openapitools.model.TransactionNotFoundError;
 import com.radixdlt.api.gateway.openapitools.model.TransactionStatusRequest;
 import com.radixdlt.api.gateway.openapitools.model.TransactionStatusResponse;
 import com.radixdlt.api.gateway.openapitools.model.TransactionStatusResponseSuccess;
@@ -97,7 +98,7 @@ final class TransactionStatusHandler extends GatewayJsonRpcHandler<TransactionSt
 		var txnId = AID.from(request.getTransactionIdentifier().getHash());
 		var response = new TransactionStatusResponseSuccess();
 		var transaction = service.getTransactionStatus(txnId)
-			.orElseThrow(() -> new GatewayException(GatewayErrorCode.NOT_FOUND));
+			.orElseThrow(() -> new GatewayException(GatewayErrorCode.NOT_FOUND, new TransactionNotFoundError()));
 		var proof = inMemorySystemInfo.getCurrentProof();
 		return response
 			.ledgerState(gatewayModelMapper.ledgerState(proof))

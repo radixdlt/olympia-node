@@ -66,6 +66,7 @@ package com.radixdlt.api.gateway.transaction;
 import com.google.inject.Inject;
 import com.radixdlt.api.gateway.GatewayErrorCode;
 import com.radixdlt.api.gateway.GatewayException;
+import com.radixdlt.api.gateway.openapitools.model.InvalidTransactionError;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
@@ -84,7 +85,7 @@ public final class MempoolSubmitter {
 			radixEngineStateComputer.addToMempool(txn);
 		} catch (MempoolDuplicateException ignored) {
 		} catch (MempoolRejectedException e) {
-			throw new GatewayException(GatewayErrorCode.BAD_REQUEST);
+			throw new GatewayException(GatewayErrorCode.BAD_REQUEST, new InvalidTransactionError());
 		}
 	}
 }

@@ -952,36 +952,13 @@ components:
     TokenResponse:
       type: object
       required:
-        - type
+        - ledger_state
+        - token
       properties:
-        type:
-          type: string
-      discriminator:
-        propertyName: type
-        mapping:
-          TokenResponseSuccess: "#/components/schemas/TokenResponseSuccess"
-          TokenResponseError: "#/components/schemas/TokenResponseError"
-    TokenResponseSuccess:
-      allOf:
-        - $ref: "#/components/schemas/TokenResponse"
-        - type: object
-          required:
-            - ledger_state
-            - token
-          properties:
-            ledger_state:
-              $ref: "#/components/schemas/LedgerState"
-            token:
-              $ref: "#/components/schemas/Token"
-    TokenResponseError:
-      allOf:
-        - $ref: "#/components/schemas/TokenResponse"
-        - type: object
-          required:
-            - error
-          properties:
-            error:
-              $ref: "#/components/schemas/GatewayError"
+        ledger_state:
+          $ref: "#/components/schemas/LedgerState"
+        token:
+          $ref: "#/components/schemas/Token"
     TokenNativeRequest:
       type: object
       required:
@@ -994,36 +971,13 @@ components:
     TokenNativeResponse:
       type: object
       required:
-        - type
+        - token
+        - ledger_state
       properties:
-        type:
-          type: string
-      discriminator:
-        propertyName: type
-        mapping:
-          TokenNativeResponseSuccess: "#/components/schemas/TokenNativeResponseSuccess"
-          TokenNativeResponseError: "#/components/schemas/TokenNativeResponseError"
-    TokenNativeResponseSuccess:
-      allOf:
-        - $ref: "#/components/schemas/TokenNativeResponse"
-        - type: object
-          required:
-            - token
-            - ledger_state
-          properties:
-            ledger_state:
-              "$ref": "#/components/schemas/LedgerState"
-            token:
-              "$ref": "#/components/schemas/Token"
-    TokenNativeResponseError:
-      allOf:
-        - $ref: "#/components/schemas/TokenNativeResponse"
-        - type: object
-          required:
-            - error
-          properties:
-            error:
-              "$ref": "#/components/schemas/GatewayError"
+        ledger_state:
+          $ref: "#/components/schemas/LedgerState"
+        token:
+          $ref: "#/components/schemas/Token"
     TokenDeriveRequest:
       type: object
       required:
@@ -1519,6 +1473,7 @@ components:
           InvalidTokenSymbolError: "#/components/schemas/InvalidTokenSymbolError"
           InvalidActionError: "#/components/schemas/InvalidActionError"
           TokenNotFoundError: "#/components/schemas/TokenNotFoundError"
+          TransactionNotFoundError: "#/components/schemas/TransactionNotFoundError"
           NotEnoughNativeTokenForFeesError: "#/components/schemas/NotEnoughNativeTokenForFeesError"
           NotEnoughTokensForTransferError: "#/components/schemas/NotEnoughTokensForTransferError"
           NotEnoughTokensForStakeError: "#/components/schemas/NotEnoughTokensForStakeError"
@@ -1730,3 +1685,12 @@ components:
           properties:
             token_not_found:
               $ref: "#/components/schemas/TokenIdentifier"
+    TransactionNotFoundError:
+      allOf:
+        - $ref: "#/components/schemas/GatewayError"
+        - type: object
+          required:
+            - transaction_not_found
+          properties:
+            transaction_not_found:
+              $ref: "#/components/schemas/TransactionIdentifier"
