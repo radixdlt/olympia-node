@@ -26,28 +26,28 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * ValidatorInfoResponseSuccess
+ * TokenNativeResponseSuccess
  */
 @JsonPropertyOrder({
-  ValidatorInfoResponseSuccess.JSON_PROPERTY_LEDGER_STATE,
-  ValidatorInfoResponseSuccess.JSON_PROPERTY_VALIDATOR
+  TokenNativeResponseSuccess.JSON_PROPERTY_LEDGER_STATE,
+  TokenNativeResponseSuccess.JSON_PROPERTY_TOKEN
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T23:17:20.933920-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T23:12:43.705185-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = ValidatorInfoResponseError.class, name = "ValidatorInfoResponseError"),
-  @JsonSubTypes.Type(value = ValidatorInfoResponseSuccess.class, name = "ValidatorInfoResponseSuccess"),
+  @JsonSubTypes.Type(value = TokenNativeResponseError.class, name = "TokenNativeResponseError"),
+  @JsonSubTypes.Type(value = TokenNativeResponseSuccess.class, name = "TokenNativeResponseSuccess"),
 })
 
-public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
+public class TokenNativeResponseSuccess extends TokenNativeResponse {
   public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
   private LedgerState ledgerState;
 
-  public static final String JSON_PROPERTY_VALIDATOR = "validator";
-  private Validator validator;
+  public static final String JSON_PROPERTY_TOKEN = "token";
+  private Token token;
 
 
-  public ValidatorInfoResponseSuccess ledgerState(LedgerState ledgerState) {
+  public TokenNativeResponseSuccess ledgerState(LedgerState ledgerState) {
     this.ledgerState = ledgerState;
     return this;
   }
@@ -73,34 +73,34 @@ public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
   }
 
 
-  public ValidatorInfoResponseSuccess validator(Validator validator) {
-    this.validator = validator;
+  public TokenNativeResponseSuccess token(Token token) {
+    this.token = token;
     return this;
   }
 
    /**
-   * Get validator
-   * @return validator
+   * Get token
+   * @return token
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR)
+  @JsonProperty(JSON_PROPERTY_TOKEN)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Validator getValidator() {
-    return validator;
+  public Token getToken() {
+    return token;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALIDATOR)
+  @JsonProperty(JSON_PROPERTY_TOKEN)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidator(Validator validator) {
-    this.validator = validator;
+  public void setToken(Token token) {
+    this.token = token;
   }
 
 
   /**
-   * Return true if this ValidatorInfoResponseSuccess object is equal to o.
+   * Return true if this TokenNativeResponseSuccess object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,24 +110,24 @@ public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ValidatorInfoResponseSuccess validatorInfoResponseSuccess = (ValidatorInfoResponseSuccess) o;
-    return Objects.equals(this.ledgerState, validatorInfoResponseSuccess.ledgerState) &&
-        Objects.equals(this.validator, validatorInfoResponseSuccess.validator) &&
+    TokenNativeResponseSuccess tokenNativeResponseSuccess = (TokenNativeResponseSuccess) o;
+    return Objects.equals(this.ledgerState, tokenNativeResponseSuccess.ledgerState) &&
+        Objects.equals(this.token, tokenNativeResponseSuccess.token) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ledgerState, validator, super.hashCode());
+    return Objects.hash(ledgerState, token, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ValidatorInfoResponseSuccess {\n");
+    sb.append("class TokenNativeResponseSuccess {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    ledgerState: ").append(toIndentedString(ledgerState)).append("\n");
-    sb.append("    validator: ").append(toIndentedString(validator)).append("\n");
+    sb.append("    token: ").append(toIndentedString(token)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -146,10 +146,10 @@ public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("ValidatorInfoResponseError", ValidatorInfoResponseError.class);
-  mappings.put("ValidatorInfoResponseSuccess", ValidatorInfoResponseSuccess.class);
-  mappings.put("ValidatorInfoResponseSuccess", ValidatorInfoResponseSuccess.class);
-  JSON.registerDiscriminator(ValidatorInfoResponseSuccess.class, "type", mappings);
+  mappings.put("TokenNativeResponseError", TokenNativeResponseError.class);
+  mappings.put("TokenNativeResponseSuccess", TokenNativeResponseSuccess.class);
+  mappings.put("TokenNativeResponseSuccess", TokenNativeResponseSuccess.class);
+  JSON.registerDiscriminator(TokenNativeResponseSuccess.class, "type", mappings);
 }
 }
 

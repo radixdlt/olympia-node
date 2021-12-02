@@ -69,6 +69,7 @@ import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.Validator;
 import com.radixdlt.api.gateway.openapitools.model.ValidatorsRequest;
 import com.radixdlt.api.gateway.openapitools.model.ValidatorsResponse;
+import com.radixdlt.api.gateway.openapitools.model.ValidatorsResponseSuccess;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 import java.util.List;
@@ -110,10 +111,10 @@ final class ValidatorsApiHandler extends GatewayJsonRpcHandler<ValidatorsRequest
 
 	@Override
 	public ValidatorsResponse handleRequest(ValidatorsRequest request) {
-		var response = new ValidatorsResponse();
+		var response = new ValidatorsResponseSuccess();
 		fetchValidators(0, 1000).forEach(response::addValidatorsItem);
 		var proof = inMemorySystemInfo.getCurrentProof();
 		var ledgerState = gatewayModelMapper.ledgerState(proof);
-		return response.ledgerState(ledgerState);
+		return response.ledgerState(ledgerState).type(ValidatorsResponseSuccess.class.getSimpleName());
 	}
 }

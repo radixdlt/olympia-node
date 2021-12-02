@@ -21,33 +21,35 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * ValidatorInfoResponseSuccess
+ * ValidatorsResponseSuccess
  */
 @JsonPropertyOrder({
-  ValidatorInfoResponseSuccess.JSON_PROPERTY_LEDGER_STATE,
-  ValidatorInfoResponseSuccess.JSON_PROPERTY_VALIDATOR
+  ValidatorsResponseSuccess.JSON_PROPERTY_LEDGER_STATE,
+  ValidatorsResponseSuccess.JSON_PROPERTY_VALIDATORS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T23:17:20.933920-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = ValidatorInfoResponseError.class, name = "ValidatorInfoResponseError"),
-  @JsonSubTypes.Type(value = ValidatorInfoResponseSuccess.class, name = "ValidatorInfoResponseSuccess"),
+  @JsonSubTypes.Type(value = ValidatorsResponseError.class, name = "ValidatorsResponseError"),
+  @JsonSubTypes.Type(value = ValidatorsResponseSuccess.class, name = "ValidatorsResponseSuccess"),
 })
 
-public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
+public class ValidatorsResponseSuccess extends ValidatorsResponse {
   public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
   private LedgerState ledgerState;
 
-  public static final String JSON_PROPERTY_VALIDATOR = "validator";
-  private Validator validator;
+  public static final String JSON_PROPERTY_VALIDATORS = "validators";
+  private List<Validator> validators = new ArrayList<>();
 
 
-  public ValidatorInfoResponseSuccess ledgerState(LedgerState ledgerState) {
+  public ValidatorsResponseSuccess ledgerState(LedgerState ledgerState) {
     this.ledgerState = ledgerState;
     return this;
   }
@@ -73,34 +75,39 @@ public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
   }
 
 
-  public ValidatorInfoResponseSuccess validator(Validator validator) {
-    this.validator = validator;
+  public ValidatorsResponseSuccess validators(List<Validator> validators) {
+    this.validators = validators;
+    return this;
+  }
+
+  public ValidatorsResponseSuccess addValidatorsItem(Validator validatorsItem) {
+    this.validators.add(validatorsItem);
     return this;
   }
 
    /**
-   * Get validator
-   * @return validator
+   * Get validators
+   * @return validators
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR)
+  @JsonProperty(JSON_PROPERTY_VALIDATORS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Validator getValidator() {
-    return validator;
+  public List<Validator> getValidators() {
+    return validators;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALIDATOR)
+  @JsonProperty(JSON_PROPERTY_VALIDATORS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidator(Validator validator) {
-    this.validator = validator;
+  public void setValidators(List<Validator> validators) {
+    this.validators = validators;
   }
 
 
   /**
-   * Return true if this ValidatorInfoResponseSuccess object is equal to o.
+   * Return true if this ValidatorsResponseSuccess object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,24 +117,24 @@ public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ValidatorInfoResponseSuccess validatorInfoResponseSuccess = (ValidatorInfoResponseSuccess) o;
-    return Objects.equals(this.ledgerState, validatorInfoResponseSuccess.ledgerState) &&
-        Objects.equals(this.validator, validatorInfoResponseSuccess.validator) &&
+    ValidatorsResponseSuccess validatorsResponseSuccess = (ValidatorsResponseSuccess) o;
+    return Objects.equals(this.ledgerState, validatorsResponseSuccess.ledgerState) &&
+        Objects.equals(this.validators, validatorsResponseSuccess.validators) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ledgerState, validator, super.hashCode());
+    return Objects.hash(ledgerState, validators, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ValidatorInfoResponseSuccess {\n");
+    sb.append("class ValidatorsResponseSuccess {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    ledgerState: ").append(toIndentedString(ledgerState)).append("\n");
-    sb.append("    validator: ").append(toIndentedString(validator)).append("\n");
+    sb.append("    validators: ").append(toIndentedString(validators)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -146,10 +153,10 @@ public class ValidatorInfoResponseSuccess extends ValidatorInfoResponse {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("ValidatorInfoResponseError", ValidatorInfoResponseError.class);
-  mappings.put("ValidatorInfoResponseSuccess", ValidatorInfoResponseSuccess.class);
-  mappings.put("ValidatorInfoResponseSuccess", ValidatorInfoResponseSuccess.class);
-  JSON.registerDiscriminator(ValidatorInfoResponseSuccess.class, "type", mappings);
+  mappings.put("ValidatorsResponseError", ValidatorsResponseError.class);
+  mappings.put("ValidatorsResponseSuccess", ValidatorsResponseSuccess.class);
+  mappings.put("ValidatorsResponseSuccess", ValidatorsResponseSuccess.class);
+  JSON.registerDiscriminator(ValidatorsResponseSuccess.class, "type", mappings);
 }
 }
 

@@ -68,6 +68,7 @@ import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.TokenNativeRequest;
 import com.radixdlt.api.gateway.openapitools.model.TokenNativeResponse;
+import com.radixdlt.api.gateway.openapitools.model.TokenNativeResponseSuccess;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
@@ -91,9 +92,9 @@ public class TokenNativeHandler extends GatewayJsonRpcHandler<TokenNativeRequest
 	@Override
 	public TokenNativeResponse handleRequest(TokenNativeRequest request) {
 		var proof = inMemorySystemInfo.getCurrentProof();
-		var response = new TokenNativeResponse()
+		var response = new TokenNativeResponseSuccess()
 			.ledgerState(gatewayModelMapper.ledgerState(proof));
 		store.getResourceInfo(REAddr.ofNativeToken()).ifPresent(response::setToken);
-		return response;
+		return response.type(TokenNativeResponseSuccess.class.getSimpleName());
 	}
 }

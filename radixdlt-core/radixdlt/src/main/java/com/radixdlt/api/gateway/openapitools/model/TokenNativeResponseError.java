@@ -26,24 +26,24 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * ValidatorInfoResponseError
+ * TokenNativeResponseError
  */
 @JsonPropertyOrder({
-  ValidatorInfoResponseError.JSON_PROPERTY_ERROR
+  TokenNativeResponseError.JSON_PROPERTY_ERROR
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T23:17:20.933920-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T23:12:43.705185-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = ValidatorInfoResponseError.class, name = "ValidatorInfoResponseError"),
-  @JsonSubTypes.Type(value = ValidatorInfoResponseSuccess.class, name = "ValidatorInfoResponseSuccess"),
+  @JsonSubTypes.Type(value = TokenNativeResponseError.class, name = "TokenNativeResponseError"),
+  @JsonSubTypes.Type(value = TokenNativeResponseSuccess.class, name = "TokenNativeResponseSuccess"),
 })
 
-public class ValidatorInfoResponseError extends ValidatorInfoResponse {
+public class TokenNativeResponseError extends TokenNativeResponse {
   public static final String JSON_PROPERTY_ERROR = "error";
   private java.lang.Error error;
 
 
-  public ValidatorInfoResponseError error(java.lang.Error error) {
+  public TokenNativeResponseError error(java.lang.Error error) {
     this.error = error;
     return this;
   }
@@ -70,7 +70,7 @@ public class ValidatorInfoResponseError extends ValidatorInfoResponse {
 
 
   /**
-   * Return true if this ValidatorInfoResponseError object is equal to o.
+   * Return true if this TokenNativeResponseError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,8 +80,8 @@ public class ValidatorInfoResponseError extends ValidatorInfoResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ValidatorInfoResponseError validatorInfoResponseError = (ValidatorInfoResponseError) o;
-    return Objects.equals(this.error, validatorInfoResponseError.error) &&
+    TokenNativeResponseError tokenNativeResponseError = (TokenNativeResponseError) o;
+    return Objects.equals(this.error, tokenNativeResponseError.error) &&
         super.equals(o);
   }
 
@@ -93,7 +93,7 @@ public class ValidatorInfoResponseError extends ValidatorInfoResponse {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ValidatorInfoResponseError {\n");
+    sb.append("class TokenNativeResponseError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("}");
@@ -114,10 +114,10 @@ public class ValidatorInfoResponseError extends ValidatorInfoResponse {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("ValidatorInfoResponseError", ValidatorInfoResponseError.class);
-  mappings.put("ValidatorInfoResponseSuccess", ValidatorInfoResponseSuccess.class);
-  mappings.put("ValidatorInfoResponseError", ValidatorInfoResponseError.class);
-  JSON.registerDiscriminator(ValidatorInfoResponseError.class, "type", mappings);
+  mappings.put("TokenNativeResponseError", TokenNativeResponseError.class);
+  mappings.put("TokenNativeResponseSuccess", TokenNativeResponseSuccess.class);
+  mappings.put("TokenNativeResponseError", TokenNativeResponseError.class);
+  JSON.registerDiscriminator(TokenNativeResponseError.class, "type", mappings);
 }
 }
 

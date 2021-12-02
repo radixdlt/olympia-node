@@ -16,76 +16,56 @@ package com.radixdlt.api.gateway.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
-
 
 /**
  * TokenNativeResponse
  */
 @JsonPropertyOrder({
-  TokenNativeResponse.JSON_PROPERTY_LEDGER_STATE,
-  TokenNativeResponse.JSON_PROPERTY_TOKEN
+  TokenNativeResponse.JSON_PROPERTY_TYPE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T01:49:33.060927-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T23:12:43.705185-06:00[America/Chicago]")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = TokenNativeResponseError.class, name = "TokenNativeResponseError"),
+  @JsonSubTypes.Type(value = TokenNativeResponseSuccess.class, name = "TokenNativeResponseSuccess"),
+})
+
 public class TokenNativeResponse {
-  public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
-  private LedgerState ledgerState;
-
-  public static final String JSON_PROPERTY_TOKEN = "token";
-  private Token token;
+  public static final String JSON_PROPERTY_TYPE = "type";
+  private String type;
 
 
-  public TokenNativeResponse ledgerState(LedgerState ledgerState) {
-    this.ledgerState = ledgerState;
+  public TokenNativeResponse type(String type) {
+    this.type = type;
     return this;
   }
 
    /**
-   * Get ledgerState
-   * @return ledgerState
+   * Get type
+   * @return type
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
+  @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LedgerState getLedgerState() {
-    return ledgerState;
+  public String getType() {
+    return type;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
+  @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLedgerState(LedgerState ledgerState) {
-    this.ledgerState = ledgerState;
-  }
-
-
-  public TokenNativeResponse token(Token token) {
-    this.token = token;
-    return this;
-  }
-
-   /**
-   * Get token
-   * @return token
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TOKEN)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Token getToken() {
-    return token;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_TOKEN)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setToken(Token token) {
-    this.token = token;
+  public void setType(String type) {
+    this.type = type;
   }
 
 
@@ -101,21 +81,19 @@ public class TokenNativeResponse {
       return false;
     }
     TokenNativeResponse tokenNativeResponse = (TokenNativeResponse) o;
-    return Objects.equals(this.ledgerState, tokenNativeResponse.ledgerState) &&
-        Objects.equals(this.token, tokenNativeResponse.token);
+    return Objects.equals(this.type, tokenNativeResponse.type);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ledgerState, token);
+    return Objects.hash(type);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TokenNativeResponse {\n");
-    sb.append("    ledgerState: ").append(toIndentedString(ledgerState)).append("\n");
-    sb.append("    token: ").append(toIndentedString(token)).append("\n");
+    sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -131,5 +109,13 @@ public class TokenNativeResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
+static {
+  // Initialize and register the discriminator mappings.
+  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("TokenNativeResponseError", TokenNativeResponseError.class);
+  mappings.put("TokenNativeResponseSuccess", TokenNativeResponseSuccess.class);
+  mappings.put("TokenNativeResponse", TokenNativeResponse.class);
+  JSON.registerDiscriminator(TokenNativeResponse.class, "type", mappings);
+}
 }
 
