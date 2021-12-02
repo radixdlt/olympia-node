@@ -39,7 +39,8 @@ public class PMTPath {
 	}
 
 	public PMTPath recogniseRemainder(PMTKey current, PMTKey incoming) {
-		if (current.isEmpty()) {
+		// TODO remove null possibility
+		if (current == null || current.isEmpty()) {
 			if (incoming.isEmpty()) {
 				this.suffix = Subtree.NONE;
 			} else {

@@ -1,5 +1,7 @@
 package com.radixdlt.store.tree;
 
+import com.radixdlt.store.tree.serialization.rlp.RLP;
+
 public class PMTLeaf extends PMTNode {
 
 	private static final int EVEN_PREFIX = 2;
@@ -19,10 +21,11 @@ public class PMTLeaf extends PMTNode {
 	public byte[] serialize() {
 		// INFO: leaf can have empty key. It's because value may not fit branches' hash pointer field
 
-		// XXX TODO: this is probably wrong on bit level?!
-		var prefixedKey = TreeUtils.applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
-		// TODO: serialize, RLP?
-		var serialized = "leaf".getBytes();
-		return serialized;
+		var nibblesWithPrefix = TreeUtils.applyPrefix(this.getKey().getKey(), ODD_PREFIX, EVEN_PREFIX);
+		byte[] bytesWithPrefix = TreeUtils.fromNibblesToBytes(nibblesWithPrefix);
+		return RLP.encodeList(
+				RLP.encodeElement(bytesWithPrefix),
+				RLP.encodeElement(value)
+		);
 	}
 }
