@@ -26,51 +26,51 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * TransactionStatusResponse
+ * TransactionFinalizeResponseError
  */
 @JsonPropertyOrder({
-  TransactionStatusResponse.JSON_PROPERTY_TYPE
+  TransactionFinalizeResponseError.JSON_PROPERTY_DETAILS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T19:16:28.200533-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T19:04:44.841200-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = TransactionStatusResponseError.class, name = "TransactionStatusResponseError"),
-  @JsonSubTypes.Type(value = TransactionStatusResponseSuccess.class, name = "TransactionStatusResponseSuccess"),
+  @JsonSubTypes.Type(value = TransactionFinalizeResponseError.class, name = "TransactionFinalizeResponseError"),
+  @JsonSubTypes.Type(value = TransactionFinalizeResponseSuccess.class, name = "TransactionFinalizeResponseSuccess"),
 })
 
-public class TransactionStatusResponse {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+public class TransactionFinalizeResponseError extends TransactionFinalizeResponse {
+  public static final String JSON_PROPERTY_DETAILS = "details";
+  private ErrorDetails details;
 
 
-  public TransactionStatusResponse type(String type) {
-    this.type = type;
+  public TransactionFinalizeResponseError details(ErrorDetails details) {
+    this.details = details;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get details
+   * @return details
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_DETAILS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public ErrorDetails getDetails() {
+    return details;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_DETAILS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setDetails(ErrorDetails details) {
+    this.details = details;
   }
 
 
   /**
-   * Return true if this TransactionStatusResponse object is equal to o.
+   * Return true if this TransactionFinalizeResponseError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,20 +80,22 @@ public class TransactionStatusResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionStatusResponse transactionStatusResponse = (TransactionStatusResponse) o;
-    return Objects.equals(this.type, transactionStatusResponse.type);
+    TransactionFinalizeResponseError transactionFinalizeResponseError = (TransactionFinalizeResponseError) o;
+    return Objects.equals(this.details, transactionFinalizeResponseError.details) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(details, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionStatusResponse {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class TransactionFinalizeResponseError {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    details: ").append(toIndentedString(details)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -112,10 +114,10 @@ public class TransactionStatusResponse {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("TransactionStatusResponseError", TransactionStatusResponseError.class);
-  mappings.put("TransactionStatusResponseSuccess", TransactionStatusResponseSuccess.class);
-  mappings.put("TransactionStatusResponse", TransactionStatusResponse.class);
-  JSON.registerDiscriminator(TransactionStatusResponse.class, "type", mappings);
+  mappings.put("TransactionFinalizeResponseError", TransactionFinalizeResponseError.class);
+  mappings.put("TransactionFinalizeResponseSuccess", TransactionFinalizeResponseSuccess.class);
+  mappings.put("TransactionFinalizeResponseError", TransactionFinalizeResponseError.class);
+  JSON.registerDiscriminator(TransactionFinalizeResponseError.class, "type", mappings);
 }
 }
 

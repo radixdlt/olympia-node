@@ -26,10 +26,10 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * TransactionSubmitResponse
+ * TransactionSubmitResponseSuccess
  */
 @JsonPropertyOrder({
-  TransactionSubmitResponse.JSON_PROPERTY_TYPE
+  TransactionSubmitResponseSuccess.JSON_PROPERTY_TRANSACTION_IDENTIFIER
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T19:09:52.735451-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
@@ -38,39 +38,39 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = TransactionSubmitResponseSuccess.class, name = "TransactionSubmitResponseSuccess"),
 })
 
-public class TransactionSubmitResponse {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+public class TransactionSubmitResponseSuccess extends TransactionSubmitResponse {
+  public static final String JSON_PROPERTY_TRANSACTION_IDENTIFIER = "transaction_identifier";
+  private TransactionIdentifier transactionIdentifier;
 
 
-  public TransactionSubmitResponse type(String type) {
-    this.type = type;
+  public TransactionSubmitResponseSuccess transactionIdentifier(TransactionIdentifier transactionIdentifier) {
+    this.transactionIdentifier = transactionIdentifier;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get transactionIdentifier
+   * @return transactionIdentifier
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public TransactionIdentifier getTransactionIdentifier() {
+    return transactionIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setTransactionIdentifier(TransactionIdentifier transactionIdentifier) {
+    this.transactionIdentifier = transactionIdentifier;
   }
 
 
   /**
-   * Return true if this TransactionSubmitResponse object is equal to o.
+   * Return true if this TransactionSubmitResponseSuccess object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,20 +80,22 @@ public class TransactionSubmitResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionSubmitResponse transactionSubmitResponse = (TransactionSubmitResponse) o;
-    return Objects.equals(this.type, transactionSubmitResponse.type);
+    TransactionSubmitResponseSuccess transactionSubmitResponseSuccess = (TransactionSubmitResponseSuccess) o;
+    return Objects.equals(this.transactionIdentifier, transactionSubmitResponseSuccess.transactionIdentifier) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(transactionIdentifier, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionSubmitResponse {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class TransactionSubmitResponseSuccess {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    transactionIdentifier: ").append(toIndentedString(transactionIdentifier)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -114,8 +116,8 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("TransactionSubmitResponseError", TransactionSubmitResponseError.class);
   mappings.put("TransactionSubmitResponseSuccess", TransactionSubmitResponseSuccess.class);
-  mappings.put("TransactionSubmitResponse", TransactionSubmitResponse.class);
-  JSON.registerDiscriminator(TransactionSubmitResponse.class, "type", mappings);
+  mappings.put("TransactionSubmitResponseSuccess", TransactionSubmitResponseSuccess.class);
+  JSON.registerDiscriminator(TransactionSubmitResponseSuccess.class, "type", mappings);
 }
 }
 

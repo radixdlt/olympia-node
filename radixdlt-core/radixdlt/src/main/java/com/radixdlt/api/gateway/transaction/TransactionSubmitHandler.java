@@ -69,6 +69,7 @@ import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.openapitools.model.TransactionIdentifier;
 import com.radixdlt.api.gateway.openapitools.model.TransactionSubmitRequest;
 import com.radixdlt.api.gateway.openapitools.model.TransactionSubmitResponse;
+import com.radixdlt.api.gateway.openapitools.model.TransactionSubmitResponseSuccess;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.utils.Bytes;
 
@@ -85,7 +86,8 @@ final class TransactionSubmitHandler extends GatewayJsonRpcHandler<TransactionSu
 	public TransactionSubmitResponse handleRequest(TransactionSubmitRequest request) throws GatewayException {
 		var txn = Txn.create(Bytes.fromHexString(request.getSignedTransaction()));
 		mempoolSubmitter.submitToMempool(txn);
-		return new TransactionSubmitResponse()
-			.transactionIdentifier(new TransactionIdentifier().hash(txn.getId().toString()));
+		return new TransactionSubmitResponseSuccess()
+			.transactionIdentifier(new TransactionIdentifier().hash(txn.getId().toString()))
+			.type(TransactionSubmitResponseSuccess.class.getSimpleName());
 	}
 }

@@ -16,76 +16,56 @@ package com.radixdlt.api.gateway.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
-
 
 /**
  * TransactionFinalizeResponse
  */
 @JsonPropertyOrder({
-  TransactionFinalizeResponse.JSON_PROPERTY_SIGNED_TRANSACTION,
-  TransactionFinalizeResponse.JSON_PROPERTY_TRANSACTION_IDENTIFIER
+  TransactionFinalizeResponse.JSON_PROPERTY_TYPE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T13:02:32.525636-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T19:04:44.841200-06:00[America/Chicago]")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = TransactionFinalizeResponseError.class, name = "TransactionFinalizeResponseError"),
+  @JsonSubTypes.Type(value = TransactionFinalizeResponseSuccess.class, name = "TransactionFinalizeResponseSuccess"),
+})
+
 public class TransactionFinalizeResponse {
-  public static final String JSON_PROPERTY_SIGNED_TRANSACTION = "signed_transaction";
-  private String signedTransaction;
-
-  public static final String JSON_PROPERTY_TRANSACTION_IDENTIFIER = "transaction_identifier";
-  private TransactionIdentifier transactionIdentifier;
+  public static final String JSON_PROPERTY_TYPE = "type";
+  private String type;
 
 
-  public TransactionFinalizeResponse signedTransaction(String signedTransaction) {
-    this.signedTransaction = signedTransaction;
+  public TransactionFinalizeResponse type(String type) {
+    this.type = type;
     return this;
   }
 
    /**
-   * Get signedTransaction
-   * @return signedTransaction
+   * Get type
+   * @return type
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SIGNED_TRANSACTION)
+  @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getSignedTransaction() {
-    return signedTransaction;
+  public String getType() {
+    return type;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SIGNED_TRANSACTION)
+  @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSignedTransaction(String signedTransaction) {
-    this.signedTransaction = signedTransaction;
-  }
-
-
-  public TransactionFinalizeResponse transactionIdentifier(TransactionIdentifier transactionIdentifier) {
-    this.transactionIdentifier = transactionIdentifier;
-    return this;
-  }
-
-   /**
-   * Get transactionIdentifier
-   * @return transactionIdentifier
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TRANSACTION_IDENTIFIER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public TransactionIdentifier getTransactionIdentifier() {
-    return transactionIdentifier;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_TRANSACTION_IDENTIFIER)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTransactionIdentifier(TransactionIdentifier transactionIdentifier) {
-    this.transactionIdentifier = transactionIdentifier;
+  public void setType(String type) {
+    this.type = type;
   }
 
 
@@ -101,21 +81,19 @@ public class TransactionFinalizeResponse {
       return false;
     }
     TransactionFinalizeResponse transactionFinalizeResponse = (TransactionFinalizeResponse) o;
-    return Objects.equals(this.signedTransaction, transactionFinalizeResponse.signedTransaction) &&
-        Objects.equals(this.transactionIdentifier, transactionFinalizeResponse.transactionIdentifier);
+    return Objects.equals(this.type, transactionFinalizeResponse.type);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(signedTransaction, transactionIdentifier);
+    return Objects.hash(type);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionFinalizeResponse {\n");
-    sb.append("    signedTransaction: ").append(toIndentedString(signedTransaction)).append("\n");
-    sb.append("    transactionIdentifier: ").append(toIndentedString(transactionIdentifier)).append("\n");
+    sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -131,5 +109,13 @@ public class TransactionFinalizeResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
+static {
+  // Initialize and register the discriminator mappings.
+  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("TransactionFinalizeResponseError", TransactionFinalizeResponseError.class);
+  mappings.put("TransactionFinalizeResponseSuccess", TransactionFinalizeResponseSuccess.class);
+  mappings.put("TransactionFinalizeResponse", TransactionFinalizeResponse.class);
+  JSON.registerDiscriminator(TransactionFinalizeResponse.class, "type", mappings);
+}
 }
 

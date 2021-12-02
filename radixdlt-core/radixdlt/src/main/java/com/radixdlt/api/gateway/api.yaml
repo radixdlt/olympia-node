@@ -812,13 +812,36 @@ components:
     TransactionFinalizeResponse:
       type: object
       required:
-        - transaction_identifier
-        - signed_transaction
+        - type
       properties:
-        signed_transaction:
+        type:
           type: string
-        transaction_identifier:
-          $ref: "#/components/schemas/TransactionIdentifier"
+      discriminator:
+        propertyName: type
+        mapping:
+          TransactionFinalizeResponseSuccess: "#/components/schemas/TransactionFinalizeResponseSuccess"
+          TransactionFinalizeResponseError: "#/components/schemas/TransactionFinalizeResponseError"
+    TransactionFinalizeResponseSuccess:
+      allOf:
+        - $ref: "#/components/schemas/TransactionFinalizeResponse"
+        - type: object
+          required:
+            - transaction_identifier
+            - signed_transaction
+          properties:
+            signed_transaction:
+              type: string
+            transaction_identifier:
+              $ref: "#/components/schemas/TransactionIdentifier"
+    TransactionFinalizeResponseError:
+      allOf:
+        - "$ref": "#/components/schemas/TransactionFinalizeResponse"
+        - type: object
+          required:
+            - details
+          properties:
+            details:
+              $ref: "#/components/schemas/ErrorDetails"
     TransactionSubmitRequest:
       type: object
       required:
@@ -832,10 +855,33 @@ components:
     TransactionSubmitResponse:
       type: object
       required:
-        - transaction_identifier
+        - type
       properties:
-        transaction_identifier:
-          $ref: "#/components/schemas/TransactionIdentifier"
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          TransactionSubmitResponseSuccess: "#/components/schemas/TransactionSubmitResponseSuccess"
+          TransactionSubmitResponseError: "#/components/schemas/TransactionSubmitResponseError"
+    TransactionSubmitResponseSuccess:
+      allOf:
+        - $ref: "#/components/schemas/TransactionSubmitResponse"
+        - type: object
+          required:
+            - transaction_identifier
+          properties:
+            transaction_identifier:
+              $ref: "#/components/schemas/TransactionIdentifier"
+    TransactionSubmitResponseError:
+      allOf:
+        - "$ref": "#/components/schemas/TransactionSubmitResponse"
+        - type: object
+          required:
+            - details
+          properties:
+            details:
+              $ref: "#/components/schemas/ErrorDetails"
     GatewayRequest:
       type: object
       example: {}
@@ -1051,13 +1097,36 @@ components:
     TransactionStatusResponse:
       type: object
       required:
-        - ledger_state
-        - transaction
+        - type
       properties:
-        ledger_state:
-          "$ref": "#/components/schemas/LedgerState"
-        transaction:
-          "$ref": "#/components/schemas/AccountTransaction"
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          TransactionStatusResponseSuccess: "#/components/schemas/TransactionStatusResponseSuccess"
+          TransactionStatusResponseError: "#/components/schemas/TransactionStatusResponseError"
+    TransactionStatusResponseSuccess:
+      allOf:
+        - $ref: "#/components/schemas/TransactionStatusResponse"
+        - type: object
+          required:
+            - ledger_state
+            - transaction
+          properties:
+            ledger_state:
+              "$ref": "#/components/schemas/LedgerState"
+            transaction:
+              "$ref": "#/components/schemas/AccountTransaction"
+    TransactionStatusResponseError:
+      allOf:
+        - "$ref": "#/components/schemas/TransactionStatusResponse"
+        - type: object
+          required:
+            - details
+          properties:
+            details:
+              $ref: "#/components/schemas/ErrorDetails"
     ValidatorInfoRequest:
       type: object
       required:
