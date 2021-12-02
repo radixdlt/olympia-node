@@ -38,7 +38,7 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = CouldNotConstructFeesError.class, name = "CouldNotConstructFeesError"),
   @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
   @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
-  @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
+  @JsonSubTypes.Type(value = CannotStakeError.class, name = "NotValidatorOwnerError"),
 })
 
 public class TransactionBuildError {
@@ -119,7 +119,7 @@ static {
   mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
   mappings.put("MessageTooLongError", MessageTooLongError.class);
   mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
-  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
+  mappings.put("NotValidatorOwnerError", CannotStakeError.class);
   mappings.put("TransactionBuildError", TransactionBuildError.class);
   JSON.registerDiscriminator(TransactionBuildError.class, "type", mappings);
 }

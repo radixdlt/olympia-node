@@ -79,7 +79,7 @@ import com.radixdlt.api.gateway.openapitools.model.LedgerState;
 import com.radixdlt.api.gateway.openapitools.model.MessageTooLongError;
 import com.radixdlt.api.gateway.openapitools.model.MintTokens;
 import com.radixdlt.api.gateway.openapitools.model.NotEnoughResourcesError;
-import com.radixdlt.api.gateway.openapitools.model.NotValidatorOwnerError;
+import com.radixdlt.api.gateway.openapitools.model.CannotStakeError;
 import com.radixdlt.api.gateway.openapitools.model.StakeTokens;
 import com.radixdlt.api.gateway.openapitools.model.TokenAmount;
 import com.radixdlt.api.gateway.openapitools.model.TokenIdentifier;
@@ -513,26 +513,26 @@ public final class GatewayModelMapper {
 			return new NotEnoughResourcesError()
 				.availableAmount(notEnoughResourcesException.getAvailable().toString())
 				.requestedAmount(notEnoughResourcesException.getRequested().toString())
-				.type("NotEnoughResourcesError");
+				.type(NotEnoughResourcesError.class.getSimpleName());
 		} else if (e instanceof MinimumStakeException minimumStakeException) {
 			return new BelowMinimumStakeError()
 				.minimumAmount(minimumStakeException.getMinimumStake().toString())
 				.requestedAmount(minimumStakeException.getAttempt().toString())
-				.type("MinimumStakeError");
+				.type(BelowMinimumStakeError.class.getSimpleName());
 		} else if (e instanceof DelegateStakePermissionException delegateStakePermissionException) {
-			return new NotValidatorOwnerError()
+			return new CannotStakeError()
 				.owner(accountIdentifier(delegateStakePermissionException.getOwner()))
 				.user(accountIdentifier(delegateStakePermissionException.getUser()))
-				.type("NotValidatorOwnerError");
+				.type(CannotStakeError.class.getSimpleName());
 		} else if (e instanceof MessageTooLongException messageTooLongException) {
 			return new MessageTooLongError()
 				.lengthLimit(255)
 				.attemptedLength(messageTooLongException.getAttemptedLength())
-				.type("MessageTooLongError");
+				.type(MessageTooLongError.class.getSimpleName());
 		} else if (e instanceof FeeConstructionException feeConstructionException) {
 			return new CouldNotConstructFeesError()
 				.attempts(feeConstructionException.getAttempts())
-				.type("CouldNotConstructFeesError");
+				.type(CouldNotConstructFeesError.class.getSimpleName());
 		} else {
 			throw new IllegalStateException();
 		}

@@ -21,20 +21,23 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * InvalidAccountAddressError
+ * NetworkNotSupportedError
  */
 @JsonPropertyOrder({
-  InvalidAccountAddressError.JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS
+  NetworkNotSupportedError.JSON_PROPERTY_NETWORKS_SUPPORTED
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T22:57:23.640286-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T23:25:49.735663-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
+  @JsonSubTypes.Type(value = CannotStakeError.class, name = "CannotStakeError"),
   @JsonSubTypes.Type(value = CouldNotConstructFeesError.class, name = "CouldNotConstructFeesError"),
   @JsonSubTypes.Type(value = InvalidAccountAddressError.class, name = "InvalidAccountAddressError"),
   @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
@@ -42,44 +45,49 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = InvalidTokenSymbolError.class, name = "InvalidTokenSymbolError"),
   @JsonSubTypes.Type(value = InvalidValidatorAddressError.class, name = "InvalidValidatorAddressError"),
   @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
+  @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
   @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
-  @JsonSubTypes.Type(value = CannotStakeError.class, name = "NotValidatorOwnerError"),
-  @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFound"),
+  @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFoundError"),
 })
 
-public class InvalidAccountAddressError extends java.lang.Error {
-  public static final String JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS = "invalid_account_address";
-  private String invalidAccountAddress;
+public class NetworkNotSupportedError extends java.lang.Error {
+  public static final String JSON_PROPERTY_NETWORKS_SUPPORTED = "networks_supported";
+  private List<String> networksSupported = new ArrayList<>();
 
 
-  public InvalidAccountAddressError invalidAccountAddress(String invalidAccountAddress) {
-    this.invalidAccountAddress = invalidAccountAddress;
+  public NetworkNotSupportedError networksSupported(List<String> networksSupported) {
+    this.networksSupported = networksSupported;
+    return this;
+  }
+
+  public NetworkNotSupportedError addNetworksSupportedItem(String networksSupportedItem) {
+    this.networksSupported.add(networksSupportedItem);
     return this;
   }
 
    /**
-   * Get invalidAccountAddress
-   * @return invalidAccountAddress
+   * Get networksSupported
+   * @return networksSupported
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_NETWORKS_SUPPORTED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getInvalidAccountAddress() {
-    return invalidAccountAddress;
+  public List<String> getNetworksSupported() {
+    return networksSupported;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_NETWORKS_SUPPORTED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setInvalidAccountAddress(String invalidAccountAddress) {
-    this.invalidAccountAddress = invalidAccountAddress;
+  public void setNetworksSupported(List<String> networksSupported) {
+    this.networksSupported = networksSupported;
   }
 
 
   /**
-   * Return true if this InvalidAccountAddressError object is equal to o.
+   * Return true if this NetworkNotSupportedError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -89,22 +97,22 @@ public class InvalidAccountAddressError extends java.lang.Error {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InvalidAccountAddressError invalidAccountAddressError = (InvalidAccountAddressError) o;
-    return Objects.equals(this.invalidAccountAddress, invalidAccountAddressError.invalidAccountAddress) &&
+    NetworkNotSupportedError networkNotSupportedError = (NetworkNotSupportedError) o;
+    return Objects.equals(this.networksSupported, networkNotSupportedError.networksSupported) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(invalidAccountAddress, super.hashCode());
+    return Objects.hash(networksSupported, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InvalidAccountAddressError {\n");
+    sb.append("class NetworkNotSupportedError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    invalidAccountAddress: ").append(toIndentedString(invalidAccountAddress)).append("\n");
+    sb.append("    networksSupported: ").append(toIndentedString(networksSupported)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -124,6 +132,7 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
+  mappings.put("CannotStakeError", CannotStakeError.class);
   mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
   mappings.put("InvalidAccountAddressError", InvalidAccountAddressError.class);
   mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
@@ -131,11 +140,11 @@ static {
   mappings.put("InvalidTokenSymbolError", InvalidTokenSymbolError.class);
   mappings.put("InvalidValidatorAddressError", InvalidValidatorAddressError.class);
   mappings.put("MessageTooLongError", MessageTooLongError.class);
+  mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
   mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
-  mappings.put("NotValidatorOwnerError", CannotStakeError.class);
-  mappings.put("TokenNotFound", TokenNotFoundError.class);
-  mappings.put("InvalidAccountAddressError", InvalidAccountAddressError.class);
-  JSON.registerDiscriminator(InvalidAccountAddressError.class, "type", mappings);
+  mappings.put("TokenNotFoundError", TokenNotFoundError.class);
+  mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
+  JSON.registerDiscriminator(NetworkNotSupportedError.class, "type", mappings);
 }
 }
 

@@ -44,7 +44,7 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = InvalidValidatorAddressError.class, name = "InvalidValidatorAddress"),
   @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
   @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
-  @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
+  @JsonSubTypes.Type(value = CannotStakeError.class, name = "NotValidatorOwnerError"),
   @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFound"),
 })
 
@@ -164,7 +164,7 @@ static {
   mappings.put("InvalidValidatorAddress", InvalidValidatorAddressError.class);
   mappings.put("MessageTooLongError", MessageTooLongError.class);
   mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
-  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
+  mappings.put("NotValidatorOwnerError", CannotStakeError.class);
   mappings.put("TokenNotFound", TokenNotFoundError.class);
   mappings.put("MessageTooLongError", MessageTooLongError.class);
   JSON.registerDiscriminator(MessageTooLongError.class, "type", mappings);

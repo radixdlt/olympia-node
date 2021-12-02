@@ -26,29 +26,30 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * NotValidatorOwnerError
+ * CannotStakeError
  */
 @JsonPropertyOrder({
-  NotValidatorOwnerError.JSON_PROPERTY_OWNER,
-  NotValidatorOwnerError.JSON_PROPERTY_USER
+  CannotStakeError.JSON_PROPERTY_OWNER,
+  CannotStakeError.JSON_PROPERTY_USER
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:41:04.998487-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T23:25:49.735663-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
+  @JsonSubTypes.Type(value = CannotStakeError.class, name = "CannotStakeError"),
   @JsonSubTypes.Type(value = CouldNotConstructFeesError.class, name = "CouldNotConstructFeesError"),
-  @JsonSubTypes.Type(value = InvalidAccountAddressError.class, name = "InvalidAccountAddress"),
-  @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKey"),
-  @JsonSubTypes.Type(value = InvalidTokenRRIError.class, name = "InvalidTokenRRI"),
-  @JsonSubTypes.Type(value = InvalidTokenSymbolError.class, name = "InvalidTokenSymbol"),
-  @JsonSubTypes.Type(value = InvalidValidatorAddressError.class, name = "InvalidValidatorAddress"),
+  @JsonSubTypes.Type(value = InvalidAccountAddressError.class, name = "InvalidAccountAddressError"),
+  @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
+  @JsonSubTypes.Type(value = InvalidTokenRRIError.class, name = "InvalidTokenRRIError"),
+  @JsonSubTypes.Type(value = InvalidTokenSymbolError.class, name = "InvalidTokenSymbolError"),
+  @JsonSubTypes.Type(value = InvalidValidatorAddressError.class, name = "InvalidValidatorAddressError"),
   @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
+  @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
   @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
-  @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
-  @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFound"),
+  @JsonSubTypes.Type(value = TokenNotFoundError.class, name = "TokenNotFoundError"),
 })
 
-public class NotValidatorOwnerError extends Error {
+public class CannotStakeError extends Error {
   public static final String JSON_PROPERTY_OWNER = "owner";
   private AccountIdentifier owner;
 
@@ -56,7 +57,7 @@ public class NotValidatorOwnerError extends Error {
   private AccountIdentifier user;
 
 
-  public NotValidatorOwnerError owner(AccountIdentifier owner) {
+  public CannotStakeError owner(AccountIdentifier owner) {
     this.owner = owner;
     return this;
   }
@@ -82,7 +83,7 @@ public class NotValidatorOwnerError extends Error {
   }
 
 
-  public NotValidatorOwnerError user(AccountIdentifier user) {
+  public CannotStakeError user(AccountIdentifier user) {
     this.user = user;
     return this;
   }
@@ -109,7 +110,7 @@ public class NotValidatorOwnerError extends Error {
 
 
   /**
-   * Return true if this NotValidatorOwnerError object is equal to o.
+   * Return true if this CannotStakeError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -119,9 +120,9 @@ public class NotValidatorOwnerError extends Error {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NotValidatorOwnerError notValidatorOwnerError = (NotValidatorOwnerError) o;
-    return Objects.equals(this.owner, notValidatorOwnerError.owner) &&
-        Objects.equals(this.user, notValidatorOwnerError.user) &&
+    CannotStakeError cannotStakeError = (CannotStakeError) o;
+    return Objects.equals(this.owner, cannotStakeError.owner) &&
+        Objects.equals(this.user, cannotStakeError.user) &&
         super.equals(o);
   }
 
@@ -133,7 +134,7 @@ public class NotValidatorOwnerError extends Error {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NotValidatorOwnerError {\n");
+    sb.append("class CannotStakeError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    owner: ").append(toIndentedString(owner)).append("\n");
     sb.append("    user: ").append(toIndentedString(user)).append("\n");
@@ -156,18 +157,19 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
+  mappings.put("CannotStakeError", CannotStakeError.class);
   mappings.put("CouldNotConstructFeesError", CouldNotConstructFeesError.class);
-  mappings.put("InvalidAccountAddress", InvalidAccountAddressError.class);
-  mappings.put("InvalidPublicKey", InvalidPublicKeyError.class);
-  mappings.put("InvalidTokenRRI", InvalidTokenRRIError.class);
-  mappings.put("InvalidTokenSymbol", InvalidTokenSymbolError.class);
-  mappings.put("InvalidValidatorAddress", InvalidValidatorAddressError.class);
+  mappings.put("InvalidAccountAddressError", InvalidAccountAddressError.class);
+  mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
+  mappings.put("InvalidTokenRRIError", InvalidTokenRRIError.class);
+  mappings.put("InvalidTokenSymbolError", InvalidTokenSymbolError.class);
+  mappings.put("InvalidValidatorAddressError", InvalidValidatorAddressError.class);
   mappings.put("MessageTooLongError", MessageTooLongError.class);
+  mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
   mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
-  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
-  mappings.put("TokenNotFound", TokenNotFoundError.class);
-  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
-  JSON.registerDiscriminator(NotValidatorOwnerError.class, "type", mappings);
+  mappings.put("TokenNotFoundError", TokenNotFoundError.class);
+  mappings.put("CannotStakeError", CannotStakeError.class);
+  JSON.registerDiscriminator(CannotStakeError.class, "type", mappings);
 }
 }
 
