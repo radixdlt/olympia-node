@@ -22,45 +22,45 @@ import java.util.Objects;
 
 
 /**
- * TransactionRulesRequest
+ * PublicKey
  */
 @JsonPropertyOrder({
-  TransactionRulesRequest.JSON_PROPERTY_NETWORK_IDENTIFIER
+  PublicKey.JSON_PROPERTY_HEX
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T16:10:09.598664-06:00[America/Chicago]")
-public class TransactionRulesRequest {
-  public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
-  private NetworkIdentifier networkIdentifier;
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T15:46:47.061439-06:00[America/Chicago]")
+public class PublicKey {
+  public static final String JSON_PROPERTY_HEX = "hex";
+  private String hex;
 
 
-  public TransactionRulesRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
-    this.networkIdentifier = networkIdentifier;
+  public PublicKey hex(String hex) {
+    this.hex = hex;
     return this;
   }
 
    /**
-   * Get networkIdentifier
-   * @return networkIdentifier
+   * Get hex
+   * @return hex
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NetworkIdentifier getNetworkIdentifier() {
-    return networkIdentifier;
+  public String getHex() {
+    return hex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetworkIdentifier(NetworkIdentifier networkIdentifier) {
-    this.networkIdentifier = networkIdentifier;
+  public void setHex(String hex) {
+    this.hex = hex;
   }
 
 
   /**
-   * Return true if this TransactionRulesRequest object is equal to o.
+   * Return true if this PublicKey object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -70,20 +70,20 @@ public class TransactionRulesRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionRulesRequest transactionRulesRequest = (TransactionRulesRequest) o;
-    return Objects.equals(this.networkIdentifier, transactionRulesRequest.networkIdentifier);
+    PublicKey publicKey = (PublicKey) o;
+    return Objects.equals(this.hex, publicKey.hex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkIdentifier);
+    return Objects.hash(hex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionRulesRequest {\n");
-    sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
+    sb.append("class PublicKey {\n");
+    sb.append("    hex: ").append(toIndentedString(hex)).append("\n");
     sb.append("}");
     return sb.toString();
   }

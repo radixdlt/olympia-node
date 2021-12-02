@@ -22,45 +22,45 @@ import java.util.Objects;
 
 
 /**
- * TransactionRulesRequest
+ * NetworkIdentifier
  */
 @JsonPropertyOrder({
-  TransactionRulesRequest.JSON_PROPERTY_NETWORK_IDENTIFIER
+  NetworkIdentifier.JSON_PROPERTY_NETWORK
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T16:10:09.598664-06:00[America/Chicago]")
-public class TransactionRulesRequest {
-  public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
-  private NetworkIdentifier networkIdentifier;
+public class NetworkIdentifier {
+  public static final String JSON_PROPERTY_NETWORK = "network";
+  private String network;
 
 
-  public TransactionRulesRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
-    this.networkIdentifier = networkIdentifier;
+  public NetworkIdentifier network(String network) {
+    this.network = network;
     return this;
   }
 
    /**
-   * Get networkIdentifier
-   * @return networkIdentifier
+   * Get network
+   * @return network
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_NETWORK)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public NetworkIdentifier getNetworkIdentifier() {
-    return networkIdentifier;
+  public String getNetwork() {
+    return network;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_NETWORK)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetworkIdentifier(NetworkIdentifier networkIdentifier) {
-    this.networkIdentifier = networkIdentifier;
+  public void setNetwork(String network) {
+    this.network = network;
   }
 
 
   /**
-   * Return true if this TransactionRulesRequest object is equal to o.
+   * Return true if this NetworkIdentifier object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -70,20 +70,20 @@ public class TransactionRulesRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionRulesRequest transactionRulesRequest = (TransactionRulesRequest) o;
-    return Objects.equals(this.networkIdentifier, transactionRulesRequest.networkIdentifier);
+    NetworkIdentifier networkIdentifier = (NetworkIdentifier) o;
+    return Objects.equals(this.network, networkIdentifier.network);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkIdentifier);
+    return Objects.hash(network);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionRulesRequest {\n");
-    sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
+    sb.append("class NetworkIdentifier {\n");
+    sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -30,7 +30,7 @@ import java.util.Objects;
   TransactionFinalizeRequest.JSON_PROPERTY_SIGNATURE,
   TransactionFinalizeRequest.JSON_PROPERTY_SUBMIT
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-29T13:12:37.554814-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T16:10:09.598664-06:00[America/Chicago]")
 public class TransactionFinalizeRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
@@ -39,7 +39,7 @@ public class TransactionFinalizeRequest {
   private String unsignedTransaction;
 
   public static final String JSON_PROPERTY_SIGNATURE = "signature";
-  private TransactionFinalizeRequestSignature signature;
+  private Signature signature;
 
   public static final String JSON_PROPERTY_SUBMIT = "submit";
   private Boolean submit;
@@ -97,7 +97,7 @@ public class TransactionFinalizeRequest {
   }
 
 
-  public TransactionFinalizeRequest signature(TransactionFinalizeRequestSignature signature) {
+  public TransactionFinalizeRequest signature(Signature signature) {
     this.signature = signature;
     return this;
   }
@@ -111,14 +111,14 @@ public class TransactionFinalizeRequest {
   @JsonProperty(JSON_PROPERTY_SIGNATURE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TransactionFinalizeRequestSignature getSignature() {
+  public Signature getSignature() {
     return signature;
   }
 
 
   @JsonProperty(JSON_PROPERTY_SIGNATURE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSignature(TransactionFinalizeRequestSignature signature) {
+  public void setSignature(Signature signature) {
     this.signature = signature;
   }
 

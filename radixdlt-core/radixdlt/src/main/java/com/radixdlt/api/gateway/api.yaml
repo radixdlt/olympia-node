@@ -24,7 +24,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/GatewayResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -46,7 +46,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/TokenNativeResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -68,7 +68,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/TokenResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -90,7 +90,29 @@ paths:
               schema:
                 "$ref": "#/components/schemas/TokenDeriveResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/account/derive":
+    post:
+      summary: Derive Account Identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/AccountDeriveRequest"
+      responses:
+        '200':
+          description: Token info
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AccountDeriveResponse"
+        '500':
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -112,7 +134,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/AccountBalancesResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -134,7 +156,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/AccountStakesResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -156,7 +178,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/AccountUnstakesResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -178,7 +200,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/AccountTransactionsResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -200,7 +222,29 @@ paths:
               schema:
                 "$ref": "#/components/schemas/ValidatorResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/validator/derive":
+    post:
+      summary: Get Validator Identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ValidatorDeriveRequest"
+      responses:
+        '200':
+          description: Validator Info
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ValidatorDeriveResponse"
+        '500':
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -222,7 +266,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/ValidatorsResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -244,7 +288,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/TransactionRulesResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -266,7 +310,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/TransactionBuildResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -288,7 +332,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/TransactionFinalizeResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -310,7 +354,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/TransactionSubmitResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -332,7 +376,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/TransactionStatusResponse"
         '500':
-          description: Unexpected error
+          description: Gateway error
           content:
             application/json:
               schema:
@@ -342,15 +386,16 @@ components:
     AccountBalancesRequest:
       type: object
       required:
-        - network
+        - network_identifier
         - account_identifier
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
         account_identifier:
           "$ref": "#/components/schemas/AccountIdentifier"
       example:
-        network: mainnet
+        network_identifier:
+          network: mainnet
         account_identifier:
           address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
     AccountBalancesResponse:
@@ -378,25 +423,31 @@ components:
     AccountStakesRequest:
       type: object
       required:
-        - network
+        - network_identifier
         - account_identifier
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
         account_identifier:
-          "$ref": "#/components/schemas/AccountIdentifier"
+          $ref: "#/components/schemas/AccountIdentifier"
       example:
-        network: mainnet
+        network_identifier:
+          network: mainnet
         account_identifier:
           address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
     AccountStakesResponse:
       type: object
       required:
+        - pending_stakes
         - stakes
         - ledger_state
       properties:
         ledger_state:
           $ref: "#/components/schemas/LedgerState"
+        pending_stakes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountStakeEntry"
         stakes:
           type: array
           items:
@@ -414,25 +465,31 @@ components:
     AccountUnstakesRequest:
       type: object
       required:
-        - network
+        - network_identifier
         - account_identifier
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
         account_identifier:
-          "$ref": "#/components/schemas/AccountIdentifier"
+          $ref: "#/components/schemas/AccountIdentifier"
       example:
-        network: mainnet
+        network_identifier:
+          network: mainnet
         account_identifier:
           address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
     AccountUnstakesResponse:
       type: object
       required:
         - ledger_state
+        - pending_unstakes
         - unstakes
       properties:
         ledger_state:
           $ref: "#/components/schemas/LedgerState"
+        pending_unstakes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountUnstakeEntry"
         unstakes:
           type: array
           items:
@@ -454,19 +511,20 @@ components:
     AccountTransactionsRequest:
       type: object
       required:
-        - network
+        - network_identifier
         - account_identifier
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
         account_identifier:
-          "$ref": "#/components/schemas/AccountIdentifier"
+          $ref: "#/components/schemas/AccountIdentifier"
         cursor:
           type: string
         limit:
           type: integer
       example:
-        network: mainnet
+        network_identifier:
+          network: mainnet
         account_identifier:
           address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
         cursor: '0'
@@ -589,12 +647,13 @@ components:
     TransactionRulesRequest:
       type: object
       required:
-        - network
+        - network_identifier
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
       example:
-        network: mainnet
+        network_identifier:
+          network: mainnet
     TransactionRulesResponse:
       type: object
       required:
@@ -615,12 +674,12 @@ components:
     TransactionBuildRequest:
       type: object
       required:
-        - network
+        - network_identifier
         - actions
         - fee_payer
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
         actions:
           type: array
           items:
@@ -632,7 +691,8 @@ components:
         disable_token_mint_and_burn:
           type: boolean
       example:
-        network: mainnet
+        network_identifier:
+          network: mainnet
         actions:
           - type: TransferTokens
             from_account:
@@ -681,6 +741,13 @@ components:
           $ref: "#/components/schemas/Signature"
         submit:
           type: boolean
+    PublicKey:
+      type: object
+      required:
+        - hex
+      properties:
+        hex:
+          type: string
     Signature:
       type: object
       required:
@@ -688,7 +755,7 @@ components:
         - bytes
       properties:
         public_key:
-          type: string
+          $ref: "#/components/schemas/PublicKey"
         bytes:
           type: string
     TransactionFinalizeResponse:
@@ -704,11 +771,11 @@ components:
     TransactionSubmitRequest:
       type: object
       required:
-        - network
+        - network_identifier
         - signed_transaction
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
         signed_transaction:
           type: string
     TransactionSubmitResponse:
@@ -724,11 +791,11 @@ components:
     GatewayResponse:
       type: object
       required:
-        - network
+        - network_identifier
         - ledger_state
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
         ledger_state:
           $ref: "#/components/schemas/LedgerState"
         target_ledger_state:
@@ -736,15 +803,16 @@ components:
     TokenRequest:
       type: object
       required:
-        - network
+        - network_identifier
         - token_identifier
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
         token_identifier:
           "$ref": "#/components/schemas/TokenIdentifier"
       example:
-        network: mainnet
+        network_identifier:
+          network: mainnet
         token_identifier:
           rri: xrd_rr1qy5wfsfh
     LedgerState:
@@ -787,12 +855,13 @@ components:
     TokenNativeRequest:
       type: object
       required:
-        - network
+        - network_identifier
       properties:
-        network:
+        network_identifier:
           type: string
       example:
-        network: mainnet
+        network_identifier:
+          network: mainnet
     TokenNativeResponse:
       type: object
       required:
@@ -806,21 +875,16 @@ components:
     TokenDeriveRequest:
       type: object
       required:
-        - network
-        - creator_account_identifier
+        - network_identifier
+        - public_key
         - symbol
       properties:
-        network:
-          type: string
-        creator_account_identifier:
-          "$ref": "#/components/schemas/AccountIdentifier"
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        public_key:
+          $ref: "#/components/schemas/PublicKey"
         symbol:
           type: string
-      example:
-        network: mainnet
-        creator_account_identifier:
-          address: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
-        symbol: tkn
     TokenDeriveResponse:
       type: object
       required:
@@ -828,18 +892,53 @@ components:
       properties:
         token_identifier:
           $ref: "#/components/schemas/TokenIdentifier"
+    AccountDeriveRequest:
+      type: object
+      required:
+        - network_identifier
+        - public_key
+      properties:
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        public_key:
+          $ref: "#/components/schemas/PublicKey"
+    AccountDeriveResponse:
+      type: object
+      required:
+        - account_identifier
+      properties:
+        account_identifier:
+          $ref: "#/components/schemas/AccountIdentifier"
+    ValidatorDeriveRequest:
+      type: object
+      required:
+        - network_identifier
+        - public_key
+      properties:
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        public_key:
+          $ref: "#/components/schemas/PublicKey"
+    ValidatorDeriveResponse:
+      type: object
+      required:
+        - account_identifier
+      properties:
+        account_identifier:
+          $ref: "#/components/schemas/ValidatorIdentifier"
     TransactionStatusRequest:
       type: object
       required:
-        - network
+        - network_identifier
         - transaction_identifier
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
         transaction_identifier:
           $ref: "#/components/schemas/TransactionIdentifier"
       example:
-        network: mainnet
+        network_identifier:
+          network: mainnet
         transaction_identifier:
           hash: ef71a9d6c63444fce6abd2df8fab2755cfb51f6794e578f60d99337193811842
     TransactionStatusResponse:
@@ -855,15 +954,16 @@ components:
     ValidatorRequest:
       type: object
       required:
-        - network
+        - network_identifier
         - validator_identifier
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
         validator_identifier:
-          "$ref": "#/components/schemas/ValidatorIdentifier"
+          $ref: "#/components/schemas/ValidatorIdentifier"
       example:
-        network: mainnet
+        network_identifier:
+          network: mainnet
         validator_identifier:
           address: rv1qf2x63qx4jdaxj83kkw2yytehvvmu6r2xll5gcp6c9rancmrfsgfwttnczx
     ValidatorResponse:
@@ -879,12 +979,13 @@ components:
     ValidatorsRequest:
       type: object
       required:
-        - network
+        - network_identifier
       properties:
-        network:
-          type: string
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
       example:
-        network: mainnet
+        network_identifier:
+          network: mainnet
     ValidatorsResponse:
       type: object
       required:
@@ -1142,6 +1243,13 @@ components:
     BigInteger:
       type: string
       pattern: "^-?[0-9]+$"
+    NetworkIdentifier:
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          type: string
     AccountIdentifier:
       type: object
       required:

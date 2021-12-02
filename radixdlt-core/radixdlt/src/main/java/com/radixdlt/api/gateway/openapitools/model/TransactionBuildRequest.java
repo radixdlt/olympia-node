@@ -27,16 +27,16 @@ import java.util.Objects;
  * TransactionBuildRequest
  */
 @JsonPropertyOrder({
-  TransactionBuildRequest.JSON_PROPERTY_NETWORK,
+  TransactionBuildRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
   TransactionBuildRequest.JSON_PROPERTY_ACTIONS,
   TransactionBuildRequest.JSON_PROPERTY_FEE_PAYER,
   TransactionBuildRequest.JSON_PROPERTY_MESSAGE,
   TransactionBuildRequest.JSON_PROPERTY_DISABLE_TOKEN_MINT_AND_BURN
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T16:10:09.598664-06:00[America/Chicago]")
 public class TransactionBuildRequest {
-  public static final String JSON_PROPERTY_NETWORK = "network";
-  private String network;
+  public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
+  private NetworkIdentifier networkIdentifier;
 
   public static final String JSON_PROPERTY_ACTIONS = "actions";
   private List<Action> actions = new ArrayList<>();
@@ -51,29 +51,29 @@ public class TransactionBuildRequest {
   private Boolean disableTokenMintAndBurn;
 
 
-  public TransactionBuildRequest network(String network) {
-    this.network = network;
+  public TransactionBuildRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
     return this;
   }
 
    /**
-   * Get network
-   * @return network
+   * Get networkIdentifier
+   * @return networkIdentifier
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getNetwork() {
-    return network;
+  public NetworkIdentifier getNetworkIdentifier() {
+    return networkIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetwork(String network) {
-    this.network = network;
+  public void setNetworkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
   }
 
 
@@ -198,7 +198,7 @@ public class TransactionBuildRequest {
       return false;
     }
     TransactionBuildRequest transactionBuildRequest = (TransactionBuildRequest) o;
-    return Objects.equals(this.network, transactionBuildRequest.network) &&
+    return Objects.equals(this.networkIdentifier, transactionBuildRequest.networkIdentifier) &&
         Objects.equals(this.actions, transactionBuildRequest.actions) &&
         Objects.equals(this.feePayer, transactionBuildRequest.feePayer) &&
         Objects.equals(this.message, transactionBuildRequest.message) &&
@@ -207,14 +207,14 @@ public class TransactionBuildRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, actions, feePayer, message, disableTokenMintAndBurn);
+    return Objects.hash(networkIdentifier, actions, feePayer, message, disableTokenMintAndBurn);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionBuildRequest {\n");
-    sb.append("    network: ").append(toIndentedString(network)).append("\n");
+    sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
     sb.append("    actions: ").append(toIndentedString(actions)).append("\n");
     sb.append("    feePayer: ").append(toIndentedString(feePayer)).append("\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");

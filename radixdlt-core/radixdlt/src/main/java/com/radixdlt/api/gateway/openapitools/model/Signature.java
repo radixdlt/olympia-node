@@ -28,16 +28,16 @@ import java.util.Objects;
   Signature.JSON_PROPERTY_PUBLIC_KEY,
   Signature.JSON_PROPERTY_BYTES
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T12:28:18.350415-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T15:46:47.061439-06:00[America/Chicago]")
 public class Signature {
   public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
-  private String publicKey;
+  private PublicKey publicKey;
 
   public static final String JSON_PROPERTY_BYTES = "bytes";
   private String bytes;
 
 
-  public Signature publicKey(String publicKey) {
+  public Signature publicKey(PublicKey publicKey) {
     this.publicKey = publicKey;
     return this;
   }
@@ -51,14 +51,14 @@ public class Signature {
   @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getPublicKey() {
+  public PublicKey getPublicKey() {
     return publicKey;
   }
 
 
   @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPublicKey(String publicKey) {
+  public void setPublicKey(PublicKey publicKey) {
     this.publicKey = publicKey;
   }
 

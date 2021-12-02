@@ -80,6 +80,7 @@ import com.radixdlt.api.gateway.openapitools.model.MessageTooLongError;
 import com.radixdlt.api.gateway.openapitools.model.MintTokens;
 import com.radixdlt.api.gateway.openapitools.model.NotEnoughResourcesError;
 import com.radixdlt.api.gateway.openapitools.model.CannotStakeError;
+import com.radixdlt.api.gateway.openapitools.model.PublicKey;
 import com.radixdlt.api.gateway.openapitools.model.StakeTokens;
 import com.radixdlt.api.gateway.openapitools.model.TokenAmount;
 import com.radixdlt.api.gateway.openapitools.model.TokenIdentifier;
@@ -159,9 +160,9 @@ public final class GatewayModelMapper {
 		).getSecond();
 	}
 
-	public ECPublicKey ecPublicKey(String publicKeyHex) {
+	public ECPublicKey ecPublicKey(PublicKey publicKey) {
 		try {
-			return ECPublicKey.fromHex(publicKeyHex);
+			return ECPublicKey.fromHex(publicKey.getHex());
 		} catch (PublicKeyException e) {
 			throw new IllegalStateException();
 		}

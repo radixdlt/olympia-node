@@ -25,41 +25,41 @@ import java.util.Objects;
  * TransactionSubmitRequest
  */
 @JsonPropertyOrder({
-  TransactionSubmitRequest.JSON_PROPERTY_NETWORK,
+  TransactionSubmitRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
   TransactionSubmitRequest.JSON_PROPERTY_SIGNED_TRANSACTION
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T16:10:09.598664-06:00[America/Chicago]")
 public class TransactionSubmitRequest {
-  public static final String JSON_PROPERTY_NETWORK = "network";
-  private String network;
+  public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
+  private NetworkIdentifier networkIdentifier;
 
   public static final String JSON_PROPERTY_SIGNED_TRANSACTION = "signed_transaction";
   private String signedTransaction;
 
 
-  public TransactionSubmitRequest network(String network) {
-    this.network = network;
+  public TransactionSubmitRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
     return this;
   }
 
    /**
-   * Get network
-   * @return network
+   * Get networkIdentifier
+   * @return networkIdentifier
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getNetwork() {
-    return network;
+  public NetworkIdentifier getNetworkIdentifier() {
+    return networkIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetwork(String network) {
-    this.network = network;
+  public void setNetworkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
   }
 
 
@@ -101,20 +101,20 @@ public class TransactionSubmitRequest {
       return false;
     }
     TransactionSubmitRequest transactionSubmitRequest = (TransactionSubmitRequest) o;
-    return Objects.equals(this.network, transactionSubmitRequest.network) &&
+    return Objects.equals(this.networkIdentifier, transactionSubmitRequest.networkIdentifier) &&
         Objects.equals(this.signedTransaction, transactionSubmitRequest.signedTransaction);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, signedTransaction);
+    return Objects.hash(networkIdentifier, signedTransaction);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionSubmitRequest {\n");
-    sb.append("    network: ").append(toIndentedString(network)).append("\n");
+    sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
     sb.append("    signedTransaction: ").append(toIndentedString(signedTransaction)).append("\n");
     sb.append("}");
     return sb.toString();

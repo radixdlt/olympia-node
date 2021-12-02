@@ -25,41 +25,41 @@ import java.util.Objects;
  * TransactionStatusRequest
  */
 @JsonPropertyOrder({
-  TransactionStatusRequest.JSON_PROPERTY_NETWORK,
+  TransactionStatusRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
   TransactionStatusRequest.JSON_PROPERTY_TRANSACTION_IDENTIFIER
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T11:34:49.994520-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T16:10:09.598664-06:00[America/Chicago]")
 public class TransactionStatusRequest {
-  public static final String JSON_PROPERTY_NETWORK = "network";
-  private String network;
+  public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
+  private NetworkIdentifier networkIdentifier;
 
   public static final String JSON_PROPERTY_TRANSACTION_IDENTIFIER = "transaction_identifier";
   private TransactionIdentifier transactionIdentifier;
 
 
-  public TransactionStatusRequest network(String network) {
-    this.network = network;
+  public TransactionStatusRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
     return this;
   }
 
    /**
-   * Get network
-   * @return network
+   * Get networkIdentifier
+   * @return networkIdentifier
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getNetwork() {
-    return network;
+  public NetworkIdentifier getNetworkIdentifier() {
+    return networkIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetwork(String network) {
-    this.network = network;
+  public void setNetworkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
   }
 
 
@@ -101,20 +101,20 @@ public class TransactionStatusRequest {
       return false;
     }
     TransactionStatusRequest transactionStatusRequest = (TransactionStatusRequest) o;
-    return Objects.equals(this.network, transactionStatusRequest.network) &&
+    return Objects.equals(this.networkIdentifier, transactionStatusRequest.networkIdentifier) &&
         Objects.equals(this.transactionIdentifier, transactionStatusRequest.transactionIdentifier);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, transactionIdentifier);
+    return Objects.hash(networkIdentifier, transactionIdentifier);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionStatusRequest {\n");
-    sb.append("    network: ").append(toIndentedString(network)).append("\n");
+    sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
     sb.append("    transactionIdentifier: ").append(toIndentedString(transactionIdentifier)).append("\n");
     sb.append("}");
     return sb.toString();
