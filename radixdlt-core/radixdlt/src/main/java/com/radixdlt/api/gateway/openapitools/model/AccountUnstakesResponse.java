@@ -16,58 +16,83 @@ package com.radixdlt.api.gateway.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+
 
 /**
  * AccountUnstakesResponse
  */
 @JsonPropertyOrder({
-  AccountUnstakesResponse.JSON_PROPERTY_TYPE
+  AccountUnstakesResponse.JSON_PROPERTY_LEDGER_STATE,
+  AccountUnstakesResponse.JSON_PROPERTY_UNSTAKES
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:15:02.792179-06:00[America/Chicago]")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
-@JsonSubTypes({
-  @JsonSubTypes.Type(value = AccountUnstakesResponseError.class, name = "AccountUnstakeResponseError"),
-  @JsonSubTypes.Type(value = AccountUnstakesResponseSuccess.class, name = "AccountUnstakeResponseSuccess"),
-  @JsonSubTypes.Type(value = AccountUnstakesResponseError.class, name = "AccountUnstakesResponseError"),
-  @JsonSubTypes.Type(value = AccountUnstakesResponseSuccess.class, name = "AccountUnstakesResponseSuccess"),
-})
-
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T13:11:38.357742-06:00[America/Chicago]")
 public class AccountUnstakesResponse {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+  public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
+  private LedgerState ledgerState;
+
+  public static final String JSON_PROPERTY_UNSTAKES = "unstakes";
+  private List<AccountUnstakeEntry> unstakes = new ArrayList<>();
 
 
-  public AccountUnstakesResponse type(String type) {
-    this.type = type;
+  public AccountUnstakesResponse ledgerState(LedgerState ledgerState) {
+    this.ledgerState = ledgerState;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get ledgerState
+   * @return ledgerState
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public LedgerState getLedgerState() {
+    return ledgerState;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setLedgerState(LedgerState ledgerState) {
+    this.ledgerState = ledgerState;
+  }
+
+
+  public AccountUnstakesResponse unstakes(List<AccountUnstakeEntry> unstakes) {
+    this.unstakes = unstakes;
+    return this;
+  }
+
+  public AccountUnstakesResponse addUnstakesItem(AccountUnstakeEntry unstakesItem) {
+    this.unstakes.add(unstakesItem);
+    return this;
+  }
+
+   /**
+   * Get unstakes
+   * @return unstakes
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_UNSTAKES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<AccountUnstakeEntry> getUnstakes() {
+    return unstakes;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_UNSTAKES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setUnstakes(List<AccountUnstakeEntry> unstakes) {
+    this.unstakes = unstakes;
   }
 
 
@@ -83,19 +108,21 @@ public class AccountUnstakesResponse {
       return false;
     }
     AccountUnstakesResponse accountUnstakesResponse = (AccountUnstakesResponse) o;
-    return Objects.equals(this.type, accountUnstakesResponse.type);
+    return Objects.equals(this.ledgerState, accountUnstakesResponse.ledgerState) &&
+        Objects.equals(this.unstakes, accountUnstakesResponse.unstakes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(ledgerState, unstakes);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccountUnstakesResponse {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("    ledgerState: ").append(toIndentedString(ledgerState)).append("\n");
+    sb.append("    unstakes: ").append(toIndentedString(unstakes)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -111,15 +138,5 @@ public class AccountUnstakesResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
-static {
-  // Initialize and register the discriminator mappings.
-  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("AccountUnstakeResponseError", AccountUnstakesResponseError.class);
-  mappings.put("AccountUnstakeResponseSuccess", AccountUnstakesResponseSuccess.class);
-  mappings.put("AccountUnstakesResponseError", AccountUnstakesResponseError.class);
-  mappings.put("AccountUnstakesResponseSuccess", AccountUnstakesResponseSuccess.class);
-  mappings.put("AccountUnstakesResponse", AccountUnstakesResponse.class);
-  JSON.registerDiscriminator(AccountUnstakesResponse.class, "type", mappings);
-}
 }
 

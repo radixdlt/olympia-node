@@ -68,7 +68,6 @@ import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.AccountStakesRequest;
 import com.radixdlt.api.gateway.openapitools.model.AccountStakesResponse;
-import com.radixdlt.api.gateway.openapitools.model.AccountStakesResponseSuccess;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 final class AccountStakesHandler extends GatewayJsonRpcHandler<AccountStakesRequest, AccountStakesResponse> {
@@ -92,10 +91,10 @@ final class AccountStakesHandler extends GatewayJsonRpcHandler<AccountStakesRequ
 	@Override
 	public AccountStakesResponse handleRequest(AccountStakesRequest request) {
 		var proof = inMemorySystemInfo.getCurrentProof();
-		var response = new AccountStakesResponseSuccess()
+		var response = new AccountStakesResponse()
 			.ledgerState(gatewayModelMapper.ledgerState(proof));
 		var accountAddress = gatewayModelMapper.account(request.getAccountIdentifier());
 		store.getAccountStakes(accountAddress).forEach(response::addStakesItem);
-		return response.type(AccountStakesResponseSuccess.class.getSimpleName());
+		return response;
 	}
 }

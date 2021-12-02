@@ -16,56 +16,83 @@ package com.radixdlt.api.gateway.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+
 
 /**
  * AccountStakesResponse
  */
 @JsonPropertyOrder({
-  AccountStakesResponse.JSON_PROPERTY_TYPE
+  AccountStakesResponse.JSON_PROPERTY_LEDGER_STATE,
+  AccountStakesResponse.JSON_PROPERTY_STAKES
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:09:44.037426-06:00[America/Chicago]")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
-@JsonSubTypes({
-  @JsonSubTypes.Type(value = AccountStakesResponseError.class, name = "AccountStakesResponseError"),
-  @JsonSubTypes.Type(value = AccountStakesResponseSuccess.class, name = "AccountStakesResponseSuccess"),
-})
-
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T13:10:00.072293-06:00[America/Chicago]")
 public class AccountStakesResponse {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+  public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
+  private LedgerState ledgerState;
+
+  public static final String JSON_PROPERTY_STAKES = "stakes";
+  private List<AccountStakeEntry> stakes = new ArrayList<>();
 
 
-  public AccountStakesResponse type(String type) {
-    this.type = type;
+  public AccountStakesResponse ledgerState(LedgerState ledgerState) {
+    this.ledgerState = ledgerState;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get ledgerState
+   * @return ledgerState
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public LedgerState getLedgerState() {
+    return ledgerState;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setLedgerState(LedgerState ledgerState) {
+    this.ledgerState = ledgerState;
+  }
+
+
+  public AccountStakesResponse stakes(List<AccountStakeEntry> stakes) {
+    this.stakes = stakes;
+    return this;
+  }
+
+  public AccountStakesResponse addStakesItem(AccountStakeEntry stakesItem) {
+    this.stakes.add(stakesItem);
+    return this;
+  }
+
+   /**
+   * Get stakes
+   * @return stakes
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STAKES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<AccountStakeEntry> getStakes() {
+    return stakes;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STAKES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStakes(List<AccountStakeEntry> stakes) {
+    this.stakes = stakes;
   }
 
 
@@ -81,19 +108,21 @@ public class AccountStakesResponse {
       return false;
     }
     AccountStakesResponse accountStakesResponse = (AccountStakesResponse) o;
-    return Objects.equals(this.type, accountStakesResponse.type);
+    return Objects.equals(this.ledgerState, accountStakesResponse.ledgerState) &&
+        Objects.equals(this.stakes, accountStakesResponse.stakes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(ledgerState, stakes);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccountStakesResponse {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("    ledgerState: ").append(toIndentedString(ledgerState)).append("\n");
+    sb.append("    stakes: ").append(toIndentedString(stakes)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -109,13 +138,5 @@ public class AccountStakesResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
-static {
-  // Initialize and register the discriminator mappings.
-  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("AccountStakesResponseError", AccountStakesResponseError.class);
-  mappings.put("AccountStakesResponseSuccess", AccountStakesResponseSuccess.class);
-  mappings.put("AccountStakesResponse", AccountStakesResponse.class);
-  JSON.registerDiscriminator(AccountStakesResponse.class, "type", mappings);
-}
 }
 

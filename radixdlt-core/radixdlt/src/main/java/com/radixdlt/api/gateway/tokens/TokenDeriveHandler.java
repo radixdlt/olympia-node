@@ -68,7 +68,6 @@ import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.TokenDeriveRequest;
 import com.radixdlt.api.gateway.openapitools.model.TokenDeriveResponse;
-import com.radixdlt.api.gateway.openapitools.model.TokenDeriveResponseSuccess;
 import com.radixdlt.identifiers.REAddr;
 
 public final class TokenDeriveHandler extends GatewayJsonRpcHandler<TokenDeriveRequest, TokenDeriveResponse> {
@@ -86,8 +85,7 @@ public final class TokenDeriveHandler extends GatewayJsonRpcHandler<TokenDeriveR
 		var key = accountAddress.publicKey().orElseThrow();
 		var symbol = request.getSymbol();
 		var tokenAddress = REAddr.ofHashedKey(key, symbol);
-		return new TokenDeriveResponseSuccess()
-			.tokenIdentifier(gatewayModelMapper.tokenIdentifier(tokenAddress, symbol))
-			.type(TokenDeriveResponseSuccess.class.getSimpleName());
+		return new TokenDeriveResponse()
+			.tokenIdentifier(gatewayModelMapper.tokenIdentifier(tokenAddress, symbol));
 	}
 }

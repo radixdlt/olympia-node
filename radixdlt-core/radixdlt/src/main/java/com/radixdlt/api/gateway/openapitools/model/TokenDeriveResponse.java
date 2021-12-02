@@ -16,58 +16,46 @@ package com.radixdlt.api.gateway.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
+
 
 /**
  * TokenDeriveResponse
  */
 @JsonPropertyOrder({
-  TokenDeriveResponse.JSON_PROPERTY_TYPE
+  TokenDeriveResponse.JSON_PROPERTY_TOKEN_IDENTIFIER
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T17:41:28.920972-06:00[America/Chicago]")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
-@JsonSubTypes({
-  @JsonSubTypes.Type(value = TokenDeriveResponseError.class, name = "TokenDeriveResponseError"),
-  @JsonSubTypes.Type(value = TokenDeriveResponseSuccess.class, name = "TokenDeriveResponseSuccess"),
-  @JsonSubTypes.Type(value = TokenDeriveResponseError.class, name = "TokenResponseError"),
-  @JsonSubTypes.Type(value = TokenDeriveResponseSuccess.class, name = "TokenResponseSuccess"),
-})
-
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T13:05:33.365806-06:00[America/Chicago]")
 public class TokenDeriveResponse {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+  public static final String JSON_PROPERTY_TOKEN_IDENTIFIER = "token_identifier";
+  private TokenIdentifier tokenIdentifier;
 
 
-  public TokenDeriveResponse type(String type) {
-    this.type = type;
+  public TokenDeriveResponse tokenIdentifier(TokenIdentifier tokenIdentifier) {
+    this.tokenIdentifier = tokenIdentifier;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get tokenIdentifier
+   * @return tokenIdentifier
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TOKEN_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public TokenIdentifier getTokenIdentifier() {
+    return tokenIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TOKEN_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setTokenIdentifier(TokenIdentifier tokenIdentifier) {
+    this.tokenIdentifier = tokenIdentifier;
   }
 
 
@@ -83,19 +71,19 @@ public class TokenDeriveResponse {
       return false;
     }
     TokenDeriveResponse tokenDeriveResponse = (TokenDeriveResponse) o;
-    return Objects.equals(this.type, tokenDeriveResponse.type);
+    return Objects.equals(this.tokenIdentifier, tokenDeriveResponse.tokenIdentifier);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(tokenIdentifier);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TokenDeriveResponse {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("    tokenIdentifier: ").append(toIndentedString(tokenIdentifier)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -111,15 +99,5 @@ public class TokenDeriveResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
-static {
-  // Initialize and register the discriminator mappings.
-  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("TokenDeriveResponseError", TokenDeriveResponseError.class);
-  mappings.put("TokenDeriveResponseSuccess", TokenDeriveResponseSuccess.class);
-  mappings.put("TokenResponseError", TokenDeriveResponseError.class);
-  mappings.put("TokenResponseSuccess", TokenDeriveResponseSuccess.class);
-  mappings.put("TokenDeriveResponse", TokenDeriveResponse.class);
-  JSON.registerDiscriminator(TokenDeriveResponse.class, "type", mappings);
-}
 }
 

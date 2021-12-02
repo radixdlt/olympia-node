@@ -356,36 +356,13 @@ components:
     AccountBalancesResponse:
       type: object
       required:
-        - type
+        - ledger_state
+        - account_balances
       properties:
-        type:
-          type: string
-      discriminator:
-        propertyName: type
-        mapping:
-          AccountBalancesResponseSuccess: "#/components/schemas/AccountBalancesResponse"
-          AccountBalancesResponseError: "#/components/schemas/AccountBalancesResponseError"
-    AccountBalancesResponseSuccess:
-      allOf:
-        - $ref: "#/components/schemas/AccountBalancesResponse"
-        - type: object
-          required:
-            - ledger_state
-            - account_balances
-          properties:
-            ledger_state:
-              $ref: "#/components/schemas/LedgerState"
-            account_balances:
-              $ref: "#/components/schemas/AccountBalances"
-    AccountBalancesResponseError:
-      allOf:
-        - $ref: "#/components/schemas/AccountBalancesResponse"
-        - type: object
-          required:
-            - error
-          properties:
-            error:
-              $ref: "#/components/schemas/GatewayError"
+        ledger_state:
+          $ref: "#/components/schemas/LedgerState"
+        account_balances:
+          $ref: "#/components/schemas/AccountBalances"
     AccountBalances:
       type: object
       required:
@@ -415,38 +392,15 @@ components:
     AccountStakesResponse:
       type: object
       required:
-        - type
+        - stakes
+        - ledger_state
       properties:
-        type:
-          type: string
-      discriminator:
-        propertyName: type
-        mapping:
-          AccountStakesResponseSuccess: "#/components/schemas/AccountStakesResponseSuccess"
-          AccountStakesResponseError: "#/components/schemas/AccountStakesResponseError"
-    AccountStakesResponseSuccess:
-      allOf:
-        - $ref: "#/components/schemas/AccountStakesResponse"
-        - type: object
-          required:
-            - stakes
-            - ledger_state
-          properties:
-            ledger_state:
-              "$ref": "#/components/schemas/LedgerState"
-            stakes:
-              type: array
-              items:
-                "$ref": "#/components/schemas/AccountStakeEntry"
-    AccountStakesResponseError:
-      allOf:
-        - $ref: "#/components/schemas/AccountStakesResponse"
-        - type: object
-          required:
-            - error
-          properties:
-            error:
-              $ref: "#/components/schemas/GatewayError"
+        ledger_state:
+          $ref: "#/components/schemas/LedgerState"
+        stakes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountStakeEntry"
     AccountStakeEntry:
       type: object
       required:
@@ -474,38 +428,15 @@ components:
     AccountUnstakesResponse:
       type: object
       required:
-        - type
+        - ledger_state
+        - unstakes
       properties:
-        type:
-          type: string
-      discriminator:
-        propertyName: type
-        mapping:
-          AccountUnstakeResponseSuccess: "#/components/schemas/AccountUnstakesResponseSuccess"
-          AccountUnstakeResponseError: "#/components/schemas/AccountUnstakesResponseError"
-    AccountUnstakesResponseSuccess:
-      allOf:
-        - $ref: "#/components/schemas/AccountUnstakesResponse"
-        - type: object
-          required:
-            - ledger_state
-            - unstakes
-          properties:
-            ledger_state:
-              "$ref": "#/components/schemas/LedgerState"
-            unstakes:
-              type: array
-              items:
-                "$ref": "#/components/schemas/AccountUnstakeEntry"
-    AccountUnstakesResponseError:
-      allOf:
-        - $ref: "#/components/schemas/AccountUnstakesResponse"
-        - type: object
-          required:
-            - error
-          properties:
-            error:
-              $ref: "#/components/schemas/GatewayError"
+        ledger_state:
+          $ref: "#/components/schemas/LedgerState"
+        unstakes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountUnstakeEntry"
     AccountUnstakeEntry:
       type: object
       required:
@@ -543,42 +474,20 @@ components:
     AccountTransactionsResponse:
       type: object
       required:
-        - type
+        - ledger_state
+        - transactions
       properties:
-        type:
+        ledger_state:
+          $ref: "#/components/schemas/LedgerState"
+        total_count:
+          type: integer
+          format: int64
+        next_cursor:
           type: string
-      discriminator:
-        propertyName: type
-        mapping:
-          AccountTransactionsResponseSuccess: "#/components/schemas/AccountTransactionsResponseSuccess"
-    AccountTransactionsResponseSuccess:
-      allOf:
-        - $ref: "#/components/schemas/AccountTransactionsResponse"
-        - type: object
-          required:
-            - ledger_state
-            - transactions
-          properties:
-            ledger_state:
-              "$ref": "#/components/schemas/LedgerState"
-            total_count:
-              type: integer
-              format: int64
-            next_cursor:
-              type: string
-            transactions:
-              type: array
-              items:
-                "$ref": "#/components/schemas/AccountTransaction"
-    AccountTransactionsResponseError:
-      allOf:
-        - $ref: "#/components/schemas/AccountTransactionsResponse"
-        - type: object
-          required:
-            - error
-          properties:
-            error:
-              $ref: "#/components/schemas/GatewayError"
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountTransaction"
     TransferTokens:
       allOf:
         - "$ref": "#/components/schemas/Action"
@@ -999,33 +908,10 @@ components:
     TokenDeriveResponse:
       type: object
       required:
-        - type
+        - token_identifier
       properties:
-        type:
-          type: string
-      discriminator:
-        propertyName: type
-        mapping:
-          TokenResponseSuccess: "#/components/schemas/TokenDeriveResponseSuccess"
-          TokenResponseError: "#/components/schemas/TokenDeriveResponseError"
-    TokenDeriveResponseSuccess:
-      allOf:
-        - $ref: "#/components/schemas/TokenDeriveResponse"
-        - type: object
-          required:
-            - token_identifier
-          properties:
-            token_identifier:
-              "$ref": "#/components/schemas/TokenIdentifier"
-    TokenDeriveResponseError:
-      allOf:
-        - $ref: "#/components/schemas/TokenDeriveResponse"
-        - type: object
-          required:
-            - error
-          properties:
-            error:
-              "$ref": "#/components/schemas/GatewayError"
+        token_identifier:
+          $ref: "#/components/schemas/TokenIdentifier"
     TransactionStatusRequest:
       type: object
       required:
