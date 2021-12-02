@@ -385,7 +385,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/ErrorDetails"
+              $ref: "#/components/schemas/Error"
     AccountBalances:
       type: object
       required:
@@ -446,7 +446,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/ErrorDetails"
+              $ref: "#/components/schemas/Error"
     AccountStakeEntry:
       type: object
       required:
@@ -505,7 +505,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/ErrorDetails"
+              $ref: "#/components/schemas/Error"
     AccountUnstakeEntry:
       type: object
       required:
@@ -578,7 +578,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/ErrorDetails"
+              $ref: "#/components/schemas/Error"
     TransferTokens:
       allOf:
         - "$ref": "#/components/schemas/Action"
@@ -779,7 +779,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/ErrorDetails"
+              $ref: "#/components/schemas/Error"
     TransactionFinalizeRequest:
       type: object
       required:
@@ -792,15 +792,7 @@ components:
         unsigned_transaction:
           type: string
         signature:
-          type: object
-          required:
-            - public_key
-            - bytes
-          properties:
-            public_key:
-              type: string
-            bytes:
-              type: string
+          $ref: "#/components/schemas/Signature"
         submit:
           type: boolean
       example:
@@ -809,6 +801,16 @@ components:
         signature:
           public_key: 03dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab
           bytes: ''
+    Signature:
+      type: object
+      required:
+        - public_key
+        - bytes
+      properties:
+        public_key:
+          type: string
+        bytes:
+          type: string
     TransactionFinalizeResponse:
       type: object
       required:
@@ -841,7 +843,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/ErrorDetails"
+              $ref: "#/components/schemas/Error"
     TransactionSubmitRequest:
       type: object
       required:
@@ -881,7 +883,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/ErrorDetails"
+              $ref: "#/components/schemas/Error"
     GatewayRequest:
       type: object
       example: {}
@@ -979,8 +981,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/ErrorDetails"
-
+              $ref: "#/components/schemas/Error"
     TokenNativeRequest:
       type: object
       required:
@@ -993,45 +994,36 @@ components:
     TokenNativeResponse:
       type: object
       required:
-        - token
-        - ledger_state
+        - type
       properties:
-        ledger_state:
-          "$ref": "#/components/schemas/LedgerState"
-        token:
-          "$ref": "#/components/schemas/Token"
-      example:
-        ledger_state:
-          epoch: 1
-          round: 1
-          version: 1
-          timestamp: "2021-08-29T01:19:00.524Z"
-        token:
-          - token_identifier:
-              rri: xrd_rr1qy5wfsfh
-            supply:
-              token_identifier:
-                rri: xrd_rr1qy5wfsfh
-              value: '12014560679861300000000000000'
-            info:
-              total_burned:
-                token_identifier:
-                  rri: xrd_rr1qy5wfsfh
-                value: '11437173800000000000000'
-              total_minted:
-                token_identifier:
-                  rri: xrd_rr1qy5wfsfh
-                value: '12014572117035100000000000000'
-            properties:
-              icon_url: https://assets.radixdlt.com/icons/icon-xrd-32x32.png
-              is_supply_mutable: true
-              symbol: xrd
-              granularity: '1'
-              name: Radix
-              description: The Radix Public Network's native token, used to pay the
-                network's required transaction fees and to secure the network through
-                staking to its validator nodes.
-              url: https://tokens.radixdlt.com
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          TokenNativeResponseSuccess: "#/components/schemas/TokenNativeResponseSuccess"
+          TokenNativeResponseError: "#/components/schemas/TokenNativeResponseError"
+    TokenNativeResponseSuccess:
+      allOf:
+        - $ref: "#/components/schemas/TokenNativeResponse"
+        - type: object
+          required:
+            - token
+            - ledger_state
+          properties:
+            ledger_state:
+              "$ref": "#/components/schemas/LedgerState"
+            token:
+              "$ref": "#/components/schemas/Token"
+    TokenNativeResponseError:
+      allOf:
+        - $ref: "#/components/schemas/TokenNativeResponse"
+        - type: object
+          required:
+            - error
+          properties:
+            error:
+              "$ref": "#/components/schemas/Error"
     TokenDeriveRequest:
       type: object
       required:
@@ -1079,7 +1071,7 @@ components:
             - error
           properties:
             error:
-              "$ref": "#/components/schemas/ErrorDetails"
+              "$ref": "#/components/schemas/Error"
     TransactionStatusRequest:
       type: object
       required:
@@ -1126,7 +1118,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/ErrorDetails"
+              $ref: "#/components/schemas/Error"
     ValidatorInfoRequest:
       type: object
       required:
@@ -1173,7 +1165,7 @@ components:
             - error
           properties:
             error:
-              $ref: "#/components/schemas/ErrorDetails"
+              $ref: "#/components/schemas/Error"
     ValidatorsRequest:
       type: object
       required:
@@ -1186,15 +1178,38 @@ components:
     ValidatorsResponse:
       type: object
       required:
-        - ledger_state
-        - validators
+        - type
       properties:
-        ledger_state:
-          "$ref": "#/components/schemas/LedgerState"
-        validators:
-          type: array
-          items:
-            "$ref": "#/components/schemas/Validator"
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          ValidatorsResponseSuccess: "#/components/schemas/ValidatorsResponseSuccess"
+          ValidatorsResponseError: "#/components/schemas/ValidatorsResponseError"
+    ValidatorsResponseSuccess:
+      allOf:
+        - $ref: "#/components/schemas/ValidatorsResponse"
+        - type: object
+          required:
+            - ledger_state
+            - validators
+          properties:
+            ledger_state:
+              "$ref": "#/components/schemas/LedgerState"
+            validators:
+              type: array
+              items:
+                "$ref": "#/components/schemas/Validator"
+    ValidatorsResponseError:
+      allOf:
+        - $ref: "#/components/schemas/ValidatorsResponse"
+        - type: object
+          required:
+            - error
+          properties:
+            error:
+              $ref: "#/components/schemas/Error"
     UnexpectedError:
       type: object
       required:
@@ -1483,7 +1498,7 @@ components:
           pattern: "^[0123456789abcdef]{64}$"
           maxLength: 64
           minLength: 64
-    ErrorDetails:
+    Error:
       type: object
       required:
         - type
@@ -1493,32 +1508,118 @@ components:
       discriminator:
         propertyName: type
         mapping:
-          InvalidTokenRRI: "#/components/schemas/InvalidTokenRRI"
-          InvalidAccountAddress: "#/components/schemas/InvalidAccountAddress"
-          InvalidValidatorAddress: "#/components/schemas/InvalidValidatorAddress"
-          InvalidPublicKey: "#/components/schemas/InvalidPublicKey"
-          InvalidTokenSymbol: "#/components/schemas/InvalidTokenSymbol"
-          TokenNotFound: "#/components/schemas/TokenNotFound"
-          NotEnoughResourcesError: "#/components/schemas/NotEnoughResourcesError"
+          NetworkNotSupportedError: "#/components/schemas/NetworkNotSupportedError"
+          InvalidSignatureError: "#/components/schemas/InvalidSignatureError"
+          InvalidTransactionError: "#/components/schemas/InvalidTransactionError"
+          InvalidTokenRRIError: "#/components/schemas/InvalidTokenRRIError"
+          InvalidAccountAddressError: "#/components/schemas/InvalidAccountAddressError"
+          InvalidValidatorAddressError: "#/components/schemas/InvalidValidatorAddressError"
+          InvalidPublicKeyError: "#/components/schemas/InvalidPublicKeyError"
+          InvalidTokenSymbolError: "#/components/schemas/InvalidTokenSymbolError"
+          InvalidActionError: "#/components/schemas/InvalidActionError"
+          TokenNotFoundError: "#/components/schemas/TokenNotFoundError"
+          NotEnoughNativeTokenForFeesError: "#/components/schemas/NotEnoughNativeTokenForFeesError"
+          NotEnoughTokensForTransferError: "#/components/schemas/NotEnoughTokensForTransferError"
+          NotEnoughTokensForStakeError: "#/components/schemas/NotEnoughTokensForStakeError"
+          NotEnoughTokensForUnstakeError: "#/components/schemas/NotEnoughTokensForUnstakeError"
           BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"
-          NotValidatorOwnerError: "#/components/schemas/NotValidatorOwnerError"
+          CannotStakeError: "#/components/schemas/CannotStakeError"
           MessageTooLongError: "#/components/schemas/MessageTooLongError"
           CouldNotConstructFeesError: "#/components/schemas/CouldNotConstructFeesError"
-    NotEnoughResourcesError:
+    NetworkNotSupportedError:
       allOf:
-        - "$ref": "#/components/schemas/ErrorDetails"
+        - "$ref": "#/components/schemas/Error"
+        - type: object
+          required:
+            - networks_supported
+          properties:
+            networks_supported:
+              type: array
+              items:
+                type: string
+    InvalidActionError:
+      allOf:
+        - "$ref": "#/components/schemas/Error"
+        - type: object
+          required:
+            - invalid_action
+          properties:
+            invalid_action:
+              $ref: "#/components/schemas/Action"
+    InvalidSignatureError:
+      allOf:
+        - "$ref": "#/components/schemas/Error"
+        - type: object
+          required:
+            - invalid_signature
+          properties:
+            invalid_signature:
+              $ref: "#/components/schemas/Signature"
+    InvalidTransactionError:
+      allOf:
+        - "$ref": "#/components/schemas/Error"
+        - type: object
+          required:
+            - invalid_transaction
+            - message
+          properties:
+            invalid_transaction:
+              type: string
+            message:
+              type: string
+    NotEnoughNativeTokenForFeesError:
+      allOf:
+        - "$ref": "#/components/schemas/Error"
         - type: object
           required:
             - requested_amount
             - available_amount
           properties:
             requested_amount:
-              $ref: "#/components/schemas/BigInteger"
+              $ref: "#/components/schemas/TokenAmount"
             available_amount:
-              $ref: "#/components/schemas/BigInteger"
+              $ref: "#/components/schemas/TokenAmount"
+    NotEnoughTokensForTransferError:
+      allOf:
+        - "$ref": "#/components/schemas/Error"
+        - type: object
+          required:
+            - requested_amount
+            - available_amount
+          properties:
+            requested_amount:
+              $ref: "#/components/schemas/TokenAmount"
+            available_amount:
+              $ref: "#/components/schemas/TokenAmount"
+    NotEnoughTokensForStakeError:
+      allOf:
+        - "$ref": "#/components/schemas/Error"
+        - type: object
+          required:
+            - requested_amount
+            - available_amount
+          properties:
+            requested_amount:
+              $ref: "#/components/schemas/TokenAmount"
+            available_amount:
+              $ref: "#/components/schemas/TokenAmount"
+    NotEnoughTokensForUnstakeError:
+      allOf:
+        - "$ref": "#/components/schemas/Error"
+        - type: object
+          required:
+            - requested_amount
+            - available_amount
+          properties:
+            requested_amount:
+              $ref: "#/components/schemas/TokenAmount"
+            pending_staked_amount:
+              $ref: "#/components/schemas/TokenAmount"
+            available_staked_amount:
+              $ref: "#/components/schemas/TokenAmount"
     BelowMinimumStakeError:
       allOf:
-        - "$ref": "#/components/schemas/ErrorDetails"
+        - "$ref": "#/components/schemas/Error"
         - type: object
           required:
             - requested_amount
@@ -1528,9 +1629,9 @@ components:
               $ref: "#/components/schemas/BigInteger"
             minimum_amount:
               $ref: "#/components/schemas/BigInteger"
-    NotValidatorOwnerError:
+    CannotStakeError:
       allOf:
-        - "$ref": "#/components/schemas/ErrorDetails"
+        - "$ref": "#/components/schemas/Error"
         - type: object
           required:
             - owner
@@ -1542,7 +1643,7 @@ components:
               $ref: "#/components/schemas/AccountIdentifier"
     MessageTooLongError:
       allOf:
-        - "$ref": "#/components/schemas/ErrorDetails"
+        - "$ref": "#/components/schemas/Error"
         - type: object
           required:
             - length_limit
@@ -1554,61 +1655,61 @@ components:
               type: integer
     CouldNotConstructFeesError:
       allOf:
-        - "$ref": "#/components/schemas/ErrorDetails"
+        - "$ref": "#/components/schemas/Error"
         - type: object
           required:
             - attempts
           properties:
             attempts:
               type: integer
-    InvalidPublicKey:
+    InvalidPublicKeyError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/Error"
         - type: object
           required:
             - invalid_public_key
           properties:
             invalid_public_key:
               type: string
-    InvalidTokenSymbol:
+    InvalidTokenSymbolError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/Error"
         - type: object
           required:
             - invalid_token_symbol
           properties:
             invalid_token_symbol:
               type: string
-    InvalidTokenRRI:
+    InvalidTokenRRIError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/Error"
         - type: object
           required:
             - invalid_rri
           properties:
             invalid_rri:
               type: string
-    InvalidAccountAddress:
+    InvalidAccountAddressError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/Error"
         - type: object
           required:
             - invalid_account_address
           properties:
             invalid_account_address:
               type: string
-    InvalidValidatorAddress:
+    InvalidValidatorAddressError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/Error"
         - type: object
           required:
             - invalid_validator_address
           properties:
             invalid_account_address:
               type: string
-    TokenNotFound:
+    TokenNotFoundError:
       allOf:
-        - $ref: "#/components/schemas/ErrorDetails"
+        - $ref: "#/components/schemas/Error"
         - type: object
           required:
             - token_not_found
