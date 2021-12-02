@@ -5,6 +5,7 @@ import com.radixdlt.store.tree.storage.PMTCache;
 import com.radixdlt.store.tree.storage.PMTStorage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.spongycastle.crypto.digests.SHA3Digest;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -52,7 +53,7 @@ public class PMT {
 	public static byte[] represent(PMTNode node) {
 		var ser = node.serialize();
 		if (hasDbRepresentation(ser)) {
-			return hash(ser);
+			return sha3(ser);
 		} else {
 			return ser;
 		}
@@ -63,7 +64,7 @@ public class PMT {
 
 		if (this.root != null) {
 			var acc = getValue(this.root, pmtKey, new PMTAcc());
-			if (acc.notFound() != null) {
+			if (acc.notFound()) {
 				log.debug("Not found key: {} for root: {}",
 					TreeUtils.toHexString(key),
 					TreeUtils.toHexString(root == null ? null : represent(root)));
@@ -93,7 +94,7 @@ public class PMT {
 						 this.cache.put(represent(sanitizedAcc), sanitizedAcc);
 						 byte[] serialisedNode = sanitizedAcc.serialize();
 						 if (hasDbRepresentation(serialisedNode)) {
-							 this.db.save(hash(serialisedNode), serialisedNode);
+							 this.db.save(sha3(serialisedNode), serialisedNode);
 						 }
 					 });
 				this.root = acc.getTip();
@@ -106,9 +107,10 @@ public class PMT {
 				e.getMessage(),
 				TreeUtils.toHexString(key),
 				TreeUtils.toHexString(val),
-				TreeUtils.toHexString(root == null ? null : hash(root)));
+				TreeUtils.toHexString(root == null ? null : sha3(root)));
+			throw e;
 		}
-		return root == null ? null : hash(root);
+		return root == null ? null : sha3(root);
 	}
 
 	PMTAcc getValue(PMTNode current, PMTKey key, PMTAcc acc) {
@@ -228,7 +230,7 @@ public class PMT {
 					case NEW:
 						var nextHash = currentBranch.getNextHash(key);
 						PMTNode subTip;
-						if (nextHash == null) {
+						if (nextHash == null || nextHash.length == 0) {
 							var newLeaf = new PMTLeaf(key.getFirstNibble(), key.getTailNibbles(), val);
 							acc.add(newLeaf);
 							subTip = newLeaf;
@@ -328,6 +330,20 @@ public class PMT {
 			node = key;
 		}
 		return PMTNode.deserialize(node);
+	}
+
+	private static byte[] sha3(byte[] data) {
+		SHA3Digest sha3Digest = new SHA3Digest(256);
+		byte[] hashed = new byte[sha3Digest.getDigestSize()];
+		if (data.length != 0) {
+			sha3Digest.update(data, 0, data.length);
+		}
+		sha3Digest.doFinal(hashed, 0);
+		return hashed;
+	}
+
+	private byte[] sha3(PMTNode node) {
+		return sha3(node.serialize());
 	}
 
 	private static byte[] hash(byte[] serialized) {
