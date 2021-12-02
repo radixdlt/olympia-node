@@ -1,12 +1,14 @@
 package com.radixdlt.store.tree;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class PMTAcc {
 
-	private List<PMTNode> visitedAcc;
-	private List<PMTNode> addedAcc;
+	// TODO maybe make this class immutable?
+	private List<PMTNode> visitedAcc = new ArrayList<>();;
+	private List<PMTNode> addedAcc = new ArrayList<>();
 
 	public PMTAcc() { }
 
@@ -15,7 +17,7 @@ public class PMTAcc {
 	//INFO: it can be Leaf or Branch
 	private PMTNode retVal;
 
-	private Boolean notFound;
+	private boolean notFound;
 
 	public void setNewTip(PMTNode newTip) {
 		this.newTip = newTip;
@@ -37,7 +39,8 @@ public class PMTAcc {
 		this.notFound = true;
 	}
 
-	public Boolean notFound() {
+	// TODO try to improve this
+	public boolean notFound() {
 		return this.notFound;
 	}
 
@@ -48,19 +51,11 @@ public class PMTAcc {
 
 	// handle nulls that got added (when Ext was null) or handle them at insertion
 	public void add(PMTNode... nodes) {
-		if (addedAcc != null) {
-			addedAcc.addAll(Arrays.stream(nodes).toList());
-		} else {
-			addedAcc = Arrays.stream(nodes).toList();
-		}
+		addedAcc.addAll(Arrays.stream(nodes).toList());
 	}
 
 	public void mark(PMTNode node) {
-		if (visitedAcc != null) {
-			visitedAcc.add(node);
-		} else {
-			visitedAcc = List.of(node);
-		}
+		visitedAcc.add(node);
 	}
 
 }
