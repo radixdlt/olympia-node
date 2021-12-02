@@ -26,51 +26,51 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * AccountBalancesResponse
+ * InvalidAccountAddress
  */
 @JsonPropertyOrder({
-  AccountBalancesResponse.JSON_PROPERTY_TYPE
+  InvalidAccountAddress.JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:03:23.286227-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = AccountBalancesResponseError.class, name = "AccountBalancesResponseError"),
-  @JsonSubTypes.Type(value = AccountBalancesResponse.class, name = "AccountBalancesResponseSuccess"),
+  @JsonSubTypes.Type(value = InvalidTokenRRI.class, name = "InvalidTokenRRI"),
+  @JsonSubTypes.Type(value = TokenNotFound.class, name = "TokenNotFound"),
 })
 
-public class AccountBalancesResponse {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+public class InvalidAccountAddress extends ErrorDetails {
+  public static final String JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS = "invalid_account_address";
+  private String invalidAccountAddress;
 
 
-  public AccountBalancesResponse type(String type) {
-    this.type = type;
+  public InvalidAccountAddress invalidAccountAddress(String invalidAccountAddress) {
+    this.invalidAccountAddress = invalidAccountAddress;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get invalidAccountAddress
+   * @return invalidAccountAddress
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public String getInvalidAccountAddress() {
+    return invalidAccountAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_INVALID_ACCOUNT_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setInvalidAccountAddress(String invalidAccountAddress) {
+    this.invalidAccountAddress = invalidAccountAddress;
   }
 
 
   /**
-   * Return true if this AccountBalancesResponse object is equal to o.
+   * Return true if this InvalidAccountAddress object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,20 +80,22 @@ public class AccountBalancesResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AccountBalancesResponse accountBalancesResponse = (AccountBalancesResponse) o;
-    return Objects.equals(this.type, accountBalancesResponse.type);
+    InvalidAccountAddress invalidAccountAddress = (InvalidAccountAddress) o;
+    return Objects.equals(this.invalidAccountAddress, invalidAccountAddress.invalidAccountAddress) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(invalidAccountAddress, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AccountBalancesResponse {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class InvalidAccountAddress {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    invalidAccountAddress: ").append(toIndentedString(invalidAccountAddress)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -112,10 +114,10 @@ public class AccountBalancesResponse {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("AccountBalancesResponseError", AccountBalancesResponseError.class);
-  mappings.put("AccountBalancesResponseSuccess", AccountBalancesResponse.class);
-  mappings.put("AccountBalancesResponse", AccountBalancesResponse.class);
-  JSON.registerDiscriminator(AccountBalancesResponse.class, "type", mappings);
+  mappings.put("InvalidTokenRRI", InvalidTokenRRI.class);
+  mappings.put("TokenNotFound", TokenNotFound.class);
+  mappings.put("InvalidAccountAddress", InvalidAccountAddress.class);
+  JSON.registerDiscriminator(InvalidAccountAddress.class, "type", mappings);
 }
 }
 

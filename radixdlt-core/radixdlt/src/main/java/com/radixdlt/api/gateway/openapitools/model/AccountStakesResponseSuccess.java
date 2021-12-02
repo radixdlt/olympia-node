@@ -21,15 +21,18 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * AccountStakesResponse
+ * AccountStakesResponseSuccess
  */
 @JsonPropertyOrder({
-  AccountStakesResponse.JSON_PROPERTY_TYPE
+  AccountStakesResponseSuccess.JSON_PROPERTY_LEDGER_STATE,
+  AccountStakesResponseSuccess.JSON_PROPERTY_STAKES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:09:44.037426-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
@@ -38,39 +41,73 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = AccountStakesResponseSuccess.class, name = "AccountStakesResponseSuccess"),
 })
 
-public class AccountStakesResponse {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+public class AccountStakesResponseSuccess extends AccountStakesResponse {
+  public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
+  private LedgerState ledgerState;
+
+  public static final String JSON_PROPERTY_STAKES = "stakes";
+  private List<AccountStakeEntry> stakes = new ArrayList<>();
 
 
-  public AccountStakesResponse type(String type) {
-    this.type = type;
+  public AccountStakesResponseSuccess ledgerState(LedgerState ledgerState) {
+    this.ledgerState = ledgerState;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get ledgerState
+   * @return ledgerState
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public LedgerState getLedgerState() {
+    return ledgerState;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setLedgerState(LedgerState ledgerState) {
+    this.ledgerState = ledgerState;
+  }
+
+
+  public AccountStakesResponseSuccess stakes(List<AccountStakeEntry> stakes) {
+    this.stakes = stakes;
+    return this;
+  }
+
+  public AccountStakesResponseSuccess addStakesItem(AccountStakeEntry stakesItem) {
+    this.stakes.add(stakesItem);
+    return this;
+  }
+
+   /**
+   * Get stakes
+   * @return stakes
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STAKES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<AccountStakeEntry> getStakes() {
+    return stakes;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STAKES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStakes(List<AccountStakeEntry> stakes) {
+    this.stakes = stakes;
   }
 
 
   /**
-   * Return true if this AccountStakesResponse object is equal to o.
+   * Return true if this AccountStakesResponseSuccess object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,20 +117,24 @@ public class AccountStakesResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AccountStakesResponse accountStakesResponse = (AccountStakesResponse) o;
-    return Objects.equals(this.type, accountStakesResponse.type);
+    AccountStakesResponseSuccess accountStakesResponseSuccess = (AccountStakesResponseSuccess) o;
+    return Objects.equals(this.ledgerState, accountStakesResponseSuccess.ledgerState) &&
+        Objects.equals(this.stakes, accountStakesResponseSuccess.stakes) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(ledgerState, stakes, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AccountStakesResponse {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class AccountStakesResponseSuccess {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    ledgerState: ").append(toIndentedString(ledgerState)).append("\n");
+    sb.append("    stakes: ").append(toIndentedString(stakes)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -114,8 +155,8 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccountStakesResponseError", AccountStakesResponseError.class);
   mappings.put("AccountStakesResponseSuccess", AccountStakesResponseSuccess.class);
-  mappings.put("AccountStakesResponse", AccountStakesResponse.class);
-  JSON.registerDiscriminator(AccountStakesResponse.class, "type", mappings);
+  mappings.put("AccountStakesResponseSuccess", AccountStakesResponseSuccess.class);
+  JSON.registerDiscriminator(AccountStakesResponseSuccess.class, "type", mappings);
 }
 }
 

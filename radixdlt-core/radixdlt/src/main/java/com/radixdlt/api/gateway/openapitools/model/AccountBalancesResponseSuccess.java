@@ -26,10 +26,11 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * AccountBalancesResponse
+ * AccountBalancesResponseSuccess
  */
 @JsonPropertyOrder({
-  AccountBalancesResponse.JSON_PROPERTY_TYPE
+  AccountBalancesResponseSuccess.JSON_PROPERTY_LEDGER_STATE,
+  AccountBalancesResponseSuccess.JSON_PROPERTY_ACCOUNT_BALANCES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:03:23.286227-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
@@ -38,39 +39,68 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = AccountBalancesResponse.class, name = "AccountBalancesResponseSuccess"),
 })
 
-public class AccountBalancesResponse {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+public class AccountBalancesResponseSuccess extends AccountBalancesResponse {
+  public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
+  private LedgerState ledgerState;
+
+  public static final String JSON_PROPERTY_ACCOUNT_BALANCES = "account_balances";
+  private AccountBalances accountBalances;
 
 
-  public AccountBalancesResponse type(String type) {
-    this.type = type;
+  public AccountBalancesResponseSuccess ledgerState(LedgerState ledgerState) {
+    this.ledgerState = ledgerState;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get ledgerState
+   * @return ledgerState
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public LedgerState getLedgerState() {
+    return ledgerState;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setLedgerState(LedgerState ledgerState) {
+    this.ledgerState = ledgerState;
+  }
+
+
+  public AccountBalancesResponseSuccess accountBalances(AccountBalances accountBalances) {
+    this.accountBalances = accountBalances;
+    return this;
+  }
+
+   /**
+   * Get accountBalances
+   * @return accountBalances
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ACCOUNT_BALANCES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public AccountBalances getAccountBalances() {
+    return accountBalances;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ACCOUNT_BALANCES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAccountBalances(AccountBalances accountBalances) {
+    this.accountBalances = accountBalances;
   }
 
 
   /**
-   * Return true if this AccountBalancesResponse object is equal to o.
+   * Return true if this AccountBalancesResponseSuccess object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,20 +110,24 @@ public class AccountBalancesResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AccountBalancesResponse accountBalancesResponse = (AccountBalancesResponse) o;
-    return Objects.equals(this.type, accountBalancesResponse.type);
+    AccountBalancesResponseSuccess accountBalancesResponseSuccess = (AccountBalancesResponseSuccess) o;
+    return Objects.equals(this.ledgerState, accountBalancesResponseSuccess.ledgerState) &&
+        Objects.equals(this.accountBalances, accountBalancesResponseSuccess.accountBalances) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(ledgerState, accountBalances, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AccountBalancesResponse {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class AccountBalancesResponseSuccess {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    ledgerState: ").append(toIndentedString(ledgerState)).append("\n");
+    sb.append("    accountBalances: ").append(toIndentedString(accountBalances)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -114,8 +148,8 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccountBalancesResponseError", AccountBalancesResponseError.class);
   mappings.put("AccountBalancesResponseSuccess", AccountBalancesResponse.class);
-  mappings.put("AccountBalancesResponse", AccountBalancesResponse.class);
-  JSON.registerDiscriminator(AccountBalancesResponse.class, "type", mappings);
+  mappings.put("AccountBalancesResponseSuccess", AccountBalancesResponseSuccess.class);
+  JSON.registerDiscriminator(AccountBalancesResponseSuccess.class, "type", mappings);
 }
 }
 

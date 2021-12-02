@@ -356,28 +356,36 @@ components:
     AccountBalancesResponse:
       type: object
       required:
-        - ledger_state
-        - account_balances
+        - type
       properties:
-        ledger_state:
-          "$ref": "#/components/schemas/LedgerState"
-        account_balances:
-          "$ref": "#/components/schemas/AccountBalances"
-      example:
-        ledger_state:
-          epoch: 1
-          round: 1
-          version: 1
-          timestamp: "2021-08-29T01:19:00.524Z"
-        account_balances:
-          staked_and_unstaking_balance:
-            amount: '0'
-            token_identifier:
-              rri: xrd_rr1qy5wfsfh
-          liquid_balances:
-            - amount: '1000000000000000000000'
-              token_identifier:
-                rri: xrd_rr1qy5wfsfh
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          AccountBalancesResponseSuccess: "#/components/schemas/AccountBalancesResponse"
+          AccountBalancesResponseError: "#/components/schemas/AccountBalancesResponseError"
+    AccountBalancesResponseSuccess:
+      allOf:
+        - $ref: "#/components/schemas/AccountBalancesResponse"
+        - type: object
+          required:
+            - ledger_state
+            - account_balances
+          properties:
+            ledger_state:
+              $ref: "#/components/schemas/LedgerState"
+            account_balances:
+              $ref: "#/components/schemas/AccountBalances"
+    AccountBalancesResponseError:
+      allOf:
+        - $ref: "#/components/schemas/AccountBalancesResponse"
+        - type: object
+          required:
+            - details
+          properties:
+            details:
+              $ref: "#/components/schemas/ErrorDetails"
     AccountBalances:
       type: object
       required:
@@ -407,28 +415,38 @@ components:
     AccountStakesResponse:
       type: object
       required:
-        - stakes
-        - ledger_state
+        - type
       properties:
-        ledger_state:
-          "$ref": "#/components/schemas/LedgerState"
-        stakes:
-          type: array
-          items:
-            "$ref": "#/components/schemas/AccountStakeEntry"
-      example:
-        ledger_state:
-          epoch: 1
-          round: 1
-          version: 1
-          timestamp: "2021-08-29T01:19:00.524Z"
-        stakes:
-          - validator_identifier:
-              address: rv1qg923hl7f725cs06eg5gmdcy4pfvpa8mfnjcw669traquj28c96z5w0rld0
-            delegated_stake:
-              token_identifier:
-                rri: xrd_rr1qy5wfsfh
-              value: '1000000000000000000000'
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          AccountStakesResponseSuccess: "#/components/schemas/AccountStakesResponseSuccess"
+          AccountStakesResponseError: "#/components/schemas/AccountStakesResponseError"
+    AccountStakesResponseSuccess:
+      allOf:
+        - $ref: "#/components/schemas/AccountStakesResponse"
+        - type: object
+          required:
+            - stakes
+            - ledger_state
+          properties:
+            ledger_state:
+              "$ref": "#/components/schemas/LedgerState"
+            stakes:
+              type: array
+              items:
+                "$ref": "#/components/schemas/AccountStakeEntry"
+    AccountStakesResponseError:
+      allOf:
+        - $ref: "#/components/schemas/AccountStakesResponse"
+        - type: object
+          required:
+            - details
+          properties:
+            details:
+              $ref: "#/components/schemas/ErrorDetails"
     AccountStakeEntry:
       type: object
       required:
@@ -456,29 +474,38 @@ components:
     AccountUnstakesResponse:
       type: object
       required:
-        - ledger_state
-        - unstakes
+        - type
       properties:
-        ledger_state:
-          "$ref": "#/components/schemas/LedgerState"
-        unstakes:
-          type: array
-          items:
-            "$ref": "#/components/schemas/AccountUnstakeEntry"
-      example:
-        ledger_state:
-          epoch: 1
-          round: 1
-          version: 1
-          timestamp: "2021-08-29T01:19:00.524Z"
-        unstakes:
-          - validator_identifier:
-              address: rv1qg923hl7f725cs06eg5gmdcy4pfvpa8mfnjcw669traquj28c96z5w0rld0
-            unstaking_amount:
-              token_identifier:
-                rri: xrd_rr1qy5wfsfh
-              value: '1000000000000000000000'
-            epochs_until_unlocked: 1
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          AccountUnstakeResponseSuccess: "#/components/schemas/AccountUnstakesResponseSuccess"
+          AccountUnstakeResponseError: "#/components/schemas/AccountUnstakesResponseError"
+    AccountUnstakesResponseSuccess:
+      allOf:
+        - $ref: "#/components/schemas/AccountUnstakesResponse"
+        - type: object
+          required:
+            - ledger_state
+            - unstakes
+          properties:
+            ledger_state:
+              "$ref": "#/components/schemas/LedgerState"
+            unstakes:
+              type: array
+              items:
+                "$ref": "#/components/schemas/AccountUnstakeEntry"
+    AccountUnstakesResponseError:
+      allOf:
+        - $ref: "#/components/schemas/AccountUnstakesResponse"
+        - type: object
+          required:
+            - details
+          properties:
+            details:
+              $ref: "#/components/schemas/ErrorDetails"
     AccountUnstakeEntry:
       type: object
       required:
@@ -516,44 +543,42 @@ components:
     AccountTransactionsResponse:
       type: object
       required:
-        - ledger_state
-        - transactions
+        - type
       properties:
-        ledger_state:
-          "$ref": "#/components/schemas/LedgerState"
-          type: integer
-          format: int64
-        next_cursor:
+        type:
           type: string
-        transactions:
-          type: array
-          items:
-            "$ref": "#/components/schemas/AccountTransaction"
-      example:
-        ledger_state:
-          epoch: 1
-          round: 1
-          version: 1
-          timestamp: "2021-08-29T01:19:00.524Z"
-        next_cursor: 0
-        transactions:
-          - fee_paid:
-              token_identifier:
-                rri: xrd_rr1qy5wfsfh
-              value: '72000000000000000'
-            metadata:
-              signed_by:
-                hex: 02aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b6
-              hex: 07030e7094728c8d065c5db696977696bea9094f67bcfd4c021f99ec784e24023b0000000c0100210000000000000000000000000000000000000000000000000000ffcb9e57d4000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007c13bc4b1c16827082c00000008000002004506000402aa1c49af92a39d15257d7dc43f805f18f9f0ea712450c53e75255f5a0d1d93b601000000000000000000000000000000000000000007ad6192165e31dff02c000002004506000403dc62fa04804f75d009a2fac32c8ceb9dc5eaccd54934fe20ef5b86be40c7a2ab0100000000000000000000000000000000000000000013da329b63364718000000000b015584aed8375f30b22a2203b77dbe15e5dc0a3618fb45ea30ee54a6ebe0054b673a471ad2214b7bd06c4228083643b57e095787c9fb01443e1c3d6890d28f60cf
-              timestamp: 1627407310726
-            actions:
-              - amount:
-                  token_identifier:
-                    rri: xrd_rr1qy5wfsfh
-                  value: '24000000000000000000000000'
-                from: rdx1qsp258zf47f288g4y47hm3plsp03370safcjg5x98e6j2h66p5we8ds8m7g33
-                to: rdx1qspacch6qjqy7awspx304sev3n4em302en25jd87yrh4hp47grr692cm0kv88
-                type: TransferTokens
+      discriminator:
+        propertyName: type
+        mapping:
+          AccountTransactionsResponseSuccess: "#/components/schemas/AccountTransactionsResponseSuccess"
+    AccountTransactionsResponseSuccess:
+      allOf:
+        - $ref: "#/components/schemas/AccountTransactionsResponse"
+        - type: object
+          required:
+            - ledger_state
+            - transactions
+          properties:
+            ledger_state:
+              "$ref": "#/components/schemas/LedgerState"
+            total_count:
+              type: integer
+              format: int64
+            next_cursor:
+              type: string
+            transactions:
+              type: array
+              items:
+                "$ref": "#/components/schemas/AccountTransaction"
+    AccountTransactionsResponseError:
+      allOf:
+        - $ref: "#/components/schemas/AccountTransactionsResponse"
+        - type: object
+          required:
+            - details
+          properties:
+            details:
+              $ref: "#/components/schemas/ErrorDetails"
     TransferTokens:
       allOf:
         - "$ref": "#/components/schemas/Action"
@@ -1476,6 +1501,15 @@ components:
             - invalid_rri
           properties:
             invalid_rri:
+              type: string
+    InvalidAccountAddress:
+      allOf:
+        - $ref: "#/components/schemas/ErrorDetails"
+        - type: object
+          required:
+            - invalid_account_address
+          properties:
+            invalid_account_address:
               type: string
     TokenNotFound:
       allOf:

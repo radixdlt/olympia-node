@@ -16,121 +16,56 @@ package com.radixdlt.api.gateway.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
-
 
 /**
  * AccountTransactionsResponse
  */
 @JsonPropertyOrder({
-  AccountTransactionsResponse.JSON_PROPERTY_LEDGER_STATE,
-  AccountTransactionsResponse.JSON_PROPERTY_NEXT_CURSOR,
-  AccountTransactionsResponse.JSON_PROPERTY_TRANSACTIONS
+  AccountTransactionsResponse.JSON_PROPERTY_TYPE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-25T22:30:43.084837-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:21:18.592676-06:00[America/Chicago]")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = AccountTransactionsResponseError.class, name = "AccountTransactionsResponseError"),
+  @JsonSubTypes.Type(value = AccountTransactionsResponseSuccess.class, name = "AccountTransactionsResponseSuccess"),
+})
+
 public class AccountTransactionsResponse {
-  public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
-  private LedgerState ledgerState;
-
-  private Integer totalCount;
-
-  public static final String JSON_PROPERTY_NEXT_CURSOR = "next_cursor";
-  private String nextCursor;
-
-  public static final String JSON_PROPERTY_TRANSACTIONS = "transactions";
-  private List<AccountTransaction> transactions = new ArrayList<>();
+  public static final String JSON_PROPERTY_TYPE = "type";
+  private String type;
 
 
-  public AccountTransactionsResponse ledgerState(LedgerState ledgerState) {
-    this.ledgerState = ledgerState;
+  public AccountTransactionsResponse type(String type) {
+    this.type = type;
     return this;
   }
 
    /**
-   * Get ledgerState
-   * @return ledgerState
+   * Get type
+   * @return type
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
+  @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LedgerState getLedgerState() {
-    return ledgerState;
+  public String getType() {
+    return type;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
+  @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLedgerState(LedgerState ledgerState) {
-    this.ledgerState = ledgerState;
-  }
-
-
-  public AccountTransactionsResponse totalCount(Integer totalCount) {
-    this.totalCount = totalCount;
-    return this;
-  }
-
-
-  public AccountTransactionsResponse nextCursor(String nextCursor) {
-    this.nextCursor = nextCursor;
-    return this;
-  }
-
-   /**
-   * Get nextCursor
-   * @return nextCursor
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_NEXT_CURSOR)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public String getNextCursor() {
-    return nextCursor;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NEXT_CURSOR)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setNextCursor(String nextCursor) {
-    this.nextCursor = nextCursor;
-  }
-
-
-  public AccountTransactionsResponse transactions(List<AccountTransaction> transactions) {
-    this.transactions = transactions;
-    return this;
-  }
-
-  public AccountTransactionsResponse addTransactionsItem(AccountTransaction transactionsItem) {
-    this.transactions.add(transactionsItem);
-    return this;
-  }
-
-   /**
-   * Get transactions
-   * @return transactions
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TRANSACTIONS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<AccountTransaction> getTransactions() {
-    return transactions;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_TRANSACTIONS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTransactions(List<AccountTransaction> transactions) {
-    this.transactions = transactions;
+  public void setType(String type) {
+    this.type = type;
   }
 
 
@@ -146,25 +81,19 @@ public class AccountTransactionsResponse {
       return false;
     }
     AccountTransactionsResponse accountTransactionsResponse = (AccountTransactionsResponse) o;
-    return Objects.equals(this.ledgerState, accountTransactionsResponse.ledgerState) &&
-        Objects.equals(this.totalCount, accountTransactionsResponse.totalCount) &&
-        Objects.equals(this.nextCursor, accountTransactionsResponse.nextCursor) &&
-        Objects.equals(this.transactions, accountTransactionsResponse.transactions);
+    return Objects.equals(this.type, accountTransactionsResponse.type);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ledgerState, totalCount, nextCursor, transactions);
+    return Objects.hash(type);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class AccountTransactionsResponse {\n");
-    sb.append("    ledgerState: ").append(toIndentedString(ledgerState)).append("\n");
-    sb.append("    totalCount: ").append(toIndentedString(totalCount)).append("\n");
-    sb.append("    nextCursor: ").append(toIndentedString(nextCursor)).append("\n");
-    sb.append("    transactions: ").append(toIndentedString(transactions)).append("\n");
+    sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -180,5 +109,13 @@ public class AccountTransactionsResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
+static {
+  // Initialize and register the discriminator mappings.
+  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("AccountTransactionsResponseError", AccountTransactionsResponseError.class);
+  mappings.put("AccountTransactionsResponseSuccess", AccountTransactionsResponseSuccess.class);
+  mappings.put("AccountTransactionsResponse", AccountTransactionsResponse.class);
+  JSON.registerDiscriminator(AccountTransactionsResponse.class, "type", mappings);
+}
 }
 

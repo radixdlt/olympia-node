@@ -69,6 +69,7 @@ import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.AccountTransactionsRequest;
 import com.radixdlt.api.gateway.openapitools.model.AccountTransactionsResponse;
+import com.radixdlt.api.gateway.openapitools.model.AccountTransactionsResponseSuccess;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 import java.util.Optional;
@@ -103,7 +104,7 @@ class AccountTransactionsHandler extends GatewayJsonRpcHandler<AccountTransactio
 			.map(Long::parseLong).map(OptionalLong::of).orElse(OptionalLong.empty());
 		var limit = request.getLimit() == null ? 10 : request.getLimit();
 		var lastOffset = new AtomicLong(0);
-		var response = new AccountTransactionsResponse();
+		var response = new AccountTransactionsResponseSuccess();
 		txHistoryStore.getTxnIdsAssociatedWithAccount(accountAddress, cursor)
 			.limit(limit)
 			.forEach(pair -> {
@@ -117,6 +118,7 @@ class AccountTransactionsHandler extends GatewayJsonRpcHandler<AccountTransactio
 		}
 
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return response.ledgerState(gatewayModelMapper.ledgerState(proof));
+		return response.ledgerState(gatewayModelMapper.ledgerState(proof))
+			.type(AccountTransactionsResponseSuccess.class.getSimpleName());
 	}
 }

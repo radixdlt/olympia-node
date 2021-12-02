@@ -26,51 +26,51 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * AccountBalancesResponse
+ * AccountStakesResponseError
  */
 @JsonPropertyOrder({
-  AccountBalancesResponse.JSON_PROPERTY_TYPE
+  AccountStakesResponseError.JSON_PROPERTY_DETAILS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:03:23.286227-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:09:44.037426-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = AccountBalancesResponseError.class, name = "AccountBalancesResponseError"),
-  @JsonSubTypes.Type(value = AccountBalancesResponse.class, name = "AccountBalancesResponseSuccess"),
+  @JsonSubTypes.Type(value = AccountStakesResponseError.class, name = "AccountStakesResponseError"),
+  @JsonSubTypes.Type(value = AccountStakesResponseSuccess.class, name = "AccountStakesResponseSuccess"),
 })
 
-public class AccountBalancesResponse {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+public class AccountStakesResponseError extends AccountStakesResponse {
+  public static final String JSON_PROPERTY_DETAILS = "details";
+  private ErrorDetails details;
 
 
-  public AccountBalancesResponse type(String type) {
-    this.type = type;
+  public AccountStakesResponseError details(ErrorDetails details) {
+    this.details = details;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get details
+   * @return details
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_DETAILS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public ErrorDetails getDetails() {
+    return details;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_DETAILS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setDetails(ErrorDetails details) {
+    this.details = details;
   }
 
 
   /**
-   * Return true if this AccountBalancesResponse object is equal to o.
+   * Return true if this AccountStakesResponseError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,20 +80,22 @@ public class AccountBalancesResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AccountBalancesResponse accountBalancesResponse = (AccountBalancesResponse) o;
-    return Objects.equals(this.type, accountBalancesResponse.type);
+    AccountStakesResponseError accountStakesResponseError = (AccountStakesResponseError) o;
+    return Objects.equals(this.details, accountStakesResponseError.details) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(details, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AccountBalancesResponse {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class AccountStakesResponseError {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    details: ").append(toIndentedString(details)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -112,10 +114,10 @@ public class AccountBalancesResponse {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("AccountBalancesResponseError", AccountBalancesResponseError.class);
-  mappings.put("AccountBalancesResponseSuccess", AccountBalancesResponse.class);
-  mappings.put("AccountBalancesResponse", AccountBalancesResponse.class);
-  JSON.registerDiscriminator(AccountBalancesResponse.class, "type", mappings);
+  mappings.put("AccountStakesResponseError", AccountStakesResponseError.class);
+  mappings.put("AccountStakesResponseSuccess", AccountStakesResponseSuccess.class);
+  mappings.put("AccountStakesResponseError", AccountStakesResponseError.class);
+  JSON.registerDiscriminator(AccountStakesResponseError.class, "type", mappings);
 }
 }
 

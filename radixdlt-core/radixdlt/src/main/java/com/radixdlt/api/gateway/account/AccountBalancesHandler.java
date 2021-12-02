@@ -68,6 +68,7 @@ import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.AccountBalancesRequest;
 import com.radixdlt.api.gateway.openapitools.model.AccountBalancesResponse;
+import com.radixdlt.api.gateway.openapitools.model.AccountBalancesResponseSuccess;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 final class AccountBalancesHandler extends GatewayJsonRpcHandler<AccountBalancesRequest, AccountBalancesResponse> {
@@ -91,8 +92,9 @@ final class AccountBalancesHandler extends GatewayJsonRpcHandler<AccountBalances
 	public AccountBalancesResponse handleRequest(AccountBalancesRequest request) {
 		var accountAddress = gatewayModelMapper.account(request.getAccountIdentifier());
 		var proof = inMemorySystemInfo.getCurrentProof();
-		return new AccountBalancesResponse()
+		return new AccountBalancesResponseSuccess()
 			.ledgerState(gatewayModelMapper.ledgerState(proof))
-			.accountBalances(store.getAccountInfo(accountAddress));
+			.accountBalances(store.getAccountInfo(accountAddress))
+			.type(AccountBalancesResponseSuccess.class.getSimpleName());
 	}
 }
