@@ -16,56 +16,46 @@ package com.radixdlt.api.gateway.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
+
 
 /**
  * TransactionBuildResponse
  */
 @JsonPropertyOrder({
-  TransactionBuildResponse.JSON_PROPERTY_TYPE
+  TransactionBuildResponse.JSON_PROPERTY_TRANSACTION_BUILD
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T18:41:04.998487-06:00[America/Chicago]")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
-@JsonSubTypes({
-  @JsonSubTypes.Type(value = TransactionBuildResponseError.class, name = "TransactionBuildResponseError"),
-  @JsonSubTypes.Type(value = TransactionBuildResponseSuccess.class, name = "TransactionBuildResponseSuccess"),
-})
-
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T13:25:58.096142-06:00[America/Chicago]")
 public class TransactionBuildResponse {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+  public static final String JSON_PROPERTY_TRANSACTION_BUILD = "transaction_build";
+  private TransactionBuild transactionBuild;
 
 
-  public TransactionBuildResponse type(String type) {
-    this.type = type;
+  public TransactionBuildResponse transactionBuild(TransactionBuild transactionBuild) {
+    this.transactionBuild = transactionBuild;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get transactionBuild
+   * @return transactionBuild
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_BUILD)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public TransactionBuild getTransactionBuild() {
+    return transactionBuild;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_BUILD)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setTransactionBuild(TransactionBuild transactionBuild) {
+    this.transactionBuild = transactionBuild;
   }
 
 
@@ -81,19 +71,19 @@ public class TransactionBuildResponse {
       return false;
     }
     TransactionBuildResponse transactionBuildResponse = (TransactionBuildResponse) o;
-    return Objects.equals(this.type, transactionBuildResponse.type);
+    return Objects.equals(this.transactionBuild, transactionBuildResponse.transactionBuild);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(transactionBuild);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionBuildResponse {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("    transactionBuild: ").append(toIndentedString(transactionBuild)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -109,13 +99,5 @@ public class TransactionBuildResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
-static {
-  // Initialize and register the discriminator mappings.
-  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("TransactionBuildResponseError", TransactionBuildResponseError.class);
-  mappings.put("TransactionBuildResponseSuccess", TransactionBuildResponseSuccess.class);
-  mappings.put("TransactionBuildResponse", TransactionBuildResponse.class);
-  JSON.registerDiscriminator(TransactionBuildResponse.class, "type", mappings);
-}
 }
 

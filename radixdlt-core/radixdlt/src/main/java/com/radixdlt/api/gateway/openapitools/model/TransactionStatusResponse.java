@@ -16,56 +16,76 @@ package com.radixdlt.api.gateway.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
+
 
 /**
  * TransactionStatusResponse
  */
 @JsonPropertyOrder({
-  TransactionStatusResponse.JSON_PROPERTY_TYPE
+  TransactionStatusResponse.JSON_PROPERTY_LEDGER_STATE,
+  TransactionStatusResponse.JSON_PROPERTY_TRANSACTION
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T19:16:28.200533-06:00[America/Chicago]")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
-@JsonSubTypes({
-  @JsonSubTypes.Type(value = TransactionStatusResponseError.class, name = "TransactionStatusResponseError"),
-  @JsonSubTypes.Type(value = TransactionStatusResponseSuccess.class, name = "TransactionStatusResponseSuccess"),
-})
-
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T13:25:58.096142-06:00[America/Chicago]")
 public class TransactionStatusResponse {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+  public static final String JSON_PROPERTY_LEDGER_STATE = "ledger_state";
+  private LedgerState ledgerState;
+
+  public static final String JSON_PROPERTY_TRANSACTION = "transaction";
+  private AccountTransaction transaction;
 
 
-  public TransactionStatusResponse type(String type) {
-    this.type = type;
+  public TransactionStatusResponse ledgerState(LedgerState ledgerState) {
+    this.ledgerState = ledgerState;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get ledgerState
+   * @return ledgerState
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public LedgerState getLedgerState() {
+    return ledgerState;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_LEDGER_STATE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setLedgerState(LedgerState ledgerState) {
+    this.ledgerState = ledgerState;
+  }
+
+
+  public TransactionStatusResponse transaction(AccountTransaction transaction) {
+    this.transaction = transaction;
+    return this;
+  }
+
+   /**
+   * Get transaction
+   * @return transaction
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_TRANSACTION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public AccountTransaction getTransaction() {
+    return transaction;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TRANSACTION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setTransaction(AccountTransaction transaction) {
+    this.transaction = transaction;
   }
 
 
@@ -81,19 +101,21 @@ public class TransactionStatusResponse {
       return false;
     }
     TransactionStatusResponse transactionStatusResponse = (TransactionStatusResponse) o;
-    return Objects.equals(this.type, transactionStatusResponse.type);
+    return Objects.equals(this.ledgerState, transactionStatusResponse.ledgerState) &&
+        Objects.equals(this.transaction, transactionStatusResponse.transaction);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(ledgerState, transaction);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionStatusResponse {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("    ledgerState: ").append(toIndentedString(ledgerState)).append("\n");
+    sb.append("    transaction: ").append(toIndentedString(transaction)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -109,13 +131,5 @@ public class TransactionStatusResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
-static {
-  // Initialize and register the discriminator mappings.
-  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("TransactionStatusResponseError", TransactionStatusResponseError.class);
-  mappings.put("TransactionStatusResponseSuccess", TransactionStatusResponseSuccess.class);
-  mappings.put("TransactionStatusResponse", TransactionStatusResponse.class);
-  JSON.registerDiscriminator(TransactionStatusResponse.class, "type", mappings);
-}
 }
 

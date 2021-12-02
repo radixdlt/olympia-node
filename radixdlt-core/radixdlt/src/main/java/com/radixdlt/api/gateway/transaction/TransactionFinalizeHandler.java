@@ -69,7 +69,6 @@ import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.TransactionFinalizeRequest;
 import com.radixdlt.api.gateway.openapitools.model.TransactionFinalizeResponse;
-import com.radixdlt.api.gateway.openapitools.model.TransactionFinalizeResponseSuccess;
 import com.radixdlt.api.gateway.openapitools.model.TransactionIdentifier;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.crypto.ECDSASignature;
@@ -104,9 +103,8 @@ final class TransactionFinalizeHandler extends GatewayJsonRpcHandler<Transaction
 			mempoolSubmitter.submitToMempool(txn);
 		}
 
-		return new TransactionFinalizeResponseSuccess()
+		return new TransactionFinalizeResponse()
 			.signedTransaction(Bytes.toHexString(txn.getPayload()))
-			.transactionIdentifier(new TransactionIdentifier().hash(txn.getId().toString()))
-			.type(TransactionFinalizeResponseSuccess.class.getSimpleName());
+			.transactionIdentifier(new TransactionIdentifier().hash(txn.getId().toString()));
 	}
 }

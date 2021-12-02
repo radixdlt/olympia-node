@@ -16,56 +16,46 @@ package com.radixdlt.api.gateway.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.radixdlt.api.gateway.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
+
 
 /**
  * TransactionSubmitResponse
  */
 @JsonPropertyOrder({
-  TransactionSubmitResponse.JSON_PROPERTY_TYPE
+  TransactionSubmitResponse.JSON_PROPERTY_TRANSACTION_IDENTIFIER
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-01T19:09:52.735451-06:00[America/Chicago]")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
-@JsonSubTypes({
-  @JsonSubTypes.Type(value = TransactionSubmitResponseError.class, name = "TransactionSubmitResponseError"),
-  @JsonSubTypes.Type(value = TransactionSubmitResponseSuccess.class, name = "TransactionSubmitResponseSuccess"),
-})
-
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T13:25:58.096142-06:00[America/Chicago]")
 public class TransactionSubmitResponse {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+  public static final String JSON_PROPERTY_TRANSACTION_IDENTIFIER = "transaction_identifier";
+  private TransactionIdentifier transactionIdentifier;
 
 
-  public TransactionSubmitResponse type(String type) {
-    this.type = type;
+  public TransactionSubmitResponse transactionIdentifier(TransactionIdentifier transactionIdentifier) {
+    this.transactionIdentifier = transactionIdentifier;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get transactionIdentifier
+   * @return transactionIdentifier
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public TransactionIdentifier getTransactionIdentifier() {
+    return transactionIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setTransactionIdentifier(TransactionIdentifier transactionIdentifier) {
+    this.transactionIdentifier = transactionIdentifier;
   }
 
 
@@ -81,19 +71,19 @@ public class TransactionSubmitResponse {
       return false;
     }
     TransactionSubmitResponse transactionSubmitResponse = (TransactionSubmitResponse) o;
-    return Objects.equals(this.type, transactionSubmitResponse.type);
+    return Objects.equals(this.transactionIdentifier, transactionSubmitResponse.transactionIdentifier);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(transactionIdentifier);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionSubmitResponse {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("    transactionIdentifier: ").append(toIndentedString(transactionIdentifier)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -109,13 +99,5 @@ public class TransactionSubmitResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
-static {
-  // Initialize and register the discriminator mappings.
-  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("TransactionSubmitResponseError", TransactionSubmitResponseError.class);
-  mappings.put("TransactionSubmitResponseSuccess", TransactionSubmitResponseSuccess.class);
-  mappings.put("TransactionSubmitResponse", TransactionSubmitResponse.class);
-  JSON.registerDiscriminator(TransactionSubmitResponse.class, "type", mappings);
-}
 }
 

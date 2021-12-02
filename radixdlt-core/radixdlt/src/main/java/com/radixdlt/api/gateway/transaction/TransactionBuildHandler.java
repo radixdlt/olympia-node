@@ -64,12 +64,12 @@
 package com.radixdlt.api.gateway.transaction;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.gateway.GatewayErrorCode;
+import com.radixdlt.api.gateway.GatewayException;
 import com.radixdlt.api.gateway.GatewayJsonRpcHandler;
 import com.radixdlt.api.gateway.GatewayModelMapper;
 import com.radixdlt.api.gateway.openapitools.model.TransactionBuildRequest;
 import com.radixdlt.api.gateway.openapitools.model.TransactionBuildResponse;
-import com.radixdlt.api.gateway.openapitools.model.TransactionBuildResponseError;
-import com.radixdlt.api.gateway.openapitools.model.TransactionBuildResponseSuccess;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.RadixEngine;
@@ -91,21 +91,18 @@ final class TransactionBuildHandler extends GatewayJsonRpcHandler<TransactionBui
 	}
 
 	@Override
-	public TransactionBuildResponse handleRequest(TransactionBuildRequest request) {
+	public TransactionBuildResponse handleRequest(TransactionBuildRequest request) throws GatewayException {
 		var txnConstructionRequest = gatewayModelMapper.txnConstructionRequest(request);
 		TxBuilder builder;
 		try {
 			builder = radixEngine.construct(txnConstructionRequest);
 		} catch (TxBuilderException e) {
 			var error = gatewayModelMapper.transactionBuildError(e);
-			return new TransactionBuildResponseError()
-				.error(error)
-				.type(TransactionBuildResponseError.class.getSimpleName());
+			throw new GatewayException(GatewayErrorCode.BAD_REQUEST, error);
 		}
 
 		var unsignedTransaction = builder.buildForExternalSign();
-		return new TransactionBuildResponseSuccess()
-			.transactionBuild(gatewayModelMapper.transactionBuild(unsignedTransaction))
-			.type(TransactionBuildResponseSuccess.class.getSimpleName());
+		return new TransactionBuildResponse()
+			.transactionBuild(gatewayModelMapper.transactionBuild(unsignedTransaction));
 	}
 }
