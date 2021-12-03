@@ -4,15 +4,20 @@ import com.radixdlt.store.tree.serialization.rlp.RLP;
 
 import java.util.Arrays;
 
-public class PMTBranch extends PMTNode {
+public final class PMTBranch extends PMTNode {
 
-	private static final int NUMBER_OF_NIBBLES = 16;
+	public static final int NUMBER_OF_NIBBLES = 16;
 
 	private byte[][] slices;
 	private int slicesCounter = 0; // INFO: for removal
 
+	PMTBranch(byte[][] slices, byte[] value) {
+		this.nodeType = NodeType.BRANCH;
+		this.slices = slices;
+		this.value = value;
+	}
 
-	PMTBranch(byte[] value, PMTNode... nextNode) {
+	public PMTBranch(byte[] value, PMTNode... nextNode) {
 		this.nodeType = NodeType.BRANCH;
 		this.slices = new byte[NUMBER_OF_NIBBLES][];
 		Arrays.fill(slices, new byte[0]);
