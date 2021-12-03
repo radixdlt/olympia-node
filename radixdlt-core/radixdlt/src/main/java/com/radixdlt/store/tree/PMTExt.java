@@ -2,12 +2,12 @@ package com.radixdlt.store.tree;
 
 import com.radixdlt.store.tree.serialization.rlp.RLP;
 
-public class PMTExt extends PMTNode {
+public final class PMTExt extends PMTNode {
 
-	private static final int EVEN_PREFIX = 0;
-	private static final int ODD_PREFIX = 1;
+	public static final int EVEN_PREFIX = 0;
+	public static final int ODD_PREFIX = 1;
 
-	PMTExt(PMTKey allNibbles, byte[] newHashPointer) {
+	public PMTExt(PMTKey allNibbles, byte[] newHashPointer) {
 		this(null, allNibbles, newHashPointer);
 	}
 

@@ -37,10 +37,14 @@ public class PMT {
 	// serialization
 
 	public PMT(PMTStorage db) {
+		this(db, Duration.of(10, ChronoUnit.MINUTES));
+	}
+
+	public PMT(PMTStorage db, Duration cacheExpiryAfter) {
 		this.db = db;
 		this.cache = new PMTCache(
 			CACHE_MAXIMUM_SIZE,
-			Duration.of(10, ChronoUnit.MINUTES),
+			cacheExpiryAfter,
 			this::nodeLoader
 		);
 	}
