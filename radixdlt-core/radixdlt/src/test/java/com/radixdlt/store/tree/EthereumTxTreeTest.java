@@ -5,13 +5,28 @@ import org.bouncycastle.util.encoders.Hex;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+
 public class EthereumTxTreeTest {
 
     @Test
-    public void t() {
+    public void when_tx_tree_of_eth_block_10593417_created_using_cache__then_tx_root_is_correct() {
         var storage = new InMemoryPMTStorage();
-        var tree = new PMT(storage);
+        var tree = new PMT(storage, Duration.of(10, ChronoUnit.MINUTES));
 
+        createEthereumTxTreeTest(tree);
+    }
+
+    @Test
+    public void when_tx_tree_of_eth_block_10593417_created_not_using_cache__then_tx_root_is_correct() {
+        var storage = new InMemoryPMTStorage();
+        var tree = new PMT(storage, Duration.ZERO);
+
+        createEthereumTxTreeTest(tree);
+    }
+
+    private void createEthereumTxTreeTest(PMT tree) {
         tree.add(
                 Hex.decode("80"),
                 Hex.decode("f8ab81a5852e90edd00083012bc294a3bed4e1c75d00fa6f4e5e6922db7261b5e9acd280b844a9059cbb00"
