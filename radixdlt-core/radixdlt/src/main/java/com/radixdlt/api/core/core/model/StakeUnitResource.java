@@ -65,10 +65,10 @@ package com.radixdlt.api.core.core.model;
 
 import com.radixdlt.crypto.ECPublicKey;
 
-public final class StakeOwnershipResource implements Resource {
+public final class StakeUnitResource implements Resource {
 	private final ECPublicKey validatorKey;
 
-	private StakeOwnershipResource(ECPublicKey validatorKey) {
+	private StakeUnitResource(ECPublicKey validatorKey) {
 		this.validatorKey = validatorKey;
 	}
 
@@ -76,7 +76,7 @@ public final class StakeOwnershipResource implements Resource {
 		return validatorKey;
 	}
 
-	public static StakeOwnershipResource from(ECPublicKey validatorKey) {
-		return new StakeOwnershipResource(validatorKey);
+	public static StakeUnitResource from(ECPublicKey validatorKey) {
+		return new StakeUnitResource(validatorKey);
 	}
 }

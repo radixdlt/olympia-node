@@ -253,7 +253,7 @@ public class EntityHandlerTest {
 		assertThat(response.getBalances())
 			.containsExactlyInAnyOrder(
 				coreModelMapper.nativeTokenAmount(liquidAmount.toSubunits()),
-				coreModelMapper.stakeOwnershipAmount(TEST_KEY.getPublicKey(), stakeAmount.toSubunits())
+				coreModelMapper.stakeUnitAmount(TEST_KEY.getPublicKey(), stakeAmount.toSubunits())
 			);
 	}
 

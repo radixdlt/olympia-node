@@ -2805,8 +2805,8 @@ components:
     SubEntityMetadata:
       type: object
       properties:
-        validator:
-          "$ref": "#/components/schemas/ValidatorAddress"
+        validator_address:
+          type: string
         epoch_unlock:
           "$ref": "#/components/schemas/LongNumber"
     ResourceIdentifier:
@@ -2837,11 +2837,11 @@ components:
         - "$ref": "#/components/schemas/ResourceIdentifier"
         - type: object
           required:
-            - validator
+            - validator_address
           properties:
-            validator:
+            validator_address:
               description: The validator associated with this stake unit.
-              "$ref": "#/components/schemas/ValidatorAddress"
+              type: string
     Signature:
       type: object
       required:
@@ -2890,9 +2890,6 @@ components:
           type: string
         resource_hrp_suffix:
           type: string
-    ValidatorAddress:
-      type: string
-      pattern: "^(r|t|d)v[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$"
     RRI:
       type: string
       pattern: ^[!\"#$%&'()*+,-.\/0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\\\]\^_`abcdefghijklmnopqrstuvwxyz{|}~]{1,83}_r[rb]1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,90}$

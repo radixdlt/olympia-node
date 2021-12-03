@@ -351,7 +351,7 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 		runner.start();
 		var selfAddress = REAddr.ofPubKeyAccount(self);
 		var request = buildTransfer(
-			coreModelMapper.stakeOwnership(self),
+			coreModelMapper.stakeUnit(self),
 			stakeAmount.toSubunits(),
 			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
 			coreModelMapper.entityIdentifierPreparedUnstake(selfAddress, self)

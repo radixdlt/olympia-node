@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.radixdlt.api.gateway.openapitools.JSON;
+import com.radixdlt.api.core.core.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
 import java.util.HashMap;
@@ -29,9 +29,9 @@ import java.util.Objects;
  * StakeUnitResourceIdentifier
  */
 @JsonPropertyOrder({
-  StakeUnitResourceIdentifier.JSON_PROPERTY_VALIDATOR
+  StakeUnitResourceIdentifier.JSON_PROPERTY_VALIDATOR_ADDRESS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T16:28:59.363198-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T20:54:11.411987-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = StakeUnitResourceIdentifier.class, name = "StakeUnit"),
@@ -39,33 +39,33 @@ import java.util.Objects;
 })
 
 public class StakeUnitResourceIdentifier extends ResourceIdentifier {
-  public static final String JSON_PROPERTY_VALIDATOR = "validator";
-  private String validator;
+  public static final String JSON_PROPERTY_VALIDATOR_ADDRESS = "validator_address";
+  private String validatorAddress;
 
 
-  public StakeUnitResourceIdentifier validator(String validator) {
-    this.validator = validator;
+  public StakeUnitResourceIdentifier validatorAddress(String validatorAddress) {
+    this.validatorAddress = validatorAddress;
     return this;
   }
 
    /**
-   * Get validator
-   * @return validator
+   * The validator associated with this stake unit.
+   * @return validatorAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR)
+  @ApiModelProperty(required = true, value = "The validator associated with this stake unit.")
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getValidator() {
-    return validator;
+  public String getValidatorAddress() {
+    return validatorAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALIDATOR)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidator(String validator) {
-    this.validator = validator;
+  public void setValidatorAddress(String validatorAddress) {
+    this.validatorAddress = validatorAddress;
   }
 
 
@@ -81,13 +81,13 @@ public class StakeUnitResourceIdentifier extends ResourceIdentifier {
       return false;
     }
     StakeUnitResourceIdentifier stakeUnitResourceIdentifier = (StakeUnitResourceIdentifier) o;
-    return Objects.equals(this.validator, stakeUnitResourceIdentifier.validator) &&
+    return Objects.equals(this.validatorAddress, stakeUnitResourceIdentifier.validatorAddress) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(validator, super.hashCode());
+    return Objects.hash(validatorAddress, super.hashCode());
   }
 
   @Override
@@ -95,7 +95,7 @@ public class StakeUnitResourceIdentifier extends ResourceIdentifier {
     StringBuilder sb = new StringBuilder();
     sb.append("class StakeUnitResourceIdentifier {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    validator: ").append(toIndentedString(validator)).append("\n");
+    sb.append("    validatorAddress: ").append(toIndentedString(validatorAddress)).append("\n");
     sb.append("}");
     return sb.toString();
   }

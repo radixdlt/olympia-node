@@ -69,7 +69,7 @@ import com.radixdlt.api.core.core.model.ParsedDataObject;
 import com.radixdlt.api.core.core.model.Resource;
 import com.radixdlt.api.core.core.model.ResourceQuery;
 import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
-import com.radixdlt.api.core.core.model.StakeOwnershipResource;
+import com.radixdlt.api.core.core.model.StakeUnitResource;
 import com.radixdlt.api.core.core.model.SubstateWithdrawal;
 import com.radixdlt.api.core.core.model.TokenResource;
 import com.radixdlt.application.system.state.StakeOwnership;
@@ -109,8 +109,8 @@ public final class AccountVaultEntity implements Entity {
 		if (amount.getResource() instanceof TokenResource tokenResource) {
 			var tokenAddress = tokenResource.getTokenAddress();
 			substate = new TokensInAccount(accountAddress, tokenAddress, amount.getAmount());
-		} else if (amount.getResource() instanceof StakeOwnershipResource stakeOwnershipResource) {
-			substate = new StakeOwnership(stakeOwnershipResource.getValidatorKey(), accountAddress, amount.getAmount());
+		} else if (amount.getResource() instanceof StakeUnitResource stakeUnitResource) {
+			substate = new StakeOwnership(stakeUnitResource.getValidatorKey(), accountAddress, amount.getAmount());
 		} else {
 			throw new IllegalStateException("Unknown resource type " + amount.getResource());
 		}
@@ -130,8 +130,8 @@ public final class AccountVaultEntity implements Entity {
 				p -> p.bucket().resourceAddr().equals(tokenResource.getTokenAddress())
 				&& p.bucket().getOwner().equals(accountAddress)
 			);
-		} else if (resource instanceof StakeOwnershipResource stakeOwnershipResource) {
-			var validatorKey = stakeOwnershipResource.getValidatorKey();
+		} else if (resource instanceof StakeUnitResource stakeUnitResource) {
+			var validatorKey = stakeUnitResource.getValidatorKey();
 			var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES));
 			buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
 			buf.put((byte) 0);

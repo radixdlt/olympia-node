@@ -86,7 +86,7 @@ import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.entities.PreparedStakeVaultEntity;
 import com.radixdlt.api.core.core.model.entities.PreparedUnstakeVaultEntity;
 import com.radixdlt.api.core.core.model.Resource;
-import com.radixdlt.api.core.core.model.StakeOwnershipResource;
+import com.radixdlt.api.core.core.model.StakeUnitResource;
 import com.radixdlt.api.core.core.model.entities.TokenEntity;
 import com.radixdlt.api.core.core.model.entities.ValidatorEntity;
 import com.radixdlt.api.core.core.openapitools.model.*;
@@ -350,7 +350,7 @@ public final class CoreModelMapper {
 					throw invalidSubEntity(subEntity);
 				}
 
-				var validator = addressing.forValidators().parseOrThrow(metadata.getValidator(), s -> invalidAddress(address));
+				var validator = addressing.forValidators().parseOrThrow(metadata.getValidatorAddress(), s -> invalidAddress(address));
 				return switch (subEntity.getAddress()) {
 					case "prepared_stake" -> PreparedStakeVaultEntity.from(
 						accountAddress,
@@ -510,9 +510,9 @@ public final class CoreModelMapper {
 			var symbolAndAddr = addressing.forResources().parseOrThrow(rri, s -> invalidAddress(rri));
 			return com.radixdlt.api.core.core.model.TokenResource.from(symbolAndAddr.getFirst(), symbolAndAddr.getSecond());
 		} else if (resourceIdentifier instanceof StakeUnitResourceIdentifier stakeUnitResourceIdentifier) {
-			var validatorAddress = stakeUnitResourceIdentifier.getValidator();
+			var validatorAddress = stakeUnitResourceIdentifier.getValidatorAddress();
 			var key = addressing.forValidators().parseOrThrow(validatorAddress, s -> invalidAddress(validatorAddress));
-			return StakeOwnershipResource.from(key);
+			return StakeUnitResource.from(key);
 		} else {
 			throw new IllegalStateException("Unknown resourceIdentifier: " + resourceIdentifier);
 		}
@@ -531,10 +531,10 @@ public final class CoreModelMapper {
 			return new TokenResourceIdentifier()
 				.rri(addressing.forResources().of(tokenResource.getSymbol(), tokenResource.getTokenAddress()))
 				.type("TokenResourceIdentifier");
-		} else if (resource instanceof StakeOwnershipResource stakeOwnership) {
+		} else if (resource instanceof StakeUnitResource stakeUnitResource) {
 			return new StakeUnitResourceIdentifier()
-				.validator(addressing.forValidators().of(stakeOwnership.getValidatorKey()))
-				.type("StakeOwnershipResourceIdentifier");
+				.validatorAddress(addressing.forValidators().of(stakeUnitResource.getValidatorKey()))
+				.type("StakeUnitResourceIdentifier");
 		} else {
 			throw new IllegalStateException("Unknown resource " + resource);
 		}
@@ -548,7 +548,7 @@ public final class CoreModelMapper {
 				.subEntity(new SubEntity()
 					.address("prepared_stake")
 					.metadata(new SubEntityMetadata()
-						.validator(addressing.forValidators().of(stake.getValidatorKey()))
+						.validatorAddress(addressing.forValidators().of(stake.getValidatorKey()))
 					)
 				);
 		} else if (entity instanceof PreparedUnstakeVaultEntity unstake) {
@@ -556,7 +556,7 @@ public final class CoreModelMapper {
 				.subEntity(new SubEntity()
 					.address("prepared_unstake")
 					.metadata(new SubEntityMetadata()
-						.validator(addressing.forValidators().of(unstake.getValidatorKey()))
+						.validatorAddress(addressing.forValidators().of(unstake.getValidatorKey()))
 					)
 				);
 		} else if (entity instanceof ValidatorEntity validator) {
@@ -579,7 +579,7 @@ public final class CoreModelMapper {
 			.subEntity(new SubEntity()
 				.address("exiting_stake")
 				.metadata(new SubEntityMetadata()
-					.validator(addressing.forValidators().of(validatorKey))
+					.validatorAddress(addressing.forValidators().of(validatorKey))
 					.epochUnlock(epochUnlock)
 				)
 			);
@@ -595,7 +595,7 @@ public final class CoreModelMapper {
 			.subEntity(new SubEntity()
 				.address("exiting_stake")
 				.metadata(new SubEntityMetadata()
-					.validator(addressing.forValidators().of(validatorKey))
+					.validatorAddress(addressing.forValidators().of(validatorKey))
 					.epochUnlock(epochUnlock)
 				)
 			);
@@ -608,7 +608,7 @@ public final class CoreModelMapper {
 			.subEntity(new SubEntity()
 				.address("prepared_unstake")
 				.metadata(new SubEntityMetadata()
-					.validator(addressing.forValidators().of(validatorKey))
+					.validatorAddress(addressing.forValidators().of(validatorKey))
 				)
 			);
 	}
@@ -619,7 +619,7 @@ public final class CoreModelMapper {
 			.subEntity(new SubEntity()
 				.address("prepared_stake")
 				.metadata(new SubEntityMetadata()
-					.validator(addressing.forValidators().of(validatorKey))
+					.validatorAddress(addressing.forValidators().of(validatorKey))
 				)
 			);
 	}
@@ -676,9 +676,9 @@ public final class CoreModelMapper {
 			.value(positive ? value.toString() : "-" + value);
 	}
 
-	public ResourceAmount stakeOwnershipAmount(ECPublicKey validatorKey, UInt256 value) {
+	public ResourceAmount stakeUnitAmount(ECPublicKey validatorKey, UInt256 value) {
 		return new ResourceAmount()
-			.resourceIdentifier(stakeOwnership(validatorKey))
+			.resourceIdentifier(stakeUnit(validatorKey))
 			.value(value.toString());
 	}
 
@@ -690,10 +690,10 @@ public final class CoreModelMapper {
 		return create(REAddr.ofNativeToken(), "xrd");
 	}
 
-	public ResourceIdentifier stakeOwnership(ECPublicKey validatorKey) {
+	public ResourceIdentifier stakeUnit(ECPublicKey validatorKey) {
 		return new StakeUnitResourceIdentifier()
-			.validator(addressing.forValidators().of(validatorKey))
-			.type("StakeOwnership");
+			.validatorAddress(addressing.forValidators().of(validatorKey))
+			.type("StakeUnit");
 	}
 
 	public ResourceIdentifier resourceIdentifier(Bucket bucket, Function<REAddr, String> tokenAddressToSymbol) {
@@ -706,8 +706,8 @@ public final class CoreModelMapper {
 		}
 
 		return new StakeUnitResourceIdentifier()
-			.validator(addressing.forValidators().of(bucket.getValidatorKey()))
-			.type("StakeOwnership");
+			.validatorAddress(addressing.forValidators().of(bucket.getValidatorKey()))
+			.type("StakeUnit");
 	}
 
 	public ResourceAmount resourceOperation(Bucket bucket, UInt384 amount, Function<REAddr, String> tokenAddressToSymbol) {
@@ -958,7 +958,7 @@ public final class CoreModelMapper {
 					entityIdentifier.subEntity(new SubEntity()
 						.address("prepared_stakes")
 						.metadata(new SubEntityMetadata()
-							.validator(addressing.forValidators().of(bucket.getValidatorKey()))
+							.validatorAddress(addressing.forValidators().of(bucket.getValidatorKey()))
 						)
 					);
 				} else if (bucket.resourceAddr() == null && Objects.equals(bucket.getEpochUnlock(), 0L)) {
@@ -970,7 +970,7 @@ public final class CoreModelMapper {
 					entityIdentifier.subEntity(new SubEntity()
 						.address("exiting_unstakes")
 						.metadata(new SubEntityMetadata()
-							.validator(addressing.forValidators().of(bucket.getValidatorKey()))
+							.validatorAddress(addressing.forValidators().of(bucket.getValidatorKey()))
 							.epochUnlock(bucket.getEpochUnlock())
 						)
 					);

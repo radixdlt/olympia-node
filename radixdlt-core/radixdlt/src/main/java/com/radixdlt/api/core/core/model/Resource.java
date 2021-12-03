@@ -63,5 +63,5 @@
 
 package com.radixdlt.api.core.core.model;
 
-public sealed interface Resource permits TokenResource, StakeOwnershipResource {
+public sealed interface Resource permits TokenResource, StakeUnitResource {
 }

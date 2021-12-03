@@ -69,7 +69,7 @@ import com.radixdlt.api.core.core.model.ParsedDataObject;
 import com.radixdlt.api.core.core.model.Resource;
 import com.radixdlt.api.core.core.model.ResourceQuery;
 import com.radixdlt.api.core.core.model.ResourceUnsignedAmount;
-import com.radixdlt.api.core.core.model.StakeOwnershipResource;
+import com.radixdlt.api.core.core.model.StakeUnitResource;
 import com.radixdlt.api.core.core.model.SubstateWithdrawal;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
@@ -106,10 +106,10 @@ public final class PreparedUnstakeVaultEntity implements Entity {
 	@Override
 	public void deposit(ResourceUnsignedAmount amount, TxBuilder txBuilder, Supplier<RERulesConfig> config)
 		throws TxBuilderException {
-		if (!(amount.getResource() instanceof StakeOwnershipResource stakeOwnershipResource)) {
+		if (!(amount.getResource() instanceof StakeUnitResource stakeUnitResource)) {
 			throw new EntityDoesNotSupportResourceDepositException(this, amount.getResource());
 		}
-		var stakeOwnershipKey = stakeOwnershipResource.getValidatorKey();
+		var stakeOwnershipKey = stakeUnitResource.getValidatorKey();
 		var substate = new PreparedUnstakeOwnership(stakeOwnershipKey, accountAddress, amount.getAmount());
 		txBuilder.up(substate);
 	}
