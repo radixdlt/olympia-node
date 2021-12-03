@@ -2545,7 +2545,7 @@ components:
             owner:
               description: The owner of the token who can mint/burn.
                 This is only available for mutable tokens.
-              "$ref": "#/components/schemas/AccountAddress"
+              $ref: "#/components/schemas/EntityIdentifier"
     TokenMetadata:
       allOf:
         - "$ref": "#/components/schemas/DataObject"
@@ -2639,7 +2639,7 @@ components:
             owner:
               description: The owner of the validator which will be updated by the end
                 of `epoch`.
-              "$ref": "#/components/schemas/AccountAddress"
+              $ref: "#/components/schemas/EntityIdentifier"
             epoch:
               description: Optional field, when non-empty describes the epoch the `owner`
                 field will update, otherwise no update is scheduled.
@@ -2712,7 +2712,7 @@ components:
             owner:
               description: The owner of the validator who receives the fees when others
                 stake to the validator.
-              "$ref": "#/components/schemas/AccountAddress"
+              $ref: "#/components/schemas/EntityIdentifier"
             registered:
               description: Flag indicating whether a validator is registered to be part
                 of the validator set.
@@ -2890,9 +2890,6 @@ components:
           type: string
         resource_hrp_suffix:
           type: string
-    AccountAddress:
-      type: string
-      pattern: "^(r|t|d)dx[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$"
     ValidatorAddress:
       type: string
       pattern: "^(r|t|d)v[0-9]?1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,69}$"

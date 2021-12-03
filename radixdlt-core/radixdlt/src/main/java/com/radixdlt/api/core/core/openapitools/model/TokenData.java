@@ -33,7 +33,7 @@ import java.util.Objects;
   TokenData.JSON_PROPERTY_IS_MUTABLE,
   TokenData.JSON_PROPERTY_OWNER
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-28T14:39:50.615405-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-02T20:22:02.557776-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = EpochData.class, name = "EpochData"),
@@ -49,7 +49,7 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = ValidatorData.class, name = "ValidatorData"),
   @JsonSubTypes.Type(value = ValidatorMetadata.class, name = "ValidatorMetadata"),
   @JsonSubTypes.Type(value = ValidatorSystemMetadata.class, name = "ValidatorSystemMetadata"),
-  @JsonSubTypes.Type(value = VirtualParentData.class, name = "VirtualParent"),
+  @JsonSubTypes.Type(value = VirtualParentData.class, name = "VirtualParentData"),
 })
 
 public class TokenData extends DataObject {
@@ -60,7 +60,7 @@ public class TokenData extends DataObject {
   private Boolean isMutable;
 
   public static final String JSON_PROPERTY_OWNER = "owner";
-  private String owner;
+  private EntityIdentifier owner;
 
 
   public TokenData granularity(String granularity) {
@@ -115,7 +115,7 @@ public class TokenData extends DataObject {
   }
 
 
-  public TokenData owner(String owner) {
+  public TokenData owner(EntityIdentifier owner) {
     this.owner = owner;
     return this;
   }
@@ -129,14 +129,14 @@ public class TokenData extends DataObject {
   @JsonProperty(JSON_PROPERTY_OWNER)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public String getOwner() {
+  public EntityIdentifier getOwner() {
     return owner;
   }
 
 
   @JsonProperty(JSON_PROPERTY_OWNER)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setOwner(String owner) {
+  public void setOwner(EntityIdentifier owner) {
     this.owner = owner;
   }
 
@@ -203,7 +203,7 @@ static {
   mappings.put("ValidatorData", ValidatorData.class);
   mappings.put("ValidatorMetadata", ValidatorMetadata.class);
   mappings.put("ValidatorSystemMetadata", ValidatorSystemMetadata.class);
-  mappings.put("VirtualParent", VirtualParentData.class);
+  mappings.put("VirtualParentData", VirtualParentData.class);
   mappings.put("TokenData", TokenData.class);
   JSON.registerDiscriminator(TokenData.class, "type", mappings);
 }

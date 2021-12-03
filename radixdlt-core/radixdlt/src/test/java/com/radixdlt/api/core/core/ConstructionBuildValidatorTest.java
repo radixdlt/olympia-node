@@ -232,7 +232,7 @@ public class ConstructionBuildValidatorTest {
 		runner.start();
 		var otherAddress = REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(2).getPublicKey());
 		var request = buildValidatorUpdate(
-			new PreparedValidatorOwner().owner(addressing.forAccounts().of(otherAddress))
+			new PreparedValidatorOwner().owner(coreModelMapper.entityIdentifier(otherAddress))
 		);
 
 		// Act

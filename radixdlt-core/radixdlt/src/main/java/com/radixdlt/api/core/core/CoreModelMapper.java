@@ -376,6 +376,14 @@ public final class CoreModelMapper {
 		}
 	}
 
+	public Optional<AccountVaultEntity> accountVaultEntity(EntityIdentifier entityIdentifier) throws CoreApiException {
+		var entity = entity(entityIdentifier);
+		if (!(entity instanceof AccountVaultEntity accountVaultEntity)) {
+			return Optional.empty();
+		}
+		return Optional.of(accountVaultEntity);
+	}
+
 	public DataOperation dataOperation(Data data) throws CoreApiException {
 		if (data == null) {
 			return null;
@@ -385,13 +393,16 @@ public final class CoreModelMapper {
 		var dataObject = data.getDataObject();
 		if (dataObject instanceof PreparedValidatorOwner preparedValidatorOwner) {
 			var owner = preparedValidatorOwner.getOwner();
-			parsed = ImmutableClassToInstanceMap.of(
-				REAddr.class, addressing.forAccounts().parseOrThrow(owner, s -> invalidAddress(owner))
-			);
+			var accountVaultEntity = accountVaultEntity(owner)
+				.orElseThrow(() -> CoreApiException.badRequest(new InvalidDataObjectError().invalidDataObject(preparedValidatorOwner)));
+			var ownerAddress = accountVaultEntity.getAccountAddress();
+			parsed = ImmutableClassToInstanceMap.of(REAddr.class, ownerAddress);
 		} else if (dataObject instanceof TokenData tokenData && tokenData.getOwner() != null) {
 			var owner = tokenData.getOwner();
-			var ownerAddress = addressing.forAccounts().parseOrThrow(owner, s -> invalidAddress(owner));
-			var key = ownerAddress.publicKey().orElseThrow(() -> invalidAddress(owner));
+			var accountVaultEntity = accountVaultEntity(owner)
+				.orElseThrow(() -> CoreApiException.badRequest(new InvalidDataObjectError().invalidDataObject(tokenData)));
+			var key = accountVaultEntity.getAccountAddress().publicKey()
+				.orElseThrow(() -> new IllegalStateException("Account vault should only have account addresses"));
 			parsed = ImmutableClassToInstanceMap.of(ECPublicKey.class, key);
 		} else {
 			parsed = ImmutableClassToInstanceMap.of();
@@ -750,7 +761,7 @@ public final class CoreModelMapper {
 			.isMutable(tokenResource.isMutable());
 		tokenResource.getOwner()
 			.map(REAddr::ofPubKeyAccount)
-			.ifPresent(key -> tokenData.setOwner(addressing.forAccounts().of(key)));
+			.ifPresent(addr -> tokenData.setOwner(entityIdentifier(addr)));
 		return tokenData
 			.type(SubstateTypeMapping.getName(SubstateTypeId.TOKEN_RESOURCE));
 	}
@@ -790,7 +801,7 @@ public final class CoreModelMapper {
 		var preparedValidatorOwner = new PreparedValidatorOwner();
 		copy.getEpochUpdate().ifPresent(preparedValidatorOwner::epoch);
 		return preparedValidatorOwner
-			.owner(addressing.forAccounts().of(copy.getOwner()))
+			.owner(entityIdentifier(copy.getOwner()))
 			.type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_OWNER_COPY));
 	}
 
@@ -835,7 +846,7 @@ public final class CoreModelMapper {
 	public DataObject validatorStakeData(ValidatorStakeData validatorStakeData) {
 		var validatorData = new com.radixdlt.api.core.core.openapitools.model.ValidatorData();
 		return validatorData
-			.owner(addressing.forAccounts().of(validatorStakeData.getOwnerAddr()))
+			.owner(entityIdentifier(validatorStakeData.getOwnerAddr()))
 			.registered(validatorStakeData.isRegistered())
 			.fee(validatorStakeData.getRakePercentage())
 			.type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_STAKE_DATA));

@@ -172,7 +172,7 @@ public final class ConstructionBuildTokenDefinitionTest {
 					.data(new Data()
 						.action(Data.ActionEnum.CREATE)
 						.dataObject(new TokenData()
-							.owner(owner == null ? null : addressing.forAccounts().of(owner))
+							.owner(owner == null ? null : coreModelMapper.entityIdentifier(owner))
 							.granularity(Integer.toString(granularity))
 							.isMutable(isMutable)
 						)
