@@ -326,7 +326,7 @@ public final class BerkeleyValidatorStore implements BerkeleyAdditionalStore {
 			var copy = (ValidatorFeeCopy) validatorData;
 			return Pair.of(
 				"properties",
-				Map.of("validator_fee", (double) copy.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY + "")
+				Map.of("validator_fee_percentage", (double) copy.getRakePercentage() / (double) RAKE_PERCENTAGE_GRANULARITY)
 			);
 		} else if (validatorData instanceof ValidatorMetaData) {
 			var meta = (ValidatorMetaData) validatorData;

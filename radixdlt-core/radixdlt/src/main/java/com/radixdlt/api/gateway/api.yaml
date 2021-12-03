@@ -858,7 +858,7 @@ components:
         - network_identifier
       properties:
         network_identifier:
-          type: string
+          $ref: "#/components/schemas/NetworkIdentifier"
       example:
         network_identifier:
           network: mainnet
@@ -1023,7 +1023,7 @@ components:
           value: '100000000000000000000'
         properties:
           url: https://learn.radixdlt.com/article/will-the-radix-foundation-operate-validator-nodes
-          validator_fee: '100.0'
+          validator_fee_percentage: 100
           name: Radix Foundation eu-west-1 node0 mainnet
           registered: true
           owner_account_identifier:
@@ -1038,14 +1038,14 @@ components:
             epoch_range:
               from: 1
               to: 1
-            uptime_percentage: '100.00'
+            uptime_percentage: 100
             proposals_missed: 0
             proposals_completed: 108320
     ValidatorProperties:
       type: object
       required:
         - url
-        - validator_fee
+        - validator_fee_percentage
         - name
         - registered
         - owner_account_identifier
@@ -1053,7 +1053,7 @@ components:
       properties:
         url:
           type: string
-        validator_fee:
+        validator_fee_percentage:
           type: number
         name:
           type: string
