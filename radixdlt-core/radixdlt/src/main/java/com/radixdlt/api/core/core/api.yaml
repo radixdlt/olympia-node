@@ -2831,7 +2831,7 @@ components:
           properties:
             rri:
               description: The Radix Resource Identifier "RRI" of the token.
-              "$ref": "#/components/schemas/RRI"
+              type: string
     StakeUnitResourceIdentifier:
       allOf:
         - "$ref": "#/components/schemas/ResourceIdentifier"
@@ -2890,9 +2890,6 @@ components:
           type: string
         resource_hrp_suffix:
           type: string
-    RRI:
-      type: string
-      pattern: ^[!\"#$%&'()*+,-.\/0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\\\]\^_`abcdefghijklmnopqrstuvwxyz{|}~]{1,83}_r[rb]1[023456789ACDEFGHJKLMNPQRSTUVWXYZacdefghjklmnpqrstuvwxyz]{6,90}$
     LongNumber:
       type: integer
       format: int64

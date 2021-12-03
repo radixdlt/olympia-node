@@ -200,7 +200,7 @@ public final class ECDSASignature {
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Failed to read bytes as ASN1 decode bytes", e);
 		} catch (ClassCastException e) {
-			throw new IllegalStateException("Failed to cast to ASN1Integer", e);
+			throw new IllegalArgumentException("Failed to cast to ASN1Integer", e);
 		}
 	}
 }
