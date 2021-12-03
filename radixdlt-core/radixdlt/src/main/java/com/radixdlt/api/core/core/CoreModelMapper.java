@@ -797,11 +797,11 @@ public final class CoreModelMapper {
 			.type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY));
 	}
 
-	public DataObject preparedValidatorOwner(ValidatorOwnerCopy copy) {
+	public DataObject preparedValidatorOwner(ValidatorOwnerCopy copy, boolean virtual) {
 		var preparedValidatorOwner = new PreparedValidatorOwner();
 		copy.getEpochUpdate().ifPresent(preparedValidatorOwner::epoch);
 		return preparedValidatorOwner
-			.owner(entityIdentifier(copy.getOwner()))
+			.owner(virtual ? selfAccountEntityIdentifier() : entityIdentifier(copy.getOwner()))
 			.type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_OWNER_COPY));
 	}
 
@@ -843,10 +843,15 @@ public final class CoreModelMapper {
 			.type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_SYSTEM_META_DATA));
 	}
 
-	public DataObject validatorStakeData(ValidatorStakeData validatorStakeData) {
+	private EntityIdentifier selfAccountEntityIdentifier() {
+		return new EntityIdentifier()
+			.address(addressing.forAccounts().getHrp() + "1<self>");
+	}
+
+	public DataObject validatorStakeData(ValidatorStakeData validatorStakeData, boolean virtual) {
 		var validatorData = new com.radixdlt.api.core.core.openapitools.model.ValidatorData();
 		return validatorData
-			.owner(entityIdentifier(validatorStakeData.getOwnerAddr()))
+			.owner(virtual ? selfAccountEntityIdentifier() : entityIdentifier(validatorStakeData.getOwnerAddr()))
 			.registered(validatorStakeData.isRegistered())
 			.fee(validatorStakeData.getRakePercentage())
 			.type(SubstateTypeMapping.getName(SubstateTypeId.VALIDATOR_STAKE_DATA));
@@ -873,11 +878,11 @@ public final class CoreModelMapper {
 		var virtualDataObject = switch (childType) {
 			case UNCLAIMED_READDR -> unclaimedREAddrData();
 			case VALIDATOR_META_DATA -> validatorMetadata(ValidatorMetaData.createVirtual(MOCK_PUBLIC_KEY));
-			case VALIDATOR_STAKE_DATA -> validatorStakeData(ValidatorStakeData.createVirtual(MOCK_PUBLIC_KEY));
+			case VALIDATOR_STAKE_DATA -> validatorStakeData(ValidatorStakeData.createVirtual(MOCK_PUBLIC_KEY), true);
 			case VALIDATOR_ALLOW_DELEGATION_FLAG -> allowDelegationFlag(AllowDelegationFlag.createVirtual(MOCK_PUBLIC_KEY));
 			case VALIDATOR_REGISTERED_FLAG_COPY -> preparedValidatorRegistered(ValidatorRegisteredCopy.createVirtual(MOCK_PUBLIC_KEY));
 			case VALIDATOR_RAKE_COPY -> preparedValidatorFee(ValidatorFeeCopy.createVirtual(MOCK_PUBLIC_KEY));
-			case VALIDATOR_OWNER_COPY -> preparedValidatorOwner(ValidatorOwnerCopy.createVirtual(MOCK_PUBLIC_KEY));
+			case VALIDATOR_OWNER_COPY -> preparedValidatorOwner(ValidatorOwnerCopy.createVirtual(MOCK_PUBLIC_KEY), true);
 			case VALIDATOR_SYSTEM_META_DATA -> validatorSystemMetadata(ValidatorSystemMetadata.createVirtual(MOCK_PUBLIC_KEY));
 			default -> throw new IllegalStateException("Virtualization of " + childType + " unsupported");
 		};
@@ -904,7 +909,7 @@ public final class CoreModelMapper {
 		} else if (substate instanceof ValidatorRegisteredCopy validatorRegisteredCopy) {
 			dataObject = preparedValidatorRegistered(validatorRegisteredCopy);
 		} else if (substate instanceof ValidatorOwnerCopy validatorOwnerCopy) {
-			dataObject = preparedValidatorOwner(validatorOwnerCopy);
+			dataObject = preparedValidatorOwner(validatorOwnerCopy, false);
 		} else if (substate instanceof ValidatorFeeCopy validatorFeeCopy) {
 			dataObject = preparedValidatorFee(validatorFeeCopy);
 		} else if (substate instanceof ValidatorMetaData validatorMetaData) {
@@ -916,7 +921,7 @@ public final class CoreModelMapper {
 		} else if (substate instanceof ValidatorSystemMetadata validatorSystemMetadata) {
 			dataObject = validatorSystemMetadata(validatorSystemMetadata);
 		} else if (substate instanceof ValidatorStakeData validatorStakeData) {
-			dataObject = validatorStakeData(validatorStakeData);
+			dataObject = validatorStakeData(validatorStakeData, false);
 		} else if (substate instanceof UnclaimedREAddr) {
 			dataObject = unclaimedREAddrData();
 		} else if (substate instanceof VirtualParent virtualParent) {
