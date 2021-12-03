@@ -64,22 +64,21 @@
 
 package com.radixdlt.crypto;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.utils.Bytes;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -95,6 +94,16 @@ public class ECDSASignatureTest {
 		EqualsVerifier.forClass(ECDSASignature.class)
 				.suppress(Warning.NONFINAL_FIELDS) // serialization prevents us from making `r` and `s` final.
 				.verify();
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException1() {
+		ECDSASignature.deserialize(null, BigInteger.ONE.toByteArray(), 1);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException2() {
+		ECDSASignature.deserialize(BigInteger.ONE.toByteArray(), null, 1);
 	}
 
 	@Test

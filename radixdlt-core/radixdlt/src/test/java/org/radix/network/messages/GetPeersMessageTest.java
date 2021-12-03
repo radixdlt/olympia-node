@@ -62,58 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package org.radix.network.messages;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
-import org.radix.network.messaging.Message;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+import org.junit.Test;
+import org.radix.serialization.SerializeMessageObject;
 
-import java.util.List;
-import java.util.Objects;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * RPC Response message for GetVertex call
- */
-@SerializerId2("message.consensus.vertices_response")
-public final class GetVerticesResponseMessage extends Message {
-	@JsonProperty("vertices")
-	@DsonOutput(Output.ALL)
-	private final List<UnverifiedVertex> vertices;
+public class GetPeersMessageTest extends SerializeMessageObject<GetPeersMessage> {
 
-	@JsonCreator
-	public GetVerticesResponseMessage(
-		@JsonProperty(value = "vertices", required = true) List<UnverifiedVertex> vertices
-	) {
-		this.vertices = Objects.requireNonNull(vertices);
-		vertices.forEach(Objects::requireNonNull);
+	public GetPeersMessageTest() {
+		super(GetPeersMessage.class, GetPeersMessage::new);
 	}
 
-	public List<UnverifiedVertex> getVertices() {
-		return vertices;
+	@Test
+	public void sensibleToString() {
+		String s = new GetPeersMessage().toString();
+
+		assertThat(s).contains(GetPeersMessage.class.getSimpleName());
 	}
 
-	@Override
-	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), vertices);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-
-		return (o instanceof GetVerticesResponseMessage that)
-			   && Objects.equals(vertices, that.vertices)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(vertices, getTimestamp());
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(GetPeersMessage.class)
+				.withIgnoredFields("instance")
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
 	}
 }

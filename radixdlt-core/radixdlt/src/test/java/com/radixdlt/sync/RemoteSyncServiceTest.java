@@ -154,6 +154,18 @@ public class RemoteSyncServiceTest {
 		verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void when_bad_remote_sync_request__then_throw_NPE() {
+		var node = mock(BFTNode.class);
+		var verifiedTxnsAndProof = mock(VerifiedTxnsAndProof.class);
+		var verifiedHeader = mock(LedgerProof.class);
+		when(verifiedTxnsAndProof.getProof()).thenReturn(verifiedHeader);
+		when(reader.getNextCommittedTxns(any())).thenReturn(verifiedTxnsAndProof);
+
+		processor.syncRequestEventProcessor().process(node, SyncRequest.create(null));
+		verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
+	}
+
 	@Test
 	public void when_remote_sync_request_and_unable__then_dont_do_anything() {
 		SyncRequest request = mock(SyncRequest.class);

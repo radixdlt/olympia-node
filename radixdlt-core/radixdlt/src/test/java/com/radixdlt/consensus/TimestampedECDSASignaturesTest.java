@@ -62,58 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.consensus;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
-import org.radix.network.messaging.Message;
+import org.junit.Test;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.HashMap;
 
-/**
- * RPC Response message for GetVertex call
- */
-@SerializerId2("message.consensus.vertices_response")
-public final class GetVerticesResponseMessage extends Message {
-	@JsonProperty("vertices")
-	@DsonOutput(Output.ALL)
-	private final List<UnverifiedVertex> vertices;
+import static org.mockito.Mockito.mock;
 
-	@JsonCreator
-	public GetVerticesResponseMessage(
-		@JsonProperty(value = "vertices", required = true) List<UnverifiedVertex> vertices
-	) {
-		this.vertices = Objects.requireNonNull(vertices);
-		vertices.forEach(Objects::requireNonNull);
-	}
+public class TimestampedECDSASignaturesTest {
+    @Test(expected = NullPointerException.class)
+    public void deserializationWithInvalidMapThrowsException1() {
+        var map = new HashMap<String, TimestampedECDSASignature>();
+        map.put(null, mock(TimestampedECDSASignature.class));
 
-	public List<UnverifiedVertex> getVertices() {
-		return vertices;
-	}
+        TimestampedECDSASignatures.from(map);
+    }
 
-	@Override
-	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), vertices);
-	}
+    @Test(expected = NullPointerException.class)
+    public void deserializationWithInvalidMapThrowsException2() {
+        var map = new HashMap<String, TimestampedECDSASignature>();
+        map.put("not null string", null);
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-
-		return (o instanceof GetVerticesResponseMessage that)
-			   && Objects.equals(vertices, that.vertices)
-			   && Objects.equals(getTimestamp(), that.getTimestamp());
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(vertices, getTimestamp());
-	}
+        TimestampedECDSASignatures.from(map);
+    }
 }

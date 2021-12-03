@@ -69,11 +69,23 @@ import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
+import static org.mockito.Mockito.mock;
+
 public class VoteDataTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(VoteData.class)
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException1() {
+		new VoteData(null, mock(BFTHeader.class), mock(BFTHeader.class));
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException2() {
+		new VoteData(mock(BFTHeader.class), null, mock(BFTHeader.class));
 	}
 }

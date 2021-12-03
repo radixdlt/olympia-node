@@ -66,6 +66,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -114,7 +115,8 @@ public final class LedgerHeader {
 
 	// TODO: Replace isEndOfEpoch with nextValidatorSet
 	@JsonCreator
-	private LedgerHeader(
+	@VisibleForTesting
+	LedgerHeader(
 		@JsonProperty("epoch") long epoch,
 		@JsonProperty("view") long view,
 		@JsonProperty(value = "accumulator_state", required = true) AccumulatorState accumulatorState,

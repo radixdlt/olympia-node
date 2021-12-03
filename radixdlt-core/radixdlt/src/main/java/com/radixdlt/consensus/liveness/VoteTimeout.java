@@ -101,6 +101,10 @@ public final class VoteTimeout {
     }
 
     public VoteTimeout(View view, long epoch) {
+        if (epoch < 0) {
+            throw new IllegalArgumentException("Epoch can't be < 0");
+        }
+
         this.view = Objects.requireNonNull(view);
         this.epoch = epoch;
     }

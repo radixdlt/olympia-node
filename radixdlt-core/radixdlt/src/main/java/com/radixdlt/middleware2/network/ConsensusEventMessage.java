@@ -64,6 +64,7 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
@@ -90,6 +91,7 @@ public final class ConsensusEventMessage extends Message {
 	@DsonOutput(Output.ALL)
 	private final Vote vote;
 
+	@JsonCreator
 	public ConsensusEventMessage(
 		@JsonProperty("proposal") Proposal proposal,
 		@JsonProperty("vote") Vote vote

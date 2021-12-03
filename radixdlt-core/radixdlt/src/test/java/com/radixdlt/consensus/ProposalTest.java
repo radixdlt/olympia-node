@@ -65,18 +65,17 @@
 package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.crypto.ECDSASignature;
+import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.*;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
-
-import java.util.Optional;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ProposalTest {
 	private Proposal proposal;
@@ -119,5 +118,20 @@ public class ProposalTest {
 	public void sensibleToString() {
 		String s = this.proposal.toString();
 		assertThat(s).contains(vertex.toString());
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializeWithNullThrowsException1() {
+		new Proposal(null, mock(QuorumCertificate.class), mock(ECDSASignature.class), mock(TimeoutCertificate.class));
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializeWithNullThrowsException2() {
+		new Proposal(mock(UnverifiedVertex.class), null, mock(ECDSASignature.class), mock(TimeoutCertificate.class));
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializeWithNullThrowsException3() {
+		new Proposal(mock(UnverifiedVertex.class), mock(QuorumCertificate.class), null, mock(TimeoutCertificate.class));
 	}
 }

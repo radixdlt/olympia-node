@@ -72,4 +72,9 @@ public final class RadixNodeUriTest {
 	public void equals_test() {
 		EqualsVerifier.forClass(RadixNodeUri.class).verify();
 	}
+
+    @Test(expected = NullPointerException.class)
+    public void deserializationWithNullThrowsException() throws Exception {
+        RadixNodeUri.deserialize(null);
+    }
 }

@@ -75,7 +75,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class BFTHeaderTest {
-
 	private BFTHeader testObject;
 	private HashCode id;
 	private LedgerHeader ledgerHeader;
@@ -106,5 +105,20 @@ public class BFTHeaderTest {
 	@Test
 	public void testToString() {
 		assertThat(this.testObject.toString()).contains(BFTHeader.class.getSimpleName());
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException1() {
+		BFTHeader.create(1L, null, mock(LedgerHeader.class));
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deserializationWithNullThrowsException2() {
+		BFTHeader.create(1L, mock(HashCode.class), null);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void deserializationWithInvalidViewThrowsException() {
+		BFTHeader.create(-1L, mock(HashCode.class), mock(LedgerHeader.class));
 	}
 }
