@@ -2,10 +2,10 @@ package com.radixdlt.store.tree;
 
 import com.radixdlt.store.tree.serialization.rlp.RLP;
 
-public class PMTLeaf extends PMTNode {
+public final class PMTLeaf extends PMTNode {
 
-	private static final int EVEN_PREFIX = 2;
-	private static final int ODD_PREFIX = 3;
+	public static final int EVEN_PREFIX = 2;
+	public static final int ODD_PREFIX = 3;
 
 	public PMTLeaf(PMTKey allNibbles, byte[] newValue) {
 		this(null, allNibbles, newValue);
