@@ -64,20 +64,13 @@
 
 package com.radixdlt;
 
-import org.radix.Radix;
-
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.PacemakerMaxExponent;
-import com.radixdlt.consensus.bft.PacemakerRate;
-import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.counters.SystemCounters;
@@ -87,11 +80,6 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.middleware2.InfoSupplier;
-
-import java.util.Map;
-
-import static org.radix.Radix.SYSTEM_VERSION_KEY;
 
 /**
  * Module which manages system info
@@ -152,49 +140,5 @@ public class SystemInfoModule extends AbstractModule {
 			BFTHighQCUpdate.class,
 			inMemorySystemInfo.bftHighQCEventProcessor()
 		);
-	}
-
-	@Provides
-	@Singleton
-	private InfoSupplier infoSupplier(
-		SystemCounters counters,
-		InMemorySystemInfo infoStateManager,
-		@PacemakerTimeout long pacemakerTimeout,
-		@PacemakerRate double pacemakerRate,
-		@PacemakerMaxExponent int pacemakerMaxExponent
-	) {
-		return () -> {
-			var currentEpochView = infoStateManager.getCurrentView();
-			var timeout = infoStateManager.getLastTimeout();
-			var highQC = infoStateManager.getHighestQC();
-
-			return Map.of(
-				"configuration", Map.of(
-					"pacemakerTimeout", pacemakerTimeout,
-					"pacemakerRate", pacemakerRate,
-					"pacemakerMaxExponent", pacemakerMaxExponent
-				),
-				"epochManager", Map.of(
-					"highQC", highQC != null ? Map.of(
-						"epoch", highQC.getProposed().getLedgerHeader().getEpoch(),
-						"view", highQC.getView().number(),
-						"vertexId", highQC.getProposed().getVertexId()
-					) : Map.of(),
-					"currentView", Map.of(
-						"epoch", currentEpochView.getEpoch(),
-						"view", currentEpochView.getView().number()
-					),
-					"lastTimeout", timeout != null ? Map.of(
-						"epoch", timeout.getEpochView().getEpoch(),
-						"view", timeout.getEpochView().getView().number(),
-						"leader", timeout.getLeader().toString(),
-						"timeoutLengthMs", timeout.getBase().timeout().millisecondsWaitTime(),
-						"count", timeout.getBase().timeout().count()
-					) : Map.of()
-				),
-				"counters", counters.toMap(),
-				SYSTEM_VERSION_KEY, Radix.systemVersionInfo().get(SYSTEM_VERSION_KEY)
-			);
-		};
 	}
 }

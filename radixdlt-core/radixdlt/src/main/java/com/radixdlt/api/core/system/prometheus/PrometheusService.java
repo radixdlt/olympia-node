@@ -79,8 +79,8 @@ import org.apache.logging.log4j.Logger;
 import com.google.inject.Inject;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.utils.UInt384;
+import org.radix.Radix;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -124,7 +124,6 @@ public class PrometheusService {
 	private static final String COUNTER_PREFIX = "info_counters_";
 
 	private final SystemCounters systemCounters;
-	private final InfoSupplier infoSupplier;
 	private final NetworkInfoService networkInfoService;
 	private final Addressing addressing;
 	private final InMemorySystemInfo inMemorySystemInfo;
@@ -136,7 +135,6 @@ public class PrometheusService {
 	public PrometheusService(
 		@Endpoints Map<String, Boolean> endpointStatuses,
 		SystemCounters systemCounters,
-		InfoSupplier infoSupplier,
 		PeersView peersView,
 		NetworkInfoService networkInfoService,
 		InMemorySystemInfo inMemorySystemInfo,
@@ -145,7 +143,6 @@ public class PrometheusService {
 	) {
 		this.endpointStatuses = endpointStatuses;
 		this.systemCounters = systemCounters;
-		this.infoSupplier = infoSupplier;
 		this.peersView = peersView;
 		this.networkInfoService = networkInfoService;
 		this.inMemorySystemInfo = inMemorySystemInfo;
@@ -163,11 +160,11 @@ public class PrometheusService {
 	}
 
 	private void exportSystemInfo(StringBuilder builder) {
-		var snapshot = infoSupplier.getInfo();
+		var currentEpochView = inMemorySystemInfo.getCurrentView();
+		var timeout = inMemorySystemInfo.getLastTimeout();
 
-		appendCounter(builder, "info_configuration_pacemakermaxexponent", pacemakerMaxExponent(snapshot));
-		appendCounter(builder, "info_epochmanager_currentview_view", currentView(snapshot));
-		appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpoch(snapshot));
+		appendCounter(builder, "info_epochmanager_currentview_view", currentEpochView.getView().number());
+		appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpochView.getEpoch());
 		appendCounter(builder, "total_peers", peersView.peers().count());
 
 		var totalValidators = inMemorySystemInfo.getEpochProof().getNextValidatorSet()
@@ -186,22 +183,6 @@ public class PrometheusService {
 			"Special metric used to convey information about the current node using labels. Value will always be 0.",
 			0.0
 		);
-	}
-
-	@SuppressWarnings("unchecked")
-	private Number currentView(Map<String, Map<String, Object>> snapshot) {
-		var currentView = (Map<String, Object>) snapshot.get("epochManager").get("currentView");
-		return (Number) currentView.get("view");
-	}
-
-	@SuppressWarnings("unchecked")
-	private Number currentEpoch(Map<String, Map<String, Object>> snapshot) {
-		var currentView = (Map<String, Object>) snapshot.get("epochManager").get("currentView");
-		return (Number) currentView.get("epoch");
-	}
-
-	private Number pacemakerMaxExponent(Map<String, Map<String, Object>> snapshot) {
-		return (Number) snapshot.get("configuration").get("pacemakerMaxExponent");
 	}
 
 	private String prepareNodeInfo() {
@@ -227,7 +208,7 @@ public class PrometheusService {
 	}
 
 	private void addBranchAndCommit(StringBuilder builder) {
-		var branchAndCommit = infoSupplier.getInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
+		var branchAndCommit = Radix.systemVersionInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
 		appendField(builder, "branch_and_commit", branchAndCommit);
 	}
 
