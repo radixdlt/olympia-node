@@ -103,6 +103,10 @@ public final class REProcessedTxn {
 		return events;
 	}
 
+	public ParsedTxn getParsedTxn() {
+		return parsedTxn;
+	}
+
 	public UInt256 getFeePaid() {
 		return parsedTxn.getFeePaid();
 	}

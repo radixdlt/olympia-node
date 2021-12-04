@@ -1021,16 +1021,29 @@ public final class CoreModelMapper {
 			.action(bootUp ? Data.ActionEnum.CREATE : Data.ActionEnum.DELETE));
 	}
 
+	public Operation operation(
+		Particle substate,
+		SubstateId substateId,
+		boolean isBootUp,
+		Function<REAddr, String> addressToSymbol
+	) {
+		var operation = new Operation();
+		var typeId = SubstateTypeId.valueOf(substate.getClass());
+		operation.type(SubstateTypeMapping.getType(typeId));
+		operation.substate(substate(substateId, isBootUp));
+		operation.entityIdentifier(entityIdentifier(substate, addressToSymbol));
+		if (substate instanceof ResourceInBucket resourceInBucket && !resourceInBucket.getAmount().isZero()) {
+			operation.amount(resourceOperation(resourceInBucket, isBootUp, addressToSymbol));
+		}
+		data(substate, isBootUp).ifPresent(operation::data);
+		return operation;
+	}
+
 	public Operation operation(REStateUpdate update, Function<REAddr, String> addressToSymbol) {
 		var operation = new Operation();
 		var substate = (Particle) update.getParsed();
 		operation.type(SubstateTypeMapping.getType(SubstateTypeId.valueOf(update.typeByte())));
 		operation.substate(substate(update.getId(), update.isBootUp()));
-		/*
-			.putOpt("metadata", update.isShutDown() ? null : new JSONObject()
-				.put("substate_data_hex", Bytes.toHexString(update.getRawSubstateBytes().getData()))
-			);
-		 */
 		operation.entityIdentifier(entityIdentifier(substate, addressToSymbol));
 		if (substate instanceof ResourceInBucket resourceInBucket && !resourceInBucket.getAmount().isZero()) {
 			operation.amount(resourceOperation(resourceInBucket, update.isBootUp(), addressToSymbol));

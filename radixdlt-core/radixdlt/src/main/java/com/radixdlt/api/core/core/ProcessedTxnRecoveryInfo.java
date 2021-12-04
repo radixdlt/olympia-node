@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,88 +61,83 @@
  * permissions under this License.
  */
 
-package com.radixdlt.constraintmachine;
+package com.radixdlt.api.core.core;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.constraintmachine.UpSubstate;
+import com.radixdlt.engine.parser.ParsedTxn;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
+import io.netty.buffer.ByteBuf;
 
 import java.nio.ByteBuffer;
-import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Instruction which has been parsed and state checked by Radix Engine
- */
-public final class REStateUpdate {
-	private final REOp op;
-	private final SubstateId id;
-	private final byte typeByte;
-	private final Object parsed;
-	private final Supplier<ByteBuffer> stateBuf;
-	private final int instructionIndex;
+@SerializerId2("xtx")
+public class ProcessedTxnRecoveryInfo {
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private REStateUpdate(REOp op, int instructionIndex, SubstateId id, byte typeByte, Object parsed, Supplier<ByteBuffer> stateBuf) {
-		Objects.requireNonNull(op);
+	@JsonProperty("s")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final List<ShutdownSubstateInfo> shutdownSubstates;
 
-		this.op = op;
-		this.instructionIndex = instructionIndex;
-		this.id = id;
-		this.typeByte = typeByte;
-		this.parsed = parsed;
-		this.stateBuf = stateBuf;
-	}
-
-	public static REStateUpdate of(
-		REOp op,
-		int instructionIndex,
-		SubstateId substateId,
-		byte typeByte,
-		Object parsed,
-		Supplier<ByteBuffer> stateBuf
+	@JsonCreator
+	public ProcessedTxnRecoveryInfo(
+		@JsonProperty("s") List<ShutdownSubstateInfo> shutdownSubstates
 	) {
-		if (op != REOp.DOWN && op != REOp.UP) {
-			throw new IllegalArgumentException();
+		this.shutdownSubstates = shutdownSubstates;
+	}
+
+	public List<List<RawSubstateUpdate>> recoverStateUpdates(ParsedTxn parsedTxn) {
+		var substateGroups = new ArrayList<List<RawSubstateUpdate>>();
+		var substateUpdates = new ArrayList<RawSubstateUpdate>();
+
+		for (int i = 0; i < parsedTxn.instructions().size(); i++) {
+			var instruction = parsedTxn.instructions().get(i);
+			if (!instruction.isStateUpdate()) {
+				if (instruction.getMicroOp() == REInstruction.REMicroOp.END) {
+					substateGroups.add(substateUpdates);
+					substateUpdates = new ArrayList<>();
+				}
+				continue;
+			}
+
+			switch (instruction.getMicroOp()) {
+				case UP -> {
+					UpSubstate upSubstate = instruction.getData();
+					ByteBuffer substate = upSubstate.getSubstateBuffer();
+					SubstateId substateId = upSubstate.getSubstateId();
+					substateUpdates.add(new RawSubstateUpdate(substate, substateId, true));
+				}
+				case DOWN -> {
+					SubstateId substateId = instruction.getData();
+					final int instructionIndex = i;
+					var downSubstate = shutdownSubstates.stream().filter(s -> s.getInstructionIndex() == instructionIndex)
+						.findFirst().orElseThrow(() -> new IllegalStateException("Could not find down substate."));
+
+					var substate = ByteBuffer.wrap(downSubstate.getSubstate());
+					substateUpdates.add(new RawSubstateUpdate(substate, substateId, false));
+				}
+				/*
+				case LDOWN:
+				case VDOWN:
+				case LVDOWN:
+					SubstateId substateId = instruction.getData();
+					break;
+				case DOWNINDEX:
+				 */
+			}
 		}
-		return new REStateUpdate(op, instructionIndex, substateId, typeByte, parsed, stateBuf);
-	}
 
-	public byte typeByte() {
-		return typeByte;
-	}
-
-	public int getInstructionIndex() {
-		return instructionIndex;
-	}
-
-	public SubstateId getId() {
-		return id;
-	}
-
-	public ByteBuffer getStateBuf() {
-		return stateBuf.get();
-	}
-
-	public boolean isBootUp() {
-		return this.op == REOp.UP;
-	}
-
-	public boolean isShutDown() {
-		return this.op == REOp.DOWN;
-	}
-
-	public Object getParsed() {
-		return parsed;
-	}
-
-	public RawSubstateBytes getRawSubstateBytes() {
-		var buffer = stateBuf.get();
-		int remaining = buffer.remaining();
-		var buf = new byte[remaining];
-		buffer.get(buf);
-		return new RawSubstateBytes(id.asBytes(), buf);
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{op=%s state=%s}", getClass().getSimpleName(), op, parsed);
+		return substateGroups;
 	}
 }

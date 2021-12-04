@@ -63,48 +63,130 @@
 
 package com.radixdlt.api.core.core.handlers;
 
-import com.google.common.hash.HashCode;
+import com.google.common.collect.Streams;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
+import com.radixdlt.api.core.core.ProcessedTxnRecoveryInfo;
+import com.radixdlt.api.core.core.openapitools.model.CommittedTransaction;
+import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionMetadata;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsResponse;
+import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
 import com.radixdlt.api.core.core.BerkeleyProcessedTransactionsStore;
-import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.application.tokens.state.TokenResourceMetadata;
+import com.radixdlt.atom.SubstateId;
+import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.parser.ParsedTxn;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
 
-import java.util.Optional;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final BerkeleyProcessedTransactionsStore txnStore;
+	private final BerkeleyLedgerEntryStore ledgerEntryStore;
+	private final LedgerAccumulator ledgerAccumulator;
 	private final CoreModelMapper coreModelMapper;
 
 	@Inject
 	TransactionsHandler(
 		CoreModelMapper coreModelMapper,
-		BerkeleyProcessedTransactionsStore txnStore
+		BerkeleyProcessedTransactionsStore txnStore,
+		BerkeleyLedgerEntryStore ledgerEntryStore,
+		LedgerAccumulator ledgerAccumulator,
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider
 	) {
 		super(CommittedTransactionsRequest.class);
 		this.coreModelMapper = coreModelMapper;
 		this.txnStore = txnStore;
+		this.ledgerEntryStore = ledgerEntryStore;
+		this.ledgerAccumulator = ledgerAccumulator;
+		this.radixEngineProvider = radixEngineProvider;
 	}
 
-	private Optional<HashCode> getAccumulatorHash(long stateVersion) {
-		var previousStateVersion = stateVersion - 1;
-		if (previousStateVersion >= 0) {
-			try (var stream = txnStore.get(previousStateVersion)) {
-				return stream.findFirst()
-					.map(prevTxn -> {
-						var bytes = Bytes.fromHexString(prevTxn.getCommittedStateIdentifier().getTransactionAccumulator());
-						return HashCode.fromBytes(bytes);
-					});
-			}
-		} else {
-			return Optional.of(HashUtils.zero256());
+	private Particle deserialize(ByteBuffer buf) {
+		var deserialization = radixEngineProvider.get().getSubstateDeserialization();
+		try {
+			return deserialization.deserialize(buf);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Failed to deserialize substate.", e);
 		}
+	}
+
+	private String symbol(REAddr tokenAddress) {
+		var mapKey = SystemMapKey.ofResourceData(tokenAddress, SubstateTypeId.TOKEN_RESOURCE_METADATA.id());
+		var substate = radixEngineProvider.get().read(reader -> reader.get(mapKey).orElseThrow());
+		// TODO: This is a bit of a hack to require deserialization, figure out correct abstraction
+		var tokenResourceMetadata = (TokenResourceMetadata) substate;
+		return tokenResourceMetadata.getSymbol();
+	}
+
+	private CommittedTransaction construct(Txn txn, ProcessedTxnRecoveryInfo recoveryInfo, AccumulatorState accumulatorState) {
+		var transactionIdentifier = coreModelMapper.transactionIdentifier(txn.getId());
+		var parser = radixEngineProvider.get().getParser();
+		ParsedTxn parsedTxn;
+		try {
+			parsedTxn = parser.parse(txn);
+		} catch (TxnParseException e) {
+			throw new IllegalStateException("Could not parse already committed transaction", e);
+		}
+
+		var committedTransaction = new CommittedTransaction();
+		recoveryInfo.recoverStateUpdates(parsedTxn).stream()
+			.map(stateUpdateGroup -> {
+				var operationGroup = new OperationGroup();
+				stateUpdateGroup.stream()
+					.map(stateUpdate ->
+						coreModelMapper.operation(
+							deserialize(stateUpdate.getSubstateBuffer()),
+							stateUpdate.getSubstateId(),
+							stateUpdate.isBootUp(),
+							this::symbol
+						)
+					)
+					.forEach(operationGroup::addOperationsItem);
+				return operationGroup;
+			})
+			.forEach(committedTransaction::addOperationGroupsItem);
+
+		var signedBy = parsedTxn.getPayloadHashAndSig()
+			.map(hashAndSig -> {
+				var hash = hashAndSig.getFirst();
+				var sig = hashAndSig.getSecond();
+				return ECPublicKey.recoverFrom(hash, sig)
+					.orElseThrow(() -> new IllegalStateException("Invalid signature on already committed transaction"));
+			});
+
+		return committedTransaction
+			.committedStateIdentifier(coreModelMapper.stateIdentifier(accumulatorState))
+			.metadata(new CommittedTransactionMetadata()
+				.fee(coreModelMapper.nativeTokenAmount(parsedTxn.getFeePaid()))
+				.message(parsedTxn.getMsg().map(Bytes::toHexString).orElse(null))
+				.size(txn.getPayload().length)
+				.hex(Bytes.toHexString(txn.getPayload()))
+				.signedBy(signedBy.map(coreModelMapper::publicKey).orElse(null))
+			)
+			.transactionIdentifier(transactionIdentifier);
 	}
 
 	@Override
@@ -115,7 +197,7 @@ public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransaction
 		var stateIdentifier = coreModelMapper.partialStateIdentifier(request.getStateIdentifier());
 		long stateVersion = stateIdentifier.getFirst();
 		var accumulator = stateIdentifier.getSecond();
-		var currentAccumulator = getAccumulatorHash(stateVersion)
+		var currentAccumulator = txnStore.getAccumulator(stateVersion)
 			.orElseThrow(() -> CoreApiException.notFound(coreModelMapper.notFoundErrorDetails(request.getStateIdentifier())));
 		if (accumulator != null) {
 			var matchesInput = accumulator.equals(currentAccumulator);
@@ -124,11 +206,23 @@ public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransaction
 			}
 		}
 
-		var response = new CommittedTransactionsResponse();
+		final List<ProcessedTxnRecoveryInfo> processedTransactionList;
 		try (var stream = txnStore.get(stateVersion)) {
-			var transactions = stream.limit(limit).collect(Collectors.toList());
-			response.transactions(transactions);
+			processedTransactionList = stream.limit(limit).collect(Collectors.toList());
 		}
+
+		var accumulatorState = new AtomicReference<>(new AccumulatorState(stateVersion, currentAccumulator));
+		var response = new CommittedTransactionsResponse();
+		try (var stream = ledgerEntryStore.getCommittedTxns(stateVersion)) {
+			Streams.mapWithIndex(stream.limit(processedTransactionList.size()), (txn, index) -> {
+				var stored = processedTransactionList.get((int) index);
+				var curAccumulatorState = accumulatorState.get();
+				var nextAccumulatorState = ledgerAccumulator.accumulate(curAccumulatorState, txn.getId().asHashCode());
+				accumulatorState.set(nextAccumulatorState);
+				return construct(txn, stored, nextAccumulatorState);
+			}).forEach(response::addTransactionsItem);
+		}
+
 		return response
 			.stateIdentifier(new StateIdentifier()
 				.stateVersion(stateVersion)

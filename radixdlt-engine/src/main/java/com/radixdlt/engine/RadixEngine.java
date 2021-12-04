@@ -527,6 +527,12 @@ public final class RadixEngine<M> {
 		}
 	}
 
+	public SubstateSerialization getSubstateSerialization() {
+		synchronized (stateUpdateEngineLock) {
+			return serialization;
+		}
+	}
+
 	public SubstateDeserialization getSubstateDeserialization() {
 		synchronized (stateUpdateEngineLock) {
 			return constraintMachine.getDeserialization();
