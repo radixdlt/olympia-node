@@ -269,10 +269,11 @@ public final class CoreModelMapper {
 			return new NotEnoughResourcesError()
 				.attemptedToTake(new ResourceAmount()
 					.resourceIdentifier(resourceIdentifier)
-					.value(notEnoughResourcesException.getAvailable().toString()))
+					.value(notEnoughResourcesException.getRequested().toString()))
 				.available(new ResourceAmount()
 					.resourceIdentifier(resourceIdentifier)
-					.value(notEnoughResourcesException.getRequested().toString()));
+					.value(notEnoughResourcesException.getAvailable().toString()))
+				.type(NotEnoughResourcesError.class.getSimpleName());
 		}
 
 		throw new IllegalStateException(e);
@@ -537,11 +538,11 @@ public final class CoreModelMapper {
 		if (resource instanceof com.radixdlt.api.core.core.model.TokenResource tokenResource) {
 			return new TokenResourceIdentifier()
 				.rri(addressing.forResources().of(tokenResource.getSymbol(), tokenResource.getTokenAddress()))
-				.type("TokenResourceIdentifier");
+				.type("Token");
 		} else if (resource instanceof StakeUnitResource stakeUnitResource) {
 			return new StakeUnitResourceIdentifier()
 				.validatorAddress(addressing.forValidators().of(stakeUnitResource.getValidatorKey()))
-				.type("StakeUnitResourceIdentifier");
+				.type("StakeUnit");
 		} else {
 			throw new IllegalStateException("Unknown resource " + resource);
 		}
