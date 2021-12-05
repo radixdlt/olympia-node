@@ -354,7 +354,7 @@ public final class ConstructionBuildTransferStakeUnstakeTest {
 			coreModelMapper.stakeUnit(self),
 			stakeAmount.toSubunits(),
 			coreModelMapper.entityIdentifier(REAddr.ofPubKeyAccount(self)),
-			coreModelMapper.entityIdentifierPreparedUnstake(selfAddress, self)
+			coreModelMapper.entityIdentifierPreparedUnstake(selfAddress)
 		);
 
 		// Act
