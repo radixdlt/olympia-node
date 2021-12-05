@@ -269,10 +269,11 @@ public final class CoreModelMapper {
 			return new NotEnoughResourcesError()
 				.attemptedToTake(new ResourceAmount()
 					.resourceIdentifier(resourceIdentifier)
-					.value(notEnoughResourcesException.getAvailable().toString()))
+					.value(notEnoughResourcesException.getRequested().toString()))
 				.available(new ResourceAmount()
 					.resourceIdentifier(resourceIdentifier)
-					.value(notEnoughResourcesException.getRequested().toString()));
+					.value(notEnoughResourcesException.getAvailable().toString()))
+				.type(NotEnoughResourcesError.class.getSimpleName());
 		}
 
 		throw new IllegalStateException(e);
@@ -340,33 +341,40 @@ public final class CoreModelMapper {
 					return AccountVaultEntity.from(accountAddress);
 				}
 
-				var metadata = subEntity.getMetadata();
-				if (metadata == null) {
-					throw invalidSubEntity(subEntity);
-				}
+				switch (subEntity.getAddress()) {
+					case "prepared_stake" -> {
+						var metadata = subEntity.getMetadata();
+						if (metadata == null || metadata.getEpochUnlock() != null || metadata.getValidatorAddress() == null) {
+							throw invalidSubEntity(subEntity);
+						}
+						var validator = addressing.forValidators().parseOrThrow(metadata.getValidatorAddress(), s -> invalidAddress(address));
+						return PreparedStakeVaultEntity.from(
+							accountAddress,
+							validator
+						);
+					}
+					case "prepared_unstake" -> {
+						var metadata = subEntity.getMetadata();
+						if (metadata != null) {
+							throw invalidSubEntity(subEntity);
+						}
+						return PreparedUnstakeVaultEntity.from(accountAddress);
+					}
+					case "exiting_stake" -> {
+						var metadata = subEntity.getMetadata();
+						if (metadata == null || metadata.getEpochUnlock() == null || metadata.getValidatorAddress() == null) {
+							throw invalidSubEntity(subEntity);
+						}
 
-				// Exiting stake is the only enity which should have epoch unlock
-				if ((metadata.getEpochUnlock() == null) == subEntity.getAddress().equals("exiting_stake")) {
-					throw invalidSubEntity(subEntity);
-				}
-
-				var validator = addressing.forValidators().parseOrThrow(metadata.getValidatorAddress(), s -> invalidAddress(address));
-				return switch (subEntity.getAddress()) {
-					case "prepared_stake" -> PreparedStakeVaultEntity.from(
-						accountAddress,
-						validator
-					);
-					case "prepared_unstake" -> PreparedUnstakeVaultEntity.from(
-						accountAddress,
-						validator
-					);
-					case "exiting_stake" -> ExitingStakeVaultEntity.from(
-						accountAddress,
-						validator,
-						metadata.getEpochUnlock()
-					);
+						var validator = addressing.forValidators().parseOrThrow(metadata.getValidatorAddress(), s -> invalidAddress(address));
+						return ExitingStakeVaultEntity.from(
+							accountAddress,
+							validator,
+							metadata.getEpochUnlock()
+						);
+					}
 					default -> throw invalidSubEntity(subEntity);
-				};
+				}
 			}
 			case RESOURCE -> {
 				var pair = addressing.forResources().parseOrThrow(address, s -> invalidAddress(address));
@@ -530,11 +538,11 @@ public final class CoreModelMapper {
 		if (resource instanceof com.radixdlt.api.core.core.model.TokenResource tokenResource) {
 			return new TokenResourceIdentifier()
 				.rri(addressing.forResources().of(tokenResource.getSymbol(), tokenResource.getTokenAddress()))
-				.type("TokenResourceIdentifier");
+				.type("Token");
 		} else if (resource instanceof StakeUnitResource stakeUnitResource) {
 			return new StakeUnitResourceIdentifier()
 				.validatorAddress(addressing.forValidators().of(stakeUnitResource.getValidatorKey()))
-				.type("StakeUnitResourceIdentifier");
+				.type("StakeUnit");
 		} else {
 			throw new IllegalStateException("Unknown resource " + resource);
 		}
@@ -553,12 +561,7 @@ public final class CoreModelMapper {
 				);
 		} else if (entity instanceof PreparedUnstakeVaultEntity unstake) {
 			return entityIdentifier(unstake.getAccountAddress())
-				.subEntity(new SubEntity()
-					.address("prepared_unstake")
-					.metadata(new SubEntityMetadata()
-						.validatorAddress(addressing.forValidators().of(unstake.getValidatorKey()))
-					)
-				);
+				.subEntity(new SubEntity().address("prepared_unstake"));
 		} else if (entity instanceof ValidatorEntity validator) {
 			return entityIdentifier(validator.getValidatorKey());
 		} else if (entity instanceof ValidatorSystemEntity validatorSystem) {
@@ -602,15 +605,10 @@ public final class CoreModelMapper {
 	}
 
 
-	public EntityIdentifier entityIdentifierPreparedUnstake(REAddr accountAddress, ECPublicKey validatorKey) {
+	public EntityIdentifier entityIdentifierPreparedUnstake(REAddr accountAddress) {
 		return new EntityIdentifier()
 			.address(addressing.forAccounts().of(accountAddress))
-			.subEntity(new SubEntity()
-				.address("prepared_unstake")
-				.metadata(new SubEntityMetadata()
-					.validatorAddress(addressing.forValidators().of(validatorKey))
-				)
-			);
+			.subEntity(new SubEntity().address("prepared_unstake"));
 	}
 
 	public EntityIdentifier entityIdentifierPreparedStake(REAddr accountAddress, ECPublicKey validatorKey) {

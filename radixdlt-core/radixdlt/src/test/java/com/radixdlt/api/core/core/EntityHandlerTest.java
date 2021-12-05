@@ -333,7 +333,7 @@ public class EntityHandlerTest {
 		var address = REAddr.ofPubKeyAccount(TEST_KEY.getPublicKey());
 		var request = new EntityRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
-			.entityIdentifier(coreModelMapper.entityIdentifierPreparedUnstake(address, TEST_KEY.getPublicKey()));
+			.entityIdentifier(coreModelMapper.entityIdentifierPreparedUnstake(address));
 		var response = sut.handleRequest(request);
 
 		// Assert

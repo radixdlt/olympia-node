@@ -76,11 +76,9 @@ import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -88,19 +86,13 @@ import static com.radixdlt.atom.SubstateTypeId.PREPARED_UNSTAKE;
 
 public final class PreparedUnstakeVaultEntity implements Entity {
 	private final REAddr accountAddress;
-	private final ECPublicKey validatorKey;
 
-	PreparedUnstakeVaultEntity(REAddr accountAddress, ECPublicKey validatorKey) {
+	PreparedUnstakeVaultEntity(REAddr accountAddress) {
 		this.accountAddress = accountAddress;
-		this.validatorKey = validatorKey;
 	}
 
 	public REAddr getAccountAddress() {
 		return accountAddress;
-	}
-
-	public ECPublicKey getValidatorKey() {
-		return validatorKey;
 	}
 
 	@Override
@@ -130,14 +122,16 @@ public final class PreparedUnstakeVaultEntity implements Entity {
 
 	@Override
 	public List<ResourceQuery> getResourceQueries() {
-
-		var buf = ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + REAddr.PUB_KEY_BYTES);
-		buf.put(PREPARED_UNSTAKE.id());
-		buf.put((byte) 0); // Reserved byte
-		buf.put(validatorKey.getCompressedBytes());
-		buf.put(accountAddress.getBytes());
-		var index = SubstateIndex.<ResourceInBucket>create(buf.array(), PreparedUnstakeOwnership.class);
-		return List.of(ResourceQuery.from(index));
+		var index = SubstateIndex.<ResourceInBucket>create(
+			PREPARED_UNSTAKE.id(),
+			PreparedUnstakeOwnership.class
+		);
+		var query = ResourceQuery.from(
+			index,
+			r -> r.bucket().resourceAddr() == null && r.bucket().getEpochUnlock().equals(0L)
+				&& r.bucket().getOwner().equals(accountAddress)
+		);
+		return List.of(query);
 	}
 
 	@Override
@@ -145,7 +139,7 @@ public final class PreparedUnstakeVaultEntity implements Entity {
 		return List.of();
 	}
 
-	public static PreparedUnstakeVaultEntity from(REAddr accountAddress, ECPublicKey validatorKey) {
-		return new PreparedUnstakeVaultEntity(accountAddress, validatorKey);
+	public static PreparedUnstakeVaultEntity from(REAddr accountAddress) {
+		return new PreparedUnstakeVaultEntity(accountAddress);
 	}
 }

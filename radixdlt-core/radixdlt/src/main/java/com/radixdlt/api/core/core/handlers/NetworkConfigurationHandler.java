@@ -74,6 +74,7 @@ import com.radixdlt.networks.NetworkId;
 import org.radix.Radix;
 
 import static org.radix.Radix.SYSTEM_VERSION_KEY;
+import static org.radix.Radix.VERSION_STRING_KEY;
 
 public class NetworkConfigurationHandler extends CoreJsonRpcHandler<Void, NetworkConfigurationResponse> {
 	private final Network network;
@@ -100,7 +101,11 @@ public class NetworkConfigurationHandler extends CoreJsonRpcHandler<Void, Networ
 			.version(
 				new NetworkConfigurationResponseVersion()
 					.apiVersion("0.9.0")
-					.coreVersion(Radix.systemVersionInfo().get(SYSTEM_VERSION_KEY).toString())
+					.coreVersion(Radix.systemVersionInfo()
+						.get(SYSTEM_VERSION_KEY)
+						.get(VERSION_STRING_KEY)
+						.toString()
+					)
 			);
 	}
 }
