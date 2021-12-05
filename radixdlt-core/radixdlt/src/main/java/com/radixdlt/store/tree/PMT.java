@@ -1,11 +1,11 @@
 package com.radixdlt.store.tree;
 
-import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.store.tree.hash.HashFunction;
+import com.radixdlt.store.tree.hash.SHA256;
 import com.radixdlt.store.tree.storage.PMTCache;
 import com.radixdlt.store.tree.storage.PMTStorage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.spongycastle.crypto.digests.SHA3Digest;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -18,6 +18,7 @@ public class PMT {
 
 	private final PMTStorage db;
 	private final PMTCache cache;
+	private final HashFunction hashFunction;
 	private PMTNode root;
 
 	// API:
@@ -37,30 +38,35 @@ public class PMT {
 	// serialization
 
 	public PMT(PMTStorage db) {
-		this(db, Duration.of(10, ChronoUnit.MINUTES));
+		this(db, new SHA256(), Duration.of(10, ChronoUnit.MINUTES));
 	}
 
-	public PMT(PMTStorage db, Duration cacheExpiryAfter) {
+	public PMT(PMTStorage db, HashFunction hashFunction, Duration cacheExpiryAfter) {
 		this.db = db;
 		this.cache = new PMTCache(
 			CACHE_MAXIMUM_SIZE,
 			cacheExpiryAfter,
 			this::nodeLoader
 		);
+		this.hashFunction = hashFunction;
+	}
+
+	public byte[] represent(PMTNode node) {
+		return represent(node, this.hashFunction);
+	}
+
+	public static byte[] represent(PMTNode node, HashFunction hashFunction) {
+		var ser = node.serialize();
+		if (hasDbRepresentation(ser)) {
+			return hashFunction.hash(ser);
+		} else {
+			return ser;
+		}
 	}
 
 	public static boolean hasDbRepresentation(byte[] serializedNode) {
 		// INFO: the DB_SIZE_CONDITION relates to hash size
 		return serializedNode.length >= PMTNode.DB_SIZE_COND;
-	}
-
-	public static byte[] represent(PMTNode node) {
-		var ser = node.serialize();
-		if (hasDbRepresentation(ser)) {
-			return sha3(ser);
-		} else {
-			return ser;
-		}
 	}
 
 	public byte[] get(byte[] key) {
@@ -98,7 +104,7 @@ public class PMT {
 						 this.cache.put(represent(sanitizedAcc), sanitizedAcc);
 						 byte[] serialisedNode = sanitizedAcc.serialize();
 						 if (hasDbRepresentation(serialisedNode)) {
-							 this.db.save(sha3(serialisedNode), serialisedNode);
+							 this.db.save(hash(serialisedNode), serialisedNode);
 						 }
 					 });
 				this.root = acc.getTip();
@@ -111,10 +117,10 @@ public class PMT {
 				e.getMessage(),
 				TreeUtils.toHexString(key),
 				TreeUtils.toHexString(val),
-				TreeUtils.toHexString(root == null ? null : sha3(root)));
+				TreeUtils.toHexString(root == null ? null : hash(root)));
 			throw e;
 		}
-		return root == null ? null : sha3(root);
+		return root == null ? null : hash(root);
 	}
 
 	PMTAcc getValue(PMTNode current, PMTKey key, PMTAcc acc) {
@@ -181,7 +187,10 @@ public class PMT {
 					case OLD:
 						var remainder = commonPath.getRemainder(PMTPath.Subtree.OLD);
 						var newLeaf = new PMTLeaf(remainder.getFirstNibble(), remainder.getTailNibbles(), val);
-						var newBranch = new PMTBranch(current.getValue(), newLeaf);
+						var newBranch = new PMTBranch(
+								current.getValue(),
+								new PMTBranch.PMTBranchChild(newLeaf.getBranchNibble(), represent(newLeaf))
+						);
 						var newExt = insertExtension(commonPath, newBranch);
 						acc.setNewTip(newExt == null ? newBranch : newExt);
 						acc.add(newLeaf, newBranch, newExt);
@@ -190,7 +199,10 @@ public class PMT {
 					case NEW:
 						remainder = commonPath.getRemainder(PMTPath.Subtree.NEW);
 						newLeaf = new PMTLeaf(remainder.getFirstNibble(), remainder.getTailNibbles(), current.value);
-						newBranch = new PMTBranch(val, newLeaf);
+						newBranch = new PMTBranch(
+								val,
+								new PMTBranch.PMTBranchChild(newLeaf.getBranchNibble(), represent(newLeaf))
+						);
 						newExt = insertExtension(commonPath, newBranch);
 						acc.setNewTip(newExt == null ? newBranch : newExt);
 						acc.add(newLeaf, newBranch, newExt);
@@ -201,7 +213,11 @@ public class PMT {
 						var remainderOld = commonPath.getRemainder(PMTPath.Subtree.OLD);
 						var newLeafNew = new PMTLeaf(remainderNew.getFirstNibble(), remainderNew.getTailNibbles(), val);
 						var newLeafOld = new PMTLeaf(remainderOld.getFirstNibble(), remainderOld.getTailNibbles(), current.value);
-						newBranch = new PMTBranch(null, newLeafNew, newLeafOld);
+						newBranch = new PMTBranch(
+								null,
+								new PMTBranch.PMTBranchChild(newLeafNew.getBranchNibble(), represent(newLeafNew)),
+								new PMTBranch.PMTBranchChild(newLeafOld.getBranchNibble(), represent(newLeafOld))
+						);
 						newExt = insertExtension(commonPath, newBranch);
 						acc.setNewTip(newExt == null ? newBranch : newExt);
 						acc.add(newLeafNew, newLeafOld, newBranch, newExt);
@@ -244,7 +260,7 @@ public class PMT {
 							subTip = acc.getTip();
 						}
 						var branchWithNext = cloneBranch(currentBranch);
-						branchWithNext.setNibble(key.getFirstNibble(), subTip);
+						branchWithNext.setNibble(new PMTBranch.PMTBranchChild(key.getFirstNibble(), represent(subTip)));
 						acc.setNewTip(branchWithNext);
 						acc.add(branchWithNext);
 						acc.mark(current);
@@ -256,7 +272,10 @@ public class PMT {
 					case OLD:
 						var remainder = commonPath.getRemainder(PMTPath.Subtree.OLD);
 						var newShorter = splitExtension(remainder, current, acc);
-						var newBranch = new PMTBranch(val, newShorter);
+						var newBranch = new PMTBranch(
+							val,
+							new PMTBranch.PMTBranchChild(newShorter.getBranchNibble(), represent(newShorter))
+						);
 						var newExt = insertExtension(commonPath, newBranch);
 						acc.setNewTip(newExt == null ? newBranch : newExt);
 						acc.add(newBranch, newExt);
@@ -280,7 +299,11 @@ public class PMT {
 						var remainderOld = commonPath.getRemainder(PMTPath.Subtree.OLD);
 						var newLeaf = new PMTLeaf(remainderNew.getFirstNibble(), remainderNew.getTailNibbles(), val);
 						newShorter = splitExtension(remainderOld, current, acc);
-						newBranch = new PMTBranch(null, newLeaf, newShorter);
+						newBranch = new PMTBranch(
+								null,
+								new PMTBranch.PMTBranchChild(newLeaf.getBranchNibble(), represent(newLeaf)),
+								new PMTBranch.PMTBranchChild(newShorter.getBranchNibble(), represent(newShorter))
+						);
 						newExt = insertExtension(commonPath, newBranch);
 						acc.setNewTip(newExt == null ? newBranch : newExt);
 						acc.add(newShorter, newBranch, newExt, newLeaf);
@@ -336,23 +359,8 @@ public class PMT {
 		return PMTNode.deserialize(node);
 	}
 
-	private static byte[] sha3(byte[] data) {
-		SHA3Digest sha3Digest = new SHA3Digest(256);
-		byte[] hashed = new byte[sha3Digest.getDigestSize()];
-		if (data.length != 0) {
-			sha3Digest.update(data, 0, data.length);
-		}
-		sha3Digest.doFinal(hashed, 0);
-		return hashed;
-	}
-
-	private byte[] sha3(PMTNode node) {
-		return sha3(node.serialize());
-	}
-
-	private static byte[] hash(byte[] serialized) {
-		var hash = HashUtils.sha256(serialized).asBytes();
-		return hash;
+	private byte[] hash(byte[] serialized) {
+		return this.hashFunction.hash(serialized);
 	}
 
 	private byte[] hash(PMTNode node) {
