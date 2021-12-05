@@ -1,5 +1,6 @@
 package com.radixdlt.store.tree;
 
+import com.radixdlt.store.tree.hash.Keccak256;
 import com.radixdlt.store.tree.storage.InMemoryPMTStorage;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Assert;
@@ -10,10 +11,12 @@ import java.time.temporal.ChronoUnit;
 
 public class EthereumTxTreeTest {
 
+    private static final Keccak256 KECCAK_256 = new Keccak256();
+
     @Test
     public void when_tx_tree_of_eth_block_10593417_created_using_cache__then_tx_root_is_correct() {
         var storage = new InMemoryPMTStorage();
-        var tree = new PMT(storage, Duration.of(10, ChronoUnit.MINUTES));
+        var tree = new PMT(storage, KECCAK_256, Duration.of(10, ChronoUnit.MINUTES));
 
         createEthereumTxTreeTest(tree);
     }
@@ -21,7 +24,7 @@ public class EthereumTxTreeTest {
     @Test
     public void when_tx_tree_of_eth_block_10593417_created_not_using_cache__then_tx_root_is_correct() {
         var storage = new InMemoryPMTStorage();
-        var tree = new PMT(storage, Duration.ZERO);
+        var tree = new PMT(storage, KECCAK_256, Duration.ZERO);
 
         createEthereumTxTreeTest(tree);
     }
