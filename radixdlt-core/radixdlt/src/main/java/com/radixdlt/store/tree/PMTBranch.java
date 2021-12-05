@@ -1,5 +1,6 @@
 package com.radixdlt.store.tree;
 
+import com.google.common.base.Objects;
 import com.radixdlt.store.tree.serialization.rlp.RLP;
 
 import java.util.Arrays;
@@ -11,13 +12,45 @@ public final class PMTBranch extends PMTNode {
 	private byte[][] slices;
 	private int slicesCounter = 0; // INFO: for removal
 
-	PMTBranch(byte[][] slices, byte[] value) {
+	record PMTBranchChild(PMTKey branchNibble, byte[] representation) {
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			PMTBranchChild that = (PMTBranchChild) o;
+			return Objects.equal(branchNibble, that.branchNibble)
+					&& Arrays.equals(representation, that.representation);
+		}
+
+		@Override
+		public int hashCode() {
+			int result = Objects.hashCode(branchNibble);
+			result = 31 * result + Arrays.hashCode(representation);
+			return result;
+
+		}
+
+		@Override
+		public String toString() {
+			return "PMTBranchChild{"
+					+ "branchNibble=" + branchNibble
+					+ ", representation=" + Arrays.toString(representation)
+					+ '}';
+		}
+	}
+
+	 PMTBranch(byte[][] slices, byte[] value) {
 		this.nodeType = NodeType.BRANCH;
 		this.slices = slices;
 		this.value = value;
 	}
 
-	public PMTBranch(byte[] value, PMTNode... nextNode) {
+	public PMTBranch(byte[] value, PMTBranchChild... nextNode) {
 		this.nodeType = NodeType.BRANCH;
 		this.slices = new byte[NUMBER_OF_NIBBLES][];
 		Arrays.fill(slices, new byte[0]);
@@ -32,17 +65,13 @@ public final class PMTBranch extends PMTNode {
 		return slices[nib];
 	}
 
-	public PMTBranch setNibble(PMTKey nibble, PMTNode nextNode) {
-		var sliceKey = nibble.getFirstNibbleValue();
+	public PMTBranch setNibble(PMTBranchChild nextNode) {
+		var sliceKey = nextNode.branchNibble.getFirstNibbleValue();
 		if (this.slices[sliceKey] == null) {
 			slicesCounter++;
 		}
-		this.slices[sliceKey] = PMT.represent(nextNode);
+		this.slices[sliceKey] = nextNode.representation;
 		return this;
-	}
-
-	private PMTBranch setNibble(PMTNode nextNode) {
-		return setNibble(nextNode.getBranchNibble(), nextNode);
 	}
 
 	public PMTBranch copyForEdit() {
@@ -63,5 +92,4 @@ public final class PMTBranch extends PMTNode {
 		list[slices.length] = RLP.encodeElement(value == null ? new byte[0] : value);
 		return RLP.encodeList(list);
 	}
-
 }
