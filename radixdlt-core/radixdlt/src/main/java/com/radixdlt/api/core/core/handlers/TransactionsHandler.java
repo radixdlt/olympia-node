@@ -156,14 +156,15 @@ public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransaction
 			.map(stateUpdateGroup -> {
 				var operationGroup = new OperationGroup();
 				stateUpdateGroup.stream()
-					.map(stateUpdate ->
-						coreModelMapper.operation(
-							deserialize(stateUpdate.getSubstateBuffer()),
-							stateUpdate.getSubstateId(),
-							stateUpdate.isBootUp(),
+					.map(stateUpdate -> {
+						var substateOperation = stateUpdate.toOperation(radixEngineProvider);
+						return coreModelMapper.operation(
+							substateOperation.getSubstate(),
+							substateOperation.getSubstateId(),
+							substateOperation.isBootUp(),
 							this::symbol
-						)
-					)
+						);
+					})
 					.forEach(operationGroup::addOperationsItem);
 				return operationGroup;
 			})

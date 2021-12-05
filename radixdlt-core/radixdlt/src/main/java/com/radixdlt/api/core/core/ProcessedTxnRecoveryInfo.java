@@ -66,6 +66,7 @@ package com.radixdlt.api.core.core;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
+import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.UpSubstate;
@@ -86,6 +87,7 @@ public class ProcessedTxnRecoveryInfo {
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	// TODO: Change this to be a map
 	@JsonProperty("s")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final List<ShutdownSubstateInfo> shutdownSubstates;
@@ -97,9 +99,10 @@ public class ProcessedTxnRecoveryInfo {
 		this.shutdownSubstates = shutdownSubstates;
 	}
 
-	public List<List<RawSubstateUpdate>> recoverStateUpdates(ParsedTxn parsedTxn) {
-		var substateGroups = new ArrayList<List<RawSubstateUpdate>>();
-		var substateUpdates = new ArrayList<RawSubstateUpdate>();
+	public List<List<RecoverableSubstateUpdate>> recoverStateUpdates(ParsedTxn parsedTxn) {
+		var substateGroups = new ArrayList<List<RecoverableSubstateUpdate>>();
+		var substateUpdates = new ArrayList<RecoverableSubstateUpdate>();
+		var upSubstates = new ArrayList<UpSubstate>();
 
 		for (int i = 0; i < parsedTxn.instructions().size(); i++) {
 			var instruction = parsedTxn.instructions().get(i);
@@ -117,24 +120,57 @@ public class ProcessedTxnRecoveryInfo {
 					ByteBuffer substate = upSubstate.getSubstateBuffer();
 					SubstateId substateId = upSubstate.getSubstateId();
 					substateUpdates.add(new RawSubstateUpdate(substate, substateId, true));
+					upSubstates.add(upSubstate);
 				}
 				case DOWN -> {
 					SubstateId substateId = instruction.getData();
 					final int instructionIndex = i;
-					var downSubstate = shutdownSubstates.stream().filter(s -> s.getInstructionIndex() == instructionIndex)
+					var downSubstate = shutdownSubstates.stream()
+						.filter(s -> s.getInstructionIndex() == instructionIndex)
 						.findFirst().orElseThrow(() -> new IllegalStateException("Could not find down substate."));
 
 					var substate = ByteBuffer.wrap(downSubstate.getSubstate());
 					substateUpdates.add(new RawSubstateUpdate(substate, substateId, false));
 				}
+				case LDOWN -> {
+					SubstateId substateId = instruction.getData();
+					var index = substateId.getIndex().orElseThrow(() -> new IllegalStateException("Could not find index"));
+					var substate = upSubstates.get(index).getSubstateBuffer();
+					substateUpdates.add(new RawSubstateUpdate(substate, substateId, false));
+				}
 				/*
-				case LDOWN:
-				case VDOWN:
+				case VDOWN -> {
+					SubstateId substateId = instruction.getData();
+					final int instructionIndex = i;
+					var downSubstate = shutdownSubstates.stream()
+						.filter(s -> s.getInstructionIndex() == instructionIndex)
+						.findFirst().orElseThrow(() -> new IllegalStateException("Could not find down substate."));
+
+					var virtualType = downSubstate.getSubstate()[0];
+					substateUpdates.add(new RawSubstateUpdate(substate, substateId, false));
+
+					var parentBuf = store.verifyVirtualSubstate(substateId);
+					var parent = (VirtualParent) deserialization.deserialize(parentBuf);
+					var typeByte = parent.getData()[0];
+					var keyBuf = substateId.getVirtualKey().orElseThrow();
+					return virtualSubstateDeserialization.keyToSubstate(typeByte, keyBuf);
+
+				}
 				case LVDOWN:
 					SubstateId substateId = instruction.getData();
 					break;
-				case DOWNINDEX:
 				 */
+				case DOWNINDEX -> {
+					final int instructionIndex = i;
+					shutdownSubstates.stream().filter(s -> s.getInstructionIndex() == instructionIndex)
+						.map(s -> {
+							var substate = ByteBuffer.wrap(s.getSubstate());
+							var substateId = s.getSubstateId().map(SubstateId::fromBytes)
+								.orElseThrow(() -> new IllegalStateException("DownIndex does not contain substate"));
+							return new RawSubstateUpdate(substate, substateId, false);
+						})
+						.forEach(substateUpdates::add);
+				}
 			}
 		}
 
