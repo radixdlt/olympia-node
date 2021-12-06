@@ -71,6 +71,7 @@ public final class CoreApiException extends Exception {
 	private final CoreError errorDetails;
 
 	private CoreApiException(CoreApiErrorCode errorCode, CoreError errorDetails) {
+		super(errorCode + ": " + errorDetails);
 		this.errorCode = errorCode;
 		this.errorDetails = errorDetails;
 	}
@@ -123,6 +124,10 @@ public final class CoreApiException extends Exception {
 
 		public String getMessage() {
 			return message;
+		}
+
+		public String toString() {
+			return errorCode + " " + message;
 		}
 	}
 }

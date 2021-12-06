@@ -686,6 +686,18 @@ public final class CoreModelMapper {
 			.value(value.toString());
 	}
 
+	public ResourceAmount stakeUnitAmount(boolean positive, ECPublicKey validatorKey, UInt256 value) {
+		return new ResourceAmount()
+			.resourceIdentifier(stakeUnit(validatorKey))
+			.value(positive ? value.toString() : "-" + value);
+	}
+
+	public ResourceAmount stakeUnitAmount(boolean positive, String validatorAddress, UInt256 value) {
+		return new ResourceAmount()
+			.resourceIdentifier(new StakeUnitResourceIdentifier().validatorAddress(validatorAddress).type("StakeUnit"))
+			.value(positive ? value.toString() : "-" + value);
+	}
+
 	public ResourceAmount nativeTokenAmount(UInt256 value) {
 		return nativeTokenAmount(true, value);
 	}

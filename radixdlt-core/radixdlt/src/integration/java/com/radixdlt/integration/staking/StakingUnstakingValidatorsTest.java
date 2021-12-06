@@ -67,23 +67,16 @@ package com.radixdlt.integration.staking;
 import com.google.common.collect.ClassToInstanceMap;
 import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.handlers.ConstructionSubmitHandler;
 import com.radixdlt.api.core.core.handlers.EngineConfigurationHandler;
 import com.radixdlt.api.core.core.handlers.EngineStatusHandler;
 import com.radixdlt.api.core.core.handlers.EntityHandler;
-import com.radixdlt.api.core.core.handlers.SignHandler;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
 import com.radixdlt.api.core.core.openapitools.model.EngineStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
-import com.radixdlt.api.core.core.openapitools.model.MempoolFullError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.SignRequest;
 import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
-import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
-import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -100,7 +93,6 @@ import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.store.LastProof;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -121,7 +113,6 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.system.state.ValidatorStakeData;
@@ -130,16 +121,6 @@ import com.radixdlt.application.tokens.state.ExitingStake;
 import com.radixdlt.application.tokens.state.PreparedStake;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.AllowDelegationFlag;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.RegisterValidator;
-import com.radixdlt.atom.actions.StakeTokens;
-import com.radixdlt.atom.actions.TransferToken;
-import com.radixdlt.atom.actions.UnregisterValidator;
-import com.radixdlt.atom.actions.UnstakeTokens;
-import com.radixdlt.atom.actions.UpdateAllowDelegationFlag;
-import com.radixdlt.atom.actions.UpdateValidatorFee;
-import com.radixdlt.atom.actions.UpdateValidatorOwner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -505,84 +486,18 @@ public class StakingUnstakingValidatorsTest {
 
 		var random = new Random(12345);
 
+		var randomTransactionSubmitter = new RandomTransactionSubmitter(deterministicRunner, random);
+
 		for (int i = 0; i < ACTION_ROUNDS; i++) {
 			deterministicRunner.processForCount(100);
 
-			var nodeIndex = random.nextInt(nodeKeys.size());
-			var nodeInjector = this.deterministicRunner.getNode(nodeIndex);
-			var radixEngine = nodeInjector.getInstance(
-				Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() { })
-			);
-			var signHandler = nodeInjector.getInstance(SignHandler.class);
-			var submitHandler = nodeInjector.getInstance(ConstructionSubmitHandler.class);
-			var coreModelMapper = nodeInjector.getInstance(CoreModelMapper.class);
-
-			var privKey = nodeKeys.get(nodeIndex);
-			var acct = REAddr.ofPubKeyAccount(privKey.getPublicKey());
-			var to = nodeKeys.get(random.nextInt(nodeKeys.size())).getPublicKey();
-			var amount = Amount.ofTokens(random.nextInt(10) * 10 + 1).toSubunits();
-
 			var next = random.nextInt(16);
-			final TxAction action;
-			switch (next) {
-				case 0:
-					action = new TransferToken(REAddr.ofNativeToken(), acct, REAddr.ofPubKeyAccount(to), amount);
-					break;
-				case 1:
-					action = new StakeTokens(acct, to, amount);
-					break;
-				case 2:
-					var unstakeAmt = random.nextBoolean() ? UInt256.from(random.nextLong()) : amount;
-					action = new UnstakeTokens(to, acct, unstakeAmt);
-					break;
-				case 3:
-					action = new RegisterValidator(privKey.getPublicKey());
-					break;
-				case 4:
-					// Only unregister once in a while
-					if (nodeIndex <= 1) {
-						continue;
-					}
-
-					action = new UnregisterValidator(privKey.getPublicKey());
-					break;
-				case 5:
-					deterministicRunner.restartNode(nodeIndex);
-					continue;
-				case 6:
-					action = new UpdateValidatorFee(privKey.getPublicKey(), random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
-					break;
-				case 7:
-					action = new UpdateValidatorOwner(privKey.getPublicKey(), REAddr.ofPubKeyAccount(to));
-					break;
-				case 8:
-					action = new UpdateAllowDelegationFlag(privKey.getPublicKey(), random.nextBoolean());
-					break;
-				default:
-					continue;
-			}
-
-			var request = TxnConstructionRequest.create().action(action);
-			try {
-				var txBuilder = radixEngine.construct(request.feePayer(acct));
-				var unsignedData = txBuilder.buildForExternalSign();
-
-				var response = signHandler.handleRequest(new SignRequest()
-					.networkIdentifier(new NetworkIdentifier().network("localnet"))
-					.publicKey(coreModelMapper.publicKey(privKey.getPublicKey()))
-					.unsignedTransaction(Bytes.toHexString(unsignedData.blob()))
-				);
-
-				submitHandler.handleRequest(new ConstructionSubmitRequest()
-					.networkIdentifier(new NetworkIdentifier().network("localnet"))
-					.signedTransaction(response.getSignedTransaction())
-				);
-			} catch (CoreApiException e) {
-				// Continue if its a mempool full error
-				if (!(e.toError().getDetails() instanceof MempoolFullError)) {
-					throw e;
-				}
-			} catch (TxBuilderException ignored) {
+			if (next < 8) {
+				randomTransactionSubmitter.execute();
+			} else if (next < 9) {
+				var nodeIndex = random.nextInt(nodeKeys.size());
+				deterministicRunner.restartNode(nodeIndex);
+				continue;
 			}
 
 			deterministicRunner.dispatchToAll(new Key<EventDispatcher<MempoolRelayTrigger>>() {}, MempoolRelayTrigger.create());
@@ -598,11 +513,13 @@ public class StakingUnstakingValidatorsTest {
 		logger.info("Epoch {} Round {} Total Rounds {}", epochView.getEpoch(), epochView.getView().number(), totalRounds);
 		var maxEmissions = UInt256.from(maxRounds).multiply(REWARDS_PER_PROPOSAL.toSubunits()).multiply(UInt256.from(epoch - 1));
 		logger.info("Max emissions {}", Amount.ofSubunits(maxEmissions));
-		var finalCount = nodeState.getTotalNativeTokens();
-		assertThat(finalCount).isGreaterThan(initialCount);
-		var diff = finalCount.subtract(initialCount);
-		logger.info("Difference {}", Amount.ofSubunits(diff));
-		assertThat(diff).isLessThanOrEqualTo(maxEmissions);
+		if (epoch > 1) {
+			var finalCount = nodeState.getTotalNativeTokens();
+			assertThat(finalCount).isGreaterThan(initialCount);
+			var diff = finalCount.subtract(initialCount);
+			logger.info("Difference {}", Amount.ofSubunits(diff));
+			assertThat(diff).isLessThanOrEqualTo(maxEmissions);
+		}
 
 		var totalTokenBalance = PrivateKeys.numeric(1).limit(20)
 			.map(ECKeyPair::getPublicKey)

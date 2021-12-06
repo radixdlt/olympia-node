@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,97 +61,8 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment.deterministic;
+package com.radixdlt.integration.staking;
 
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import io.reactivex.rxjava3.schedulers.Timed;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.ThreadContext;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-public final class MultiNodeDeterministicRunner {
-	private static final Logger logger = LogManager.getLogger();
-
-	private final List<Supplier<Injector>> nodeCreators;
-	private final DeterministicNetwork network;
-	private final List<Injector> nodes = new ArrayList<>();
-	private final Consumer<Injector> teardown;
-
-	@Inject
-	public MultiNodeDeterministicRunner(
-		List<Supplier<Injector>> nodeCreators,
-		Consumer<Injector> teardown,
-		DeterministicNetwork network
-	) {
-		this.nodeCreators = nodeCreators;
-		this.teardown = teardown;
-		this.network = network;
-	}
-
-	public int getSize() {
-		return nodes.size();
-	}
-
-	public Injector getNode(int index) {
-		return nodes.get(index);
-	}
-
-	public <T> void dispatchToAll(Key<EventDispatcher<T>> dispatcherKey, T t) {
-		this.nodes.forEach(n -> n.getInstance(dispatcherKey).dispatch(t));
-	}
-
-	public void start() {
-		for (Supplier<Injector> nodeCreator : nodeCreators) {
-			this.nodes.add(nodeCreator.get());
-		}
-		this.nodes.forEach(i -> i.getInstance(DeterministicProcessor.class).start());
-	}
-
-	public void tearDown() {
-		this.nodes.forEach(teardown);
-	}
-
-	public void restartNode(int index) {
-		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
-		var injector = nodeCreators.get(index).get();
-		teardown.accept(this.nodes.set(index, injector));
-		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-		try {
-			injector.getInstance(DeterministicProcessor.class).start();
-		} finally {
-			ThreadContext.remove("self");
-		}
-	}
-
-	public void processNext() {
-		Timed<ControlledMessage> msg = this.network.nextMessage();
-		logger.debug("Processing message {}", msg);
-
-		int nodeIndex = msg.value().channelId().receiverIndex();
-		Injector injector = this.nodes.get(nodeIndex);
-		ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-		try {
-			injector.getInstance(DeterministicProcessor.class)
-				.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
-		} finally {
-			ThreadContext.remove("self");
-		}
-	}
-
-	public void processForCount(int messageCount) {
-		for (int i = 0; i < messageCount; i++) {
-			processNext();
-		}
-	}
+public interface DeterministicActionExecutor {
+	void execute() throws Exception;
 }
