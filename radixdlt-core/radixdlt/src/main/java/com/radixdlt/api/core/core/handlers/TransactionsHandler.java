@@ -66,19 +66,18 @@ package com.radixdlt.api.core.core.handlers;
 import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.api.core.core.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.CoreApiException;
-import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.ProcessedTxnRecoveryInfo;
+import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.model.CoreApiException;
+import com.radixdlt.api.core.core.model.CoreModelMapper;
+import com.radixdlt.api.core.core.reconstruction.RecoverableProcessedTxn;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransaction;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionMetadata;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsRequest;
 import com.radixdlt.api.core.core.openapitools.model.CommittedTransactionsResponse;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.StateIdentifier;
-import com.radixdlt.api.core.core.BerkeleyProcessedTransactionsStore;
+import com.radixdlt.api.core.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.Particle;
@@ -97,13 +96,12 @@ import com.radixdlt.utils.Bytes;
 
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransactionsRequest, CommittedTransactionsResponse> {
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
-	private final BerkeleyProcessedTransactionsStore txnStore;
+	private final BerkeleyRecoverableProcessedTxnStore txnStore;
 	private final BerkeleyLedgerEntryStore ledgerEntryStore;
 	private final LedgerAccumulator ledgerAccumulator;
 	private final CoreModelMapper coreModelMapper;
@@ -111,7 +109,7 @@ public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransaction
 	@Inject
 	TransactionsHandler(
 		CoreModelMapper coreModelMapper,
-		BerkeleyProcessedTransactionsStore txnStore,
+		BerkeleyRecoverableProcessedTxnStore txnStore,
 		BerkeleyLedgerEntryStore ledgerEntryStore,
 		LedgerAccumulator ledgerAccumulator,
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider
@@ -141,7 +139,7 @@ public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransaction
 		return tokenResourceMetadata.getSymbol();
 	}
 
-	private CommittedTransaction construct(Txn txn, ProcessedTxnRecoveryInfo recoveryInfo, AccumulatorState accumulatorState) {
+	private CommittedTransaction construct(Txn txn, RecoverableProcessedTxn recoveryInfo, AccumulatorState accumulatorState) {
 		var transactionIdentifier = coreModelMapper.transactionIdentifier(txn.getId());
 		var parser = radixEngineProvider.get().getParser();
 		ParsedTxn parsedTxn;
@@ -157,7 +155,7 @@ public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransaction
 				var operationGroup = new OperationGroup();
 				stateUpdateGroup.stream()
 					.map(stateUpdate -> {
-						var substateOperation = stateUpdate.toOperation(radixEngineProvider);
+						var substateOperation = stateUpdate.recover(radixEngineProvider);
 						return coreModelMapper.operation(
 							substateOperation.getSubstate(),
 							substateOperation.getSubstateId(),
@@ -207,7 +205,7 @@ public class TransactionsHandler extends CoreJsonRpcHandler<CommittedTransaction
 			}
 		}
 
-		final List<ProcessedTxnRecoveryInfo> processedTransactionList;
+		final List<RecoverableProcessedTxn> processedTransactionList;
 		try (var stream = txnStore.get(stateVersion)) {
 			processedTransactionList = stream.limit(limit).collect(Collectors.toList());
 		}

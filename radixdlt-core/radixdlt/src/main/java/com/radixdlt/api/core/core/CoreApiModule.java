@@ -82,6 +82,7 @@ import com.radixdlt.api.core.core.handlers.NetworkStatusHandler;
 import com.radixdlt.api.core.core.handlers.ConstructionParseHandler;
 import com.radixdlt.api.core.core.handlers.SignHandler;
 import com.radixdlt.api.core.core.handlers.TransactionsHandler;
+import com.radixdlt.api.core.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
@@ -111,9 +112,9 @@ public class CoreApiModule extends AbstractModule {
 		routeBinder.addBinding(HandlerRoute.post("/engine/configuration")).to(EngineConfigurationHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/engine/status")).to(EngineStatusHandler.class);
 		if (transactionsEnable) {
-			bind(BerkeleyProcessedTransactionsStore.class).in(Scopes.SINGLETON);
+			bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
 			Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-				.addBinding().to(BerkeleyProcessedTransactionsStore.class);
+				.addBinding().to(BerkeleyRecoverableProcessedTxnStore.class);
 			routeBinder.addBinding(HandlerRoute.post("/transactions")).to(TransactionsHandler.class);
 		}
 		routeBinder.addBinding(HandlerRoute.post("/construction/derive")).to(ConstructionDeriveHandler.class);

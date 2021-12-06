@@ -64,7 +64,7 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.openapitools.model.Bech32HRPs;
 import com.radixdlt.api.core.core.openapitools.model.NetworkConfigurationResponse;
 import com.radixdlt.api.core.core.openapitools.model.NetworkConfigurationResponseVersion;

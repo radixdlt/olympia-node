@@ -61,31 +61,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.reconstruction;
 
-import com.radixdlt.api.core.core.openapitools.JSON;
-import com.radixdlt.api.core.core.openapitools.model.InvalidJsonError;
-import com.radixdlt.api.core.core.openapitools.model.UnexpectedError;
-import com.radixdlt.api.util.JsonRpcHandler;
+import com.google.inject.Provider;
+import com.radixdlt.api.core.core.model.SubstateOperation;
+import com.radixdlt.atom.SubstateId;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public abstract class CoreJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, CoreApiException, UnexpectedError> {
-	public CoreJsonRpcHandler(Class<T> requestClass) {
-		super(requestClass, CoreApiException.class, JSON.getDefault().getMapper());
+public final class RecoverableSubstateVirtualShutdown implements RecoverableSubstate {
+	private final byte typeByte;
+	private final SubstateId substateId;
+
+	public RecoverableSubstateVirtualShutdown(byte typeByte, SubstateId substateId) {
+		this.typeByte = typeByte;
+		this.substateId = substateId;
 	}
 
 	@Override
-	public UnexpectedError handleParseException(Exception e) {
-		return new UnexpectedError()
-			.code(1)
-			.message("Invalid Json")
-			.details(new InvalidJsonError()
-				.cause(e.getMessage())
-				.type("InvalidJsonDetails")
-			);
-	}
-
-	@Override
-	public UnexpectedError handleException(CoreApiException e) {
-		return e.toError();
+	public SubstateOperation recover(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
+		var radixEngine = radixEngineProvider.get();
+		var keyBuf = substateId.getVirtualKey().orElseThrow();
+		Particle substate;
+		try {
+			substate = radixEngine.getVirtualSubstateDeserialization().keyToSubstate(typeByte, keyBuf);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Could not deserialize virtual substate.");
+		}
+		return new SubstateOperation(substate, substateId, false);
 	}
 }

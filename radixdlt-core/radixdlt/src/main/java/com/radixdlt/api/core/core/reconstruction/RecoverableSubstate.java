@@ -61,55 +61,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.reconstruction;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
+import com.google.inject.Provider;
+import com.radixdlt.api.core.core.model.SubstateOperation;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-import java.util.Optional;
-
-@SerializerId2("pr_s")
-public final class ShutdownSubstateInfo {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
-
-	@JsonProperty("x")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private int instructionIndex;
-
-	@JsonProperty("s")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private byte[] substate;
-
-	@JsonProperty("i")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private byte[] substateId;
-
-	@JsonCreator
-	public ShutdownSubstateInfo(
-		@JsonProperty("x") int instructionIndex,
-		@JsonProperty("s") byte[] substate,
-		@JsonProperty("i") byte[] substateId
-	) {
-		this.instructionIndex = instructionIndex;
-		this.substate = substate;
-		this.substateId = substateId;
-	}
-
-	public int getInstructionIndex() {
-		return instructionIndex;
-	}
-
-	public byte[] getSubstate() {
-		return substate;
-	}
-
-	public Optional<byte[]> getSubstateId() {
-		return Optional.ofNullable(substateId);
-	}
+public interface RecoverableSubstate {
+	SubstateOperation recover(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider);
 }

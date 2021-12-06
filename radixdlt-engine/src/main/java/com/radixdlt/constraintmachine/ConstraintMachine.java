@@ -136,6 +136,10 @@ public final class ConstraintMachine {
 		return deserialization;
 	}
 
+	public VirtualSubstateDeserialization getVirtualDeserialization() {
+		return virtualSubstateDeserialization;
+	}
+
 	private static final class CMValidationState {
 		private final Map<REAddr, TokenResource> localResources = new HashMap<>();
 		private final Map<Integer, Pair<Substate, Supplier<ByteBuffer>>> localUpParticles = new HashMap<>();

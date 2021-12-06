@@ -70,6 +70,8 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.EntityHandler;
+import com.radixdlt.api.core.core.model.CoreApiException;
+import com.radixdlt.api.core.core.model.CoreModelMapper;
 import com.radixdlt.api.core.core.model.SubstateTypeMapping;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
@@ -88,6 +90,7 @@ import com.radixdlt.api.core.core.openapitools.model.ValidatorBFTData;
 import com.radixdlt.api.core.core.openapitools.model.ValidatorData;
 import com.radixdlt.api.core.core.openapitools.model.ValidatorMetadata;
 import com.radixdlt.api.core.core.openapitools.model.ValidatorSystemMetadata;
+import com.radixdlt.api.core.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.SubstateTypeId;
@@ -161,9 +164,9 @@ public class EntityHandlerTest {
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(BerkeleyProcessedTransactionsStore.class).in(Scopes.SINGLETON);
+					bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
 					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-						.addBinding().to(BerkeleyProcessedTransactionsStore.class);
+						.addBinding().to(BerkeleyRecoverableProcessedTxnStore.class);
 					bindConstant().annotatedWith(NumPeers.class).to(0);
 					bindConstant().annotatedWith(DatabaseLocation.class).to(folder.getRoot().getAbsolutePath());
 					bindConstant().annotatedWith(NetworkId.class).to(99);

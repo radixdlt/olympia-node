@@ -61,12 +61,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.reconstruction;
 
 import com.google.inject.Provider;
+import com.radixdlt.api.core.core.model.SubstateOperation;
+import com.radixdlt.atom.SubstateId;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 
-public interface RecoverableSubstateUpdate {
-	SubstateOperation toOperation(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider);
+import java.nio.ByteBuffer;
+
+public class RecoverableSubstateShutdown implements RecoverableSubstate {
+	private final ByteBuffer substateBuffer;
+	private final SubstateId substateId;
+	private final boolean isBootUp;
+
+	public RecoverableSubstateShutdown(ByteBuffer substateBuffer, SubstateId substateId, boolean isBootUp) {
+		this.substateBuffer = substateBuffer;
+		this.substateId = substateId;
+		this.isBootUp = isBootUp;
+	}
+
+	private Particle deserialize(RadixEngine<LedgerAndBFTProof> radixEngine) {
+		var deserialization = radixEngine.getSubstateDeserialization();
+		try {
+			return deserialization.deserialize(substateBuffer);
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Failed to deserialize substate.", e);
+		}
+	}
+
+	@Override
+	public SubstateOperation recover(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider) {
+		return new SubstateOperation(
+			deserialize(radixEngineProvider.get()),
+			substateId,
+			isBootUp
+		);
+	}
 }

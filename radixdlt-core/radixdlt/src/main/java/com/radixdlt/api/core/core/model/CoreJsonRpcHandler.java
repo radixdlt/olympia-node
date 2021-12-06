@@ -61,33 +61,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.model;
 
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.api.core.core.openapitools.JSON;
+import com.radixdlt.api.core.core.openapitools.model.InvalidJsonError;
+import com.radixdlt.api.core.core.openapitools.model.UnexpectedError;
+import com.radixdlt.api.util.JsonRpcHandler;
 
-import java.nio.ByteBuffer;
-
-public class SubstateOperation {
-	private final Particle substate;
-	private final SubstateId substateId;
-	private final boolean isBootUp;
-
-	public SubstateOperation(Particle substate, SubstateId substateId, boolean isBootUp) {
-		this.substate = substate;
-		this.substateId = substateId;
-		this.isBootUp = isBootUp;
+public abstract class CoreJsonRpcHandler<T, U> extends JsonRpcHandler<T, U, CoreApiException, UnexpectedError> {
+	public CoreJsonRpcHandler(Class<T> requestClass) {
+		super(requestClass, CoreApiException.class, JSON.getDefault().getMapper());
 	}
 
-	public Particle getSubstate() {
-		return substate;
+	@Override
+	public UnexpectedError handleParseException(Exception e) {
+		return new UnexpectedError()
+			.code(1)
+			.message("Invalid Json")
+			.details(new InvalidJsonError()
+				.cause(e.getMessage())
+				.type("InvalidJsonDetails")
+			);
 	}
 
-	public SubstateId getSubstateId() {
-		return substateId;
-	}
-
-	public boolean isBootUp() {
-		return isBootUp;
+	@Override
+	public UnexpectedError handleException(CoreApiException e) {
+		return e.toError();
 	}
 }

@@ -61,28 +61,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core;
+package com.radixdlt.api.core.core.reconstruction;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.atom.SubstateId;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.UpSubstate;
 import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import io.netty.buffer.ByteBuf;
+import com.radixdlt.utils.Pair;
+import org.bouncycastle.util.Arrays;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @SerializerId2("xtx")
-public class ProcessedTxnRecoveryInfo {
+public class RecoverableProcessedTxn {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -90,18 +94,46 @@ public class ProcessedTxnRecoveryInfo {
 	// TODO: Change this to be a map
 	@JsonProperty("s")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final List<ShutdownSubstateInfo> shutdownSubstates;
+	private final Map<Integer, List<byte[]>> shutdownSubstates;
 
 	@JsonCreator
-	public ProcessedTxnRecoveryInfo(
-		@JsonProperty("s") List<ShutdownSubstateInfo> shutdownSubstates
+	public RecoverableProcessedTxn(
+		@JsonProperty("s") Map<Integer, List<byte[]>> shutdownSubstates
 	) {
-		this.shutdownSubstates = shutdownSubstates;
+		this.shutdownSubstates = shutdownSubstates == null ? Map.of() : shutdownSubstates;
 	}
 
-	public List<List<RecoverableSubstateUpdate>> recoverStateUpdates(ParsedTxn parsedTxn) {
-		var substateGroups = new ArrayList<List<RecoverableSubstateUpdate>>();
-		var substateUpdates = new ArrayList<RecoverableSubstateUpdate>();
+	public static RecoverableProcessedTxn from(REProcessedTxn txn, SubstateSerialization serialization) {
+		var parsedTxn = txn.getParsedTxn();
+
+		var stateUpdateGroups = txn.getGroupedStateUpdates()
+			.stream()
+			.flatMap(stateUpdates -> stateUpdates.stream()
+				.filter(u -> {
+					var microOp = parsedTxn.instructions().get(u.getInstructionIndex()).getMicroOp();
+					return switch (microOp) {
+						case DOWN, DOWNINDEX, VDOWN, LVDOWN -> true;
+						default -> false;
+					};
+				})
+				.map(u -> {
+					var microOp = parsedTxn.instructions().get(u.getInstructionIndex()).getMicroOp();
+					var data = switch (microOp) {
+						case DOWN -> serialization.serialize((Particle) u.getParsed());
+						case DOWNINDEX -> Arrays.concatenate(u.getId().asBytes(), serialization.serialize((Particle) u.getParsed()));
+						case VDOWN, LVDOWN -> new byte[] {u.typeByte()};
+						default -> throw new IllegalStateException();
+					};
+					return Pair.of(u.getInstructionIndex(), data);
+				})
+			)
+			.collect(Collectors.groupingBy(Pair::getFirst, Collectors.mapping(Pair::getSecond, Collectors.toList())));
+		return new RecoverableProcessedTxn(stateUpdateGroups);
+	}
+
+	public List<List<RecoverableSubstate>> recoverStateUpdates(ParsedTxn parsedTxn) {
+		var substateGroups = new ArrayList<List<RecoverableSubstate>>();
+		var substateUpdates = new ArrayList<RecoverableSubstate>();
 		var upSubstates = new ArrayList<UpSubstate>();
 
 		for (int i = 0; i < parsedTxn.instructions().size(); i++) {
@@ -119,57 +151,44 @@ public class ProcessedTxnRecoveryInfo {
 					UpSubstate upSubstate = instruction.getData();
 					ByteBuffer substate = upSubstate.getSubstateBuffer();
 					SubstateId substateId = upSubstate.getSubstateId();
-					substateUpdates.add(new RawSubstateUpdate(substate, substateId, true));
+					substateUpdates.add(new RecoverableSubstateShutdown(substate, substateId, true));
 					upSubstates.add(upSubstate);
 				}
 				case DOWN -> {
 					SubstateId substateId = instruction.getData();
-					final int instructionIndex = i;
-					var downSubstate = shutdownSubstates.stream()
-						.filter(s -> s.getInstructionIndex() == instructionIndex)
-						.findFirst().orElseThrow(() -> new IllegalStateException("Could not find down substate."));
-
-					var substate = ByteBuffer.wrap(downSubstate.getSubstate());
-					substateUpdates.add(new RawSubstateUpdate(substate, substateId, false));
+					var dataList = shutdownSubstates.get(i);
+					if (dataList.size() != 1) {
+						throw new IllegalStateException();
+					}
+					var substate = ByteBuffer.wrap(dataList.get(0));
+					substateUpdates.add(new RecoverableSubstateShutdown(substate, substateId, false));
 				}
 				case LDOWN -> {
 					SubstateId substateId = instruction.getData();
 					var index = substateId.getIndex().orElseThrow(() -> new IllegalStateException("Could not find index"));
 					var substate = upSubstates.get(index).getSubstateBuffer();
-					substateUpdates.add(new RawSubstateUpdate(substate, substateId, false));
+					substateUpdates.add(new RecoverableSubstateShutdown(substate, substateId, false));
 				}
-				/*
-				case VDOWN -> {
+				case VDOWN, LVDOWN -> {
 					SubstateId substateId = instruction.getData();
-					final int instructionIndex = i;
-					var downSubstate = shutdownSubstates.stream()
-						.filter(s -> s.getInstructionIndex() == instructionIndex)
-						.findFirst().orElseThrow(() -> new IllegalStateException("Could not find down substate."));
-
-					var virtualType = downSubstate.getSubstate()[0];
-					substateUpdates.add(new RawSubstateUpdate(substate, substateId, false));
-
-					var parentBuf = store.verifyVirtualSubstate(substateId);
-					var parent = (VirtualParent) deserialization.deserialize(parentBuf);
-					var typeByte = parent.getData()[0];
-					var keyBuf = substateId.getVirtualKey().orElseThrow();
-					return virtualSubstateDeserialization.keyToSubstate(typeByte, keyBuf);
-
+					var dataList = shutdownSubstates.get(i);
+					if (dataList.size() != 1) {
+						throw new IllegalStateException();
+					}
+					substateUpdates.add(new RecoverableSubstateVirtualShutdown(dataList.get(0)[0], substateId));
 				}
-				case LVDOWN:
-					SubstateId substateId = instruction.getData();
-					break;
-				 */
 				case DOWNINDEX -> {
-					final int instructionIndex = i;
-					shutdownSubstates.stream().filter(s -> s.getInstructionIndex() == instructionIndex)
-						.map(s -> {
-							var substate = ByteBuffer.wrap(s.getSubstate());
-							var substateId = s.getSubstateId().map(SubstateId::fromBytes)
-								.orElseThrow(() -> new IllegalStateException("DownIndex does not contain substate"));
-							return new RawSubstateUpdate(substate, substateId, false);
-						})
-						.forEach(substateUpdates::add);
+					var substates = shutdownSubstates.get(i);
+					if (substates == null) {
+						continue;
+					}
+					for (var data : substates) {
+						var buf = ByteBuffer.wrap(data);
+						var substateId = SubstateId.fromBuffer(buf);
+						var substate = ByteBuffer.wrap(data, SubstateId.BYTES, data.length - SubstateId.BYTES);
+						var recoverable = new RecoverableSubstateShutdown(substate, substateId, false);
+						substateUpdates.add(recoverable);
+					}
 				}
 			}
 		}
