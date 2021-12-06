@@ -65,32 +65,39 @@
 package com.radixdlt.integration.staking;
 
 import com.google.common.collect.ClassToInstanceMap;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.gateway.account.BerkeleyAccountInfoStore;
-import com.radixdlt.api.gateway.openapitools.model.AccountBalances;
-import com.radixdlt.api.gateway.openapitools.model.AccountUnstakeEntry;
-import com.radixdlt.api.gateway.openapitools.model.Token;
-import com.radixdlt.api.gateway.validator.BerkeleyValidatorUptimeStore;
-import com.radixdlt.api.gateway.tokens.BerkeleyResourceInfoStore;
+import com.radixdlt.api.core.core.CoreApiException;
+import com.radixdlt.api.core.core.CoreModelMapper;
+import com.radixdlt.api.core.core.handlers.EngineConfigurationHandler;
+import com.radixdlt.api.core.core.handlers.EngineStatusHandler;
+import com.radixdlt.api.core.core.handlers.EntityHandler;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
+import com.radixdlt.api.core.core.openapitools.model.EngineStatusRequest;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
+import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.integration.FailOnEvent;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.store.LastProof;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -158,6 +165,7 @@ import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.UInt256;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -283,13 +291,7 @@ public class StakingUnstakingValidatorsTest {
 					bind(Environment.class).toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
-					bind(BerkeleyValidatorUptimeStore.class).in(Scopes.SINGLETON);
-					var binder = Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
-					binder.addBinding().to(BerkeleyValidatorUptimeStore.class);
-					bind(BerkeleyResourceInfoStore.class).in(Scopes.SINGLETON);
-					binder.addBinding().to(BerkeleyResourceInfoStore.class);
-					bind(BerkeleyAccountInfoStore.class).in(Scopes.SINGLETON);
-					binder.addBinding().to(BerkeleyAccountInfoStore.class);
+					bindConstant().annotatedWith(NetworkId.class).to(Network.LOCALNET.getId());
 				}
 
 				@Provides
@@ -307,9 +309,12 @@ public class StakingUnstakingValidatorsTest {
 		private final LedgerProof lastLedgerProof;
 		private final RadixEngine<LedgerAndBFTProof> radixEngine;
 		private final ClassToInstanceMap<Object> lastEvents;
-		private final BerkeleyResourceInfoStore resourceInfoStore;
-		private final BerkeleyAccountInfoStore accountInfoStore;
 		private final Forks forks;
+		private final EngineStatusHandler engineStatusHandler;
+		private final EntityHandler entityHandler;
+		private final EngineConfigurationHandler engineConfigurationHandler;
+		private final Addressing addressing;
+		private final CoreModelMapper coreModelMapper;
 
 		@Inject
 		private NodeState(
@@ -317,16 +322,22 @@ public class StakingUnstakingValidatorsTest {
 			ClassToInstanceMap<Object> lastEvents,
 			@LastProof LedgerProof lastLedgerProof,
 			RadixEngine<LedgerAndBFTProof> radixEngine,
-			BerkeleyResourceInfoStore resourceInfoStore,
-			BerkeleyAccountInfoStore accountInfoStore,
+			EntityHandler entityHandler,
+			EngineStatusHandler engineStatusHandler,
+			EngineConfigurationHandler engineConfigurationHandler,
+			CoreModelMapper coreModelMapper,
+			Addressing addressing,
 			Forks forks
 		) {
 			this.self = self;
 			this.lastEvents = lastEvents;
 			this.lastLedgerProof = lastLedgerProof;
 			this.radixEngine = radixEngine;
-			this.resourceInfoStore = resourceInfoStore;
-			this.accountInfoStore = accountInfoStore;
+			this.entityHandler = entityHandler;
+			this.engineStatusHandler = engineStatusHandler;
+			this.engineConfigurationHandler = engineConfigurationHandler;
+			this.coreModelMapper = coreModelMapper;
+			this.addressing = addressing;
 			this.forks = forks;
 		}
 
@@ -388,16 +399,67 @@ public class StakingUnstakingValidatorsTest {
 			return map;
 		}
 
-		public Token getNativeToken() {
-			return resourceInfoStore.getResourceInfo(REAddr.ofNativeToken()).orElseThrow();
+		public long unstakingDelayEpochLength() {
+			try {
+				return engineConfigurationHandler.handleRequest(new EngineConfigurationRequest()
+					.networkIdentifier(new NetworkIdentifier().network("localnet"))
+				).getForks().get(0).getEngineConfiguration().getUnstakingDelayEpochLength();
+			} catch (CoreApiException e) {
+				throw new IllegalStateException(e);
+			}
 		}
 
-		public AccountBalances getAccountInfo(REAddr addr) {
-			return accountInfoStore.getAccountInfo(addr);
+		public TokenResourceIdentifier nativeToken() {
+			try {
+				return engineConfigurationHandler.handleRequest(new EngineConfigurationRequest()
+					.networkIdentifier(new NetworkIdentifier().network("localnet"))
+				).getNativeToken();
+			} catch (CoreApiException e) {
+				throw new IllegalStateException(e);
+			}
 		}
 
-		public List<AccountUnstakeEntry> getAccountUnstakes(REAddr addr) {
-			return accountInfoStore.getAccountUnstakes(addr);
+		public List<ResourceAmount> getAccountBalances(REAddr addr) {
+			try {
+				var response = entityHandler.handleRequest(new EntityRequest()
+					.networkIdentifier(new NetworkIdentifier().network("localnet"))
+					.entityIdentifier(new EntityIdentifier().address(addressing.forAccounts().of(addr)))
+				);
+				return response.getBalances();
+			} catch (CoreApiException e) {
+				throw new IllegalStateException(e);
+			}
+		}
+
+		private List<ResourceAmount> getUnstakes(REAddr addr, ECPublicKey validatorKey) {
+			var networkIdentifier = new NetworkIdentifier().network("localnet");
+			var unstakingDelayEpochLength = unstakingDelayEpochLength();
+			var unstakes = new ArrayList<ResourceAmount>();
+			try {
+				var statusResponse = engineStatusHandler
+					.handleRequest(new EngineStatusRequest().networkIdentifier(networkIdentifier));
+				var curEpoch = statusResponse.getEngineStateIdentifier().getEpoch();
+				var maxEpoch = curEpoch + unstakingDelayEpochLength;
+
+				for (long epochUnstake = curEpoch; epochUnstake <= maxEpoch; epochUnstake++) {
+					var response = entityHandler.handleRequest(new EntityRequest()
+						.networkIdentifier(networkIdentifier)
+						.entityIdentifier(coreModelMapper.entityIdentifierExitingStake(addr, validatorKey, epochUnstake))
+					);
+					unstakes.addAll(response.getBalances());
+				}
+			} catch (CoreApiException e) {
+				throw new IllegalStateException(e);
+			}
+
+			return unstakes;
+		}
+
+		public List<ResourceAmount> getAccountUnstakes(REAddr addr) {
+			return PrivateKeys.numeric(1).limit(20)
+				.map(ECKeyPair::getPublicKey)
+				.flatMap(validatorKey -> getUnstakes(addr, validatorKey).stream())
+				.collect(Collectors.toList());
 		}
 
 		public BigInteger getTotalExittingStake() {
@@ -523,46 +585,22 @@ public class StakingUnstakingValidatorsTest {
 		var diff = finalCount.subtract(initialCount);
 		logger.info("Difference {}", Amount.ofSubunits(diff));
 		assertThat(diff).isLessThanOrEqualTo(maxEmissions);
-		var nativeToken = nodeState.getNativeToken();
-		logger.info("nativeToken {}", nativeToken);
-		var supplyString = nativeToken.getTokenSupply().getValue();
-		assertThat(finalCount.toString()).isLessThanOrEqualTo(supplyString);
-		var supplyFromJson = new BigInteger(supplyString, 10);
-		var totalMinted = new BigInteger(nativeToken.getInfo().getTotalMinted().getValue());
-		var totalBurned = new BigInteger(nativeToken.getInfo().getTotalBurned().getValue());
-		assertThat(supplyFromJson).isEqualTo(totalMinted.subtract(totalBurned));
 
 		var totalTokenBalance = PrivateKeys.numeric(1).limit(20)
 			.map(ECKeyPair::getPublicKey)
 			.map(REAddr::ofPubKeyAccount)
-			.map(nodeState::getAccountInfo)
-			.map(accountBalances -> {
-				var tokenAmounts = accountBalances.getLiquidBalances();
-				if (tokenAmounts.size() == 1) {
-					return new BigInteger(tokenAmounts.get(0).getValue());
-				} else if (tokenAmounts.isEmpty()) {
-					return BigInteger.ZERO;
-				} else {
-					throw new IllegalStateException();
-				}
-			})
+			.flatMap(addr -> nodeState.getAccountBalances(addr).stream())
+			.filter(r -> r.getResourceIdentifier().equals(nodeState.nativeToken()))
+			.map(r -> new BigInteger(r.getValue()))
 			.reduce(BigInteger.ZERO, BigInteger::add);
 		assertThat(totalTokenBalance).isEqualTo(nodeState.getTotalTokensInAccounts());
 
 		var totalUnstakingBalance = PrivateKeys.numeric(1).limit(20)
 			.map(ECKeyPair::getPublicKey)
 			.map(REAddr::ofPubKeyAccount)
-			.map(nodeState::getAccountUnstakes)
-			.map(unstakes -> {
-				BigInteger sum = BigInteger.ZERO;
-				for (var unstake : unstakes) {
-					if (unstake.getEpochsUntilUnlocked() != 500L) {
-						var amt = new BigInteger(unstake.getUnstakingAmount().getValue());
-						sum = sum.add(amt);
-					}
-				}
-				return sum;
-			})
+			.flatMap(addr -> nodeState.getAccountUnstakes(addr).stream())
+			.filter(r -> r.getResourceIdentifier().equals(nodeState.nativeToken()))
+			.map(r -> new BigInteger(r.getValue()))
 			.reduce(BigInteger.ZERO, BigInteger::add);
 		assertThat(totalUnstakingBalance).isEqualTo(nodeState.getTotalExittingStake());
 
