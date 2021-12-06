@@ -662,8 +662,8 @@ public final class CoreModelMapper {
 			.type(name);
 	}
 
-	public ResourceIdentifier create(REAddr tokenAddress, String symbol) {
-		return new TokenResourceIdentifier()
+	public TokenResourceIdentifier create(REAddr tokenAddress, String symbol) {
+		return (TokenResourceIdentifier) new TokenResourceIdentifier()
 			.rri(addressing.forResources().of(symbol, tokenAddress))
 			.type("Token");
 	}
@@ -684,7 +684,7 @@ public final class CoreModelMapper {
 		return nativeTokenAmount(true, value);
 	}
 
-	public ResourceIdentifier nativeToken() {
+	public TokenResourceIdentifier nativeToken() {
 		return create(REAddr.ofNativeToken(), "xrd");
 	}
 
@@ -728,6 +728,7 @@ public final class CoreModelMapper {
 
 	public EngineConfiguration engineConfiguration(RERulesConfig config) {
 		return new EngineConfiguration()
+			.maximumMessageLength(255) // TODO: Remove hardcode
 			.maximumValidatorFeeIncrease(ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE)
 			.feeTable(feeTable(config.getFeeTable()))
 			.reservedSymbols(config.getReservedSymbols().stream().toList())
