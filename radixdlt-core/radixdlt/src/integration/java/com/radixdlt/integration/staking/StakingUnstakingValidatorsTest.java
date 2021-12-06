@@ -439,7 +439,7 @@ public class StakingUnstakingValidatorsTest {
 				var statusResponse = engineStatusHandler
 					.handleRequest(new EngineStatusRequest().networkIdentifier(networkIdentifier));
 				var curEpoch = statusResponse.getEngineStateIdentifier().getEpoch();
-				var maxEpoch = curEpoch + unstakingDelayEpochLength;
+				var maxEpoch = curEpoch + unstakingDelayEpochLength + 1;
 
 				for (long epochUnstake = curEpoch; epochUnstake <= maxEpoch; epochUnstake++) {
 					var response = entityHandler.handleRequest(new EntityRequest()
