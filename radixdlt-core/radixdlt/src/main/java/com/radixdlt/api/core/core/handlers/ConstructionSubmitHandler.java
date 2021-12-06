@@ -71,6 +71,7 @@ import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
@@ -103,6 +104,8 @@ public final class ConstructionSubmitHandler extends CoreJsonRpcHandler<Construc
 			return new ConstructionSubmitResponse()
 				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
 				.duplicate(true);
+		} catch (MempoolFullException e) {
+			throw modelMapper.mempoolFullException(e);
 		} catch (MempoolRejectedException e) {
 			var reException = (RadixEngineException) e.getCause();
 			throw modelMapper.radixEngineException(reException);

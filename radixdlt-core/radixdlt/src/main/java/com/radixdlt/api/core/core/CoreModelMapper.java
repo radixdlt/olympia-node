@@ -133,6 +133,7 @@ import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
@@ -649,11 +650,16 @@ public final class CoreModelMapper {
 	}
 
 	public EngineStateIdentifier engineStateIdentifier(LedgerProof ledgerProof) {
-		return new EngineStateIdentifier()
+		return ledgerProof.getNextValidatorSet().map(vset -> new EngineStateIdentifier()
+			.stateIdentifier(stateIdentifier(ledgerProof.getAccumulatorState()))
+			.epoch(ledgerProof.getEpoch() + 1)
+			.round(0L)
+			.timestamp(ledgerProof.timestamp())
+		).orElseGet(() -> new EngineStateIdentifier()
 			.stateIdentifier(stateIdentifier(ledgerProof.getAccumulatorState()))
 			.epoch(ledgerProof.getEpoch())
 			.round(ledgerProof.getView().number())
-			.timestamp(ledgerProof.timestamp());
+			.timestamp(ledgerProof.timestamp()));
 	}
 
 	public SubstateTypeIdentifier substateTypeIdentifier(Class<? extends Particle> substateClass) {
@@ -1133,6 +1139,14 @@ public final class CoreModelMapper {
 			new InvalidTransactionError()
 				.message(cause.getMessage())
 				.type(InvalidTransactionError.class.getSimpleName())
+		);
+	}
+
+	public CoreApiException mempoolFullException(MempoolFullException e) {
+		return CoreApiException.unavailable(
+			new MempoolFullError()
+				.mempoolTransactionCount(e.getMaxSize())
+				.type(MempoolFullError.class.getSimpleName())
 		);
 	}
 

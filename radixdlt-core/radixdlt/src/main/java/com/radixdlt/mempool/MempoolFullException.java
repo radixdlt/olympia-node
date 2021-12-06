@@ -69,7 +69,13 @@ package com.radixdlt.mempool;
  * exceed the mempool's maximum capacity.
  */
 public class MempoolFullException extends MempoolRejectedException {
-	public MempoolFullException(String message) {
-		super(message);
+	private final int maxSize;
+	public MempoolFullException(int curSize, int maxSize) {
+		super(String.format("Mempool full: %s of %s items", curSize, maxSize));
+		this.maxSize = maxSize;
+	}
+
+	public int getMaxSize() {
+		return maxSize;
 	}
 }

@@ -3009,6 +3009,15 @@ components:
           properties:
             message:
               type: string
+    MempoolFullError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - mempool_transaction_count
+          properties:
+            mempool_transaction_count:
+              type: integer
     NotEnoughResourcesError:
       allOf:
         - $ref: "#/components/schemas/CoreError"
@@ -3190,6 +3199,7 @@ components:
           InvalidHexError: "#/components/schemas/InvalidHexError"
           InvalidSignatureError: "#/components/schemas/InvalidSignatureError"
           InvalidTransactionError: "#/components/schemas/InvalidTransactionError"
+          MempoolFullError: "#/components/schemas/MempoolFullError"
           AboveMaximumValidatorFeeIncreaseError: "#/components/schemas/AboveMaximumValidatorFeeIncreaseError"
           NotEnoughResourcesError: "#/components/schemas/NotEnoughResourcesError"
           BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"

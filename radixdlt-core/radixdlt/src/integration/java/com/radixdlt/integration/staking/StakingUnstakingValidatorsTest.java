@@ -67,19 +67,23 @@ package com.radixdlt.integration.staking;
 import com.google.common.collect.ClassToInstanceMap;
 import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
+import com.radixdlt.api.core.core.handlers.ConstructionSubmitHandler;
 import com.radixdlt.api.core.core.handlers.EngineConfigurationHandler;
 import com.radixdlt.api.core.core.handlers.EngineStatusHandler;
 import com.radixdlt.api.core.core.handlers.EntityHandler;
+import com.radixdlt.api.core.core.handlers.SignHandler;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
 import com.radixdlt.api.core.core.openapitools.model.EngineStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
+import com.radixdlt.api.core.core.openapitools.model.MempoolFullError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.SignRequest;
 import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -89,15 +93,14 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.integration.FailOnEvent;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
-import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -179,6 +182,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(Parameterized.class)
 public class StakingUnstakingValidatorsTest {
+	private static final int ACTION_ROUNDS = 2000;
 	private static final Logger logger = LogManager.getLogger();
 	private static final Amount REWARDS_PER_PROPOSAL = Amount.ofMicroTokens(2307700);
 	private static final RERulesConfig config = RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
@@ -501,7 +505,7 @@ public class StakingUnstakingValidatorsTest {
 
 		var random = new Random(12345);
 
-		for (int i = 0; i < 5000; i++) {
+		for (int i = 0; i < ACTION_ROUNDS; i++) {
 			deterministicRunner.processForCount(100);
 
 			var nodeIndex = random.nextInt(nodeKeys.size());
@@ -509,10 +513,9 @@ public class StakingUnstakingValidatorsTest {
 			var radixEngine = nodeInjector.getInstance(
 				Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() { })
 			);
-			var radixEngineStateComputer = nodeInjector.getInstance(
-				RadixEngineStateComputer.class
-			);
-			var hashSigner = nodeInjector.getInstance(HashSigner.class);
+			var signHandler = nodeInjector.getInstance(SignHandler.class);
+			var submitHandler = nodeInjector.getInstance(ConstructionSubmitHandler.class);
+			var coreModelMapper = nodeInjector.getInstance(CoreModelMapper.class);
 
 			var privKey = nodeKeys.get(nodeIndex);
 			var acct = REAddr.ofPubKeyAccount(privKey.getPublicKey());
@@ -562,9 +565,24 @@ public class StakingUnstakingValidatorsTest {
 			var request = TxnConstructionRequest.create().action(action);
 			try {
 				var txBuilder = radixEngine.construct(request.feePayer(acct));
-				var txn = txBuilder.signAndBuild(hashSigner::sign);
-				radixEngineStateComputer.addToMempool(txn);
-			} catch (TxBuilderException | MempoolFullException ignored) {
+				var unsignedData = txBuilder.buildForExternalSign();
+
+				var response = signHandler.handleRequest(new SignRequest()
+					.networkIdentifier(new NetworkIdentifier().network("localnet"))
+					.publicKey(coreModelMapper.publicKey(privKey.getPublicKey()))
+					.unsignedTransaction(Bytes.toHexString(unsignedData.blob()))
+				);
+
+				submitHandler.handleRequest(new ConstructionSubmitRequest()
+					.networkIdentifier(new NetworkIdentifier().network("localnet"))
+					.signedTransaction(response.getSignedTransaction())
+				);
+			} catch (CoreApiException e) {
+				// Continue if its a mempool full error
+				if (!(e.toError().getDetails() instanceof MempoolFullError)) {
+					throw e;
+				}
+			} catch (TxBuilderException ignored) {
 			}
 
 			deterministicRunner.dispatchToAll(new Key<EventDispatcher<MempoolRelayTrigger>>() {}, MempoolRelayTrigger.create());
