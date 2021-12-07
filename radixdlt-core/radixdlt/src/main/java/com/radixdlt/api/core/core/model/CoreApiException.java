@@ -71,6 +71,7 @@ public final class CoreApiException extends Exception {
 	private final CoreError errorDetails;
 
 	private CoreApiException(CoreApiErrorCode errorCode, CoreError errorDetails) {
+		super(errorCode + ": " + errorDetails);
 		this.errorCode = errorCode;
 		this.errorDetails = errorDetails;
 	}
@@ -98,11 +99,16 @@ public final class CoreApiException extends Exception {
 		return new CoreApiException(CoreApiErrorCode.NOT_SUPPORTED, errorDetails);
 	}
 
+	public static CoreApiException unavailable(CoreError errorDetails) {
+		return new CoreApiException(CoreApiErrorCode.UNAVAILABLE, errorDetails);
+	}
+
 	public enum CoreApiErrorCode {
 		BAD_REQUEST(400, "Bad request"),
 		NOT_FOUND(404, "Not found"),
 		CONFLICT(409, "State Conflict"),
-		NOT_SUPPORTED(501, "Not supported");
+		NOT_SUPPORTED(501, "Not supported"),
+		UNAVAILABLE(503, "Unavailable");
 
 		private final int errorCode;
 		private final String message;
@@ -118,6 +124,10 @@ public final class CoreApiException extends Exception {
 
 		public String getMessage() {
 			return message;
+		}
+
+		public String toString() {
+			return errorCode + " " + message;
 		}
 	}
 }

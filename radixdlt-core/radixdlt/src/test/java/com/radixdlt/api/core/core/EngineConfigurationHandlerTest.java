@@ -68,6 +68,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.api.core.core.handlers.EngineConfigurationHandler;
+import com.radixdlt.api.core.core.model.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.application.system.FeeTable;
@@ -110,6 +111,8 @@ public class EngineConfigurationHandlerTest {
 	private EngineConfigurationHandler sut;
 	@Inject
 	private SingleNodeDeterministicRunner runner;
+	@Inject
+	private CoreModelMapper coreModelMapper;
 	@Inject
 	@Genesis
 	private VerifiedTxnsAndProof genesis;
@@ -156,5 +159,6 @@ public class EngineConfigurationHandlerTest {
 		assertThat(response.getCheckpoints()).hasSize(1);
 		assertThat(response.getCheckpoints().get(0).getCheckpointTransaction())
 			.isEqualTo(Bytes.toHexString(genesis.getTxns().get(0).getPayload()));
+		assertThat(response.getForks()).allMatch(fork -> fork.getEngineConfiguration().getMaximumMessageLength() == 255);
 	}
 }

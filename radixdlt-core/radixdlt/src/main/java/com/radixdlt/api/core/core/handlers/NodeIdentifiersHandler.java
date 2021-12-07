@@ -64,51 +64,42 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.model.CoreApiException;
+import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.model.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiersRequest;
+import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiersResponse;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
-public final class ConstructionSubmitHandler extends CoreJsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
-	private final RadixEngineStateComputer radixEngineStateComputer;
-	private final CoreModelMapper modelMapper;
+public final class NodeIdentifiersHandler extends CoreJsonRpcHandler<NodeIdentifiersRequest, NodeIdentifiersResponse> {
+	private final REAddr accountAddress;
+	private final ECPublicKey validatorKey;
+	private final CoreModelMapper coreModelMapper;
 
 	@Inject
-	ConstructionSubmitHandler(
-		RadixEngineStateComputer radixEngineStateComputer,
-		CoreModelMapper modelMapper
+	NodeIdentifiersHandler(
+		@Self ECPublicKey validatorKey,
+		CoreModelMapper coreModelMapper
 	) {
-		super(ConstructionSubmitRequest.class);
+		super(NodeIdentifiersRequest.class);
 
-		this.radixEngineStateComputer = radixEngineStateComputer;
-		this.modelMapper = modelMapper;
+		this.accountAddress = REAddr.ofPubKeyAccount(validatorKey);
+		this.validatorKey = validatorKey;
+		this.coreModelMapper = coreModelMapper;
 	}
 
 	@Override
-	public ConstructionSubmitResponse handleRequest(ConstructionSubmitRequest request) throws CoreApiException {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
-
-		var txn = modelMapper.txn(request.getSignedTransaction());
-		try {
-			radixEngineStateComputer.addToMempool(txn);
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-				.duplicate(false);
-		} catch (MempoolDuplicateException e) {
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-				.duplicate(true);
-		} catch (MempoolFullException e) {
-			throw modelMapper.mempoolFullException(e);
-		} catch (MempoolRejectedException e) {
-			var reException = (RadixEngineException) e.getCause();
-			throw modelMapper.radixEngineException(reException);
-		}
+	public NodeIdentifiersResponse handleRequest(NodeIdentifiersRequest request) throws CoreApiException {
+		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
+		return new NodeIdentifiersResponse()
+			.nodeIdentifiers(new NodeIdentifiers()
+				.accountEntityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
+				.validatorEntityIdentifier(coreModelMapper.entityIdentifier(validatorKey))
+				.publicKey(coreModelMapper.publicKey(validatorKey))
+				.p2pNode(coreModelMapper.peer(validatorKey))
+			);
 	}
 }

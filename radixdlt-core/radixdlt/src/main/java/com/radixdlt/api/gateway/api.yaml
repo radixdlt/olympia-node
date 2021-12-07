@@ -1293,6 +1293,8 @@ components:
           type: string
         details:
           $ref: "#/components/schemas/GatewayError"
+        trace_id:
+          type: string
     GatewayError:
       type: object
       required:
@@ -1341,13 +1343,24 @@ components:
         - $ref: "#/components/schemas/GatewayError"
         - type: object
           required:
-            - exception
-            - cause
+            - validation_errors
           properties:
-            exception:
-              type: string
-            cause:
-              type: string
+            validation_errors:
+              type: array
+              items:
+                $ref: "#/components/schemas/ValidationErrorsAtPath"
+    ValidationErrorsAtPath:
+      type: object
+      required:
+        - path
+        - errors
+      properties:
+        path:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
     NetworkNotSupportedError:
       allOf:
         - "$ref": "#/components/schemas/GatewayError"

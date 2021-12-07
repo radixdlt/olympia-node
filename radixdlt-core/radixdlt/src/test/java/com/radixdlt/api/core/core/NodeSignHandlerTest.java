@@ -67,9 +67,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.radixdlt.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.api.core.core.handlers.SignHandler;
 import com.radixdlt.api.core.core.model.CoreApiException;
 import com.radixdlt.api.core.core.model.CoreModelMapper;
+import com.radixdlt.api.core.core.handlers.NodeSignHandler;
 import com.radixdlt.api.core.core.model.EntityOperation;
 import com.radixdlt.api.core.core.model.OperationTxBuilder;
 import com.radixdlt.api.core.core.model.ResourceOperation;
@@ -78,7 +78,7 @@ import com.radixdlt.api.core.core.model.entities.AccountVaultEntity;
 import com.radixdlt.api.core.core.openapitools.model.InvalidTransactionError;
 import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedError;
-import com.radixdlt.api.core.core.openapitools.model.SignRequest;
+import com.radixdlt.api.core.core.openapitools.model.NodeSignRequest;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.crypto.ECKeyPair;
@@ -111,7 +111,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class SignHandlerTest {
+public class NodeSignHandlerTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 	private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
@@ -120,7 +120,7 @@ public class SignHandlerTest {
 	private final Amount stakeAmount = Amount.ofTokens(10);
 
 	@Inject
-	private SignHandler sut;
+	private NodeSignHandler sut;
 	@Inject
 	private SingleNodeDeterministicRunner runner;
 	@Inject
@@ -193,7 +193,7 @@ public class SignHandlerTest {
 		var other = PrivateKeys.ofNumeric(2);
 		var to = REAddr.ofPubKeyAccount(other.getPublicKey());
 		var unsignedTxn = buildUnsignedTxn(from, to);
-		var request = new SignRequest()
+		var request = new NodeSignRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.publicKey(mapper.publicKey(TEST_KEY.getPublicKey()))
 			.unsignedTransaction(Bytes.toHexString(unsignedTxn));
@@ -214,7 +214,7 @@ public class SignHandlerTest {
 		var other = PrivateKeys.ofNumeric(2);
 		var to = REAddr.ofPubKeyAccount(other.getPublicKey());
 		var unsignedTxn = buildUnsignedTxn(from, to);
-		var request = new SignRequest()
+		var request = new NodeSignRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.publicKey(mapper.publicKey(other.getPublicKey()))
 			.unsignedTransaction(Bytes.toHexString(unsignedTxn));
@@ -232,7 +232,7 @@ public class SignHandlerTest {
 
 		// Act
 		// Assert
-		var request = new SignRequest()
+		var request = new NodeSignRequest()
 			.networkIdentifier(new NetworkIdentifier().network("localnet"))
 			.publicKey(mapper.publicKey(TEST_KEY.getPublicKey()))
 			.unsignedTransaction("badbadbadbad");

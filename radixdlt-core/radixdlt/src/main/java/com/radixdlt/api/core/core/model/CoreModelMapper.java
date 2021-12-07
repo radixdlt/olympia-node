@@ -125,6 +125,7 @@ import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
@@ -641,11 +642,16 @@ public final class CoreModelMapper {
 	}
 
 	public EngineStateIdentifier engineStateIdentifier(LedgerProof ledgerProof) {
-		return new EngineStateIdentifier()
+		return ledgerProof.getNextValidatorSet().map(vset -> new EngineStateIdentifier()
+			.stateIdentifier(stateIdentifier(ledgerProof.getAccumulatorState()))
+			.epoch(ledgerProof.getEpoch() + 1)
+			.round(0L)
+			.timestamp(ledgerProof.timestamp())
+		).orElseGet(() -> new EngineStateIdentifier()
 			.stateIdentifier(stateIdentifier(ledgerProof.getAccumulatorState()))
 			.epoch(ledgerProof.getEpoch())
 			.round(ledgerProof.getView().number())
-			.timestamp(ledgerProof.timestamp());
+			.timestamp(ledgerProof.timestamp()));
 	}
 
 	public SubstateTypeIdentifier substateTypeIdentifier(Class<? extends Particle> substateClass) {
@@ -654,8 +660,8 @@ public final class CoreModelMapper {
 			.type(name);
 	}
 
-	public ResourceIdentifier create(REAddr tokenAddress, String symbol) {
-		return new TokenResourceIdentifier()
+	public TokenResourceIdentifier create(REAddr tokenAddress, String symbol) {
+		return (TokenResourceIdentifier) new TokenResourceIdentifier()
 			.rri(addressing.forResources().of(symbol, tokenAddress))
 			.type("Token");
 	}
@@ -672,11 +678,23 @@ public final class CoreModelMapper {
 			.value(value.toString());
 	}
 
+	public ResourceAmount stakeUnitAmount(boolean positive, ECPublicKey validatorKey, UInt256 value) {
+		return new ResourceAmount()
+			.resourceIdentifier(stakeUnit(validatorKey))
+			.value(positive ? value.toString() : "-" + value);
+	}
+
+	public ResourceAmount stakeUnitAmount(boolean positive, String validatorAddress, UInt256 value) {
+		return new ResourceAmount()
+			.resourceIdentifier(new StakeUnitResourceIdentifier().validatorAddress(validatorAddress).type("StakeUnit"))
+			.value(positive ? value.toString() : "-" + value);
+	}
+
 	public ResourceAmount nativeTokenAmount(UInt256 value) {
 		return nativeTokenAmount(true, value);
 	}
 
-	public ResourceIdentifier nativeToken() {
+	public TokenResourceIdentifier nativeToken() {
 		return create(REAddr.ofNativeToken(), "xrd");
 	}
 
@@ -720,6 +738,8 @@ public final class CoreModelMapper {
 
 	public EngineConfiguration engineConfiguration(RERulesConfig config) {
 		return new EngineConfiguration()
+			.nativeToken(nativeToken())
+			.maximumMessageLength(255) // TODO: Remove hardcode
 			.maximumValidatorFeeIncrease(ValidatorUpdateRakeConstraintScrypt.MAX_RAKE_INCREASE)
 			.feeTable(feeTable(config.getFeeTable()))
 			.reservedSymbols(config.getReservedSymbols().stream().toList())
@@ -1137,6 +1157,14 @@ public final class CoreModelMapper {
 			new InvalidTransactionError()
 				.message(cause.getMessage())
 				.type(InvalidTransactionError.class.getSimpleName())
+		);
+	}
+
+	public CoreApiException mempoolFullException(MempoolFullException e) {
+		return CoreApiException.unavailable(
+			new MempoolFullError()
+				.mempoolTransactionCount(e.getMaxSize())
+				.type(MempoolFullError.class.getSimpleName())
 		);
 	}
 

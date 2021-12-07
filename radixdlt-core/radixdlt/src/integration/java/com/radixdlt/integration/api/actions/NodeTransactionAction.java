@@ -61,77 +61,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.core.handlers;
+package com.radixdlt.integration.api.actions;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
-import com.radixdlt.api.core.core.model.CoreApiException;
-import com.radixdlt.api.core.core.model.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedError;
-import com.radixdlt.api.core.core.openapitools.model.SignRequest;
-import com.radixdlt.api.core.core.openapitools.model.SignResponse;
-import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.parser.exceptions.TxnParseException;
-import com.radixdlt.qualifier.LocalSigner;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.utils.Bytes;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
+import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 
-public final class SignHandler extends CoreJsonRpcHandler<SignRequest, SignResponse> {
-
-	private final ECPublicKey self;
-	private final HashSigner hashSigner;
-	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
-	private final CoreModelMapper coreModelMapper;
-
-	@Inject
-	SignHandler(
-		@Self ECPublicKey self,
-		@LocalSigner HashSigner hashSigner,
-		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
-		CoreModelMapper coreModelMapper
-	) {
-		super(SignRequest.class);
-
-		this.self = self;
-		this.hashSigner = hashSigner;
-		this.radixEngineProvider = radixEngineProvider;
-		this.coreModelMapper = coreModelMapper;
-	}
-
-	@Override
-	public SignResponse handleRequest(SignRequest request) throws CoreApiException {
-		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
-
-		var pubKey = coreModelMapper.ecPublicKey(request.getPublicKey());
-		if (!self.equals(pubKey)) {
-			throw CoreApiException.notSupported(
-				new PublicKeyNotSupportedError()
-					.unsupportedPublicKey(request.getPublicKey())
-					.type(PublicKeyNotSupportedError.class.getSimpleName())
-			);
-		}
-
-		// Verify this is a valid transaction and not anything more malicious
-		var bytes = coreModelMapper.bytes(request.getUnsignedTransaction());
-		var txn = Txn.create(bytes);
-		try {
-			radixEngineProvider.get().getParser().parse(txn);
-		} catch (TxnParseException e) {
-			throw coreModelMapper.parseException(e);
-		}
-
-		var builder = TxLowLevelBuilder.newBuilder(bytes);
-		var hash = builder.hashToSign();
-		var signature = this.hashSigner.sign(hash);
-		var signedTransaction = builder.sig(signature).blob();
-
-		return new SignResponse()
-			.signedTransaction(Bytes.toHexString(signedTransaction));
-	}
+public sealed interface NodeTransactionAction permits RegisterValidator, SetAllowDelegationFlag, SetValidatorFee,
+	SetValidatorOwner, StakeTokens, TransferTokens, UnstakeStakeUnits {
+	OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers);
 }

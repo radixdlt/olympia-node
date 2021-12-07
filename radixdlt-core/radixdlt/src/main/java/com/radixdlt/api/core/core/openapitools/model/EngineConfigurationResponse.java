@@ -30,7 +30,7 @@ import java.util.Objects;
   EngineConfigurationResponse.JSON_PROPERTY_CHECKPOINTS,
   EngineConfigurationResponse.JSON_PROPERTY_FORKS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T13:38:25.299627-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:41:23.542373-06:00[America/Chicago]")
 public class EngineConfigurationResponse {
   public static final String JSON_PROPERTY_CHECKPOINTS = "checkpoints";
   private List<EngineCheckpoint> checkpoints = new ArrayList<>();

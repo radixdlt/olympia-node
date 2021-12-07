@@ -128,9 +128,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 	@Override
 	public REProcessedTxn add(Txn txn) throws MempoolRejectedException {
 		if (this.data.size() >= maxSize) {
-			throw new MempoolFullException(
-				String.format("Mempool full: %s of %s items", this.data.size(), maxSize)
-			);
+			throw new MempoolFullException(this.data.size(), maxSize);
 		}
 
 		if (this.data.containsKey(txn.getId())) {

@@ -22,26 +22,18 @@ import java.util.Objects;
 
 
 /**
- * SignRequest
+ * NodeIdentifiersRequest
  */
 @JsonPropertyOrder({
-  SignRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
-  SignRequest.JSON_PROPERTY_UNSIGNED_TRANSACTION,
-  SignRequest.JSON_PROPERTY_PUBLIC_KEY
+  NodeIdentifiersRequest.JSON_PROPERTY_NETWORK_IDENTIFIER
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-25T19:31:26.842808-06:00[America/Chicago]")
-public class SignRequest {
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:56:33.306430-06:00[America/Chicago]")
+public class NodeIdentifiersRequest {
   public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
   private NetworkIdentifier networkIdentifier;
 
-  public static final String JSON_PROPERTY_UNSIGNED_TRANSACTION = "unsigned_transaction";
-  private String unsignedTransaction;
 
-  public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
-  private PublicKey publicKey;
-
-
-  public SignRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
+  public NodeIdentifiersRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
     this.networkIdentifier = networkIdentifier;
     return this;
   }
@@ -67,60 +59,8 @@ public class SignRequest {
   }
 
 
-  public SignRequest unsignedTransaction(String unsignedTransaction) {
-    this.unsignedTransaction = unsignedTransaction;
-    return this;
-  }
-
-   /**
-   * Get unsignedTransaction
-   * @return unsignedTransaction
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_UNSIGNED_TRANSACTION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getUnsignedTransaction() {
-    return unsignedTransaction;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_UNSIGNED_TRANSACTION)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUnsignedTransaction(String unsignedTransaction) {
-    this.unsignedTransaction = unsignedTransaction;
-  }
-
-
-  public SignRequest publicKey(PublicKey publicKey) {
-    this.publicKey = publicKey;
-    return this;
-  }
-
-   /**
-   * Get publicKey
-   * @return publicKey
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public PublicKey getPublicKey() {
-    return publicKey;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPublicKey(PublicKey publicKey) {
-    this.publicKey = publicKey;
-  }
-
-
   /**
-   * Return true if this SignRequest object is equal to o.
+   * Return true if this NodeIdentifiersRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -130,24 +70,20 @@ public class SignRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    SignRequest signRequest = (SignRequest) o;
-    return Objects.equals(this.networkIdentifier, signRequest.networkIdentifier) &&
-        Objects.equals(this.unsignedTransaction, signRequest.unsignedTransaction) &&
-        Objects.equals(this.publicKey, signRequest.publicKey);
+    NodeIdentifiersRequest nodeIdentifiersRequest = (NodeIdentifiersRequest) o;
+    return Objects.equals(this.networkIdentifier, nodeIdentifiersRequest.networkIdentifier);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkIdentifier, unsignedTransaction, publicKey);
+    return Objects.hash(networkIdentifier);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class SignRequest {\n");
+    sb.append("class NodeIdentifiersRequest {\n");
     sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
-    sb.append("    unsignedTransaction: ").append(toIndentedString(unsignedTransaction)).append("\n");
-    sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -103,9 +103,7 @@ public final class SimpleMempool implements Mempool<Txn> {
 	@Override
 	public Txn add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
 		if (this.data.size() >= maxSize) {
-			throw new MempoolFullException(
-				String.format("Mempool full: %s of %s items", this.data.size(), maxSize)
-			);
+			throw new MempoolFullException(this.data.size(), maxSize);
 		}
 		if (!this.data.add(txn)) {
 			throw new MempoolDuplicateException(String.format("Mempool already has command %s", txn));

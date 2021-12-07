@@ -100,6 +100,10 @@ public final class MultiNodeDeterministicRunner {
 		this.network = network;
 	}
 
+	public int getSize() {
+		return nodes.size();
+	}
+
 	public Injector getNode(int index) {
 		return nodes.get(index);
 	}

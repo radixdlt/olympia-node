@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,27 +61,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.services;
+package com.radixdlt.integration.api;
 
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.gateway.BerkeleyAccountTransactionStore;
-import com.radixdlt.api.gateway.openapitools.model.AccountTransactionStatus;
-import com.radixdlt.api.gateway.transaction.TransactionStatusService;
-import com.radixdlt.api.gateway.transaction.TransactionStatusServiceModule;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.deterministic.LastEventsModule;
+import com.radixdlt.integration.FailOnEvent;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.PrivateKeys;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
@@ -90,12 +85,11 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Module;
 import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
+import com.google.inject.util.Modules;
 import com.radixdlt.PersistedNodeForTestingModule;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atom.actions.TransferToken;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -104,36 +98,83 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.statecomputer.InvalidProposedTxn;
 import com.radixdlt.statecomputer.checkpoint.MockedGenesisModule;
+import com.radixdlt.application.system.FeeTable;
+import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.statecomputer.forks.ForksModule;
 import com.radixdlt.statecomputer.forks.RERulesConfig;
 import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static org.assertj.core.api.Assertions.assertThat;
+@RunWith(Parameterized.class)
+public class ApiBalancesTest {
+	private static final int ACTION_ROUNDS = 5000;
+	private static final RERulesConfig config = RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
+	private static final Amount PER_BYTE_FEE = Amount.ofMicroTokens(2);
 
-public class TransactionStatusTest {
-	private static final int NUM_NODES = 10;
+	@Parameterized.Parameters
+	public static Collection<Object[]> forksModule() {
+		return List.of(new Object[][]{
+			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100)), null},
+			{new ForkOverwritesWithShorterEpochsModule(config), null},
+			{
+				new ForkOverwritesWithShorterEpochsModule(config),
+				new ForkOverwritesWithShorterEpochsModule(config.removeSigsPerRoundLimit())
+			},
+			{
+				new RadixEngineForksLatestOnlyModule(
+					config.overrideMaxRounds(100).overrideFeeTable(
+						FeeTable.create(
+							PER_BYTE_FEE,
+							Map.of()
+						)
+					)
+				), null},
+			{
+				new ForkOverwritesWithShorterEpochsModule(
+					config.overrideFeeTable(
+						FeeTable.create(
+							PER_BYTE_FEE,
+							Map.of()
+						)
+					)
+				), null},
+		});
+	}
+
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 	private DeterministicNetwork network;
 	private final ImmutableList<ECKeyPair> nodeKeys;
+	private final Module radixEngineConfiguration;
+	private final Module byzantineModule;
 	private MultiNodeDeterministicRunner deterministicRunner;
 
-	public TransactionStatusTest() {
+	public ApiBalancesTest(Module forkModule, Module byzantineModule) {
 		this.nodeKeys = PrivateKeys.numeric(1)
-			.limit(NUM_NODES)
+			.limit(20)
 			.collect(ImmutableList.toImmutableList());
+		this.radixEngineConfiguration = Modules.combine(
+			new MainnetForkConfigsModule(),
+			new ForksModule(),
+			forkModule
+		);
+		this.byzantineModule = byzantineModule;
 	}
 
 	@Before
@@ -144,9 +185,10 @@ public class TransactionStatusTest {
 			MessageMutator.nothing()
 		);
 
-		var allNodes = nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
+		List<BFTNode> allNodes = nodeKeys.stream()
+			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
 		var nodeCreators = Streams.mapWithIndex(nodeKeys.stream(), (k, i) ->
-			(Supplier<Injector>) () -> createRunner(k, allNodes)).collect(Collectors.toList());
+			(Supplier<Injector>) () -> createRunner(i == 1, k, allNodes)).collect(Collectors.toList());
 
 		deterministicRunner = new MultiNodeDeterministicRunner(
 			nodeCreators,
@@ -156,18 +198,22 @@ public class TransactionStatusTest {
 		deterministicRunner.start();
 	}
 
-	@After
-	public void teardown() {
-		deterministicRunner.tearDown();
-	}
-
 	private void stopDatabase(Injector injector) {
 		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
 		injector.getInstance(PersistentSafetyStateStore.class).close();
 		injector.getInstance(DatabaseEnvironment.class).stop();
 	}
 
-	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
+	@After
+	public void teardown() {
+		deterministicRunner.tearDown();
+	}
+
+	private Injector createRunner(boolean byzantine, ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
+		var reConfig = byzantine && byzantineModule != null
+			? Modules.override(this.radixEngineConfiguration).with(byzantineModule)
+			: this.radixEngineConfiguration;
+
 		return Guice.createInjector(
 			new MockedGenesisModule(
 				nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
@@ -175,11 +221,10 @@ public class TransactionStatusTest {
 				Amount.ofTokens(1000)
 			),
 			MempoolConfig.asModule(10, 10),
-			new MainnetForkConfigsModule(),
-			new ForksModule(),
-			new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
+			reConfig,
 			new PersistedNodeForTestingModule(),
-			new TransactionStatusServiceModule(),
+			new LastEventsModule(LedgerUpdate.class),
+			FailOnEvent.asModule(InvalidProposedTxn.class),
 			new AbstractModule() {
 				@Override
 				protected void configure() {
@@ -187,10 +232,7 @@ public class TransactionStatusTest {
 					bind(Environment.class).toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
 					bindConstant().annotatedWith(DatabaseLocation.class)
 						.to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
-
-					bind(BerkeleyAccountTransactionStore.class).in(Scopes.SINGLETON);
-					Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-						.addBinding().to(BerkeleyAccountTransactionStore.class);
+					bindConstant().annotatedWith(NetworkId.class).to(Network.LOCALNET.getId());
 				}
 
 				@Provides
@@ -203,49 +245,32 @@ public class TransactionStatusTest {
 		);
 	}
 
+	/**
+	 * TODO: Figure out why if run for long enough, # of validators
+	 * trends to minimum.
+	 */
 	@Test
-	public void transaction_status_should_not_change_once_committed() throws Exception {
-		var radixEngine = deterministicRunner.getNode(0)
-			.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() { }));
-		var acct = REAddr.ofPubKeyAccount(nodeKeys.get(0).getPublicKey());
-		var action = new TransferToken(
-			REAddr.ofNativeToken(),
-			acct,
-			REAddr.ofPubKeyAccount(PrivateKeys.ofNumeric(1).getPublicKey()),
-			UInt256.ONE
-		);
-		var request = TxnConstructionRequest.create()
-			.feePayer(acct)
-			.action(action);
-		var txBuilder = radixEngine.construct(request);
-		var txn = txBuilder.signAndBuild(nodeKeys.get(0)::sign);
-		var service = deterministicRunner.getNode(0).getInstance(TransactionStatusService.class);
-		assertThat(service.getTransactionStatus(txn.getId())).isEmpty();
+	public void api_balances_should_be_consistent_with_radix_engine_balances() throws Exception {
+		var random = new Random(12345);
+		var randomTransactionSubmitter = new RandomTransactionSubmitter(deterministicRunner, random);
+		var apiBalanceChecker = new ApiBalanceChecker(deterministicRunner);
 
-		var dispatcher = this.deterministicRunner.getNode(0)
-			.getInstance(Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() { }));
+		for (int i = 0; i < ACTION_ROUNDS; i++) {
+			deterministicRunner.processForCount(100);
 
-
-		dispatcher.dispatch(MempoolAdd.create(txn));
-		AccountTransactionStatus.StatusEnum lastStatus = null;
-		for (int i = 0; i < 20; i++) {
-			for (int j = 0; j < 100; j++) {
-				deterministicRunner.processNext();
-				// Check that once confirmed, status does not change
-				var accountTransactionMaybe = service.getTransactionStatus(txn.getId());
-				if (accountTransactionMaybe.isPresent()) {
-					var status = accountTransactionMaybe.get()
-						.getTransactionStatus().getStatus();
-					if (!status.equals(AccountTransactionStatus.StatusEnum.CONFIRMED)) {
-						assertThat(lastStatus).isNotEqualTo(AccountTransactionStatus.StatusEnum.CONFIRMED);
-					}
-				}
-
-				lastStatus = accountTransactionMaybe.map(s -> s.getTransactionStatus().getStatus())
-						.orElse(null);
+			if (random.nextInt(100) < 50) {
+				randomTransactionSubmitter.execute();
 			}
-			// TODO: allow network to dispatch to itself rather than forcing it here
-			dispatcher.dispatch(MempoolAdd.create(txn));
+			if (random.nextInt(100) < 10) {
+				var nodeIndex = random.nextInt(nodeKeys.size());
+				deterministicRunner.restartNode(nodeIndex);
+			}
+			if (random.nextInt(200) < 1) {
+				apiBalanceChecker.execute();
+			}
+
+			deterministicRunner.dispatchToAll(new Key<EventDispatcher<MempoolRelayTrigger>>() {}, MempoolRelayTrigger.create());
+			deterministicRunner.dispatchToAll(new Key<EventDispatcher<SyncCheckTrigger>>() {}, SyncCheckTrigger.create());
 		}
 	}
 }

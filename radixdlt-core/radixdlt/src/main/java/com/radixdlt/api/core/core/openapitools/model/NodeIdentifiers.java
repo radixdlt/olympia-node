@@ -16,86 +16,141 @@ package com.radixdlt.api.core.core.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.radixdlt.api.core.core.openapitools.JSON;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
+
 /**
- * CoreError
+ * NodeIdentifiers
  */
 @JsonPropertyOrder({
-  CoreError.JSON_PROPERTY_TYPE
+  NodeIdentifiers.JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER,
+  NodeIdentifiers.JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER,
+  NodeIdentifiers.JSON_PROPERTY_PUBLIC_KEY,
+  NodeIdentifiers.JSON_PROPERTY_P2P_NODE
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T13:55:31.682669-06:00[America/Chicago]")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
-@JsonSubTypes({
-  @JsonSubTypes.Type(value = AboveMaximumValidatorFeeIncreaseError.class, name = "AboveMaximumValidatorFeeIncreaseError"),
-  @JsonSubTypes.Type(value = BelowMinimumStakeError.class, name = "BelowMinimumStakeError"),
-  @JsonSubTypes.Type(value = DataObjectNotSupportedByEntityError.class, name = "DataObjectNotSupportedByEntityError"),
-  @JsonSubTypes.Type(value = FeeConstructionError.class, name = "FeeConstructionError"),
-  @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
-  @JsonSubTypes.Type(value = InvalidAddressError.class, name = "InvalidAddressError"),
-  @JsonSubTypes.Type(value = InvalidDataObjectError.class, name = "InvalidDataObjectError"),
-  @JsonSubTypes.Type(value = InvalidFeePayerEntityError.class, name = "InvalidFeePayerEntityError"),
-  @JsonSubTypes.Type(value = InvalidHexError.class, name = "InvalidHexError"),
-  @JsonSubTypes.Type(value = InvalidJsonError.class, name = "InvalidJsonError"),
-  @JsonSubTypes.Type(value = InvalidPartialStateIdentifierError.class, name = "InvalidPartialStateIdentifierError"),
-  @JsonSubTypes.Type(value = InvalidPublicKeyError.class, name = "InvalidPublicKeyError"),
-  @JsonSubTypes.Type(value = InvalidSignatureError.class, name = "InvalidSignatureError"),
-  @JsonSubTypes.Type(value = InvalidSubEntityError.class, name = "InvalidSubEntityError"),
-  @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
-  @JsonSubTypes.Type(value = InvalidTransactionHashError.class, name = "InvalidTransactionHashError"),
-  @JsonSubTypes.Type(value = MempoolFullError.class, name = "MempoolFullError"),
-  @JsonSubTypes.Type(value = MessageTooLongError.class, name = "MessageTooLongError"),
-  @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
-  @JsonSubTypes.Type(value = NotEnoughResourcesError.class, name = "NotEnoughResourcesError"),
-  @JsonSubTypes.Type(value = NotValidatorOwnerError.class, name = "NotValidatorOwnerError"),
-  @JsonSubTypes.Type(value = PublicKeyNotSupportedError.class, name = "PublicKeyNotSupportedError"),
-  @JsonSubTypes.Type(value = ResourceDepositOperationNotSupportedByEntityError.class, name = "ResourceDepositOperationNotSupportedByEntityError"),
-  @JsonSubTypes.Type(value = ResourceWithdrawOperationNotSupportedByEntityError.class, name = "ResourceWithdrawOperationNotSupportedByEntityError"),
-  @JsonSubTypes.Type(value = StateIdentifierNotFoundError.class, name = "StateIdentifierNotFoundError"),
-  @JsonSubTypes.Type(value = SubstateDependencyNotFoundError.class, name = "SubstateDependencyNotFoundError"),
-  @JsonSubTypes.Type(value = TransactionNotFoundError.class, name = "TransactionNotFoundError"),
-})
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:56:33.306430-06:00[America/Chicago]")
+public class NodeIdentifiers {
+  public static final String JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER = "account_entity_identifier";
+  private EntityIdentifier accountEntityIdentifier;
 
-public class CoreError {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+  public static final String JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER = "validator_entity_identifier";
+  private EntityIdentifier validatorEntityIdentifier;
+
+  public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
+  private PublicKey publicKey;
+
+  public static final String JSON_PROPERTY_P2P_NODE = "p2p_node";
+  private Peer p2pNode;
 
 
-  public CoreError type(String type) {
-    this.type = type;
+  public NodeIdentifiers accountEntityIdentifier(EntityIdentifier accountEntityIdentifier) {
+    this.accountEntityIdentifier = accountEntityIdentifier;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get accountEntityIdentifier
+   * @return accountEntityIdentifier
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public EntityIdentifier getAccountEntityIdentifier() {
+    return accountEntityIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setAccountEntityIdentifier(EntityIdentifier accountEntityIdentifier) {
+    this.accountEntityIdentifier = accountEntityIdentifier;
+  }
+
+
+  public NodeIdentifiers validatorEntityIdentifier(EntityIdentifier validatorEntityIdentifier) {
+    this.validatorEntityIdentifier = validatorEntityIdentifier;
+    return this;
+  }
+
+   /**
+   * Get validatorEntityIdentifier
+   * @return validatorEntityIdentifier
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public EntityIdentifier getValidatorEntityIdentifier() {
+    return validatorEntityIdentifier;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValidatorEntityIdentifier(EntityIdentifier validatorEntityIdentifier) {
+    this.validatorEntityIdentifier = validatorEntityIdentifier;
+  }
+
+
+  public NodeIdentifiers publicKey(PublicKey publicKey) {
+    this.publicKey = publicKey;
+    return this;
+  }
+
+   /**
+   * Get publicKey
+   * @return publicKey
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public PublicKey getPublicKey() {
+    return publicKey;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setPublicKey(PublicKey publicKey) {
+    this.publicKey = publicKey;
+  }
+
+
+  public NodeIdentifiers p2pNode(Peer p2pNode) {
+    this.p2pNode = p2pNode;
+    return this;
+  }
+
+   /**
+   * Get p2pNode
+   * @return p2pNode
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_P2P_NODE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Peer getP2pNode() {
+    return p2pNode;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_P2P_NODE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setP2pNode(Peer p2pNode) {
+    this.p2pNode = p2pNode;
   }
 
 
   /**
-   * Return true if this CoreError object is equal to o.
+   * Return true if this NodeIdentifiers object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -105,20 +160,26 @@ public class CoreError {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CoreError coreError = (CoreError) o;
-    return Objects.equals(this.type, coreError.type);
+    NodeIdentifiers nodeIdentifiers = (NodeIdentifiers) o;
+    return Objects.equals(this.accountEntityIdentifier, nodeIdentifiers.accountEntityIdentifier) &&
+        Objects.equals(this.validatorEntityIdentifier, nodeIdentifiers.validatorEntityIdentifier) &&
+        Objects.equals(this.publicKey, nodeIdentifiers.publicKey) &&
+        Objects.equals(this.p2pNode, nodeIdentifiers.p2pNode);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(accountEntityIdentifier, validatorEntityIdentifier, publicKey, p2pNode);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CoreError {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class NodeIdentifiers {\n");
+    sb.append("    accountEntityIdentifier: ").append(toIndentedString(accountEntityIdentifier)).append("\n");
+    sb.append("    validatorEntityIdentifier: ").append(toIndentedString(validatorEntityIdentifier)).append("\n");
+    sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
+    sb.append("    p2pNode: ").append(toIndentedString(p2pNode)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -134,38 +195,5 @@ public class CoreError {
     return o.toString().replace("\n", "\n    ");
   }
 
-static {
-  // Initialize and register the discriminator mappings.
-  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("AboveMaximumValidatorFeeIncreaseError", AboveMaximumValidatorFeeIncreaseError.class);
-  mappings.put("BelowMinimumStakeError", BelowMinimumStakeError.class);
-  mappings.put("DataObjectNotSupportedByEntityError", DataObjectNotSupportedByEntityError.class);
-  mappings.put("FeeConstructionError", FeeConstructionError.class);
-  mappings.put("InternalServerError", InternalServerError.class);
-  mappings.put("InvalidAddressError", InvalidAddressError.class);
-  mappings.put("InvalidDataObjectError", InvalidDataObjectError.class);
-  mappings.put("InvalidFeePayerEntityError", InvalidFeePayerEntityError.class);
-  mappings.put("InvalidHexError", InvalidHexError.class);
-  mappings.put("InvalidJsonError", InvalidJsonError.class);
-  mappings.put("InvalidPartialStateIdentifierError", InvalidPartialStateIdentifierError.class);
-  mappings.put("InvalidPublicKeyError", InvalidPublicKeyError.class);
-  mappings.put("InvalidSignatureError", InvalidSignatureError.class);
-  mappings.put("InvalidSubEntityError", InvalidSubEntityError.class);
-  mappings.put("InvalidTransactionError", InvalidTransactionError.class);
-  mappings.put("InvalidTransactionHashError", InvalidTransactionHashError.class);
-  mappings.put("MempoolFullError", MempoolFullError.class);
-  mappings.put("MessageTooLongError", MessageTooLongError.class);
-  mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
-  mappings.put("NotEnoughResourcesError", NotEnoughResourcesError.class);
-  mappings.put("NotValidatorOwnerError", NotValidatorOwnerError.class);
-  mappings.put("PublicKeyNotSupportedError", PublicKeyNotSupportedError.class);
-  mappings.put("ResourceDepositOperationNotSupportedByEntityError", ResourceDepositOperationNotSupportedByEntityError.class);
-  mappings.put("ResourceWithdrawOperationNotSupportedByEntityError", ResourceWithdrawOperationNotSupportedByEntityError.class);
-  mappings.put("StateIdentifierNotFoundError", StateIdentifierNotFoundError.class);
-  mappings.put("SubstateDependencyNotFoundError", SubstateDependencyNotFoundError.class);
-  mappings.put("TransactionNotFoundError", TransactionNotFoundError.class);
-  mappings.put("CoreError", CoreError.class);
-  JSON.registerDiscriminator(CoreError.class, "type", mappings);
-}
 }
 

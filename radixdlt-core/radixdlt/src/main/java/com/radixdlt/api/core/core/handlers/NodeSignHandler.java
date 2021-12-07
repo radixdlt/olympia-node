@@ -64,51 +64,73 @@
 package com.radixdlt.api.core.core.handlers;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.radixdlt.api.core.core.model.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.model.CoreApiException;
 import com.radixdlt.api.core.core.model.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
-import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitResponse;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedError;
+import com.radixdlt.api.core.core.openapitools.model.NodeSignRequest;
+import com.radixdlt.api.core.core.openapitools.model.NodeSignResponse;
+import com.radixdlt.atom.TxLowLevelBuilder;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.parser.exceptions.TxnParseException;
+import com.radixdlt.qualifier.LocalSigner;
+import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.utils.Bytes;
 
-public final class ConstructionSubmitHandler extends CoreJsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {
-	private final RadixEngineStateComputer radixEngineStateComputer;
-	private final CoreModelMapper modelMapper;
+public final class NodeSignHandler extends CoreJsonRpcHandler<NodeSignRequest, NodeSignResponse> {
+	private final ECPublicKey self;
+	private final HashSigner hashSigner;
+	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
+	private final CoreModelMapper coreModelMapper;
 
 	@Inject
-	ConstructionSubmitHandler(
-		RadixEngineStateComputer radixEngineStateComputer,
-		CoreModelMapper modelMapper
+	NodeSignHandler(
+		@Self ECPublicKey self,
+		@LocalSigner HashSigner hashSigner,
+		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
+		CoreModelMapper coreModelMapper
 	) {
-		super(ConstructionSubmitRequest.class);
+		super(NodeSignRequest.class);
 
-		this.radixEngineStateComputer = radixEngineStateComputer;
-		this.modelMapper = modelMapper;
+		this.self = self;
+		this.hashSigner = hashSigner;
+		this.radixEngineProvider = radixEngineProvider;
+		this.coreModelMapper = coreModelMapper;
 	}
 
 	@Override
-	public ConstructionSubmitResponse handleRequest(ConstructionSubmitRequest request) throws CoreApiException {
-		modelMapper.verifyNetwork(request.getNetworkIdentifier());
+	public NodeSignResponse handleRequest(NodeSignRequest request) throws CoreApiException {
+		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
-		var txn = modelMapper.txn(request.getSignedTransaction());
-		try {
-			radixEngineStateComputer.addToMempool(txn);
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-				.duplicate(false);
-		} catch (MempoolDuplicateException e) {
-			return new ConstructionSubmitResponse()
-				.transactionIdentifier(modelMapper.transactionIdentifier(txn.getId()))
-				.duplicate(true);
-		} catch (MempoolFullException e) {
-			throw modelMapper.mempoolFullException(e);
-		} catch (MempoolRejectedException e) {
-			var reException = (RadixEngineException) e.getCause();
-			throw modelMapper.radixEngineException(reException);
+		var pubKey = coreModelMapper.ecPublicKey(request.getPublicKey());
+		if (!self.equals(pubKey)) {
+			throw CoreApiException.notSupported(
+				new PublicKeyNotSupportedError()
+					.unsupportedPublicKey(request.getPublicKey())
+					.type(PublicKeyNotSupportedError.class.getSimpleName())
+			);
 		}
+
+		// Verify this is a valid transaction and not anything more malicious
+		var bytes = coreModelMapper.bytes(request.getUnsignedTransaction());
+		var txn = Txn.create(bytes);
+		try {
+			radixEngineProvider.get().getParser().parse(txn);
+		} catch (TxnParseException e) {
+			throw coreModelMapper.parseException(e);
+		}
+
+		var builder = TxLowLevelBuilder.newBuilder(bytes);
+		var hash = builder.hashToSign();
+		var signature = this.hashSigner.sign(hash);
+		var signedTransaction = builder.sig(signature).blob();
+
+		return new NodeSignResponse()
+			.signedTransaction(Bytes.toHexString(signedTransaction));
 	}
 }

@@ -26,10 +26,10 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * CoreError
+ * MempoolFullError
  */
 @JsonPropertyOrder({
-  CoreError.JSON_PROPERTY_TYPE
+  MempoolFullError.JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T13:55:31.682669-06:00[America/Chicago]")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
@@ -63,39 +63,39 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = TransactionNotFoundError.class, name = "TransactionNotFoundError"),
 })
 
-public class CoreError {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private String type;
+public class MempoolFullError extends CoreError {
+  public static final String JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT = "mempool_transaction_count";
+  private Integer mempoolTransactionCount;
 
 
-  public CoreError type(String type) {
-    this.type = type;
+  public MempoolFullError mempoolTransactionCount(Integer mempoolTransactionCount) {
+    this.mempoolTransactionCount = mempoolTransactionCount;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get mempoolTransactionCount
+   * @return mempoolTransactionCount
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getType() {
-    return type;
+  public Integer getMempoolTransactionCount() {
+    return mempoolTransactionCount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(String type) {
-    this.type = type;
+  public void setMempoolTransactionCount(Integer mempoolTransactionCount) {
+    this.mempoolTransactionCount = mempoolTransactionCount;
   }
 
 
   /**
-   * Return true if this CoreError object is equal to o.
+   * Return true if this MempoolFullError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -105,20 +105,22 @@ public class CoreError {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CoreError coreError = (CoreError) o;
-    return Objects.equals(this.type, coreError.type);
+    MempoolFullError mempoolFullError = (MempoolFullError) o;
+    return Objects.equals(this.mempoolTransactionCount, mempoolFullError.mempoolTransactionCount) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(mempoolTransactionCount, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CoreError {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class MempoolFullError {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    mempoolTransactionCount: ").append(toIndentedString(mempoolTransactionCount)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -164,8 +166,8 @@ static {
   mappings.put("StateIdentifierNotFoundError", StateIdentifierNotFoundError.class);
   mappings.put("SubstateDependencyNotFoundError", SubstateDependencyNotFoundError.class);
   mappings.put("TransactionNotFoundError", TransactionNotFoundError.class);
-  mappings.put("CoreError", CoreError.class);
-  JSON.registerDiscriminator(CoreError.class, "type", mappings);
+  mappings.put("MempoolFullError", MempoolFullError.class);
+  JSON.registerDiscriminator(MempoolFullError.class, "type", mappings);
 }
 }
 

@@ -1408,24 +1408,48 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/UnexpectedError"
-  "/sign":
+  "/node/identifiers":
     post:
-      summary: Sign a transaction with the node's key
+      summary: Get the node's identifiers
       tags:
-        - sign
+        - node
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/SignRequest"
+              "$ref": "#/components/schemas/NodeIdentifiersRequest"
       responses:
         '200':
           description: An unsigned transaction
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/SignResponse"
+                "$ref": "#/components/schemas/NodeIdentifiersResponse"
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnexpectedError"
+  "/node/sign":
+    post:
+      summary: Sign a transaction with the node's key
+      tags:
+        - node
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/NodeSignRequest"
+      responses:
+        '200':
+          description: An unsigned transaction
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NodeSignResponse"
         '500':
           description: Unexpected error
           content:
@@ -1488,7 +1512,6 @@ components:
         - current_state_epoch
         - current_state_round
         - current_state_timestamp
-        - node_identifiers
         - sync_status
         - peers
       properties:
@@ -1511,24 +1534,6 @@ components:
           description: The current ledger state timestamp at the top of the node's copy of the ledger.
             This timestamp is not guaranteed to always increase.
           "$ref": "#/components/schemas/LongNumber"
-        node_identifiers:
-          description: The entity identifiers associated with this node's private
-            key.
-          type: object
-          required:
-            - account_entity_identifier
-            - validator_entity_identifier
-            - public_key
-            - p2p_node
-          properties:
-            account_entity_identifier:
-              "$ref": "#/components/schemas/EntityIdentifier"
-            validator_entity_identifier:
-              "$ref": "#/components/schemas/EntityIdentifier"
-            public_key:
-              "$ref": "#/components/schemas/PublicKey"
-            p2p_node:
-              $ref: "#/components/schemas/Peer"
         sync_status:
           $ref: "#/components/schemas/SyncStatus"
         peers:
@@ -2200,7 +2205,23 @@ components:
         timestamp:
           type: integer
           format: int64
-    SignRequest:
+    NodeIdentifiersRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          $ref: "#/components/schemas/NetworkIdentifier"
+    NodeIdentifiersResponse:
+      type: object
+      required:
+        - node_identifiers
+      properties:
+        node_identifiers:
+          description: The entity identifiers associated with this node's private
+            key.
+          $ref: "#/components/schemas/NodeIdentifiers"
+    NodeSignRequest:
       type: object
       required:
         - network_identifier
@@ -2213,18 +2234,35 @@ components:
           type: string
         public_key:
           $ref: "#/components/schemas/PublicKey"
-    SignResponse:
+    NodeSignResponse:
       type: object
       required:
         - signed_transaction
       properties:
         signed_transaction:
           type: string
+    NodeIdentifiers:
+      type: object
+      required:
+        - account_entity_identifier
+        - validator_entity_identifier
+        - public_key
+        - p2p_node
+      properties:
+        account_entity_identifier:
+          $ref: "#/components/schemas/EntityIdentifier"
+        validator_entity_identifier:
+          $ref: "#/components/schemas/EntityIdentifier"
+        public_key:
+          $ref: "#/components/schemas/PublicKey"
+        p2p_node:
+          $ref: "#/components/schemas/Peer"
     Fork:
       type: object
       required:
         - fork_identifier
         - engine_identifier
+        - engine_configuration
       properties:
         fork_identifier:
           "$ref": "#/components/schemas/ForkIdentifier"
@@ -2235,6 +2273,8 @@ components:
     EngineConfiguration:
       type: object
       required:
+        - native_token
+        - maximum_message_length
         - maximum_validators
         - token_symbol_pattern
         - unstaking_delay_epoch_length
@@ -2249,6 +2289,10 @@ components:
         - reserved_symbols
         - fee_table
       properties:
+        native_token:
+          $ref: "#/components/schemas/TokenResourceIdentifier"
+        maximum_message_length:
+          type: integer
         maximum_validators:
           type: integer
         token_symbol_pattern:
@@ -3002,6 +3046,15 @@ components:
           properties:
             message:
               type: string
+    MempoolFullError:
+      allOf:
+        - $ref: "#/components/schemas/CoreError"
+        - type: object
+          required:
+            - mempool_transaction_count
+          properties:
+            mempool_transaction_count:
+              type: integer
     NotEnoughResourcesError:
       allOf:
         - $ref: "#/components/schemas/CoreError"
@@ -3183,6 +3236,7 @@ components:
           InvalidHexError: "#/components/schemas/InvalidHexError"
           InvalidSignatureError: "#/components/schemas/InvalidSignatureError"
           InvalidTransactionError: "#/components/schemas/InvalidTransactionError"
+          MempoolFullError: "#/components/schemas/MempoolFullError"
           AboveMaximumValidatorFeeIncreaseError: "#/components/schemas/AboveMaximumValidatorFeeIncreaseError"
           NotEnoughResourcesError: "#/components/schemas/NotEnoughResourcesError"
           BelowMinimumStakeError: "#/components/schemas/BelowMinimumStakeError"
