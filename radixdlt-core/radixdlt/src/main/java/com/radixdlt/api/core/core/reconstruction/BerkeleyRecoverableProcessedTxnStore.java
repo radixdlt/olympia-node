@@ -102,8 +102,8 @@ import static com.google.common.primitives.UnsignedBytes.lexicographicalComparat
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAdditionalStore {
-	private static final String PROCESSED_TRANSACTIONS_DB_NAME = "radix.transactions";
-	private static final String ACCUMULATOR_DB_NAME = "radix.accumulator";
+	private static final String RECOVERABLE_TRANSACTIONS_DB_NAME = "radix.recoverable_txns";
+	private static final String ACCUMULATOR_HASH_DB_NAME = "radix.accumulator_hash";
 	private Database processedTransactionsDatabase; // Txns by index; Append-only
 	private Database accumulatorDatabase; // Txns by index; Append-only
 
@@ -127,14 +127,14 @@ public final class BerkeleyRecoverableProcessedTxnStore implements BerkeleyAddit
 
 	@Override
 	public void open(DatabaseEnvironment dbEnv) {
-		processedTransactionsDatabase = dbEnv.getEnvironment().openDatabase(null, PROCESSED_TRANSACTIONS_DB_NAME, new DatabaseConfig()
+		processedTransactionsDatabase = dbEnv.getEnvironment().openDatabase(null, RECOVERABLE_TRANSACTIONS_DB_NAME, new DatabaseConfig()
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setKeyPrefixing(true)
 			.setBtreeComparator(lexicographicalComparator())
 		);
 
-		accumulatorDatabase = dbEnv.getEnvironment().openDatabase(null, ACCUMULATOR_DB_NAME, new DatabaseConfig()
+		accumulatorDatabase = dbEnv.getEnvironment().openDatabase(null, ACCUMULATOR_HASH_DB_NAME, new DatabaseConfig()
 			.setAllowCreate(true)
 			.setTransactional(true)
 			.setKeyPrefixing(true)
