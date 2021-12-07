@@ -61,54 +61,8 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking.actions;
+package com.radixdlt.integration.api;
 
-import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
-import com.radixdlt.api.core.core.openapitools.model.Operation;
-import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.SubEntity;
-import com.radixdlt.api.core.core.openapitools.model.SubEntityMetadata;
-import com.radixdlt.application.tokens.Amount;
-
-public final class StakeTokens implements NodeTransactionAction {
-	private final Amount amount;
-	private final String validatorAddress;
-
-	public StakeTokens(Amount amount, String validatorAddress) {
-		this.amount = amount;
-		this.validatorAddress = validatorAddress;
-	}
-
-	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
-		var nativeToken = configuration.getNativeToken();
-		return new OperationGroup()
-			.addOperationsItem(
-				new Operation()
-					.type("Resource")
-					.amount(new ResourceAmount()
-						.resourceIdentifier(nativeToken)
-						.value("-" + amount.toSubunits().toString())
-					)
-					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier())
-			)
-			.addOperationsItem(
-				new Operation()
-					.type("Resource")
-					.amount(new ResourceAmount()
-						.resourceIdentifier(nativeToken)
-						.value(amount.toSubunits().toString())
-					)
-					.entityIdentifier(new EntityIdentifier()
-						.address(nodeIdentifiers.getAccountEntityIdentifier().getAddress())
-						.subEntity(new SubEntity()
-							.address("prepared_stake")
-							.metadata(new SubEntityMetadata().validatorAddress(validatorAddress))
-						)
-					)
-			);
-	}
+public interface DeterministicActor {
+	void execute() throws Exception;
 }

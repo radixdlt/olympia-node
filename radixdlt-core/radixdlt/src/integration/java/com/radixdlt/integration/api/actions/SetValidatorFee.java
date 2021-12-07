@@ -61,49 +61,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking.actions;
+package com.radixdlt.integration.api.actions;
 
+import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
-import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorFee;
 
+public final class SetValidatorFee implements NodeTransactionAction {
+	private final int fee;
 
-public final class TransferTokens implements NodeTransactionAction {
-	private final Amount amount;
-	private final TokenResourceIdentifier tokenResourceIdentifier;
-	private final EntityIdentifier to;
-
-	public TransferTokens(Amount amount, TokenResourceIdentifier tokenResourceIdentifier, EntityIdentifier to) {
-		this.amount = amount;
-		this.tokenResourceIdentifier = tokenResourceIdentifier;
-		this.to = to;
+	public SetValidatorFee(int fee) {
+		this.fee = fee;
 	}
 
 	@Override
 	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
-		return new OperationGroup()
-			.addOperationsItem(
-				new Operation()
-					.type("Resource")
-					.amount(new ResourceAmount()
-						.resourceIdentifier(tokenResourceIdentifier)
-						.value("-" + amount.toSubunits().toString())
-					)
-					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier())
-			)
-			.addOperationsItem(
-				new Operation()
-					.type("Resource")
-					.amount(new ResourceAmount()
-						.resourceIdentifier(tokenResourceIdentifier)
-						.value(amount.toSubunits().toString())
-					)
-					.entityIdentifier(to)
-			);
+		return new OperationGroup().addOperationsItem(
+			new Operation()
+				.type("Data")
+				.data(new Data().action(Data.ActionEnum.CREATE)
+					.dataObject(new PreparedValidatorFee().fee(fee).type(PreparedValidatorFee.class.getSimpleName()))
+				)
+				.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
+		);
 	}
 }

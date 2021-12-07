@@ -1,10 +1,9 @@
-/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
- *
+/*
+ * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
- *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -62,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking;
+package com.radixdlt.integration.api;
 
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
@@ -123,7 +122,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
-public class StakingUnstakingValidatorsTest {
+public class ApiBalancesTest {
 	private static final int ACTION_ROUNDS = 5000;
 	private static final RERulesConfig config = RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
 	private static final Amount PER_BYTE_FEE = Amount.ofMicroTokens(2);
@@ -166,7 +165,7 @@ public class StakingUnstakingValidatorsTest {
 	private final Module byzantineModule;
 	private MultiNodeDeterministicRunner deterministicRunner;
 
-	public StakingUnstakingValidatorsTest(Module forkModule, Module byzantineModule) {
+	public ApiBalancesTest(Module forkModule, Module byzantineModule) {
 		this.nodeKeys = PrivateKeys.numeric(1)
 			.limit(20)
 			.collect(ImmutableList.toImmutableList());
@@ -251,9 +250,8 @@ public class StakingUnstakingValidatorsTest {
 	 * trends to minimum.
 	 */
 	@Test
-	public void stake_unstake_transfers_restarts() throws Exception {
+	public void api_balances_should_be_consistent_with_radix_engine_balances() throws Exception {
 		var random = new Random(12345);
-
 		var randomTransactionSubmitter = new RandomTransactionSubmitter(deterministicRunner, random);
 		var apiBalanceChecker = new ApiBalanceChecker(deterministicRunner);
 

@@ -61,20 +61,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking.actions;
+package com.radixdlt.integration.api.actions;
 
 import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
 import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorFee;
+import com.radixdlt.api.core.core.openapitools.model.ValidatorAllowDelegation;
 
-public final class SetValidatorFee implements NodeTransactionAction {
-	private final int fee;
+public final class SetAllowDelegationFlag implements NodeTransactionAction {
+	private final boolean allowDelegation;
 
-	public SetValidatorFee(int fee) {
-		this.fee = fee;
+	public SetAllowDelegationFlag(boolean allowDelegation) {
+		this.allowDelegation = allowDelegation;
 	}
 
 	@Override
@@ -83,7 +83,7 @@ public final class SetValidatorFee implements NodeTransactionAction {
 			new Operation()
 				.type("Data")
 				.data(new Data().action(Data.ActionEnum.CREATE)
-					.dataObject(new PreparedValidatorFee().fee(fee).type(PreparedValidatorFee.class.getSimpleName()))
+					.dataObject(new ValidatorAllowDelegation().allowDelegation(allowDelegation).type(ValidatorAllowDelegation.class.getSimpleName()))
 				)
 				.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
 		);

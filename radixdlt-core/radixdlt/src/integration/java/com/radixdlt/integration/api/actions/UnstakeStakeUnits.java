@@ -61,8 +61,52 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking;
+package com.radixdlt.integration.api.actions;
 
-public interface DeterministicActor {
-	void execute() throws Exception;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.Operation;
+import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
+import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.radixdlt.api.core.core.openapitools.model.StakeUnitResourceIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.SubEntity;
+import com.radixdlt.application.tokens.Amount;
+
+public final class UnstakeStakeUnits implements NodeTransactionAction {
+	private final Amount amount;
+	private final String validatorAddress;
+
+	public UnstakeStakeUnits(Amount amount, String validatorAddress) {
+		this.amount = amount;
+		this.validatorAddress = validatorAddress;
+	}
+
+	@Override
+	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
+		var resourceIdentifier = new StakeUnitResourceIdentifier().validatorAddress(validatorAddress).type("StakeUnits");
+		return new OperationGroup()
+			.addOperationsItem(
+				new Operation()
+					.type("Resource")
+					.amount(new ResourceAmount()
+						.resourceIdentifier(resourceIdentifier)
+						.value("-" + amount.toSubunits().toString())
+					)
+					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier())
+			)
+			.addOperationsItem(
+				new Operation()
+					.type("Resource")
+					.amount(new ResourceAmount()
+						.resourceIdentifier(resourceIdentifier)
+						.value(amount.toSubunits().toString())
+					)
+					.entityIdentifier(
+						new EntityIdentifier()
+							.address(nodeIdentifiers.getAccountEntityIdentifier().getAddress())
+							.subEntity(new SubEntity().address("prepared_unstake"))
+					)
+			);
+	}
 }

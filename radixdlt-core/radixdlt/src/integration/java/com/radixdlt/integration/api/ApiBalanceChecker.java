@@ -61,7 +61,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking;
+package com.radixdlt.integration.api;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.core.CoreApiException;

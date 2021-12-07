@@ -61,20 +61,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking.actions;
+package com.radixdlt.integration.api.actions;
 
 import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.ValidatorAllowDelegation;
+import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorOwner;
 
-public final class SetAllowDelegationFlag implements NodeTransactionAction {
-	private final boolean allowDelegation;
+public final class SetValidatorOwner implements NodeTransactionAction {
+	private final EntityIdentifier owner;
 
-	public SetAllowDelegationFlag(boolean allowDelegation) {
-		this.allowDelegation = allowDelegation;
+	public SetValidatorOwner(EntityIdentifier owner) {
+		this.owner = owner;
 	}
 
 	@Override
@@ -83,7 +84,7 @@ public final class SetAllowDelegationFlag implements NodeTransactionAction {
 			new Operation()
 				.type("Data")
 				.data(new Data().action(Data.ActionEnum.CREATE)
-					.dataObject(new ValidatorAllowDelegation().allowDelegation(allowDelegation).type(ValidatorAllowDelegation.class.getSimpleName()))
+					.dataObject(new PreparedValidatorOwner().owner(owner).type(PreparedValidatorOwner.class.getSimpleName()))
 				)
 				.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
 		);

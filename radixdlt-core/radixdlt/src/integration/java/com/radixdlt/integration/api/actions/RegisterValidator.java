@@ -61,52 +61,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking.actions;
+package com.radixdlt.integration.api.actions;
 
+import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.StakeUnitResourceIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.SubEntity;
-import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorRegistered;
 
-public final class UnstakeStakeUnits implements NodeTransactionAction {
-	private final Amount amount;
-	private final String validatorAddress;
+public final class RegisterValidator implements NodeTransactionAction {
+	private final boolean register;
 
-	public UnstakeStakeUnits(Amount amount, String validatorAddress) {
-		this.amount = amount;
-		this.validatorAddress = validatorAddress;
+	public RegisterValidator(boolean register) {
+		this.register = register;
 	}
 
 	@Override
 	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
-		var resourceIdentifier = new StakeUnitResourceIdentifier().validatorAddress(validatorAddress).type("StakeUnits");
-		return new OperationGroup()
-			.addOperationsItem(
-				new Operation()
-					.type("Resource")
-					.amount(new ResourceAmount()
-						.resourceIdentifier(resourceIdentifier)
-						.value("-" + amount.toSubunits().toString())
+		return new OperationGroup().addOperationsItem(
+			new Operation()
+				.type("Data")
+				.data(new Data().action(Data.ActionEnum.CREATE)
+					.dataObject(new PreparedValidatorRegistered().registered(register)
+						.type(PreparedValidatorRegistered.class.getSimpleName())
 					)
-					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier())
-			)
-			.addOperationsItem(
-				new Operation()
-					.type("Resource")
-					.amount(new ResourceAmount()
-						.resourceIdentifier(resourceIdentifier)
-						.value(amount.toSubunits().toString())
-					)
-					.entityIdentifier(
-						new EntityIdentifier()
-							.address(nodeIdentifiers.getAccountEntityIdentifier().getAddress())
-							.subEntity(new SubEntity().address("prepared_unstake"))
-					)
-			);
+				)
+				.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
+		);
 	}
 }

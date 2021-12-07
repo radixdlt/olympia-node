@@ -61,8 +61,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking;
+package com.radixdlt.integration.api;
 
+import com.google.inject.Inject;
+import com.google.inject.Key;
+import com.radixdlt.api.core.core.handlers.ConstructionDeriveHandler;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequest;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataAccount;
+import com.radixdlt.api.core.core.openapitools.model.ConstructionDeriveRequestMetadataValidator;
+import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.integration.api.actions.NodeTransactionAction;
+import com.radixdlt.integration.api.actions.RegisterValidator;
+import com.radixdlt.integration.api.actions.SetAllowDelegationFlag;
+import com.radixdlt.integration.api.actions.SetValidatorFee;
+import com.radixdlt.integration.api.actions.SetValidatorOwner;
+import com.radixdlt.integration.api.actions.StakeTokens;
+import com.radixdlt.integration.api.actions.TransferTokens;
+import com.radixdlt.integration.api.actions.UnstakeStakeUnits;
 import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
@@ -84,14 +103,6 @@ import com.radixdlt.api.core.core.openapitools.model.NodeSignRequest;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
-import com.radixdlt.integration.staking.actions.NodeTransactionAction;
-import com.radixdlt.integration.staking.actions.RegisterValidator;
-import com.radixdlt.integration.staking.actions.SetAllowDelegationFlag;
-import com.radixdlt.integration.staking.actions.SetValidatorFee;
-import com.radixdlt.integration.staking.actions.SetValidatorOwner;
-import com.radixdlt.integration.staking.actions.StakeTokens;
-import com.radixdlt.integration.staking.actions.TransferTokens;
-import com.radixdlt.integration.staking.actions.UnstakeStakeUnits;
 
 import java.util.List;
 import java.util.Random;
@@ -110,87 +121,137 @@ public final class RandomTransactionSubmitter implements DeterministicActor {
 		return Amount.ofTokens(random.nextInt(10) * 10 + 1);
 	}
 
+	private static class NodeModel {
+		private final NetworkConfigurationHandler networkConfigurationHandler;
+		private final NodeIdentifiersHandler nodeIdentifiersHandler;
+		private final ConstructionBuildHandler constructionBuildHandler;
+		private final NodeSignHandler nodeSignHandler;
+		private final ConstructionDeriveHandler constructionDeriveHandler;
+		private final ConstructionSubmitHandler constructionSubmitHandler;
+		private final EngineConfigurationHandler engineConfigurationHandler;
+		private final CoreModelMapper coreModelMapper;
+
+		@Inject
+		NodeModel(
+			NetworkConfigurationHandler networkConfigurationHandler,
+			NodeIdentifiersHandler nodeIdentifiersHandler,
+			ConstructionBuildHandler constructionBuildHandler,
+			ConstructionDeriveHandler constructionDeriveHandler,
+			NodeSignHandler nodeSignHandler,
+			ConstructionSubmitHandler constructionSubmitHandler,
+			EngineConfigurationHandler engineConfigurationHandler,
+			CoreModelMapper coreModelMapper
+		) {
+			this.networkConfigurationHandler = networkConfigurationHandler;
+			this.nodeIdentifiersHandler = nodeIdentifiersHandler;
+			this.constructionDeriveHandler = constructionDeriveHandler;
+			this.constructionBuildHandler = constructionBuildHandler;
+			this.nodeSignHandler = nodeSignHandler;
+			this.constructionSubmitHandler = constructionSubmitHandler;
+			this.engineConfigurationHandler = engineConfigurationHandler;
+			this.coreModelMapper = coreModelMapper;
+		}
+
+		private NetworkIdentifier networkIdentifier() {
+			var networkResponse = networkConfigurationHandler.handleRequest((Void) null);
+			return networkResponse.getNetworkIdentifier();
+		}
+
+		public TokenResourceIdentifier nativeToken() {
+			return coreModelMapper.nativeToken();
+		}
+
+		public EntityIdentifier deriveValidator(ECPublicKey key) throws Exception {
+			var response = this.constructionDeriveHandler.handleRequest(new ConstructionDeriveRequest()
+				.networkIdentifier(networkIdentifier())
+				.publicKey(coreModelMapper.publicKey(key))
+				.metadata(new ConstructionDeriveRequestMetadataValidator())
+			);
+			return response.getEntityIdentifier();
+		}
+
+		public EntityIdentifier deriveAccount(ECPublicKey key) throws Exception {
+			var response = this.constructionDeriveHandler.handleRequest(new ConstructionDeriveRequest()
+				.networkIdentifier(networkIdentifier())
+				.publicKey(coreModelMapper.publicKey(key))
+				.metadata(new ConstructionDeriveRequestMetadataAccount())
+			);
+			return response.getEntityIdentifier();
+		}
+
+		public void submit(NodeTransactionAction action) throws Exception {
+			var networkIdentifier = networkIdentifier();
+			var engineConfigurationResponse = engineConfigurationHandler.handleRequest(
+				new EngineConfigurationRequest().networkIdentifier(networkIdentifier)
+			);
+			var nodeIdentifiersResponse = nodeIdentifiersHandler.handleRequest(new NodeIdentifiersRequest().networkIdentifier(networkIdentifier));
+			var nodeIdentifiers = nodeIdentifiersResponse.getNodeIdentifiers();
+			var configuration = engineConfigurationResponse.getForks().get(0).getEngineConfiguration();
+			var operationGroup = action.toOperationGroup(configuration, nodeIdentifiers);
+
+			try {
+				var buildResponse = constructionBuildHandler.handleRequest(new ConstructionBuildRequest()
+					.networkIdentifier(networkIdentifier)
+					.feePayer(nodeIdentifiers.getAccountEntityIdentifier())
+					.operationGroups(List.of(operationGroup))
+				);
+				var unsignedTransaction = buildResponse.getUnsignedTransaction();
+
+				var response = nodeSignHandler.handleRequest(new NodeSignRequest()
+					.networkIdentifier(networkIdentifier)
+					.publicKey(nodeIdentifiers.getPublicKey())
+					.unsignedTransaction(unsignedTransaction)
+				);
+
+				constructionSubmitHandler.handleRequest(new ConstructionSubmitRequest()
+					.networkIdentifier(networkIdentifier)
+					.signedTransaction(response.getSignedTransaction())
+				);
+			} catch (CoreApiException e) {
+				var okayErrors = Set.of(
+					MempoolFullError.class,
+					NotEnoughResourcesError.class,
+					AboveMaximumValidatorFeeIncreaseError.class,
+					BelowMinimumStakeError.class,
+					NotValidatorOwnerError.class
+				);
+
+				// Throw error if not expected
+				if (!okayErrors.contains(e.toError().getDetails().getClass())) {
+					throw e;
+				}
+			}
+		}
+	}
+
 	@Override
 	public void execute() throws Exception {
 		int size = this.multiNodeDeterministicRunner.getSize();
 		var nodeIndex = this.random.nextInt(size);
 		var nodeInjector = this.multiNodeDeterministicRunner.getNode(nodeIndex);
-		var networkConfigurationHandler = nodeInjector.getInstance(NetworkConfigurationHandler.class);
-		var nodeIdentifiersHandler = nodeInjector.getInstance(NodeIdentifiersHandler.class);
-		var buildHandler = nodeInjector.getInstance(ConstructionBuildHandler.class);
-		var signHandler = nodeInjector.getInstance(NodeSignHandler.class);
-		var submitHandler = nodeInjector.getInstance(ConstructionSubmitHandler.class);
-		var engineConfigurationHandler = nodeInjector.getInstance(EngineConfigurationHandler.class);
-		var coreModelMapper = nodeInjector.getInstance(CoreModelMapper.class);
-
-		var networkResponse = networkConfigurationHandler.handleRequest((Void) null);
-		var networkIdentifier = networkResponse.getNetworkIdentifier();
-		var nodeIdentifiersResponse = nodeIdentifiersHandler.handleRequest(new NodeIdentifiersRequest().networkIdentifier(networkIdentifier));
-		var nodeIdentifiers = nodeIdentifiersResponse.getNodeIdentifiers();
-		var engineConfigurationResponse = engineConfigurationHandler.handleRequest(
-			new EngineConfigurationRequest().networkIdentifier(networkIdentifier)
-		);
-
+		var nodeModel = nodeInjector.getInstance(NodeModel.class);
 		var otherNodeIndex = this.random.nextInt(size);
-		var otherNodeInjector = this.multiNodeDeterministicRunner.getNode(otherNodeIndex);
-		var otherNodeIdentifiersHandler = otherNodeInjector.getInstance(NodeIdentifiersHandler.class);
-		var otherNodeIdentifiersResponse = otherNodeIdentifiersHandler.handleRequest(
-			new NodeIdentifiersRequest().networkIdentifier(networkIdentifier)
-		);
-		var otherNodeIdentifiers = otherNodeIdentifiersResponse.getNodeIdentifiers();
-
+		var otherKey = this.multiNodeDeterministicRunner.getNode(otherNodeIndex)
+			.getInstance(Key.get(ECPublicKey.class, Self.class));
 		var next = random.nextInt(8);
+
+		// Don't let the last validator unregister
 		if (next == 4 && nodeIndex <= 0) {
 			return;
 		}
 
 		NodeTransactionAction action = switch (next) {
-			case 0 -> new TransferTokens(nextAmount(), coreModelMapper.nativeToken(), otherNodeIdentifiers.getAccountEntityIdentifier());
-			case 1 -> new StakeTokens(nextAmount(), otherNodeIdentifiers.getValidatorEntityIdentifier().getAddress());
-			case 2 -> new UnstakeStakeUnits(nextAmount(), otherNodeIdentifiers.getValidatorEntityIdentifier().getAddress());
+			case 0 -> new TransferTokens(nextAmount(), nodeModel.nativeToken(), nodeModel.deriveAccount(otherKey));
+			case 1 -> new StakeTokens(nextAmount(), nodeModel.deriveValidator(otherKey).getAddress());
+			case 2 -> new UnstakeStakeUnits(nextAmount(), nodeModel.deriveValidator(otherKey).getAddress());
 			case 3 -> new RegisterValidator(true);
 			case 4 -> new RegisterValidator(false);
 			case 5 -> new SetValidatorFee(random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
-			case 6 -> new SetValidatorOwner(otherNodeIdentifiers.getAccountEntityIdentifier());
+			case 6 -> new SetValidatorOwner(nodeModel.deriveAccount(otherKey));
 			case 7 -> new SetAllowDelegationFlag(random.nextBoolean());
 			default -> throw new IllegalStateException("Unexpected value: " + next);
 		};
 
-		var configuration = engineConfigurationResponse.getForks().get(0).getEngineConfiguration();
-		var operationGroup = action.toOperationGroup(configuration, nodeIdentifiers);
-
-		try {
-			var buildResponse = buildHandler.handleRequest(new ConstructionBuildRequest()
-				.networkIdentifier(networkIdentifier)
-				.feePayer(nodeIdentifiers.getAccountEntityIdentifier())
-				.operationGroups(List.of(operationGroup))
-			);
-			var unsignedTransaction = buildResponse.getUnsignedTransaction();
-
-			var response = signHandler.handleRequest(new NodeSignRequest()
-				.networkIdentifier(networkIdentifier)
-				.publicKey(nodeIdentifiers.getPublicKey())
-				.unsignedTransaction(unsignedTransaction)
-			);
-
-			submitHandler.handleRequest(new ConstructionSubmitRequest()
-				.networkIdentifier(networkIdentifier)
-				.signedTransaction(response.getSignedTransaction())
-			);
-		} catch (CoreApiException e) {
-			var okayErrors = Set.of(
-				MempoolFullError.class,
-				NotEnoughResourcesError.class,
-				AboveMaximumValidatorFeeIncreaseError.class,
-				BelowMinimumStakeError.class,
-				NotValidatorOwnerError.class
-			);
-
-			// Throw error if not expected
-			if (!okayErrors.contains(e.toError().getDetails().getClass())) {
-				throw e;
-			}
-		}
-
+		nodeModel.submit(action);
 	}
 }
