@@ -7,13 +7,8 @@ public final class PMTExt extends PMTNode {
 	public static final int EVEN_PREFIX = 0;
 	public static final int ODD_PREFIX = 1;
 
-	public PMTExt(PMTKey allNibbles, byte[] newHashPointer) {
-		this(null, allNibbles, newHashPointer);
-	}
-
-	PMTExt(PMTKey branchNibble, PMTKey keyNibbles, byte[] newHashPointer) {
-		nodeType = NodeType.EXTENSION; // refactor to casting or pattern
-		this.branchNibble = branchNibble;
+	public PMTExt(PMTKey keyNibbles, byte[] newHashPointer) {
+		nodeType = NodeType.EXTENSION;
 		this.keyNibbles = keyNibbles;
 		this.value = newHashPointer;
 	}
