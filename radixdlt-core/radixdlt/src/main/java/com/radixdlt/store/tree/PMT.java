@@ -98,19 +98,22 @@ public class PMT {
 
 			if (this.root != null) {
 				var acc = insertNode(this.root, pmtKey, val, new PMTAcc());
-				 acc.getNewNodes().stream()
-					 .filter(Objects::nonNull)
-					 .forEach(sanitizedAcc -> {
-						 this.cache.put(represent(sanitizedAcc), sanitizedAcc);
-						 byte[] serialisedNode = sanitizedAcc.serialize();
-						 if (hasDbRepresentation(serialisedNode)) {
-							 this.db.save(hash(serialisedNode), serialisedNode);
-						 }
-					 });
 				this.root = acc.getTip();
+				acc.getNewNodes().stream()
+					.filter(Objects::nonNull)
+					.forEach(sanitizedAcc -> {
+						this.cache.put(represent(sanitizedAcc), sanitizedAcc);
+						byte[] serialisedNode = sanitizedAcc.serialize();
+						if (sanitizedAcc == this.root || hasDbRepresentation(serialisedNode)) {
+							this.db.save(hash(serialisedNode), serialisedNode);
+						}
+					});
 			} else {
 				PMTNode nodeRoot = new PMTLeaf(pmtKey, val);
 				this.root = nodeRoot;
+				byte[] serialisedNode = nodeRoot.serialize();
+				this.cache.put(represent(nodeRoot), nodeRoot);
+				this.db.save(hash(nodeRoot), serialisedNode);
 			}
 		} catch (Exception e) {
 			log.error("PMT operation failure: {} for: {} {} {}",
