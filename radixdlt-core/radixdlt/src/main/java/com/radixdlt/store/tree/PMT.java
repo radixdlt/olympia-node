@@ -186,9 +186,9 @@ public class PMT {
 			 	switch (commonPath.whichRemainderIsLeft()) {
 					case OLD:
 						var remainder = commonPath.getRemainder(PMTPath.Subtree.OLD);
-						var newLeaf = new PMTLeaf(remainder.getTailNibbles(), val);
+						var newLeaf = new PMTLeaf(remainder.getTailNibbles(), current.getValue());
 						var newBranch = new PMTBranch(
-								current.getValue(),
+								val,
 								new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), represent(newLeaf))
 						);
 						var newExt = insertExtension(commonPath, newBranch);
@@ -198,9 +198,9 @@ public class PMT {
 						break;
 					case NEW:
 						remainder = commonPath.getRemainder(PMTPath.Subtree.NEW);
-						newLeaf = new PMTLeaf(remainder.getTailNibbles(), current.value);
+						newLeaf = new PMTLeaf(remainder.getTailNibbles(), val);
 						newBranch = new PMTBranch(
-								val,
+								current.getValue(),
 								new PMTBranch.PMTBranchChild(remainder.getFirstNibble(), represent(newLeaf))
 						);
 						newExt = insertExtension(commonPath, newBranch);
