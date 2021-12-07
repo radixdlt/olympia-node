@@ -67,7 +67,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.api.gateway.GatewayServerModule;
 import com.radixdlt.api.core.CoreServerModule;
-import com.radixdlt.api.service.network.NetworkInfoServiceModule;
 import com.radixdlt.properties.RuntimeProperties;
 
 import java.util.HashMap;
@@ -86,8 +85,6 @@ public final class ApiModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		install(new NetworkInfoServiceModule());
-
 		var endpointStatus = new HashMap<String, Boolean>();
 
 		var gatewayEnable = properties.get("api.gateway.enable", false);

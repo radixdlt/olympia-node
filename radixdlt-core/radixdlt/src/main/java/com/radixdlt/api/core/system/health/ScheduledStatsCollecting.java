@@ -61,62 +61,12 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.util;
+package com.radixdlt.api.core.system.health;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+public enum ScheduledStatsCollecting {
+	INSTANCE;
 
-public class MovingAverage {
-	private final long averagingFactor;
-	private BigDecimal average = BigDecimal.ZERO;
-	private long count = 0;
-
-	private MovingAverage(long averagingFactor) {
-		this.averagingFactor = averagingFactor;
-	}
-
-	public static MovingAverage create(long averagingFactor) {
-		if (averagingFactor <= 1) {
-			throw new IllegalArgumentException("Averaging factor must be above 1");
-		}
-		return new MovingAverage(averagingFactor);
-	}
-
-	public BigDecimal asBigDecimal() {
-		return average;
-	}
-
-	public int asInteger() {
-		return average.intValue();
-	}
-
-	public long asLong() {
-		return average.longValue();
-	}
-
-	public double asDouble() {
-		return average.doubleValue();
-	}
-
-	public MovingAverage update(int value) {
-		return update(BigDecimal.valueOf(value));
-	}
-
-	public MovingAverage update(long value) {
-		return update(BigDecimal.valueOf(value));
-	}
-
-	public MovingAverage update(double value) {
-		return update(BigDecimal.valueOf(value));
-	}
-
-	public MovingAverage update(BigDecimal value) {
-		count++;
-
-		var divisor = BigDecimal.valueOf(Math.min(count, averagingFactor));
-		var delta = value.subtract(average).divide(divisor, 3, RoundingMode.HALF_UP);
-
-		average = average.add(delta);
-		return this;
+	public static ScheduledStatsCollecting create() {
+		return INSTANCE;
 	}
 }

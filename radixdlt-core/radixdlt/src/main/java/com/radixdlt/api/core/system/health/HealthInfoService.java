@@ -61,33 +61,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.service.network;
+package com.radixdlt.api.core.system.health;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.util.MovingAverage;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
 import java.util.EnumMap;
 
-import static com.radixdlt.api.service.network.NodeStatus.BOOTING;
-import static com.radixdlt.api.service.network.NodeStatus.OUT_OF_SYNC;
-import static com.radixdlt.api.service.network.NodeStatus.STALLED;
-import static com.radixdlt.api.service.network.NodeStatus.SYNCING;
-import static com.radixdlt.api.service.network.NodeStatus.UP;
-import static com.radixdlt.api.service.network.NetworkInfoService.ValueHolder.Type.ABSOLUTE;
-import static com.radixdlt.api.service.network.NetworkInfoService.ValueHolder.Type.INCREMENTAL;
+import static com.radixdlt.api.core.system.health.NodeStatus.BOOTING;
+import static com.radixdlt.api.core.system.health.NodeStatus.OUT_OF_SYNC;
+import static com.radixdlt.api.core.system.health.NodeStatus.STALLED;
+import static com.radixdlt.api.core.system.health.NodeStatus.SYNCING;
+import static com.radixdlt.api.core.system.health.NodeStatus.UP;
+import static com.radixdlt.api.core.system.health.HealthInfoService.ValueHolder.Type.ABSOLUTE;
 import static com.radixdlt.counters.SystemCounters.CounterType;
 
-public class NetworkInfoService {
+public class HealthInfoService {
 	private static final long THRESHOLD = 3;                      // Maximum difference between ledger and target
 	private static final long DEFAULT_COLLECTING_INTERVAL = 1000L; // 1 second
-	private static final long DEFAULT_AVERAGING_FACTOR = 10L;     // averaging time in multiples of collecting interval
 	private static final long STATUS_AVERAGING_FACTOR = 3L;       // averaging time in multiples of collecting interval
 
-	public static final CounterType THROUGHPUT_KEY = CounterType.COUNT_BDB_LEDGER_COMMIT;
-	public static final CounterType DEMAND_KEY = CounterType.MEMPOOL_CURRENT_SIZE;
 	public static final CounterType LEDGER_KEY = CounterType.LEDGER_STATE_VERSION;
 	public static final CounterType TARGET_KEY = CounterType.SYNC_TARGET_STATE_VERSION;
 
@@ -96,27 +91,17 @@ public class NetworkInfoService {
 	private final EnumMap<CounterType, ValueHolder> statistics = new EnumMap<>(CounterType.class);
 
 	@Inject
-	public NetworkInfoService(
+	public HealthInfoService(
 		SystemCounters systemCounters,
 		ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting
 	) {
 		this.scheduledStatsCollecting = scheduledStatsCollecting;
 		this.systemCounters = systemCounters;
 
-		statistics.put(THROUGHPUT_KEY, new ValueHolder(DEFAULT_AVERAGING_FACTOR, INCREMENTAL));
-		statistics.put(DEMAND_KEY, new ValueHolder(DEFAULT_AVERAGING_FACTOR, ABSOLUTE));
 		statistics.put(LEDGER_KEY, new ValueHolder(STATUS_AVERAGING_FACTOR, ABSOLUTE));
 		statistics.put(TARGET_KEY, new ValueHolder(STATUS_AVERAGING_FACTOR, ABSOLUTE));
 
 		scheduledStatsCollecting.dispatch(ScheduledStatsCollecting.create(), DEFAULT_COLLECTING_INTERVAL);
-	}
-
-	public long throughput() {
-		return statistics.get(THROUGHPUT_KEY).average();
-	}
-
-	public long demand() {
-		return statistics.get(DEMAND_KEY).average();
 	}
 
 	public NodeStatus nodeStatus() {
@@ -183,10 +168,6 @@ public class NetworkInfoService {
 			}
 
 			return this;
-		}
-
-		public long average() {
-			return calculator.asLong();
 		}
 
 		public long lastValue() {

@@ -64,9 +64,18 @@
 package com.radixdlt.api.core.system;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.api.core.system.health.HealthInfoService;
+import com.radixdlt.api.core.system.health.ScheduledStatsCollecting;
 import com.radixdlt.api.core.system.prometheus.PrometheusApiModule;
 import com.radixdlt.api.util.HandlerRoute;
+import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.Runners;
 import io.undertow.server.HttpHandler;
 
 import java.lang.annotation.Annotation;
@@ -80,6 +89,12 @@ public class SystemApiModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
+		var eventBinder = Multibinder
+			.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+			.permitDuplicates();
+		eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
+		bind(HealthInfoService.class).in(Scopes.SINGLETON);
+
 		var binder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class, annotationType);
 		binder.addBinding(HandlerRoute.get("/system/configuration")).to(SystemConfigurationHandler.class);
 		binder.addBinding(HandlerRoute.get("/system/metrics")).to(SystemMetricsHandler.class);
@@ -88,5 +103,14 @@ public class SystemApiModule extends AbstractModule {
 		binder.addBinding(HandlerRoute.get("/system/peers")).to(PeersHandler.class);
 		binder.addBinding(HandlerRoute.get("/system/addressbook")).to(AddressBookHandler.class);
 		install(new PrometheusApiModule(annotationType, "/prometheus/metrics"));
+	}
+
+	@ProvidesIntoSet
+	public EventProcessorOnRunner<?> healthInfoService(HealthInfoService healthInfoService) {
+		return new EventProcessorOnRunner<>(
+			Runners.APPLICATION,
+			ScheduledStatsCollecting.class,
+			healthInfoService.updateStats()
+		);
 	}
 }
