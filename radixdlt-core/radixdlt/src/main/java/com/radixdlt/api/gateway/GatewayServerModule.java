@@ -65,14 +65,10 @@ package com.radixdlt.api.gateway;
 
 import com.google.common.base.Throwables;
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.api.gateway.account.AccountApiModule;
 import com.radixdlt.api.gateway.openapitools.JSON;
 import com.radixdlt.api.gateway.openapitools.model.ErrorResponse;
 import com.radixdlt.api.gateway.openapitools.model.InternalServerError;
@@ -82,7 +78,6 @@ import com.radixdlt.api.gateway.validator.ValidatorApiModule;
 import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ExceptionHandler;
@@ -116,16 +111,6 @@ public class GatewayServerModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		bind(BerkeleyAccountTransactionStore.class).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-			.addBinding().to(BerkeleyAccountTransactionStore.class);
-
-		var routeBinder = MapBinder.newMapBinder(
-			binder(), HandlerRoute.class, HttpHandler.class, GatewayServer.class
-		);
-		routeBinder.addBinding(HandlerRoute.post("/gateway")).to(GatewayHandler.class);
-
-		install(new AccountApiModule(GatewayServer.class, "/account"));
 		install(new TokenApiModule(GatewayServer.class, "/token"));
 		install(new ValidatorApiModule(GatewayServer.class, "/validator"));
 		install(new TransactionApiModule(GatewayServer.class, "/transaction"));

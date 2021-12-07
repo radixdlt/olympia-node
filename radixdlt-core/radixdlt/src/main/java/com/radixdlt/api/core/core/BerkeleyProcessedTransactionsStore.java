@@ -166,7 +166,7 @@ public final class BerkeleyProcessedTransactionsStore implements BerkeleyAdditio
 				try {
 					next = JSON.getDefault().getMapper().readValue(value.getData(), CommittedTransaction.class);
 				} catch (IOException e) {
-					throw new IllegalStateException("Failed to deserialize committed transaction.");
+					throw new IllegalStateException("Failed to deserialize committed transaction.", e);
 				}
 
 				status = cursor.getNext(key, value, null);
