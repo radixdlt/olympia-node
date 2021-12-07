@@ -16,90 +16,84 @@ package com.radixdlt.api.core.core.openapitools.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 import java.util.Objects;
 
 
 /**
- * The entity identifiers associated with this node&#39;s private key.
+ * NodeSignRequest
  */
-@ApiModel(description = "The entity identifiers associated with this node's private key.")
 @JsonPropertyOrder({
-  NetworkStatusResponseNodeIdentifiers.JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER,
-  NetworkStatusResponseNodeIdentifiers.JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER,
-  NetworkStatusResponseNodeIdentifiers.JSON_PROPERTY_PUBLIC_KEY,
-  NetworkStatusResponseNodeIdentifiers.JSON_PROPERTY_P2P_NODE
+  NodeSignRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
+  NodeSignRequest.JSON_PROPERTY_UNSIGNED_TRANSACTION,
+  NodeSignRequest.JSON_PROPERTY_PUBLIC_KEY
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-26T22:42:19.934226-06:00[America/Chicago]")
-public class NetworkStatusResponseNodeIdentifiers {
-  public static final String JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER = "account_entity_identifier";
-  private EntityIdentifier accountEntityIdentifier;
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:56:33.306430-06:00[America/Chicago]")
+public class NodeSignRequest {
+  public static final String JSON_PROPERTY_NETWORK_IDENTIFIER = "network_identifier";
+  private NetworkIdentifier networkIdentifier;
 
-  public static final String JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER = "validator_entity_identifier";
-  private EntityIdentifier validatorEntityIdentifier;
+  public static final String JSON_PROPERTY_UNSIGNED_TRANSACTION = "unsigned_transaction";
+  private String unsignedTransaction;
 
   public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
   private PublicKey publicKey;
 
-  public static final String JSON_PROPERTY_P2P_NODE = "p2p_node";
-  private Peer p2pNode;
 
-
-  public NetworkStatusResponseNodeIdentifiers accountEntityIdentifier(EntityIdentifier accountEntityIdentifier) {
-    this.accountEntityIdentifier = accountEntityIdentifier;
+  public NodeSignRequest networkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
     return this;
   }
 
    /**
-   * Get accountEntityIdentifier
-   * @return accountEntityIdentifier
+   * Get networkIdentifier
+   * @return networkIdentifier
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityIdentifier getAccountEntityIdentifier() {
-    return accountEntityIdentifier;
+  public NetworkIdentifier getNetworkIdentifier() {
+    return networkIdentifier;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_ENTITY_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_NETWORK_IDENTIFIER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccountEntityIdentifier(EntityIdentifier accountEntityIdentifier) {
-    this.accountEntityIdentifier = accountEntityIdentifier;
+  public void setNetworkIdentifier(NetworkIdentifier networkIdentifier) {
+    this.networkIdentifier = networkIdentifier;
   }
 
 
-  public NetworkStatusResponseNodeIdentifiers validatorEntityIdentifier(EntityIdentifier validatorEntityIdentifier) {
-    this.validatorEntityIdentifier = validatorEntityIdentifier;
+  public NodeSignRequest unsignedTransaction(String unsignedTransaction) {
+    this.unsignedTransaction = unsignedTransaction;
     return this;
   }
 
    /**
-   * Get validatorEntityIdentifier
-   * @return validatorEntityIdentifier
+   * Get unsignedTransaction
+   * @return unsignedTransaction
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_UNSIGNED_TRANSACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityIdentifier getValidatorEntityIdentifier() {
-    return validatorEntityIdentifier;
+  public String getUnsignedTransaction() {
+    return unsignedTransaction;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_ENTITY_IDENTIFIER)
+  @JsonProperty(JSON_PROPERTY_UNSIGNED_TRANSACTION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorEntityIdentifier(EntityIdentifier validatorEntityIdentifier) {
-    this.validatorEntityIdentifier = validatorEntityIdentifier;
+  public void setUnsignedTransaction(String unsignedTransaction) {
+    this.unsignedTransaction = unsignedTransaction;
   }
 
 
-  public NetworkStatusResponseNodeIdentifiers publicKey(PublicKey publicKey) {
+  public NodeSignRequest publicKey(PublicKey publicKey) {
     this.publicKey = publicKey;
     return this;
   }
@@ -125,34 +119,8 @@ public class NetworkStatusResponseNodeIdentifiers {
   }
 
 
-  public NetworkStatusResponseNodeIdentifiers p2pNode(Peer p2pNode) {
-    this.p2pNode = p2pNode;
-    return this;
-  }
-
-   /**
-   * Get p2pNode
-   * @return p2pNode
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_P2P_NODE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Peer getP2pNode() {
-    return p2pNode;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_P2P_NODE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setP2pNode(Peer p2pNode) {
-    this.p2pNode = p2pNode;
-  }
-
-
   /**
-   * Return true if this NetworkStatusResponse_node_identifiers object is equal to o.
+   * Return true if this NodeSignRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -162,26 +130,24 @@ public class NetworkStatusResponseNodeIdentifiers {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NetworkStatusResponseNodeIdentifiers networkStatusResponseNodeIdentifiers = (NetworkStatusResponseNodeIdentifiers) o;
-    return Objects.equals(this.accountEntityIdentifier, networkStatusResponseNodeIdentifiers.accountEntityIdentifier) &&
-        Objects.equals(this.validatorEntityIdentifier, networkStatusResponseNodeIdentifiers.validatorEntityIdentifier) &&
-        Objects.equals(this.publicKey, networkStatusResponseNodeIdentifiers.publicKey) &&
-        Objects.equals(this.p2pNode, networkStatusResponseNodeIdentifiers.p2pNode);
+    NodeSignRequest nodeSignRequest = (NodeSignRequest) o;
+    return Objects.equals(this.networkIdentifier, nodeSignRequest.networkIdentifier) &&
+        Objects.equals(this.unsignedTransaction, nodeSignRequest.unsignedTransaction) &&
+        Objects.equals(this.publicKey, nodeSignRequest.publicKey);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(accountEntityIdentifier, validatorEntityIdentifier, publicKey, p2pNode);
+    return Objects.hash(networkIdentifier, unsignedTransaction, publicKey);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NetworkStatusResponseNodeIdentifiers {\n");
-    sb.append("    accountEntityIdentifier: ").append(toIndentedString(accountEntityIdentifier)).append("\n");
-    sb.append("    validatorEntityIdentifier: ").append(toIndentedString(validatorEntityIdentifier)).append("\n");
+    sb.append("class NodeSignRequest {\n");
+    sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
+    sb.append("    unsignedTransaction: ").append(toIndentedString(unsignedTransaction)).append("\n");
     sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
-    sb.append("    p2pNode: ").append(toIndentedString(p2pNode)).append("\n");
     sb.append("}");
     return sb.toString();
   }

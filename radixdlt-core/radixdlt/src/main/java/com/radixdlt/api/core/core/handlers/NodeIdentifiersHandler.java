@@ -61,32 +61,45 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking.actions;
+package com.radixdlt.api.core.core.handlers;
 
-import com.radixdlt.api.core.core.openapitools.model.Data;
-import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.google.inject.Inject;
+import com.radixdlt.api.core.core.CoreApiException;
+import com.radixdlt.api.core.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
-import com.radixdlt.api.core.core.openapitools.model.Operation;
-import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorOwner;
+import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiersRequest;
+import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiersResponse;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.REAddr;
 
-public final class SetValidatorOwner implements NodeTransactionAction {
-	private final EntityIdentifier owner;
+public final class NodeIdentifiersHandler extends CoreJsonRpcHandler<NodeIdentifiersRequest, NodeIdentifiersResponse> {
+	private final REAddr accountAddress;
+	private final ECPublicKey validatorKey;
+	private final CoreModelMapper coreModelMapper;
 
-	public SetValidatorOwner(EntityIdentifier owner) {
-		this.owner = owner;
+	@Inject
+	NodeIdentifiersHandler(
+		@Self ECPublicKey validatorKey,
+		CoreModelMapper coreModelMapper
+	) {
+		super(NodeIdentifiersRequest.class);
+
+		this.accountAddress = REAddr.ofPubKeyAccount(validatorKey);
+		this.validatorKey = validatorKey;
+		this.coreModelMapper = coreModelMapper;
 	}
 
 	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
-		return new OperationGroup().addOperationsItem(
-			new Operation()
-				.type("Data")
-				.data(new Data().action(Data.ActionEnum.CREATE)
-					.dataObject(new PreparedValidatorOwner().owner(owner).type(PreparedValidatorOwner.class.getSimpleName()))
-				)
-				.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
-		);
+	public NodeIdentifiersResponse handleRequest(NodeIdentifiersRequest request) throws CoreApiException {
+		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
+		return new NodeIdentifiersResponse()
+			.nodeIdentifiers(new NodeIdentifiers()
+				.accountEntityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
+				.validatorEntityIdentifier(coreModelMapper.entityIdentifier(validatorKey))
+				.publicKey(coreModelMapper.publicKey(validatorKey))
+				.p2pNode(coreModelMapper.peer(validatorKey))
+			);
 	}
 }

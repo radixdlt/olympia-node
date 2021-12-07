@@ -69,18 +69,18 @@ import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
 import com.radixdlt.api.core.core.handlers.ConstructionSubmitHandler;
 import com.radixdlt.api.core.core.handlers.EngineConfigurationHandler;
 import com.radixdlt.api.core.core.handlers.NetworkConfigurationHandler;
-import com.radixdlt.api.core.core.handlers.NetworkStatusHandler;
-import com.radixdlt.api.core.core.handlers.SignHandler;
+import com.radixdlt.api.core.core.handlers.NodeIdentifiersHandler;
+import com.radixdlt.api.core.core.handlers.NodeSignHandler;
 import com.radixdlt.api.core.core.openapitools.model.AboveMaximumValidatorFeeIncreaseError;
 import com.radixdlt.api.core.core.openapitools.model.BelowMinimumStakeError;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
 import com.radixdlt.api.core.core.openapitools.model.MempoolFullError;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
+import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiersRequest;
 import com.radixdlt.api.core.core.openapitools.model.NotEnoughResourcesError;
 import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerError;
-import com.radixdlt.api.core.core.openapitools.model.SignRequest;
+import com.radixdlt.api.core.core.openapitools.model.NodeSignRequest;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
@@ -116,26 +116,28 @@ public final class RandomTransactionSubmitter implements DeterministicActor {
 		var nodeIndex = this.random.nextInt(size);
 		var nodeInjector = this.multiNodeDeterministicRunner.getNode(nodeIndex);
 		var networkConfigurationHandler = nodeInjector.getInstance(NetworkConfigurationHandler.class);
-		var networkStatusHandler = nodeInjector.getInstance(NetworkStatusHandler.class);
+		var nodeIdentifiersHandler = nodeInjector.getInstance(NodeIdentifiersHandler.class);
 		var buildHandler = nodeInjector.getInstance(ConstructionBuildHandler.class);
-		var signHandler = nodeInjector.getInstance(SignHandler.class);
+		var signHandler = nodeInjector.getInstance(NodeSignHandler.class);
 		var submitHandler = nodeInjector.getInstance(ConstructionSubmitHandler.class);
 		var engineConfigurationHandler = nodeInjector.getInstance(EngineConfigurationHandler.class);
 		var coreModelMapper = nodeInjector.getInstance(CoreModelMapper.class);
 
 		var networkResponse = networkConfigurationHandler.handleRequest((Void) null);
 		var networkIdentifier = networkResponse.getNetworkIdentifier();
-		var networkStatusResponse = networkStatusHandler.handleRequest(new NetworkStatusRequest().networkIdentifier(networkIdentifier));
-		var nodeIdentifiers = networkStatusResponse.getNodeIdentifiers();
+		var nodeIdentifiersResponse = nodeIdentifiersHandler.handleRequest(new NodeIdentifiersRequest().networkIdentifier(networkIdentifier));
+		var nodeIdentifiers = nodeIdentifiersResponse.getNodeIdentifiers();
 		var engineConfigurationResponse = engineConfigurationHandler.handleRequest(
 			new EngineConfigurationRequest().networkIdentifier(networkIdentifier)
 		);
 
 		var otherNodeIndex = this.random.nextInt(size);
 		var otherNodeInjector = this.multiNodeDeterministicRunner.getNode(otherNodeIndex);
-		var otherNodeStatusHandler = otherNodeInjector.getInstance(NetworkStatusHandler.class);
-		var otherNodeStatusResponse = otherNodeStatusHandler.handleRequest(new NetworkStatusRequest().networkIdentifier(networkIdentifier));
-		var otherNodeIdentifiers = otherNodeStatusResponse.getNodeIdentifiers();
+		var otherNodeIdentifiersHandler = otherNodeInjector.getInstance(NodeIdentifiersHandler.class);
+		var otherNodeIdentifiersResponse = otherNodeIdentifiersHandler.handleRequest(
+			new NodeIdentifiersRequest().networkIdentifier(networkIdentifier)
+		);
+		var otherNodeIdentifiers = otherNodeIdentifiersResponse.getNodeIdentifiers();
 
 		var next = random.nextInt(8);
 		if (next == 4 && nodeIndex <= 0) {
@@ -165,7 +167,7 @@ public final class RandomTransactionSubmitter implements DeterministicActor {
 			);
 			var unsignedTransaction = buildResponse.getUnsignedTransaction();
 
-			var response = signHandler.handleRequest(new SignRequest()
+			var response = signHandler.handleRequest(new NodeSignRequest()
 				.networkIdentifier(networkIdentifier)
 				.publicKey(nodeIdentifiers.getPublicKey())
 				.unsignedTransaction(unsignedTransaction)

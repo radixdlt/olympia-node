@@ -65,7 +65,7 @@ package com.radixdlt.integration.staking.actions;
 
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
 import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
@@ -83,7 +83,7 @@ public final class UnstakeStakeUnits implements NodeTransactionAction {
 	}
 
 	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NetworkStatusResponseNodeIdentifiers nodeIdentifiers) {
+	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
 		var resourceIdentifier = new StakeUnitResourceIdentifier().validatorAddress(validatorAddress).type("StakeUnits");
 		return new OperationGroup()
 			.addOperationsItem(

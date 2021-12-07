@@ -65,7 +65,7 @@ package com.radixdlt.integration.staking.actions;
 
 import com.radixdlt.api.core.core.openapitools.model.Data;
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.Operation;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 import com.radixdlt.api.core.core.openapitools.model.ValidatorAllowDelegation;
@@ -78,7 +78,7 @@ public final class SetAllowDelegationFlag implements NodeTransactionAction {
 	}
 
 	@Override
-	public OperationGroup toOperationGroup(EngineConfiguration configuration, NetworkStatusResponseNodeIdentifiers nodeIdentifiers) {
+	public OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers) {
 		return new OperationGroup().addOperationsItem(
 			new Operation()
 				.type("Data")

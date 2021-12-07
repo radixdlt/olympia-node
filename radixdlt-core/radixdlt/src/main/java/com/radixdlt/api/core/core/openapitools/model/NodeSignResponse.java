@@ -22,18 +22,18 @@ import java.util.Objects;
 
 
 /**
- * SignResponse
+ * NodeSignResponse
  */
 @JsonPropertyOrder({
-  SignResponse.JSON_PROPERTY_SIGNED_TRANSACTION
+  NodeSignResponse.JSON_PROPERTY_SIGNED_TRANSACTION
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-25T19:31:26.842808-06:00[America/Chicago]")
-public class SignResponse {
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:56:33.306430-06:00[America/Chicago]")
+public class NodeSignResponse {
   public static final String JSON_PROPERTY_SIGNED_TRANSACTION = "signed_transaction";
   private String signedTransaction;
 
 
-  public SignResponse signedTransaction(String signedTransaction) {
+  public NodeSignResponse signedTransaction(String signedTransaction) {
     this.signedTransaction = signedTransaction;
     return this;
   }
@@ -60,7 +60,7 @@ public class SignResponse {
 
 
   /**
-   * Return true if this SignResponse object is equal to o.
+   * Return true if this NodeSignResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -70,8 +70,8 @@ public class SignResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    SignResponse signResponse = (SignResponse) o;
-    return Objects.equals(this.signedTransaction, signResponse.signedTransaction);
+    NodeSignResponse nodeSignResponse = (NodeSignResponse) o;
+    return Objects.equals(this.signedTransaction, nodeSignResponse.signedTransaction);
   }
 
   @Override
@@ -82,7 +82,7 @@ public class SignResponse {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class SignResponse {\n");
+    sb.append("class NodeSignResponse {\n");
     sb.append("    signedTransaction: ").append(toIndentedString(signedTransaction)).append("\n");
     sb.append("}");
     return sb.toString();

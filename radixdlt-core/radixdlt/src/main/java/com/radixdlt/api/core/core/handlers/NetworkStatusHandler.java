@@ -69,13 +69,9 @@ import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponse;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.SyncStatus;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -84,8 +80,6 @@ import com.radixdlt.statecomputer.checkpoint.Genesis;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 
 public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatusRequest, NetworkStatusResponse> {
-	private final REAddr accountAddress;
-	private final ECPublicKey validatorKey;
 	private final InMemorySystemInfo inMemorySystemInfo;
 	private final AccumulatorState preGenesisAccumulatorState;
 	private final AccumulatorState genesisAccumulatorState;
@@ -95,7 +89,6 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 
 	@Inject
 	NetworkStatusHandler(
-		@Self ECPublicKey validatorKey,
 		InMemorySystemInfo inMemorySystemInfo,
 		@Genesis VerifiedTxnsAndProof txnsAndProof,
 		LedgerAccumulator ledgerAccumulator,
@@ -105,8 +98,6 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 	) {
 		super(NetworkStatusRequest.class);
 
-		this.accountAddress = REAddr.ofPubKeyAccount(validatorKey);
-		this.validatorKey = validatorKey;
 		this.inMemorySystemInfo = inMemorySystemInfo;
 		this.preGenesisAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
 		this.genesisAccumulatorState = ledgerAccumulator.accumulate(
@@ -129,13 +120,6 @@ public final class NetworkStatusHandler extends CoreJsonRpcHandler<NetworkStatus
 			.preGenesisStateIdentifier(coreModelMapper.stateIdentifier(preGenesisAccumulatorState))
 			.genesisStateIdentifier(coreModelMapper.stateIdentifier(genesisAccumulatorState))
 			.currentStateIdentifier(coreModelMapper.stateIdentifier(currentProof.getAccumulatorState()))
-			.nodeIdentifiers(
-				new NetworkStatusResponseNodeIdentifiers()
-					.accountEntityIdentifier(coreModelMapper.entityIdentifier(accountAddress))
-					.validatorEntityIdentifier(coreModelMapper.entityIdentifier(validatorKey))
-					.publicKey(coreModelMapper.publicKey(validatorKey))
-					.p2pNode(coreModelMapper.peer(validatorKey))
-			)
 			.syncStatus(new SyncStatus()
 				.currentStateVersion(systemCounters.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
 				.targetStateVersion(systemCounters.get(SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION))

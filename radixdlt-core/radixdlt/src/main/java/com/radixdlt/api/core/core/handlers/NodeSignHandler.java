@@ -69,8 +69,8 @@ import com.radixdlt.api.core.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.openapitools.model.PublicKeyNotSupportedError;
-import com.radixdlt.api.core.core.openapitools.model.SignRequest;
-import com.radixdlt.api.core.core.openapitools.model.SignResponse;
+import com.radixdlt.api.core.core.openapitools.model.NodeSignRequest;
+import com.radixdlt.api.core.core.openapitools.model.NodeSignResponse;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.HashSigner;
@@ -82,21 +82,20 @@ import com.radixdlt.qualifier.LocalSigner;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
 
-public final class SignHandler extends CoreJsonRpcHandler<SignRequest, SignResponse> {
-
+public final class NodeSignHandler extends CoreJsonRpcHandler<NodeSignRequest, NodeSignResponse> {
 	private final ECPublicKey self;
 	private final HashSigner hashSigner;
 	private final Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider;
 	private final CoreModelMapper coreModelMapper;
 
 	@Inject
-	SignHandler(
+	NodeSignHandler(
 		@Self ECPublicKey self,
 		@LocalSigner HashSigner hashSigner,
 		Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider,
 		CoreModelMapper coreModelMapper
 	) {
-		super(SignRequest.class);
+		super(NodeSignRequest.class);
 
 		this.self = self;
 		this.hashSigner = hashSigner;
@@ -105,7 +104,7 @@ public final class SignHandler extends CoreJsonRpcHandler<SignRequest, SignRespo
 	}
 
 	@Override
-	public SignResponse handleRequest(SignRequest request) throws CoreApiException {
+	public NodeSignResponse handleRequest(NodeSignRequest request) throws CoreApiException {
 		coreModelMapper.verifyNetwork(request.getNetworkIdentifier());
 
 		var pubKey = coreModelMapper.ecPublicKey(request.getPublicKey());
@@ -131,7 +130,7 @@ public final class SignHandler extends CoreJsonRpcHandler<SignRequest, SignRespo
 		var signature = this.hashSigner.sign(hash);
 		var signedTransaction = builder.sig(signature).blob();
 
-		return new SignResponse()
+		return new NodeSignResponse()
 			.signedTransaction(Bytes.toHexString(signedTransaction));
 	}
 }

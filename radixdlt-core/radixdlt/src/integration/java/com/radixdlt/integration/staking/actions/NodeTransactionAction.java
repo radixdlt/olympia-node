@@ -64,12 +64,10 @@
 package com.radixdlt.integration.staking.actions;
 
 import com.radixdlt.api.core.core.openapitools.model.EngineConfiguration;
-import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.NodeIdentifiers;
 import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
 
 public sealed interface NodeTransactionAction permits RegisterValidator, SetAllowDelegationFlag, SetValidatorFee,
 	SetValidatorOwner, StakeTokens, TransferTokens, UnstakeStakeUnits {
-	OperationGroup toOperationGroup(EngineConfiguration configuration,
-		NetworkStatusResponseNodeIdentifiers nodeIdentifiers
-	);
+	OperationGroup toOperationGroup(EngineConfiguration configuration, NodeIdentifiers nodeIdentifiers);
 }

@@ -33,11 +33,10 @@ import java.util.Objects;
   NetworkStatusResponse.JSON_PROPERTY_CURRENT_STATE_EPOCH,
   NetworkStatusResponse.JSON_PROPERTY_CURRENT_STATE_ROUND,
   NetworkStatusResponse.JSON_PROPERTY_CURRENT_STATE_TIMESTAMP,
-  NetworkStatusResponse.JSON_PROPERTY_NODE_IDENTIFIERS,
   NetworkStatusResponse.JSON_PROPERTY_SYNC_STATUS,
   NetworkStatusResponse.JSON_PROPERTY_PEERS
 })
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-27T17:01:34.779105-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-12-06T21:56:33.306430-06:00[America/Chicago]")
 public class NetworkStatusResponse {
   public static final String JSON_PROPERTY_PRE_GENESIS_STATE_IDENTIFIER = "pre_genesis_state_identifier";
   private StateIdentifier preGenesisStateIdentifier;
@@ -56,9 +55,6 @@ public class NetworkStatusResponse {
 
   public static final String JSON_PROPERTY_CURRENT_STATE_TIMESTAMP = "current_state_timestamp";
   private Long currentStateTimestamp;
-
-  public static final String JSON_PROPERTY_NODE_IDENTIFIERS = "node_identifiers";
-  private NetworkStatusResponseNodeIdentifiers nodeIdentifiers;
 
   public static final String JSON_PROPERTY_SYNC_STATUS = "sync_status";
   private SyncStatus syncStatus;
@@ -223,32 +219,6 @@ public class NetworkStatusResponse {
   }
 
 
-  public NetworkStatusResponse nodeIdentifiers(NetworkStatusResponseNodeIdentifiers nodeIdentifiers) {
-    this.nodeIdentifiers = nodeIdentifiers;
-    return this;
-  }
-
-   /**
-   * Get nodeIdentifiers
-   * @return nodeIdentifiers
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NODE_IDENTIFIERS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public NetworkStatusResponseNodeIdentifiers getNodeIdentifiers() {
-    return nodeIdentifiers;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NODE_IDENTIFIERS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNodeIdentifiers(NetworkStatusResponseNodeIdentifiers nodeIdentifiers) {
-    this.nodeIdentifiers = nodeIdentifiers;
-  }
-
-
   public NetworkStatusResponse syncStatus(SyncStatus syncStatus) {
     this.syncStatus = syncStatus;
     return this;
@@ -324,14 +294,13 @@ public class NetworkStatusResponse {
         Objects.equals(this.currentStateEpoch, networkStatusResponse.currentStateEpoch) &&
         Objects.equals(this.currentStateRound, networkStatusResponse.currentStateRound) &&
         Objects.equals(this.currentStateTimestamp, networkStatusResponse.currentStateTimestamp) &&
-        Objects.equals(this.nodeIdentifiers, networkStatusResponse.nodeIdentifiers) &&
         Objects.equals(this.syncStatus, networkStatusResponse.syncStatus) &&
         Objects.equals(this.peers, networkStatusResponse.peers);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(preGenesisStateIdentifier, genesisStateIdentifier, currentStateIdentifier, currentStateEpoch, currentStateRound, currentStateTimestamp, nodeIdentifiers, syncStatus, peers);
+    return Objects.hash(preGenesisStateIdentifier, genesisStateIdentifier, currentStateIdentifier, currentStateEpoch, currentStateRound, currentStateTimestamp, syncStatus, peers);
   }
 
   @Override
@@ -344,7 +313,6 @@ public class NetworkStatusResponse {
     sb.append("    currentStateEpoch: ").append(toIndentedString(currentStateEpoch)).append("\n");
     sb.append("    currentStateRound: ").append(toIndentedString(currentStateRound)).append("\n");
     sb.append("    currentStateTimestamp: ").append(toIndentedString(currentStateTimestamp)).append("\n");
-    sb.append("    nodeIdentifiers: ").append(toIndentedString(nodeIdentifiers)).append("\n");
     sb.append("    syncStatus: ").append(toIndentedString(syncStatus)).append("\n");
     sb.append("    peers: ").append(toIndentedString(peers)).append("\n");
     sb.append("}");

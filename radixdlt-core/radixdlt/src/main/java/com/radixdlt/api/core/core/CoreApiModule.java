@@ -80,7 +80,8 @@ import com.radixdlt.api.core.core.handlers.MempoolTransactionHandler;
 import com.radixdlt.api.core.core.handlers.NetworkConfigurationHandler;
 import com.radixdlt.api.core.core.handlers.NetworkStatusHandler;
 import com.radixdlt.api.core.core.handlers.ConstructionParseHandler;
-import com.radixdlt.api.core.core.handlers.SignHandler;
+import com.radixdlt.api.core.core.handlers.NodeIdentifiersHandler;
+import com.radixdlt.api.core.core.handlers.NodeSignHandler;
 import com.radixdlt.api.core.core.handlers.TransactionsHandler;
 import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
@@ -122,6 +123,7 @@ public class CoreApiModule extends AbstractModule {
 		routeBinder.addBinding(HandlerRoute.post("/construction/finalize")).to(ConstructionFinalizeHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/construction/hash")).to(ConstructionHashHandler.class);
 		routeBinder.addBinding(HandlerRoute.post("/construction/submit")).to(ConstructionSubmitHandler.class);
-		routeBinder.addBinding(HandlerRoute.post("/sign")).to(SignHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/node/identifiers")).to(NodeIdentifiersHandler.class);
+		routeBinder.addBinding(HandlerRoute.post("/node/sign")).to(NodeSignHandler.class);
 	}
 }
