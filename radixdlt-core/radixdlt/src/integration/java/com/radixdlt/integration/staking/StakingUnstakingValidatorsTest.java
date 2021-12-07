@@ -64,38 +64,14 @@
 
 package com.radixdlt.integration.staking;
 
-import com.google.common.collect.ClassToInstanceMap;
-import com.radixdlt.api.core.core.CoreApiException;
-import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.handlers.EngineConfigurationHandler;
-import com.radixdlt.api.core.core.handlers.EngineStatusHandler;
-import com.radixdlt.api.core.core.handlers.EntityHandler;
-import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
-import com.radixdlt.api.core.core.openapitools.model.EngineStatusRequest;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.EntityRequest;
-import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
-import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
-import com.radixdlt.api.core.core.openapitools.model.TokenResourceIdentifier;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.integration.FailOnEvent;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.statecomputer.forks.MainnetForkConfigsModule;
-import com.radixdlt.store.LastProof;
 import com.radixdlt.utils.PrivateKeys;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -108,29 +84,21 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.util.Modules;
 import com.radixdlt.PersistedNodeForTestingModule;
-import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.application.tokens.state.PreparedStake;
-import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.application.validators.state.AllowDelegationFlag;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
@@ -146,36 +114,27 @@ import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
-import com.radixdlt.utils.UInt256;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.LongStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(Parameterized.class)
 public class StakingUnstakingValidatorsTest {
-	private static final int ACTION_ROUNDS = 2000;
-	private static final Logger logger = LogManager.getLogger();
-	private static final Amount REWARDS_PER_PROPOSAL = Amount.ofMicroTokens(2307700);
+	private static final int ACTION_ROUNDS = 5000;
 	private static final RERulesConfig config = RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
 	private static final Amount PER_BYTE_FEE = Amount.ofMicroTokens(2);
 
 	@Parameterized.Parameters
 	public static Collection<Object[]> forksModule() {
 		return List.of(new Object[][]{
-			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100)), 100, null},
-			{new ForkOverwritesWithShorterEpochsModule(config), 10, null},
+			{new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(100)), null},
+			{new ForkOverwritesWithShorterEpochsModule(config), null},
 			{
-				new ForkOverwritesWithShorterEpochsModule(config), 10,
+				new ForkOverwritesWithShorterEpochsModule(config),
 				new ForkOverwritesWithShorterEpochsModule(config.removeSigsPerRoundLimit())
 			},
 			{
@@ -186,7 +145,7 @@ public class StakingUnstakingValidatorsTest {
 							Map.of()
 						)
 					)
-				), 100, null},
+				), null},
 			{
 				new ForkOverwritesWithShorterEpochsModule(
 					config.overrideFeeTable(
@@ -195,7 +154,7 @@ public class StakingUnstakingValidatorsTest {
 							Map.of()
 						)
 					)
-				), 10, null},
+				), null},
 		});
 	}
 
@@ -205,10 +164,9 @@ public class StakingUnstakingValidatorsTest {
 	private final ImmutableList<ECKeyPair> nodeKeys;
 	private final Module radixEngineConfiguration;
 	private final Module byzantineModule;
-	private final long maxRounds;
 	private MultiNodeDeterministicRunner deterministicRunner;
 
-	public StakingUnstakingValidatorsTest(Module forkModule, long maxRounds, Module byzantineModule) {
+	public StakingUnstakingValidatorsTest(Module forkModule, Module byzantineModule) {
 		this.nodeKeys = PrivateKeys.numeric(1)
 			.limit(20)
 			.collect(ImmutableList.toImmutableList());
@@ -217,7 +175,6 @@ public class StakingUnstakingValidatorsTest {
 			new ForksModule(),
 			forkModule
 		);
-		this.maxRounds = maxRounds;
 		this.byzantineModule = byzantineModule;
 	}
 
@@ -289,259 +246,33 @@ public class StakingUnstakingValidatorsTest {
 		);
 	}
 
-	private static class NodeState {
-		private final String self;
-		private final LedgerProof lastLedgerProof;
-		private final RadixEngine<LedgerAndBFTProof> radixEngine;
-		private final ClassToInstanceMap<Object> lastEvents;
-		private final Forks forks;
-		private final EngineStatusHandler engineStatusHandler;
-		private final EntityHandler entityHandler;
-		private final EngineConfigurationHandler engineConfigurationHandler;
-		private final Addressing addressing;
-		private final CoreModelMapper coreModelMapper;
-
-		@Inject
-		private NodeState(
-			@Self String self,
-			ClassToInstanceMap<Object> lastEvents,
-			@LastProof LedgerProof lastLedgerProof,
-			RadixEngine<LedgerAndBFTProof> radixEngine,
-			EntityHandler entityHandler,
-			EngineStatusHandler engineStatusHandler,
-			EngineConfigurationHandler engineConfigurationHandler,
-			CoreModelMapper coreModelMapper,
-			Addressing addressing,
-			Forks forks
-		) {
-			this.self = self;
-			this.lastEvents = lastEvents;
-			this.lastLedgerProof = lastLedgerProof;
-			this.radixEngine = radixEngine;
-			this.entityHandler = entityHandler;
-			this.engineStatusHandler = engineStatusHandler;
-			this.engineConfigurationHandler = engineConfigurationHandler;
-			this.coreModelMapper = coreModelMapper;
-			this.addressing = addressing;
-			this.forks = forks;
-		}
-
-		public String getSelf() {
-			return self;
-		}
-
-		public long getExpectedNumberOfRounds() {
-			var epochView = getEpochView();
-			var curEpoch = getEpochView().getEpoch();
-			return LongStream.range(1, curEpoch)
-				.map(i -> forks.get(i).getMaxRounds().number())
-				.sum() + epochView.getView().number();
-		}
-
-		public EpochView getEpochView() {
-			var lastLedgerUpdate = lastEvents.getInstance(LedgerUpdate.class);
-			if (lastLedgerUpdate == null) {
-				return lastLedgerProof.getNextValidatorSet().isPresent()
-					? EpochView.of(lastLedgerProof.getEpoch() + 1, View.genesis())
-					: EpochView.of(lastLedgerProof.getEpoch(), lastLedgerProof.getView());
-			}
-			var epochChange = lastLedgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
-			if (epochChange != null) {
-				return EpochView.of(epochChange.getEpoch(), View.genesis());
-			} else {
-				var tail = lastLedgerUpdate.getTail();
-				return EpochView.of(tail.getEpoch(), tail.getView());
-			}
-		}
-
-		public Map<BFTNode, Map<String, String>> getValidators() {
-			var map = radixEngine.read(reader -> reader.reduce(
-				ValidatorStakeData.class,
-				new HashMap<BFTNode, Map<String, String>>(),
-				(u, s) -> {
-					var data = new HashMap<String, String>();
-					data.put("stake", Amount.ofSubunits(s.getAmount()).toString());
-					data.put("rake", Integer.toString(s.getRakePercentage()));
-					u.put(BFTNode.create(s.getValidatorKey()), data);
-					return u;
-				}
-			));
-
-			radixEngine.read(reader -> reader.reduce(
-				AllowDelegationFlag.class,
-				map,
-				(u, flag) -> {
-					var data = new HashMap<String, String>();
-					data.put("allowDelegation", Boolean.toString(flag.allowsDelegation()));
-					u.merge(BFTNode.create(flag.getValidatorKey()), data, (a, b) -> {
-						a.putAll(b);
-						return a;
-					});
-					return u;
-				}
-			));
-
-			return map;
-		}
-
-		public long unstakingDelayEpochLength() {
-			try {
-				return engineConfigurationHandler.handleRequest(new EngineConfigurationRequest()
-					.networkIdentifier(new NetworkIdentifier().network("localnet"))
-				).getForks().get(0).getEngineConfiguration().getUnstakingDelayEpochLength();
-			} catch (CoreApiException e) {
-				throw new IllegalStateException(e);
-			}
-		}
-
-		public TokenResourceIdentifier nativeToken() {
-			try {
-				return engineConfigurationHandler.handleRequest(new EngineConfigurationRequest()
-					.networkIdentifier(new NetworkIdentifier().network("localnet"))
-				).getNativeToken();
-			} catch (CoreApiException e) {
-				throw new IllegalStateException(e);
-			}
-		}
-
-		public List<ResourceAmount> getAccountBalances(REAddr addr) {
-			try {
-				var response = entityHandler.handleRequest(new EntityRequest()
-					.networkIdentifier(new NetworkIdentifier().network("localnet"))
-					.entityIdentifier(new EntityIdentifier().address(addressing.forAccounts().of(addr)))
-				);
-				return response.getBalances();
-			} catch (CoreApiException e) {
-				throw new IllegalStateException(e);
-			}
-		}
-
-		private List<ResourceAmount> getUnstakes(REAddr addr, ECPublicKey validatorKey) {
-			var networkIdentifier = new NetworkIdentifier().network("localnet");
-			var unstakingDelayEpochLength = unstakingDelayEpochLength();
-			var unstakes = new ArrayList<ResourceAmount>();
-			try {
-				var statusResponse = engineStatusHandler
-					.handleRequest(new EngineStatusRequest().networkIdentifier(networkIdentifier));
-				var curEpoch = statusResponse.getEngineStateIdentifier().getEpoch();
-				var maxEpoch = curEpoch + unstakingDelayEpochLength + 1;
-
-				for (long epochUnstake = curEpoch; epochUnstake <= maxEpoch; epochUnstake++) {
-					var response = entityHandler.handleRequest(new EntityRequest()
-						.networkIdentifier(networkIdentifier)
-						.entityIdentifier(coreModelMapper.entityIdentifierExitingStake(addr, validatorKey, epochUnstake))
-					);
-					unstakes.addAll(response.getBalances());
-				}
-			} catch (CoreApiException e) {
-				throw new IllegalStateException(e);
-			}
-
-			return unstakes;
-		}
-
-		public List<ResourceAmount> getAccountUnstakes(REAddr addr) {
-			return PrivateKeys.numeric(1).limit(20)
-				.map(ECKeyPair::getPublicKey)
-				.flatMap(validatorKey -> getUnstakes(addr, validatorKey).stream())
-				.collect(Collectors.toList());
-		}
-
-		public BigInteger getTotalExittingStake() {
-			var totalStakeExitting = radixEngine.read(reader -> reader.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
-			return new BigInteger(1, totalStakeExitting.toByteArray());
-		}
-
-		public BigInteger getTotalTokensInAccounts() {
-			var totalTokens = radixEngine.read(reader -> reader.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
-			return new BigInteger(1, totalTokens.toByteArray());
-		}
-
-		public UInt256 getTotalNativeTokens() {
-			var totalTokens = radixEngine.read(reader -> reader.reduce(TokensInAccount.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
-			logger.info("Total tokens: {}", Amount.ofSubunits(totalTokens));
-			var totalStaked = radixEngine.read(reader -> reader.reduce(ValidatorStakeData.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
-			logger.info("Total staked: {}", Amount.ofSubunits(totalStaked));
-			var totalStakePrepared = radixEngine.read(reader -> reader.reduce(PreparedStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
-			logger.info("Total preparing stake: {}", Amount.ofSubunits(totalStakePrepared));
-			var totalStakeExitting = radixEngine.read(reader -> reader.reduce(ExitingStake.class, UInt256.ZERO, (u, t) -> u.add(t.getAmount())));
-			logger.info("Total exitting stake: {}", Amount.ofSubunits(totalStakeExitting));
-			var total = totalTokens.add(totalStaked).add(totalStakePrepared).add(totalStakeExitting);
-			logger.info("Total: {}", Amount.ofSubunits(total));
-			return total;
-		}
-	}
-
-	private NodeState reloadNodeState() {
-		return deterministicRunner.getNode(0).getInstance(NodeState.class);
-	}
-
 	/**
 	 * TODO: Figure out why if run for long enough, # of validators
 	 * trends to minimum.
 	 */
 	@Test
 	public void stake_unstake_transfers_restarts() throws Exception {
-		var initialCount = reloadNodeState().getTotalNativeTokens();
-
 		var random = new Random(12345);
 
 		var randomTransactionSubmitter = new RandomTransactionSubmitter(deterministicRunner, random);
+		var apiBalanceChecker = new ApiBalanceChecker(deterministicRunner);
 
 		for (int i = 0; i < ACTION_ROUNDS; i++) {
 			deterministicRunner.processForCount(100);
 
-			var next = random.nextInt(16);
-			if (next < 8) {
+			if (random.nextInt(100) < 50) {
 				randomTransactionSubmitter.execute();
-			} else if (next < 9) {
+			}
+			if (random.nextInt(100) < 10) {
 				var nodeIndex = random.nextInt(nodeKeys.size());
 				deterministicRunner.restartNode(nodeIndex);
-				continue;
+			}
+			if (random.nextInt(200) < 1) {
+				apiBalanceChecker.execute();
 			}
 
 			deterministicRunner.dispatchToAll(new Key<EventDispatcher<MempoolRelayTrigger>>() {}, MempoolRelayTrigger.create());
 			deterministicRunner.dispatchToAll(new Key<EventDispatcher<SyncCheckTrigger>>() {}, SyncCheckTrigger.create());
 		}
-
-		var nodeState = reloadNodeState();
-		logger.info("Node {}", nodeState.getSelf());
-		logger.info("Initial {}", Amount.ofSubunits(initialCount));
-		var epochView = nodeState.getEpochView();
-		var epoch = epochView.getEpoch();
-		var totalRounds = nodeState.getExpectedNumberOfRounds();
-		logger.info("Epoch {} Round {} Total Rounds {}", epochView.getEpoch(), epochView.getView().number(), totalRounds);
-		var maxEmissions = UInt256.from(maxRounds).multiply(REWARDS_PER_PROPOSAL.toSubunits()).multiply(UInt256.from(epoch - 1));
-		logger.info("Max emissions {}", Amount.ofSubunits(maxEmissions));
-		if (epoch > 1) {
-			var finalCount = nodeState.getTotalNativeTokens();
-			assertThat(finalCount).isGreaterThan(initialCount);
-			var diff = finalCount.subtract(initialCount);
-			logger.info("Difference {}", Amount.ofSubunits(diff));
-			assertThat(diff).isLessThanOrEqualTo(maxEmissions);
-		}
-
-		var totalTokenBalance = PrivateKeys.numeric(1).limit(20)
-			.map(ECKeyPair::getPublicKey)
-			.map(REAddr::ofPubKeyAccount)
-			.flatMap(addr -> nodeState.getAccountBalances(addr).stream())
-			.filter(r -> r.getResourceIdentifier().equals(nodeState.nativeToken()))
-			.map(r -> new BigInteger(r.getValue()))
-			.reduce(BigInteger.ZERO, BigInteger::add);
-		assertThat(totalTokenBalance).isEqualTo(nodeState.getTotalTokensInAccounts());
-
-		var totalUnstakingBalance = PrivateKeys.numeric(1).limit(20)
-			.map(ECKeyPair::getPublicKey)
-			.map(REAddr::ofPubKeyAccount)
-			.flatMap(addr -> nodeState.getAccountUnstakes(addr).stream())
-			.filter(r -> r.getResourceIdentifier().equals(nodeState.nativeToken()))
-			.map(r -> new BigInteger(r.getValue()))
-			.reduce(BigInteger.ZERO, BigInteger::add);
-		assertThat(totalUnstakingBalance).isEqualTo(nodeState.getTotalExittingStake());
-
-		for (var e : nodeState.getValidators().entrySet()) {
-			logger.info("{} {}", e.getKey(), e.getValue());
-		}
 	}
-
 }

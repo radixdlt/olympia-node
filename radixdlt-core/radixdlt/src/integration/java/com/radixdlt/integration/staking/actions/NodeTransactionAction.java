@@ -61,8 +61,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.staking;
+package com.radixdlt.integration.staking.actions;
 
-public interface DeterministicActionExecutor {
-	void execute() throws Exception;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationResponse;
+import com.radixdlt.api.core.core.openapitools.model.NetworkStatusResponseNodeIdentifiers;
+import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
+
+public sealed interface NodeTransactionAction permits RegisterValidator, SetAllowDelegationFlag, SetValidatorFee,
+	SetValidatorOwner, StakeTokens, TransferTokens, UnstakeStakeUnits {
+	OperationGroup toOperationGroup(
+		EngineConfigurationResponse configuration,
+		NetworkStatusResponseNodeIdentifiers nodeIdentifiers
+	);
 }

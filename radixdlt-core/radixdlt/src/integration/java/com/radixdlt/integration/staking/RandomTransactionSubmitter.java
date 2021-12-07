@@ -67,6 +67,7 @@ import com.radixdlt.api.core.core.CoreApiException;
 import com.radixdlt.api.core.core.CoreModelMapper;
 import com.radixdlt.api.core.core.handlers.ConstructionBuildHandler;
 import com.radixdlt.api.core.core.handlers.ConstructionSubmitHandler;
+import com.radixdlt.api.core.core.handlers.EngineConfigurationHandler;
 import com.radixdlt.api.core.core.handlers.NetworkConfigurationHandler;
 import com.radixdlt.api.core.core.handlers.NetworkStatusHandler;
 import com.radixdlt.api.core.core.handlers.SignHandler;
@@ -74,38 +75,39 @@ import com.radixdlt.api.core.core.openapitools.model.AboveMaximumValidatorFeeInc
 import com.radixdlt.api.core.core.openapitools.model.BelowMinimumStakeError;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionBuildRequest;
 import com.radixdlt.api.core.core.openapitools.model.ConstructionSubmitRequest;
-import com.radixdlt.api.core.core.openapitools.model.Data;
-import com.radixdlt.api.core.core.openapitools.model.EntityIdentifier;
+import com.radixdlt.api.core.core.openapitools.model.EngineConfigurationRequest;
 import com.radixdlt.api.core.core.openapitools.model.MempoolFullError;
-import com.radixdlt.api.core.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.api.core.core.openapitools.model.NetworkStatusRequest;
 import com.radixdlt.api.core.core.openapitools.model.NotEnoughResourcesError;
 import com.radixdlt.api.core.core.openapitools.model.NotValidatorOwnerError;
-import com.radixdlt.api.core.core.openapitools.model.Operation;
-import com.radixdlt.api.core.core.openapitools.model.OperationGroup;
-import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorFee;
-import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorOwner;
-import com.radixdlt.api.core.core.openapitools.model.PreparedValidatorRegistered;
 import com.radixdlt.api.core.core.openapitools.model.SignRequest;
-import com.radixdlt.api.core.core.openapitools.model.SubEntity;
-import com.radixdlt.api.core.core.openapitools.model.SubEntityMetadata;
-import com.radixdlt.api.core.core.openapitools.model.ValidatorAllowDelegation;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
-import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.integration.staking.actions.NodeTransactionAction;
+import com.radixdlt.integration.staking.actions.RegisterValidator;
+import com.radixdlt.integration.staking.actions.SetAllowDelegationFlag;
+import com.radixdlt.integration.staking.actions.SetValidatorFee;
+import com.radixdlt.integration.staking.actions.SetValidatorOwner;
+import com.radixdlt.integration.staking.actions.StakeTokens;
+import com.radixdlt.integration.staking.actions.TransferTokens;
+import com.radixdlt.integration.staking.actions.UnstakeStakeUnits;
 
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-public final class RandomTransactionSubmitter implements DeterministicActionExecutor {
+public final class RandomTransactionSubmitter implements DeterministicActor {
 	private final MultiNodeDeterministicRunner multiNodeDeterministicRunner;
 	private final Random random;
 
 	public RandomTransactionSubmitter(MultiNodeDeterministicRunner multiNodeDeterministicRunner, Random random) {
 		this.multiNodeDeterministicRunner = multiNodeDeterministicRunner;
 		this.random = random;
+	}
+
+	private Amount nextAmount() {
+		return Amount.ofTokens(random.nextInt(10) * 10 + 1);
 	}
 
 	@Override
@@ -118,12 +120,16 @@ public final class RandomTransactionSubmitter implements DeterministicActionExec
 		var buildHandler = nodeInjector.getInstance(ConstructionBuildHandler.class);
 		var signHandler = nodeInjector.getInstance(SignHandler.class);
 		var submitHandler = nodeInjector.getInstance(ConstructionSubmitHandler.class);
+		var engineConfigurationHandler = nodeInjector.getInstance(EngineConfigurationHandler.class);
 		var coreModelMapper = nodeInjector.getInstance(CoreModelMapper.class);
 
 		var networkResponse = networkConfigurationHandler.handleRequest((Void) null);
 		var networkIdentifier = networkResponse.getNetworkIdentifier();
 		var networkStatusResponse = networkStatusHandler.handleRequest(new NetworkStatusRequest().networkIdentifier(networkIdentifier));
 		var nodeIdentifiers = networkStatusResponse.getNodeIdentifiers();
+		var engineConfigurationResponse = engineConfigurationHandler.handleRequest(
+			new EngineConfigurationRequest().networkIdentifier(networkIdentifier)
+		);
 
 		var otherNodeIndex = this.random.nextInt(size);
 		var otherNodeInjector = this.multiNodeDeterministicRunner.getNode(otherNodeIndex);
@@ -132,105 +138,23 @@ public final class RandomTransactionSubmitter implements DeterministicActionExec
 		var otherNodeIdentifiers = otherNodeStatusResponse.getNodeIdentifiers();
 
 		var next = random.nextInt(8);
-		var amount = Amount.ofTokens(random.nextInt(10) * 10 + 1).toSubunits();
-
 		if (next == 4 && nodeIndex <= 0) {
 			return;
 		}
 
-		final OperationGroup operationGroup = switch (next) {
-			case 0 -> new OperationGroup().operations(List.of(
-				new Operation()
-					.type("Resource")
-					.amount(coreModelMapper.nativeTokenAmount(false, amount))
-					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier()),
-				new Operation()
-					.type("Resource")
-					.amount(coreModelMapper.nativeTokenAmount(true, amount))
-					.entityIdentifier(otherNodeIdentifiers.getAccountEntityIdentifier())
-			));
-			case 1 -> new OperationGroup().operations(List.of(
-				new Operation()
-					.type("Resource")
-					.amount(coreModelMapper.nativeTokenAmount(false, amount))
-					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier()),
-				new Operation()
-					.type("Resource")
-					.amount(coreModelMapper.nativeTokenAmount(true, amount))
-					.entityIdentifier(
-						new EntityIdentifier()
-							.address(nodeIdentifiers.getAccountEntityIdentifier().getAddress())
-							.subEntity(new SubEntity()
-								.address("prepared_stake")
-								.metadata(new SubEntityMetadata().validatorAddress(otherNodeIdentifiers.getValidatorEntityIdentifier().getAddress()))
-							)
-					)
-			));
-			case 2 -> new OperationGroup().operations(List.of(
-				new Operation()
-					.type("Resource")
-					.amount(coreModelMapper.stakeUnitAmount(false, otherNodeIdentifiers.getValidatorEntityIdentifier().getAddress(), amount))
-					.entityIdentifier(nodeIdentifiers.getAccountEntityIdentifier()),
-				new Operation()
-					.type("Resource")
-					.amount(coreModelMapper.stakeUnitAmount(true, otherNodeIdentifiers.getValidatorEntityIdentifier().getAddress(), amount))
-					.entityIdentifier(
-						new EntityIdentifier()
-							.address(nodeIdentifiers.getAccountEntityIdentifier().getAddress())
-							.subEntity(new SubEntity().address("prepared_unstake"))
-					)
-			));
-			case 3 -> new OperationGroup().addOperationsItem(
-				new Operation()
-					.type("Data")
-					.data(new Data().action(Data.ActionEnum.CREATE)
-						.dataObject(new PreparedValidatorRegistered().registered(true).type(PreparedValidatorRegistered.class.getSimpleName()))
-					)
-					.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
-			);
-			case 4 -> new OperationGroup().addOperationsItem(
-				new Operation()
-					.type("Data")
-					.data(new Data().action(Data.ActionEnum.CREATE)
-						.dataObject(new PreparedValidatorRegistered().registered(false).type(PreparedValidatorRegistered.class.getSimpleName()))
-					)
-					.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
-			);
-			case 5 -> new OperationGroup().addOperationsItem(
-				new Operation()
-					.type("Data")
-					.data(new Data().action(Data.ActionEnum.CREATE)
-						.dataObject(new PreparedValidatorFee()
-							.fee(random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1))
-							.type(PreparedValidatorFee.class.getSimpleName())
-						)
-					)
-					.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
-			);
-			case 6 -> new OperationGroup().addOperationsItem(
-				new Operation()
-					.type("Data")
-					.data(new Data().action(Data.ActionEnum.CREATE)
-						.dataObject(new PreparedValidatorOwner()
-							.owner(otherNodeIdentifiers.getAccountEntityIdentifier())
-							.type(PreparedValidatorOwner.class.getSimpleName())
-						)
-					)
-					.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
-			);
-			case 7 -> new OperationGroup().addOperationsItem(
-				new Operation()
-					.type("Data")
-					.data(new Data().action(Data.ActionEnum.CREATE)
-						.dataObject(new ValidatorAllowDelegation()
-							.allowDelegation(random.nextBoolean())
-							.type(ValidatorAllowDelegation.class.getSimpleName())
-						)
-					)
-					.entityIdentifier(nodeIdentifiers.getValidatorEntityIdentifier())
-			);
+		NodeTransactionAction action = switch (next) {
+			case 0 -> new TransferTokens(nextAmount(), coreModelMapper.nativeToken(), otherNodeIdentifiers.getAccountEntityIdentifier());
+			case 1 -> new StakeTokens(nextAmount(), otherNodeIdentifiers.getValidatorEntityIdentifier().getAddress());
+			case 2 -> new UnstakeStakeUnits(nextAmount(), otherNodeIdentifiers.getValidatorEntityIdentifier().getAddress());
+			case 3 -> new RegisterValidator(true);
+			case 4 -> new RegisterValidator(false);
+			case 5 -> new SetValidatorFee(random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
+			case 6 -> new SetValidatorOwner(otherNodeIdentifiers.getAccountEntityIdentifier());
+			case 7 -> new SetAllowDelegationFlag(random.nextBoolean());
 			default -> throw new IllegalStateException("Unexpected value: " + next);
 		};
+
+		var operationGroup = action.toOperationGroup(engineConfigurationResponse, nodeIdentifiers);
 
 		try {
 			var buildResponse = buildHandler.handleRequest(new ConstructionBuildRequest()
