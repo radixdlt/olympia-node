@@ -585,13 +585,13 @@ components:
             amount:
               "$ref": "#/components/schemas/TokenAmount"
     UnstakeTokens:
+      description: An action to unstake tokens. Exactly one of amount or unstake_percentage is required.
       allOf:
         - "$ref": "#/components/schemas/Action"
         - type: object
           required:
             - from_validator
             - to_account
-            - amount
           properties:
             from_validator:
               "$ref": "#/components/schemas/ValidatorIdentifier"
@@ -599,6 +599,10 @@ components:
               "$ref": "#/components/schemas/AccountIdentifier"
             amount:
               "$ref": "#/components/schemas/TokenAmount"
+            unstake_percentage:
+              type: number
+              minimum: 0
+              maximum: 100
     CreateTokenDefinition:
       allOf:
         - "$ref": "#/components/schemas/Action"
@@ -1093,6 +1097,8 @@ components:
           type: string
         validator_fee_percentage:
           type: number
+          minimum: 0
+          maximum: 100
         name:
           type: string
         registered:
@@ -1123,6 +1129,8 @@ components:
           "$ref": "#/components/schemas/EpochRange"
         uptime_percentage:
           type: number
+          minimum: 0
+          maximum: 100
         proposals_missed:
           type: integer
           format: int64
