@@ -52,7 +52,12 @@ public class PMT {
 	}
 
 	public byte[] represent(PMTNode node) {
-		return represent(node, this.hashFunction);
+		if (node.getNodeType() == PMTNode.NodeType.EXTENSION
+			&& node.keyNibbles.isEmpty()) {
+					return node.getValue();
+			} else {
+			return represent(node, this.hashFunction);
+		}
 	}
 
 	public static byte[] represent(PMTNode node, HashFunction hashFunction) {
@@ -297,6 +302,7 @@ public class PMT {
 					case BOTH:
 						var remainderNew = commonPath.getRemainder(PMTPath.Subtree.NEW);
 						var remainderOld = commonPath.getRemainder(PMTPath.Subtree.OLD);
+						// INFO: as implemented here, the key-end can be empty
 						var newLeaf = new PMTLeaf(remainderNew.getTailNibbles(), val);
 						newShorter = splitExtension(remainderOld, current, acc);
 						newBranch = new PMTBranch(
@@ -330,13 +336,7 @@ public class PMT {
 
 	PMTExt splitExtension(PMTKey remainder, PMTNode current, PMTAcc acc) {
 		if (remainder.isNibble()) {
-			// INFO: The remainder will be ONLY expressed as position in the branch
-			//       * it's not necessarily a leaf as it has hash pointer to another branch
-			//       * hash pointer will be rewritten to nibble position in a branch
-			//       * this is why we dont save it as it's only container to pass the first nibble to branch
-
-			// XXX TODO: should this go to cache?! (now it won't as it's not added to accumulator)
-			// XXX TODO: this is probably illegal. See page 21 of the yellowpaper
+			// INFO: transient object helper to construct a branch
 			return new PMTExt(remainder.getTailNibbles(), current.getValue());
 		} else {
 			var newShorter = new PMTExt(remainder.getTailNibbles(), current.getValue());
