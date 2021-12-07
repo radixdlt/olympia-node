@@ -862,7 +862,9 @@ components:
           format: int64
     PartialLedgerStateIdentifier:
       description: Allows a client to request a response in relation to a certain ledger position.
-        Up to one property should be provided. If none are provided, the top of the ledger is assumed.
+        If the version is provided, the latest ledger state <= the given version is returned.
+        If a timestamp is provided, the latest ledger state <= the given timestamp is returned.
+        If an epoch is provided, the ledger state at the given epoch <= the given round (else round 0) is returned.
       type: object
       properties:
         version:
