@@ -73,8 +73,6 @@ import com.radixdlt.api.gateway.openapitools.JSON;
 import com.radixdlt.api.gateway.openapitools.model.ErrorResponse;
 import com.radixdlt.api.gateway.openapitools.model.InternalServerError;
 import com.radixdlt.api.gateway.transaction.TransactionApiModule;
-import com.radixdlt.api.gateway.tokens.TokenApiModule;
-import com.radixdlt.api.gateway.validator.ValidatorApiModule;
 import com.radixdlt.api.util.HandlerRoute;
 import com.radixdlt.api.util.HttpServerRunner;
 import com.radixdlt.environment.Runners;
@@ -111,8 +109,6 @@ public class GatewayServerModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		install(new TokenApiModule(GatewayServer.class, "/token"));
-		install(new ValidatorApiModule(GatewayServer.class, "/validator"));
 		install(new TransactionApiModule(GatewayServer.class, "/transaction"));
 	}
 
