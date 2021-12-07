@@ -63,89 +63,64 @@
 
 package com.radixdlt.integration.api;
 
-import com.radixdlt.api.core.core.CoreModelMapper;
-import com.radixdlt.api.core.core.openapitools.model.ResourceAmount;
+import com.google.inject.Key;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.integration.api.actions.NodeTransactionAction;
+import com.radixdlt.integration.api.actions.RegisterValidator;
+import com.radixdlt.integration.api.actions.SetAllowDelegationFlag;
+import com.radixdlt.integration.api.actions.SetValidatorFee;
+import com.radixdlt.integration.api.actions.SetValidatorOwner;
+import com.radixdlt.integration.api.actions.StakeTokens;
+import com.radixdlt.integration.api.actions.TransferTokens;
+import com.radixdlt.integration.api.actions.UnstakeStakeUnits;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-import java.math.BigInteger;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Random;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public final class ApiTxnSubmitter implements DeterministicActor {
+	private final MultiNodeDeterministicRunner multiNodeDeterministicRunner;
+	private final Random random;
 
-public class ApiBalanceChecker implements DeterministicActor {
-	private static final Logger logger = LogManager.getLogger();
-
-
-	private final MultiNodeDeterministicRunner runner;
-	private UInt256 lastNativeTokenCount;
-	private Long lastEpoch;
-
-	public ApiBalanceChecker(MultiNodeDeterministicRunner runner) {
-		this.runner = runner;
+	public ApiTxnSubmitter(MultiNodeDeterministicRunner multiNodeDeterministicRunner, Random random) {
+		this.multiNodeDeterministicRunner = multiNodeDeterministicRunner;
+		this.random = random;
 	}
 
-
-	public List<ResourceAmount> getAccountUnstakes(REAddr addr, NodeApiClient nodeClient) {
-		return PrivateKeys.numeric(1).limit(20)
-			.map(ECKeyPair::getPublicKey)
-			.flatMap(validatorKey -> nodeClient.getUnstakes(addr, validatorKey).stream())
-			.collect(Collectors.toList());
+	private Amount nextAmount() {
+		return Amount.ofTokens(random.nextInt(10) * 10 + 1);
 	}
 
 	@Override
 	public void execute() throws Exception {
-		var injector = this.runner.getNode(0);
-		var nodeClient = injector.getInstance(NodeApiClient.class);
-		var coreModelMapper = injector.getInstance(CoreModelMapper.class);
-		var radixEngineReader = injector.getInstance(RadixEngineReader.class);
+		int size = this.multiNodeDeterministicRunner.getSize();
+		var nodeIndex = this.random.nextInt(size);
+		var nodeInjector = this.multiNodeDeterministicRunner.getNode(nodeIndex);
+		var nodeClient = nodeInjector.getInstance(NodeApiClient.class);
+		var otherNodeIndex = this.random.nextInt(size);
+		var otherKey = this.multiNodeDeterministicRunner.getNode(otherNodeIndex)
+			.getInstance(Key.get(ECPublicKey.class, Self.class));
+		var next = random.nextInt(8);
 
-		var epochView = nodeClient.getEpochView();
-		var epoch = epochView.getEpoch();
-		var totalNativeTokenCount = radixEngineReader.getTotalNativeTokens();
-		if (lastEpoch != null) {
-			logger.info("total_xrd: {} last_check: {}", Amount.ofSubunits(totalNativeTokenCount), Amount.ofSubunits(lastNativeTokenCount));
-			if (epoch - lastEpoch > 1) {
-				var numEpochs = epoch - lastEpoch;
-				var maxEmissions = UInt256.from(nodeClient.getRoundsPerEpoch())
-					.multiply(nodeClient.getRewardsPerProposal())
-					.multiply(UInt256.from(numEpochs));
-				assertThat(totalNativeTokenCount).isGreaterThan(lastNativeTokenCount);
-				var diff = totalNativeTokenCount.subtract(lastNativeTokenCount);
-				assertThat(diff).isLessThanOrEqualTo(maxEmissions);
-			}
-		} else {
-			logger.info("total_xrd: {}", Amount.ofSubunits(totalNativeTokenCount));
+		// Don't let the last validator unregister
+		if (next == 4 && nodeIndex <= 0) {
+			return;
 		}
 
-		lastEpoch = epoch;
-		lastNativeTokenCount = totalNativeTokenCount;
+		NodeTransactionAction action = switch (next) {
+			case 0 -> new TransferTokens(nextAmount(), nodeClient.nativeToken(), nodeClient.deriveAccount(otherKey));
+			case 1 -> new StakeTokens(nextAmount(), nodeClient.deriveValidator(otherKey).getAddress());
+			case 2 -> new UnstakeStakeUnits(nextAmount(), nodeClient.deriveValidator(otherKey).getAddress());
+			case 3 -> new RegisterValidator(true);
+			case 4 -> new RegisterValidator(false);
+			case 5 -> new SetValidatorFee(random.nextInt(ValidatorUpdateRakeConstraintScrypt.RAKE_MAX + 1));
+			case 6 -> new SetValidatorOwner(nodeClient.deriveAccount(otherKey));
+			case 7 -> new SetAllowDelegationFlag(random.nextBoolean());
+			default -> throw new IllegalStateException("Unexpected value: " + next);
+		};
 
-		// Check that sum of api balances matches radixEngine numbers
-		var totalTokenBalance = PrivateKeys.numeric(1).limit(20)
-			.map(ECKeyPair::getPublicKey)
-			.map(REAddr::ofPubKeyAccount)
-			.flatMap(addr -> nodeClient.getBalances(coreModelMapper.entityIdentifier(addr)).stream())
-			.filter(r -> r.getResourceIdentifier().equals(nodeClient.nativeToken()))
-			.map(r -> new BigInteger(r.getValue()))
-			.reduce(BigInteger.ZERO, BigInteger::add);
-		assertThat(totalTokenBalance).isEqualTo(radixEngineReader.getTotalTokensInAccounts());
-
-		// Check that sum of api exiting stake balances matches radixEngine numbers
-		var totalUnstakingBalance = PrivateKeys.numeric(1).limit(20)
-			.map(ECKeyPair::getPublicKey)
-			.map(REAddr::ofPubKeyAccount)
-			.flatMap(addr -> getAccountUnstakes(addr, nodeClient).stream())
-			.filter(r -> r.getResourceIdentifier().equals(nodeClient.nativeToken()))
-			.map(r -> new BigInteger(r.getValue()))
-			.reduce(BigInteger.ZERO, BigInteger::add);
-		assertThat(totalUnstakingBalance).isEqualTo(radixEngineReader.getTotalExittingStake());
+		nodeClient.submit(action);
 	}
 }

@@ -252,7 +252,7 @@ public class ApiBalancesTest {
 	@Test
 	public void api_balances_should_be_consistent_with_radix_engine_balances() throws Exception {
 		var random = new Random(12345);
-		var randomTransactionSubmitter = new RandomTransactionSubmitter(deterministicRunner, random);
+		var randomTransactionSubmitter = new ApiTxnSubmitter(deterministicRunner, random);
 		var apiBalanceChecker = new ApiBalanceChecker(deterministicRunner);
 
 		for (int i = 0; i < ACTION_ROUNDS; i++) {
