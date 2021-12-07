@@ -73,13 +73,12 @@ public class PMTNodeTest {
     public void when_branch_node_with_non_empty_value_is_deserialized__then_it_is_created_correctly() {
         // given
         PMTLeaf pmtLeaf = new PMTLeaf(
-                BRANCH_NIBBLE,
                 KEY_NIBBLES,
                 NON_EMPTY_VALUE
         );
         PMTBranch pmtBranch = new PMTBranch(
                 NON_EMPTY_VALUE,
-                new PMTBranch.PMTBranchChild(pmtLeaf.getBranchNibble(), PMT.represent(pmtLeaf, KECCAK_256))
+                new PMTBranch.PMTBranchChild(BRANCH_NIBBLE, PMT.represent(pmtLeaf, KECCAK_256))
         );
         byte[] serializedLeaf = pmtBranch.serialize();
 
@@ -89,7 +88,7 @@ public class PMTNodeTest {
         // then
         PMTBranch expected = new PMTBranch(
                 NON_EMPTY_VALUE,
-                new PMTBranch.PMTBranchChild(pmtLeaf.getBranchNibble(), PMT.represent(pmtLeaf, KECCAK_256))
+                new PMTBranch.PMTBranchChild(BRANCH_NIBBLE, PMT.represent(pmtLeaf, KECCAK_256))
         );
         assertEquals(expected, deserialize);
     }
@@ -98,13 +97,12 @@ public class PMTNodeTest {
     public void when_branch_node_with_empty_value_is_deserialized__then_it_is_created_correctly() {
         // given
         PMTLeaf pmtLeaf = new PMTLeaf(
-                BRANCH_NIBBLE,
                 KEY_NIBBLES,
                 NON_EMPTY_VALUE
         );
         PMTBranch pmtBranch = new PMTBranch(
                 EMPTY_VALUE,
-                new PMTBranch.PMTBranchChild(pmtLeaf.getBranchNibble(), PMT.represent(pmtLeaf, KECCAK_256))
+                new PMTBranch.PMTBranchChild(BRANCH_NIBBLE, PMT.represent(pmtLeaf, KECCAK_256))
         );
 
         // when
@@ -114,7 +112,7 @@ public class PMTNodeTest {
         // then
         PMTBranch expected = new PMTBranch(
                 EMPTY_VALUE,
-                new PMTBranch.PMTBranchChild(pmtLeaf.getBranchNibble(), PMT.represent(pmtLeaf, KECCAK_256))
+                new PMTBranch.PMTBranchChild(BRANCH_NIBBLE, PMT.represent(pmtLeaf, KECCAK_256))
         );
         assertEquals(expected, deserialize);
     }

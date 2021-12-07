@@ -21,13 +21,8 @@ public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMT
 
 	protected byte[] hash;
 	protected NodeType nodeType;
-	protected PMTKey branchNibble;
 	protected PMTKey keyNibbles;
 	protected byte[] value;
-
-	protected PMTKey getBranchNibble() {
-		return branchNibble;
-	}
 
 	public PMTKey getKey() {
 		return this.keyNibbles;
@@ -132,13 +127,12 @@ public abstract sealed class PMTNode implements Cloneable permits PMTBranch, PMT
 		PMTNode pmtNode = (PMTNode) o;
 		return Arrays.equals(hash, pmtNode.hash)
 				&& nodeType == pmtNode.nodeType
-				&& Objects.equals(branchNibble, pmtNode.branchNibble)
 				&& Objects.equals(keyNibbles, pmtNode.keyNibbles)
 				&& Arrays.equals(value, pmtNode.value);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(Arrays.hashCode(hash), nodeType, branchNibble, keyNibbles, Arrays.hashCode(value));
+		return Objects.hash(Arrays.hashCode(hash), nodeType, keyNibbles, Arrays.hashCode(value));
 	}
 }
