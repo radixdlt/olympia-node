@@ -29,9 +29,13 @@ public class PMTKey {
 
 	public PMTKey getTailNibbles() {
 		if (tailNibbles == null) {
-			var tail = new PMTKey(Arrays.copyOfRange(key, 1, key.length)); // TODO: perf, mem?
-			tailNibbles = tail;
-			return tail;
+			if (key.length > 1) {
+				var tail = new PMTKey(Arrays.copyOfRange(key, 1, key.length)); // TODO: perf, mem?
+				tailNibbles = tail;
+				return tail;
+			} else {
+				return new PMTKey(new byte[0]);
+			}
 		} else {
 			return firstNibble;
 		}
