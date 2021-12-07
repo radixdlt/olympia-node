@@ -1,13 +1,21 @@
 package com.radixdlt.store.tree;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.radixdlt.store.tree.hash.Keccak256;
+import com.radixdlt.store.tree.serialization.rlp.RLP;
+import com.radixdlt.store.tree.storage.EthTransaction;
 import com.radixdlt.store.tree.storage.InMemoryPMTStorage;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Map;
 
 public class EthereumTxTreeTest {
 
@@ -18,7 +26,7 @@ public class EthereumTxTreeTest {
         var storage = new InMemoryPMTStorage();
         var tree = new PMT(storage, KECCAK_256, Duration.of(10, ChronoUnit.MINUTES));
 
-        createEthereumTxTreeTest(tree);
+        createEthereumTxTreeBlock10593417Test(tree);
     }
 
     @Test
@@ -26,10 +34,10 @@ public class EthereumTxTreeTest {
         var storage = new InMemoryPMTStorage();
         var tree = new PMT(storage, KECCAK_256, Duration.ZERO);
 
-        createEthereumTxTreeTest(tree);
+        createEthereumTxTreeBlock10593417Test(tree);
     }
 
-    private void createEthereumTxTreeTest(PMT tree) {
+    private void createEthereumTxTreeBlock10593417Test(PMT tree) {
         tree.add(
                 Hex.decode("80"),
                 Hex.decode("f8ab81a5852e90edd00083012bc294a3bed4e1c75d00fa6f4e5e6922db7261b5e9acd280b844a9059cbb00"
@@ -64,5 +72,93 @@ public class EthereumTxTreeTest {
                 "ab41f886be23cd786d8a69a72b0f988ea72e0b2e03970d0798f5e03763a442cc",
                 Hex.toHexString(rootHash)
         );
+    }
+
+    @Test
+    public void when_tx_tree_of_eth_block_10467135_created_using_cache__then_tx_root_is_correct() throws IOException {
+        var storage = new InMemoryPMTStorage();
+        var tree = new PMT(storage, KECCAK_256, Duration.of(10, ChronoUnit.MINUTES));
+
+        createEthereumTxTreeBlock10467135Test(tree);
+    }
+
+    @Test
+    public void when_tx_tree_of_eth_block_10467135_created_not_using_cache__then_tx_root_is_correct() throws IOException {
+        var storage = new InMemoryPMTStorage();
+        var tree = new PMT(storage, KECCAK_256, Duration.of(0, ChronoUnit.MINUTES));
+
+        createEthereumTxTreeBlock10467135Test(tree);
+    }
+
+    private void createEthereumTxTreeBlock10467135Test(PMT tree) throws IOException {
+        String expectedTxRootHash = "bb345e208bda953c908027a45aa443d6cab6b8d2fd64e83ec52f1008ddeafa58";
+
+        Map<String, String>[] maps = new ObjectMapper().readValue(
+                Paths.get("src/test/resources", "eth-txs/eth-txs.json").toFile(), Map[].class);
+
+        var txRLPEncodedList = new ArrayList<byte[]>();
+
+        byte[] rootHash = new byte[0];
+
+        for (int i = 0; i < maps.length; i++) {
+            Map<String, String> m = maps[i];
+
+            EthTransaction ethTransaction = getEthTransaction(m);
+            byte[] txRLPEncoded = ethTransaction.rlpEncoded();
+            txRLPEncodedList.add(txRLPEncoded);
+
+            Assert.assertArrayEquals(
+                    decodeHex(m.get("hash")),
+                    KECCAK_256.hash(txRLPEncoded));
+
+            byte[] txIdxRLPEncoded = RLP.encodeBigInteger(BigInteger.valueOf(i));
+
+            rootHash = tree.add(
+                    txIdxRLPEncoded,
+                    txRLPEncoded
+            );
+
+            Assert.assertArrayEquals(
+                    txRLPEncoded,
+                    tree.get(txIdxRLPEncoded)
+            );
+        }
+
+        for (int i = 0; i < txRLPEncodedList.size(); i++) {
+            Assert.assertArrayEquals(
+                    txRLPEncodedList.get(i),
+                    tree.get(RLP.encodeBigInteger(BigInteger.valueOf(i)))
+            );
+        }
+
+        Assert.assertEquals(
+                expectedTxRootHash,
+                Hex.toHexString(rootHash)
+        );
+    }
+
+    private EthTransaction getEthTransaction(Map<String, String> m) {
+        EthTransaction ethTransaction = new EthTransaction(
+                new BigInteger(decodeHex(m.get("nonce"))),
+                new BigInteger(decodeHex(m.get("gasPrice"))),
+                new BigInteger(decodeHex(m.get("gas"))),
+                decodeHex(m.get("to")),
+                new BigInteger(decodeHex(m.get("value"))),
+                decodeHex(m.get("input")),
+                decodeHex(m.get("v")),
+                decodeHex(m.get("r")),
+                decodeHex(m.get("s"))
+        );
+        return ethTransaction;
+    }
+
+
+    private byte[] decodeHex(String hexString) {
+        String finalHexString;
+        finalHexString = hexString.substring(2); // removing 0x
+        if (finalHexString.length() % 2 != 0) {
+            finalHexString = "0" + finalHexString; // add a zero if odd length
+        }
+        return Hex.decode(finalHexString);
     }
 }
